@@ -3,7 +3,8 @@
 import React from "react";
 import { Banknote, Link, CheckCircle, Globe } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+import axiosInstance from "@/utils/axiosInstance";
+
 
 // Fetch Stripe account details
 const fetchStripeAccount = async () => {

@@ -11,14 +11,18 @@ import {
   ChevronRightCircle,
   Save,
 } from "lucide-react";
-import Input from "packages/components/input";
+import { Input } from "@repo/ui";
+
 import { useForm } from "react-hook-form";
-import CustomDomains from "apps/seller-ui/src/shared/modules/settings";
-import WithdrawMethod from "apps/seller-ui/src/shared/modules/settings/withdraw-method";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import toast from "react-hot-toast";
-import useSeller from "apps/seller-ui/src/hooks/useSeller";
+
+import axiosInstance from "@/utils/axiosInstance";
+import useSeller from "@/hooks/useSeller";
+import WithdrawMethod from "@/shared/modules/settings/withdraw-method";
+import CustomDomains from "@/shared/modules/settings";
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("general");
@@ -52,7 +56,7 @@ const SettingsPage = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || "Failed to delete shop. Try again."
+        error?.response?.data?.message || "Failed to delete shop. Try again.",
       );
     },
   });
@@ -68,7 +72,7 @@ const SettingsPage = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || "Failed to Restore shop. Try again."
+        error?.response?.data?.message || "Failed to Restore shop. Try again.",
       );
     },
   });

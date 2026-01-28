@@ -3,11 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import ChatInput from "apps/seller-ui/src/shared/components/chatinput";
-import useSeller from "apps/seller-ui/src/hooks/useSeller";
-import { useWebSocket } from "apps/seller-ui/src/context/web-socket-context";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+import ChatInput from "@/shared/components/chatinput";
+import useSeller from "@/hooks/useSeller";
+import axiosInstance from "@/utils/axiosInstance";
+import { useWebSocket } from "@/context/web-socket-context";
 
 const ChatPage = () => {
   const searchParams = useSearchParams();
@@ -28,7 +29,7 @@ const ChatPage = () => {
     queryFn: async () => {
       if (!conversationId || hasFetchedOnce) return [];
       const res = await axiosInstance.get(
-        `/chatting/api/get-seller-messages/${conversationId}?page=1`
+        `/chatting/api/get-seller-messages/${conversationId}?page=1`,
       );
       setHasFetchedOnce(true);
       return res.data.messages.reverse();
@@ -65,7 +66,7 @@ const ChatPage = () => {
     queryKey: ["conversations"],
     queryFn: async () => {
       const res = await axiosInstance.get(
-        "/chatting/api/get-seller-conversations"
+        "/chatting/api/get-seller-conversations",
       );
       return res.data.conversations;
     },
@@ -95,7 +96,7 @@ const ChatPage = () => {
                 seen: false,
                 createdAt: newMsg.createdAt || new Date().toISOString(),
               },
-            ]
+            ],
           );
           scrollToBottom();
         }
@@ -104,8 +105,8 @@ const ChatPage = () => {
           prevChats.map((chat) =>
             chat.conversationId === newMsg.conversationId
               ? { ...chat, lastMessage: newMsg.content }
-              : chat
-          )
+              : chat,
+          ),
         );
       }
 
@@ -115,8 +116,8 @@ const ChatPage = () => {
           prevChats.map((chat) =>
             chat.conversationId === conversationId
               ? { ...chat, unreadCount: count }
-              : chat
-          )
+              : chat,
+          ),
         );
       }
     };
@@ -126,8 +127,8 @@ const ChatPage = () => {
     setHasFetchedOnce(false);
     setChats((prev) =>
       prev.map((c) =>
-        c.conversationId === chat.conversationId ? { ...c, unreadCount: 0 } : c
-      )
+        c.conversationId === chat.conversationId ? { ...c, unreadCount: 0 } : c,
+      ),
     );
     router.push(`?conversationId=${chat.conversationId}`);
 
@@ -136,7 +137,7 @@ const ChatPage = () => {
         JSON.stringify({
           type: "MARK_AS_SEEN",
           conversationId: chat.conversationId,
-        })
+        }),
       );
     }
   };

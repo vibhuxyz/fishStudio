@@ -5,10 +5,9 @@ import { X, UploadCloud, Wand, Trash2, Loader } from "lucide-react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "@/utils/axiosInstance";
-import { convertFileToBase64 } from "@/utils/convertToBase64";
-// import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
-// import { convertFileToBase64 } from "apps/seller-ui/src/utils/convertToBase64";
+
+import axiosInstance from "../../../utils/axiosInstance";
+import { convertFileToBase64 } from "../../../utils/convertToBase64";
 
 interface ImageEditModalProps {
   editType: "cover" | "avatar";
@@ -50,7 +49,7 @@ const ImageEditModal = ({ editType, onClose }: ImageEditModalProps) => {
 
   // Handle File Upload
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
@@ -75,7 +74,7 @@ const ImageEditModal = ({ editType, onClose }: ImageEditModalProps) => {
 
       const response = await axiosInstance.post(
         "/seller/api/upload-image",
-        payload
+        payload,
       );
 
       if (response.data.url) {
@@ -115,7 +114,7 @@ const ImageEditModal = ({ editType, onClose }: ImageEditModalProps) => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || "Failed to update profile!"
+        error?.response?.data?.message || "Failed to update profile!",
       );
     },
   });

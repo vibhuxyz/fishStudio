@@ -79,18 +79,23 @@ export const verifySeller = async (
     await verifyOtp(email, otp, next);
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.sellers.create({
+    const seller = await prisma.sellers.create({
       data: {
         name,
         email,
         password: hashedPassword,
         phone_number,
       },
+      select: {
+        id: true,
+      },
     });
 
-    res
-      .status(201)
-      .json({ success: true, message: "Seller registration successful!" });
+    res.status(201).json({
+      success: true,
+      message: "Seller registration successful!",
+      seller,
+    });
   } catch (error) {
     next(error);
   }

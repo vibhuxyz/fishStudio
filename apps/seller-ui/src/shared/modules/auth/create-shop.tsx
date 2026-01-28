@@ -1,9 +1,9 @@
 import { shopCategories } from "@/utils/categories";
-import { cities } from "@/utils/countires";
+import { cities } from "@/utils/cities";
+
 import { useMutation } from "@tanstack/react-query";
-// import { shopCategories } from "apps/seller-ui/src/utils/categories";
-import axios from "axios";
-import React from "react";
+import axios, { AxiosError } from "axios";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 
 const CreateShop = ({
@@ -13,32 +13,75 @@ const CreateShop = ({
   sellerId: string;
   setActiveStep: (step: number) => void;
 }) => {
+  const [submitError, setSubmitError] = useState<string>("");
+
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm();
+    formState: { errors, isSubmitting },
+    watch,
+  } = useForm({
+    mode: "onBlur",
+    defaultValues: {
+      name: "",
+      bio: "",
+      city: "",
+      address: "",
+      pincode: "",
+      opening_hours: "",
+      website: "",
+      category: "",
+    },
+  });
+
+  const bioValue = watch("bio");
+  const countWords = (text: string) => text.trim().split(/\s+/).length;
+  const wordCount = bioValue ? countWords(bioValue) : 0;
 
   const shopCreateMutation = useMutation({
-    mutationFn: async (data: FormData) => {
+    mutationFn: async (data: any) => {
+      const shopData = {
+        ...data,
+        sellerId,
+      };
+
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/api/create-store`,
-        data,
+        `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/create-store`,
+        shopData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
 
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Store created successfully:", data);
       setActiveStep(3);
+    },
+    onError: (error) => {
+      if (error instanceof AxiosError) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to create shop. Please try again.";
+        setSubmitError(errorMessage);
+      } else {
+        setSubmitError(
+          "An unexpected error occurred. Please check the console.",
+        );
+      }
+      console.error("Create shop error:", error);
     },
   });
 
   const onSubmit = async (data: any) => {
-    const shopData = { ...data, sellerId };
-    shopCreateMutation.mutate(shopData);
+    setSubmitError("");
+    console.log("Submitting form with data:", { ...data, sellerId });
+    shopCreateMutation.mutate(data);
   };
-
-  const countWords = (text: string) => text.trim().split(/\s+/).length;
 
   return (
     <div>
@@ -47,148 +90,211 @@ const CreateShop = ({
           Setup new shop
         </h3>
 
+        {/* Shop Name */}
         <label className="block text-gray-700 mb-1">Name *</label>
         <input
           type="text"
-          placeholder="shop name"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+          placeholder="My Awesome Shop"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
           {...register("name", {
-            required: "Name is required",
+            required: "Shop name is required",
+            minLength: {
+              value: 2,
+              message: "Shop name must be at least 2 characters",
+            },
+            maxLength: {
+              value: 100,
+              message: "Shop name cannot exceed 100 characters",
+            },
           })}
         />
         {errors.name && (
-          <p className="text-red-500 text-sm">{String(errors.name.message)}</p>
+          <p className="text-red-500 text-sm mb-3">
+            {String(errors.name.message)}
+          </p>
         )}
 
+        {/* Shop Bio */}
         <label className="block text-gray-700 mb-1">
-          Bio (Max 100 words) *
+          Bio (Max 100 words) *{" "}
+          {wordCount > 0 && (
+            <span className="text-gray-500">({wordCount} words)</span>
+          )}
         </label>
-        <input
-          type="text"
-          placeholder="shop bio"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+        <textarea
+          placeholder="Tell customers about your shop..."
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2 resize-none"
+          rows={4}
           {...register("bio", {
-            required: "Bio is required",
+            required: "Shop bio is required",
+            minLength: {
+              value: 10,
+              message: "Bio must be at least 10 characters",
+            },
             validate: (value) =>
-              countWords(value) <= 100 || "Bio can't exceed 100 words",
+              countWords(value) <= 100 || "Bio cannot exceed 100 words",
           })}
         />
         {errors.bio && (
-          <p className="text-red-500 text-sm">{String(errors.bio.message)}</p>
+          <p className="text-red-500 text-sm mb-3">
+            {String(errors.bio.message)}
+          </p>
         )}
 
-        <label className="block text-gray-700 mb-1">City</label>
+        {/* City */}
+        {/*<label className="block text-gray-700 mb-1">City *</label>
         <select
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1 bg-white"
-          {...register("City", { required: "City is required" })}
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2 bg-white"
+          {...register("city", { required: "City is required" })}
         >
           <option value="">Select your city</option>
-          {cities.map((cities) => (
-            <option key={cities.code} value={cities.code}>
-              {cities.name}
+          {cities.map((city) => (
+            <option key={city.code} value={city.name}>
+              {city.name}
             </option>
           ))}
         </select>
+        {errors.city && (
+          <p className="text-red-500 text-sm mb-3">
+            {String(errors.city.message)}
+          </p>
+        )}*/}
 
-        {errors.country && (
-          <p className="text-red-500 text-sm">
-            {String(errors.country.message)}
+        <label className="block text-gray-700 mb-1">City</label>
+        <input
+          type="text"
+          placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
+          {...register("city", {
+            required: "Opening hours are required",
+            minLength: {
+              value: 3,
+              message: "Please enter valid opening hours",
+            },
+          })}
+        />
+        {errors.city && (
+          <p className="text-red-500 text-sm mb-3">
+            {String(errors.city.message)}
           </p>
         )}
 
+        {/* Address */}
         <label className="block text-gray-700 mb-1">Address *</label>
         <input
           type="text"
-          placeholder="shop location"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+          placeholder="123 Main Street, Suite 100"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
           {...register("address", {
-            required: "Shop Address is required",
+            required: "Shop address is required",
+            minLength: {
+              value: 5,
+              message: "Address must be at least 5 characters",
+            },
           })}
         />
         {errors.address && (
-          <p className="text-red-500 text-sm">
+          <p className="text-red-500 text-sm mb-3">
             {String(errors.address.message)}
           </p>
         )}
-        
-        <label className="block text-gray-700 mb-1">Pin Code</label>
+
+        {/* Pincode - IMPORTANT: Use text, not number */}
+        <label className="block text-gray-700 mb-1">Pin Code *</label>
         <input
-          type="number"
-          placeholder="******"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+          type="text"
+          inputMode="numeric"
+          placeholder="123456"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
+          maxLength={6}
           {...register("pincode", {
             required: "Pincode is required",
             pattern: {
-              value: /^\+?[1-9]\d{1,14}$/, // Follows E.164 format
-              message: "Invalid Pincode format",
-            },
-            minLength: {
-              value: 6,
-              message: "Pincode must be at least 6 digits",
-            },
-            maxLength: {
-              value: 6,
-              message: "Pincode cannot exceed 6 digits",
+              value: /^[1-9][0-9]{5}$/,
+              message: "Pincode must be exactly 6 digits (starting with 1-9)",
             },
           })}
         />
+        {errors.pincode && (
+          <p className="text-red-500 text-sm mb-3">
+            {String(errors.pincode.message)}
+          </p>
+        )}
 
+        {/* Opening Hours */}
         <label className="block text-gray-700 mb-1">Opening Hours *</label>
         <input
           type="text"
-          placeholder="e.g., Mon-Fri 9AM - 6PM"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+          placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
           {...register("opening_hours", {
             required: "Opening hours are required",
+            minLength: {
+              value: 3,
+              message: "Please enter valid opening hours",
+            },
           })}
         />
         {errors.opening_hours && (
-          <p className="text-red-500 text-sm">
+          <p className="text-red-500 text-sm mb-3">
             {String(errors.opening_hours.message)}
           </p>
         )}
 
-        <label className="block text-gray-700 mb-1">Website</label>
+        {/* Website - Optional */}
+        <label className="block text-gray-700 mb-1">Website *</label>
         <input
-          type="url"
-          placeholder="https://example.com"
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
+          type="text"
+          placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
           {...register("website", {
-            pattern: {
-              value: /^(https?:\/\/)?([\w\d-]+\.)+\w{2,}(\/.*)?$/,
-              message: "Enter a valid URL",
+            required: "Opening hours are required",
+            minLength: {
+              value: 3,
+              message: "Please enter valid opening hours",
             },
           })}
         />
         {errors.website && (
-          <p className="text-red-500 text-sm">
+          <p className="text-red-500 text-sm mb-3">
             {String(errors.website.message)}
           </p>
         )}
 
+        {/* Website - Optional */}
         <label className="block text-gray-700 mb-1">Category *</label>
-        <select
-          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-1"
-          {...register("category", { required: "Category is required" })}
-        >
-          <option value="">Select a category</option>
-          {shopCategories.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.label}
-            </option>
-          ))}
-        </select>
+        <input
+          type="text"
+          placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
+          className="w-full p-2 border border-gray-300 outline-0 rounded-[4px] mb-2"
+          {...register("category", {
+            required: "Opening hours are required",
+            minLength: {
+              value: 3,
+              message: "Please enter valid opening hours",
+            },
+          })}
+        />
         {errors.category && (
-          <p className="text-red-500 text-sm">
+          <p className="text-red-500 text-sm mb-3">
             {String(errors.category.message)}
           </p>
         )}
 
+        {/* API Error Message */}
+        {submitError && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-3">
+            <p className="text-red-600 text-sm">{submitError}</p>
+          </div>
+        )}
+
+        {/* Submit Button */}
         <button
           type="submit"
-          className="w-full text-lg bg-blue-600 text-white py-2 rounded-lg mt-4"
+          disabled={isSubmitting || shopCreateMutation.isPending}
+          className="w-full cursor-pointer text-lg bg-blue-600 text-white py-2 rounded-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          Create
+          {shopCreateMutation.isPending ? "Creating Store..." : "Create Store"}
         </button>
       </form>
     </div>

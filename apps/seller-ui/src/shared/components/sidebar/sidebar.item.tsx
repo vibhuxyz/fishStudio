@@ -1,5 +1,6 @@
+import axiosInstance from "@/utils/axiosInstance";
 import { useQueryClient } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";

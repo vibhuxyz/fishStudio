@@ -1,7 +1,9 @@
 "use client";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
+import axiosInstance from "@/utils/axiosInstance";
 import { useQuery } from "@tanstack/react-query";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
+
 import Link from "next/link";
 import React from "react";
 

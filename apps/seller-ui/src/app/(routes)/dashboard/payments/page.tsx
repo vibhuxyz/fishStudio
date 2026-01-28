@@ -9,9 +9,11 @@ import {
 } from "@tanstack/react-table";
 import { Search, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import Link from "next/link";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
+
+import axiosInstance from "@/utils/axiosInstance";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
 
 const fetchOrders = async () => {
   const res = await axiosInstance.get("/order/api/get-seller-orders");
@@ -63,9 +65,7 @@ const SellerPayments = () => {
         cell: ({ row }: any) => {
           const adminFee = row.original.total * 0.1;
           return (
-            <span className="text-yellow-400">
-              ${adminFee.toFixed(2)}
-            </span>
+            <span className="text-yellow-400">${adminFee.toFixed(2)}</span>
           );
         },
       },
@@ -104,7 +104,7 @@ const SellerPayments = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -145,7 +145,7 @@ const SellerPayments = () => {
                     <th key={header.id} className="p-3 text-left">
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                     </th>
                   ))}
@@ -162,7 +162,7 @@ const SellerPayments = () => {
                     <td key={cell.id} className="p-3">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}

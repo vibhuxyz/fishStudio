@@ -1,14 +1,15 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 // import { useAuthStore } from "apps/store-ui/src/store/authStore";
 import axios, { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
+// import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useAuthStore } from "../../../store/authStore";
+import Link from "next/link";
 
 type FormData = {
   email: string;
@@ -34,7 +35,7 @@ const Login = () => {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/login-seller`,
         data,
-        { withCredentials: true }
+        { withCredentials: true },
       );
       return response.data;
     },
@@ -97,7 +98,7 @@ const Login = () => {
                 },
               })}
             />
-           
+
             {errors.email && (
               <p className="text-red-500 text-sm">
                 {String(errors.email.message)}

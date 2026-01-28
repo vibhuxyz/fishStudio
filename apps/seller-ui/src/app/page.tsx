@@ -20,9 +20,10 @@ import { useQuery } from "@tanstack/react-query";
 import ProductCard from "../shared/components/cards/product.card";
 import ImageEditModal from "../shared/components/modals/image-edit-modal";
 import XIcon from "../assets/icons/xIcon";
-import axiosInstance from "@/utils/axiosInstance";
-import useSeller from "@/hooks/useSeller";
-import YoutubeIcon from "@/assets/icons/youtube-icons";
+
+import axiosInstance from "../utils/axiosInstance";
+import useSeller from "../hooks/useSeller";
+import YoutubeIcon from "../assets/icons/youtube-icons";
 
 const TABS = ["Products", "Offers", "Reviews"];
 

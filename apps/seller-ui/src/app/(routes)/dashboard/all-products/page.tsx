@@ -8,12 +8,16 @@ import {
 } from "@tanstack/react-table";
 import { Search, Trash, Eye, Plus, BarChart, Star } from "lucide-react";
 import Link from "next/link";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import DeleteConfirmationModal from "apps/seller-ui/src/shared/components/modals/delete.confirmation.modal";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
-import AnalyticsModal from "apps/seller-ui/src/shared/components/modals/analytics.modal";
+
+
+
+import axiosInstance from "@/utils/axiosInstance";
+import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
+import AnalyticsModal from "@/shared/components/modals/analytics.modal";
 
 const fetchProducts = async () => {
   const res = await axiosInstance.get("/product/api/get-shop-products");

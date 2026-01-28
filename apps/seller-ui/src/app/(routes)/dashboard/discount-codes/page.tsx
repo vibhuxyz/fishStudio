@@ -1,11 +1,12 @@
 "use client";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
+import DeleteDiscountCodeModal from "@/shared/components/modals/delete.discount-codes";
+import axiosInstance from "@/utils/axiosInstance";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
-import DeleteDiscountCodeModal from "apps/seller-ui/src/shared/components/modals/delete.discount-codes";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import { AxiosError } from "axios";
 import { Plus, Trash, X } from "lucide-react";
-import Input from "packages/components/input";
+import { Input } from "@repo/ui";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
@@ -54,7 +55,7 @@ const Page = () => {
   const deleteDiscountCodeMutation = useMutation({
     mutationFn: async (discountId) => {
       await axiosInstance.delete(
-        `/product/api/delete-discount-code/${discountId}`
+        `/product/api/delete-discount-code/${discountId}`,
       );
     },
     onSuccess: () => {

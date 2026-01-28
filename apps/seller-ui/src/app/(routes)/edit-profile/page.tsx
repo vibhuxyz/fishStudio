@@ -4,11 +4,12 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, FieldValues } from "react-hook-form";
 import { Save, Trash, ArrowLeft, Loader } from "lucide-react";
-import Input from "packages/components/input";
+import { Input } from "@repo/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
-import useSeller from "apps/seller-ui/src/hooks/useSeller";
+
+import axiosInstance from "@/utils/axiosInstance";
+import useSeller from "@/hooks/useSeller";
 
 interface SocialLink {
   type: string;
@@ -72,7 +73,7 @@ const EditProfile: React.FC = () => {
     },
     onError: (error: any) => {
       toast.error(
-        error?.response?.data?.message || "Failed to update profile!"
+        error?.response?.data?.message || "Failed to update profile!",
       );
     },
   });

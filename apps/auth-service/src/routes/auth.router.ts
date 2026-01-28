@@ -29,8 +29,8 @@ router.post("/refresh-token", refreshToken);
 router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
 router.post("/login-seller", loginSeller);
-router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/create-store", createStore);
+router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 
 // router.post(
 //   "/create-stripe-link",

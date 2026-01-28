@@ -1,15 +1,15 @@
 "use client";
 
-import useSeller from "apps/seller-ui/src/hooks/useSeller";
-import useSidebar from "apps/seller-ui/src/hooks/useSidebar";
+// import useSeller from "apps/seller-ui/src/hooks/useSeller";
+
 import { redirect, usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 import Box from "../box";
 import { Sidebar } from "./sidebar.styles";
 import Link from "next/link";
-import Logo from "apps/seller-ui/src/assets/svgs/logo";
+
 import SidebarItem from "./sidebar.item";
-import Home from "apps/seller-ui/src/assets/icons/home";
+
 import SidebarMenu from "./sidebar.menu";
 import {
   BellPlus,
@@ -24,8 +24,12 @@ import {
   SquarePlus,
   TicketPercent,
 } from "lucide-react";
-import Payment from "apps/seller-ui/src/assets/icons/payment";
-import useRequireAuth from "apps/seller-ui/src/hooks/useRequiredAuth";
+
+import useSidebar from "@/hooks/useSidebar";
+import Logo from "@/assets/svgs/logo";
+import Home from "@/assets/icons/home";
+import Payment from "@/assets/icons/payment";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 
 const SidebarBarWrapper = () => {
   const { activeSidebar, setActiveSidebar } = useSidebar();
@@ -144,14 +148,14 @@ const SidebarBarWrapper = () => {
               />
             </SidebarMenu>
             <SidebarMenu title="Controllers">
-              <SidebarItem
+              {/*<SidebarItem
                 isActive={activeSidebar === "/dashboard/inbox"}
                 title="Inbox"
                 href="/dashboard/inbox"
                 icon={
                   <Mail size={20} color={getIconColor("/dashboard/inbox")} />
                 }
-              />
+              />*/}
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/settings"}
                 title="Settings"

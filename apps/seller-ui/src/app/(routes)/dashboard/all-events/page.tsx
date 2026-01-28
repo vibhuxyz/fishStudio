@@ -17,12 +17,14 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import DeleteConfirmationModal from "apps/seller-ui/src/shared/components/modals/delete.confirmation.modal";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
-import AnalyticsModal from "apps/seller-ui/src/shared/components/modals/analytics.modal";
+
+import axiosInstance from "@/utils/axiosInstance";
+import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
+import AnalyticsModal from "@/shared/components/modals/analytics.modal";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
 
 const fetchEvents = async () => {
   const res = await axiosInstance.get("/product/api/get-shop-products");
@@ -174,7 +176,7 @@ const EventList = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -237,7 +239,7 @@ const EventList = () => {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </th>
                   ))}
@@ -254,7 +256,7 @@ const EventList = () => {
                     <td key={cell.id} className="p-3">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}

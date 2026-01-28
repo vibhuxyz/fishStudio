@@ -15,12 +15,13 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
             staleTime: 1000 * 60 * 5,
           },
         },
-      })
+      }),
   );
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ProvidersWithWebSocket>{children}</ProvidersWithWebSocket>
+      {/*<ProvidersWithWebSocket>{children}</ProvidersWithWebSocket>*/}
+      {children}
       <Toaster />
     </QueryClientProvider>
   );

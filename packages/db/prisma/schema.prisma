@@ -50,7 +50,7 @@ model storeReviews {
 model stores {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  bio           String?
+  bio           String
   category      String
   avatar        images?
   coverBanner   String?
@@ -59,7 +59,7 @@ model stores {
   pincode       String
   opening_hours String
   socialLinks   Json[]
-  ratings       Float          @default(0)
+  ratings       Float?         @default(0)
   reviews       storeReviews[]
   sellerId      String         @unique @db.ObjectId
   sellers       sellers        @relation(fields: [sellerId], references: [id])

@@ -1,14 +1,14 @@
-"use client";
-
 import styled from "styled-components";
 
 interface BoxProps {
   css?: React.CSSProperties;
 }
 
-const Box = styled.div.attrs<BoxProps>((props) => ({
-  style: props.css,
-}))<BoxProps>`
+// ✅ CORRECT WAY 1: Using attrs without the generic type parameter in attrs
+const Box = styled.div<BoxProps>`
   box-sizing: border-box;
-`;
+` as any;
+
+Box.defaultProps = {};
+
 export default Box;

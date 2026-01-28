@@ -1,13 +1,14 @@
 import React from "react";
 import { Eye, ShoppingCart, Heart, CheckCircle, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
-import { isProtected } from "apps/seller-ui/src/utils/protected";
+
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 
 const fetchAnalytics = async (productId: string) => {
   const res = await axiosInstance.get(
     `/product/api/get-product-analytics/${productId}`,
-    isProtected
+    isProtected,
   );
   return res?.data?.analytics;
 };

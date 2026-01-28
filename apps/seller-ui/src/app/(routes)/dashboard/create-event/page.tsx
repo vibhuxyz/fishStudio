@@ -1,17 +1,18 @@
 "use client";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
+import ImagePlaceHolder from "@/shared/components/image-placeholder";
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 import { useQuery } from "@tanstack/react-query";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
-import ImagePlaceHolder from "apps/seller-ui/src/shared/components/image-placeholder";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
-import { isProtected } from "apps/seller-ui/src/utils/protected";
+
 import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import ColorSelector from "packages/components/color-selector";
-import CustomProperties from "packages/components/custom-properties";
-import CustomSpecifications from "packages/components/custom-specifications";
-import Input from "packages/components/input";
-import RichTextEditor from "packages/components/rich-text-editor";
-import SizeSelector from "packages/components/size-selector";
+import { ColorSelector } from "@repo/ui";
+import { CustomProperties } from "@repo/ui";
+import { CustomSpecifications } from "@repo/ui";
+import { Input } from "@repo/ui";
+import { RichTextEditor } from "@repo/ui";
+import { SizeSelector } from "@repo/ui";
 import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -272,7 +273,7 @@ const Page = () => {
                         const title = getValues("title");
                         if (!title) {
                           toast.error(
-                            "Please enter a event title to generate a slug!"
+                            "Please enter a event title to generate a slug!",
                           );
                           return;
                         }
@@ -289,7 +290,7 @@ const Page = () => {
                           // Check slug validity via API
                           const res = await axiosInstance.post(
                             "/product/api/slug-validator",
-                            { slug: rawSlug }
+                            { slug: rawSlug },
                           );
                           const { available, suggestedSlug } = res.data;
 
@@ -299,11 +300,11 @@ const Page = () => {
                           } else if (suggestedSlug) {
                             setValue("slug", suggestedSlug);
                             toast.info(
-                              "Slug not available, suggested new one!"
+                              "Slug not available, suggested new one!",
                             );
                           } else {
                             toast.error(
-                              "Slug is already taken, try editing it."
+                              "Slug is already taken, try editing it.",
                             );
                           }
                         } catch (err) {
@@ -607,10 +608,10 @@ const Page = () => {
                         onClick={() => {
                           const currentSelection = watch("discountCodes") || [];
                           const updatedSelection = currentSelection?.includes(
-                            code.id
+                            code.id,
                           )
                             ? currentSelection.filter(
-                                (id: string) => id !== code.id
+                                (id: string) => id !== code.id,
                               )
                             : [...currentSelection, code.id];
                           setValue("discountCodes", updatedSelection);

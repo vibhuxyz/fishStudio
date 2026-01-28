@@ -5,17 +5,17 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import  colorSelector  from "../../../../../../../packages/components/color-selector/index.";
-
+import {
+  ColorSelector,
+  CustomProperties,
+  CustomSpecifications,
+  Input,
+  RichTextEditor,
+  SizeSelector,
+} from "@repo/ui";
 
 import { useQuery } from "@tanstack/react-query";
 
-// import ColorSelector from "packages/components/color-selector";
-// import CustomProperties from "packages/components/custom-properties";
-// import CustomSpecifications from "packages/components/custom-specifications";
-// import Input from "packages/components/input";
-// import RichTextEditor from "packages/components/rich-text-editor";
-// import SizeSelector from "packages/components/size-selector";
 import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -88,7 +88,7 @@ const Page = () => {
       try {
         const res = await axiosInstance.get(
           "/product/api/get-categories",
-          isProtected
+          isProtected,
         );
         return res.data;
       } catch (error) {
@@ -104,7 +104,7 @@ const Page = () => {
     queryFn: async () => {
       const res = await axiosInstance.get(
         "/product/api/get-discount-codes",
-        isProtected
+        isProtected,
       );
       return res?.data?.discount_codes || [];
     },
@@ -266,7 +266,7 @@ const Page = () => {
                         const title = getValues("title");
                         if (!title) {
                           toast.error(
-                            "Please enter a product title to generate a slug!"
+                            "Please enter a product title to generate a slug!",
                           );
                           return;
                         }
@@ -283,7 +283,7 @@ const Page = () => {
                           // Check slug validity via API
                           const res = await axiosInstance.post(
                             "/product/api/slug-validator",
-                            { slug: rawSlug }
+                            { slug: rawSlug },
                           );
                           const { available, suggestedSlug } = res.data;
 
@@ -293,11 +293,11 @@ const Page = () => {
                           } else if (suggestedSlug) {
                             setValue("slug", suggestedSlug);
                             toast.info(
-                              "Slug not available, suggested new one!"
+                              "Slug not available, suggested new one!",
                             );
                           } else {
                             toast.error(
-                              "Slug is already taken, try editing it."
+                              "Slug is already taken, try editing it.",
                             );
                           }
                         } catch (err) {
@@ -587,10 +587,10 @@ const Page = () => {
                         onClick={() => {
                           const currentSelection = watch("discountCodes") || [];
                           const updatedSelection = currentSelection?.includes(
-                            code.id
+                            code.id,
                           )
                             ? currentSelection.filter(
-                                (id: string) => id !== code.id
+                                (id: string) => id !== code.id,
                               )
                             : [...currentSelection, code.id];
                           setValue("discountCodes", updatedSelection);

@@ -6,12 +6,10 @@ import Link from "next/link";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios, { AxiosError } from "axios";
-import { cities } from "@/utils/countires";
-import CreateShop from "@/shared/modules/auth/create-shop";
-import StripeLogo from "@/assets/svgs/stripe-logo";
-// import { countries } from "apps/seller-ui/src/utils/countires";
-// import CreateShop from "apps/seller-ui/src/shared/modules/auth/create-shop";
-// import StripeLogo from "apps/seller-ui/src/assets/svgs/stripe-logo";
+
+// import StripeLogo from "@/assets/svgs/stripe-logo";
+import CreateShop from "../../../shared/modules/auth/create-shop";
+import StripeLogo from "../../../assets/svgs/stripe-logo";
 
 const Signup = () => {
   const [activeStep, setActiveStep] = useState(1);
@@ -220,8 +218,6 @@ const Signup = () => {
                   </p>
                 )}
 
-                
-
                 <label className="block text-gray-700 mb-1">Password</label>
                 <div className="relative">
                   <input
@@ -268,7 +264,7 @@ const Signup = () => {
 
                 <p className="pt-3 text-center">
                   Already have an account?{" "}
-                  <Link href={"/login"} className="text-blue-500">
+                  <Link href={"/login"} className="text-red-500">
                     Login
                   </Link>
                 </p>

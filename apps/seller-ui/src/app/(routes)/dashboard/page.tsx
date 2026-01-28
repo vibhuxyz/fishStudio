@@ -16,8 +16,6 @@ import {
 } from "recharts";
 import GeographicalMap from "@/shared/components/charts/geographicalMap";
 import { SalesChart } from "@/shared/components/charts/sales.chart";
-// import GeographicalMap from "apps/seller-ui/src/shared/components/charts/geographicalMap";
-// import { SalesChart } from "@/shared/shared/components/charts/sales.chart";
 
 // Device data
 const deviceData = [
@@ -29,12 +27,9 @@ const COLORS = ["#4ade80", "#facc15", "#60a5fa"];
 
 // Orders data
 const orders = [
-  { id: "ORD-001", customer: "John Doe", amount: "$250", status: "Paid" },
-  { id: "ORD-002", customer: "Jane Smith", amount: "$180", status: "Pending" },
-  { id: "ORD-003", customer: "Alice Johnson", amount: "$340", status: "Paid" },
-  { id: "ORD-004", customer: "Bob Lee", amount: "$90", status: "Failed" },
-  { id: "ORD-005", customer: "Bob Lee", amount: "$90", status: "Failed" },
-  { id: "ORD-006", customer: "Bob Lee", amount: "$90", status: "Failed" },
+  {
+    id: "ORD-001", customer: "Nitesh  ", amount: "rs250", status: "Paid" },
+
 ];
 
 // Orders table columns
@@ -54,14 +49,15 @@ const columns = [
   {
     accessorKey: "status",
     header: "Status",
+    
     cell: ({ getValue }: any) => {
       const value = getValue();
       const color =
         value === "Paid"
           ? "text-green-400"
           : value === "Pending"
-          ? "text-yellow-400"
-          : "text-red-400";
+            ? "text-yellow-400"
+            : "text-red-400";
       return <span className={`font-medium ${color}`}>{value}</span>;
     },
   },
@@ -91,7 +87,7 @@ const OrdersTable = () => {
                   <th key={header.id} className="p-3 text-left">
                     {flexRender(
                       header.column.columnDef.header,
-                      header.getContext()
+                      header.getContext(),
                     )}
                   </th>
                 ))}

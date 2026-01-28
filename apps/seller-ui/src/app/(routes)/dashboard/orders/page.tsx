@@ -8,9 +8,11 @@ import {
 } from "@tanstack/react-table";
 import { Search, Eye } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import Link from "next/link";
-import BreadCrumbs from "apps/seller-ui/src/shared/components/breadcrumbs";
+
+import axiosInstance from "@/utils/axiosInstance";
+import BreadCrumbs from "@/shared/components/breadcrumbs";
 
 const fetchOrders = async () => {
   const res = await axiosInstance.get("/order/api/get-seller-orders");
@@ -86,7 +88,7 @@ const OrdersTable = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -131,7 +133,7 @@ const OrdersTable = () => {
                     <th key={header.id} className="p-3 text-left text-sm">
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                     </th>
                   ))}
@@ -148,7 +150,7 @@ const OrdersTable = () => {
                     <td key={cell.id} className="p-3 text-sm">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}
