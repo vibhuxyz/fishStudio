@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+//create a DB design for an e-commerce application
+
+//------------------------------- User Model started -------------------------------
+// avatar images
+model images {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  file_id   String
+  url       String
+  userId    String?   @unique @db.ObjectId
+  storeId   String?   @unique @db.ObjectId
+  users     users?    @relation(fields: [userId], references: [id])
+  stores    stores?   @relation(fields: [storeId], references: [id])
+  products  products? @relation(fields: [productId], references: [id])
+  productId String?   @db.ObjectId
+}
+
+model users {
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  phone_number String         @unique
+  name         String
+  following    String[]
+  avatar       images?
+  storeReviews storeReviews[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+// //------------------------------- Store Model ended -------------------------------
+model storeReviews {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      users    @relation(fields: [userId], references: [id])
+  rating    Float
+  reviews   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  storeId   String?  @db.ObjectId
+  shops     stores?  @relation(fields: [storeId], references: [id])
+}
+
+model stores {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  bio           String?
+  category      String
+  avatar        images?
+  coverBanner   String?
+  address       String
+  city          String
+  pincode       String
+  opening_hours String
+  socialLinks   Json[]
+  ratings       Float          @default(0)
+  reviews       storeReviews[]
+  sellerId      String         @unique @db.ObjectId
+  sellers       sellers        @relation(fields: [sellerId], references: [id])
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  products      products[]
+}
+
+model sellers {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String   @unique
+  phone_number String
+  password     String
+  following    String[]
+  stripeId     String?
+  store        stores?
+  storeId      String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  storesId     String?  @db.ObjectId
+}
+
+// //------------------------------- Store Model ended -------------------------------
+
+model site_config {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories    String[]
+  subCategories Json
+}
+
+model discount_codes {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  public_name   String
+  discountType  String
+  discountValue Float
+  discountCode  String   @unique
+  sellerId      String   @db.ObjectId
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum productStatus {
+  Active
+  Pending
+  Draft
+}
+
+// -------------------------------------Product Details Schema---------------------------------
+model products {
+  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
+  title                 String
+  slug                  String        @unique
+  category              String
+  subCategory           String
+  short_description     String
+  detailed_description  String
+  images                images[]
+  video_url             String?
+  tags                  String[]
+  brand                 String?
+  colors                String[]
+  sizes                 String[]
+  starting_date         DateTime?
+  ending_date           DateTime?
+  stock                 Int
+  sale_price            Float
+  regular_price         Float
+  ratings               Float         @default(5)
+  warranty              String?
+  custom_specifications Json?
+  custom_properties     Json
+  isDeleted             Boolean?      @default(false)
+  cashOnDelivery        String?
+  discount_codes        String[]      @db.ObjectId
+  status                productStatus @default(Active)
+  deletedAt             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  storeId               String        @db.ObjectId
+  store                 stores        @relation(fields: [storeId], references: [id])
+}

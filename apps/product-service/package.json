@@ -1,0 +1,32 @@
+{
+  "name": "product-service",
+  "module": "main.ts",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@repo/env-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@types/bun": "latest",
+    "tsx": "^4.21.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}

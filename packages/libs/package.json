@@ -1,0 +1,29 @@
+{
+  "name": "@repo/libs",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@repo/env-config": "workspace:*",
+    "@types/bun": "latest",
+    "@repo/typescript-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@types/amqplib": "^0.10.8",
+    "@types/ejs": "^3.1.5",
+    "@types/nodemailer": "^7.0.9",
+    "amqplib": "^0.10.9",
+    "axios": "^1.13.3",
+    "dotenv": "^17.2.3",
+    "ejs": "^4.0.1",
+    "imagekit": "^6.0.0",
+    "ioredis": "^5.9.2",
+    "nodemailer": "^7.0.13"
+  }
+}

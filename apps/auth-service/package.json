@@ -1,0 +1,41 @@
+{
+  "name": "@repo/auth-service",
+  "module": "index.ts",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/rabbitMQ-service":"workspace:*",
+    "@repo/env-config":"workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/bun": "latest",
+    "tsx": "^4.21.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  }
+}

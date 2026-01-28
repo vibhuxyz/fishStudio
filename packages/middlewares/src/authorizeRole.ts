@@ -1,0 +1,16 @@
+import { AuthError } from "@repo/error-handlers/index";
+import { Response, NextFunction } from "express";
+
+export const isSeller = (req: any, res: Response, next: NextFunction) => {
+  if (req.role !== "seller") {
+    return next(new AuthError("Access denied: Seller only"));
+  }
+  return next();
+};
+
+export const isUser = (req: any, res: Response, next: NextFunction) => {
+  if (req.role !== "user") {
+    return next(new AuthError("Access denied: Seller only"));
+  }
+  return next();
+};

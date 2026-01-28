@@ -1,0 +1,23 @@
+{
+  "name": "@repo/env-config",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@repo/typescript-config": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "path": "^0.12.7",
+    "zod": "^4.3.6"
+  }
+}
