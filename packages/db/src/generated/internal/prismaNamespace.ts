@@ -395,8 +395,8 @@ export const ModelName = {
   storeReviews: 'storeReviews',
   stores: 'stores',
   sellers: 'sellers',
-  site_config: 'site_config',
   discount_codes: 'discount_codes',
+  site_config: 'site_config',
   products: 'products'
 } as const
 
@@ -413,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "images" | "users" | "storeReviews" | "stores" | "sellers" | "site_config" | "discount_codes" | "products"
+    modelProps: "images" | "users" | "storeReviews" | "stores" | "sellers" | "discount_codes" | "site_config" | "products"
     txIsolationLevel: never
   }
   model: {
@@ -787,80 +787,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    site_config: {
-      payload: Prisma.$site_configPayload<ExtArgs>
-      fields: Prisma.site_configFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.site_configFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.site_configFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        findFirst: {
-          args: Prisma.site_configFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.site_configFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        findMany: {
-          args: Prisma.site_configFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>[]
-        }
-        create: {
-          args: Prisma.site_configCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        createMany: {
-          args: Prisma.site_configCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        delete: {
-          args: Prisma.site_configDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        update: {
-          args: Prisma.site_configUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        deleteMany: {
-          args: Prisma.site_configDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.site_configUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        upsert: {
-          args: Prisma.site_configUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
-        }
-        aggregate: {
-          args: Prisma.Site_configAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSite_config>
-        }
-        groupBy: {
-          args: Prisma.site_configGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Site_configGroupByOutputType>[]
-        }
-        findRaw: {
-          args: Prisma.site_configFindRawArgs<ExtArgs>
-          result: Prisma.JsonObject
-        }
-        aggregateRaw: {
-          args: Prisma.site_configAggregateRawArgs<ExtArgs>
-          result: Prisma.JsonObject
-        }
-        count: {
-          args: Prisma.site_configCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.Site_configCountAggregateOutputType> | number
-        }
-      }
-    }
     discount_codes: {
       payload: Prisma.$discount_codesPayload<ExtArgs>
       fields: Prisma.discount_codesFieldRefs
@@ -932,6 +858,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.discount_codesCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Discount_codesCountAggregateOutputType> | number
+        }
+      }
+    }
+    site_config: {
+      payload: Prisma.$site_configPayload<ExtArgs>
+      fields: Prisma.site_configFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.site_configFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.site_configFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        findFirst: {
+          args: Prisma.site_configFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.site_configFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        findMany: {
+          args: Prisma.site_configFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>[]
+        }
+        create: {
+          args: Prisma.site_configCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        createMany: {
+          args: Prisma.site_configCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.site_configDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        update: {
+          args: Prisma.site_configUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        deleteMany: {
+          args: Prisma.site_configDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.site_configUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.site_configUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$site_configPayload>
+        }
+        aggregate: {
+          args: Prisma.Site_configAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSite_config>
+        }
+        groupBy: {
+          args: Prisma.site_configGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Site_configGroupByOutputType>[]
+        }
+        findRaw: {
+          args: Prisma.site_configFindRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        aggregateRaw: {
+          args: Prisma.site_configAggregateRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        count: {
+          args: Prisma.site_configCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Site_configCountAggregateOutputType> | number
         }
       }
     }
@@ -1100,15 +1100,6 @@ export const SellersScalarFieldEnum = {
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
 
 
-export const Site_configScalarFieldEnum = {
-  id: 'id',
-  categories: 'categories',
-  subCategories: 'subCategories'
-} as const
-
-export type Site_configScalarFieldEnum = (typeof Site_configScalarFieldEnum)[keyof typeof Site_configScalarFieldEnum]
-
-
 export const Discount_codesScalarFieldEnum = {
   id: 'id',
   public_name: 'public_name',
@@ -1123,6 +1114,21 @@ export const Discount_codesScalarFieldEnum = {
 export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
 
 
+export const Site_configScalarFieldEnum = {
+  id: 'id',
+  categories: 'categories',
+  subCategories: 'subCategories',
+  sizes: 'sizes',
+  cuttingTypes: 'cuttingTypes',
+  pieceSizes: 'pieceSizes',
+  processingWeightLoss: 'processingWeightLoss',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Site_configScalarFieldEnum = (typeof Site_configScalarFieldEnum)[keyof typeof Site_configScalarFieldEnum]
+
+
 export const ProductsScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -1131,20 +1137,15 @@ export const ProductsScalarFieldEnum = {
   subCategory: 'subCategory',
   short_description: 'short_description',
   detailed_description: 'detailed_description',
-  video_url: 'video_url',
   tags: 'tags',
-  brand: 'brand',
-  colors: 'colors',
   sizes: 'sizes',
-  starting_date: 'starting_date',
-  ending_date: 'ending_date',
+  cuttingTypes: 'cuttingTypes',
+  pieceSizes: 'pieceSizes',
+  processingWeightLoss: 'processingWeightLoss',
   stock: 'stock',
   sale_price: 'sale_price',
   regular_price: 'regular_price',
   ratings: 'ratings',
-  warranty: 'warranty',
-  custom_specifications: 'custom_specifications',
-  custom_properties: 'custom_properties',
   isDeleted: 'isDeleted',
   cashOnDelivery: 'cashOnDelivery',
   discount_codes: 'discount_codes',
@@ -1361,8 +1362,8 @@ export type GlobalOmitConfig = {
   storeReviews?: Prisma.storeReviewsOmit
   stores?: Prisma.storesOmit
   sellers?: Prisma.sellersOmit
-  site_config?: Prisma.site_configOmit
   discount_codes?: Prisma.discount_codesOmit
+  site_config?: Prisma.site_configOmit
   products?: Prisma.productsOmit
 }
 

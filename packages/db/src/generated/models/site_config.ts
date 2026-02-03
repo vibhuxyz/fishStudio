@@ -26,32 +26,52 @@ export type AggregateSite_config = {
 
 export type Site_configMinAggregateOutputType = {
   id: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type Site_configMaxAggregateOutputType = {
   id: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type Site_configCountAggregateOutputType = {
   id: number
   categories: number
   subCategories: number
+  sizes: number
+  cuttingTypes: number
+  pieceSizes: number
+  processingWeightLoss: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
 
 export type Site_configMinAggregateInputType = {
   id?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type Site_configMaxAggregateInputType = {
   id?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type Site_configCountAggregateInputType = {
   id?: true
   categories?: true
   subCategories?: true
+  sizes?: true
+  cuttingTypes?: true
+  pieceSizes?: true
+  processingWeightLoss?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -131,6 +151,12 @@ export type Site_configGroupByOutputType = {
   id: string
   categories: string[]
   subCategories: runtime.JsonValue
+  sizes: runtime.JsonValue
+  cuttingTypes: runtime.JsonValue
+  pieceSizes: runtime.JsonValue
+  processingWeightLoss: runtime.JsonValue
+  createdAt: Date
+  updatedAt: Date
   _count: Site_configCountAggregateOutputType | null
   _min: Site_configMinAggregateOutputType | null
   _max: Site_configMaxAggregateOutputType | null
@@ -158,12 +184,24 @@ export type site_configWhereInput = {
   id?: Prisma.StringFilter<"site_config"> | string
   categories?: Prisma.StringNullableListFilter<"site_config">
   subCategories?: Prisma.JsonFilter<"site_config">
+  sizes?: Prisma.JsonFilter<"site_config">
+  cuttingTypes?: Prisma.JsonFilter<"site_config">
+  pieceSizes?: Prisma.JsonFilter<"site_config">
+  processingWeightLoss?: Prisma.JsonFilter<"site_config">
+  createdAt?: Prisma.DateTimeFilter<"site_config"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"site_config"> | Date | string
 }
 
 export type site_configOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   categories?: Prisma.SortOrder
   subCategories?: Prisma.SortOrder
+  sizes?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type site_configWhereUniqueInput = Prisma.AtLeast<{
@@ -173,12 +211,24 @@ export type site_configWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.site_configWhereInput | Prisma.site_configWhereInput[]
   categories?: Prisma.StringNullableListFilter<"site_config">
   subCategories?: Prisma.JsonFilter<"site_config">
+  sizes?: Prisma.JsonFilter<"site_config">
+  cuttingTypes?: Prisma.JsonFilter<"site_config">
+  pieceSizes?: Prisma.JsonFilter<"site_config">
+  processingWeightLoss?: Prisma.JsonFilter<"site_config">
+  createdAt?: Prisma.DateTimeFilter<"site_config"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"site_config"> | Date | string
 }, "id">
 
 export type site_configOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   categories?: Prisma.SortOrder
   subCategories?: Prisma.SortOrder
+  sizes?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.site_configCountOrderByAggregateInput
   _max?: Prisma.site_configMaxOrderByAggregateInput
   _min?: Prisma.site_configMinOrderByAggregateInput
@@ -191,58 +241,116 @@ export type site_configScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"site_config"> | string
   categories?: Prisma.StringNullableListFilter<"site_config">
   subCategories?: Prisma.JsonWithAggregatesFilter<"site_config">
+  sizes?: Prisma.JsonWithAggregatesFilter<"site_config">
+  cuttingTypes?: Prisma.JsonWithAggregatesFilter<"site_config">
+  pieceSizes?: Prisma.JsonWithAggregatesFilter<"site_config">
+  processingWeightLoss?: Prisma.JsonWithAggregatesFilter<"site_config">
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"site_config"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"site_config"> | Date | string
 }
 
 export type site_configCreateInput = {
   id?: string
   categories?: Prisma.site_configCreatecategoriesInput | string[]
   subCategories: runtime.InputJsonValue
+  sizes: runtime.InputJsonValue
+  cuttingTypes: runtime.InputJsonValue
+  pieceSizes: runtime.InputJsonValue
+  processingWeightLoss: runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type site_configUncheckedCreateInput = {
   id?: string
   categories?: Prisma.site_configCreatecategoriesInput | string[]
   subCategories: runtime.InputJsonValue
+  sizes: runtime.InputJsonValue
+  cuttingTypes: runtime.InputJsonValue
+  pieceSizes: runtime.InputJsonValue
+  processingWeightLoss: runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type site_configUpdateInput = {
   categories?: Prisma.site_configUpdatecategoriesInput | string[]
   subCategories?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  cuttingTypes?: runtime.InputJsonValue | runtime.InputJsonValue
+  pieceSizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type site_configUncheckedUpdateInput = {
   categories?: Prisma.site_configUpdatecategoriesInput | string[]
   subCategories?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  cuttingTypes?: runtime.InputJsonValue | runtime.InputJsonValue
+  pieceSizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type site_configCreateManyInput = {
   id?: string
   categories?: Prisma.site_configCreatecategoriesInput | string[]
   subCategories: runtime.InputJsonValue
+  sizes: runtime.InputJsonValue
+  cuttingTypes: runtime.InputJsonValue
+  pieceSizes: runtime.InputJsonValue
+  processingWeightLoss: runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type site_configUpdateManyMutationInput = {
   categories?: Prisma.site_configUpdatecategoriesInput | string[]
   subCategories?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  cuttingTypes?: runtime.InputJsonValue | runtime.InputJsonValue
+  pieceSizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type site_configUncheckedUpdateManyInput = {
   categories?: Prisma.site_configUpdatecategoriesInput | string[]
   subCategories?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  cuttingTypes?: runtime.InputJsonValue | runtime.InputJsonValue
+  pieceSizes?: runtime.InputJsonValue | runtime.InputJsonValue
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type site_configCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   categories?: Prisma.SortOrder
   subCategories?: Prisma.SortOrder
+  sizes?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type site_configMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type site_configMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type site_configCreatecategoriesInput = {
@@ -260,6 +368,12 @@ export type site_configSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   id?: boolean
   categories?: boolean
   subCategories?: boolean
+  sizes?: boolean
+  cuttingTypes?: boolean
+  pieceSizes?: boolean
+  processingWeightLoss?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["site_config"]>
 
 
@@ -268,9 +382,15 @@ export type site_configSelectScalar = {
   id?: boolean
   categories?: boolean
   subCategories?: boolean
+  sizes?: boolean
+  cuttingTypes?: boolean
+  pieceSizes?: boolean
+  processingWeightLoss?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type site_configOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categories" | "subCategories", ExtArgs["result"]["site_config"]>
+export type site_configOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "categories" | "subCategories" | "sizes" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "createdAt" | "updatedAt", ExtArgs["result"]["site_config"]>
 
 export type $site_configPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "site_config"
@@ -279,6 +399,12 @@ export type $site_configPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: string
     categories: string[]
     subCategories: runtime.JsonValue
+    sizes: runtime.JsonValue
+    cuttingTypes: runtime.JsonValue
+    pieceSizes: runtime.JsonValue
+    processingWeightLoss: runtime.JsonValue
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["site_config"]>
   composites: {}
 }
@@ -674,6 +800,12 @@ export interface site_configFieldRefs {
   readonly id: Prisma.FieldRef<"site_config", 'String'>
   readonly categories: Prisma.FieldRef<"site_config", 'String[]'>
   readonly subCategories: Prisma.FieldRef<"site_config", 'Json'>
+  readonly sizes: Prisma.FieldRef<"site_config", 'Json'>
+  readonly cuttingTypes: Prisma.FieldRef<"site_config", 'Json'>
+  readonly pieceSizes: Prisma.FieldRef<"site_config", 'Json'>
+  readonly processingWeightLoss: Prisma.FieldRef<"site_config", 'Json'>
+  readonly createdAt: Prisma.FieldRef<"site_config", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"site_config", 'DateTime'>
 }
     
 

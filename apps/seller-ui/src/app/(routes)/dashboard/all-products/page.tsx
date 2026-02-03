@@ -12,15 +12,13 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 
-
-
 import axiosInstance from "@/utils/axiosInstance";
 import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import AnalyticsModal from "@/shared/components/modals/analytics.modal";
 
 const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-shop-products");
+  const res = await axiosInstance.get("/product/api/get-store-products");
   const products = res.data.products?.filter((i: any) => !i.starting_date);
   return products;
 };
@@ -158,7 +156,7 @@ const ProductList = () => {
         ),
       },
     ],
-    []
+    [],
   );
 
   const table = useReactTable({
@@ -227,7 +225,7 @@ const ProductList = () => {
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </th>
                   ))}
@@ -244,7 +242,7 @@ const ProductList = () => {
                     <td key={cell.id} className="p-3">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </td>
                   ))}

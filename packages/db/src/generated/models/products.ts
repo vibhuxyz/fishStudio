@@ -48,15 +48,13 @@ export type ProductsMinAggregateOutputType = {
   subCategory: string | null
   short_description: string | null
   detailed_description: string | null
-  video_url: string | null
-  brand: string | null
-  starting_date: Date | null
-  ending_date: Date | null
+  sizes: string | null
+  cuttingTypes: string | null
+  pieceSizes: string | null
   stock: number | null
   sale_price: number | null
   regular_price: number | null
   ratings: number | null
-  warranty: string | null
   isDeleted: boolean | null
   cashOnDelivery: string | null
   status: $Enums.productStatus | null
@@ -74,15 +72,13 @@ export type ProductsMaxAggregateOutputType = {
   subCategory: string | null
   short_description: string | null
   detailed_description: string | null
-  video_url: string | null
-  brand: string | null
-  starting_date: Date | null
-  ending_date: Date | null
+  sizes: string | null
+  cuttingTypes: string | null
+  pieceSizes: string | null
   stock: number | null
   sale_price: number | null
   regular_price: number | null
   ratings: number | null
-  warranty: string | null
   isDeleted: boolean | null
   cashOnDelivery: string | null
   status: $Enums.productStatus | null
@@ -100,20 +96,15 @@ export type ProductsCountAggregateOutputType = {
   subCategory: number
   short_description: number
   detailed_description: number
-  video_url: number
   tags: number
-  brand: number
-  colors: number
   sizes: number
-  starting_date: number
-  ending_date: number
+  cuttingTypes: number
+  pieceSizes: number
+  processingWeightLoss: number
   stock: number
   sale_price: number
   regular_price: number
   ratings: number
-  warranty: number
-  custom_specifications: number
-  custom_properties: number
   isDeleted: number
   cashOnDelivery: number
   discount_codes: number
@@ -148,15 +139,13 @@ export type ProductsMinAggregateInputType = {
   subCategory?: true
   short_description?: true
   detailed_description?: true
-  video_url?: true
-  brand?: true
-  starting_date?: true
-  ending_date?: true
+  sizes?: true
+  cuttingTypes?: true
+  pieceSizes?: true
   stock?: true
   sale_price?: true
   regular_price?: true
   ratings?: true
-  warranty?: true
   isDeleted?: true
   cashOnDelivery?: true
   status?: true
@@ -174,15 +163,13 @@ export type ProductsMaxAggregateInputType = {
   subCategory?: true
   short_description?: true
   detailed_description?: true
-  video_url?: true
-  brand?: true
-  starting_date?: true
-  ending_date?: true
+  sizes?: true
+  cuttingTypes?: true
+  pieceSizes?: true
   stock?: true
   sale_price?: true
   regular_price?: true
   ratings?: true
-  warranty?: true
   isDeleted?: true
   cashOnDelivery?: true
   status?: true
@@ -200,20 +187,15 @@ export type ProductsCountAggregateInputType = {
   subCategory?: true
   short_description?: true
   detailed_description?: true
-  video_url?: true
   tags?: true
-  brand?: true
-  colors?: true
   sizes?: true
-  starting_date?: true
-  ending_date?: true
+  cuttingTypes?: true
+  pieceSizes?: true
+  processingWeightLoss?: true
   stock?: true
   sale_price?: true
   regular_price?: true
   ratings?: true
-  warranty?: true
-  custom_specifications?: true
-  custom_properties?: true
   isDeleted?: true
   cashOnDelivery?: true
   discount_codes?: true
@@ -319,20 +301,15 @@ export type ProductsGroupByOutputType = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url: string | null
   tags: string[]
-  brand: string | null
-  colors: string[]
-  sizes: string[]
-  starting_date: Date | null
-  ending_date: Date | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes: string | null
+  processingWeightLoss: runtime.JsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings: number
-  warranty: string | null
-  custom_specifications: runtime.JsonValue | null
-  custom_properties: runtime.JsonValue
   isDeleted: boolean | null
   cashOnDelivery: string | null
   discount_codes: string[]
@@ -374,20 +351,15 @@ export type productsWhereInput = {
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
-  video_url?: Prisma.StringNullableFilter<"products"> | string | null
   tags?: Prisma.StringNullableListFilter<"products">
-  brand?: Prisma.StringNullableFilter<"products"> | string | null
-  colors?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringNullableListFilter<"products">
-  starting_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
-  ending_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
+  sizes?: Prisma.StringFilter<"products"> | string
+  cuttingTypes?: Prisma.StringFilter<"products"> | string
+  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
+  processingWeightLoss?: Prisma.JsonFilter<"products">
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  warranty?: Prisma.StringNullableFilter<"products"> | string | null
-  custom_specifications?: Prisma.JsonNullableFilter<"products">
-  custom_properties?: Prisma.JsonFilter<"products">
   isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
@@ -397,7 +369,7 @@ export type productsWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"products"> | Date | string
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
-  store?: Prisma.XOR<Prisma.StoresScalarRelationFilter, Prisma.storesWhereInput>
+  store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }
 
 export type productsOrderByWithRelationInput = {
@@ -408,20 +380,15 @@ export type productsOrderByWithRelationInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  video_url?: Prisma.SortOrder
   tags?: Prisma.SortOrder
-  brand?: Prisma.SortOrder
-  colors?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
-  starting_date?: Prisma.SortOrder
-  ending_date?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  warranty?: Prisma.SortOrder
-  custom_specifications?: Prisma.SortOrder
-  custom_properties?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
@@ -445,20 +412,15 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
-  video_url?: Prisma.StringNullableFilter<"products"> | string | null
   tags?: Prisma.StringNullableListFilter<"products">
-  brand?: Prisma.StringNullableFilter<"products"> | string | null
-  colors?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringNullableListFilter<"products">
-  starting_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
-  ending_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
+  sizes?: Prisma.StringFilter<"products"> | string
+  cuttingTypes?: Prisma.StringFilter<"products"> | string
+  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
+  processingWeightLoss?: Prisma.JsonFilter<"products">
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  warranty?: Prisma.StringNullableFilter<"products"> | string | null
-  custom_specifications?: Prisma.JsonNullableFilter<"products">
-  custom_properties?: Prisma.JsonFilter<"products">
   isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
@@ -468,7 +430,7 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"products"> | Date | string
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
-  store?: Prisma.XOR<Prisma.StoresScalarRelationFilter, Prisma.storesWhereInput>
+  store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }, "id" | "slug">
 
 export type productsOrderByWithAggregationInput = {
@@ -479,20 +441,15 @@ export type productsOrderByWithAggregationInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  video_url?: Prisma.SortOrder
   tags?: Prisma.SortOrder
-  brand?: Prisma.SortOrder
-  colors?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
-  starting_date?: Prisma.SortOrder
-  ending_date?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  warranty?: Prisma.SortOrder
-  custom_specifications?: Prisma.SortOrder
-  custom_properties?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
@@ -519,20 +476,15 @@ export type productsScalarWhereWithAggregatesInput = {
   subCategory?: Prisma.StringWithAggregatesFilter<"products"> | string
   short_description?: Prisma.StringWithAggregatesFilter<"products"> | string
   detailed_description?: Prisma.StringWithAggregatesFilter<"products"> | string
-  video_url?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
   tags?: Prisma.StringNullableListFilter<"products">
-  brand?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
-  colors?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringNullableListFilter<"products">
-  starting_date?: Prisma.DateTimeNullableWithAggregatesFilter<"products"> | Date | string | null
-  ending_date?: Prisma.DateTimeNullableWithAggregatesFilter<"products"> | Date | string | null
+  sizes?: Prisma.StringWithAggregatesFilter<"products"> | string
+  cuttingTypes?: Prisma.StringWithAggregatesFilter<"products"> | string
+  pieceSizes?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
+  processingWeightLoss?: Prisma.JsonWithAggregatesFilter<"products">
   stock?: Prisma.IntWithAggregatesFilter<"products"> | number
   sale_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
   regular_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
   ratings?: Prisma.FloatWithAggregatesFilter<"products"> | number
-  warranty?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
-  custom_specifications?: Prisma.JsonNullableWithAggregatesFilter<"products">
-  custom_properties?: Prisma.JsonWithAggregatesFilter<"products">
   isDeleted?: Prisma.BoolNullableWithAggregatesFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
@@ -551,20 +503,15 @@ export type productsCreateInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -573,7 +520,7 @@ export type productsCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.imagesCreateNestedManyWithoutProductsInput
-  store: Prisma.storesCreateNestedOneWithoutProductsInput
+  store?: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
 export type productsUncheckedCreateInput = {
@@ -584,20 +531,15 @@ export type productsUncheckedCreateInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -616,20 +558,15 @@ export type productsUpdateInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -638,7 +575,7 @@ export type productsUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
-  store?: Prisma.storesUpdateOneRequiredWithoutProductsNestedInput
+  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
 }
 
 export type productsUncheckedUpdateInput = {
@@ -648,20 +585,15 @@ export type productsUncheckedUpdateInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -681,20 +613,15 @@ export type productsCreateManyInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -712,20 +639,15 @@ export type productsUpdateManyMutationInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -742,20 +664,15 @@ export type productsUncheckedUpdateManyInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -789,20 +706,15 @@ export type productsCountOrderByAggregateInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  video_url?: Prisma.SortOrder
   tags?: Prisma.SortOrder
-  brand?: Prisma.SortOrder
-  colors?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
-  starting_date?: Prisma.SortOrder
-  ending_date?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  warranty?: Prisma.SortOrder
-  custom_specifications?: Prisma.SortOrder
-  custom_properties?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
@@ -828,15 +740,13 @@ export type productsMaxOrderByAggregateInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  video_url?: Prisma.SortOrder
-  brand?: Prisma.SortOrder
-  starting_date?: Prisma.SortOrder
-  ending_date?: Prisma.SortOrder
+  sizes?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  warranty?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -854,15 +764,13 @@ export type productsMinOrderByAggregateInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  video_url?: Prisma.SortOrder
-  brand?: Prisma.SortOrder
-  starting_date?: Prisma.SortOrder
-  ending_date?: Prisma.SortOrder
+  sizes?: Prisma.SortOrder
+  cuttingTypes?: Prisma.SortOrder
+  pieceSizes?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  warranty?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   status?: Prisma.SortOrder
@@ -941,14 +849,6 @@ export type productsCreatetagsInput = {
   set: string[]
 }
 
-export type productsCreatecolorsInput = {
-  set: string[]
-}
-
-export type productsCreatesizesInput = {
-  set: string[]
-}
-
 export type productsCreatediscount_codesInput = {
   set: string[]
 }
@@ -956,21 +856,6 @@ export type productsCreatediscount_codesInput = {
 export type productsUpdatetagsInput = {
   set?: string[]
   push?: string | string[]
-}
-
-export type productsUpdatecolorsInput = {
-  set?: string[]
-  push?: string | string[]
-}
-
-export type productsUpdatesizesInput = {
-  set?: string[]
-  push?: string | string[]
-}
-
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-  unset?: boolean
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -995,6 +880,11 @@ export type EnumproductStatusFieldUpdateOperationsInput = {
   set?: $Enums.productStatus
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+  unset?: boolean
+}
+
 export type productsCreateWithoutImagesInput = {
   id?: string
   title: string
@@ -1003,20 +893,15 @@ export type productsCreateWithoutImagesInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -1024,7 +909,7 @@ export type productsCreateWithoutImagesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  store: Prisma.storesCreateNestedOneWithoutProductsInput
+  store?: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
 export type productsUncheckedCreateWithoutImagesInput = {
@@ -1035,20 +920,15 @@ export type productsUncheckedCreateWithoutImagesInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -1082,20 +962,15 @@ export type productsUpdateWithoutImagesInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -1103,7 +978,7 @@ export type productsUpdateWithoutImagesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  store?: Prisma.storesUpdateOneRequiredWithoutProductsNestedInput
+  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
 }
 
 export type productsUncheckedUpdateWithoutImagesInput = {
@@ -1113,20 +988,15 @@ export type productsUncheckedUpdateWithoutImagesInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -1145,20 +1015,15 @@ export type productsCreateWithoutStoreInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -1177,20 +1042,15 @@ export type productsUncheckedCreateWithoutStoreInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -1237,20 +1097,15 @@ export type productsScalarWhereInput = {
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
-  video_url?: Prisma.StringNullableFilter<"products"> | string | null
   tags?: Prisma.StringNullableListFilter<"products">
-  brand?: Prisma.StringNullableFilter<"products"> | string | null
-  colors?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringNullableListFilter<"products">
-  starting_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
-  ending_date?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
+  sizes?: Prisma.StringFilter<"products"> | string
+  cuttingTypes?: Prisma.StringFilter<"products"> | string
+  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
+  processingWeightLoss?: Prisma.JsonFilter<"products">
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  warranty?: Prisma.StringNullableFilter<"products"> | string | null
-  custom_specifications?: Prisma.JsonNullableFilter<"products">
-  custom_properties?: Prisma.JsonFilter<"products">
   isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
@@ -1269,20 +1124,15 @@ export type productsCreateManyStoreInput = {
   subCategory: string
   short_description: string
   detailed_description: string
-  video_url?: string | null
   tags?: Prisma.productsCreatetagsInput | string[]
-  brand?: string | null
-  colors?: Prisma.productsCreatecolorsInput | string[]
-  sizes?: Prisma.productsCreatesizesInput | string[]
-  starting_date?: Date | string | null
-  ending_date?: Date | string | null
+  sizes: string
+  cuttingTypes: string
+  pieceSizes?: string | null
+  processingWeightLoss: runtime.InputJsonValue
   stock: number
   sale_price: number
   regular_price: number
   ratings?: number
-  warranty?: string | null
-  custom_specifications?: runtime.InputJsonValue | null
-  custom_properties: runtime.InputJsonValue
   isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
@@ -1299,20 +1149,15 @@ export type productsUpdateWithoutStoreInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -1330,20 +1175,15 @@ export type productsUncheckedUpdateWithoutStoreInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -1361,20 +1201,15 @@ export type productsUncheckedUpdateManyWithoutStoreInput = {
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
-  video_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.productsUpdatetagsInput | string[]
-  brand?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  colors?: Prisma.productsUpdatecolorsInput | string[]
-  sizes?: Prisma.productsUpdatesizesInput | string[]
-  starting_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  ending_date?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  sizes?: Prisma.StringFieldUpdateOperationsInput | string
+  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
+  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  warranty?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  custom_specifications?: runtime.InputJsonValue | runtime.InputJsonValue | null
-  custom_properties?: runtime.InputJsonValue | runtime.InputJsonValue
   isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
@@ -1423,20 +1258,15 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   subCategory?: boolean
   short_description?: boolean
   detailed_description?: boolean
-  video_url?: boolean
   tags?: boolean
-  brand?: boolean
-  colors?: boolean
   sizes?: boolean
-  starting_date?: boolean
-  ending_date?: boolean
+  cuttingTypes?: boolean
+  pieceSizes?: boolean
+  processingWeightLoss?: boolean
   stock?: boolean
   sale_price?: boolean
   regular_price?: boolean
   ratings?: boolean
-  warranty?: boolean
-  custom_specifications?: boolean
-  custom_properties?: boolean
   isDeleted?: boolean
   cashOnDelivery?: boolean
   discount_codes?: boolean
@@ -1446,7 +1276,7 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updatedAt?: boolean
   storeId?: boolean
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
-  store?: boolean | Prisma.storesDefaultArgs<ExtArgs>
+  store?: boolean | Prisma.products$storeArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["products"]>
 
@@ -1460,20 +1290,15 @@ export type productsSelectScalar = {
   subCategory?: boolean
   short_description?: boolean
   detailed_description?: boolean
-  video_url?: boolean
   tags?: boolean
-  brand?: boolean
-  colors?: boolean
   sizes?: boolean
-  starting_date?: boolean
-  ending_date?: boolean
+  cuttingTypes?: boolean
+  pieceSizes?: boolean
+  processingWeightLoss?: boolean
   stock?: boolean
   sale_price?: boolean
   regular_price?: boolean
   ratings?: boolean
-  warranty?: boolean
-  custom_specifications?: boolean
-  custom_properties?: boolean
   isDeleted?: boolean
   cashOnDelivery?: boolean
   discount_codes?: boolean
@@ -1484,10 +1309,10 @@ export type productsSelectScalar = {
   storeId?: boolean
 }
 
-export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "detailed_description" | "video_url" | "tags" | "brand" | "colors" | "sizes" | "starting_date" | "ending_date" | "stock" | "sale_price" | "regular_price" | "ratings" | "warranty" | "custom_specifications" | "custom_properties" | "isDeleted" | "cashOnDelivery" | "discount_codes" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "storeId", ExtArgs["result"]["products"]>
+export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "detailed_description" | "tags" | "sizes" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "stock" | "sale_price" | "regular_price" | "ratings" | "isDeleted" | "cashOnDelivery" | "discount_codes" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "storeId", ExtArgs["result"]["products"]>
 export type productsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
-  store?: boolean | Prisma.storesDefaultArgs<ExtArgs>
+  store?: boolean | Prisma.products$storeArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1495,7 +1320,7 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "products"
   objects: {
     images: Prisma.$imagesPayload<ExtArgs>[]
-    store: Prisma.$storesPayload<ExtArgs>
+    store: Prisma.$storesPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1505,20 +1330,15 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     subCategory: string
     short_description: string
     detailed_description: string
-    video_url: string | null
     tags: string[]
-    brand: string | null
-    colors: string[]
-    sizes: string[]
-    starting_date: Date | null
-    ending_date: Date | null
+    sizes: string
+    cuttingTypes: string
+    pieceSizes: string | null
+    processingWeightLoss: runtime.JsonValue
     stock: number
     sale_price: number
     regular_price: number
     ratings: number
-    warranty: string | null
-    custom_specifications: runtime.JsonValue | null
-    custom_properties: runtime.JsonValue
     isDeleted: boolean | null
     cashOnDelivery: string | null
     discount_codes: string[]
@@ -1891,7 +1711,7 @@ readonly fields: productsFieldRefs;
 export interface Prisma__productsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   images<T extends Prisma.products$imagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  store<T extends Prisma.storesDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.storesDefaultArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  store<T extends Prisma.products$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$storeArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1928,20 +1748,15 @@ export interface productsFieldRefs {
   readonly subCategory: Prisma.FieldRef<"products", 'String'>
   readonly short_description: Prisma.FieldRef<"products", 'String'>
   readonly detailed_description: Prisma.FieldRef<"products", 'String'>
-  readonly video_url: Prisma.FieldRef<"products", 'String'>
   readonly tags: Prisma.FieldRef<"products", 'String[]'>
-  readonly brand: Prisma.FieldRef<"products", 'String'>
-  readonly colors: Prisma.FieldRef<"products", 'String[]'>
-  readonly sizes: Prisma.FieldRef<"products", 'String[]'>
-  readonly starting_date: Prisma.FieldRef<"products", 'DateTime'>
-  readonly ending_date: Prisma.FieldRef<"products", 'DateTime'>
+  readonly sizes: Prisma.FieldRef<"products", 'String'>
+  readonly cuttingTypes: Prisma.FieldRef<"products", 'String'>
+  readonly pieceSizes: Prisma.FieldRef<"products", 'String'>
+  readonly processingWeightLoss: Prisma.FieldRef<"products", 'Json'>
   readonly stock: Prisma.FieldRef<"products", 'Int'>
   readonly sale_price: Prisma.FieldRef<"products", 'Float'>
   readonly regular_price: Prisma.FieldRef<"products", 'Float'>
   readonly ratings: Prisma.FieldRef<"products", 'Float'>
-  readonly warranty: Prisma.FieldRef<"products", 'String'>
-  readonly custom_specifications: Prisma.FieldRef<"products", 'Json'>
-  readonly custom_properties: Prisma.FieldRef<"products", 'Json'>
   readonly isDeleted: Prisma.FieldRef<"products", 'Boolean'>
   readonly cashOnDelivery: Prisma.FieldRef<"products", 'String'>
   readonly discount_codes: Prisma.FieldRef<"products", 'String[]'>
@@ -2341,6 +2156,25 @@ export type products$imagesArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.ImagesScalarFieldEnum | Prisma.ImagesScalarFieldEnum[]
+}
+
+/**
+ * products.store
+ */
+export type products$storeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the stores
+   */
+  select?: Prisma.storesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the stores
+   */
+  omit?: Prisma.storesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.storesInclude<ExtArgs> | null
+  where?: Prisma.storesWhereInput
 }
 
 /**

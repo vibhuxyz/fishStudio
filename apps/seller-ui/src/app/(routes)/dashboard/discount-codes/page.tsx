@@ -22,6 +22,7 @@ const Page = () => {
     queryKey: ["shop-discounts"],
     queryFn: async () => {
       const res = await axiosInstance.get("/product/api/get-discount-codes");
+      console.log("discountCodes", res);
       return res?.data?.discount_codes || [];
     },
   });
@@ -187,7 +188,7 @@ const Page = () => {
                       className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
                     >
                       <option value="percentage">Percentage (%)</option>
-                      <option value="flat">Flat Amount ($)</option>
+                      <option value="flat">Flat Amount (RS)</option>
                     </select>
                   )}
                 />

@@ -43,15 +43,15 @@ export type stores = Prisma.storesModel
  */
 export type sellers = Prisma.sellersModel
 /**
- * Model site_config
- * 
- */
-export type site_config = Prisma.site_configModel
-/**
  * Model discount_codes
  * 
  */
 export type discount_codes = Prisma.discount_codesModel
+/**
+ * Model site_config
+ * 
+ */
+export type site_config = Prisma.site_configModel
 /**
  * Model products
  * 

@@ -3,6 +3,48 @@ import { prisma } from "@repo/db";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { imagekit } from "@repo/libs/imagekit/index";
 
+export const slugValidator = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    let { slug } = req.body;
+
+    if (!slug || typeof slug !== "string") {
+      return next(
+        new ValidationError("Slug is required and must be a string."),
+      );
+    }
+
+    // Slugify manually (no slugify lib)
+    slug = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50); // cap to 50 chars
+
+    let uniqueSlug = slug;
+    let counter = 1;
+
+    while (
+      await prisma.products.findUnique({
+        where: { slug: uniqueSlug },
+      })
+    ) {
+      uniqueSlug = `${slug}-${counter}`;
+      counter++;
+    }
+
+    return res.status(200).json({
+      available: uniqueSlug === slug,
+      slug: uniqueSlug,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const getCategories = async (
   req: Request,
   res: Response,
@@ -21,6 +63,10 @@ export const getCategories = async (
       success: true,
       categories: config.categories,
       subCategories: config.subCategories,
+      sizes: config.sizes,
+      cuttingTypes: config.cuttingTypes,
+      pieceSizes: config.pieceSizes,
+      processingWeightLoss: config.processingWeightLoss,
     });
   } catch (error) {
     return next(error);
@@ -72,6 +118,7 @@ export const createDiscountCodes = async (
     next(error);
   }
 };
+
 //get discount codes
 export const getDiscountCodes = async (
   req: any,
@@ -186,48 +233,60 @@ export const createProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+ ) => {
   try {
     const {
       title,
       short_description,
       detailed_description,
-      warranty,
-      custom_specifications,
+      sizes,
+      cuttingTypes,
+      pieceSizes,
+      processingWeightLoss,
       slug,
       tags,
-      casn_on_delivery,
-      brand,
-      video_url,
+      cash_on_delivery,
       category,
-      colors = [],
-      size = [],
-      discountCodes,
+      discountCodes = [],
       stock,
       sale_price,
       regular_price,
       subCategory,
-      customProperties = [],
+
       images = [],
     } = req.body;
 
     if (
       !title ||
+      !sizes ||
+      !cuttingTypes ||
+      !pieceSizes ||
+      !processingWeightLoss ||
       !slug ||
       !short_description ||
       !category ||
       !subCategory ||
       !sale_price ||
       !tags ||
-      !images ||
       !regular_price ||
       !stock ||
       !detailed_description
     ) {
       return next(new ValidationError("Midding required fields!"));
     }
+
     if (!req.seller.id) {
       return next(new ValidationError("Only seller can create products!"));
+    }
+
+    // ✅ FIXED: Proper store ID validation
+    const storeId = req.seller?.storeId || req.seller?.store?.id;
+    if (!storeId) {
+      return next(
+        new ValidationError(
+          "Seller store information not found! Please contact support.",
+        ),
+      );
     }
 
     const slugChecking = await prisma.products.findUnique({
@@ -249,31 +308,36 @@ export const createProduct = async (
         title,
         short_description,
         detailed_description,
-        warranty,
-        cashOnDelivery: casn_on_delivery,
-        slug,
-        storeId: req.sellers?.store?.id,
-        tags: Array.isArray(tags) ? tags : tags.split(","),
-        brand,
-        video_url,
         category,
         subCategory,
-        colors: colors || [],
-        discount_codes: discountCodes.map((codeId: String) => codeId),
-        sizes: size || [],
+        sizes,
+        cuttingTypes,
+        pieceSizes,
+        processingWeightLoss,
+        cashOnDelivery: cash_on_delivery,
+        slug,
+        storeId,
+        tags: Array.isArray(tags) ? tags : tags.split(","),
+
+        discount_codes:
+          Array.isArray(discountCodes) && discountCodes.length > 0
+            ? discountCodes
+            : [],
+
         stock: parseInt(stock),
         sale_price: parseFloat(sale_price),
         regular_price: parseFloat(regular_price),
-        custom_properties: customProperties || {},
-        custom_specifications: custom_specifications || {},
-        images: {
-          create: images
-            .filter((img: any) => img && img.fileId && img.file_url)
-            .map((img: any) => ({
-              file_id: img.fileId,
-              url: img.file_url,
-            })),
-        },
+
+        ...(images.length > 0 && {
+          images: {
+            create: images
+              .filter((img: any) => img && img.fileId && img.file_url)
+              .map((img: any) => ({
+                file_id: img.fileId,
+                url: img.file_url,
+              })),
+          },
+        }),
       },
       include: { images: true },
     });
@@ -283,7 +347,10 @@ export const createProduct = async (
       message: "Product created successfully!",
       newProduct,
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error(error);
+    return next(error);
+  }
 };
 
 //get logged in seller products

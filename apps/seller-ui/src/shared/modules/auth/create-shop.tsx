@@ -59,7 +59,8 @@ const CreateShop = ({
     },
     onSuccess: (data) => {
       console.log("Store created successfully:", data);
-      setActiveStep(3);
+      // Redirect to home page
+      window.location.href = "/";
     },
     onError: (error) => {
       if (error instanceof AxiosError) {

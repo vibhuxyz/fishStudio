@@ -54,8 +54,8 @@ export const ModelName = {
   storeReviews: 'storeReviews',
   stores: 'stores',
   sellers: 'sellers',
-  site_config: 'site_config',
   discount_codes: 'discount_codes',
+  site_config: 'site_config',
   products: 'products'
 } as const
 
@@ -139,15 +139,6 @@ export const SellersScalarFieldEnum = {
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
 
 
-export const Site_configScalarFieldEnum = {
-  id: 'id',
-  categories: 'categories',
-  subCategories: 'subCategories'
-} as const
-
-export type Site_configScalarFieldEnum = (typeof Site_configScalarFieldEnum)[keyof typeof Site_configScalarFieldEnum]
-
-
 export const Discount_codesScalarFieldEnum = {
   id: 'id',
   public_name: 'public_name',
@@ -162,6 +153,21 @@ export const Discount_codesScalarFieldEnum = {
 export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
 
 
+export const Site_configScalarFieldEnum = {
+  id: 'id',
+  categories: 'categories',
+  subCategories: 'subCategories',
+  sizes: 'sizes',
+  cuttingTypes: 'cuttingTypes',
+  pieceSizes: 'pieceSizes',
+  processingWeightLoss: 'processingWeightLoss',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Site_configScalarFieldEnum = (typeof Site_configScalarFieldEnum)[keyof typeof Site_configScalarFieldEnum]
+
+
 export const ProductsScalarFieldEnum = {
   id: 'id',
   title: 'title',
@@ -170,20 +176,15 @@ export const ProductsScalarFieldEnum = {
   subCategory: 'subCategory',
   short_description: 'short_description',
   detailed_description: 'detailed_description',
-  video_url: 'video_url',
   tags: 'tags',
-  brand: 'brand',
-  colors: 'colors',
   sizes: 'sizes',
-  starting_date: 'starting_date',
-  ending_date: 'ending_date',
+  cuttingTypes: 'cuttingTypes',
+  pieceSizes: 'pieceSizes',
+  processingWeightLoss: 'processingWeightLoss',
   stock: 'stock',
   sale_price: 'sale_price',
   regular_price: 'regular_price',
   ratings: 'ratings',
-  warranty: 'warranty',
-  custom_specifications: 'custom_specifications',
-  custom_properties: 'custom_properties',
   isDeleted: 'isDeleted',
   cashOnDelivery: 'cashOnDelivery',
   discount_codes: 'discount_codes',

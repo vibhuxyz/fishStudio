@@ -110,20 +110,59 @@ const Page = () => {
     },
   });
 
+  // Extract data from API response
   const categories = data?.categories || [];
   const subCategoriesData = data?.subCategories || {};
+  const sizes = data?.sizes || {};
+  const cuttingTypes = data?.cuttingTypes || [];
+  const pieceSizes = data?.pieceSizes || [];
+  const processingWeightLoss = data?.processingWeightLoss || {};
 
+  // Watch form fields
   const selectedCategory = watch("category");
+  const selectedSubcategory = watch("subCategory");
+  const selectedCuttingType = watch("cuttingType");
   const regularPrice = watch("regular_price");
 
+  // Category mapping from display name to API key
+  const categoryKeyMap: { [key: string]: string } = {
+    "Fresh Water": "freshWater",
+    "Sea Fish": "seaFish",
+    "Premium Sea Food": "premiumSeaFood",
+    "Meat & Poultry": "meatPoultry",
+    "Fry Ready": "fryReady",
+    "Moms Magic": "momsMagic",
+    "Rice & Spice": "riceSpice",
+    "Pet Serve": "petServe",
+  };
+
+  // Memoized subcategories based on selected category
   const subcategories = useMemo(() => {
-    return selectedCategory ? subCategoriesData[selectedCategory] || [] : [];
+    if (!selectedCategory) return [];
+    const categoryKey = categoryKeyMap[selectedCategory];
+    return subCategoriesData[categoryKey] || [];
   }, [selectedCategory, subCategoriesData]);
+
+  // Memoized sizes based on selected subcategory
+  const availableSizes = useMemo(() => {
+    if (!selectedSubcategory) return sizes["default"] || [];
+    return sizes[selectedSubcategory] || sizes["default"] || [];
+  }, [selectedSubcategory, sizes]);
+
+  // Memoized processing weight loss based on selected cutting type
+  const processingInfo = useMemo(() => {
+    if (!selectedCuttingType) return null;
+    return (
+      processingWeightLoss[selectedCuttingType] ||
+      processingWeightLoss["default"]
+    );
+  }, [selectedCuttingType, processingWeightLoss]);
 
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
       await axiosInstance.post("/product/api/create-product", data);
+      console.log("Produts are ", data);
       router.push("/dashboard/all-products");
     } catch (error: any) {
       toast.error(error?.data?.message);
@@ -176,8 +215,9 @@ const Page = () => {
         {/* Right side - form inputs */}
         <div className="md:w-[65%]">
           <div className="w-full flex gap-6">
-            {/* Product Title Input */}
+            {/* LEFT COLUMN */}
             <div className="w-2/4">
+              {/* Product Title Input */}
               <Input
                 label="Product Title *"
                 placeholder="Enter product title"
@@ -230,21 +270,6 @@ const Page = () => {
               </div>
 
               <div className="mt-2">
-                <Input
-                  label="Warranty *"
-                  placeholder="1 Year / No Warranty"
-                  {...register("warranty", {
-                    required: "Warranty is required!",
-                  })}
-                />
-                {errors.tags && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.tags.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
                 <div className="relative">
                   <Input
                     label="Slug *"
@@ -271,7 +296,6 @@ const Page = () => {
                           return;
                         }
 
-                        // Generate slug from title
                         const rawSlug = title
                           .toLowerCase()
                           .trim()
@@ -280,7 +304,6 @@ const Page = () => {
                           .replace(/-+/g, "-");
 
                         try {
-                          // Check slug validity via API
                           const res = await axiosInstance.post(
                             "/product/api/slug-validator",
                             { slug: rawSlug },
@@ -315,183 +338,11 @@ const Page = () => {
                 )}
               </div>
 
-              <div className="mt-2">
-                <Input
-                  label="Brand"
-                  placeholder="Apple"
-                  {...register("brand")}
-                />
-                {errors.tags && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.tags.message as string}
-                  </p>
-                )}
-              </div>
+              {/* Add this side
 
-              <div className="mt-2">
-                <ColorSelector control={control} errors={errors} />
-              </div>
-
-              <div className="mt-2">
-                <CustomSpecifications control={control} errors={errors} />
-              </div>
-
-              <div className="mt-2">
-                <CustomProperties control={control} errors={errors} />
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Cash On Delivery *
-                </label>
-                <select
-                  {...register("cash_on_delivery", {
-                    required: "Cash on Delivery is required",
-                  })}
-                  defaultValue="yes"
-                  className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                >
-                  <option value="yes" className="bg-black">
-                    Yes
-                  </option>
-                  <option value="no" className="bg-black">
-                    No
-                  </option>
-                </select>
-                {errors.cash_on_delivery && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.cash_on_delivery.message as string}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="w-2/4">
-              <label className="block font-semibold text-gray-300 mb-1">
-                Category *
-              </label>
-              {isLoading ? (
-                <p className="text-gray-400">Loading categories...</p>
-              ) : isError ? (
-                <p className="text-red-500">Failed to load categories</p>
-              ) : (
-                <Controller
-                  name="category"
-                  control={control}
-                  rules={{ required: "Category is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Category
-                      </option>
-                      {categories?.map((category: string) => (
-                        <option
-                          value={category}
-                          key={category}
-                          className="bg-black"
-                        >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-              )}
-              {errors.category && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.category.message as string}
-                </p>
-              )}
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Subcategory *
-                </label>
-                <Controller
-                  name="subCategory"
-                  control={control}
-                  rules={{ required: "Subcategory is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Subcategory
-                      </option>
-                      {subcategories?.map((subcategory: string) => (
-                        <option
-                          key={subcategory}
-                          value={subcategory}
-                          className="bg-black"
-                        >
-                          {subcategory}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-                {errors.subcategory && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.subcategory.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Detailed Description * (Min 100 words)
-                </label>
-                <Controller
-                  name="detailed_description"
-                  control={control}
-                  rules={{
-                    required: "Detailed description is required!",
-                    validate: (value) => {
-                      const wordCount = value
-                        ?.split(/\s+/)
-                        .filter((word: string) => word).length;
-                      return (
-                        wordCount >= 100 ||
-                        "Description must be at least 100 words!"
-                      );
-                    },
-                  }}
-                  render={({ field }) => (
-                    <RichTextEditor
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                {errors.detailed_description && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.detailed_description.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Video URL"
-                  placeholder="https://www.youtube.com/embed/xyz123"
-                  {...register("video_url", {
-                    pattern: {
-                      value:
-                        /^https:\/\/(www\.)?youtube\.com\/embed\/[a-zA-Z0-9_-]+$/,
-                      message:
-                        "Invalid YouTube embed URL! Use format: https://www.youtube.com/embed/xyz123",
-                    },
-                  })}
-                />
-                {errors.video_url && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.video_url.message as string}
-                  </p>
-                )}
-              </div>
+ ok
+Add
+  */}
 
               <div className="mt-2">
                 <Input
@@ -562,8 +413,268 @@ const Page = () => {
                 )}
               </div>
 
+              {/*From to */}
+
               <div className="mt-2">
-                <SizeSelector control={control} errors={errors} />
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Cash On Delivery *
+                </label>
+                <select
+                  {...register("cash_on_delivery", {
+                    required: "Cash on Delivery is required",
+                  })}
+                  defaultValue="yes"
+                  className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                >
+                  <option value="yes" className="bg-black">
+                    Yes
+                  </option>
+                  <option value="no" className="bg-black">
+                    No
+                  </option>
+                </select>
+                {errors.cash_on_delivery && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.cash_on_delivery.message as string}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="w-2/4">
+              {/* Category Dropdown */}
+              <label className="block font-semibold text-gray-300 mb-1">
+                Category *
+              </label>
+              {isLoading ? (
+                <p className="text-gray-400">Loading categories...</p>
+              ) : isError ? (
+                <p className="text-red-500">Failed to load categories</p>
+              ) : (
+                <Controller
+                  name="category"
+                  control={control}
+                  rules={{ required: "Category is required" }}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                    >
+                      <option value="" className="bg-black">
+                        Select Category
+                      </option>
+                      {categories?.map((category: string) => (
+                        <option
+                          value={category}
+                          key={category}
+                          className="bg-black"
+                        >
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+              )}
+              {errors.category && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.category.message as string}
+                </p>
+              )}
+
+              {/* Subcategory Dropdown */}
+              <div className="mt-2">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Subcategory *
+                </label>
+                <Controller
+                  name="subCategory"
+                  control={control}
+                  rules={{ required: "Subcategory is required" }}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                    >
+                      <option value="" className="bg-black">
+                        Select Subcategory
+                      </option>
+                      {subcategories?.map((subcategory: string) => (
+                        <option
+                          key={subcategory}
+                          value={subcategory}
+                          className="bg-black"
+                        >
+                          {subcategory}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.subCategory && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.subCategory.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* Size Dropdown */}
+              <div className="mt-2">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Size *
+                </label>
+                <Controller
+                  name="size"
+                  control={control}
+                  rules={{ required: "Size is required" }}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                    >
+                      <option value="" className="bg-black">
+                        Select Size
+                      </option>
+                      {availableSizes?.map((size: string) => (
+                        <option key={size} value={size} className="bg-black">
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.size && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.size.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* Cutting Type Dropdown */}
+              <div className="mt-2">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Cutting Type *
+                </label>
+                <Controller
+                  name="cuttingType"
+                  control={control}
+                  rules={{ required: "Cutting type is required" }}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                    >
+                      <option value="" className="bg-black">
+                        Select Cutting Type
+                      </option>
+                      {cuttingTypes?.map((cutting: any) => (
+                        <option
+                          key={cutting.id}
+                          value={cutting.id}
+                          className="bg-black"
+                        >
+                          {cutting.icon} {cutting.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.cuttingType && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.cuttingType.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* Piece Size Dropdown */}
+              <div className="mt-2">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Piece Size *
+                </label>
+                <Controller
+                  name="pieceSize"
+                  control={control}
+                  rules={{ required: "Piece size is required" }}
+                  render={({ field }) => (
+                    <select
+                      {...field}
+                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                    >
+                      <option value="" className="bg-black">
+                        Select Piece Size
+                      </option>
+                      {pieceSizes?.map((piece: any) => (
+                        <option
+                          key={piece.id}
+                          value={piece.id}
+                          className="bg-black"
+                        >
+                          {piece.name} ({piece.range})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+                {errors.pieceSize && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.pieceSize.message as string}
+                  </p>
+                )}
+              </div>
+
+              {/* Processing Weight Loss Info Display */}
+              {processingInfo && (
+                <div className="mt-2 p-3 bg-blue-900 rounded-md border border-blue-700">
+                  <p className="text-sm font-semibold text-blue-200">
+                    Processing Weight Loss Info
+                  </p>
+                  {typeof processingInfo === "object" &&
+                  processingInfo.min !== undefined ? (
+                    <p className="text-xs text-blue-100 mt-1">
+                      Loss: {processingInfo.min}% - {processingInfo.max}%
+                      <br />
+                      {processingInfo.description}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-blue-100 mt-1">
+                      No weight loss for this cutting type
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-2">
+                <label className="block font-semibold text-gray-300 mb-1">
+                  Detailed Description * (Min 100 words)
+                </label>
+                <Controller
+                  name="detailed_description"
+                  control={control}
+                  rules={{
+                    required: "Detailed description is required!",
+                    validate: (value) => {
+                      const wordCount = value
+                        ?.split(/\s+/)
+                        .filter((word: string) => word).length;
+                      return (
+                        wordCount >= 100 ||
+                        "Description must be at least 100 words!"
+                      );
+                    },
+                  }}
+                  render={({ field }) => (
+                    <RichTextEditor
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  )}
+                />
+                {errors.detailed_description && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.detailed_description.message as string}
+                  </p>
+                )}
               </div>
 
               <div className="mt-3">
@@ -616,7 +727,7 @@ const Page = () => {
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer"
           disabled={loading}
         >
           {loading ? "Creating..." : "Create"}

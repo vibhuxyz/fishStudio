@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 //create a DB design for an e-commerce application
@@ -75,21 +76,12 @@ model sellers {
   phone_number String
   password     String
   following    String[]
-  stripeId     String?
   store        stores?
-  storeId      String?  @db.ObjectId
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  storesId     String?  @db.ObjectId
 }
 
 // //------------------------------- Store Model ended -------------------------------
-
-model site_config {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  categories    String[]
-  subCategories Json
-}
 
 model discount_codes {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -108,37 +100,47 @@ enum productStatus {
   Draft
 }
 
+model site_config {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories           String[]
+  subCategories        Json
+  sizes                Json
+  cuttingTypes         Json
+  pieceSizes           Json
+  processingWeightLoss Json
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("site_config")
+}
+
 // -------------------------------------Product Details Schema---------------------------------
 model products {
-  id                    String        @id @default(auto()) @map("_id") @db.ObjectId
-  title                 String
-  slug                  String        @unique
-  category              String
-  subCategory           String
-  short_description     String
-  detailed_description  String
-  images                images[]
-  video_url             String?
-  tags                  String[]
-  brand                 String?
-  colors                String[]
-  sizes                 String[]
-  starting_date         DateTime?
-  ending_date           DateTime?
-  stock                 Int
-  sale_price            Float
-  regular_price         Float
-  ratings               Float         @default(5)
-  warranty              String?
-  custom_specifications Json?
-  custom_properties     Json
-  isDeleted             Boolean?      @default(false)
-  cashOnDelivery        String?
-  discount_codes        String[]      @db.ObjectId
-  status                productStatus @default(Active)
-  deletedAt             DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  storeId               String        @db.ObjectId
-  store                 stores        @relation(fields: [storeId], references: [id])
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  title                String
+  slug                 String   @unique
+  category             String
+  subCategory          String
+  short_description    String
+  detailed_description String
+  images               images[]
+  tags                 String[]
+  sizes                String
+  cuttingTypes         String
+  pieceSizes           String?
+  processingWeightLoss Json
+  stock                Int
+  sale_price           Float
+  regular_price        Float
+  ratings              Float    @default(5)
+
+  isDeleted      Boolean?      @default(false)
+  cashOnDelivery String?
+  discount_codes String[]      @db.ObjectId
+  status         productStatus @default(Active)
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  storeId        String        @db.ObjectId
+  store          stores?       @relation(fields: [storeId], references: [id])
 }
