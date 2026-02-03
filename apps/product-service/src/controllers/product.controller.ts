@@ -233,7 +233,7 @@ export const createProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
- ) => {
+  ) => {
   try {
     const {
       title,
@@ -256,23 +256,35 @@ export const createProduct = async (
       images = [],
     } = req.body;
 
-    if (
-      !title ||
-      !sizes ||
-      !cuttingTypes ||
-      !pieceSizes ||
-      !processingWeightLoss ||
-      !slug ||
-      !short_description ||
-      !category ||
-      !subCategory ||
-      !sale_price ||
-      !tags ||
-      !regular_price ||
-      !stock ||
-      !detailed_description
-    ) {
-      return next(new ValidationError("Midding required fields!"));
+    const requiredFields = {
+      title,
+      sizes,
+      cuttingTypes,
+      pieceSizes,
+      processingWeightLoss,
+      slug,
+      short_description,
+      category,
+      subCategory,
+      sale_price,
+      tags,
+      regular_price,
+      stock,
+      detailed_description,
+    };
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(
+        ([_, value]) => value === undefined || value === null || value === "",
+      )
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      return next(
+        new ValidationError(
+          `Missing required fields: ${missingFields.join(", ")}`,
+        ),
+      );
     }
 
     if (!req.seller.id) {

@@ -9,12 +9,15 @@ import {
   getDiscountCodes,
   getStoreProducts,
   restoreProduct,
+  slugValidator,
   uploadProductImage,
 } from "../controllers/product.controller";
 import isAuthenticated from "@repo/middlewares/isAuthenticated";
 import { isSeller } from "@repo/middlewares/authorizeRole";
 
 const router: Router = express.Router();
+
+router.post("/slug-validator", isAuthenticated, isSeller, slugValidator);
 
 router.post(
   "/create-discount-code",

@@ -5,14 +5,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  ColorSelector,
-  CustomProperties,
-  CustomSpecifications,
-  Input,
-  RichTextEditor,
-  SizeSelector,
-} from "@repo/ui";
+import { Input, RichTextEditor } from "@repo/ui";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -122,6 +115,8 @@ const Page = () => {
   const selectedCategory = watch("category");
   const selectedSubcategory = watch("subCategory");
   const selectedCuttingType = watch("cuttingType");
+  const selectedSize = watch("sizes"); // CHANGED from "size" to "sizes"
+  const selectedPieceSize = watch("pieceSizes"); // CHANGED from "pieceSize" to "pieceSizes"
   const regularPrice = watch("regular_price");
 
   // Category mapping from display name to API key
@@ -161,11 +156,25 @@ const Page = () => {
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
-      await axiosInstance.post("/product/api/create-product", data);
-      console.log("Produts are ", data);
+
+      // Transform form data to match backend expectations
+      const submitData = {
+        ...data,
+        // Rename singular field names to plural to match backend
+        sizes: data.sizes,
+        cuttingTypes: data.cuttingType,
+        pieceSizes: data.pieceSizes,
+        processingWeightLoss: processingInfo || {},
+      };
+
+      console.log("Submitting data:", submitData);
+
+      await axiosInstance.post("/product/api/create-product", submitData);
+      toast.success("Product created successfully!");
       router.push("/dashboard/all-products");
     } catch (error: any) {
-      toast.error(error?.data?.message);
+      toast.error(error?.response?.data?.message || "Failed to create product");
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -247,9 +256,9 @@ const Page = () => {
                     },
                   })}
                 />
-                {errors.description && (
+                {errors.short_description && (
                   <p className="text-red-500 text-xs mt-1">
-                    {errors.description.message as string}
+                    {errors.short_description.message as string}
                   </p>
                 )}
               </div>
@@ -259,7 +268,7 @@ const Page = () => {
                   label="Tags *"
                   placeholder="apple,flagship"
                   {...register("tags", {
-                    required: "Seperate related products tags with a coma,",
+                    required: "Separate related products tags with a comma",
                   })}
                 />
                 {errors.tags && (
@@ -338,12 +347,6 @@ const Page = () => {
                 )}
               </div>
 
-              {/* Add this side
-
- ok
-Add
-  */}
-
               <div className="mt-2">
                 <Input
                   label="Regular Price"
@@ -412,8 +415,6 @@ Add
                   </p>
                 )}
               </div>
-
-              {/*From to */}
 
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
@@ -519,13 +520,13 @@ Add
                 )}
               </div>
 
-              {/* Size Dropdown */}
+              {/* Size Dropdown - CHANGED from "size" to "sizes" */}
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
                   Size *
                 </label>
                 <Controller
-                  name="size"
+                  name="sizes"
                   control={control}
                   rules={{ required: "Size is required" }}
                   render={({ field }) => (
@@ -544,9 +545,9 @@ Add
                     </select>
                   )}
                 />
-                {errors.size && (
+                {errors.sizes && (
                   <p className="text-red-500 text-xs mt-1">
-                    {errors.size.message as string}
+                    {errors.sizes.message as string}
                   </p>
                 )}
               </div>
@@ -587,13 +588,13 @@ Add
                 )}
               </div>
 
-              {/* Piece Size Dropdown */}
+              {/* Piece Size Dropdown - CHANGED from "pieceSize" to "pieceSizes" */}
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
                   Piece Size *
                 </label>
                 <Controller
-                  name="pieceSize"
+                  name="pieceSizes"
                   control={control}
                   rules={{ required: "Piece size is required" }}
                   render={({ field }) => (
@@ -616,9 +617,9 @@ Add
                     </select>
                   )}
                 />
-                {errors.pieceSize && (
+                {errors.pieceSizes && (
                   <p className="text-red-500 text-xs mt-1">
-                    {errors.pieceSize.message as string}
+                    {errors.pieceSizes.message as string}
                   </p>
                 )}
               </div>
@@ -646,7 +647,7 @@ Add
 
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
-                  Detailed Description * (Min 100 words)
+                  Detailed Description * (Min 1 word)
                 </label>
                 <Controller
                   name="detailed_description"
@@ -658,8 +659,7 @@ Add
                         ?.split(/\s+/)
                         .filter((word: string) => word).length;
                       return (
-                        wordCount >= 100 ||
-                        "Description must be at least 100 words!"
+                        wordCount >= 1 || "Description must be at least 1 word!"
                       );
                     },
                   }}
