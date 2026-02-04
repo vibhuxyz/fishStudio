@@ -28,7 +28,7 @@ import YoutubeIcon from "../assets/icons/youtube-icons";
 const TABS = ["Products", "Offers", "Reviews"];
 
 const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-shop-products");
+  const res = await axiosInstance.get("/product/api/get-store-product"); // add s in the end if product
   const products = res.data.products?.filter((i: any) => !i.starting_date);
   return products;
 };

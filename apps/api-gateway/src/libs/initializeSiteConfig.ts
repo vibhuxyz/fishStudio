@@ -1,18 +1,5 @@
 import { prisma } from "@repo/db";
 
-/**
- * Initialize Site Configuration
- *
- * This function sets up the default configuration for the Jalongi platform.
- * It includes:
- * - Main Categories (Fresh Water, Sea Fish, Premium Sea Food, etc.)
- * - Sub-categories with specific product types
- * - Sizes for different fish types
- * - Cutting types for fish preparation
- * - Piece sizes for cut fish products
- *
- * This is a one-time initialization that runs when the site config doesn't exist.
- */
 const initializeConfig = async () => {
   try {
     // Check if configuration already exists to avoid duplicates

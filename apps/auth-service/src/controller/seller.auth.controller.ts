@@ -12,6 +12,16 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie";
 import { ENV } from "@repo/env-config";
+
+export const logOutSeller = async (req: any, res: Response) => {
+  res.clearCookie("seller-access-token");
+  res.clearCookie("seller-refresh-token");
+
+  res.status(201).json({
+    success: true,
+  });
+};
+
 export const registerSeller = async (
   req: Request,
   res: Response,

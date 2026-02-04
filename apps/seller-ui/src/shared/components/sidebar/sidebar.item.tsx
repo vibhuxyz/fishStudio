@@ -18,7 +18,7 @@ const SidebarItem = ({ icon, title, isActive, href }: Props) => {
 
   const logoutHandler = async () => {
     try {
-      await axiosInstance.get("/api/logout-seller");
+      await axiosInstance.post("/auth/api/logout-seller");
       queryClient.invalidateQueries({ queryKey: ["seller"] });
       router.push("/login");
     } catch (error) {

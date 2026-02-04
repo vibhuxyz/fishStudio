@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Controller } from "react-hook-form";
 import { Plus } from "lucide-react";
@@ -37,7 +38,7 @@ const ColorSelector = ({ control, errors }: any) => {
                     field.onChange(
                       isSelected
                         ? field.value.filter((c: string) => c !== color)
-                        : [...(field.value || []), color]
+                        : [...(field.value || []), color],
                     )
                   }
                   className={`w-7 h-7 p-2 rounded-md my-1 flex items-center justify-center border-2 transition ${

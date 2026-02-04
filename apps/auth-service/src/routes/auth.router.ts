@@ -12,6 +12,7 @@ import {
   createStore,
   getSeller,
   loginSeller,
+  logOutSeller,
   registerSeller,
   verifySeller,
 } from "../controller/seller.auth.controller";
@@ -39,7 +40,7 @@ router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 //   createStripeConnectLink,
 // );
 
-// router.get("/logout-seller", isAuthenticated, isSeller, logOutSeller);
+router.post("/logout-seller", isAuthenticated, isSeller, logOutSeller);
 
 // router.post("/forget-password-seller", userForgetPassword);
 // router.post("/reset-password-seller", resetUserPassword);
