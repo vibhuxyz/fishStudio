@@ -129,11 +129,8 @@ export const SellersScalarFieldEnum = {
   phone_number: 'phone_number',
   password: 'password',
   following: 'following',
-  stripeId: 'stripeId',
-  storeId: 'storeId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  storesId: 'storesId'
+  updatedAt: 'updatedAt'
 } as const
 
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
