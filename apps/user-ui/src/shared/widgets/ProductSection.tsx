@@ -1,97 +1,83 @@
+"use client";
+
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { StaticImageData } from "next/image";
 import ProductCard from "./ProductCard";
-import fishImage from "@/assets/product-fish-1.jpg";
-import chickenImage from "@/assets/product-chicken-1.jpg";
-import meatImage from "@/assets/product-meat-1.jpg";
-import prawnsImage from "@/assets/product-prawns.jpg";
+import type { Product } from "@/data/siteConfig";
 
 interface ProductSectionProps {
-  label: string;
   title: string;
-  variant?: "simple" | "detailed";
+  label: string;
+  products: Product[];
+  onAddToCart: (product: Product) => void;
 }
-
-interface Product {
-  name: string;
-  price: number;
-  weight: string;
-  image: StaticImageData;
-  rating: number;
-  description: string;
-}
-
-const products: Product[] = [
-  {
-    name: "Bhetki Fish",
-    price: 220,
-    weight: "400g",
-    image: fishImage,
-    rating: 4.9,
-    description: "Fresh sea bass fillet",
-  },
-  {
-    name: "Chicken Breast",
-    price: 220,
-    weight: "400g",
-    image: chickenImage,
-    rating: 4.9,
-    description: "Boneless chicken breast",
-  },
-  {
-    name: "Mutton Curry Cut",
-    price: 220,
-    weight: "400g",
-    image: meatImage,
-    rating: 4.9,
-    description: "Premium lamb pieces",
-  },
-  {
-    name: "Fresh Prawns",
-    price: 220,
-    weight: "400g",
-    image: prawnsImage,
-    rating: 4.9,
-    description: "Large tiger prawns",
-  },
-];
 
 const ProductSection = ({
-  label,
   title,
-  variant = "simple",
+  label,
+  products,
+  onAddToCart,
 }: ProductSectionProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const itemsPerView = 4;
+  const maxIndex = Math.max(0, products.length - itemsPerView);
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
+  };
+
   return (
     <section className="py-12 md:py-16">
       <div className="container mx-auto px-4">
+        {/* Heading */}
         <div className="text-center mb-10">
           <span className="section-label">{label}</span>
           <h2 className="section-title mt-2">{title}</h2>
         </div>
+
         <div className="relative">
-          {/* Carousel Navigation */}
-          <button className="carousel-btn absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 hidden md:flex">
-            <ChevronLeft className="h-5 w-5" />
+          {/* Prev */}
+          <button
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-accent text-accent-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Previous products"
+          >
+            <ChevronLeft className="w-6 h-6" />
           </button>
-          <button className="carousel-btn absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 hidden md:flex">
-            <ChevronRight className="h-5 w-5" />
+
+          {/* Next */}
+          <button
+            onClick={handleNext}
+            disabled={currentIndex >= maxIndex}
+            className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-accent text-accent-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Next products"
+          >
+            <ChevronRight className="w-6 h-6" />
           </button>
-          {/* Products Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {products.map((product, index) => (
-              <ProductCard
-                key={index}
-                name={product.name}
-                price={product.price}
-                weight={product.weight}
-                image={product.image}
-                rating={variant === "detailed" ? product.rating : undefined}
-                description={
-                  variant === "detailed" ? product.description : undefined
-                }
-                variant={variant}
-              />
-            ))}
+
+          {/* Slider */}
+          <div className="overflow-hidden">
+            <div
+              className="flex gap-6 transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateX(-${currentIndex * 100}%)`,
+              }}
+            >
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex-shrink-0 w-full sm:w-1/2 md:w-1/3 lg:w-1/4"
+                >
+                  <ProductCard product={product} onAddToCart={onAddToCart} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

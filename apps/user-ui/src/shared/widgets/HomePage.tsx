@@ -1,11 +1,16 @@
 "use client";
+
 import { useState } from "react";
+
 import { products, getBestsellers, type Product } from "@/data/siteConfig";
+
 import {
+  Header,
   Hero,
   ProductCustomizationModal,
   ProductSection,
   Testimonials,
+  Footer,
 } from "@/shared/widgets";
 
 interface CustomizationOptions {
@@ -35,7 +40,10 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* ✅ HERO COMES AFTER NAV */}
+      {/* ✅ HEADER MUST BE FIRST */}
+      <Header />
+
+      {/* ✅ HERO COMES AFTER HEADER */}
       <Hero />
 
       <ProductSection
@@ -62,6 +70,7 @@ const HomePage = () => {
       />
 
       <Testimonials />
+      <Footer />
 
       <ProductCustomizationModal
         product={selectedProduct}

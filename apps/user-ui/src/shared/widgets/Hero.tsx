@@ -1,104 +1,75 @@
-import { Play, Phone } from "lucide-react";
+"use client";
+
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import heroImage from "@/assets/hero-woman.jpg";
-import fishImage from "@/assets/product-fish-1.jpg";
-import fish2Image from "@/assets/product-fish-2.jpg";
-import Image from "next/image";
+import { Play } from "lucide-react";
+import heroImage from "@/assets/hero-image.jpg";
 
 const Hero = () => {
   return (
-    <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
-      <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="flex flex-col lg:flex-row items-center gap-8">
-          {/* Left Content */}
-          <div className="flex-1 text-white z-10">
-            <span className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
+    <section className="relative bg-gradient-to-br from-foreground via-foreground to-foreground/90">
+      <div className="container mx-auto px-4 py-12 lg:py-20">
+        <div className="grid lg:grid-cols-2 gap-8 items-center">
+          {/* Left content */}
+          <div className="text-background space-y-6 animate-fade-in">
+            <div className="inline-block bg-accent/20 text-accent px-4 py-2 rounded-full text-sm font-medium">
               Fresh & Tasty!
-            </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+            </div>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
               Meat, Fish, Repeat.
               <br />
-              Delivered <span className="text-cyan">Super Fresh.</span>
+              Delivered <span className="text-primary">Super Fresh.</span>
             </h1>
-            <p className="text-gray-300 text-lg mb-8 max-w-md">
-              Freshly cut chicken, mutton, fish — ordered online, arrived
+
+            <p className="text-background/80 text-lg max-w-md">
+              Freshly cut chicken, mutton, fish – ordered online, arrived
               chilled and ready.
             </p>
-            <div className="flex items-center gap-4">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-6 rounded-full text-lg font-semibold">
+
+            <div className="flex flex-wrap gap-4">
+              <Button className="btn-primary px-8 py-6 rounded-full text-lg font-semibold">
                 Order Now
               </Button>
-              <button className="flex items-center gap-2 text-white hover:text-cyan transition-colors">
-                <span className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-                  <Play className="h-5 w-5 fill-current" />
-                </span>
+
+              <button className="flex items-center gap-2 text-background hover:text-primary transition-colors">
+                <div className="w-12 h-12 bg-background/20 rounded-full flex items-center justify-center">
+                  <Play className="w-5 h-5 fill-current" />
+                </div>
                 <span className="font-medium">Watch Video</span>
               </button>
             </div>
           </div>
 
-          {/* Center - Hero Image */}
-          <div className="relative flex-1 flex justify-center">
-            <div className="relative">
-              {/* Circular Image Container */}
-              <div className="w-72 h-72 md:w-96 md:h-96 rounded-full overflow-hidden border-4 border-gray-700">
-                <Image
-                  src={heroImage}
-                  alt="Chef cooking fresh fish"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Login Form Overlay */}
-              <div className="absolute top-4 right-0 bg-white rounded-2xl shadow-2xl p-6 w-64">
-                <h3 className="text-foreground font-semibold text-center mb-4">
-                  Log in / Sign up
-                </h3>
-                <div className="relative mb-4">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    placeholder="+91 Your mobile number"
-                    className="pl-10 text-sm border-pink text-pink placeholder:text-pink/60"
-                  />
-                </div>
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
-                  Send Otp
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right - Featured Products */}
-          <div className="hidden xl:flex flex-col gap-4">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4">
+          {/* Right content */}
+          <div className="relative">
+            <div className="relative rounded-full overflow-hidden aspect-square max-w-lg mx-auto">
               <Image
-                src={fishImage}
-                alt="Bhetki"
-                className="w-16 h-16 rounded-xl object-cover"
+                src={heroImage}
+                alt="Fresh fish cooking"
+                fill
+                priority
+                className="object-cover"
               />
-
-              <div>
-                <h4 className="text-white font-medium">Bhetki (Sea Bass)</h4>
-                <div className="flex items-center gap-1 text-yellow text-sm">
-                  {"★★★★☆"}
-                </div>
-                <span className="text-cyan font-bold">₹350.00</span>
-              </div>
             </div>
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-4 flex items-center gap-4">
-              <Image
-                src={fish2Image}
-                alt="Pomfret"
-                className="w-16 h-16 rounded-xl object-cover"
-              />
-              <div>
-                <h4 className="text-white font-medium">Pomfret (Bengal)</h4>
-                <div className="flex items-center gap-1 text-yellow text-sm">
-                  {"★★★★★"}
+
+            {/* Featured products */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+              <div className="bg-foreground/80 backdrop-blur-sm text-background rounded-xl px-4 py-3 flex items-center gap-3">
+                <div className="w-12 h-12 bg-background/20 rounded-lg" />
+                <div>
+                  <p className="font-medium text-sm">Bhetki (Sea Bass)</p>
+                  <p className="text-accent font-bold">₹350.00</p>
                 </div>
-                <span className="text-cyan font-bold">₹750.00</span>
+              </div>
+
+              <div className="bg-foreground/80 backdrop-blur-sm text-background rounded-xl px-4 py-3 flex items-center gap-3 hidden sm:flex">
+                <div className="w-12 h-12 bg-background/20 rounded-lg" />
+                <div>
+                  <p className="font-medium text-sm">Pomfret (Bengal)</p>
+                  <p className="text-accent font-bold">₹750.00</p>
+                </div>
               </div>
             </div>
           </div>
