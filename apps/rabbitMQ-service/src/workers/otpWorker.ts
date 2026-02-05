@@ -1,4 +1,4 @@
-// apps/rabbitMQ-service/src/workers/otpWorker.ts
+
 import { connectRabbitMQ } from "@repo/libs/rabbitmq/index";
 import { handleOtpMessage } from "../handlers/otpHandler";
 import { parseMessage, logMessageReceived } from "./messageProcessor";

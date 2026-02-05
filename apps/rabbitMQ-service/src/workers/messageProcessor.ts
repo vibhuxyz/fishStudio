@@ -1,9 +1,7 @@
 import { ConsumeMessage } from "amqplib";
 import { isValidOtpMessage, OtpMessage } from "../types/otpMessage";
 
-/**
- * Parses and validates RabbitMQ message
- */
+
 export function parseMessage(msg: ConsumeMessage): OtpMessage {
   const data = JSON.parse(msg.content.toString());
 
@@ -14,9 +12,7 @@ export function parseMessage(msg: ConsumeMessage): OtpMessage {
   return data;
 }
 
-/**
- * Logs message received
- */
+
 export function logMessageReceived(data: OtpMessage): void {
   const recipient = data.userType === "user" ? data.phone_number : data.email;
   console.log(`📨 Received OTP request for ${data.userType}: ${recipient}`);
