@@ -243,7 +243,7 @@ const CreateShop = ({
         )}
 
         {/* Website - Optional */}
-        <label className="block text-gray-700 mb-1">Website *</label>
+        {/*<label className="block text-gray-700 mb-1">Website *</label>
         <input
           type="text"
           placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
@@ -260,10 +260,10 @@ const CreateShop = ({
           <p className="text-red-500 text-sm mb-3">
             {String(errors.website.message)}
           </p>
-        )}
+        )}*/}
 
         {/* Website - Optional */}
-        <label className="block text-gray-700 mb-1">Category *</label>
+        {/*<label className="block text-gray-700 mb-1">Category *</label>
         <input
           type="text"
           placeholder="e.g., Mon-Fri 9AM - 6PM, Sat 10AM - 4PM"
@@ -280,7 +280,7 @@ const CreateShop = ({
           <p className="text-red-500 text-sm mb-3">
             {String(errors.category.message)}
           </p>
-        )}
+        )}*/}
 
         {/* API Error Message */}
         {submitError && (

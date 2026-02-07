@@ -1067,13 +1067,11 @@ export const StoresScalarFieldEnum = {
   id: 'id',
   name: 'name',
   bio: 'bio',
-  category: 'category',
   coverBanner: 'coverBanner',
   address: 'address',
   city: 'city',
   pincode: 'pincode',
   opening_hours: 'opening_hours',
-  socialLinks: 'socialLinks',
   ratings: 'ratings',
   sellerId: 'sellerId',
   createdAt: 'createdAt',
@@ -1090,11 +1088,8 @@ export const SellersScalarFieldEnum = {
   phone_number: 'phone_number',
   password: 'password',
   following: 'following',
-  stripeId: 'stripeId',
-  storeId: 'storeId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  storesId: 'storesId'
+  updatedAt: 'updatedAt'
 } as const
 
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
@@ -1220,13 +1215,6 @@ export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, '
  * Reference to a field of type 'Float[]'
  */
 export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
-
-
-/**
- * Reference to a field of type 'Json[]'
- */
-export type ListJsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json[]'>
     
 
 

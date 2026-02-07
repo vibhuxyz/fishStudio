@@ -38,7 +38,6 @@ export type StoresMinAggregateOutputType = {
   id: string | null
   name: string | null
   bio: string | null
-  category: string | null
   coverBanner: string | null
   address: string | null
   city: string | null
@@ -54,7 +53,6 @@ export type StoresMaxAggregateOutputType = {
   id: string | null
   name: string | null
   bio: string | null
-  category: string | null
   coverBanner: string | null
   address: string | null
   city: string | null
@@ -70,13 +68,11 @@ export type StoresCountAggregateOutputType = {
   id: number
   name: number
   bio: number
-  category: number
   coverBanner: number
   address: number
   city: number
   pincode: number
   opening_hours: number
-  socialLinks: number
   ratings: number
   sellerId: number
   createdAt: number
@@ -97,7 +93,6 @@ export type StoresMinAggregateInputType = {
   id?: true
   name?: true
   bio?: true
-  category?: true
   coverBanner?: true
   address?: true
   city?: true
@@ -113,7 +108,6 @@ export type StoresMaxAggregateInputType = {
   id?: true
   name?: true
   bio?: true
-  category?: true
   coverBanner?: true
   address?: true
   city?: true
@@ -129,13 +123,11 @@ export type StoresCountAggregateInputType = {
   id?: true
   name?: true
   bio?: true
-  category?: true
   coverBanner?: true
   address?: true
   city?: true
   pincode?: true
   opening_hours?: true
-  socialLinks?: true
   ratings?: true
   sellerId?: true
   createdAt?: true
@@ -233,13 +225,11 @@ export type StoresGroupByOutputType = {
   id: string
   name: string
   bio: string
-  category: string
   coverBanner: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks: runtime.JsonValue[]
   ratings: number | null
   sellerId: string
   createdAt: Date
@@ -273,13 +263,11 @@ export type storesWhereInput = {
   id?: Prisma.StringFilter<"stores"> | string
   name?: Prisma.StringFilter<"stores"> | string
   bio?: Prisma.StringFilter<"stores"> | string
-  category?: Prisma.StringFilter<"stores"> | string
   coverBanner?: Prisma.StringNullableFilter<"stores"> | string | null
   address?: Prisma.StringFilter<"stores"> | string
   city?: Prisma.StringFilter<"stores"> | string
   pincode?: Prisma.StringFilter<"stores"> | string
   opening_hours?: Prisma.StringFilter<"stores"> | string
-  socialLinks?: Prisma.JsonNullableListFilter<"stores">
   ratings?: Prisma.FloatNullableFilter<"stores"> | number | null
   sellerId?: Prisma.StringFilter<"stores"> | string
   createdAt?: Prisma.DateTimeFilter<"stores"> | Date | string
@@ -294,13 +282,11 @@ export type storesOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   bio?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   coverBanner?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   pincode?: Prisma.SortOrder
   opening_hours?: Prisma.SortOrder
-  socialLinks?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -319,13 +305,11 @@ export type storesWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.storesWhereInput | Prisma.storesWhereInput[]
   name?: Prisma.StringFilter<"stores"> | string
   bio?: Prisma.StringFilter<"stores"> | string
-  category?: Prisma.StringFilter<"stores"> | string
   coverBanner?: Prisma.StringNullableFilter<"stores"> | string | null
   address?: Prisma.StringFilter<"stores"> | string
   city?: Prisma.StringFilter<"stores"> | string
   pincode?: Prisma.StringFilter<"stores"> | string
   opening_hours?: Prisma.StringFilter<"stores"> | string
-  socialLinks?: Prisma.JsonNullableListFilter<"stores">
   ratings?: Prisma.FloatNullableFilter<"stores"> | number | null
   createdAt?: Prisma.DateTimeFilter<"stores"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"stores"> | Date | string
@@ -339,13 +323,11 @@ export type storesOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   bio?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   coverBanner?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   pincode?: Prisma.SortOrder
   opening_hours?: Prisma.SortOrder
-  socialLinks?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -364,13 +346,11 @@ export type storesScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"stores"> | string
   name?: Prisma.StringWithAggregatesFilter<"stores"> | string
   bio?: Prisma.StringWithAggregatesFilter<"stores"> | string
-  category?: Prisma.StringWithAggregatesFilter<"stores"> | string
   coverBanner?: Prisma.StringNullableWithAggregatesFilter<"stores"> | string | null
   address?: Prisma.StringWithAggregatesFilter<"stores"> | string
   city?: Prisma.StringWithAggregatesFilter<"stores"> | string
   pincode?: Prisma.StringWithAggregatesFilter<"stores"> | string
   opening_hours?: Prisma.StringWithAggregatesFilter<"stores"> | string
-  socialLinks?: Prisma.JsonNullableListFilter<"stores">
   ratings?: Prisma.FloatNullableWithAggregatesFilter<"stores"> | number | null
   sellerId?: Prisma.StringWithAggregatesFilter<"stores"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"stores"> | Date | string
@@ -381,13 +361,11 @@ export type storesCreateInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -401,13 +379,11 @@ export type storesUncheckedCreateInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   sellerId: string
   createdAt?: Date | string
@@ -420,13 +396,11 @@ export type storesUncheckedCreateInput = {
 export type storesUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -439,13 +413,11 @@ export type storesUpdateInput = {
 export type storesUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -459,13 +431,11 @@ export type storesCreateManyInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   sellerId: string
   createdAt?: Date | string
@@ -475,13 +445,11 @@ export type storesCreateManyInput = {
 export type storesUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -490,13 +458,11 @@ export type storesUpdateManyMutationInput = {
 export type storesUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -508,32 +474,15 @@ export type StoresNullableScalarRelationFilter = {
   isNot?: Prisma.storesWhereInput | null
 }
 
-export type JsonNullableListFilter<$PrismaModel = never> =
-| Prisma.PatchUndefined<
-    Prisma.Either<Required<JsonNullableListFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>,
-    Required<JsonNullableListFilterBase<$PrismaModel>>
-  >
-| Prisma.OptionalFlat<Omit<Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>
-
-export type JsonNullableListFilterBase<$PrismaModel = never> = {
-  equals?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel> | null
-  has?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
-  hasEvery?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel>
-  hasSome?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel>
-  isEmpty?: boolean
-}
-
 export type storesCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   bio?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   coverBanner?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
   pincode?: Prisma.SortOrder
   opening_hours?: Prisma.SortOrder
-  socialLinks?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -548,7 +497,6 @@ export type storesMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   bio?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   coverBanner?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
@@ -564,7 +512,6 @@ export type storesMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   bio?: Prisma.SortOrder
-  category?: Prisma.SortOrder
   coverBanner?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
@@ -610,15 +557,6 @@ export type storesUpdateOneWithoutReviewsNestedInput = {
   delete?: Prisma.storesWhereInput | boolean
   connect?: Prisma.storesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutReviewsInput, Prisma.storesUpdateWithoutReviewsInput>, Prisma.storesUncheckedUpdateWithoutReviewsInput>
-}
-
-export type storesCreatesocialLinksInput = {
-  set: runtime.InputJsonValue[]
-}
-
-export type storesUpdatesocialLinksInput = {
-  set?: runtime.InputJsonValue[]
-  push?: runtime.InputJsonValue | runtime.InputJsonValue[]
 }
 
 export type NullableFloatFieldUpdateOperationsInput = {
@@ -682,13 +620,11 @@ export type storesCreateWithoutAvatarInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -701,13 +637,11 @@ export type storesUncheckedCreateWithoutAvatarInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   sellerId: string
   createdAt?: Date | string
@@ -735,13 +669,11 @@ export type storesUpdateToOneWithWhereWithoutAvatarInput = {
 export type storesUpdateWithoutAvatarInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -753,13 +685,11 @@ export type storesUpdateWithoutAvatarInput = {
 export type storesUncheckedUpdateWithoutAvatarInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -772,13 +702,11 @@ export type storesCreateWithoutReviewsInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -791,13 +719,11 @@ export type storesUncheckedCreateWithoutReviewsInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   sellerId: string
   createdAt?: Date | string
@@ -825,13 +751,11 @@ export type storesUpdateToOneWithWhereWithoutReviewsInput = {
 export type storesUpdateWithoutReviewsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -843,13 +767,11 @@ export type storesUpdateWithoutReviewsInput = {
 export type storesUncheckedUpdateWithoutReviewsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -862,13 +784,11 @@ export type storesCreateWithoutSellersInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -881,13 +801,11 @@ export type storesUncheckedCreateWithoutSellersInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -915,13 +833,11 @@ export type storesUpdateToOneWithWhereWithoutSellersInput = {
 export type storesUpdateWithoutSellersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -933,13 +849,11 @@ export type storesUpdateWithoutSellersInput = {
 export type storesUncheckedUpdateWithoutSellersInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -952,13 +866,11 @@ export type storesCreateWithoutProductsInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -971,13 +883,11 @@ export type storesUncheckedCreateWithoutProductsInput = {
   id?: string
   name: string
   bio: string
-  category: string
   coverBanner?: string | null
   address: string
   city: string
   pincode: string
   opening_hours: string
-  socialLinks?: Prisma.storesCreatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: number | null
   sellerId: string
   createdAt?: Date | string
@@ -1005,13 +915,11 @@ export type storesUpdateToOneWithWhereWithoutProductsInput = {
 export type storesUpdateWithoutProductsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1023,13 +931,11 @@ export type storesUpdateWithoutProductsInput = {
 export type storesUncheckedUpdateWithoutProductsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   bio?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
   coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
   pincode?: Prisma.StringFieldUpdateOperationsInput | string
   opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  socialLinks?: Prisma.storesUpdatesocialLinksInput | runtime.InputJsonValue[]
   ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1082,13 +988,11 @@ export type storesSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   id?: boolean
   name?: boolean
   bio?: boolean
-  category?: boolean
   coverBanner?: boolean
   address?: boolean
   city?: boolean
   pincode?: boolean
   opening_hours?: boolean
-  socialLinks?: boolean
   ratings?: boolean
   sellerId?: boolean
   createdAt?: boolean
@@ -1106,20 +1010,18 @@ export type storesSelectScalar = {
   id?: boolean
   name?: boolean
   bio?: boolean
-  category?: boolean
   coverBanner?: boolean
   address?: boolean
   city?: boolean
   pincode?: boolean
   opening_hours?: boolean
-  socialLinks?: boolean
   ratings?: boolean
   sellerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type storesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "bio" | "category" | "coverBanner" | "address" | "city" | "pincode" | "opening_hours" | "socialLinks" | "ratings" | "sellerId" | "createdAt" | "updatedAt", ExtArgs["result"]["stores"]>
+export type storesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "bio" | "coverBanner" | "address" | "city" | "pincode" | "opening_hours" | "ratings" | "sellerId" | "createdAt" | "updatedAt", ExtArgs["result"]["stores"]>
 export type storesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   avatar?: boolean | Prisma.stores$avatarArgs<ExtArgs>
   reviews?: boolean | Prisma.stores$reviewsArgs<ExtArgs>
@@ -1140,13 +1042,11 @@ export type $storesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     id: string
     name: string
     bio: string
-    category: string
     coverBanner: string | null
     address: string
     city: string
     pincode: string
     opening_hours: string
-    socialLinks: runtime.JsonValue[]
     ratings: number | null
     sellerId: string
     createdAt: Date
@@ -1550,13 +1450,11 @@ export interface storesFieldRefs {
   readonly id: Prisma.FieldRef<"stores", 'String'>
   readonly name: Prisma.FieldRef<"stores", 'String'>
   readonly bio: Prisma.FieldRef<"stores", 'String'>
-  readonly category: Prisma.FieldRef<"stores", 'String'>
   readonly coverBanner: Prisma.FieldRef<"stores", 'String'>
   readonly address: Prisma.FieldRef<"stores", 'String'>
   readonly city: Prisma.FieldRef<"stores", 'String'>
   readonly pincode: Prisma.FieldRef<"stores", 'String'>
   readonly opening_hours: Prisma.FieldRef<"stores", 'String'>
-  readonly socialLinks: Prisma.FieldRef<"stores", 'Json[]'>
   readonly ratings: Prisma.FieldRef<"stores", 'Float'>
   readonly sellerId: Prisma.FieldRef<"stores", 'String'>
   readonly createdAt: Prisma.FieldRef<"stores", 'DateTime'>

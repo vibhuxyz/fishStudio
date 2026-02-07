@@ -30,11 +30,8 @@ export type SellersMinAggregateOutputType = {
   email: string | null
   phone_number: string | null
   password: string | null
-  stripeId: string | null
-  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  storesId: string | null
 }
 
 export type SellersMaxAggregateOutputType = {
@@ -43,11 +40,8 @@ export type SellersMaxAggregateOutputType = {
   email: string | null
   phone_number: string | null
   password: string | null
-  stripeId: string | null
-  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  storesId: string | null
 }
 
 export type SellersCountAggregateOutputType = {
@@ -57,11 +51,8 @@ export type SellersCountAggregateOutputType = {
   phone_number: number
   password: number
   following: number
-  stripeId: number
-  storeId: number
   createdAt: number
   updatedAt: number
-  storesId: number
   _all: number
 }
 
@@ -72,11 +63,8 @@ export type SellersMinAggregateInputType = {
   email?: true
   phone_number?: true
   password?: true
-  stripeId?: true
-  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storesId?: true
 }
 
 export type SellersMaxAggregateInputType = {
@@ -85,11 +73,8 @@ export type SellersMaxAggregateInputType = {
   email?: true
   phone_number?: true
   password?: true
-  stripeId?: true
-  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storesId?: true
 }
 
 export type SellersCountAggregateInputType = {
@@ -99,11 +84,8 @@ export type SellersCountAggregateInputType = {
   phone_number?: true
   password?: true
   following?: true
-  stripeId?: true
-  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storesId?: true
   _all?: true
 }
 
@@ -186,11 +168,8 @@ export type SellersGroupByOutputType = {
   phone_number: string
   password: string
   following: string[]
-  stripeId: string | null
-  storeId: string | null
   createdAt: Date
   updatedAt: Date
-  storesId: string | null
   _count: SellersCountAggregateOutputType | null
   _min: SellersMinAggregateOutputType | null
   _max: SellersMaxAggregateOutputType | null
@@ -221,11 +200,8 @@ export type sellersWhereInput = {
   phone_number?: Prisma.StringFilter<"sellers"> | string
   password?: Prisma.StringFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
-  stripeId?: Prisma.StringNullableFilter<"sellers"> | string | null
-  storeId?: Prisma.StringNullableFilter<"sellers"> | string | null
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
-  storesId?: Prisma.StringNullableFilter<"sellers"> | string | null
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }
 
@@ -236,11 +212,8 @@ export type sellersOrderByWithRelationInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
-  stripeId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storesId?: Prisma.SortOrder
   store?: Prisma.storesOrderByWithRelationInput
 }
 
@@ -254,11 +227,8 @@ export type sellersWhereUniqueInput = Prisma.AtLeast<{
   phone_number?: Prisma.StringFilter<"sellers"> | string
   password?: Prisma.StringFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
-  stripeId?: Prisma.StringNullableFilter<"sellers"> | string | null
-  storeId?: Prisma.StringNullableFilter<"sellers"> | string | null
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
-  storesId?: Prisma.StringNullableFilter<"sellers"> | string | null
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }, "id" | "email">
 
@@ -269,11 +239,8 @@ export type sellersOrderByWithAggregationInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
-  stripeId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storesId?: Prisma.SortOrder
   _count?: Prisma.sellersCountOrderByAggregateInput
   _max?: Prisma.sellersMaxOrderByAggregateInput
   _min?: Prisma.sellersMinOrderByAggregateInput
@@ -289,11 +256,8 @@ export type sellersScalarWhereWithAggregatesInput = {
   phone_number?: Prisma.StringWithAggregatesFilter<"sellers"> | string
   password?: Prisma.StringWithAggregatesFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
-  stripeId?: Prisma.StringNullableWithAggregatesFilter<"sellers"> | string | null
-  storeId?: Prisma.StringNullableWithAggregatesFilter<"sellers"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"sellers"> | Date | string
-  storesId?: Prisma.StringNullableWithAggregatesFilter<"sellers"> | string | null
 }
 
 export type sellersCreateInput = {
@@ -303,11 +267,8 @@ export type sellersCreateInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
-  stripeId?: string | null
-  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storesId?: string | null
   store?: Prisma.storesCreateNestedOneWithoutSellersInput
 }
 
@@ -318,11 +279,8 @@ export type sellersUncheckedCreateInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
-  stripeId?: string | null
-  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storesId?: string | null
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellersInput
 }
 
@@ -332,11 +290,8 @@ export type sellersUpdateInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   store?: Prisma.storesUpdateOneWithoutSellersNestedInput
 }
 
@@ -346,11 +301,8 @@ export type sellersUncheckedUpdateInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   store?: Prisma.storesUncheckedUpdateOneWithoutSellersNestedInput
 }
 
@@ -361,11 +313,8 @@ export type sellersCreateManyInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
-  stripeId?: string | null
-  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storesId?: string | null
 }
 
 export type sellersUpdateManyMutationInput = {
@@ -374,11 +323,8 @@ export type sellersUpdateManyMutationInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type sellersUncheckedUpdateManyInput = {
@@ -387,11 +333,8 @@ export type sellersUncheckedUpdateManyInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type SellersScalarRelationFilter = {
@@ -406,11 +349,8 @@ export type sellersCountOrderByAggregateInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
-  stripeId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storesId?: Prisma.SortOrder
 }
 
 export type sellersMaxOrderByAggregateInput = {
@@ -419,11 +359,8 @@ export type sellersMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
-  stripeId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storesId?: Prisma.SortOrder
 }
 
 export type sellersMinOrderByAggregateInput = {
@@ -432,11 +369,8 @@ export type sellersMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
-  stripeId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storesId?: Prisma.SortOrder
 }
 
 export type sellersCreateNestedOneWithoutStoreInput = {
@@ -469,11 +403,8 @@ export type sellersCreateWithoutStoreInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
-  stripeId?: string | null
-  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storesId?: string | null
 }
 
 export type sellersUncheckedCreateWithoutStoreInput = {
@@ -483,11 +414,8 @@ export type sellersUncheckedCreateWithoutStoreInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
-  stripeId?: string | null
-  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storesId?: string | null
 }
 
 export type sellersCreateOrConnectWithoutStoreInput = {
@@ -512,11 +440,8 @@ export type sellersUpdateWithoutStoreInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type sellersUncheckedUpdateWithoutStoreInput = {
@@ -525,11 +450,8 @@ export type sellersUncheckedUpdateWithoutStoreInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
-  stripeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storesId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -541,11 +463,8 @@ export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   phone_number?: boolean
   password?: boolean
   following?: boolean
-  stripeId?: boolean
-  storeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  storesId?: boolean
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
 }, ExtArgs["result"]["sellers"]>
 
@@ -558,14 +477,11 @@ export type sellersSelectScalar = {
   phone_number?: boolean
   password?: boolean
   following?: boolean
-  stripeId?: boolean
-  storeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  storesId?: boolean
 }
 
-export type sellersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone_number" | "password" | "following" | "stripeId" | "storeId" | "createdAt" | "updatedAt" | "storesId", ExtArgs["result"]["sellers"]>
+export type sellersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone_number" | "password" | "following" | "createdAt" | "updatedAt", ExtArgs["result"]["sellers"]>
 export type sellersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
 }
@@ -582,11 +498,8 @@ export type $sellersPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     phone_number: string
     password: string
     following: string[]
-    stripeId: string | null
-    storeId: string | null
     createdAt: Date
     updatedAt: Date
-    storesId: string | null
   }, ExtArgs["result"]["sellers"]>
   composites: {}
 }
@@ -986,11 +899,8 @@ export interface sellersFieldRefs {
   readonly phone_number: Prisma.FieldRef<"sellers", 'String'>
   readonly password: Prisma.FieldRef<"sellers", 'String'>
   readonly following: Prisma.FieldRef<"sellers", 'String[]'>
-  readonly stripeId: Prisma.FieldRef<"sellers", 'String'>
-  readonly storeId: Prisma.FieldRef<"sellers", 'String'>
   readonly createdAt: Prisma.FieldRef<"sellers", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"sellers", 'DateTime'>
-  readonly storesId: Prisma.FieldRef<"sellers", 'String'>
 }
     
 

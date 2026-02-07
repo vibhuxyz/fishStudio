@@ -122,7 +122,7 @@ export const createStore = async (
       bio,
       address,
       opening_hours,
-      category,
+      // category,
       sellerId,
       city,
       pincode,
@@ -134,7 +134,7 @@ export const createStore = async (
       !address ||
       !opening_hours ||
       !city ||
-      !category ||
+      // !category ||
       !sellerId ||
       !pincode
     ) {
@@ -150,7 +150,7 @@ export const createStore = async (
       pincode,
       opening_hours,
 
-      category,
+      // category,
       sellerId,
     };
 

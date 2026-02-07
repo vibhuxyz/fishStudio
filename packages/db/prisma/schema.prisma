@@ -52,14 +52,14 @@ model stores {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   bio           String
-  category      String
+  // category      String
   avatar        images?
   coverBanner   String?
   address       String
   city          String
   pincode       String
   opening_hours String
-  socialLinks   Json[]
+  // socialLinks   Json[]
   ratings       Float?         @default(0)
   reviews       storeReviews[]
   sellerId      String         @unique @db.ObjectId
