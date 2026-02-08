@@ -23,7 +23,7 @@ const config: runtime.GetPrismaClientConfig = {
       "value": "prisma-client"
     },
     "output": {
-      "value": "/home/nitish/Desktop/fishStudio/packages/db/src/generated",
+      "value": "/Users/vibhu/Coding/fishStudio/packages/db/src/generated",
       "fromEnvVar": null
     },
     "config": {
@@ -32,12 +32,12 @@ const config: runtime.GetPrismaClientConfig = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "debian-openssl-3.0.x",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/home/nitish/Desktop/fishStudio/packages/db/prisma/schema.prisma",
+    "sourceFilePath": "/Users/vibhu/Coding/fishStudio/packages/db/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativePath": "../../prisma",

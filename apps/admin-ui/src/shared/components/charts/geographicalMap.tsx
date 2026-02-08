@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -31,21 +31,6 @@ const GeographicalMap = () => {
   } | null>(null);
 
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return (
-      <div className="relative w-full px-0 py-5 overflow-visible">
-        <div className="w-full h-[35vh] bg-slate-800 rounded-lg flex items-center justify-center">
-          <span className="text-slate-400">Loading map...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-full px-0 py-5 overflow-visible">
@@ -77,13 +62,7 @@ const GeographicalMap = () => {
                   key={geo.rsmKey}
                   geography={geo}
                   onMouseEnter={(e) => {
-                    if (typeof window !== 'undefined') {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setTooltipPosition({ 
-                        x: rect.left + rect.width / 2, 
-                        y: rect.top - 10 
-                      });
-                    }
+                    setTooltipPosition({ x: e.pageX, y: e.pageY });
                     setHovered({
                       name: countryName,
                       users: match?.users || 0,
@@ -91,13 +70,7 @@ const GeographicalMap = () => {
                     });
                   }}
                   onMouseMove={(e) => {
-                    if (typeof window !== 'undefined') {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setTooltipPosition({ 
-                        x: rect.left + rect.width / 2, 
-                        y: rect.top - 10 
-                      });
-                    }
+                    setTooltipPosition({ x: e.pageX, y: e.pageY });
                   }}
                   onMouseLeave={() => setHovered(null)}
                   fill={baseColor}
@@ -130,25 +103,17 @@ const GeographicalMap = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
+            className="fixed bg-gray-800 text-white text-xs p-2 !rounded shadow-lg pointer-events-none z-[9999]"
             style={{
-              position: 'fixed',
               top: tooltipPosition.y,
               left: tooltipPosition.x,
-              backgroundColor: '#1f2937',
-              color: 'white',
-              fontSize: '0.75rem',
-              padding: '0.5rem',
-              borderRadius: '0.25rem',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-              pointerEvents: 'none',
-              zIndex: 9999,
             }}
           >
             <strong>{hovered.name}</strong>
             <br />
-            Users: <span style={{ color: '#4ade80' }}>{hovered.users}</span>
+            Users: <span className="text-green-400">{hovered.users}</span>
             <br />
-            Sellers: <span style={{ color: '#facc15' }}>{hovered.sellers}</span>
+            Sellers: <span className="text-yellow-400">{hovered.sellers}</span>
           </motion.div>
         )}
       </AnimatePresence>
