@@ -30,7 +30,7 @@ router.get("/get-discount-codes", isAuthenticated, isSeller, getDiscountCodes);
 router.get("/get-categories", isAuthenticated, isSeller, getCategories);
 
 router.post("/create-product", isAuthenticated, isSeller, createProduct);
-router.get("/get-store-products", isAuthenticated, isSeller, getStoreProducts);
+router.get("/get-all-products", getStoreProducts);
 
 router.post(
   "/upload-product-image",

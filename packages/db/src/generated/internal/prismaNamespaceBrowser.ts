@@ -51,10 +51,11 @@ export const AnyNull = runtime.objectEnumValues.instances.AnyNull
 export const ModelName = {
   images: 'images',
   users: 'users',
-  storeReviews: 'storeReviews',
-  stores: 'stores',
   sellers: 'sellers',
+  stores: 'stores',
+  storeReviews: 'storeReviews',
   discount_codes: 'discount_codes',
+  favorites: 'favorites',
   site_config: 'site_config',
   products: 'products'
 } as const
@@ -89,17 +90,18 @@ export const UsersScalarFieldEnum = {
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
 
 
-export const StoreReviewsScalarFieldEnum = {
+export const SellersScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  rating: 'rating',
-  reviews: 'reviews',
+  name: 'name',
+  email: 'email',
+  phone_number: 'phone_number',
+  password: 'password',
+  following: 'following',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  storeId: 'storeId'
+  updatedAt: 'updatedAt'
 } as const
 
-export type StoreReviewsScalarFieldEnum = (typeof StoreReviewsScalarFieldEnum)[keyof typeof StoreReviewsScalarFieldEnum]
+export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
 
 
 export const StoresScalarFieldEnum = {
@@ -120,18 +122,17 @@ export const StoresScalarFieldEnum = {
 export type StoresScalarFieldEnum = (typeof StoresScalarFieldEnum)[keyof typeof StoresScalarFieldEnum]
 
 
-export const SellersScalarFieldEnum = {
+export const StoreReviewsScalarFieldEnum = {
   id: 'id',
-  name: 'name',
-  email: 'email',
-  phone_number: 'phone_number',
-  password: 'password',
-  following: 'following',
+  rating: 'rating',
+  reviews: 'reviews',
+  userId: 'userId',
+  storeId: 'storeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
+export type StoreReviewsScalarFieldEnum = (typeof StoreReviewsScalarFieldEnum)[keyof typeof StoreReviewsScalarFieldEnum]
 
 
 export const Discount_codesScalarFieldEnum = {
@@ -146,6 +147,16 @@ export const Discount_codesScalarFieldEnum = {
 } as const
 
 export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
+
+
+export const FavoritesScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  productId: 'productId',
+  createdAt: 'createdAt'
+} as const
+
+export type FavoritesScalarFieldEnum = (typeof FavoritesScalarFieldEnum)[keyof typeof FavoritesScalarFieldEnum]
 
 
 export const Site_configScalarFieldEnum = {
@@ -175,11 +186,12 @@ export const ProductsScalarFieldEnum = {
   stock: 'stock',
   sale_price: 'sale_price',
   regular_price: 'regular_price',
+  totalSold: 'totalSold',
   ratings: 'ratings',
-  isDeleted: 'isDeleted',
   cashOnDelivery: 'cashOnDelivery',
   discount_codes: 'discount_codes',
   status: 'status',
+  isDeleted: 'isDeleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',

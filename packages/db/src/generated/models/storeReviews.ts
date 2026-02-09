@@ -36,32 +36,32 @@ export type StoreReviewsSumAggregateOutputType = {
 
 export type StoreReviewsMinAggregateOutputType = {
   id: string | null
-  userId: string | null
   rating: number | null
   reviews: string | null
+  userId: string | null
+  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  storeId: string | null
 }
 
 export type StoreReviewsMaxAggregateOutputType = {
   id: string | null
-  userId: string | null
   rating: number | null
   reviews: string | null
+  userId: string | null
+  storeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
-  storeId: string | null
 }
 
 export type StoreReviewsCountAggregateOutputType = {
   id: number
-  userId: number
   rating: number
   reviews: number
+  userId: number
+  storeId: number
   createdAt: number
   updatedAt: number
-  storeId: number
   _all: number
 }
 
@@ -76,32 +76,32 @@ export type StoreReviewsSumAggregateInputType = {
 
 export type StoreReviewsMinAggregateInputType = {
   id?: true
-  userId?: true
   rating?: true
   reviews?: true
+  userId?: true
+  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storeId?: true
 }
 
 export type StoreReviewsMaxAggregateInputType = {
   id?: true
-  userId?: true
   rating?: true
   reviews?: true
+  userId?: true
+  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storeId?: true
 }
 
 export type StoreReviewsCountAggregateInputType = {
   id?: true
-  userId?: true
   rating?: true
   reviews?: true
+  userId?: true
+  storeId?: true
   createdAt?: true
   updatedAt?: true
-  storeId?: true
   _all?: true
 }
 
@@ -193,12 +193,12 @@ export type storeReviewsGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
 
 export type StoreReviewsGroupByOutputType = {
   id: string
-  userId: string
   rating: number
   reviews: string | null
+  userId: string
+  storeId: string | null
   createdAt: Date
   updatedAt: Date
-  storeId: string | null
   _count: StoreReviewsCountAggregateOutputType | null
   _avg: StoreReviewsAvgAggregateOutputType | null
   _sum: StoreReviewsSumAggregateOutputType | null
@@ -226,24 +226,24 @@ export type storeReviewsWhereInput = {
   OR?: Prisma.storeReviewsWhereInput[]
   NOT?: Prisma.storeReviewsWhereInput | Prisma.storeReviewsWhereInput[]
   id?: Prisma.StringFilter<"storeReviews"> | string
-  userId?: Prisma.StringFilter<"storeReviews"> | string
   rating?: Prisma.FloatFilter<"storeReviews"> | number
   reviews?: Prisma.StringNullableFilter<"storeReviews"> | string | null
+  userId?: Prisma.StringFilter<"storeReviews"> | string
+  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
   createdAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
-  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   shops?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }
 
 export type storeReviewsOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   reviews?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   user?: Prisma.usersOrderByWithRelationInput
   shops?: Prisma.storesOrderByWithRelationInput
 }
@@ -253,24 +253,24 @@ export type storeReviewsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.storeReviewsWhereInput | Prisma.storeReviewsWhereInput[]
   OR?: Prisma.storeReviewsWhereInput[]
   NOT?: Prisma.storeReviewsWhereInput | Prisma.storeReviewsWhereInput[]
-  userId?: Prisma.StringFilter<"storeReviews"> | string
   rating?: Prisma.FloatFilter<"storeReviews"> | number
   reviews?: Prisma.StringNullableFilter<"storeReviews"> | string | null
+  userId?: Prisma.StringFilter<"storeReviews"> | string
+  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
   createdAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
-  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
   user?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   shops?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }, "id">
 
 export type storeReviewsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   reviews?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
   _count?: Prisma.storeReviewsCountOrderByAggregateInput
   _avg?: Prisma.storeReviewsAvgOrderByAggregateInput
   _max?: Prisma.storeReviewsMaxOrderByAggregateInput
@@ -283,12 +283,12 @@ export type storeReviewsScalarWhereWithAggregatesInput = {
   OR?: Prisma.storeReviewsScalarWhereWithAggregatesInput[]
   NOT?: Prisma.storeReviewsScalarWhereWithAggregatesInput | Prisma.storeReviewsScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"storeReviews"> | string
-  userId?: Prisma.StringWithAggregatesFilter<"storeReviews"> | string
   rating?: Prisma.FloatWithAggregatesFilter<"storeReviews"> | number
   reviews?: Prisma.StringNullableWithAggregatesFilter<"storeReviews"> | string | null
+  userId?: Prisma.StringWithAggregatesFilter<"storeReviews"> | string
+  storeId?: Prisma.StringNullableWithAggregatesFilter<"storeReviews"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"storeReviews"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"storeReviews"> | Date | string
-  storeId?: Prisma.StringNullableWithAggregatesFilter<"storeReviews"> | string | null
 }
 
 export type storeReviewsCreateInput = {
@@ -303,12 +303,12 @@ export type storeReviewsCreateInput = {
 
 export type storeReviewsUncheckedCreateInput = {
   id?: string
-  userId: string
   rating: number
   reviews?: string | null
+  userId: string
+  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeId?: string | null
 }
 
 export type storeReviewsUpdateInput = {
@@ -321,22 +321,22 @@ export type storeReviewsUpdateInput = {
 }
 
 export type storeReviewsUncheckedUpdateInput = {
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type storeReviewsCreateManyInput = {
   id?: string
-  userId: string
   rating: number
   reviews?: string | null
+  userId: string
+  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeId?: string | null
 }
 
 export type storeReviewsUpdateManyMutationInput = {
@@ -347,12 +347,12 @@ export type storeReviewsUpdateManyMutationInput = {
 }
 
 export type storeReviewsUncheckedUpdateManyInput = {
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StoreReviewsListRelationFilter = {
@@ -367,12 +367,12 @@ export type storeReviewsOrderByRelationAggregateInput = {
 
 export type storeReviewsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   reviews?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
 }
 
 export type storeReviewsAvgOrderByAggregateInput = {
@@ -381,22 +381,22 @@ export type storeReviewsAvgOrderByAggregateInput = {
 
 export type storeReviewsMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   reviews?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
 }
 
 export type storeReviewsMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   rating?: Prisma.SortOrder
   reviews?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
+  storeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
 }
 
 export type storeReviewsSumOrderByAggregateInput = {
@@ -445,14 +445,6 @@ export type storeReviewsUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.storeReviewsScalarWhereInput | Prisma.storeReviewsScalarWhereInput[]
 }
 
-export type FloatFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type storeReviewsCreateNestedManyWithoutShopsInput = {
   create?: Prisma.XOR<Prisma.storeReviewsCreateWithoutShopsInput, Prisma.storeReviewsUncheckedCreateWithoutShopsInput> | Prisma.storeReviewsCreateWithoutShopsInput[] | Prisma.storeReviewsUncheckedCreateWithoutShopsInput[]
   connectOrCreate?: Prisma.storeReviewsCreateOrConnectWithoutShopsInput | Prisma.storeReviewsCreateOrConnectWithoutShopsInput[]
@@ -495,6 +487,14 @@ export type storeReviewsUncheckedUpdateManyWithoutShopsNestedInput = {
   deleteMany?: Prisma.storeReviewsScalarWhereInput | Prisma.storeReviewsScalarWhereInput[]
 }
 
+export type FloatFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type storeReviewsCreateWithoutUserInput = {
   id?: string
   rating: number
@@ -508,9 +508,9 @@ export type storeReviewsUncheckedCreateWithoutUserInput = {
   id?: string
   rating: number
   reviews?: string | null
+  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeId?: string | null
 }
 
 export type storeReviewsCreateOrConnectWithoutUserInput = {
@@ -543,12 +543,12 @@ export type storeReviewsScalarWhereInput = {
   OR?: Prisma.storeReviewsScalarWhereInput[]
   NOT?: Prisma.storeReviewsScalarWhereInput | Prisma.storeReviewsScalarWhereInput[]
   id?: Prisma.StringFilter<"storeReviews"> | string
-  userId?: Prisma.StringFilter<"storeReviews"> | string
   rating?: Prisma.FloatFilter<"storeReviews"> | number
   reviews?: Prisma.StringNullableFilter<"storeReviews"> | string | null
+  userId?: Prisma.StringFilter<"storeReviews"> | string
+  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
   createdAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"storeReviews"> | Date | string
-  storeId?: Prisma.StringNullableFilter<"storeReviews"> | string | null
 }
 
 export type storeReviewsCreateWithoutShopsInput = {
@@ -562,9 +562,9 @@ export type storeReviewsCreateWithoutShopsInput = {
 
 export type storeReviewsUncheckedCreateWithoutShopsInput = {
   id?: string
-  userId: string
   rating: number
   reviews?: string | null
+  userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -598,9 +598,9 @@ export type storeReviewsCreateManyUserInput = {
   id?: string
   rating: number
   reviews?: string | null
+  storeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeId?: string | null
 }
 
 export type storeReviewsUpdateWithoutUserInput = {
@@ -614,24 +614,24 @@ export type storeReviewsUpdateWithoutUserInput = {
 export type storeReviewsUncheckedUpdateWithoutUserInput = {
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type storeReviewsUncheckedUpdateManyWithoutUserInput = {
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type storeReviewsCreateManyShopsInput = {
   id?: string
-  userId: string
   rating: number
   reviews?: string | null
+  userId: string
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -645,17 +645,17 @@ export type storeReviewsUpdateWithoutShopsInput = {
 }
 
 export type storeReviewsUncheckedUpdateWithoutShopsInput = {
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type storeReviewsUncheckedUpdateManyWithoutShopsInput = {
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   rating?: Prisma.FloatFieldUpdateOperationsInput | number
   reviews?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -664,12 +664,12 @@ export type storeReviewsUncheckedUpdateManyWithoutShopsInput = {
 
 export type storeReviewsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  userId?: boolean
   rating?: boolean
   reviews?: boolean
+  userId?: boolean
+  storeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  storeId?: boolean
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   shops?: boolean | Prisma.storeReviews$shopsArgs<ExtArgs>
 }, ExtArgs["result"]["storeReviews"]>
@@ -678,15 +678,15 @@ export type storeReviewsSelect<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type storeReviewsSelectScalar = {
   id?: boolean
-  userId?: boolean
   rating?: boolean
   reviews?: boolean
+  userId?: boolean
+  storeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  storeId?: boolean
 }
 
-export type storeReviewsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "rating" | "reviews" | "createdAt" | "updatedAt" | "storeId", ExtArgs["result"]["storeReviews"]>
+export type storeReviewsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "rating" | "reviews" | "userId" | "storeId" | "createdAt" | "updatedAt", ExtArgs["result"]["storeReviews"]>
 export type storeReviewsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   shops?: boolean | Prisma.storeReviews$shopsArgs<ExtArgs>
@@ -700,12 +700,12 @@ export type $storeReviewsPayload<ExtArgs extends runtime.Types.Extensions.Intern
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    userId: string
     rating: number
     reviews: string | null
+    userId: string
+    storeId: string | null
     createdAt: Date
     updatedAt: Date
-    storeId: string | null
   }, ExtArgs["result"]["storeReviews"]>
   composites: {}
 }
@@ -1101,12 +1101,12 @@ export interface Prisma__storeReviewsClient<T, Null = never, ExtArgs extends run
  */
 export interface storeReviewsFieldRefs {
   readonly id: Prisma.FieldRef<"storeReviews", 'String'>
-  readonly userId: Prisma.FieldRef<"storeReviews", 'String'>
   readonly rating: Prisma.FieldRef<"storeReviews", 'Float'>
   readonly reviews: Prisma.FieldRef<"storeReviews", 'String'>
+  readonly userId: Prisma.FieldRef<"storeReviews", 'String'>
+  readonly storeId: Prisma.FieldRef<"storeReviews", 'String'>
   readonly createdAt: Prisma.FieldRef<"storeReviews", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"storeReviews", 'DateTime'>
-  readonly storeId: Prisma.FieldRef<"storeReviews", 'String'>
 }
     
 

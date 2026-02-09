@@ -14,7 +14,8 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model discount_codes
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type discount_codesModel = runtime.Types.Result.DefaultSelection<Prisma.$discount_codesPayload>
 

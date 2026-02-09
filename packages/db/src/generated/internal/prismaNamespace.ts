@@ -392,10 +392,11 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   images: 'images',
   users: 'users',
-  storeReviews: 'storeReviews',
-  stores: 'stores',
   sellers: 'sellers',
+  stores: 'stores',
+  storeReviews: 'storeReviews',
   discount_codes: 'discount_codes',
+  favorites: 'favorites',
   site_config: 'site_config',
   products: 'products'
 } as const
@@ -413,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "images" | "users" | "storeReviews" | "stores" | "sellers" | "discount_codes" | "site_config" | "products"
+    modelProps: "images" | "users" | "sellers" | "stores" | "storeReviews" | "discount_codes" | "favorites" | "site_config" | "products"
     txIsolationLevel: never
   }
   model: {
@@ -565,77 +566,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    storeReviews: {
-      payload: Prisma.$storeReviewsPayload<ExtArgs>
-      fields: Prisma.storeReviewsFieldRefs
+    sellers: {
+      payload: Prisma.$sellersPayload<ExtArgs>
+      fields: Prisma.sellersFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.storeReviewsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload> | null
+          args: Prisma.sellersFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.storeReviewsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         findFirst: {
-          args: Prisma.storeReviewsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload> | null
+          args: Prisma.sellersFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.storeReviewsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         findMany: {
-          args: Prisma.storeReviewsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>[]
+          args: Prisma.sellersFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>[]
         }
         create: {
-          args: Prisma.storeReviewsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         createMany: {
-          args: Prisma.storeReviewsCreateManyArgs<ExtArgs>
+          args: Prisma.sellersCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         delete: {
-          args: Prisma.storeReviewsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         update: {
-          args: Prisma.storeReviewsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         deleteMany: {
-          args: Prisma.storeReviewsDeleteManyArgs<ExtArgs>
+          args: Prisma.sellersDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.storeReviewsUpdateManyArgs<ExtArgs>
+          args: Prisma.sellersUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         upsert: {
-          args: Prisma.storeReviewsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
+          args: Prisma.sellersUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
         }
         aggregate: {
-          args: Prisma.StoreReviewsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateStoreReviews>
+          args: Prisma.SellersAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSellers>
         }
         groupBy: {
-          args: Prisma.storeReviewsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.StoreReviewsGroupByOutputType>[]
+          args: Prisma.sellersGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SellersGroupByOutputType>[]
         }
         findRaw: {
-          args: Prisma.storeReviewsFindRawArgs<ExtArgs>
+          args: Prisma.sellersFindRawArgs<ExtArgs>
           result: Prisma.JsonObject
         }
         aggregateRaw: {
-          args: Prisma.storeReviewsAggregateRawArgs<ExtArgs>
+          args: Prisma.sellersAggregateRawArgs<ExtArgs>
           result: Prisma.JsonObject
         }
         count: {
-          args: Prisma.storeReviewsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.StoreReviewsCountAggregateOutputType> | number
+          args: Prisma.sellersCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SellersCountAggregateOutputType> | number
         }
       }
     }
@@ -713,77 +714,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    sellers: {
-      payload: Prisma.$sellersPayload<ExtArgs>
-      fields: Prisma.sellersFieldRefs
+    storeReviews: {
+      payload: Prisma.$storeReviewsPayload<ExtArgs>
+      fields: Prisma.storeReviewsFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.sellersFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload> | null
+          args: Prisma.storeReviewsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.sellersFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         findFirst: {
-          args: Prisma.sellersFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload> | null
+          args: Prisma.storeReviewsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.sellersFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         findMany: {
-          args: Prisma.sellersFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>[]
+          args: Prisma.storeReviewsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>[]
         }
         create: {
-          args: Prisma.sellersCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         createMany: {
-          args: Prisma.sellersCreateManyArgs<ExtArgs>
+          args: Prisma.storeReviewsCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         delete: {
-          args: Prisma.sellersDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         update: {
-          args: Prisma.sellersUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         deleteMany: {
-          args: Prisma.sellersDeleteManyArgs<ExtArgs>
+          args: Prisma.storeReviewsDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.sellersUpdateManyArgs<ExtArgs>
+          args: Prisma.storeReviewsUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         upsert: {
-          args: Prisma.sellersUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$sellersPayload>
+          args: Prisma.storeReviewsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$storeReviewsPayload>
         }
         aggregate: {
-          args: Prisma.SellersAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateSellers>
+          args: Prisma.StoreReviewsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStoreReviews>
         }
         groupBy: {
-          args: Prisma.sellersGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SellersGroupByOutputType>[]
+          args: Prisma.storeReviewsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreReviewsGroupByOutputType>[]
         }
         findRaw: {
-          args: Prisma.sellersFindRawArgs<ExtArgs>
+          args: Prisma.storeReviewsFindRawArgs<ExtArgs>
           result: Prisma.JsonObject
         }
         aggregateRaw: {
-          args: Prisma.sellersAggregateRawArgs<ExtArgs>
+          args: Prisma.storeReviewsAggregateRawArgs<ExtArgs>
           result: Prisma.JsonObject
         }
         count: {
-          args: Prisma.sellersCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.SellersCountAggregateOutputType> | number
+          args: Prisma.storeReviewsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StoreReviewsCountAggregateOutputType> | number
         }
       }
     }
@@ -858,6 +859,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.discount_codesCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Discount_codesCountAggregateOutputType> | number
+        }
+      }
+    }
+    favorites: {
+      payload: Prisma.$favoritesPayload<ExtArgs>
+      fields: Prisma.favoritesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.favoritesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.favoritesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        findFirst: {
+          args: Prisma.favoritesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.favoritesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        findMany: {
+          args: Prisma.favoritesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>[]
+        }
+        create: {
+          args: Prisma.favoritesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        createMany: {
+          args: Prisma.favoritesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.favoritesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        update: {
+          args: Prisma.favoritesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        deleteMany: {
+          args: Prisma.favoritesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.favoritesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.favoritesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$favoritesPayload>
+        }
+        aggregate: {
+          args: Prisma.FavoritesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFavorites>
+        }
+        groupBy: {
+          args: Prisma.favoritesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FavoritesGroupByOutputType>[]
+        }
+        findRaw: {
+          args: Prisma.favoritesFindRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        aggregateRaw: {
+          args: Prisma.favoritesAggregateRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        count: {
+          args: Prisma.favoritesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FavoritesCountAggregateOutputType> | number
         }
       }
     }
@@ -1050,17 +1125,18 @@ export const UsersScalarFieldEnum = {
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
 
 
-export const StoreReviewsScalarFieldEnum = {
+export const SellersScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
-  rating: 'rating',
-  reviews: 'reviews',
+  name: 'name',
+  email: 'email',
+  phone_number: 'phone_number',
+  password: 'password',
+  following: 'following',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  storeId: 'storeId'
+  updatedAt: 'updatedAt'
 } as const
 
-export type StoreReviewsScalarFieldEnum = (typeof StoreReviewsScalarFieldEnum)[keyof typeof StoreReviewsScalarFieldEnum]
+export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
 
 
 export const StoresScalarFieldEnum = {
@@ -1081,18 +1157,17 @@ export const StoresScalarFieldEnum = {
 export type StoresScalarFieldEnum = (typeof StoresScalarFieldEnum)[keyof typeof StoresScalarFieldEnum]
 
 
-export const SellersScalarFieldEnum = {
+export const StoreReviewsScalarFieldEnum = {
   id: 'id',
-  name: 'name',
-  email: 'email',
-  phone_number: 'phone_number',
-  password: 'password',
-  following: 'following',
+  rating: 'rating',
+  reviews: 'reviews',
+  userId: 'userId',
+  storeId: 'storeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
+export type StoreReviewsScalarFieldEnum = (typeof StoreReviewsScalarFieldEnum)[keyof typeof StoreReviewsScalarFieldEnum]
 
 
 export const Discount_codesScalarFieldEnum = {
@@ -1107,6 +1182,16 @@ export const Discount_codesScalarFieldEnum = {
 } as const
 
 export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
+
+
+export const FavoritesScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  productId: 'productId',
+  createdAt: 'createdAt'
+} as const
+
+export type FavoritesScalarFieldEnum = (typeof FavoritesScalarFieldEnum)[keyof typeof FavoritesScalarFieldEnum]
 
 
 export const Site_configScalarFieldEnum = {
@@ -1136,11 +1221,12 @@ export const ProductsScalarFieldEnum = {
   stock: 'stock',
   sale_price: 'sale_price',
   regular_price: 'regular_price',
+  totalSold: 'totalSold',
   ratings: 'ratings',
-  isDeleted: 'isDeleted',
   cashOnDelivery: 'cashOnDelivery',
   discount_codes: 'discount_codes',
   status: 'status',
+  isDeleted: 'isDeleted',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
@@ -1236,13 +1322,6 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
  * Reference to a field of type 'productStatus'
  */
 export type EnumproductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'productStatus'>
@@ -1253,6 +1332,13 @@ export type EnumproductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'productStatus[]'
  */
 export type ListEnumproductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'productStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 /**
@@ -1343,10 +1429,11 @@ export interface PrismaClientOptions {
 export type GlobalOmitConfig = {
   images?: Prisma.imagesOmit
   users?: Prisma.usersOmit
-  storeReviews?: Prisma.storeReviewsOmit
-  stores?: Prisma.storesOmit
   sellers?: Prisma.sellersOmit
+  stores?: Prisma.storesOmit
+  storeReviews?: Prisma.storeReviewsOmit
   discount_codes?: Prisma.discount_codesOmit
+  favorites?: Prisma.favoritesOmit
   site_config?: Prisma.site_configOmit
   products?: Prisma.productsOmit
 }

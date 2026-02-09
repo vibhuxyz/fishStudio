@@ -19,41 +19,53 @@ export * as $Enums from './enums.js'
 export * from './enums.js';
 /**
  * Model images
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type images = Prisma.imagesModel
 /**
  * Model users
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type users = Prisma.usersModel
-/**
- * Model storeReviews
- * 
- */
-export type storeReviews = Prisma.storeReviewsModel
-/**
- * Model stores
- * 
- */
-export type stores = Prisma.storesModel
 /**
  * Model sellers
  * 
  */
 export type sellers = Prisma.sellersModel
 /**
- * Model discount_codes
+ * Model stores
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
+ */
+export type stores = Prisma.storesModel
+/**
+ * Model storeReviews
  * 
+ */
+export type storeReviews = Prisma.storeReviewsModel
+/**
+ * Model discount_codes
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type discount_codes = Prisma.discount_codesModel
 /**
+ * Model favorites
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
+ */
+export type favorites = Prisma.favoritesModel
+/**
  * Model site_config
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type site_config = Prisma.site_configModel
 /**
  * Model products
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type products = Prisma.productsModel

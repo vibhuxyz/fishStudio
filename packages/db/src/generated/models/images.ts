@@ -14,7 +14,8 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model images
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type imagesModel = runtime.Types.Result.DefaultSelection<Prisma.$imagesPayload>
 

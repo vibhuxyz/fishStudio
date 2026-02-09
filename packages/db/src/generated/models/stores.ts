@@ -14,7 +14,8 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model stores
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type storesModel = runtime.Types.Result.DefaultSelection<Prisma.$storesPayload>
 
@@ -543,31 +544,6 @@ export type storesUpdateOneWithoutAvatarNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutAvatarInput, Prisma.storesUpdateWithoutAvatarInput>, Prisma.storesUncheckedUpdateWithoutAvatarInput>
 }
 
-export type storesCreateNestedOneWithoutReviewsInput = {
-  create?: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
-  connectOrCreate?: Prisma.storesCreateOrConnectWithoutReviewsInput
-  connect?: Prisma.storesWhereUniqueInput
-}
-
-export type storesUpdateOneWithoutReviewsNestedInput = {
-  create?: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
-  connectOrCreate?: Prisma.storesCreateOrConnectWithoutReviewsInput
-  upsert?: Prisma.storesUpsertWithoutReviewsInput
-  disconnect?: boolean
-  delete?: Prisma.storesWhereInput | boolean
-  connect?: Prisma.storesWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutReviewsInput, Prisma.storesUpdateWithoutReviewsInput>, Prisma.storesUncheckedUpdateWithoutReviewsInput>
-}
-
-export type NullableFloatFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-  unset?: boolean
-}
-
 export type storesCreateNestedOneWithoutSellersInput = {
   create?: Prisma.XOR<Prisma.storesCreateWithoutSellersInput, Prisma.storesUncheckedCreateWithoutSellersInput>
   connectOrCreate?: Prisma.storesCreateOrConnectWithoutSellersInput
@@ -598,6 +574,31 @@ export type storesUncheckedUpdateOneWithoutSellersNestedInput = {
   delete?: Prisma.storesWhereInput | boolean
   connect?: Prisma.storesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutSellersInput, Prisma.storesUpdateWithoutSellersInput>, Prisma.storesUncheckedUpdateWithoutSellersInput>
+}
+
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+  unset?: boolean
+}
+
+export type storesCreateNestedOneWithoutReviewsInput = {
+  create?: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.storesCreateOrConnectWithoutReviewsInput
+  connect?: Prisma.storesWhereUniqueInput
+}
+
+export type storesUpdateOneWithoutReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.storesCreateOrConnectWithoutReviewsInput
+  upsert?: Prisma.storesUpsertWithoutReviewsInput
+  disconnect?: boolean
+  delete?: Prisma.storesWhereInput | boolean
+  connect?: Prisma.storesWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutReviewsInput, Prisma.storesUpdateWithoutReviewsInput>, Prisma.storesUncheckedUpdateWithoutReviewsInput>
 }
 
 export type storesCreateNestedOneWithoutProductsInput = {
@@ -698,88 +699,6 @@ export type storesUncheckedUpdateWithoutAvatarInput = {
   products?: Prisma.productsUncheckedUpdateManyWithoutStoreNestedInput
 }
 
-export type storesCreateWithoutReviewsInput = {
-  id?: string
-  name: string
-  bio: string
-  coverBanner?: string | null
-  address: string
-  city: string
-  pincode: string
-  opening_hours: string
-  ratings?: number | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  avatar?: Prisma.imagesCreateNestedOneWithoutStoresInput
-  sellers: Prisma.sellersCreateNestedOneWithoutStoreInput
-  products?: Prisma.productsCreateNestedManyWithoutStoreInput
-}
-
-export type storesUncheckedCreateWithoutReviewsInput = {
-  id?: string
-  name: string
-  bio: string
-  coverBanner?: string | null
-  address: string
-  city: string
-  pincode: string
-  opening_hours: string
-  ratings?: number | null
-  sellerId: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  avatar?: Prisma.imagesUncheckedCreateNestedOneWithoutStoresInput
-  products?: Prisma.productsUncheckedCreateNestedManyWithoutStoreInput
-}
-
-export type storesCreateOrConnectWithoutReviewsInput = {
-  where: Prisma.storesWhereUniqueInput
-  create: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
-}
-
-export type storesUpsertWithoutReviewsInput = {
-  update: Prisma.XOR<Prisma.storesUpdateWithoutReviewsInput, Prisma.storesUncheckedUpdateWithoutReviewsInput>
-  create: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
-  where?: Prisma.storesWhereInput
-}
-
-export type storesUpdateToOneWithWhereWithoutReviewsInput = {
-  where?: Prisma.storesWhereInput
-  data: Prisma.XOR<Prisma.storesUpdateWithoutReviewsInput, Prisma.storesUncheckedUpdateWithoutReviewsInput>
-}
-
-export type storesUpdateWithoutReviewsInput = {
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  bio?: Prisma.StringFieldUpdateOperationsInput | string
-  coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address?: Prisma.StringFieldUpdateOperationsInput | string
-  city?: Prisma.StringFieldUpdateOperationsInput | string
-  pincode?: Prisma.StringFieldUpdateOperationsInput | string
-  opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUpdateOneWithoutStoresNestedInput
-  sellers?: Prisma.sellersUpdateOneRequiredWithoutStoreNestedInput
-  products?: Prisma.productsUpdateManyWithoutStoreNestedInput
-}
-
-export type storesUncheckedUpdateWithoutReviewsInput = {
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  bio?: Prisma.StringFieldUpdateOperationsInput | string
-  coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  address?: Prisma.StringFieldUpdateOperationsInput | string
-  city?: Prisma.StringFieldUpdateOperationsInput | string
-  pincode?: Prisma.StringFieldUpdateOperationsInput | string
-  opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
-  ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUncheckedUpdateOneWithoutStoresNestedInput
-  products?: Prisma.productsUncheckedUpdateManyWithoutStoreNestedInput
-}
-
 export type storesCreateWithoutSellersInput = {
   id?: string
   name: string
@@ -859,6 +778,88 @@ export type storesUncheckedUpdateWithoutSellersInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUncheckedUpdateOneWithoutStoresNestedInput
   reviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutShopsNestedInput
+  products?: Prisma.productsUncheckedUpdateManyWithoutStoreNestedInput
+}
+
+export type storesCreateWithoutReviewsInput = {
+  id?: string
+  name: string
+  bio: string
+  coverBanner?: string | null
+  address: string
+  city: string
+  pincode: string
+  opening_hours: string
+  ratings?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  avatar?: Prisma.imagesCreateNestedOneWithoutStoresInput
+  sellers: Prisma.sellersCreateNestedOneWithoutStoreInput
+  products?: Prisma.productsCreateNestedManyWithoutStoreInput
+}
+
+export type storesUncheckedCreateWithoutReviewsInput = {
+  id?: string
+  name: string
+  bio: string
+  coverBanner?: string | null
+  address: string
+  city: string
+  pincode: string
+  opening_hours: string
+  ratings?: number | null
+  sellerId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  avatar?: Prisma.imagesUncheckedCreateNestedOneWithoutStoresInput
+  products?: Prisma.productsUncheckedCreateNestedManyWithoutStoreInput
+}
+
+export type storesCreateOrConnectWithoutReviewsInput = {
+  where: Prisma.storesWhereUniqueInput
+  create: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
+}
+
+export type storesUpsertWithoutReviewsInput = {
+  update: Prisma.XOR<Prisma.storesUpdateWithoutReviewsInput, Prisma.storesUncheckedUpdateWithoutReviewsInput>
+  create: Prisma.XOR<Prisma.storesCreateWithoutReviewsInput, Prisma.storesUncheckedCreateWithoutReviewsInput>
+  where?: Prisma.storesWhereInput
+}
+
+export type storesUpdateToOneWithWhereWithoutReviewsInput = {
+  where?: Prisma.storesWhereInput
+  data: Prisma.XOR<Prisma.storesUpdateWithoutReviewsInput, Prisma.storesUncheckedUpdateWithoutReviewsInput>
+}
+
+export type storesUpdateWithoutReviewsInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  bio?: Prisma.StringFieldUpdateOperationsInput | string
+  coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.StringFieldUpdateOperationsInput | string
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  pincode?: Prisma.StringFieldUpdateOperationsInput | string
+  opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
+  ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  avatar?: Prisma.imagesUpdateOneWithoutStoresNestedInput
+  sellers?: Prisma.sellersUpdateOneRequiredWithoutStoreNestedInput
+  products?: Prisma.productsUpdateManyWithoutStoreNestedInput
+}
+
+export type storesUncheckedUpdateWithoutReviewsInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  bio?: Prisma.StringFieldUpdateOperationsInput | string
+  coverBanner?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.StringFieldUpdateOperationsInput | string
+  city?: Prisma.StringFieldUpdateOperationsInput | string
+  pincode?: Prisma.StringFieldUpdateOperationsInput | string
+  opening_hours?: Prisma.StringFieldUpdateOperationsInput | string
+  ratings?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  avatar?: Prisma.imagesUncheckedUpdateOneWithoutStoresNestedInput
   products?: Prisma.productsUncheckedUpdateManyWithoutStoreNestedInput
 }
 

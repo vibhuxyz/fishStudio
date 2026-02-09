@@ -337,11 +337,6 @@ export type sellersUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type SellersScalarRelationFilter = {
-  is?: Prisma.sellersWhereInput
-  isNot?: Prisma.sellersWhereInput
-}
-
 export type sellersCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -373,6 +368,20 @@ export type sellersMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type SellersScalarRelationFilter = {
+  is?: Prisma.sellersWhereInput
+  isNot?: Prisma.sellersWhereInput
+}
+
+export type sellersCreatefollowingInput = {
+  set: string[]
+}
+
+export type sellersUpdatefollowingInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
 export type sellersCreateNestedOneWithoutStoreInput = {
   create?: Prisma.XOR<Prisma.sellersCreateWithoutStoreInput, Prisma.sellersUncheckedCreateWithoutStoreInput>
   connectOrCreate?: Prisma.sellersCreateOrConnectWithoutStoreInput
@@ -385,15 +394,6 @@ export type sellersUpdateOneRequiredWithoutStoreNestedInput = {
   upsert?: Prisma.sellersUpsertWithoutStoreInput
   connect?: Prisma.sellersWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.sellersUpdateToOneWithWhereWithoutStoreInput, Prisma.sellersUpdateWithoutStoreInput>, Prisma.sellersUncheckedUpdateWithoutStoreInput>
-}
-
-export type sellersCreatefollowingInput = {
-  set: string[]
-}
-
-export type sellersUpdatefollowingInput = {
-  set?: string[]
-  push?: string | string[]
 }
 
 export type sellersCreateWithoutStoreInput = {

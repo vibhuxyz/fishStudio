@@ -3,6 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "prisma:generate": "bunx prisma generate",
+    "prisma:push": "bunx prisma db push",
+    "prisma:seed": "bun run prisma/seed.ts",
+    "db:setup": "bun run prisma:generate && bun run prisma:push && bun run prisma:seed"
+  },
   "devDependencies": {
     "@repo/env-config": "workspace:*",
     "@types/bun": "latest",

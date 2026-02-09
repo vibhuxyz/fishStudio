@@ -14,7 +14,8 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model products
- * 
+ * ///////////////////////////////////////////////////
+ * ///////////////////////////////////////////////////
  */
 export type productsModel = runtime.Types.Result.DefaultSelection<Prisma.$productsPayload>
 
@@ -30,6 +31,7 @@ export type ProductsAvgAggregateOutputType = {
   stock: number | null
   sale_price: number | null
   regular_price: number | null
+  totalSold: number | null
   ratings: number | null
 }
 
@@ -37,6 +39,7 @@ export type ProductsSumAggregateOutputType = {
   stock: number | null
   sale_price: number | null
   regular_price: number | null
+  totalSold: number | null
   ratings: number | null
 }
 
@@ -52,10 +55,11 @@ export type ProductsMinAggregateOutputType = {
   stock: number | null
   sale_price: number | null
   regular_price: number | null
+  totalSold: number | null
   ratings: number | null
-  isDeleted: boolean | null
   cashOnDelivery: string | null
   status: $Enums.productStatus | null
+  isDeleted: boolean | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -74,10 +78,11 @@ export type ProductsMaxAggregateOutputType = {
   stock: number | null
   sale_price: number | null
   regular_price: number | null
+  totalSold: number | null
   ratings: number | null
-  isDeleted: boolean | null
   cashOnDelivery: string | null
   status: $Enums.productStatus | null
+  isDeleted: boolean | null
   deletedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -100,11 +105,12 @@ export type ProductsCountAggregateOutputType = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold: number
   ratings: number
-  isDeleted: number
   cashOnDelivery: number
   discount_codes: number
   status: number
+  isDeleted: number
   deletedAt: number
   createdAt: number
   updatedAt: number
@@ -117,6 +123,7 @@ export type ProductsAvgAggregateInputType = {
   stock?: true
   sale_price?: true
   regular_price?: true
+  totalSold?: true
   ratings?: true
 }
 
@@ -124,6 +131,7 @@ export type ProductsSumAggregateInputType = {
   stock?: true
   sale_price?: true
   regular_price?: true
+  totalSold?: true
   ratings?: true
 }
 
@@ -139,10 +147,11 @@ export type ProductsMinAggregateInputType = {
   stock?: true
   sale_price?: true
   regular_price?: true
+  totalSold?: true
   ratings?: true
-  isDeleted?: true
   cashOnDelivery?: true
   status?: true
+  isDeleted?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -161,10 +170,11 @@ export type ProductsMaxAggregateInputType = {
   stock?: true
   sale_price?: true
   regular_price?: true
+  totalSold?: true
   ratings?: true
-  isDeleted?: true
   cashOnDelivery?: true
   status?: true
+  isDeleted?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -187,11 +197,12 @@ export type ProductsCountAggregateInputType = {
   stock?: true
   sale_price?: true
   regular_price?: true
+  totalSold?: true
   ratings?: true
-  isDeleted?: true
   cashOnDelivery?: true
   discount_codes?: true
   status?: true
+  isDeleted?: true
   deletedAt?: true
   createdAt?: true
   updatedAt?: true
@@ -301,11 +312,12 @@ export type ProductsGroupByOutputType = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold: number
   ratings: number
-  isDeleted: boolean | null
   cashOnDelivery: string | null
   discount_codes: string[]
   status: $Enums.productStatus
+  isDeleted: boolean | null
   deletedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -351,16 +363,18 @@ export type productsWhereInput = {
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
+  totalSold?: Prisma.IntFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
   status?: Prisma.EnumproductStatusFilter<"products"> | $Enums.productStatus
+  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   deletedAt?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"products"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"products"> | Date | string
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
+  favorites?: Prisma.FavoritesListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }
 
@@ -380,16 +394,18 @@ export type productsOrderByWithRelationInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   storeId?: Prisma.SortOrder
   images?: Prisma.imagesOrderByRelationAggregateInput
+  favorites?: Prisma.favoritesOrderByRelationAggregateInput
   store?: Prisma.storesOrderByWithRelationInput
 }
 
@@ -412,16 +428,18 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
+  totalSold?: Prisma.IntFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
   status?: Prisma.EnumproductStatusFilter<"products"> | $Enums.productStatus
+  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   deletedAt?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"products"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"products"> | Date | string
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
+  favorites?: Prisma.FavoritesListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }, "id" | "slug">
 
@@ -441,11 +459,12 @@ export type productsOrderByWithAggregationInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -476,11 +495,12 @@ export type productsScalarWhereWithAggregatesInput = {
   stock?: Prisma.IntWithAggregatesFilter<"products"> | number
   sale_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
   regular_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
+  totalSold?: Prisma.IntWithAggregatesFilter<"products"> | number
   ratings?: Prisma.FloatWithAggregatesFilter<"products"> | number
-  isDeleted?: Prisma.BoolNullableWithAggregatesFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
   status?: Prisma.EnumproductStatusWithAggregatesFilter<"products"> | $Enums.productStatus
+  isDeleted?: Prisma.BoolNullableWithAggregatesFilter<"products"> | boolean | null
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"products"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"products"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"products"> | Date | string
@@ -503,15 +523,17 @@ export type productsCreateInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.imagesCreateNestedManyWithoutProductsInput
+  favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
   store?: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
@@ -531,16 +553,18 @@ export type productsUncheckedCreateInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   storeId: string
   images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+  favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type productsUpdateInput = {
@@ -558,15 +582,17 @@ export type productsUpdateInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
+  favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
   store?: Prisma.storesUpdateOneWithoutProductsNestedInput
 }
 
@@ -585,16 +611,18 @@ export type productsUncheckedUpdateInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
   images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
+  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type productsCreateManyInput = {
@@ -613,11 +641,12 @@ export type productsCreateManyInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -639,11 +668,12 @@ export type productsUpdateManyMutationInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -664,11 +694,12 @@ export type productsUncheckedUpdateManyInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -690,6 +721,11 @@ export type productsOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ProductsScalarRelationFilter = {
+  is?: Prisma.productsWhereInput
+  isNot?: Prisma.productsWhereInput
+}
+
 export type productsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
@@ -706,11 +742,12 @@ export type productsCountOrderByAggregateInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   discount_codes?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -721,6 +758,7 @@ export type productsAvgOrderByAggregateInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
 }
 
@@ -736,10 +774,11 @@ export type productsMaxOrderByAggregateInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -758,10 +797,11 @@ export type productsMinOrderByAggregateInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
-  isDeleted?: Prisma.SortOrder
   cashOnDelivery?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -772,6 +812,7 @@ export type productsSumOrderByAggregateInput = {
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
+  totalSold?: Prisma.SortOrder
   ratings?: Prisma.SortOrder
 }
 
@@ -833,6 +874,20 @@ export type productsUncheckedUpdateManyWithoutStoreNestedInput = {
   deleteMany?: Prisma.productsScalarWhereInput | Prisma.productsScalarWhereInput[]
 }
 
+export type productsCreateNestedOneWithoutFavoritesInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutFavoritesInput, Prisma.productsUncheckedCreateWithoutFavoritesInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutFavoritesInput
+  connect?: Prisma.productsWhereUniqueInput
+}
+
+export type productsUpdateOneRequiredWithoutFavoritesNestedInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutFavoritesInput, Prisma.productsUncheckedCreateWithoutFavoritesInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutFavoritesInput
+  upsert?: Prisma.productsUpsertWithoutFavoritesInput
+  connect?: Prisma.productsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.productsUpdateToOneWithWhereWithoutFavoritesInput, Prisma.productsUpdateWithoutFavoritesInput>, Prisma.productsUncheckedUpdateWithoutFavoritesInput>
+}
+
 export type productsCreatetagsInput = {
   set: string[]
 }
@@ -881,11 +936,6 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type NullableBoolFieldUpdateOperationsInput = {
-  set?: boolean | null
-  unset?: boolean
-}
-
 export type productsUpdatediscount_codesInput = {
   set?: string[]
   push?: string | string[]
@@ -893,6 +943,11 @@ export type productsUpdatediscount_codesInput = {
 
 export type EnumproductStatusFieldUpdateOperationsInput = {
   set?: $Enums.productStatus
+}
+
+export type NullableBoolFieldUpdateOperationsInput = {
+  set?: boolean | null
+  unset?: boolean
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
@@ -916,14 +971,16 @@ export type productsCreateWithoutImagesInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
   store?: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
@@ -943,15 +1000,17 @@ export type productsUncheckedCreateWithoutImagesInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   storeId: string
+  favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type productsCreateOrConnectWithoutImagesInput = {
@@ -985,14 +1044,16 @@ export type productsUpdateWithoutImagesInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
   store?: Prisma.storesUpdateOneWithoutProductsNestedInput
 }
 
@@ -1011,15 +1072,17 @@ export type productsUncheckedUpdateWithoutImagesInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type productsCreateWithoutStoreInput = {
@@ -1038,15 +1101,17 @@ export type productsCreateWithoutStoreInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.imagesCreateNestedManyWithoutProductsInput
+  favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
 }
 
 export type productsUncheckedCreateWithoutStoreInput = {
@@ -1065,15 +1130,17 @@ export type productsUncheckedCreateWithoutStoreInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+  favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type productsCreateOrConnectWithoutStoreInput = {
@@ -1120,15 +1187,146 @@ export type productsScalarWhereInput = {
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
+  totalSold?: Prisma.IntFilter<"products"> | number
   ratings?: Prisma.FloatFilter<"products"> | number
-  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   cashOnDelivery?: Prisma.StringNullableFilter<"products"> | string | null
   discount_codes?: Prisma.StringNullableListFilter<"products">
   status?: Prisma.EnumproductStatusFilter<"products"> | $Enums.productStatus
+  isDeleted?: Prisma.BoolNullableFilter<"products"> | boolean | null
   deletedAt?: Prisma.DateTimeNullableFilter<"products"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"products"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"products"> | Date | string
   storeId?: Prisma.StringFilter<"products"> | string
+}
+
+export type productsCreateWithoutFavoritesInput = {
+  id?: string
+  title: string
+  slug: string
+  category: string
+  subCategory: string
+  short_description: string
+  detailed_description: string
+  tags?: Prisma.productsCreatetagsInput | string[]
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
+  stock: number
+  sale_price: number
+  regular_price: number
+  totalSold?: number
+  ratings?: number
+  cashOnDelivery?: string | null
+  discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
+  status?: $Enums.productStatus
+  isDeleted?: boolean | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  images?: Prisma.imagesCreateNestedManyWithoutProductsInput
+  store?: Prisma.storesCreateNestedOneWithoutProductsInput
+}
+
+export type productsUncheckedCreateWithoutFavoritesInput = {
+  id?: string
+  title: string
+  slug: string
+  category: string
+  subCategory: string
+  short_description: string
+  detailed_description: string
+  tags?: Prisma.productsCreatetagsInput | string[]
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
+  stock: number
+  sale_price: number
+  regular_price: number
+  totalSold?: number
+  ratings?: number
+  cashOnDelivery?: string | null
+  discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
+  status?: $Enums.productStatus
+  isDeleted?: boolean | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  storeId: string
+  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+}
+
+export type productsCreateOrConnectWithoutFavoritesInput = {
+  where: Prisma.productsWhereUniqueInput
+  create: Prisma.XOR<Prisma.productsCreateWithoutFavoritesInput, Prisma.productsUncheckedCreateWithoutFavoritesInput>
+}
+
+export type productsUpsertWithoutFavoritesInput = {
+  update: Prisma.XOR<Prisma.productsUpdateWithoutFavoritesInput, Prisma.productsUncheckedUpdateWithoutFavoritesInput>
+  create: Prisma.XOR<Prisma.productsCreateWithoutFavoritesInput, Prisma.productsUncheckedCreateWithoutFavoritesInput>
+  where?: Prisma.productsWhereInput
+}
+
+export type productsUpdateToOneWithWhereWithoutFavoritesInput = {
+  where?: Prisma.productsWhereInput
+  data: Prisma.XOR<Prisma.productsUpdateWithoutFavoritesInput, Prisma.productsUncheckedUpdateWithoutFavoritesInput>
+}
+
+export type productsUpdateWithoutFavoritesInput = {
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  short_description?: Prisma.StringFieldUpdateOperationsInput | string
+  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.productsUpdatetagsInput | string[]
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
+  ratings?: Prisma.FloatFieldUpdateOperationsInput | number
+  cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
+  status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
+  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
+}
+
+export type productsUncheckedUpdateWithoutFavoritesInput = {
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  subCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  short_description?: Prisma.StringFieldUpdateOperationsInput | string
+  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
+  tags?: Prisma.productsUpdatetagsInput | string[]
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stock?: Prisma.IntFieldUpdateOperationsInput | number
+  sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
+  ratings?: Prisma.FloatFieldUpdateOperationsInput | number
+  cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
+  status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  storeId?: Prisma.StringFieldUpdateOperationsInput | string
+  images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
 }
 
 export type productsCreateManyStoreInput = {
@@ -1147,11 +1345,12 @@ export type productsCreateManyStoreInput = {
   stock: number
   sale_price: number
   regular_price: number
+  totalSold?: number
   ratings?: number
-  isDeleted?: boolean | null
   cashOnDelivery?: string | null
   discount_codes?: Prisma.productsCreatediscount_codesInput | string[]
   status?: $Enums.productStatus
+  isDeleted?: boolean | null
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1172,15 +1371,17 @@ export type productsUpdateWithoutStoreInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
+  favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
 }
 
 export type productsUncheckedUpdateWithoutStoreInput = {
@@ -1198,15 +1399,17 @@ export type productsUncheckedUpdateWithoutStoreInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
+  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type productsUncheckedUpdateManyWithoutStoreInput = {
@@ -1224,11 +1427,12 @@ export type productsUncheckedUpdateManyWithoutStoreInput = {
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
+  totalSold?: Prisma.IntFieldUpdateOperationsInput | number
   ratings?: Prisma.FloatFieldUpdateOperationsInput | number
-  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   cashOnDelivery?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   discount_codes?: Prisma.productsUpdatediscount_codesInput | string[]
   status?: Prisma.EnumproductStatusFieldUpdateOperationsInput | $Enums.productStatus
+  isDeleted?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1241,10 +1445,12 @@ export type productsUncheckedUpdateManyWithoutStoreInput = {
 
 export type ProductsCountOutputType = {
   images: number
+  favorites: number
 }
 
 export type ProductsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | ProductsCountOutputTypeCountImagesArgs
+  favorites?: boolean | ProductsCountOutputTypeCountFavoritesArgs
 }
 
 /**
@@ -1264,6 +1470,13 @@ export type ProductsCountOutputTypeCountImagesArgs<ExtArgs extends runtime.Types
   where?: Prisma.imagesWhereInput
 }
 
+/**
+ * ProductsCountOutputType without action
+ */
+export type ProductsCountOutputTypeCountFavoritesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.favoritesWhereInput
+}
+
 
 export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1281,16 +1494,18 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   stock?: boolean
   sale_price?: boolean
   regular_price?: boolean
+  totalSold?: boolean
   ratings?: boolean
-  isDeleted?: boolean
   cashOnDelivery?: boolean
   discount_codes?: boolean
   status?: boolean
+  isDeleted?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   storeId?: boolean
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
+  favorites?: boolean | Prisma.products$favoritesArgs<ExtArgs>
   store?: boolean | Prisma.products$storeArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["products"]>
@@ -1313,20 +1528,22 @@ export type productsSelectScalar = {
   stock?: boolean
   sale_price?: boolean
   regular_price?: boolean
+  totalSold?: boolean
   ratings?: boolean
-  isDeleted?: boolean
   cashOnDelivery?: boolean
   discount_codes?: boolean
   status?: boolean
+  isDeleted?: boolean
   deletedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   storeId?: boolean
 }
 
-export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "detailed_description" | "tags" | "sizes" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "stock" | "sale_price" | "regular_price" | "ratings" | "isDeleted" | "cashOnDelivery" | "discount_codes" | "status" | "deletedAt" | "createdAt" | "updatedAt" | "storeId", ExtArgs["result"]["products"]>
+export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "detailed_description" | "tags" | "sizes" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "stock" | "sale_price" | "regular_price" | "totalSold" | "ratings" | "cashOnDelivery" | "discount_codes" | "status" | "isDeleted" | "deletedAt" | "createdAt" | "updatedAt" | "storeId", ExtArgs["result"]["products"]>
 export type productsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
+  favorites?: boolean | Prisma.products$favoritesArgs<ExtArgs>
   store?: boolean | Prisma.products$storeArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1335,6 +1552,7 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "products"
   objects: {
     images: Prisma.$imagesPayload<ExtArgs>[]
+    favorites: Prisma.$favoritesPayload<ExtArgs>[]
     store: Prisma.$storesPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -1353,11 +1571,12 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     stock: number
     sale_price: number
     regular_price: number
+    totalSold: number
     ratings: number
-    isDeleted: boolean | null
     cashOnDelivery: string | null
     discount_codes: string[]
     status: $Enums.productStatus
+    isDeleted: boolean | null
     deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
@@ -1726,6 +1945,7 @@ readonly fields: productsFieldRefs;
 export interface Prisma__productsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   images<T extends Prisma.products$imagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  favorites<T extends Prisma.products$favoritesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$favoritesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$favoritesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   store<T extends Prisma.products$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$storeArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1771,11 +1991,12 @@ export interface productsFieldRefs {
   readonly stock: Prisma.FieldRef<"products", 'Int'>
   readonly sale_price: Prisma.FieldRef<"products", 'Float'>
   readonly regular_price: Prisma.FieldRef<"products", 'Float'>
+  readonly totalSold: Prisma.FieldRef<"products", 'Int'>
   readonly ratings: Prisma.FieldRef<"products", 'Float'>
-  readonly isDeleted: Prisma.FieldRef<"products", 'Boolean'>
   readonly cashOnDelivery: Prisma.FieldRef<"products", 'String'>
   readonly discount_codes: Prisma.FieldRef<"products", 'String[]'>
   readonly status: Prisma.FieldRef<"products", 'productStatus'>
+  readonly isDeleted: Prisma.FieldRef<"products", 'Boolean'>
   readonly deletedAt: Prisma.FieldRef<"products", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"products", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"products", 'DateTime'>
@@ -2171,6 +2392,30 @@ export type products$imagesArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.ImagesScalarFieldEnum | Prisma.ImagesScalarFieldEnum[]
+}
+
+/**
+ * products.favorites
+ */
+export type products$favoritesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the favorites
+   */
+  select?: Prisma.favoritesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the favorites
+   */
+  omit?: Prisma.favoritesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.favoritesInclude<ExtArgs> | null
+  where?: Prisma.favoritesWhereInput
+  orderBy?: Prisma.favoritesOrderByWithRelationInput | Prisma.favoritesOrderByWithRelationInput[]
+  cursor?: Prisma.favoritesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FavoritesScalarFieldEnum | Prisma.FavoritesScalarFieldEnum[]
 }
 
 /**
