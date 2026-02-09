@@ -1113,10 +1113,6 @@ export const Site_configScalarFieldEnum = {
   id: 'id',
   categories: 'categories',
   subCategories: 'subCategories',
-  sizes: 'sizes',
-  cuttingTypes: 'cuttingTypes',
-  pieceSizes: 'pieceSizes',
-  processingWeightLoss: 'processingWeightLoss',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

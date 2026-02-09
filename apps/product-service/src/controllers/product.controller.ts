@@ -63,10 +63,10 @@ export const getCategories = async (
       success: true,
       categories: config.categories,
       subCategories: config.subCategories,
-      sizes: config.sizes,
-      cuttingTypes: config.cuttingTypes,
-      pieceSizes: config.pieceSizes,
-      processingWeightLoss: config.processingWeightLoss,
+      // sizes: config.sizes,
+      // cuttingTypes: config.cuttingTypes,
+      // pieceSizes: config.pieceSizes,
+      // processingWeightLoss: config.processingWeightLoss,
     });
   } catch (error) {
     return next(error);
@@ -229,12 +229,151 @@ export const deleteProductImage = async (
 };
 
 //create product
+// export const createProduct = async (
+//   req: any,
+//   res: Response,
+//   next: NextFunction,
+//   ) => {
+//   try {
+//     const {
+//       title,
+//       short_description,
+//       detailed_description,
+//       sizes,
+//       cuttingTypes,
+//       pieceSizes,
+//       processingWeightLoss,
+//       slug,
+//       tags,
+//       cash_on_delivery,
+//       category,
+//       discountCodes = [],
+//       stock,
+//       sale_price,
+//       regular_price,
+//       subCategory,
+
+//       images = [],
+//     } = req.body;
+
+//     const requiredFields = {
+//       title,
+//       sizes,
+//       cuttingTypes,
+//       pieceSizes,
+//       processingWeightLoss,
+//       slug,
+//       short_description,
+//       category,
+//       subCategory,
+//       sale_price,
+//       tags,
+//       regular_price,
+//       stock,
+//       detailed_description,
+//     };
+
+//     const missingFields = Object.entries(requiredFields)
+//       .filter(
+//         ([_, value]) => value === undefined || value === null || value === "",
+//       )
+//       .map(([key]) => key);
+
+//     if (missingFields.length > 0) {
+//       return next(
+//         new ValidationError(
+//           `Missing required fields: ${missingFields.join(", ")}`,
+//         ),
+//       );
+//     }
+
+//     if (!req.seller.id) {
+//       return next(new ValidationError("Only seller can create products!"));
+//     }
+
+//     // ✅ FIXED: Proper store ID validation
+//     const storeId = req.seller?.storeId || req.seller?.store?.id;
+//     if (!storeId) {
+//       return next(
+//         new ValidationError(
+//           "Seller store information not found! Please contact support.",
+//         ),
+//       );
+//     }
+
+//     const slugChecking = await prisma.products.findUnique({
+//       where: {
+//         slug,
+//       },
+//     });
+
+//     if (slugChecking) {
+//       return next(
+//         new ValidationError(
+//           "Slug already exists! Please use a different slug!",
+//         ),
+//       );
+//     }
+
+//     const newProduct = await prisma.products.create({
+//       data: {
+//         title,
+//         short_description,
+//         detailed_description,
+//         category,
+//         subCategory,
+//         sizes,
+//         cuttingTypes,
+//         pieceSizes,
+//         processingWeightLoss,
+//         cashOnDelivery: cash_on_delivery,
+//         slug,
+//         storeId,
+//         tags: Array.isArray(tags) ? tags : tags.split(","),
+
+//         discount_codes:
+//           Array.isArray(discountCodes) && discountCodes.length > 0
+//             ? discountCodes
+//             : [],
+
+//         stock: parseInt(stock),
+//         sale_price: parseFloat(sale_price),
+//         regular_price: parseFloat(regular_price),
+
+//         ...(images.length > 0 && {
+//           images: {
+//             create: images
+//               .filter((img: any) => img && img.fileId && img.file_url)
+//               .map((img: any) => ({
+//                 file_id: img.fileId,
+//                 url: img.file_url,
+//               })),
+//           },
+//         }),
+//       },
+//       include: { images: true },
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Product created successfully!",
+//       newProduct,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return next(error);
+//   }
+// };
+//
 export const createProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
   ) => {
   try {
+    /**
+     * 1️⃣ Extract fields from request body
+     */
     const {
       title,
       short_description,
@@ -247,36 +386,46 @@ export const createProduct = async (
       tags,
       cash_on_delivery,
       category,
+      subCategory,
       discountCodes = [],
       stock,
       sale_price,
       regular_price,
-      subCategory,
-
       images = [],
     } = req.body;
 
+    /**
+     * 2️⃣ Validate required fields
+     */
     const requiredFields = {
       title,
       sizes,
       cuttingTypes,
       pieceSizes,
-      processingWeightLoss,
       slug,
       short_description,
       category,
       subCategory,
-      sale_price,
       tags,
       regular_price,
+      sale_price,
       stock,
       detailed_description,
+      cash_on_delivery,
     };
 
     const missingFields = Object.entries(requiredFields)
-      .filter(
-        ([_, value]) => value === undefined || value === null || value === "",
-      )
+      .filter(([_, value]) => {
+        if (value === undefined || value === null) return true;
+
+        // handle strings
+        if (typeof value === "string" && value.trim() === "") return true;
+
+        // handle arrays (THIS FIXES YOUR BUG)
+        if (Array.isArray(value) && value.length === 0) return true;
+
+        return false;
+      })
       .map(([key]) => key);
 
     if (missingFields.length > 0) {
@@ -287,12 +436,14 @@ export const createProduct = async (
       );
     }
 
-    if (!req.seller.id) {
+    /**
+     * 3️⃣ Seller & store validation
+     */
+    if (!req.seller?.id) {
       return next(new ValidationError("Only seller can create products!"));
     }
 
-    // ✅ FIXED: Proper store ID validation
-    const storeId = req.seller?.storeId || req.seller?.store?.id;
+    const storeId = req.seller.storeId || req.seller?.store?.id;
     if (!storeId) {
       return next(
         new ValidationError(
@@ -301,10 +452,11 @@ export const createProduct = async (
       );
     }
 
+    /**
+     * 4️⃣ Slug uniqueness check
+     */
     const slugChecking = await prisma.products.findUnique({
-      where: {
-        slug,
-      },
+      where: { slug },
     });
 
     if (slugChecking) {
@@ -315,31 +467,50 @@ export const createProduct = async (
       );
     }
 
+    /**
+     * 5️⃣ Normalize dynamic fields
+     * Convert [{ value: "500g" }] → ["500g"]
+     */
+    const normalizedSizes = sizes.map((s: any) => s.value);
+    const normalizedPieceSizes = pieceSizes.map((p: any) => p.value);
+    const normalizedCuttingTypes = cuttingTypes.map((c: any) => c.value);
+
+    /**
+     * 6️⃣ Create product
+     */
     const newProduct = await prisma.products.create({
       data: {
         title,
         short_description,
         detailed_description,
+
         category,
         subCategory,
-        sizes,
-        cuttingTypes,
-        pieceSizes,
-        processingWeightLoss,
+
+        sizes: normalizedSizes,
+        pieceSizes: normalizedPieceSizes,
+        cuttingTypes: normalizedCuttingTypes,
+
+        ...(processingWeightLoss && { processingWeightLoss }),
+
         cashOnDelivery: cash_on_delivery,
         slug,
         storeId,
-        tags: Array.isArray(tags) ? tags : tags.split(","),
 
-        discount_codes:
-          Array.isArray(discountCodes) && discountCodes.length > 0
-            ? discountCodes
-            : [],
+        tags: Array.isArray(tags)
+          ? tags
+          : tags.split(",").map((t: string) => t.trim()),
 
-        stock: parseInt(stock),
-        sale_price: parseFloat(sale_price),
-        regular_price: parseFloat(regular_price),
+        discount_codes: Array.isArray(discountCodes) ? discountCodes : [],
 
+        stock: Number(stock),
+        sale_price: Number(sale_price),
+        regular_price: Number(regular_price),
+
+        /**
+         * 7️⃣ Images (optional)
+         * Expecting pre-uploaded images with fileId & file_url
+         */
         ...(images.length > 0 && {
           images: {
             create: images
@@ -354,6 +525,9 @@ export const createProduct = async (
       include: { images: true },
     });
 
+    /**
+     * 8️⃣ Success response
+     */
     res.status(201).json({
       success: true,
       message: "Product created successfully!",

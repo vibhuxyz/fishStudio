@@ -3,47 +3,37 @@ import { Controller, useFieldArray } from "react-hook-form";
 import Input from "../input";
 import { PlusCircle, Trash2 } from "lucide-react";
 
-const CustomProperties = ({ control, errors }: any) => {
+const CoustomcuttingType = ({ control, errors }: any) => {
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "custom_properties",
+    name: "cuttingType",
   });
 
   return (
     <div>
       <label className="block font-semibold text-gray-300 mb-1">
-        Custom 
+        cuttingType
       </label>
+
       <div className="flex flex-col gap-3">
-        {fields?.map((item, index) => (
+        {fields.map((item, index) => (
           <div key={item.id} className="flex gap-2 items-center">
             <Controller
-              name={`custom_properties.${index}.name`}
+              name={`cuttingType.${index}.value`}
               control={control}
-              rules={{ required: "Property name is required" }}
+              rules={{ required: "cuttingType is required" }}
               render={({ field }) => (
                 <Input
-                  label="Property Name"
-                  placeholder="e.g., Color, Size, Brand"
+                  label={`cuttingType ${index + 1}`}
+                  placeholder="e.g., S, M, L or 250g, 1kg"
                   {...field}
                 />
               )}
             />
-            <Controller
-              name={`custom_properties.${index}.value`}
-              control={control}
-              rules={{ required: "Value is required" }}
-              render={({ field }) => (
-                <Input
-                  label="Value"
-                  placeholder="e.g., Red, Large, Apple"
-                  {...field}
-                />
-              )}
-            />
+
             <button
               type="button"
-              className="text-red-500 hover:text-red-700"
+              className="text-red-500 hover:text-red-700 mt-6"
               onClick={() => remove(index)}
             >
               <Trash2 size={20} />
@@ -52,19 +42,22 @@ const CustomProperties = ({ control, errors }: any) => {
         ))}
 
         <button
+          type="button"
           className="flex items-center gap-2 text-blue-500 hover:text-blue-600"
-          onClick={() => append({ name: "", value: "" })}
+          onClick={() => append({ value: "" })}
         >
-          <PlusCircle size={20} /> Add Property
+          <PlusCircle size={20} />
+          Add CuttingType
         </button>
       </div>
-      {errors?.custom_properties && (
+
+      {errors?.cuttingType && (
         <p className="text-red-500 text-xs mt-1">
-          {errors.custom_properties.message as string}
+          At least one CuttingType is required
         </p>
       )}
     </div>
   );
 };
 
-export default CustomProperties;
+export default CoustomcuttingType;

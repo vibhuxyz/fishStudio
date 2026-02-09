@@ -52,14 +52,12 @@ model stores {
   id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   bio           String
-  // category      String
   avatar        images?
   coverBanner   String?
   address       String
   city          String
   pincode       String
   opening_hours String
-  // socialLinks   Json[]
   ratings       Float?         @default(0)
   reviews       storeReviews[]
   sellerId      String         @unique @db.ObjectId
@@ -101,15 +99,11 @@ enum productStatus {
 }
 
 model site_config {
-  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
-  categories           String[]
-  subCategories        Json
-  sizes                Json
-  cuttingTypes         Json
-  pieceSizes           Json
-  processingWeightLoss Json
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories    String[]
+  subCategories Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("site_config")
 }
@@ -125,10 +119,10 @@ model products {
   detailed_description String
   images               images[]
   tags                 String[]
-  sizes                String
-  cuttingTypes         String
-  pieceSizes           String?
-  processingWeightLoss Json
+  sizes                String[]
+  cuttingTypes         String[]
+  pieceSizes           String[]
+  processingWeightLoss String?
   stock                Int
   sale_price           Float
   regular_price        Float

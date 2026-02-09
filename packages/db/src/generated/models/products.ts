@@ -48,9 +48,7 @@ export type ProductsMinAggregateOutputType = {
   subCategory: string | null
   short_description: string | null
   detailed_description: string | null
-  sizes: string | null
-  cuttingTypes: string | null
-  pieceSizes: string | null
+  processingWeightLoss: string | null
   stock: number | null
   sale_price: number | null
   regular_price: number | null
@@ -72,9 +70,7 @@ export type ProductsMaxAggregateOutputType = {
   subCategory: string | null
   short_description: string | null
   detailed_description: string | null
-  sizes: string | null
-  cuttingTypes: string | null
-  pieceSizes: string | null
+  processingWeightLoss: string | null
   stock: number | null
   sale_price: number | null
   regular_price: number | null
@@ -139,9 +135,7 @@ export type ProductsMinAggregateInputType = {
   subCategory?: true
   short_description?: true
   detailed_description?: true
-  sizes?: true
-  cuttingTypes?: true
-  pieceSizes?: true
+  processingWeightLoss?: true
   stock?: true
   sale_price?: true
   regular_price?: true
@@ -163,9 +157,7 @@ export type ProductsMaxAggregateInputType = {
   subCategory?: true
   short_description?: true
   detailed_description?: true
-  sizes?: true
-  cuttingTypes?: true
-  pieceSizes?: true
+  processingWeightLoss?: true
   stock?: true
   sale_price?: true
   regular_price?: true
@@ -302,10 +294,10 @@ export type ProductsGroupByOutputType = {
   short_description: string
   detailed_description: string
   tags: string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes: string | null
-  processingWeightLoss: runtime.JsonValue
+  sizes: string[]
+  cuttingTypes: string[]
+  pieceSizes: string[]
+  processingWeightLoss: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -352,10 +344,10 @@ export type productsWhereInput = {
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringFilter<"products"> | string
-  cuttingTypes?: Prisma.StringFilter<"products"> | string
-  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
-  processingWeightLoss?: Prisma.JsonFilter<"products">
+  sizes?: Prisma.StringNullableListFilter<"products">
+  cuttingTypes?: Prisma.StringNullableListFilter<"products">
+  pieceSizes?: Prisma.StringNullableListFilter<"products">
+  processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
@@ -413,10 +405,10 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringFilter<"products"> | string
-  cuttingTypes?: Prisma.StringFilter<"products"> | string
-  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
-  processingWeightLoss?: Prisma.JsonFilter<"products">
+  sizes?: Prisma.StringNullableListFilter<"products">
+  cuttingTypes?: Prisma.StringNullableListFilter<"products">
+  pieceSizes?: Prisma.StringNullableListFilter<"products">
+  processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
@@ -477,10 +469,10 @@ export type productsScalarWhereWithAggregatesInput = {
   short_description?: Prisma.StringWithAggregatesFilter<"products"> | string
   detailed_description?: Prisma.StringWithAggregatesFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringWithAggregatesFilter<"products"> | string
-  cuttingTypes?: Prisma.StringWithAggregatesFilter<"products"> | string
-  pieceSizes?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
-  processingWeightLoss?: Prisma.JsonWithAggregatesFilter<"products">
+  sizes?: Prisma.StringNullableListFilter<"products">
+  cuttingTypes?: Prisma.StringNullableListFilter<"products">
+  pieceSizes?: Prisma.StringNullableListFilter<"products">
+  processingWeightLoss?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
   stock?: Prisma.IntWithAggregatesFilter<"products"> | number
   sale_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
   regular_price?: Prisma.FloatWithAggregatesFilter<"products"> | number
@@ -504,10 +496,10 @@ export type productsCreateInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -532,10 +524,10 @@ export type productsUncheckedCreateInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -559,10 +551,10 @@ export type productsUpdateInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -586,10 +578,10 @@ export type productsUncheckedUpdateInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -614,10 +606,10 @@ export type productsCreateManyInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -640,10 +632,10 @@ export type productsUpdateManyMutationInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -665,10 +657,10 @@ export type productsUncheckedUpdateManyInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -740,9 +732,7 @@ export type productsMaxOrderByAggregateInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  sizes?: Prisma.SortOrder
-  cuttingTypes?: Prisma.SortOrder
-  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
@@ -764,9 +754,7 @@ export type productsMinOrderByAggregateInput = {
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
   detailed_description?: Prisma.SortOrder
-  sizes?: Prisma.SortOrder
-  cuttingTypes?: Prisma.SortOrder
-  pieceSizes?: Prisma.SortOrder
+  processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
   regular_price?: Prisma.SortOrder
@@ -849,11 +837,38 @@ export type productsCreatetagsInput = {
   set: string[]
 }
 
+export type productsCreatesizesInput = {
+  set: string[]
+}
+
+export type productsCreatecuttingTypesInput = {
+  set: string[]
+}
+
+export type productsCreatepieceSizesInput = {
+  set: string[]
+}
+
 export type productsCreatediscount_codesInput = {
   set: string[]
 }
 
 export type productsUpdatetagsInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type productsUpdatesizesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type productsUpdatecuttingTypesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type productsUpdatepieceSizesInput = {
   set?: string[]
   push?: string | string[]
 }
@@ -894,10 +909,10 @@ export type productsCreateWithoutImagesInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -921,10 +936,10 @@ export type productsUncheckedCreateWithoutImagesInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -963,10 +978,10 @@ export type productsUpdateWithoutImagesInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -989,10 +1004,10 @@ export type productsUncheckedUpdateWithoutImagesInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -1016,10 +1031,10 @@ export type productsCreateWithoutStoreInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -1043,10 +1058,10 @@ export type productsUncheckedCreateWithoutStoreInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -1098,10 +1113,10 @@ export type productsScalarWhereInput = {
   short_description?: Prisma.StringFilter<"products"> | string
   detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
-  sizes?: Prisma.StringFilter<"products"> | string
-  cuttingTypes?: Prisma.StringFilter<"products"> | string
-  pieceSizes?: Prisma.StringNullableFilter<"products"> | string | null
-  processingWeightLoss?: Prisma.JsonFilter<"products">
+  sizes?: Prisma.StringNullableListFilter<"products">
+  cuttingTypes?: Prisma.StringNullableListFilter<"products">
+  pieceSizes?: Prisma.StringNullableListFilter<"products">
+  processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
   stock?: Prisma.IntFilter<"products"> | number
   sale_price?: Prisma.FloatFilter<"products"> | number
   regular_price?: Prisma.FloatFilter<"products"> | number
@@ -1125,10 +1140,10 @@ export type productsCreateManyStoreInput = {
   short_description: string
   detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
-  sizes: string
-  cuttingTypes: string
-  pieceSizes?: string | null
-  processingWeightLoss: runtime.InputJsonValue
+  sizes?: Prisma.productsCreatesizesInput | string[]
+  cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
+  processingWeightLoss?: string | null
   stock: number
   sale_price: number
   regular_price: number
@@ -1150,10 +1165,10 @@ export type productsUpdateWithoutStoreInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -1176,10 +1191,10 @@ export type productsUncheckedUpdateWithoutStoreInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -1202,10 +1217,10 @@ export type productsUncheckedUpdateManyWithoutStoreInput = {
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
   detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
-  sizes?: Prisma.StringFieldUpdateOperationsInput | string
-  cuttingTypes?: Prisma.StringFieldUpdateOperationsInput | string
-  pieceSizes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  processingWeightLoss?: runtime.InputJsonValue | runtime.InputJsonValue
+  sizes?: Prisma.productsUpdatesizesInput | string[]
+  cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
+  pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
+  processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stock?: Prisma.IntFieldUpdateOperationsInput | number
   sale_price?: Prisma.FloatFieldUpdateOperationsInput | number
   regular_price?: Prisma.FloatFieldUpdateOperationsInput | number
@@ -1331,10 +1346,10 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     short_description: string
     detailed_description: string
     tags: string[]
-    sizes: string
-    cuttingTypes: string
-    pieceSizes: string | null
-    processingWeightLoss: runtime.JsonValue
+    sizes: string[]
+    cuttingTypes: string[]
+    pieceSizes: string[]
+    processingWeightLoss: string | null
     stock: number
     sale_price: number
     regular_price: number
@@ -1749,10 +1764,10 @@ export interface productsFieldRefs {
   readonly short_description: Prisma.FieldRef<"products", 'String'>
   readonly detailed_description: Prisma.FieldRef<"products", 'String'>
   readonly tags: Prisma.FieldRef<"products", 'String[]'>
-  readonly sizes: Prisma.FieldRef<"products", 'String'>
-  readonly cuttingTypes: Prisma.FieldRef<"products", 'String'>
-  readonly pieceSizes: Prisma.FieldRef<"products", 'String'>
-  readonly processingWeightLoss: Prisma.FieldRef<"products", 'Json'>
+  readonly sizes: Prisma.FieldRef<"products", 'String[]'>
+  readonly cuttingTypes: Prisma.FieldRef<"products", 'String[]'>
+  readonly pieceSizes: Prisma.FieldRef<"products", 'String[]'>
+  readonly processingWeightLoss: Prisma.FieldRef<"products", 'String'>
   readonly stock: Prisma.FieldRef<"products", 'Int'>
   readonly sale_price: Prisma.FieldRef<"products", 'Float'>
   readonly regular_price: Prisma.FieldRef<"products", 'Float'>
