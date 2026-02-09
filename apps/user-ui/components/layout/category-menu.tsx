@@ -15,8 +15,19 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { siteConfig, categoryKeyMap } from "@/lib/data";
+import { useCategories } from "@/hooks/useCategories";
 import type { CategoryKey } from "@/lib/types";
+
+const categoryKeyMap: Record<string, string> = {
+  "Fresh Water": "freshWater",
+  "Sea Fish": "seaFish",
+  "Premium Sea Food": "premiumSeaFood",
+  "Meat & Poultry": "meatPoultry",
+  "Fry Ready": "fryReady",
+  "Moms Magic": "momsMagic",
+  "Rice & Spice": "riceSpice",
+  "Pet Serve": "petServe",
+};
 
 const categoryIcons: Record<string, React.ReactNode> = {
   "Fresh Water": <Fish className="h-5 w-5" />,
@@ -33,12 +44,9 @@ function getCategorySlug(cat: string) {
   return encodeURIComponent(cat.toLowerCase().replace(/[\s&]+/g, "-"));
 }
 
-function getSubCategories(cat: string): string[] {
-  const key = categoryKeyMap[cat] as CategoryKey | undefined;
-  if (!key) return [];
-  const defs = siteConfig.subCategories[key];
-  if (!defs) return [];
-  return defs.map((d) => d.name);
+interface CategoryMenuProps {
+  variant?: "horizontal" | "dropdown";
+  onClose?: () => void;
 }
 
 interface CategoryMenuProps {
@@ -50,12 +58,25 @@ export function CategoryMenu({
   variant = "horizontal",
   onClose,
 }: CategoryMenuProps) {
+  const { data, isLoading } = useCategories();
+
+  const categories: string[] = data?.categories ?? [];
+  const subCategoriesData: Record<string, string[]> = data?.subCategories ?? {};
+
+  const getSubCategories = useCallback(
+    (cat: string) => {
+      const key = categoryKeyMap[cat];
+      if (!key) return [];
+      return subCategoriesData[key] || [];
+    },
+    [subCategoriesData],
+  );
+
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  const categories = siteConfig.categories;
 
   const keepOpen = useCallback(() => {
     if (closeTimerRef.current) {
@@ -76,7 +97,7 @@ export function CategoryMenu({
       keepOpen();
       setActiveCategory(cat);
     },
-    [keepOpen]
+    [keepOpen],
   );
 
   const checkScrollButtons = useCallback(() => {
@@ -107,15 +128,16 @@ export function CategoryMenu({
     });
   };
 
+  if (isLoading) {
+    return <CategoryMenuSkeleton />;
+  }
+
   /* Horizontal variant */
   if (variant === "horizontal") {
     const subCats = activeCategory ? getSubCategories(activeCategory) : [];
 
     return (
-      <div
-        className="relative"
-        onMouseLeave={startClose}
-      >
+      <div className="relative" onMouseLeave={startClose}>
         {/* Category nav row */}
         <div className="relative flex h-12 items-center border-t border-border bg-background">
           {canScrollLeft && (
@@ -206,10 +228,7 @@ export function CategoryMenu({
   const subCats = activeCategory ? getSubCategories(activeCategory) : [];
 
   return (
-    <div
-      className="flex min-h-[350px] w-[520px]"
-      onMouseLeave={startClose}
-    >
+    <div className="flex min-h-[350px] w-[520px]" onMouseLeave={startClose}>
       {/* Left column - categories */}
       <div className="w-56 border-r border-border bg-background py-2">
         {categories.map((cat) => (
@@ -275,7 +294,7 @@ export function CategoryMenu({
 
 export function CategoryMenuSkeleton() {
   return (
-    <div className="flex h-12 items-center gap-2 px-10">
+    <div className="flex justify-center h-12 items-center gap-2 px-10">
       {Array.from({ length: 6 }).map((_, i) => (
         <Skeleton key={i} className="h-9 w-28 rounded-full" />
       ))}

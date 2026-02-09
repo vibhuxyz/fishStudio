@@ -14,10 +14,6 @@ const initializeConfig = async () => {
             "Fresh Water",
             "Sea Fish",
             "Premium Sea Food",
-            "Meat & Poultry",
-            "Fry Ready",
-            "Moms Magic",
-            "Rice & Spice",
             "Pet Serve",
           ],
 
@@ -52,45 +48,6 @@ const initializeConfig = async () => {
               "Premium Fish Selection",
               "Sea Urchin",
               "Scallops",
-            ],
-
-            // Meat and Poultry products
-            meatPoultry: [
-              "Chicken - Whole",
-              "Chicken - Pieces",
-              "Mutton",
-              "Lamb",
-              "Goat",
-              "Beef",
-              "Pork",
-            ],
-
-            // Pre-prepared frying items
-            fryReady: [
-              "Fish Fry Mix",
-              "Prawn Fry Mix",
-              "Chicken Fry Mix",
-              "Fish Fingers",
-              "Shrimp Cutlets",
-            ],
-
-            // Special prepared/cooked items (Moms Magic)
-            momsMagic: [
-              "Fish Curry Mix",
-              "Fish Tandoori Mix",
-              "Prawn Biryani Kit",
-              "Fish Masala",
-              "Ready to Cook Fish",
-            ],
-
-            // Rice and spice combinations
-            riceSpice: [
-              "Basmati Rice",
-              "Biryani Rice",
-              "Fish Masala Powder",
-              "Fry Masala",
-              "Curry Powder",
-              "Spice Blends",
             ],
 
             // Pet food products
