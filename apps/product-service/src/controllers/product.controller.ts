@@ -178,193 +178,35 @@ export const deleteDiscountCode = async (
 
 //upload product image
 export const uploadProductImage = async (
-  req: any,
+  req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
+    // ⚠️ Note: 'fileName' here actually contains the base64 image data string
     const { fileName } = req.body;
 
     if (!fileName) {
-      return next(new ValidationError("File name is required"));
+      return next(new ValidationError("File data is required"));
     }
 
     const response = await imagekit.upload({
-      file: fileName,
+      file: fileName, // Base64 string
       fileName: `product-${Date.now()}.jpg`,
       folder: "/products",
     });
 
     res.status(201).json({
-      file_url: response.url,
-      fileName: response.fileId,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-//delete product image
-export const deleteProductImage = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { fileId } = req.body;
-    if (!fileId) {
-      return next(new ValidationError("File id is required"));
-    }
-
-    const response = await imagekit.deleteFile(fileId);
-
-    res.status(201).json({
       success: true,
-      message: "Product image deleted successfully!",
-      response,
+      file_url: response.url,
+      // 👇 CHANGE: Return 'fileId' clearly so frontend can use it
+      fileId: response.fileId,
     });
   } catch (error) {
     next(error);
   }
 };
 
-//create product
-// export const createProduct = async (
-//   req: any,
-//   res: Response,
-//   next: NextFunction,
-//   ) => {
-//   try {
-//     const {
-//       title,
-//       short_description,
-//       detailed_description,
-//       sizes,
-//       cuttingTypes,
-//       pieceSizes,
-//       processingWeightLoss,
-//       slug,
-//       tags,
-//       cash_on_delivery,
-//       category,
-//       discountCodes = [],
-//       stock,
-//       sale_price,
-//       regular_price,
-//       subCategory,
-
-//       images = [],
-//     } = req.body;
-
-//     const requiredFields = {
-//       title,
-//       sizes,
-//       cuttingTypes,
-//       pieceSizes,
-//       processingWeightLoss,
-//       slug,
-//       short_description,
-//       category,
-//       subCategory,
-//       sale_price,
-//       tags,
-//       regular_price,
-//       stock,
-//       detailed_description,
-//     };
-
-//     const missingFields = Object.entries(requiredFields)
-//       .filter(
-//         ([_, value]) => value === undefined || value === null || value === "",
-//       )
-//       .map(([key]) => key);
-
-//     if (missingFields.length > 0) {
-//       return next(
-//         new ValidationError(
-//           `Missing required fields: ${missingFields.join(", ")}`,
-//         ),
-//       );
-//     }
-
-//     if (!req.seller.id) {
-//       return next(new ValidationError("Only seller can create products!"));
-//     }
-
-//     // ✅ FIXED: Proper store ID validation
-//     const storeId = req.seller?.storeId || req.seller?.store?.id;
-//     if (!storeId) {
-//       return next(
-//         new ValidationError(
-//           "Seller store information not found! Please contact support.",
-//         ),
-//       );
-//     }
-
-//     const slugChecking = await prisma.products.findUnique({
-//       where: {
-//         slug,
-//       },
-//     });
-
-//     if (slugChecking) {
-//       return next(
-//         new ValidationError(
-//           "Slug already exists! Please use a different slug!",
-//         ),
-//       );
-//     }
-
-//     const newProduct = await prisma.products.create({
-//       data: {
-//         title,
-//         short_description,
-//         detailed_description,
-//         category,
-//         subCategory,
-//         sizes,
-//         cuttingTypes,
-//         pieceSizes,
-//         processingWeightLoss,
-//         cashOnDelivery: cash_on_delivery,
-//         slug,
-//         storeId,
-//         tags: Array.isArray(tags) ? tags : tags.split(","),
-
-//         discount_codes:
-//           Array.isArray(discountCodes) && discountCodes.length > 0
-//             ? discountCodes
-//             : [],
-
-//         stock: parseInt(stock),
-//         sale_price: parseFloat(sale_price),
-//         regular_price: parseFloat(regular_price),
-
-//         ...(images.length > 0 && {
-//           images: {
-//             create: images
-//               .filter((img: any) => img && img.fileId && img.file_url)
-//               .map((img: any) => ({
-//                 file_id: img.fileId,
-//                 url: img.file_url,
-//               })),
-//           },
-//         }),
-//       },
-//       include: { images: true },
-//     });
-
-//     res.status(201).json({
-//       success: true,
-//       message: "Product created successfully!",
-//       newProduct,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return next(error);
-//   }
-// };
-//
 export const createProduct = async (
   req: any,
   res: Response,
@@ -511,16 +353,18 @@ export const createProduct = async (
          * 7️⃣ Images (optional)
          * Expecting pre-uploaded images with fileId & file_url
          */
-        ...(images.length > 0 && {
-          images: {
-            create: images
-              .filter((img: any) => img && img.fileId && img.file_url)
-              .map((img: any) => ({
-                file_id: img.fileId,
-                url: img.file_url,
-              })),
-          },
-        }),
+        images: {
+          create: images.map((img: any) => ({
+            // Schema field: file_id | Frontend data: img.fileId
+            file_id: img.fileId,
+
+            // Schema field: url | Frontend data: img.file_url
+            url: img.file_url,
+
+            // Schema field: type | Default is PRODUCT, so we can skip or force it
+            type: "PRODUCT",
+          })),
+        },
       },
       include: { images: true },
     });

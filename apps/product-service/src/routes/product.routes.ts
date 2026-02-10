@@ -2,13 +2,9 @@ import express, { Router } from "express";
 import {
   createDiscountCodes,
   createProduct,
-  deleteDiscountCode,
-  deleteProduct,
-  deleteProductImage,
   getCategories,
   getDiscountCodes,
   getStoreProducts,
-  restoreProduct,
   slugValidator,
   uploadProductImage,
 } from "../controllers/product.controller";
@@ -29,7 +25,14 @@ router.get("/get-discount-codes", isAuthenticated, isSeller, getDiscountCodes);
 
 router.get("/get-categories", getCategories);
 
+router.post(
+  "/upload-product-image",
+  isAuthenticated,
+  isSeller,
+  uploadProductImage,
+);
 router.post("/create-product", isAuthenticated, isSeller, createProduct);
+
 router.get("/get-all-products", getStoreProducts);
 
 router.post(

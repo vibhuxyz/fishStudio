@@ -115,7 +115,6 @@ const Page = () => {
 
   // Watch form fields
   const selectedCategory = watch("category");
-  // const selectedSubcategory = watch("subCategory");
   const regularPrice = watch("regular_price");
 
   // Category mapping from display name to API key
@@ -133,26 +132,63 @@ const Page = () => {
     return subCategoriesData[categoryKey] || [];
   }, [selectedCategory, subCategoriesData]);
 
+  // ---------------------------------------------------------
+  // UPDATED SUBMIT LOGIC FOR IMAGES
+  // ---------------------------------------------------------
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
 
-      // Transform form data to match backend expectations
+      // 1. Filter valid images
+      const validImages = images.filter((img) => img !== null && img.base64);
+
+      // 2. Upload images
+      const uploadedImagesData = await Promise.all(
+        validImages.map(async (img) => {
+          if (!img?.base64) return null;
+
+          try {
+            // Send base64 data as 'fileName' to match backend destructuring
+            const uploadRes = await axiosInstance.post(
+              "/product/api/upload-product-image",
+              { fileName: img.base64 },
+              isProtected,
+            );
+
+            if (uploadRes.data.success) {
+              return {
+                fileId: uploadRes.data.fileId,
+                file_url: uploadRes.data.file_url,
+              };
+            }
+            return null;
+          } catch (err) {
+            console.error("Image upload failed", err);
+            return null;
+          }
+        }),
+      );
+
+      const finalImages = uploadedImagesData.filter(Boolean);
+
+      // 3. Prepare final payload
       const submitData = {
         ...data,
-        // Rename singular field names to plural to match backend
         sizes: data.sizes,
         cuttingTypes: data.cuttingType,
         pieceSizes: data.pieceSizes,
+        images: finalImages,
         ...(data.processingWeightLoss &&
           data.processingWeightLoss.trim() && {
             processingWeightLoss: data.processingWeightLoss,
           }),
       };
 
-      console.log("Submitting data:", submitData);
+      console.log("Submitting final payload:", submitData);
 
+      // 4. Create Product
       await axiosInstance.post("/product/api/create-product", submitData);
+
       toast.success("Product created successfully!");
       router.push("/dashboard/all-products");
     } catch (error: any) {
@@ -507,17 +543,15 @@ const Page = () => {
                 <CustomSizes control={control} errors={errors} />
               </div>
 
-              {/*  Coustom Pices*/}
+              {/* Coustom Pices*/}
               <div className="mt-2">
                 <CoustomPices control={control} errors={errors} />
               </div>
 
-              {/*  Coustom Cutting Type*/}
+              {/* Coustom Cutting Type*/}
               <div className="mt-2">
                 <CoustomCuttingType control={control} errors={errors} />
               </div>
-
-              {/* Processing Weight Loss Info Display */}
 
               {/* Processing Weight Loss Info Display */}
               <div className="mt-3">
@@ -614,7 +648,7 @@ const Page = () => {
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? "Creating..." : "Create"}
