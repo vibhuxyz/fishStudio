@@ -269,7 +269,7 @@ export type sellersCreateInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
-  store?: Prisma.storesCreateNestedOneWithoutSellersInput
+  store?: Prisma.storesCreateNestedOneWithoutSellerInput
 }
 
 export type sellersUncheckedCreateInput = {
@@ -281,7 +281,7 @@ export type sellersUncheckedCreateInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
-  store?: Prisma.storesUncheckedCreateNestedOneWithoutSellersInput
+  store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
 }
 
 export type sellersUpdateInput = {
@@ -292,7 +292,7 @@ export type sellersUpdateInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  store?: Prisma.storesUpdateOneWithoutSellersNestedInput
+  store?: Prisma.storesUpdateOneWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateInput = {
@@ -303,7 +303,7 @@ export type sellersUncheckedUpdateInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  store?: Prisma.storesUncheckedUpdateOneWithoutSellersNestedInput
+  store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
 }
 
 export type sellersCreateManyInput = {

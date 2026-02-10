@@ -14,8 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model products
- * ///////////////////////////////////////////////////
- * ///////////////////////////////////////////////////
+ * 
  */
 export type productsModel = runtime.Types.Result.DefaultSelection<Prisma.$productsPayload>
 
@@ -375,7 +374,7 @@ export type productsWhereInput = {
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
   favorites?: Prisma.FavoritesListRelationFilter
-  store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
+  store?: Prisma.XOR<Prisma.StoresScalarRelationFilter, Prisma.storesWhereInput>
 }
 
 export type productsOrderByWithRelationInput = {
@@ -440,7 +439,7 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   storeId?: Prisma.StringFilter<"products"> | string
   images?: Prisma.ImagesListRelationFilter
   favorites?: Prisma.FavoritesListRelationFilter
-  store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
+  store?: Prisma.XOR<Prisma.StoresScalarRelationFilter, Prisma.storesWhereInput>
 }, "id" | "slug">
 
 export type productsOrderByWithAggregationInput = {
@@ -532,9 +531,9 @@ export type productsCreateInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  images?: Prisma.imagesCreateNestedManyWithoutProductsInput
+  images?: Prisma.imagesCreateNestedManyWithoutProductInput
   favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
-  store?: Prisma.storesCreateNestedOneWithoutProductsInput
+  store: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
 export type productsUncheckedCreateInput = {
@@ -563,7 +562,7 @@ export type productsUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   storeId: string
-  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -591,9 +590,9 @@ export type productsUpdateInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
+  images?: Prisma.imagesUpdateManyWithoutProductNestedInput
   favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
-  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
+  store?: Prisma.storesUpdateOneRequiredWithoutProductsNestedInput
 }
 
 export type productsUncheckedUpdateInput = {
@@ -621,7 +620,7 @@ export type productsUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
+  images?: Prisma.imagesUncheckedUpdateManyWithoutProductNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -981,7 +980,7 @@ export type productsCreateWithoutImagesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
-  store?: Prisma.storesCreateNestedOneWithoutProductsInput
+  store: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
 export type productsUncheckedCreateWithoutImagesInput = {
@@ -1054,7 +1053,7 @@ export type productsUpdateWithoutImagesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
-  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
+  store?: Prisma.storesUpdateOneRequiredWithoutProductsNestedInput
 }
 
 export type productsUncheckedUpdateWithoutImagesInput = {
@@ -1110,7 +1109,7 @@ export type productsCreateWithoutStoreInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  images?: Prisma.imagesCreateNestedManyWithoutProductsInput
+  images?: Prisma.imagesCreateNestedManyWithoutProductInput
   favorites?: Prisma.favoritesCreateNestedManyWithoutProductInput
 }
 
@@ -1139,7 +1138,7 @@ export type productsUncheckedCreateWithoutStoreInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -1224,8 +1223,8 @@ export type productsCreateWithoutFavoritesInput = {
   deletedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  images?: Prisma.imagesCreateNestedManyWithoutProductsInput
-  store?: Prisma.storesCreateNestedOneWithoutProductsInput
+  images?: Prisma.imagesCreateNestedManyWithoutProductInput
+  store: Prisma.storesCreateNestedOneWithoutProductsInput
 }
 
 export type productsUncheckedCreateWithoutFavoritesInput = {
@@ -1254,7 +1253,7 @@ export type productsUncheckedCreateWithoutFavoritesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   storeId: string
-  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductsInput
+  images?: Prisma.imagesUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type productsCreateOrConnectWithoutFavoritesInput = {
@@ -1297,8 +1296,8 @@ export type productsUpdateWithoutFavoritesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
-  store?: Prisma.storesUpdateOneWithoutProductsNestedInput
+  images?: Prisma.imagesUpdateManyWithoutProductNestedInput
+  store?: Prisma.storesUpdateOneRequiredWithoutProductsNestedInput
 }
 
 export type productsUncheckedUpdateWithoutFavoritesInput = {
@@ -1326,7 +1325,7 @@ export type productsUncheckedUpdateWithoutFavoritesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeId?: Prisma.StringFieldUpdateOperationsInput | string
-  images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
+  images?: Prisma.imagesUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type productsCreateManyStoreInput = {
@@ -1380,7 +1379,7 @@ export type productsUpdateWithoutStoreInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  images?: Prisma.imagesUpdateManyWithoutProductsNestedInput
+  images?: Prisma.imagesUpdateManyWithoutProductNestedInput
   favorites?: Prisma.favoritesUpdateManyWithoutProductNestedInput
 }
 
@@ -1408,7 +1407,7 @@ export type productsUncheckedUpdateWithoutStoreInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  images?: Prisma.imagesUncheckedUpdateManyWithoutProductsNestedInput
+  images?: Prisma.imagesUncheckedUpdateManyWithoutProductNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1506,7 +1505,7 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   storeId?: boolean
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
   favorites?: boolean | Prisma.products$favoritesArgs<ExtArgs>
-  store?: boolean | Prisma.products$storeArgs<ExtArgs>
+  store?: boolean | Prisma.storesDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["products"]>
 
@@ -1544,7 +1543,7 @@ export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type productsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
   favorites?: boolean | Prisma.products$favoritesArgs<ExtArgs>
-  store?: boolean | Prisma.products$storeArgs<ExtArgs>
+  store?: boolean | Prisma.storesDefaultArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1553,7 +1552,7 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   objects: {
     images: Prisma.$imagesPayload<ExtArgs>[]
     favorites: Prisma.$favoritesPayload<ExtArgs>[]
-    store: Prisma.$storesPayload<ExtArgs> | null
+    store: Prisma.$storesPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1946,7 +1945,7 @@ export interface Prisma__productsClient<T, Null = never, ExtArgs extends runtime
   readonly [Symbol.toStringTag]: "PrismaPromise"
   images<T extends Prisma.products$imagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$imagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   favorites<T extends Prisma.products$favoritesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$favoritesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$favoritesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  store<T extends Prisma.products$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$storeArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  store<T extends Prisma.storesDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.storesDefaultArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2416,25 +2415,6 @@ export type products$favoritesArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.FavoritesScalarFieldEnum | Prisma.FavoritesScalarFieldEnum[]
-}
-
-/**
- * products.store
- */
-export type products$storeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the stores
-   */
-  select?: Prisma.storesSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the stores
-   */
-  omit?: Prisma.storesOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.storesInclude<ExtArgs> | null
-  where?: Prisma.storesWhereInput
 }
 
 /**

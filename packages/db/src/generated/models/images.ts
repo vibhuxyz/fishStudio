@@ -14,8 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model images
- * ///////////////////////////////////////////////////
- * ///////////////////////////////////////////////////
+ * 
  */
 export type imagesModel = runtime.Types.Result.DefaultSelection<Prisma.$imagesPayload>
 
@@ -29,27 +28,27 @@ export type ImagesMinAggregateOutputType = {
   id: string | null
   file_id: string | null
   url: string | null
-  userId: string | null
-  storeId: string | null
+  type: $Enums.ImageType | null
   productId: string | null
+  createdAt: Date | null
 }
 
 export type ImagesMaxAggregateOutputType = {
   id: string | null
   file_id: string | null
   url: string | null
-  userId: string | null
-  storeId: string | null
+  type: $Enums.ImageType | null
   productId: string | null
+  createdAt: Date | null
 }
 
 export type ImagesCountAggregateOutputType = {
   id: number
   file_id: number
   url: number
-  userId: number
-  storeId: number
+  type: number
   productId: number
+  createdAt: number
   _all: number
 }
 
@@ -58,27 +57,27 @@ export type ImagesMinAggregateInputType = {
   id?: true
   file_id?: true
   url?: true
-  userId?: true
-  storeId?: true
+  type?: true
   productId?: true
+  createdAt?: true
 }
 
 export type ImagesMaxAggregateInputType = {
   id?: true
   file_id?: true
   url?: true
-  userId?: true
-  storeId?: true
+  type?: true
   productId?: true
+  createdAt?: true
 }
 
 export type ImagesCountAggregateInputType = {
   id?: true
   file_id?: true
   url?: true
-  userId?: true
-  storeId?: true
+  type?: true
   productId?: true
+  createdAt?: true
   _all?: true
 }
 
@@ -158,9 +157,9 @@ export type ImagesGroupByOutputType = {
   id: string
   file_id: string
   url: string
-  userId: string | null
-  storeId: string | null
+  type: $Enums.ImageType
   productId: string | null
+  createdAt: Date
   _count: ImagesCountAggregateOutputType | null
   _min: ImagesMinAggregateOutputType | null
   _max: ImagesMaxAggregateOutputType | null
@@ -188,48 +187,48 @@ export type imagesWhereInput = {
   id?: Prisma.StringFilter<"images"> | string
   file_id?: Prisma.StringFilter<"images"> | string
   url?: Prisma.StringFilter<"images"> | string
-  userId?: Prisma.StringNullableFilter<"images"> | string | null
-  storeId?: Prisma.StringNullableFilter<"images"> | string | null
+  type?: Prisma.EnumImageTypeFilter<"images"> | $Enums.ImageType
   productId?: Prisma.StringNullableFilter<"images"> | string | null
-  users?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
-  stores?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
-  products?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
+  createdAt?: Prisma.DateTimeFilter<"images"> | Date | string
+  product?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
+  users?: Prisma.UsersListRelationFilter
+  stores?: Prisma.StoresListRelationFilter
 }
 
 export type imagesOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   file_id?: Prisma.SortOrder
   url?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   productId?: Prisma.SortOrder
-  users?: Prisma.usersOrderByWithRelationInput
-  stores?: Prisma.storesOrderByWithRelationInput
-  products?: Prisma.productsOrderByWithRelationInput
+  createdAt?: Prisma.SortOrder
+  product?: Prisma.productsOrderByWithRelationInput
+  users?: Prisma.usersOrderByRelationAggregateInput
+  stores?: Prisma.storesOrderByRelationAggregateInput
 }
 
 export type imagesWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  userId?: string
-  storeId?: string
   AND?: Prisma.imagesWhereInput | Prisma.imagesWhereInput[]
   OR?: Prisma.imagesWhereInput[]
   NOT?: Prisma.imagesWhereInput | Prisma.imagesWhereInput[]
   file_id?: Prisma.StringFilter<"images"> | string
   url?: Prisma.StringFilter<"images"> | string
+  type?: Prisma.EnumImageTypeFilter<"images"> | $Enums.ImageType
   productId?: Prisma.StringNullableFilter<"images"> | string | null
-  users?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
-  stores?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
-  products?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
-}, "id" | "userId" | "storeId">
+  createdAt?: Prisma.DateTimeFilter<"images"> | Date | string
+  product?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
+  users?: Prisma.UsersListRelationFilter
+  stores?: Prisma.StoresListRelationFilter
+}, "id">
 
 export type imagesOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   file_id?: Prisma.SortOrder
   url?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   productId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   _count?: Prisma.imagesCountOrderByAggregateInput
   _max?: Prisma.imagesMaxOrderByAggregateInput
   _min?: Prisma.imagesMinOrderByAggregateInput
@@ -242,92 +241,102 @@ export type imagesScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"images"> | string
   file_id?: Prisma.StringWithAggregatesFilter<"images"> | string
   url?: Prisma.StringWithAggregatesFilter<"images"> | string
-  userId?: Prisma.StringNullableWithAggregatesFilter<"images"> | string | null
-  storeId?: Prisma.StringNullableWithAggregatesFilter<"images"> | string | null
+  type?: Prisma.EnumImageTypeWithAggregatesFilter<"images"> | $Enums.ImageType
   productId?: Prisma.StringNullableWithAggregatesFilter<"images"> | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"images"> | Date | string
 }
 
 export type imagesCreateInput = {
   id?: string
   file_id: string
   url: string
-  users?: Prisma.usersCreateNestedOneWithoutAvatarInput
-  stores?: Prisma.storesCreateNestedOneWithoutAvatarInput
-  products?: Prisma.productsCreateNestedOneWithoutImagesInput
+  type?: $Enums.ImageType
+  createdAt?: Date | string
+  product?: Prisma.productsCreateNestedOneWithoutImagesInput
+  users?: Prisma.usersCreateNestedManyWithoutAvatarInput
+  stores?: Prisma.storesCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesUncheckedCreateInput = {
   id?: string
   file_id: string
   url: string
-  userId?: string | null
-  storeId?: string | null
+  type?: $Enums.ImageType
   productId?: string | null
+  createdAt?: Date | string
+  users?: Prisma.usersUncheckedCreateNestedManyWithoutAvatarInput
+  stores?: Prisma.storesUncheckedCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesUpdateInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  users?: Prisma.usersUpdateOneWithoutAvatarNestedInput
-  stores?: Prisma.storesUpdateOneWithoutAvatarNestedInput
-  products?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  product?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  users?: Prisma.usersUpdateManyWithoutAvatarNestedInput
+  stores?: Prisma.storesUpdateManyWithoutAvatarNestedInput
 }
 
 export type imagesUncheckedUpdateInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
   productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.usersUncheckedUpdateManyWithoutAvatarNestedInput
+  stores?: Prisma.storesUncheckedUpdateManyWithoutAvatarNestedInput
 }
 
 export type imagesCreateManyInput = {
   id?: string
   file_id: string
   url: string
-  userId?: string | null
-  storeId?: string | null
+  type?: $Enums.ImageType
   productId?: string | null
+  createdAt?: Date | string
 }
 
 export type imagesUpdateManyMutationInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type imagesUncheckedUpdateManyInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
   productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type imagesCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   file_id?: Prisma.SortOrder
   url?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   productId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type imagesMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   file_id?: Prisma.SortOrder
   url?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   productId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type imagesMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   file_id?: Prisma.SortOrder
   url?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
-  storeId?: Prisma.SortOrder
+  type?: Prisma.SortOrder
   productId?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
 }
 
 export type ImagesNullableScalarRelationFilter = {
@@ -349,6 +358,14 @@ export type StringFieldUpdateOperationsInput = {
   set?: string
 }
 
+export type EnumImageTypeFieldUpdateOperationsInput = {
+  set?: $Enums.ImageType
+}
+
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
+}
+
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
   unset?: boolean
@@ -360,27 +377,11 @@ export type imagesCreateNestedOneWithoutUsersInput = {
   connect?: Prisma.imagesWhereUniqueInput
 }
 
-export type imagesUncheckedCreateNestedOneWithoutUsersInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutUsersInput, Prisma.imagesUncheckedCreateWithoutUsersInput>
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutUsersInput
-  connect?: Prisma.imagesWhereUniqueInput
-}
-
 export type imagesUpdateOneWithoutUsersNestedInput = {
   create?: Prisma.XOR<Prisma.imagesCreateWithoutUsersInput, Prisma.imagesUncheckedCreateWithoutUsersInput>
   connectOrCreate?: Prisma.imagesCreateOrConnectWithoutUsersInput
   upsert?: Prisma.imagesUpsertWithoutUsersInput
-  disconnect?: Prisma.imagesWhereInput | boolean
-  delete?: Prisma.imagesWhereInput | boolean
-  connect?: Prisma.imagesWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.imagesUpdateToOneWithWhereWithoutUsersInput, Prisma.imagesUpdateWithoutUsersInput>, Prisma.imagesUncheckedUpdateWithoutUsersInput>
-}
-
-export type imagesUncheckedUpdateOneWithoutUsersNestedInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutUsersInput, Prisma.imagesUncheckedCreateWithoutUsersInput>
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutUsersInput
-  upsert?: Prisma.imagesUpsertWithoutUsersInput
-  disconnect?: Prisma.imagesWhereInput | boolean
+  disconnect?: boolean
   delete?: Prisma.imagesWhereInput | boolean
   connect?: Prisma.imagesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.imagesUpdateToOneWithWhereWithoutUsersInput, Prisma.imagesUpdateWithoutUsersInput>, Prisma.imagesUncheckedUpdateWithoutUsersInput>
@@ -392,71 +393,55 @@ export type imagesCreateNestedOneWithoutStoresInput = {
   connect?: Prisma.imagesWhereUniqueInput
 }
 
-export type imagesUncheckedCreateNestedOneWithoutStoresInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutStoresInput, Prisma.imagesUncheckedCreateWithoutStoresInput>
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutStoresInput
-  connect?: Prisma.imagesWhereUniqueInput
-}
-
 export type imagesUpdateOneWithoutStoresNestedInput = {
   create?: Prisma.XOR<Prisma.imagesCreateWithoutStoresInput, Prisma.imagesUncheckedCreateWithoutStoresInput>
   connectOrCreate?: Prisma.imagesCreateOrConnectWithoutStoresInput
   upsert?: Prisma.imagesUpsertWithoutStoresInput
-  disconnect?: Prisma.imagesWhereInput | boolean
+  disconnect?: boolean
   delete?: Prisma.imagesWhereInput | boolean
   connect?: Prisma.imagesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.imagesUpdateToOneWithWhereWithoutStoresInput, Prisma.imagesUpdateWithoutStoresInput>, Prisma.imagesUncheckedUpdateWithoutStoresInput>
 }
 
-export type imagesUncheckedUpdateOneWithoutStoresNestedInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutStoresInput, Prisma.imagesUncheckedCreateWithoutStoresInput>
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutStoresInput
-  upsert?: Prisma.imagesUpsertWithoutStoresInput
-  disconnect?: Prisma.imagesWhereInput | boolean
-  delete?: Prisma.imagesWhereInput | boolean
-  connect?: Prisma.imagesWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.imagesUpdateToOneWithWhereWithoutStoresInput, Prisma.imagesUpdateWithoutStoresInput>, Prisma.imagesUncheckedUpdateWithoutStoresInput>
-}
-
-export type imagesCreateNestedManyWithoutProductsInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput> | Prisma.imagesCreateWithoutProductsInput[] | Prisma.imagesUncheckedCreateWithoutProductsInput[]
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductsInput | Prisma.imagesCreateOrConnectWithoutProductsInput[]
-  createMany?: Prisma.imagesCreateManyProductsInputEnvelope
+export type imagesCreateNestedManyWithoutProductInput = {
+  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput> | Prisma.imagesCreateWithoutProductInput[] | Prisma.imagesUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductInput | Prisma.imagesCreateOrConnectWithoutProductInput[]
+  createMany?: Prisma.imagesCreateManyProductInputEnvelope
   connect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
 }
 
-export type imagesUncheckedCreateNestedManyWithoutProductsInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput> | Prisma.imagesCreateWithoutProductsInput[] | Prisma.imagesUncheckedCreateWithoutProductsInput[]
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductsInput | Prisma.imagesCreateOrConnectWithoutProductsInput[]
-  createMany?: Prisma.imagesCreateManyProductsInputEnvelope
+export type imagesUncheckedCreateNestedManyWithoutProductInput = {
+  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput> | Prisma.imagesCreateWithoutProductInput[] | Prisma.imagesUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductInput | Prisma.imagesCreateOrConnectWithoutProductInput[]
+  createMany?: Prisma.imagesCreateManyProductInputEnvelope
   connect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
 }
 
-export type imagesUpdateManyWithoutProductsNestedInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput> | Prisma.imagesCreateWithoutProductsInput[] | Prisma.imagesUncheckedCreateWithoutProductsInput[]
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductsInput | Prisma.imagesCreateOrConnectWithoutProductsInput[]
-  upsert?: Prisma.imagesUpsertWithWhereUniqueWithoutProductsInput | Prisma.imagesUpsertWithWhereUniqueWithoutProductsInput[]
-  createMany?: Prisma.imagesCreateManyProductsInputEnvelope
+export type imagesUpdateManyWithoutProductNestedInput = {
+  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput> | Prisma.imagesCreateWithoutProductInput[] | Prisma.imagesUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductInput | Prisma.imagesCreateOrConnectWithoutProductInput[]
+  upsert?: Prisma.imagesUpsertWithWhereUniqueWithoutProductInput | Prisma.imagesUpsertWithWhereUniqueWithoutProductInput[]
+  createMany?: Prisma.imagesCreateManyProductInputEnvelope
   set?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   disconnect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   delete?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   connect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
-  update?: Prisma.imagesUpdateWithWhereUniqueWithoutProductsInput | Prisma.imagesUpdateWithWhereUniqueWithoutProductsInput[]
-  updateMany?: Prisma.imagesUpdateManyWithWhereWithoutProductsInput | Prisma.imagesUpdateManyWithWhereWithoutProductsInput[]
+  update?: Prisma.imagesUpdateWithWhereUniqueWithoutProductInput | Prisma.imagesUpdateWithWhereUniqueWithoutProductInput[]
+  updateMany?: Prisma.imagesUpdateManyWithWhereWithoutProductInput | Prisma.imagesUpdateManyWithWhereWithoutProductInput[]
   deleteMany?: Prisma.imagesScalarWhereInput | Prisma.imagesScalarWhereInput[]
 }
 
-export type imagesUncheckedUpdateManyWithoutProductsNestedInput = {
-  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput> | Prisma.imagesCreateWithoutProductsInput[] | Prisma.imagesUncheckedCreateWithoutProductsInput[]
-  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductsInput | Prisma.imagesCreateOrConnectWithoutProductsInput[]
-  upsert?: Prisma.imagesUpsertWithWhereUniqueWithoutProductsInput | Prisma.imagesUpsertWithWhereUniqueWithoutProductsInput[]
-  createMany?: Prisma.imagesCreateManyProductsInputEnvelope
+export type imagesUncheckedUpdateManyWithoutProductNestedInput = {
+  create?: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput> | Prisma.imagesCreateWithoutProductInput[] | Prisma.imagesUncheckedCreateWithoutProductInput[]
+  connectOrCreate?: Prisma.imagesCreateOrConnectWithoutProductInput | Prisma.imagesCreateOrConnectWithoutProductInput[]
+  upsert?: Prisma.imagesUpsertWithWhereUniqueWithoutProductInput | Prisma.imagesUpsertWithWhereUniqueWithoutProductInput[]
+  createMany?: Prisma.imagesCreateManyProductInputEnvelope
   set?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   disconnect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   delete?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
   connect?: Prisma.imagesWhereUniqueInput | Prisma.imagesWhereUniqueInput[]
-  update?: Prisma.imagesUpdateWithWhereUniqueWithoutProductsInput | Prisma.imagesUpdateWithWhereUniqueWithoutProductsInput[]
-  updateMany?: Prisma.imagesUpdateManyWithWhereWithoutProductsInput | Prisma.imagesUpdateManyWithWhereWithoutProductsInput[]
+  update?: Prisma.imagesUpdateWithWhereUniqueWithoutProductInput | Prisma.imagesUpdateWithWhereUniqueWithoutProductInput[]
+  updateMany?: Prisma.imagesUpdateManyWithWhereWithoutProductInput | Prisma.imagesUpdateManyWithWhereWithoutProductInput[]
   deleteMany?: Prisma.imagesScalarWhereInput | Prisma.imagesScalarWhereInput[]
 }
 
@@ -464,16 +449,20 @@ export type imagesCreateWithoutUsersInput = {
   id?: string
   file_id: string
   url: string
-  stores?: Prisma.storesCreateNestedOneWithoutAvatarInput
-  products?: Prisma.productsCreateNestedOneWithoutImagesInput
+  type?: $Enums.ImageType
+  createdAt?: Date | string
+  product?: Prisma.productsCreateNestedOneWithoutImagesInput
+  stores?: Prisma.storesCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesUncheckedCreateWithoutUsersInput = {
   id?: string
   file_id: string
   url: string
-  storeId?: string | null
+  type?: $Enums.ImageType
   productId?: string | null
+  createdAt?: Date | string
+  stores?: Prisma.storesUncheckedCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesCreateOrConnectWithoutUsersInput = {
@@ -495,31 +484,39 @@ export type imagesUpdateToOneWithWhereWithoutUsersInput = {
 export type imagesUpdateWithoutUsersInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  stores?: Prisma.storesUpdateOneWithoutAvatarNestedInput
-  products?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  product?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  stores?: Prisma.storesUpdateManyWithoutAvatarNestedInput
 }
 
 export type imagesUncheckedUpdateWithoutUsersInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
   productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  stores?: Prisma.storesUncheckedUpdateManyWithoutAvatarNestedInput
 }
 
 export type imagesCreateWithoutStoresInput = {
   id?: string
   file_id: string
   url: string
-  users?: Prisma.usersCreateNestedOneWithoutAvatarInput
-  products?: Prisma.productsCreateNestedOneWithoutImagesInput
+  type?: $Enums.ImageType
+  createdAt?: Date | string
+  product?: Prisma.productsCreateNestedOneWithoutImagesInput
+  users?: Prisma.usersCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesUncheckedCreateWithoutStoresInput = {
   id?: string
   file_id: string
   url: string
-  userId?: string | null
+  type?: $Enums.ImageType
   productId?: string | null
+  createdAt?: Date | string
+  users?: Prisma.usersUncheckedCreateNestedManyWithoutAvatarInput
 }
 
 export type imagesCreateOrConnectWithoutStoresInput = {
@@ -541,56 +538,64 @@ export type imagesUpdateToOneWithWhereWithoutStoresInput = {
 export type imagesUpdateWithoutStoresInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  users?: Prisma.usersUpdateOneWithoutAvatarNestedInput
-  products?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  product?: Prisma.productsUpdateOneWithoutImagesNestedInput
+  users?: Prisma.usersUpdateManyWithoutAvatarNestedInput
 }
 
 export type imagesUncheckedUpdateWithoutStoresInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
   productId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.usersUncheckedUpdateManyWithoutAvatarNestedInput
 }
 
-export type imagesCreateWithoutProductsInput = {
+export type imagesCreateWithoutProductInput = {
   id?: string
   file_id: string
   url: string
-  users?: Prisma.usersCreateNestedOneWithoutAvatarInput
-  stores?: Prisma.storesCreateNestedOneWithoutAvatarInput
+  type?: $Enums.ImageType
+  createdAt?: Date | string
+  users?: Prisma.usersCreateNestedManyWithoutAvatarInput
+  stores?: Prisma.storesCreateNestedManyWithoutAvatarInput
 }
 
-export type imagesUncheckedCreateWithoutProductsInput = {
+export type imagesUncheckedCreateWithoutProductInput = {
   id?: string
   file_id: string
   url: string
-  userId?: string | null
-  storeId?: string | null
+  type?: $Enums.ImageType
+  createdAt?: Date | string
+  users?: Prisma.usersUncheckedCreateNestedManyWithoutAvatarInput
+  stores?: Prisma.storesUncheckedCreateNestedManyWithoutAvatarInput
 }
 
-export type imagesCreateOrConnectWithoutProductsInput = {
+export type imagesCreateOrConnectWithoutProductInput = {
   where: Prisma.imagesWhereUniqueInput
-  create: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput>
+  create: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput>
 }
 
-export type imagesCreateManyProductsInputEnvelope = {
-  data: Prisma.imagesCreateManyProductsInput | Prisma.imagesCreateManyProductsInput[]
+export type imagesCreateManyProductInputEnvelope = {
+  data: Prisma.imagesCreateManyProductInput | Prisma.imagesCreateManyProductInput[]
 }
 
-export type imagesUpsertWithWhereUniqueWithoutProductsInput = {
+export type imagesUpsertWithWhereUniqueWithoutProductInput = {
   where: Prisma.imagesWhereUniqueInput
-  update: Prisma.XOR<Prisma.imagesUpdateWithoutProductsInput, Prisma.imagesUncheckedUpdateWithoutProductsInput>
-  create: Prisma.XOR<Prisma.imagesCreateWithoutProductsInput, Prisma.imagesUncheckedCreateWithoutProductsInput>
+  update: Prisma.XOR<Prisma.imagesUpdateWithoutProductInput, Prisma.imagesUncheckedUpdateWithoutProductInput>
+  create: Prisma.XOR<Prisma.imagesCreateWithoutProductInput, Prisma.imagesUncheckedCreateWithoutProductInput>
 }
 
-export type imagesUpdateWithWhereUniqueWithoutProductsInput = {
+export type imagesUpdateWithWhereUniqueWithoutProductInput = {
   where: Prisma.imagesWhereUniqueInput
-  data: Prisma.XOR<Prisma.imagesUpdateWithoutProductsInput, Prisma.imagesUncheckedUpdateWithoutProductsInput>
+  data: Prisma.XOR<Prisma.imagesUpdateWithoutProductInput, Prisma.imagesUncheckedUpdateWithoutProductInput>
 }
 
-export type imagesUpdateManyWithWhereWithoutProductsInput = {
+export type imagesUpdateManyWithWhereWithoutProductInput = {
   where: Prisma.imagesScalarWhereInput
-  data: Prisma.XOR<Prisma.imagesUpdateManyMutationInput, Prisma.imagesUncheckedUpdateManyWithoutProductsInput>
+  data: Prisma.XOR<Prisma.imagesUpdateManyMutationInput, Prisma.imagesUncheckedUpdateManyWithoutProductInput>
 }
 
 export type imagesScalarWhereInput = {
@@ -600,52 +605,95 @@ export type imagesScalarWhereInput = {
   id?: Prisma.StringFilter<"images"> | string
   file_id?: Prisma.StringFilter<"images"> | string
   url?: Prisma.StringFilter<"images"> | string
-  userId?: Prisma.StringNullableFilter<"images"> | string | null
-  storeId?: Prisma.StringNullableFilter<"images"> | string | null
+  type?: Prisma.EnumImageTypeFilter<"images"> | $Enums.ImageType
   productId?: Prisma.StringNullableFilter<"images"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"images"> | Date | string
 }
 
-export type imagesCreateManyProductsInput = {
+export type imagesCreateManyProductInput = {
   id?: string
   file_id: string
   url: string
-  userId?: string | null
-  storeId?: string | null
+  type?: $Enums.ImageType
+  createdAt?: Date | string
 }
 
-export type imagesUpdateWithoutProductsInput = {
+export type imagesUpdateWithoutProductInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  users?: Prisma.usersUpdateOneWithoutAvatarNestedInput
-  stores?: Prisma.storesUpdateOneWithoutAvatarNestedInput
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.usersUpdateManyWithoutAvatarNestedInput
+  stores?: Prisma.storesUpdateManyWithoutAvatarNestedInput
 }
 
-export type imagesUncheckedUpdateWithoutProductsInput = {
+export type imagesUncheckedUpdateWithoutProductInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.usersUncheckedUpdateManyWithoutAvatarNestedInput
+  stores?: Prisma.storesUncheckedUpdateManyWithoutAvatarNestedInput
 }
 
-export type imagesUncheckedUpdateManyWithoutProductsInput = {
+export type imagesUncheckedUpdateManyWithoutProductInput = {
   file_id?: Prisma.StringFieldUpdateOperationsInput | string
   url?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  storeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type ImagesCountOutputType
+ */
+
+export type ImagesCountOutputType = {
+  users: number
+  stores: number
+}
+
+export type ImagesCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  users?: boolean | ImagesCountOutputTypeCountUsersArgs
+  stores?: boolean | ImagesCountOutputTypeCountStoresArgs
+}
+
+/**
+ * ImagesCountOutputType without action
+ */
+export type ImagesCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ImagesCountOutputType
+   */
+  select?: Prisma.ImagesCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ImagesCountOutputType without action
+ */
+export type ImagesCountOutputTypeCountUsersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.usersWhereInput
+}
+
+/**
+ * ImagesCountOutputType without action
+ */
+export type ImagesCountOutputTypeCountStoresArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.storesWhereInput
+}
 
 
 export type imagesSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   file_id?: boolean
   url?: boolean
-  userId?: boolean
-  storeId?: boolean
+  type?: boolean
   productId?: boolean
+  createdAt?: boolean
+  product?: boolean | Prisma.images$productArgs<ExtArgs>
   users?: boolean | Prisma.images$usersArgs<ExtArgs>
   stores?: boolean | Prisma.images$storesArgs<ExtArgs>
-  products?: boolean | Prisma.images$productsArgs<ExtArgs>
+  _count?: boolean | Prisma.ImagesCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["images"]>
 
 
@@ -654,32 +702,33 @@ export type imagesSelectScalar = {
   id?: boolean
   file_id?: boolean
   url?: boolean
-  userId?: boolean
-  storeId?: boolean
+  type?: boolean
   productId?: boolean
+  createdAt?: boolean
 }
 
-export type imagesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "file_id" | "url" | "userId" | "storeId" | "productId", ExtArgs["result"]["images"]>
+export type imagesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "file_id" | "url" | "type" | "productId" | "createdAt", ExtArgs["result"]["images"]>
 export type imagesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  product?: boolean | Prisma.images$productArgs<ExtArgs>
   users?: boolean | Prisma.images$usersArgs<ExtArgs>
   stores?: boolean | Prisma.images$storesArgs<ExtArgs>
-  products?: boolean | Prisma.images$productsArgs<ExtArgs>
+  _count?: boolean | Prisma.ImagesCountOutputTypeDefaultArgs<ExtArgs>
 }
 
 export type $imagesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "images"
   objects: {
-    users: Prisma.$usersPayload<ExtArgs> | null
-    stores: Prisma.$storesPayload<ExtArgs> | null
-    products: Prisma.$productsPayload<ExtArgs> | null
+    product: Prisma.$productsPayload<ExtArgs> | null
+    users: Prisma.$usersPayload<ExtArgs>[]
+    stores: Prisma.$storesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     file_id: string
     url: string
-    userId: string | null
-    storeId: string | null
+    type: $Enums.ImageType
     productId: string | null
+    createdAt: Date
   }, ExtArgs["result"]["images"]>
   composites: {}
 }
@@ -1043,9 +1092,9 @@ readonly fields: imagesFieldRefs;
  */
 export interface Prisma__imagesClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  users<T extends Prisma.images$usersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$usersArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  stores<T extends Prisma.images$storesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$storesArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  products<T extends Prisma.images$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$productsArgs<ExtArgs>>): Prisma.Prisma__productsClient<runtime.Types.Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  product<T extends Prisma.images$productArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$productArgs<ExtArgs>>): Prisma.Prisma__productsClient<runtime.Types.Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  users<T extends Prisma.images$usersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$usersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  stores<T extends Prisma.images$storesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.images$storesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1078,9 +1127,9 @@ export interface imagesFieldRefs {
   readonly id: Prisma.FieldRef<"images", 'String'>
   readonly file_id: Prisma.FieldRef<"images", 'String'>
   readonly url: Prisma.FieldRef<"images", 'String'>
-  readonly userId: Prisma.FieldRef<"images", 'String'>
-  readonly storeId: Prisma.FieldRef<"images", 'String'>
+  readonly type: Prisma.FieldRef<"images", 'ImageType'>
   readonly productId: Prisma.FieldRef<"images", 'String'>
+  readonly createdAt: Prisma.FieldRef<"images", 'DateTime'>
 }
     
 
@@ -1451,6 +1500,25 @@ export type imagesAggregateRawArgs<ExtArgs extends runtime.Types.Extensions.Inte
 }
 
 /**
+ * images.product
+ */
+export type images$productArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the products
+   */
+  select?: Prisma.productsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the products
+   */
+  omit?: Prisma.productsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.productsInclude<ExtArgs> | null
+  where?: Prisma.productsWhereInput
+}
+
+/**
  * images.users
  */
 export type images$usersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1467,6 +1535,11 @@ export type images$usersArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    */
   include?: Prisma.usersInclude<ExtArgs> | null
   where?: Prisma.usersWhereInput
+  orderBy?: Prisma.usersOrderByWithRelationInput | Prisma.usersOrderByWithRelationInput[]
+  cursor?: Prisma.usersWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UsersScalarFieldEnum | Prisma.UsersScalarFieldEnum[]
 }
 
 /**
@@ -1486,25 +1559,11 @@ export type images$storesArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   include?: Prisma.storesInclude<ExtArgs> | null
   where?: Prisma.storesWhereInput
-}
-
-/**
- * images.products
- */
-export type images$productsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the products
-   */
-  select?: Prisma.productsSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the products
-   */
-  omit?: Prisma.productsOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.productsInclude<ExtArgs> | null
-  where?: Prisma.productsWhereInput
+  orderBy?: Prisma.storesOrderByWithRelationInput | Prisma.storesOrderByWithRelationInput[]
+  cursor?: Prisma.storesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StoresScalarFieldEnum | Prisma.StoresScalarFieldEnum[]
 }
 
 /**

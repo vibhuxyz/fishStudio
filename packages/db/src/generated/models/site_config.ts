@@ -14,8 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model site_config
- * ///////////////////////////////////////////////////
- * ///////////////////////////////////////////////////
+ * 
  */
 export type site_configModel = runtime.Types.Result.DefaultSelection<Prisma.$site_configPayload>
 

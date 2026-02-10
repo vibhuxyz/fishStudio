@@ -18,7 +18,7 @@ import BreadCrumbs from "@/shared/components/breadcrumbs";
 import AnalyticsModal from "@/shared/components/modals/analytics.modal";
 
 const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-store-products");
+  const res = await axiosInstance.get("/product/api/get-all-products");
   const products = res.data.products?.filter((i: any) => !i.starting_date);
   return products;
 };

@@ -1,9 +1,12 @@
 import { PrismaClient } from "../src/generated/client.js";
-
+import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Checking existing data...");
+
+  const plainPassword = "123456";
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
   /**
    * 1️⃣ USER
@@ -28,7 +31,7 @@ async function main() {
       name: "Fish Seller",
       email: "seller@fish.com",
       phone_number: "8888888888",
-      password: "hashed-password",
+      password: hashedPassword,
       following: [],
     },
   });
@@ -53,368 +56,551 @@ async function main() {
     }));
 
   /**
-   * 4️⃣ PRODUCTS (check once)
+   * 4️⃣ PRODUCTS WITH IMAGES
    */
   const existingProducts = await prisma.products.findFirst({
     where: { storeId: store.id },
   });
 
   if (!existingProducts) {
-    console.log("🐟 Seeding products...");
+    console.log("🐟 Seeding products with images...");
 
-    await prisma.products.createMany({
-      data: [
-        {
-          title: "Tilapia Fish",
-          slug: "tilapia-fish-4",
-          category: "Fresh Water",
-          subCategory: "Tilapia",
-          short_description: "Fresh Tilapia fish",
-          detailed_description: "<p>Healthy freshwater Tilapia</p>",
-          tags: ["tilapia", "fresh"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole", "Curry Cut"],
-          pieceSizes: ["medium", "large"],
-          processingWeightLoss: "5-8%",
-          stock: 15,
-          sale_price: 180,
-          regular_price: 240,
-          totalSold: 40,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Pabda Fish",
-          slug: "pabda-fish-7",
-          category: "Fresh Water",
-          subCategory: "Pabda",
-          short_description: "Fresh Pabda fish",
-          detailed_description: "<p>Soft and tasty Pabda fish</p>",
-          tags: ["pabda", "fresh"],
-          sizes: ["250 gm", "500 gm"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["small"],
-          processingWeightLoss: "4-6%",
-          stock: 12,
-          sale_price: 260,
-          regular_price: 320,
-          totalSold: 22,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-
-        // -------- Sea Fish --------
-        {
-          title: "Indian Mackerel",
-          slug: "indian-mackerel-6",
-          category: "Sea Fish",
-          subCategory: "Mackerel",
-          short_description: "Fresh sea Mackerel",
-          detailed_description: "<p>Rich in omega-3</p>",
-          tags: ["mackerel", "sea"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["medium"],
-          processingWeightLoss: "6-9%",
-          stock: 20,
-          sale_price: 190,
-          regular_price: 250,
-          totalSold: 65,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Fresh Prawns",
-          slug: "fresh-prawns-1",
-          category: "Sea Fish",
-          subCategory: "Prawn",
-          short_description: "Juicy sea prawns",
-          detailed_description: "<p>Perfect for curry & fry</p>",
-          tags: ["prawn", "seafood"],
-          sizes: ["250 gm", "500 gm"],
-          cuttingTypes: ["Cleaned"],
-          pieceSizes: ["medium"],
-          processingWeightLoss: "10-15%",
-          stock: 18,
-          sale_price: 420,
-          regular_price: 520,
-          totalSold: 80, // 🔥 strong seller
-          cashOnDelivery: "no",
-          discount_codes: [],
-          storeId: store.id,
-        },
-
-        // -------- Premium Sea Food --------
-        {
-          title: "King Crab",
-          slug: "king-crab-3",
-          category: "Premium Sea Food",
-          subCategory: "King Crab",
-          short_description: "Premium King Crab",
-          detailed_description: "<p>Luxury seafood item</p>",
-          tags: ["crab", "premium"],
-          sizes: ["1 kg", "2 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["large"],
-          processingWeightLoss: "8-12%",
-          stock: 5,
-          sale_price: 3200,
-          regular_price: 3800,
-          totalSold: 12,
-          cashOnDelivery: "no",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Lobster",
-          slug: "lobster-premium-8",
-          category: "Premium Sea Food",
-          subCategory: "Lobster",
-          short_description: "Fresh premium lobster",
-          detailed_description: "<p>Restaurant-grade lobster</p>",
-          tags: ["lobster", "premium"],
-          sizes: ["1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["large"],
-          processingWeightLoss: "10%",
-          stock: 4,
-          sale_price: 4500,
-          regular_price: 5200,
-          totalSold: 9,
-          cashOnDelivery: "no",
-          discount_codes: [],
-          storeId: store.id,
-        },
-
-        // -------- Pet Serve --------
-        {
-          title: "Pet Fish Mix",
-          slug: "pet-fish-mix",
-          category: "Pet Serve",
-          subCategory: "Pet Fish Selection",
-          short_description: "Nutritious fish for pets",
-          detailed_description: "<p>Healthy mix for pets</p>",
-          tags: ["pet", "nutrition"],
-          sizes: ["1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["small"],
-          processingWeightLoss: "2-4%",
-          stock: 25,
-          sale_price: 120,
-          regular_price: 160,
-          totalSold: 35,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Chicken Offal",
-          slug: "chicken-offal",
-          category: "Pet Serve",
-          subCategory: "Chicken Offal",
-          short_description: "Protein-rich pet food",
-          detailed_description: "<p>Best for dogs & cats</p>",
-          tags: ["pet", "chicken"],
-          sizes: ["1 kg"],
-          cuttingTypes: ["Cleaned"],
-          pieceSizes: ["medium"],
-          processingWeightLoss: "3%",
-          stock: 30,
-          sale_price: 140,
-          regular_price: 180,
-          totalSold: 50,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-
-        // -------- Extra Sea Fish --------
-        {
-          title: "Squid Rings",
-          slug: "squid-rings",
-          category: "Sea Fish",
-          subCategory: "Squid",
-          short_description: "Fresh squid rings",
-          detailed_description: "<p>Ideal for frying</p>",
-          tags: ["squid", "seafood"],
-          sizes: ["500 gm"],
-          cuttingTypes: ["Rings"],
-          pieceSizes: ["medium"],
-          processingWeightLoss: "6%",
-          stock: 14,
-          sale_price: 380,
-          regular_price: 450,
-          totalSold: 28,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Sardine Fish",
-          slug: "sardine-fish",
-          category: "Sea Fish",
-          subCategory: "Sardine",
-          short_description: "Fresh sardine fish",
-          detailed_description: "<p>High protein sea fish</p>",
-          tags: ["sardine", "sea"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["small"],
-          processingWeightLoss: "5%",
-          stock: 22,
-          sale_price: 160,
-          regular_price: 210,
-          totalSold: 60,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
+    // Product data with specific images for each type
+    const productsWithImages = [
+      // -------- Fresh Water Fish --------
+      {
+        product: {
           title: "Bengali Rohu",
-          slug: "bengali-rohu-38",
+          slug: "bengali-rohu-fresh-water",
           category: "Fresh Water",
           subCategory: "Rui/Rohu",
-          short_description: "Fresh Bengali Rohu",
-          detailed_description: "<p>Fresh and tasty Rohu</p>",
-          tags: ["fresh", "rohu"],
-          sizes: ["250 gm", "500 gm", "1 kg"],
-          cuttingTypes: ["Whole", "Phile", "Thole"],
-          pieceSizes: ["small", "medium", "large"],
-          processingWeightLoss: "5-10%",
-          stock: 10,
-          sale_price: 200,
-          regular_price: 300,
-          totalSold: 120, // 🔥 BEST SELLER
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Katla Fish",
-          slug: "katla-fish-09",
-          category: "Fresh Water",
-          subCategory: "Katla/Catla",
-          short_description: "Fresh Katla Fish",
-          detailed_description: "<p>Healthy Katla fish</p>",
-          tags: ["katla", "fresh"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole", "Curry Cut"],
-          pieceSizes: ["medium", "large"],
-          processingWeightLoss: "5-8%",
-          stock: 8,
-          sale_price: 220,
-          regular_price: 320,
-          totalSold: 95, // 🔥 BEST SELLER
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Hilsa Fish",
-          slug: "hilsa-fish-8",
-          category: "Fresh Water",
-          subCategory: "Hilsa",
-          short_description: "Premium Hilsa Fish",
-          detailed_description: "<p>Premium quality Hilsa</p>",
-          tags: ["hilsa", "premium"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["large"],
-          processingWeightLoss: "6-10%",
-          stock: 5,
-          sale_price: 900,
-          regular_price: 1100,
-          totalSold: 30,
-          cashOnDelivery: "no",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Pomfret Fish",
-          slug: "pomfret-fish-81",
-          category: "Sea Fish",
-          subCategory: "Pomfret",
-          short_description: "Fresh Pomfret Fish",
-          detailed_description: "<p>Sea fresh Pomfret</p>",
-          tags: ["pomfret", "sea"],
-          sizes: ["500 gm"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["medium"],
-          processingWeightLoss: "4-7%",
-          stock: 6,
-          sale_price: 450,
-          regular_price: 550,
-          totalSold: 15,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Fish for Pets",
-          slug: "fish-for-pets",
-          category: "Pet Serve",
-          subCategory: "Fish for Pets",
-          short_description: "Fish for pet food",
-          detailed_description: "<p>Healthy fish for pets</p>",
-          tags: ["pet", "fish"],
-          sizes: ["1 kg"],
-          cuttingTypes: ["Whole"],
-          pieceSizes: ["large"],
-          processingWeightLoss: "3-5%",
-          stock: 12,
-          sale_price: 150,
-          regular_price: 200,
-          totalSold: 10,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-
-        {
-          title: "Tilapia Fish",
-          slug: "tilapia-fish",
-          category: "Fresh Water",
-          subCategory: "Tilapia",
-          short_description: "Fresh Tilapia fish",
-          detailed_description: "<p>Healthy freshwater Tilapia</p>",
-          tags: ["tilapia", "fresh"],
-          sizes: ["500 gm", "1 kg"],
-          cuttingTypes: ["Whole", "Curry Cut"],
-          pieceSizes: ["medium", "large"],
-          processingWeightLoss: "5-8%",
-          stock: 15,
-          sale_price: 180,
-          regular_price: 240,
-          totalSold: 40,
-          cashOnDelivery: "yes",
-          discount_codes: [],
-          storeId: store.id,
-        },
-        {
-          title: "Bengali Rohu",
-          slug: "bengali-rohu",
-          category: "Fresh Water",
-          subCategory: "Rui/Rohu",
-          short_description: "Fresh Bengali Rohu",
-          detailed_description: "<p>Fresh and tasty Rohu</p>",
-          tags: ["fresh", "rohu"],
-          sizes: ["250 gm", "500 gm", "1 kg"],
-          cuttingTypes: ["Whole", "Phile", "Thole"],
-          pieceSizes: ["small", "medium", "large"],
+          short_description:
+            "Fresh Bengali Rohu fish, perfect for traditional Bengali cuisine. Rich in omega-3 and protein.",
+          detailed_description:
+            "<p>Fresh and tasty Rohu fish, ideal for Bengali curries and traditional recipes. Known for its tender meat and rich flavor.</p>",
+          tags: ["rohu", "fresh", "bengali", "traditional"],
+          sizes: ["250g", "500g", "1kg"],
+          cuttingTypes: ["Whole", "Curry Cut", "Fillet"],
+          pieceSizes: ["Small", "Medium", "Large"],
           processingWeightLoss: "5-10%",
           stock: 10,
           sale_price: 200,
           regular_price: 300,
           totalSold: 120,
-          cashOnDelivery: "yes",
+          ratings: 4.8,
+          cashOnDelivery: "Yes",
           discount_codes: [],
+          status: "Active",
           storeId: store.id,
         },
-      ],
-    });
+        images: [
+          {
+            file_id: "rohu_fish_1",
+            url: "https://ik.imagekit.io/pay/rohu.jpg?updatedAt=1770539184817",
+          },
+          {
+            file_id: "rohu_fish_2",
+            url: "https://ik.imagekit.io/pay/hilsa.jpg?updatedAt=1770539184767",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Katla Fish",
+          slug: "katla-fish-fresh-water",
+          category: "Fresh Water",
+          subCategory: "Katla/Catla",
+          short_description:
+            "Fresh Katla fish with firm texture and mild flavor. Great for grilling and frying.",
+          detailed_description:
+            "<p>Healthy Katla fish, perfect for grilling, frying, or making delicious curry. High in protein and low in fat.</p>",
+          tags: ["katla", "fresh", "healthy"],
+          sizes: ["500g", "1kg", "2kg"],
+          cuttingTypes: ["Whole", "Curry Cut", "Steaks"],
+          pieceSizes: ["Medium", "Large"],
+          processingWeightLoss: "5-8%",
+          stock: 8,
+          sale_price: 220,
+          regular_price: 320,
+          totalSold: 95,
+          ratings: 4.6,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "katla_fish_1",
+            url: "https://ik.imagekit.io/pay/katla.jpg?updatedAt=1770539184787",
+          },
+          {
+            file_id: "katla_fish_2",
+            url: "https://ik.imagekit.io/pay/hilsa.jpg?updatedAt=1770539184767",
+          },
+          {
+            file_id: "katla_fish_3",
+            url: "https://ik.imagekit.io/pay/katla.jpg?updatedAt=1770539184787",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Hilsa Fish Premium",
+          slug: "hilsa-fish-premium-fresh-water",
+          category: "Fresh Water",
+          subCategory: "Hilsa",
+          short_description:
+            "Premium quality Hilsa fish, the king of fish in Bengali cuisine. Rich, oily, and flavorful.",
+          detailed_description:
+            "<p>Premium quality Hilsa fish, known for its rich taste and high omega-3 content. Perfect for special occasions and traditional Bengali preparations.</p>",
+          tags: ["hilsa", "premium", "bengali", "special"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Whole", "Sliced"],
+          pieceSizes: ["Large"],
+          processingWeightLoss: "6-10%",
+          stock: 5,
+          sale_price: 900,
+          regular_price: 1100,
+          totalSold: 30,
+          ratings: 4.9,
+          cashOnDelivery: "No",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "hilsa_fish_1",
+            url: "https://ik.imagekit.io/pay/hilsa.jpg?updatedAt=1770539184767",
+          },
+          {
+            file_id: "hilsa_fish_2",
+            url: "https://ik.imagekit.io/pay/katla.jpg?updatedAt=1770539184787",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Tilapia Fish",
+          slug: "tilapia-fish-fresh-water",
+          category: "Fresh Water",
+          subCategory: "Tilapia",
+          short_description:
+            "Fresh Tilapia fish with mild flavor and firm texture. Healthy and versatile.",
+          detailed_description:
+            "<p>Healthy freshwater Tilapia, low in calories and high in protein. Perfect for grilling, baking, or frying.</p>",
+          tags: ["tilapia", "fresh", "healthy", "versatile"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Whole", "Curry Cut", "Fillet"],
+          pieceSizes: ["Medium", "Large"],
+          processingWeightLoss: "5-8%",
+          stock: 15,
+          sale_price: 180,
+          regular_price: 240,
+          totalSold: 40,
+          ratings: 4.4,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "tilapia_fish_1",
+            url: "https://ik.imagekit.io/pay/tilapia.jpg?updatedAt=1770539184626",
+          },
+          {
+            file_id: "tilapia_fish_2",
+            url: "https://ik.imagekit.io/pay/tilapia.jpg?updatedAt=1770539184626",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Pabda Fish",
+          slug: "pabda-fish-fresh-water",
+          category: "Fresh Water",
+          subCategory: "Pabda",
+          short_description:
+            "Fresh Pabda fish, small and delicate with soft texture. Perfect for Bengali style curry.",
+          detailed_description:
+            "<p>Soft and tasty Pabda fish, ideal for traditional Bengali preparations. Known for its delicate flavor and tender meat.</p>",
+          tags: ["pabda", "fresh", "delicate", "bengali"],
+          sizes: ["250g", "500g"],
+          cuttingTypes: ["Whole"],
+          pieceSizes: ["Small", "Medium"],
+          processingWeightLoss: "4-6%",
+          stock: 12,
+          sale_price: 260,
+          regular_price: 320,
+          totalSold: 22,
+          ratings: 4.5,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "pabda_fish_1",
+            url: "https://ik.imagekit.io/pay/hilsa.jpg?updatedAt=1770539184767",
+          },
+          {
+            file_id: "pabda_fish_2",
+            url: "https://ik.imagekit.io/pay/hilsa.jpg?updatedAt=1770539184767",
+          },
+        ],
+      },
+
+      // -------- Sea Fish --------
+      {
+        product: {
+          title: "Indian Mackerel",
+          slug: "indian-mackerel-sea-fish",
+          category: "Sea Fish",
+          subCategory: "Mackerel",
+          short_description:
+            "Fresh sea Mackerel, rich in omega-3 fatty acids. Great for frying and grilling.",
+          detailed_description:
+            "<p>Rich in omega-3 and packed with nutrients. Perfect for shallow frying or grilling with minimal spices.</p>",
+          tags: ["mackerel", "sea", "omega3", "healthy"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Whole", "Cleaned"],
+          pieceSizes: ["Medium"],
+          processingWeightLoss: "6-9%",
+          stock: 20,
+          sale_price: 190,
+          regular_price: 250,
+          totalSold: 65,
+          ratings: 4.6,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "mackerel_1",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+          {
+            file_id: "mackerel_2",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Fresh Prawns",
+          slug: "fresh-prawns-sea-fish",
+          category: "Sea Fish",
+          subCategory: "Prawn",
+          short_description:
+            "Juicy sea prawns, perfect for curry and fry. Rich in protein and minerals.",
+          detailed_description:
+            "<p>Perfect for curry & fry. Fresh from the sea, these prawns are juicy, flavorful, and packed with protein.</p>",
+          tags: ["prawn", "seafood", "protein", "premium"],
+          sizes: ["250g", "500g", "1kg"],
+          cuttingTypes: ["Whole", "Cleaned", "Deveined"],
+          pieceSizes: ["Medium", "Large"],
+          processingWeightLoss: "10-15%",
+          stock: 18,
+          sale_price: 420,
+          regular_price: 520,
+          totalSold: 80,
+          ratings: 4.7,
+          cashOnDelivery: "No",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "prawn_1",
+            url: "https://ik.imagekit.io/pay/prawns.jpg?updatedAt=1770539184792",
+          },
+          {
+            file_id: "prawn_2",
+            url: "https://ik.imagekit.io/pay/prawns.jpg?updatedAt=1770539184792",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Pomfret Fish",
+          slug: "pomfret-fish-sea-fish",
+          category: "Sea Fish",
+          subCategory: "Pomfret",
+          short_description:
+            "Fresh Pomfret fish with delicate flavor and fine texture. Premium quality.",
+          detailed_description:
+            "<p>Sea fresh Pomfret with delicate flavor and fine texture. Perfect for steaming, frying, or grilling.</p>",
+          tags: ["pomfret", "sea", "premium", "delicate"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Whole", "Cleaned"],
+          pieceSizes: ["Medium", "Large"],
+          processingWeightLoss: "4-7%",
+          stock: 6,
+          sale_price: 450,
+          regular_price: 550,
+          totalSold: 15,
+          ratings: 4.8,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "pomfret_1",
+            url: "https://ik.imagekit.io/pay/pomfret.jpg?updatedAt=1770539184631",
+          },
+          {
+            file_id: "pomfret_2",
+            url: "https://ik.imagekit.io/pay/pomfret.jpg?updatedAt=1770539184631",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Sardine Fish",
+          slug: "sardine-fish-sea-fish",
+          category: "Sea Fish",
+          subCategory: "Sardine",
+          short_description:
+            "Fresh sardine fish, high in protein and omega-3. Perfect for frying.",
+          detailed_description:
+            "<p>High protein sea fish, rich in omega-3 fatty acids. Perfect for shallow frying with spices.</p>",
+          tags: ["sardine", "sea", "protein", "omega3"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Whole", "Cleaned"],
+          pieceSizes: ["Small", "Medium"],
+          processingWeightLoss: "5%",
+          stock: 22,
+          sale_price: 160,
+          regular_price: 210,
+          totalSold: 60,
+          ratings: 4.4,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "sardine_1",
+            url: "https://ik.imagekit.io/pay/rohu.jpg?updatedAt=1770539184817",
+          },
+          {
+            file_id: "sardine_2",
+            url: "https://ik.imagekit.io/pay/rohu.jpg?updatedAt=1770539184817",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Squid Rings",
+          slug: "squid-rings-sea-fish",
+          category: "Sea Fish",
+          subCategory: "Squid",
+          short_description:
+            "Fresh squid rings, ideal for frying and grilling. Tender and flavorful.",
+          detailed_description:
+            "<p>Ideal for frying and grilling. Pre-cut into rings for your convenience. Tender, flavorful, and versatile.</p>",
+          tags: ["squid", "seafood", "rings", "versatile"],
+          sizes: ["500g", "1kg"],
+          cuttingTypes: ["Rings", "Whole"],
+          pieceSizes: ["Medium"],
+          processingWeightLoss: "6%",
+          stock: 14,
+          sale_price: 380,
+          regular_price: 450,
+          totalSold: 28,
+          ratings: 4.5,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "squid_1",
+            url: "https://ik.imagekit.io/pay/rohu.jpg?updatedAt=1770539184817",
+          },
+          {
+            file_id: "squid_2",
+            url: "https://ik.imagekit.io/pay/rohu.jpg?updatedAt=1770539184817",
+          },
+        ],
+      },
+
+      // -------- Premium Sea Food --------
+      {
+        product: {
+          title: "King Crab",
+          slug: "king-crab-premium-sea-food",
+          category: "Premium Sea Food",
+          subCategory: "King Crab",
+          short_description:
+            "Premium King Crab, luxury seafood item. Sweet and succulent meat.",
+          detailed_description:
+            "<p>Luxury seafood item with sweet, succulent meat. Perfect for special occasions and gourmet preparations.</p>",
+          tags: ["crab", "premium", "luxury", "gourmet"],
+          sizes: ["1kg", "2kg"],
+          cuttingTypes: ["Whole", "Legs"],
+          pieceSizes: ["Large"],
+          processingWeightLoss: "8-12%",
+          stock: 5,
+          sale_price: 3200,
+          regular_price: 3800,
+          totalSold: 12,
+          ratings: 5.0,
+          cashOnDelivery: "No",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "king_crab_1",
+            url: "https://ik.imagekit.io/pay/lobster.jpg?updatedAt=1770539184409",
+          },
+          {
+            file_id: "king_crab_2",
+            url: "https://ik.imagekit.io/pay/lobster.jpg?updatedAt=1770539184409",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Lobster",
+          slug: "lobster-premium-sea-food",
+          category: "Premium Sea Food",
+          subCategory: "Lobster",
+          short_description:
+            "Fresh premium lobster, restaurant-grade quality. Tender and flavorful.",
+          detailed_description:
+            "<p>Restaurant-grade lobster with tender, flavorful meat. Perfect for grilling, steaming, or making gourmet dishes.</p>",
+          tags: ["lobster", "premium", "restaurant", "gourmet"],
+          sizes: ["1kg", "2kg"],
+          cuttingTypes: ["Whole", "Tails"],
+          pieceSizes: ["Large"],
+          processingWeightLoss: "10%",
+          stock: 4,
+          sale_price: 4500,
+          regular_price: 5200,
+          totalSold: 9,
+          ratings: 5.0,
+          cashOnDelivery: "No",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "lobster_1",
+            url: "https://ik.imagekit.io/pay/lobster.jpg?updatedAt=1770539184409",
+          },
+          {
+            file_id: "lobster_2",
+            url: "https://ik.imagekit.io/pay/lobster.jpg?updatedAt=1770539184409",
+          },
+        ],
+      },
+
+      // -------- Pet Serve --------
+      {
+        product: {
+          title: "Pet Fish Mix",
+          slug: "pet-fish-mix-pet-serve",
+          category: "Pet Serve",
+          subCategory: "Pet Fish Selection",
+          short_description:
+            "Nutritious fish mix for pets. Healthy and affordable pet food option.",
+          detailed_description:
+            "<p>Healthy mix for pets, packed with nutrients. Perfect for dogs and cats as a protein-rich meal supplement.</p>",
+          tags: ["pet", "nutrition", "healthy", "affordable"],
+          sizes: ["1kg", "2kg"],
+          cuttingTypes: ["Whole", "Cut Pieces"],
+          pieceSizes: ["Small", "Medium"],
+          processingWeightLoss: "2-4%",
+          stock: 25,
+          sale_price: 120,
+          regular_price: 160,
+          totalSold: 35,
+          ratings: 4.3,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "pet_fish_1",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+          {
+            file_id: "pet_fish_2",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+        ],
+      },
+      {
+        product: {
+          title: "Chicken Offal for Pets",
+          slug: "chicken-offal-pet-serve",
+          category: "Pet Serve",
+          subCategory: "Chicken Offal",
+          short_description:
+            "Protein-rich chicken offal for pets. Best for dogs and cats.",
+          detailed_description:
+            "<p>Best for dogs & cats. Rich in protein and essential nutrients. A healthy and economical pet food option.</p>",
+          tags: ["pet", "chicken", "protein", "nutritious"],
+          sizes: ["1kg", "2kg"],
+          cuttingTypes: ["Cleaned", "Mixed"],
+          pieceSizes: ["Medium"],
+          processingWeightLoss: "3%",
+          stock: 30,
+          sale_price: 140,
+          regular_price: 180,
+          totalSold: 50,
+          ratings: 4.4,
+          cashOnDelivery: "Yes",
+          discount_codes: [],
+          status: "Active",
+          storeId: store.id,
+        },
+        images: [
+          {
+            file_id: "chicken_offal_1",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+          {
+            file_id: "chicken_offal_2",
+            url: "https://ik.imagekit.io/pay/mackerel.jpg?updatedAt=1770539184395",
+          },
+        ],
+      },
+    ];
+
+    // Create products with their images
+    for (const item of productsWithImages) {
+      await prisma.products.create({
+        //@ts-ignore
+        data: {
+          ...item.product,
+          images: {
+            create: item.images.map((img) => ({
+              ...img,
+              type: "PRODUCT",
+            })),
+          },
+        },
+      });
+    }
+
+    console.log("✅ Products with images seeded successfully!");
   } else {
     console.log("✅ Products already exist — skipping");
   }
@@ -427,7 +613,7 @@ async function main() {
   });
 
   if (!favoritesExist) {
-    const products = await prisma.products.findMany({ take: 4 });
+    const products = await prisma.products.findMany({ take: 5 });
 
     await prisma.favorites.createMany({
       data: products.map((p) => ({
@@ -435,9 +621,12 @@ async function main() {
         productId: p.id,
       })),
     });
+    console.log("✅ Favorites seeded successfully!");
+  } else {
+    console.log("✅ Favorites already exist — skipping");
   }
 
-  console.log("✅ Seeding completed safely!");
+  console.log("🎉 Seeding completed successfully!");
 }
 
 main()

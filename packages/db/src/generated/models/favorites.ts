@@ -14,8 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model favorites
- * ///////////////////////////////////////////////////
- * ///////////////////////////////////////////////////
+ * 
  */
 export type favoritesModel = runtime.Types.Result.DefaultSelection<Prisma.$favoritesPayload>
 

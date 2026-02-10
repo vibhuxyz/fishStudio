@@ -54,7 +54,6 @@ export const ModelName = {
   sellers: 'sellers',
   stores: 'stores',
   storeReviews: 'storeReviews',
-  discount_codes: 'discount_codes',
   favorites: 'favorites',
   site_config: 'site_config',
   products: 'products'
@@ -70,9 +69,9 @@ export const ImagesScalarFieldEnum = {
   id: 'id',
   file_id: 'file_id',
   url: 'url',
-  userId: 'userId',
-  storeId: 'storeId',
-  productId: 'productId'
+  type: 'type',
+  productId: 'productId',
+  createdAt: 'createdAt'
 } as const
 
 export type ImagesScalarFieldEnum = (typeof ImagesScalarFieldEnum)[keyof typeof ImagesScalarFieldEnum]
@@ -83,6 +82,7 @@ export const UsersScalarFieldEnum = {
   phone_number: 'phone_number',
   name: 'name',
   following: 'following',
+  avatarId: 'avatarId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -108,12 +108,11 @@ export const StoresScalarFieldEnum = {
   id: 'id',
   name: 'name',
   bio: 'bio',
-  coverBanner: 'coverBanner',
+  avatarId: 'avatarId',
   address: 'address',
   city: 'city',
   pincode: 'pincode',
   opening_hours: 'opening_hours',
-  ratings: 'ratings',
   sellerId: 'sellerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -133,20 +132,6 @@ export const StoreReviewsScalarFieldEnum = {
 } as const
 
 export type StoreReviewsScalarFieldEnum = (typeof StoreReviewsScalarFieldEnum)[keyof typeof StoreReviewsScalarFieldEnum]
-
-
-export const Discount_codesScalarFieldEnum = {
-  id: 'id',
-  public_name: 'public_name',
-  discountType: 'discountType',
-  discountValue: 'discountValue',
-  discountCode: 'discountCode',
-  sellerId: 'sellerId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
 
 
 export const FavoritesScalarFieldEnum = {

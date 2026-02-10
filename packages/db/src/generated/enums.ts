@@ -9,6 +9,15 @@
 * 🟢 You can import this file directly.
 */
 
+export const ImageType = {
+  PRODUCT: 'PRODUCT',
+  USER_AVATAR: 'USER_AVATAR',
+  STORE_AVATAR: 'STORE_AVATAR'
+} as const
+
+export type ImageType = (typeof ImageType)[keyof typeof ImageType]
+
+
 export const productStatus = {
   Active: 'Active',
   Pending: 'Pending',

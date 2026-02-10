@@ -14,8 +14,7 @@ import type * as Prisma from "../internal/prismaNamespace.js"
 
 /**
  * Model users
- * ///////////////////////////////////////////////////
- * ///////////////////////////////////////////////////
+ * 
  */
 export type usersModel = runtime.Types.Result.DefaultSelection<Prisma.$usersPayload>
 
@@ -29,6 +28,7 @@ export type UsersMinAggregateOutputType = {
   id: string | null
   phone_number: string | null
   name: string | null
+  avatarId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -37,6 +37,7 @@ export type UsersMaxAggregateOutputType = {
   id: string | null
   phone_number: string | null
   name: string | null
+  avatarId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,6 +47,7 @@ export type UsersCountAggregateOutputType = {
   phone_number: number
   name: number
   following: number
+  avatarId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -56,6 +58,7 @@ export type UsersMinAggregateInputType = {
   id?: true
   phone_number?: true
   name?: true
+  avatarId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -64,6 +67,7 @@ export type UsersMaxAggregateInputType = {
   id?: true
   phone_number?: true
   name?: true
+  avatarId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -73,6 +77,7 @@ export type UsersCountAggregateInputType = {
   phone_number?: true
   name?: true
   following?: true
+  avatarId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -155,6 +160,7 @@ export type UsersGroupByOutputType = {
   phone_number: string
   name: string
   following: string[]
+  avatarId: string | null
   createdAt: Date
   updatedAt: Date
   _count: UsersCountAggregateOutputType | null
@@ -185,6 +191,7 @@ export type usersWhereInput = {
   phone_number?: Prisma.StringFilter<"users"> | string
   name?: Prisma.StringFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  avatarId?: Prisma.StringNullableFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
   avatar?: Prisma.XOR<Prisma.ImagesNullableScalarRelationFilter, Prisma.imagesWhereInput> | null
@@ -197,6 +204,7 @@ export type usersOrderByWithRelationInput = {
   phone_number?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   avatar?: Prisma.imagesOrderByWithRelationInput
@@ -212,6 +220,7 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   name?: Prisma.StringFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  avatarId?: Prisma.StringNullableFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
   avatar?: Prisma.XOR<Prisma.ImagesNullableScalarRelationFilter, Prisma.imagesWhereInput> | null
@@ -224,6 +233,7 @@ export type usersOrderByWithAggregationInput = {
   phone_number?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.usersCountOrderByAggregateInput
@@ -239,6 +249,7 @@ export type usersScalarWhereWithAggregatesInput = {
   phone_number?: Prisma.StringWithAggregatesFilter<"users"> | string
   name?: Prisma.StringWithAggregatesFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  avatarId?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
 }
@@ -260,9 +271,9 @@ export type usersUncheckedCreateInput = {
   phone_number: string
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  avatar?: Prisma.imagesUncheckedCreateNestedOneWithoutUsersInput
   storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
 }
@@ -282,9 +293,9 @@ export type usersUncheckedUpdateInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUncheckedUpdateOneWithoutUsersNestedInput
   storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -294,6 +305,7 @@ export type usersCreateManyInput = {
   phone_number: string
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -310,13 +322,19 @@ export type usersUncheckedUpdateManyInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type UsersNullableScalarRelationFilter = {
-  is?: Prisma.usersWhereInput | null
-  isNot?: Prisma.usersWhereInput | null
+export type UsersListRelationFilter = {
+  every?: Prisma.usersWhereInput
+  some?: Prisma.usersWhereInput
+  none?: Prisma.usersWhereInput
+}
+
+export type usersOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type StringNullableListFilter<$PrismaModel = never> = {
@@ -332,6 +350,7 @@ export type usersCountOrderByAggregateInput = {
   phone_number?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -340,6 +359,7 @@ export type usersMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -348,6 +368,7 @@ export type usersMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -357,20 +378,46 @@ export type UsersScalarRelationFilter = {
   isNot?: Prisma.usersWhereInput
 }
 
-export type usersCreateNestedOneWithoutAvatarInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput
-  connect?: Prisma.usersWhereUniqueInput
+export type usersCreateNestedManyWithoutAvatarInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput> | Prisma.usersCreateWithoutAvatarInput[] | Prisma.usersUncheckedCreateWithoutAvatarInput[]
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput | Prisma.usersCreateOrConnectWithoutAvatarInput[]
+  createMany?: Prisma.usersCreateManyAvatarInputEnvelope
+  connect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
 }
 
-export type usersUpdateOneWithoutAvatarNestedInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput
-  upsert?: Prisma.usersUpsertWithoutAvatarInput
-  disconnect?: boolean
-  delete?: Prisma.usersWhereInput | boolean
-  connect?: Prisma.usersWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutAvatarInput, Prisma.usersUpdateWithoutAvatarInput>, Prisma.usersUncheckedUpdateWithoutAvatarInput>
+export type usersUncheckedCreateNestedManyWithoutAvatarInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput> | Prisma.usersCreateWithoutAvatarInput[] | Prisma.usersUncheckedCreateWithoutAvatarInput[]
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput | Prisma.usersCreateOrConnectWithoutAvatarInput[]
+  createMany?: Prisma.usersCreateManyAvatarInputEnvelope
+  connect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+}
+
+export type usersUpdateManyWithoutAvatarNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput> | Prisma.usersCreateWithoutAvatarInput[] | Prisma.usersUncheckedCreateWithoutAvatarInput[]
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput | Prisma.usersCreateOrConnectWithoutAvatarInput[]
+  upsert?: Prisma.usersUpsertWithWhereUniqueWithoutAvatarInput | Prisma.usersUpsertWithWhereUniqueWithoutAvatarInput[]
+  createMany?: Prisma.usersCreateManyAvatarInputEnvelope
+  set?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  disconnect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  delete?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  connect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  update?: Prisma.usersUpdateWithWhereUniqueWithoutAvatarInput | Prisma.usersUpdateWithWhereUniqueWithoutAvatarInput[]
+  updateMany?: Prisma.usersUpdateManyWithWhereWithoutAvatarInput | Prisma.usersUpdateManyWithWhereWithoutAvatarInput[]
+  deleteMany?: Prisma.usersScalarWhereInput | Prisma.usersScalarWhereInput[]
+}
+
+export type usersUncheckedUpdateManyWithoutAvatarNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput> | Prisma.usersCreateWithoutAvatarInput[] | Prisma.usersUncheckedCreateWithoutAvatarInput[]
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAvatarInput | Prisma.usersCreateOrConnectWithoutAvatarInput[]
+  upsert?: Prisma.usersUpsertWithWhereUniqueWithoutAvatarInput | Prisma.usersUpsertWithWhereUniqueWithoutAvatarInput[]
+  createMany?: Prisma.usersCreateManyAvatarInputEnvelope
+  set?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  disconnect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  delete?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  connect?: Prisma.usersWhereUniqueInput | Prisma.usersWhereUniqueInput[]
+  update?: Prisma.usersUpdateWithWhereUniqueWithoutAvatarInput | Prisma.usersUpdateWithWhereUniqueWithoutAvatarInput[]
+  updateMany?: Prisma.usersUpdateManyWithWhereWithoutAvatarInput | Prisma.usersUpdateManyWithWhereWithoutAvatarInput[]
+  deleteMany?: Prisma.usersScalarWhereInput | Prisma.usersScalarWhereInput[]
 }
 
 export type usersCreatefollowingInput = {
@@ -380,10 +427,6 @@ export type usersCreatefollowingInput = {
 export type usersUpdatefollowingInput = {
   set?: string[]
   push?: string | string[]
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
 }
 
 export type usersCreateNestedOneWithoutStoreReviewsInput = {
@@ -441,35 +484,37 @@ export type usersCreateOrConnectWithoutAvatarInput = {
   create: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput>
 }
 
-export type usersUpsertWithoutAvatarInput = {
-  update: Prisma.XOR<Prisma.usersUpdateWithoutAvatarInput, Prisma.usersUncheckedUpdateWithoutAvatarInput>
-  create: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput>
-  where?: Prisma.usersWhereInput
+export type usersCreateManyAvatarInputEnvelope = {
+  data: Prisma.usersCreateManyAvatarInput | Prisma.usersCreateManyAvatarInput[]
 }
 
-export type usersUpdateToOneWithWhereWithoutAvatarInput = {
-  where?: Prisma.usersWhereInput
+export type usersUpsertWithWhereUniqueWithoutAvatarInput = {
+  where: Prisma.usersWhereUniqueInput
+  update: Prisma.XOR<Prisma.usersUpdateWithoutAvatarInput, Prisma.usersUncheckedUpdateWithoutAvatarInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutAvatarInput, Prisma.usersUncheckedCreateWithoutAvatarInput>
+}
+
+export type usersUpdateWithWhereUniqueWithoutAvatarInput = {
+  where: Prisma.usersWhereUniqueInput
   data: Prisma.XOR<Prisma.usersUpdateWithoutAvatarInput, Prisma.usersUncheckedUpdateWithoutAvatarInput>
 }
 
-export type usersUpdateWithoutAvatarInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  following?: Prisma.usersUpdatefollowingInput | string[]
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
-  favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
+export type usersUpdateManyWithWhereWithoutAvatarInput = {
+  where: Prisma.usersScalarWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateManyMutationInput, Prisma.usersUncheckedUpdateManyWithoutAvatarInput>
 }
 
-export type usersUncheckedUpdateWithoutAvatarInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  following?: Prisma.usersUpdatefollowingInput | string[]
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
-  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
+export type usersScalarWhereInput = {
+  AND?: Prisma.usersScalarWhereInput | Prisma.usersScalarWhereInput[]
+  OR?: Prisma.usersScalarWhereInput[]
+  NOT?: Prisma.usersScalarWhereInput | Prisma.usersScalarWhereInput[]
+  id?: Prisma.StringFilter<"users"> | string
+  phone_number?: Prisma.StringFilter<"users"> | string
+  name?: Prisma.StringFilter<"users"> | string
+  following?: Prisma.StringNullableListFilter<"users">
+  avatarId?: Prisma.StringNullableFilter<"users"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
 }
 
 export type usersCreateWithoutStoreReviewsInput = {
@@ -488,9 +533,9 @@ export type usersUncheckedCreateWithoutStoreReviewsInput = {
   phone_number: string
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  avatar?: Prisma.imagesUncheckedCreateNestedOneWithoutUsersInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -524,9 +569,9 @@ export type usersUncheckedUpdateWithoutStoreReviewsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUncheckedUpdateOneWithoutUsersNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -546,9 +591,9 @@ export type usersUncheckedCreateWithoutFavoritesInput = {
   phone_number: string
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  avatar?: Prisma.imagesUncheckedCreateNestedOneWithoutUsersInput
   storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -582,10 +627,47 @@ export type usersUncheckedUpdateWithoutFavoritesInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUncheckedUpdateOneWithoutUsersNestedInput
   storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type usersCreateManyAvatarInput = {
+  id?: string
+  phone_number: string
+  name: string
+  following?: Prisma.usersCreatefollowingInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type usersUpdateWithoutAvatarInput = {
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.usersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
+  favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
+}
+
+export type usersUncheckedUpdateWithoutAvatarInput = {
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.usersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
+  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type usersUncheckedUpdateManyWithoutAvatarInput = {
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.usersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -633,6 +715,7 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   phone_number?: boolean
   name?: boolean
   following?: boolean
+  avatarId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   avatar?: boolean | Prisma.users$avatarArgs<ExtArgs>
@@ -648,11 +731,12 @@ export type usersSelectScalar = {
   phone_number?: boolean
   name?: boolean
   following?: boolean
+  avatarId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone_number" | "name" | "following" | "createdAt" | "updatedAt", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone_number" | "name" | "following" | "avatarId" | "createdAt" | "updatedAt", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   avatar?: boolean | Prisma.users$avatarArgs<ExtArgs>
   storeReviews?: boolean | Prisma.users$storeReviewsArgs<ExtArgs>
@@ -672,6 +756,7 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     phone_number: string
     name: string
     following: string[]
+    avatarId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["users"]>
@@ -1073,6 +1158,7 @@ export interface usersFieldRefs {
   readonly phone_number: Prisma.FieldRef<"users", 'String'>
   readonly name: Prisma.FieldRef<"users", 'String'>
   readonly following: Prisma.FieldRef<"users", 'String[]'>
+  readonly avatarId: Prisma.FieldRef<"users", 'String'>
   readonly createdAt: Prisma.FieldRef<"users", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"users", 'DateTime'>
 }
