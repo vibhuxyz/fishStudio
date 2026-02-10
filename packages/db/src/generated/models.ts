@@ -10,6 +10,7 @@
  */
 export type * from './models/images.js'
 export type * from './models/users.js'
+export type * from './models/discount_codes.js'
 export type * from './models/sellers.js'
 export type * from './models/stores.js'
 export type * from './models/storeReviews.js'

@@ -392,6 +392,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   images: 'images',
   users: 'users',
+  discount_codes: 'discount_codes',
   sellers: 'sellers',
   stores: 'stores',
   storeReviews: 'storeReviews',
@@ -413,7 +414,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "images" | "users" | "sellers" | "stores" | "storeReviews" | "favorites" | "site_config" | "products"
+    modelProps: "images" | "users" | "discount_codes" | "sellers" | "stores" | "storeReviews" | "favorites" | "site_config" | "products"
     txIsolationLevel: never
   }
   model: {
@@ -562,6 +563,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.usersCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UsersCountAggregateOutputType> | number
+        }
+      }
+    }
+    discount_codes: {
+      payload: Prisma.$discount_codesPayload<ExtArgs>
+      fields: Prisma.discount_codesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.discount_codesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.discount_codesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        findFirst: {
+          args: Prisma.discount_codesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.discount_codesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        findMany: {
+          args: Prisma.discount_codesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>[]
+        }
+        create: {
+          args: Prisma.discount_codesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        createMany: {
+          args: Prisma.discount_codesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.discount_codesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        update: {
+          args: Prisma.discount_codesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        deleteMany: {
+          args: Prisma.discount_codesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.discount_codesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.discount_codesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$discount_codesPayload>
+        }
+        aggregate: {
+          args: Prisma.Discount_codesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDiscount_codes>
+        }
+        groupBy: {
+          args: Prisma.discount_codesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Discount_codesGroupByOutputType>[]
+        }
+        findRaw: {
+          args: Prisma.discount_codesFindRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        aggregateRaw: {
+          args: Prisma.discount_codesAggregateRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        count: {
+          args: Prisma.discount_codesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Discount_codesCountAggregateOutputType> | number
         }
       }
     }
@@ -1051,6 +1126,20 @@ export const UsersScalarFieldEnum = {
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
 
 
+export const Discount_codesScalarFieldEnum = {
+  id: 'id',
+  public_name: 'public_name',
+  discountType: 'discountType',
+  discountValue: 'discountValue',
+  discountCode: 'discountCode',
+  sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Discount_codesScalarFieldEnum = (typeof Discount_codesScalarFieldEnum)[keyof typeof Discount_codesScalarFieldEnum]
+
+
 export const SellersScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -1354,6 +1443,7 @@ export interface PrismaClientOptions {
 export type GlobalOmitConfig = {
   images?: Prisma.imagesOmit
   users?: Prisma.usersOmit
+  discount_codes?: Prisma.discount_codesOmit
   sellers?: Prisma.sellersOmit
   stores?: Prisma.storesOmit
   storeReviews?: Prisma.storeReviewsOmit

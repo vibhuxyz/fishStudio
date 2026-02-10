@@ -55,6 +55,11 @@ export type images = Prisma.imagesModel
  */
 export type users = Prisma.usersModel
 /**
+ * Model discount_codes
+ * 
+ */
+export type discount_codes = Prisma.discount_codesModel
+/**
  * Model sellers
  * 
  */

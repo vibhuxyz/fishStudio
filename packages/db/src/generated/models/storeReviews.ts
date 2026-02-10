@@ -487,14 +487,6 @@ export type storeReviewsUncheckedUpdateManyWithoutStoreNestedInput = {
   deleteMany?: Prisma.storeReviewsScalarWhereInput | Prisma.storeReviewsScalarWhereInput[]
 }
 
-export type FloatFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type storeReviewsCreateWithoutUserInput = {
   id?: string
   rating: number
