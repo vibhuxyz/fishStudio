@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Minus, Plus, Info } from "lucide-react";
 import {
@@ -18,10 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { siteConfig } from "@/lib/data";
 import { addToCart } from "@/lib/cart-store";
-import type { Product, CuttingType, PieceSize, ProcessingWeightLoss } from "@/lib/types";
+// Import the type that matches your backend response
+import type { Product } from "@repo/types";
 
 interface AddToCartModalProps {
   product: Product | null;
@@ -34,75 +33,62 @@ export function AddToCartModal({
   open,
   onOpenChange,
 }: AddToCartModalProps) {
-  const [selectedCutting, setSelectedCutting] = useState<string>(
-    siteConfig.cuttingTypes[0].id
-  );
-  const [selectedPieceSize, setSelectedPieceSize] = useState<string>(
-    siteConfig.pieceSizes[2].id
-  );
+  // Initialize state. We use strings because your backend returns string arrays (e.g. ["Whole", "Fillet"])
+  const [selectedCutting, setSelectedCutting] = useState<string>("");
+  const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [quantity, setQuantity] = useState(0.5);
+  const [quantity, setQuantity] = useState(1); // Default to 1 unit (e.g. 1 fish or 1 pack)
 
-  const cuttingType = siteConfig.cuttingTypes.find(
-    (c) => c.id === selectedCutting
-  ) as CuttingType;
-  const pieceSize = siteConfig.pieceSizes.find(
-    (p) => p.id === selectedPieceSize
-  ) as PieceSize;
-
-  const availableSizes = useMemo(() => {
-    if (!product) return siteConfig.sizes.default;
-    return (
-      siteConfig.sizes[product.subCategory] || siteConfig.sizes.default
-    );
-  }, [product]);
-
-  const weightLossInfo = useMemo(() => {
-    const wl = siteConfig.processingWeightLoss[selectedCutting];
-    if (typeof wl === "number") return null;
-    return wl as ProcessingWeightLoss;
-  }, [selectedCutting]);
+  // Reset state when the modal opens or product changes
+  useEffect(() => {
+    if (open && product) {
+      // Default to the first available option from the backend arrays
+      setSelectedCutting(product.cuttingTypes?.[0] || "");
+      setSelectedPieceSize(product.pieceSizes?.[0] || "");
+      setSelectedSize(product.sizes?.[0] || "");
+      setQuantity(1);
+    }
+  }, [open, product]);
 
   const totalPayable = useMemo(() => {
     if (!product) return 0;
+    // Assuming price is per unit/kg. Adjust logic if needed based on `selectedSize`
     return Number.parseFloat((product.price * quantity).toFixed(2));
   }, [product, quantity]);
 
-  // Reset state when product changes
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && product) {
-      setSelectedCutting(siteConfig.cuttingTypes[0].id);
-      setSelectedPieceSize(siteConfig.pieceSizes[2].id);
-      setSelectedSize(availableSizes[0] || "");
-      setQuantity(0.5);
-    }
-    onOpenChange(isOpen);
-  };
-
   const handleAddToCart = () => {
-    if (!product || !cuttingType || !pieceSize) return;
-    addToCart(product, quantity, cuttingType, pieceSize, selectedSize || availableSizes[0]);
+    if (!product) return;
+
+    // Pass the simple string values to your cart store
+    addToCart(
+      product,
+      quantity,
+      selectedCutting,
+      selectedPieceSize,
+      selectedSize,
+    );
+
     onOpenChange(false);
   };
 
   if (!product) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl text-foreground">
             Customize Your Order
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Select your cutting type, piece size and quantity
+            Select your preferences for {product.name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-6 md:flex-row">
           {/* Product image */}
           <div className="flex-shrink-0">
-            <div className="relative h-48 w-full overflow-hidden rounded-xl md:h-56 md:w-56">
+            <div className="relative h-48 w-full overflow-hidden rounded-xl md:h-56 md:w-56 bg-muted">
               <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
@@ -114,7 +100,7 @@ export function AddToCartModal({
             </div>
           </div>
 
-          {/* Product info */}
+          {/* Product info & Options */}
           <div className="flex-1">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               {product.subCategory}
@@ -123,92 +109,98 @@ export function AddToCartModal({
             <p className="mt-1 text-sm text-muted-foreground">
               {product.description}
             </p>
+
             <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Product Code: {product.id}</span>
+              {/* Using slice to show a shorter ID if it's a long Mongo ID */}
+              <span>Product Code: {product.id.slice(-6).toUpperCase()}</span>
             </div>
+
             <p className="mt-2 text-lg font-bold text-primary">
-              Price: Rs. {product.price} per Kg
+              Price: Rs. {product.price}{" "}
+              <span className="text-sm font-normal text-muted-foreground">
+                / {selectedSize || "unit"}
+              </span>
             </p>
 
-            {/* Cutting Type */}
-            <div className="mt-4">
-              <label className="text-sm font-medium text-foreground">
-                Cutting Type
-              </label>
-              <Select value={selectedCutting} onValueChange={setSelectedCutting}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteConfig.cuttingTypes.map((ct) => (
-                    <SelectItem key={ct.id} value={ct.id}>
-                      {ct.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {cuttingType && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {cuttingType.description}
-                </p>
-              )}
-            </div>
+            {/* 1. Cutting Type Selection */}
+            {product.cuttingTypes && product.cuttingTypes.length > 0 && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-foreground">
+                  Cutting Type
+                </label>
+                <Select
+                  value={selectedCutting}
+                  onValueChange={setSelectedCutting}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select cutting type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {product.cuttingTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {/* Piece Size */}
-            <div className="mt-4">
-              <label className="text-sm font-medium text-foreground">
-                Piece Size
-              </label>
-              <Select
-                value={selectedPieceSize}
-                onValueChange={setSelectedPieceSize}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {siteConfig.pieceSizes.map((ps) => (
-                    <SelectItem key={ps.id} value={ps.id}>
-                      {ps.name} ({ps.range})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {pieceSize && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Best for: {pieceSize.useCase}
-                </p>
-              )}
-            </div>
+            {/* 2. Piece Size Selection */}
+            {product.pieceSizes && product.pieceSizes.length > 0 && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-foreground">
+                  Piece Size
+                </label>
+                <Select
+                  value={selectedPieceSize}
+                  onValueChange={setSelectedPieceSize}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select piece size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {product.pieceSizes.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {/* Fish Size */}
-            <div className="mt-4">
-              <label className="text-sm font-medium text-foreground">
-                Fish Size
-              </label>
-              <Select
-                value={selectedSize || availableSizes[0]}
-                onValueChange={setSelectedSize}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSizes.map((size) => (
-                    <SelectItem key={size} value={size}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* 3. Fish/Pack Size Selection */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-foreground">
+                  Pack / Fish Size
+                </label>
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {product.sizes.map((size) => (
+                      <SelectItem key={size} value={size}>
+                        {size}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            {/* Weight Loss Info */}
-            {weightLossInfo && (
+            {/* Weight Loss Info (from Backend string) */}
+            {product.processingWeightLoss && (
               <div className="mt-3 flex items-start gap-2 rounded-md border border-border bg-muted/50 p-2.5">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
-                  Processing weight loss ({weightLossInfo.min}% - {weightLossInfo.max}%) basis cut type. {weightLossInfo.description}
+                  Processing weight loss:{" "}
+                  <span className="font-medium">
+                    {product.processingWeightLoss}
+                  </span>{" "}
+                  (varies by cutting type).
                 </p>
               </div>
             )}
@@ -220,7 +212,7 @@ export function AddToCartModal({
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 rounded-full bg-transparent"
-                  onClick={() => setQuantity(Math.max(0.25, quantity - 0.25))}
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 >
                   <Minus className="h-3 w-3" />
                   <span className="sr-only">Decrease quantity</span>
@@ -232,7 +224,7 @@ export function AddToCartModal({
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 rounded-full bg-transparent"
-                  onClick={() => setQuantity(quantity + 0.25)}
+                  onClick={() => setQuantity(quantity + 1)}
                 >
                   <Plus className="h-3 w-3" />
                   <span className="sr-only">Increase quantity</span>
@@ -252,7 +244,7 @@ export function AddToCartModal({
                 className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={handleAddToCart}
               >
-                Add to cart
+                Add to Cart
               </Button>
               <Button
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"

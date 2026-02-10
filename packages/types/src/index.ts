@@ -1,1 +1,1 @@
-console.log("Hello via Bun!");
+export type { BackendProduct, Product } from "./backend-product";

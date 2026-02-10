@@ -9,14 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { ProductCard } from "@/components/shared/product-card";
-import {
-  siteConfig,
-  categoryKeyMap,
-  categorySlugMap,
-  getSubCategoryNames,
-} from "@/lib/data";
-import { useCategoryProducts } from "@/hooks/use-products";
-import type { Product, CategoryKey } from "@/lib/types";
+import { useProducts } from "@/hooks/useProducts"; // Reuse your main hook
+import type { Product } from "@repo/types";
+
+// Helper to format category names for display (e.g. "fresh-water" -> "Fresh Water")
+const formatCategoryName = (slug: string) => {
+  return slug
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 export default function CategoryPage({
   params,
@@ -29,26 +31,56 @@ export default function CategoryPage({
   const { sub: initialSub } = use(searchParams);
 
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(
-    initialSub || null
+    initialSub || null,
   );
 
-  const decodedSlug = decodeURIComponent(slug);
-  const categoryName = categorySlugMap[decodedSlug];
-  const categoryKey = categoryName
-    ? (categoryKeyMap[categoryName] as CategoryKey | undefined)
-    : undefined;
-  const subCategoryNames = categoryKey ? getSubCategoryNames(categoryKey) : [];
+  // 1. Fetch ALL products using your existing hook
+  const { allProducts, isLoading } = useProducts();
 
-  const { data: allCategoryProducts = [] } = useCategoryProducts(decodedSlug);
+  // 2. Decode the slug (e.g., "fresh-water")
+  const categorySlug = decodeURIComponent(slug);
 
-  const filteredProducts = useMemo(() => {
-    if (!activeSubCategory) return allCategoryProducts;
-    return allCategoryProducts.filter(
-      (p) => p.subCategory === activeSubCategory
+  // 3. Filter products that belong to this category based on the URL slug
+  // We compare specific normalized versions to ensure matches
+  const categoryProducts = useMemo(() => {
+    return allProducts.filter((p) => {
+      // Normalize product category to slug format for comparison
+      const productCategorySlug = p.category
+        .toLowerCase()
+        .replace(/[\s&]+/g, "-");
+      return productCategorySlug === categorySlug;
+    });
+  }, [allProducts, categorySlug]);
+
+  // 4. Derive unique subcategories from the filtered products
+  const subCategories = useMemo(() => {
+    const subs = new Set(categoryProducts.map((p) => p.subCategory));
+    return Array.from(subs).sort();
+  }, [categoryProducts]);
+
+  // 5. Filter again based on the active subcategory (if selected)
+  const displayedProducts = useMemo(() => {
+    if (!activeSubCategory) return categoryProducts;
+    return categoryProducts.filter((p) => p.subCategory === activeSubCategory);
+  }, [categoryProducts, activeSubCategory]);
+
+  const categoryDisplayName = formatCategoryName(categorySlug);
+
+  // Loading State
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex flex-1 items-center justify-center">
+          <p>Loading products...</p>
+        </main>
+        <SiteFooter />
+      </div>
     );
-  }, [allCategoryProducts, activeSubCategory]);
+  }
 
-  if (!categoryName) {
+  // 404 State - No products found for this category
+  if (categoryProducts.length === 0) {
     return (
       <div className="flex min-h-screen flex-col">
         <SiteHeader />
@@ -58,7 +90,7 @@ export default function CategoryPage({
               Category Not Found
             </h1>
             <p className="mt-2 text-muted-foreground">
-              The category you are looking for does not exist.
+              We couldn't find any products for "{categoryDisplayName}".
             </p>
             <Link href="/">
               <Button className="mt-4 bg-transparent" variant="outline">
@@ -89,11 +121,11 @@ export default function CategoryPage({
             </Link>
 
             <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
-              {categoryName}
+              {categoryDisplayName}
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Browse our fresh selection of {categoryName.toLowerCase()}{" "}
-              products. {allCategoryProducts.length} products available.
+              Browse our fresh selection of {categoryDisplayName.toLowerCase()}{" "}
+              products. {categoryProducts.length} products available.
             </p>
           </div>
         </div>
@@ -119,17 +151,17 @@ export default function CategoryPage({
                     onClick={() => setActiveSubCategory(null)}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span>All {categoryName}</span>
+                      <span>All</span>
                       <Badge variant="secondary" className="text-[10px]">
-                        {allCategoryProducts.length}
+                        {categoryProducts.length}
                       </Badge>
                     </span>
                   </button>
 
                   {/* SubCategory buttons */}
-                  {subCategoryNames.map((sub) => {
-                    const count = allCategoryProducts.filter(
-                      (p) => p.subCategory === sub
+                  {subCategories.map((sub) => {
+                    const count = categoryProducts.filter(
+                      (p) => p.subCategory === sub,
                     ).length;
                     const isActive = activeSubCategory === sub;
                     return (
@@ -162,7 +194,7 @@ export default function CategoryPage({
                 <p className="text-sm text-muted-foreground">
                   Showing{" "}
                   <span className="font-semibold text-foreground">
-                    {filteredProducts.length}
+                    {displayedProducts.length}
                   </span>{" "}
                   {activeSubCategory
                     ? `products in "${activeSubCategory}"`
@@ -170,8 +202,8 @@ export default function CategoryPage({
                 </p>
               </div>
 
-              {/* If a subcategory is selected, just show products. If "all", group by subcategory */}
               {activeSubCategory ? (
+                // Filtered View
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={activeSubCategory}
@@ -181,7 +213,7 @@ export default function CategoryPage({
                     transition={{ duration: 0.15 }}
                     className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
                   >
-                    {filteredProducts.map((product, index) => (
+                    {displayedProducts.map((product, index) => (
                       <ProductCard
                         key={product.id}
                         product={product}
@@ -192,10 +224,11 @@ export default function CategoryPage({
                   </motion.div>
                 </AnimatePresence>
               ) : (
+                // "All" View - Grouped by Subcategory
                 <div className="flex flex-col gap-10">
-                  {subCategoryNames.map((sub) => {
-                    const subProducts = allCategoryProducts.filter(
-                      (p) => p.subCategory === sub
+                  {subCategories.map((sub) => {
+                    const subProducts = categoryProducts.filter(
+                      (p) => p.subCategory === sub,
                     );
                     if (subProducts.length === 0) return null;
                     return (
@@ -228,13 +261,10 @@ export default function CategoryPage({
                 </div>
               )}
 
-              {filteredProducts.length === 0 && (
+              {displayedProducts.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <p className="text-lg font-semibold text-foreground">
                     No products found
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Try selecting a different subcategory.
                   </p>
                   <Button
                     variant="outline"

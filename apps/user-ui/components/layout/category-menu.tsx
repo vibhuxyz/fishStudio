@@ -16,7 +16,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks/useCategories";
-import type { CategoryKey } from "@/lib/types";
 
 const categoryKeyMap: Record<string, string> = {
   "Fresh Water": "freshWater",

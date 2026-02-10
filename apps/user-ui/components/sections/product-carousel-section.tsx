@@ -1,5 +1,6 @@
+// "use client";
 import { ProductCarousel } from "@/components/shared/product-carousel";
-import type { Product } from "@/lib/types";
+import { Product } from "@repo/types";
 
 interface ProductCarouselSectionProps {
   title: string;

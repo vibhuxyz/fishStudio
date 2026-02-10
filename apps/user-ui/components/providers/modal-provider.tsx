@@ -10,7 +10,7 @@ import {
 import { AddToCartModal } from "@/components/shared/add-to-cart-modal";
 import { LoginModal } from "@/components/shared/login-modal";
 import { CartSidebar } from "@/components/shared/cart-sidebar";
-import type { Product } from "@/lib/types";
+import { Product } from "@repo/types";
 
 interface ModalContextType {
   openLogin: () => void;

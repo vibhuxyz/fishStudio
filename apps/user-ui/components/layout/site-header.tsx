@@ -2,7 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Search, User, ShoppingCart, LayoutGrid, Fish, LogOut } from "lucide-react";
+import {
+  Search,
+  User,
+  ShoppingCart,
+  LayoutGrid,
+  Fish,
+  LogOut,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +87,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   return (
     <>
-      <AnnouncementBar />
+      {/*<AnnouncementBar />*/}
 
       <header className="sticky top-0 z-40 border-b border-border bg-background shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
@@ -100,7 +107,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
           </Link>
 
           {/* Search Bar */}
-          <div className="relative flex max-w-xl flex-1 items-center" ref={dropdownRef}>
+          <div
+            className="relative flex max-w-xl flex-1 items-center"
+            ref={dropdownRef}
+          >
             <div className="relative flex w-full items-center">
               <Input
                 type="text"

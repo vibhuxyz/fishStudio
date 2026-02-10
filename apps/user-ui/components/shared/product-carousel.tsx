@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./product-card";
-import type { Product } from "@/lib/types";
+import { Product } from "@repo/types";
 
 interface ProductCarouselProps {
   products: Product[];

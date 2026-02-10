@@ -1,5 +1,5 @@
-import type { BackendProduct } from "@repo/types";
-import type { Product } from "@/lib/types"; // or wherever Product type is defined
+import type { BackendProduct, Product } from "@repo/types";
+// or wherever Product type is defined
 
 /**
  * Converts BackendProduct from API to Product format expected by cart/modals

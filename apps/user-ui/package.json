@@ -64,6 +64,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@repo/types": "workspace:*",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22",
     "@types/react": "^19",

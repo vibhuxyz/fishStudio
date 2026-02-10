@@ -27,7 +27,7 @@ router.post(
 );
 router.get("/get-discount-codes", isAuthenticated, isSeller, getDiscountCodes);
 
-router.get("/get-categories", isAuthenticated, isSeller, getCategories);
+router.get("/get-categories", getCategories);
 
 router.post("/create-product", isAuthenticated, isSeller, createProduct);
 router.get("/get-all-products", getStoreProducts);
@@ -38,6 +38,8 @@ router.post(
   isSeller,
   uploadProductImage,
 );
+
+export default router;
 
 // router.delete(
 //   "/delete-discount-code/:id",
@@ -65,4 +67,3 @@ router.post(
 //   isSeller,
 //   restoreProduct,
 // );
-export default router;

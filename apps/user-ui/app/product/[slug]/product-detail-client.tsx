@@ -24,8 +24,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { ProductCarousel } from "@/components/shared/product-carousel";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
-import { siteConfig } from "@/lib/data";
-import type { Product, ProcessingWeightLoss } from "@/lib/types";
+import type { Product } from "@repo/types";
 
 const BLUR_DATA =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCw4QDAsNEQ4SEBQSEBESFBcWFxcYGBsbGBshICD/2wBDAQMEBAUEBQkFBQkhEAsQISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISH/wAARCAAIAAgDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EAB8QAAICAgIDAQAAAAAAAAAAAAECAwQFEQASITFBcf/EABUBAQEAAAAAAAAAAAAAAAAAAAUG/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxExQf/aAAwDAQACEQMRAD8Al4/LZCnlKtaOysVeSRUVmQEqCdAnf0eXqd4bVTk7mO3LWIZB3i+y9c=";
@@ -38,46 +37,40 @@ interface Props {
 export function ProductDetailClient({ product, relatedProducts }: Props) {
   const modals = useModals();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Initialize state with the first available option from the backend data
   const [selectedCutting, setSelectedCutting] = useState(
-    siteConfig.cuttingTypes[0].id,
+    product.cuttingTypes?.[0] || "",
   );
   const [selectedPieceSize, setSelectedPieceSize] = useState(
-    siteConfig.pieceSizes[2].id,
+    product.pieceSizes?.[0] || "",
   );
-  const [selectedSize, setSelectedSize] = useState("");
-  const [quantity, setQuantity] = useState(0.25);
+  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
 
-  const cuttingType = siteConfig.cuttingTypes.find(
-    (c) => c.id === selectedCutting,
-  );
-  const pieceSize = siteConfig.pieceSizes.find(
-    (p) => p.id === selectedPieceSize,
-  );
-
-  const availableSizes = useMemo(() => {
-    return siteConfig.sizes[product.subCategory] || siteConfig.sizes.default;
-  }, [product]);
-
-  const weightLossInfo = useMemo(() => {
-    const wl = siteConfig.processingWeightLoss[selectedCutting];
-    if (typeof wl === "number") return null;
-    return wl as ProcessingWeightLoss;
-  }, [selectedCutting]);
+  // Default to 1 unit (e.g. 1 pack of 500g)
+  const [quantity, setQuantity] = useState(1);
 
   const totalPayable = useMemo(() => {
     return Number.parseFloat((product.price * quantity).toFixed(2));
   }, [product, quantity]);
 
-  const productImages = [product.image, product.image];
+  // Create a gallery. If backend only sends one image, we use that.
+  // Duplicating it just to keep the carousel UI functional if it expects >1.
+  const productImages =
+    product.images && product.images.length > 0
+      ? product.images
+      : [product.image || "/placeholder.svg"];
 
   const handleAddToCart = () => {
-    if (!cuttingType || !pieceSize) return;
+    // Basic validation to ensure options are selected
+    if (!selectedCutting || !selectedPieceSize) return;
+
     addToCart(
       product,
       quantity,
-      cuttingType,
-      pieceSize,
-      selectedSize || availableSizes[0],
+      selectedCutting,
+      selectedPieceSize,
+      selectedSize,
     );
     modals.openCart();
   };
@@ -95,14 +88,18 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
             </Link>
             <span>/</span>
             <Link
-              href={`/category/${encodeURIComponent(product.category.toLowerCase().replace(/[\s&]+/g, "-"))}`}
+              href={`/category/${encodeURIComponent(
+                product.category.toLowerCase().replace(/[\s&]+/g, "-"),
+              )}`}
               className="transition-colors hover:text-foreground"
             >
               {product.category}
             </Link>
             <span>/</span>
             <Link
-              href={`/category/${encodeURIComponent(product.category.toLowerCase().replace(/[\s&]+/g, "-"))}?sub=${encodeURIComponent(product.subCategory)}`}
+              href={`/category/${encodeURIComponent(
+                product.category.toLowerCase().replace(/[\s&]+/g, "-"),
+              )}?sub=${encodeURIComponent(product.subCategory)}`}
               className="transition-colors hover:text-foreground"
             >
               {product.subCategory}
@@ -117,7 +114,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
               <div className="flex-shrink-0">
                 <div className="relative h-72 w-full overflow-hidden rounded-xl md:h-80 md:w-96">
                   <Image
-                    src={productImages[currentImageIndex] || "/placeholder.svg"}
+                    src={productImages[currentImageIndex]}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -141,7 +138,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       }`}
                     >
                       <Image
-                        src={img || "/placeholder.svg"}
+                        src={img}
                         alt={`${product.name} thumbnail ${i + 1}`}
                         width={64}
                         height={64}
@@ -152,6 +149,8 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       />
                     </button>
                   ))}
+
+                  {/* Image Navigation Buttons */}
                   <div className="ml-2 flex gap-2">
                     <Button
                       variant="outline"
@@ -192,17 +191,18 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 <h1 className="mt-1 font-serif text-2xl font-bold text-primary md:text-3xl">
                   {product.name}
                 </h1>
-                <p className="mt-2 text-base text-muted-foreground">
-                  {product.description}
-                </p>
+                <div
+                  className="mt-2 text-base text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
 
                 <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Product Code: {product.id}</span>
-                  {weightLossInfo && (
-                    <span>
-                      Weight Loss: {weightLossInfo.min}% -{" "}
-                      {weightLossInfo.max}% kg
-                    </span>
+                  {/* Displaying shortened ID */}
+                  <span>
+                    Product Code: {product.id.slice(-6).toUpperCase()}
+                  </span>
+                  {product.processingWeightLoss && (
+                    <span>Weight Loss: {product.processingWeightLoss}</span>
                   )}
                 </div>
 
@@ -218,99 +218,118 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     />
                   ))}
                   <span className="text-sm text-muted-foreground">
-                    ({product.reviews} reviews)
+                    ({product.rating} rating)
                   </span>
                 </div>
 
                 <p className="mt-4 text-xl font-bold text-primary">
-                  Price: Rs. {product.price} per Kg
+                  Price: Rs. {product.price}
+                  {selectedSize ? (
+                    <span className="text-sm font-normal text-muted-foreground">
+                      {" "}
+                      / {selectedSize}
+                    </span>
+                  ) : (
+                    ""
+                  )}
                 </p>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
+                  {/* Cutting Type Dropdown */}
+                  {product.cuttingTypes && product.cuttingTypes.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-foreground">
+                        Cutting Type
+                      </label>
+                      <Select
+                        value={selectedCutting}
+                        onValueChange={setSelectedCutting}
+                      >
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Select cutting type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {product.cuttingTypes.map((ct) => (
+                            <SelectItem key={ct} value={ct}>
+                              {ct}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Piece Size Dropdown */}
+                  {product.pieceSizes && product.pieceSizes.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-foreground">
+                        Piece Size
+                      </label>
+                      <Select
+                        value={selectedPieceSize}
+                        onValueChange={setSelectedPieceSize}
+                      >
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Select piece size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {product.pieceSizes.map((ps) => (
+                            <SelectItem key={ps} value={ps}>
+                              {ps}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fish Size Dropdown */}
+                {product.sizes && product.sizes.length > 0 && (
+                  <div className="mt-4">
                     <label className="text-sm font-medium text-foreground">
-                      Cutting Type
+                      Fish / Pack Size
                     </label>
                     <Select
-                      value={selectedCutting}
-                      onValueChange={setSelectedCutting}
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
                     >
                       <SelectTrigger className="mt-1.5">
-                        <SelectValue />
+                        <SelectValue placeholder="Select size" />
                       </SelectTrigger>
                       <SelectContent>
-                        {siteConfig.cuttingTypes.map((ct) => (
-                          <SelectItem key={ct.id} value={ct.id}>
-                            {ct.name}
+                        {product.sizes.map((size) => (
+                          <SelectItem key={size} value={size}>
+                            {size}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+                )}
 
-                  <div>
-                    <label className="text-sm font-medium text-foreground">
-                      Piece Size
-                    </label>
-                    <Select
-                      value={selectedPieceSize}
-                      onValueChange={setSelectedPieceSize}
-                    >
-                      <SelectTrigger className="mt-1.5">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {siteConfig.pieceSizes.map((ps) => (
-                          <SelectItem key={ps.id} value={ps.id}>
-                            {ps.name} ({ps.range})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-foreground">
-                    Fish Size
-                  </label>
-                  <Select
-                    value={selectedSize || availableSizes[0]}
-                    onValueChange={setSelectedSize}
-                  >
-                    <SelectTrigger className="mt-1.5">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableSizes.map((size) => (
-                        <SelectItem key={size} value={size}>
-                          {size}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {weightLossInfo && (
+                {/* Weight Loss Info Banner */}
+                {product.processingWeightLoss && (
                   <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3">
                     <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     <p className="text-xs leading-relaxed text-muted-foreground">
-                      Processing weight loss ({weightLossInfo.min}% -{" "}
-                      {weightLossInfo.max}%) basis cut type.{" "}
-                      {weightLossInfo.description}
+                      Processing weight loss:{" "}
+                      <span className="font-medium">
+                        {product.processingWeightLoss}
+                      </span>
+                      . Varies based on cutting type selected.
                     </p>
                   </div>
                 )}
 
+                {/* Quantity & Cart Actions */}
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
                       size="icon"
                       className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() =>
-                        setQuantity(Math.max(0.25, quantity - 0.25))
-                      }
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     >
                       <Minus className="h-4 w-4" />
                       <span className="sr-only">Decrease quantity</span>
@@ -322,7 +341,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                       variant="outline"
                       size="icon"
                       className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() => setQuantity(quantity + 0.25)}
+                      onClick={() => setQuantity(quantity + 1)}
                     >
                       <Plus className="h-4 w-4" />
                       <span className="sr-only">Increase quantity</span>
@@ -369,10 +388,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   You May Also Like
                 </h2>
               </div>
-              <ProductCarousel
-                products={relatedProducts}
-                variant="compact"
-              />
+              <ProductCarousel products={relatedProducts} variant="compact" />
             </section>
           )}
         </div>

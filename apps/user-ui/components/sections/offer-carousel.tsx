@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { offerBanners } from "@/lib/data";
 
 // 8x8 warm blur placeholder for smooth fade-in
 const BLUR_DATA =

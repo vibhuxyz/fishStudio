@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Star, Heart, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
-import type { Product } from "@/lib/types";
+import { Product } from "@repo/types";
 
 // 8x8 warm-toned blur placeholder for a smooth loading effect
 const BLUR_DATA =
@@ -41,9 +41,7 @@ export function ProductCard({
   const quickAdd = useCartStore((s) => s.quickAdd);
   const quickRemove = useCartStore((s) => s.quickRemove);
 
-  const slug = encodeURIComponent(
-    product.name.toLowerCase().replace(/[\s/]+/g, "-"),
-  );
+  const slug = product.slug;
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();

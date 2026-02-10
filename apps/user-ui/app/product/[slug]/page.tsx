@@ -1,22 +1,70 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { allProducts } from "@/lib/data";
 import { ProductDetailClient } from "./product-detail-client";
+import { transformProduct } from "@/utils/product-utils";
+import type { BackendProduct, Product } from "@repo/types";
 
-function findProduct(slug: string) {
-  const decoded = decodeURIComponent(slug);
-  return allProducts.find(
-    (p) => p.name.toLowerCase().replace(/[\s/]+/g, "-") === decoded,
-  );
+// 1. Cached Data Fetching Function
+// This ensures we don't hit the API twice (once for metadata, once for the page)
+const getProducts = cache(async (): Promise<Product[]> => {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_URI}/product/api/get-all-products`,
+      {
+        // Revalidate data every 5 minutes (adjust as needed)
+        next: { revalidate: 300 },
+      },
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch products");
+    }
+
+    const data: { success: boolean; products: BackendProduct[] } =
+      await res.json();
+    return (data.products || []).map(transformProduct);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+});
+
+// 2. Helper to find specific product
+async function findProduct(slug: string) {
+  const products = await getProducts();
+  // Decode the slug to handle URL encoding
+  const decodedSlug = decodeURIComponent(slug);
+  return products.find((p) => p.slug === decodedSlug);
 }
 
+// 3. Helper to calculate related products
+async function getRelatedProducts(product: Product) {
+  const allProducts = await getProducts();
+
+  const sameSubCat = allProducts.filter(
+    (p) => p.subCategory === product.subCategory && p.id !== product.id,
+  );
+
+  const sameCat = allProducts.filter(
+    (p) =>
+      p.category === product.category &&
+      p.subCategory !== product.subCategory &&
+      p.id !== product.id,
+  );
+
+  return [...sameSubCat, ...sameCat].slice(0, 8);
+}
+
+// 4. Generate Metadata (SEO)
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await findProduct(slug);
+
   if (!product) return { title: "Product Not Found" };
 
   return {
@@ -30,16 +78,18 @@ export async function generateMetadata({
   };
 }
 
+// 5. Main Page Component
 export default async function ProductDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = findProduct(slug);
+  const product = await findProduct(slug);
+
   if (!product) notFound();
 
-  const relatedProducts = getRelatedProducts(product);
+  const relatedProducts = await getRelatedProducts(product);
 
   return (
     <>
@@ -63,31 +113,19 @@ export default async function ProductDetailPage({
               "@type": "Offer",
               price: product.price,
               priceCurrency: "INR",
-              availability: product.inStock
-                ? "https://schema.org/InStock"
-                : "https://schema.org/OutOfStock",
+              availability:
+                product.stock > 0
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
             },
             aggregateRating: {
               "@type": "AggregateRating",
               ratingValue: product.rating,
-              reviewCount: product.reviews,
+              reviewCount: 20, // Backend doesn't have review count yet, defaulted to 20 or add to type
             },
           }),
         }}
       />
     </>
   );
-}
-
-function getRelatedProducts(product: (typeof allProducts)[number]) {
-  const sameSubCat = allProducts.filter(
-    (p) => p.subCategory === product.subCategory && p.id !== product.id,
-  );
-  const sameCat = allProducts.filter(
-    (p) =>
-      p.category === product.category &&
-      p.subCategory !== product.subCategory &&
-      p.id !== product.id,
-  );
-  return [...sameSubCat, ...sameCat].slice(0, 8);
 }
