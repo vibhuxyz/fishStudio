@@ -6,8 +6,7 @@ import { ArrowLeft, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
+
 import { ProductCard } from "@/components/shared/product-card";
 import { useProducts } from "@/hooks/useProducts"; // Reuse your main hook
 import type { Product } from "@repo/types";
@@ -70,11 +69,9 @@ export default function CategoryPage({
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
-        <SiteHeader />
         <main className="flex flex-1 items-center justify-center">
           <p>Loading products...</p>
         </main>
-        <SiteFooter />
       </div>
     );
   }
@@ -83,7 +80,6 @@ export default function CategoryPage({
   if (categoryProducts.length === 0) {
     return (
       <div className="flex min-h-screen flex-col">
-        <SiteHeader />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">
@@ -99,15 +95,12 @@ export default function CategoryPage({
             </Link>
           </div>
         </main>
-        <SiteFooter />
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         {/* Category Hero */}
         <div className="border-b border-border bg-secondary/30">
@@ -279,8 +272,6 @@ export default function CategoryPage({
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

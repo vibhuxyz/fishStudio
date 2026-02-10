@@ -17,19 +17,16 @@ export default function Page() {
     isError,
   } = useProducts();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        {/*<Loader2 className="h-8 w-8 animate-spin text-primary" />*/}
-        Data is Loading
-      </div>
-    );
-  }
-
   if (isError) {
     return (
-      <div className="text-center py-10 text-red-500">
-        Failed to load products.
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4">
+        <p className="text-red-500">Failed to load products.</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm underline"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -38,7 +35,7 @@ export default function Page() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      {/*<SiteHeader />*/}
 
       <main className="flex-1">
         <HeroSection />
@@ -50,6 +47,7 @@ export default function Page() {
           products={ourProducts}
           priorityImages
           variant="compact"
+          isLoading={isLoading}
         />
 
         <ProductCarouselSection
@@ -57,6 +55,7 @@ export default function Page() {
           subtitle="Customer Favorites"
           products={displayFavorites}
           variant="compact"
+          isLoading={isLoading}
         />
 
         <ProductCarouselSection
@@ -64,12 +63,13 @@ export default function Page() {
           subtitle="Bestsellers"
           products={displayBestsellers}
           variant="full"
+          isLoading={isLoading}
         />
 
         <TestimonialsSection />
       </main>
 
-      <SiteFooter />
+      {/*<SiteFooter />*/}
     </div>
   );
 }

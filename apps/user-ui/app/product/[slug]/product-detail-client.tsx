@@ -19,8 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SiteHeader } from "@/components/layout/site-header";
-import { SiteFooter } from "@/components/layout/site-footer";
+
 import { ProductCarousel } from "@/components/shared/product-carousel";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
@@ -77,8 +76,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-
       <main className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-8">
           {/* Breadcrumb */}
@@ -393,8 +390,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
           )}
         </div>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

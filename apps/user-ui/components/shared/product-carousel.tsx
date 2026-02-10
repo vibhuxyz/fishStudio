@@ -5,12 +5,15 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./product-card";
 import { Product } from "@repo/types";
+import { motion } from "framer-motion";
+import { ProductCardSkeleton } from "./product-card-skeleton";
 
 interface ProductCarouselProps {
   products: Product[];
   onAddToCart?: (product: Product) => void;
   priorityImages?: boolean;
   variant?: "compact" | "full";
+  isLoading?: boolean;
 }
 
 export function ProductCarousel({
@@ -18,6 +21,7 @@ export function ProductCarousel({
   onAddToCart,
   priorityImages = false,
   variant = "compact",
+  isLoading = false,
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -40,7 +44,7 @@ export function ProductCarousel({
       el.removeEventListener("scroll", checkScroll);
       window.removeEventListener("resize", checkScroll);
     };
-  }, [checkScroll]);
+  }, [checkScroll, products, isLoading]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -53,11 +57,12 @@ export function ProductCarousel({
 
   return (
     <div className="relative">
-      {canScrollLeft && (
+      {/* Navigation Buttons (Only show if not loading) */}
+      {!isLoading && canScrollLeft && (
         <Button
           variant="outline"
           size="icon"
-          className="absolute -left-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border-border bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground md:-left-4"
+          className="absolute -left-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border-border bg-background shadow-md hover:bg-accent md:-left-4"
           onClick={() => scroll("left")}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -65,11 +70,11 @@ export function ProductCarousel({
         </Button>
       )}
 
-      {canScrollRight && (
+      {!isLoading && canScrollRight && (
         <Button
           variant="outline"
           size="icon"
-          className="absolute -right-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border-border bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:text-primary-foreground md:-right-4"
+          className="absolute -right-3 top-1/2 z-10 h-9 w-9 -translate-y-1/2 rounded-full border-border bg-background shadow-md hover:bg-accent md:-right-4"
           onClick={() => scroll("right")}
         >
           <ChevronRight className="h-4 w-4" />
@@ -81,19 +86,33 @@ export function ProductCarousel({
         ref={scrollRef}
         className="hide-scrollbar flex gap-4 overflow-x-auto px-1 pb-2"
       >
-        {products.map((product, index) => (
-          <div
-            key={product.id}
-            className="w-[180px] flex-shrink-0 md:w-[200px]"
-          >
-            <ProductCard
-              product={product}
-              onAddToCart={onAddToCart}
-              priority={priorityImages && index < 4}
-              variant={variant}
-            />
-          </div>
-        ))}
+        {/* ✅ LOADING STATE: Show 6 Skeletons */}
+        {isLoading
+          ? Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="w-[180px] flex-shrink-0 md:w-[200px]"
+              >
+                <ProductCardSkeleton />
+              </div>
+            ))
+          : /* ✅ DATA STATE: Show Products with animation */
+            products.map((product, index) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                className="w-[180px] flex-shrink-0 md:w-[200px]"
+              >
+                <ProductCard
+                  product={product}
+                  onAddToCart={onAddToCart}
+                  priority={priorityImages && index < 4}
+                  variant={variant}
+                />
+              </motion.div>
+            ))}
       </div>
     </div>
   );

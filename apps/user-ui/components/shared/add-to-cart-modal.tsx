@@ -11,6 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import Skeleton
 import {
   Select,
   SelectContent,
@@ -19,7 +20,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addToCart } from "@/lib/cart-store";
-// Import the type that matches your backend response
 import type { Product } from "@repo/types";
 
 interface AddToCartModalProps {
@@ -33,33 +33,32 @@ export function AddToCartModal({
   open,
   onOpenChange,
 }: AddToCartModalProps) {
-  // Initialize state. We use strings because your backend returns string arrays (e.g. ["Whole", "Fillet"])
   const [selectedCutting, setSelectedCutting] = useState<string>("");
   const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [quantity, setQuantity] = useState(1); // Default to 1 unit (e.g. 1 fish or 1 pack)
+  const [quantity, setQuantity] = useState(1);
+
+  // ✅ Image Loading State
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
   // Reset state when the modal opens or product changes
   useEffect(() => {
     if (open && product) {
-      // Default to the first available option from the backend arrays
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
       setSelectedSize(product.sizes?.[0] || "");
       setQuantity(1);
+      setIsImageLoading(true); // Reset image loader
     }
   }, [open, product]);
 
   const totalPayable = useMemo(() => {
     if (!product) return 0;
-    // Assuming price is per unit/kg. Adjust logic if needed based on `selectedSize`
     return Number.parseFloat((product.price * quantity).toFixed(2));
   }, [product, quantity]);
 
   const handleAddToCart = () => {
     if (!product) return;
-
-    // Pass the simple string values to your cart store
     addToCart(
       product,
       quantity,
@@ -67,7 +66,6 @@ export function AddToCartModal({
       selectedPieceSize,
       selectedSize,
     );
-
     onOpenChange(false);
   };
 
@@ -86,32 +84,42 @@ export function AddToCartModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-6 md:flex-row">
-          {/* Product image */}
+          {/* Product Image Section */}
           <div className="flex-shrink-0">
             <div className="relative h-48 w-full overflow-hidden rounded-xl md:h-56 md:w-56 bg-muted">
+              {/* ✅ Skeleton that shows while image is loading */}
+              {isImageLoading && (
+                <Skeleton className="absolute inset-0 z-10 h-full w-full" />
+              )}
+
               <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className={`object-cover transition-opacity duration-300 ${
+                  isImageLoading ? "opacity-0" : "opacity-100"
+                }`}
                 placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                // ✅ Hide skeleton when image is ready
+                onLoad={() => setIsImageLoading(false)}
               />
             </div>
           </div>
 
-          {/* Product info & Options */}
+          {/* Product Info & Options */}
           <div className="flex-1">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
               {product.subCategory}
             </p>
             <h3 className="text-lg font-bold text-primary">{product.name}</h3>
+
+            {/* Description */}
             <p className="mt-1 text-sm text-muted-foreground">
               {product.description}
             </p>
 
             <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
-              {/* Using slice to show a shorter ID if it's a long Mongo ID */}
               <span>Product Code: {product.id.slice(-6).toUpperCase()}</span>
             </div>
 
@@ -191,7 +199,7 @@ export function AddToCartModal({
               </div>
             )}
 
-            {/* Weight Loss Info (from Backend string) */}
+            {/* Weight Loss Info */}
             {product.processingWeightLoss && (
               <div className="mt-3 flex items-start gap-2 rounded-md border border-border bg-muted/50 p-2.5">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />

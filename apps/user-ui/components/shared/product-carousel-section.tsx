@@ -1,6 +1,5 @@
-// "use client";
 import { ProductCarousel } from "@/components/shared/product-carousel";
-import { Product } from "@repo/types";
+import type { Product } from "@repo/types";
 
 interface ProductCarouselSectionProps {
   title: string;
@@ -8,28 +7,23 @@ interface ProductCarouselSectionProps {
   products: Product[];
   priorityImages?: boolean;
   variant?: "compact" | "full";
-  isLoading?: boolean;
+  isLoading?: boolean; // ✅ Add prop
 }
 
-/**
- * Server Component wrapper -- the heading text is rendered on the server
- * for SEO. The interactive carousel scrolling is delegated to the client
- * ProductCarousel island.
- */
 export function ProductCarouselSection({
   title,
   subtitle,
   products,
   priorityImages = false,
   variant = "compact",
-  isLoading = false,
+  isLoading = false, // ✅ Default false
 }: ProductCarouselSectionProps) {
+  // If not loading and no products, don't render the section at all
   if (!isLoading && products.length === 0) return null;
 
   return (
     <section className="px-4 py-10">
       <div className="mx-auto max-w-7xl">
-        {/* Server-rendered heading -- fully crawlable by search engines */}
         <div className="mb-6 text-center">
           {subtitle && (
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
@@ -41,12 +35,11 @@ export function ProductCarouselSection({
           </h2>
         </div>
 
-        {/* Client island -- only the scrollable carousel is interactive */}
         <ProductCarousel
           products={products}
           priorityImages={priorityImages}
           variant={variant}
-          isLoading={isLoading}
+          isLoading={isLoading} // ✅ Pass it down
         />
       </div>
     </section>

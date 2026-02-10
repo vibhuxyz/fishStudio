@@ -1,9 +1,11 @@
-import React from "react"
+import React from "react";
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import "./globals.css";
+import { SiteHeader } from "@/components/layout/site-header";
+import { SiteFooter } from "@/components/layout/site-footer";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -49,7 +51,13 @@ export default function RootLayout({
     <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <body className="font-sans antialiased">
         <QueryProvider>
-          <ModalProvider>{children}</ModalProvider>
+          <ModalProvider>
+            <div className="flex min-h-screen flex-col">
+              <SiteHeader />
+              <main className="flex-1">{children}</main>
+              <SiteFooter />
+            </div>
+          </ModalProvider>
         </QueryProvider>
       </body>
     </html>
