@@ -2,10 +2,12 @@ import express, { Router } from "express";
 import {
   createDiscountCodes,
   createProduct,
+  getActiveBanners,
   getCategories,
   getDiscountCodes,
   getStoreProducts,
   slugValidator,
+  uploadBanner,
   uploadProductImage,
 } from "../controllers/product.controller";
 import isAuthenticated from "@repo/middlewares/isAuthenticated";
@@ -31,6 +33,14 @@ router.post(
   isSeller,
   uploadProductImage,
 );
+router.post(
+  "/upload-banner",
+  isAuthenticated,
+  isSeller,
+  uploadBanner,
+);
+router.get("/get-banners", getActiveBanners);
+
 router.post("/create-product", isAuthenticated, isSeller, createProduct);
 
 router.get("/get-all-products", getStoreProducts);

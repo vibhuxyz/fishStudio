@@ -202,6 +202,7 @@ export type sellersWhereInput = {
   following?: Prisma.StringNullableListFilter<"sellers">
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
+  banners?: Prisma.BannersListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }
 
@@ -214,6 +215,7 @@ export type sellersOrderByWithRelationInput = {
   following?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  banners?: Prisma.bannersOrderByRelationAggregateInput
   store?: Prisma.storesOrderByWithRelationInput
 }
 
@@ -229,6 +231,7 @@ export type sellersWhereUniqueInput = Prisma.AtLeast<{
   following?: Prisma.StringNullableListFilter<"sellers">
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
+  banners?: Prisma.BannersListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
 }, "id" | "email">
 
@@ -269,6 +272,7 @@ export type sellersCreateInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
   store?: Prisma.storesCreateNestedOneWithoutSellerInput
 }
 
@@ -281,6 +285,7 @@ export type sellersUncheckedCreateInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
 }
 
@@ -292,6 +297,7 @@ export type sellersUpdateInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUpdateOneWithoutSellerNestedInput
 }
 
@@ -303,6 +309,7 @@ export type sellersUncheckedUpdateInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
 }
 
@@ -396,6 +403,20 @@ export type sellersUpdateOneRequiredWithoutStoreNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.sellersUpdateToOneWithWhereWithoutStoreInput, Prisma.sellersUpdateWithoutStoreInput>, Prisma.sellersUncheckedUpdateWithoutStoreInput>
 }
 
+export type sellersCreateNestedOneWithoutBannersInput = {
+  create?: Prisma.XOR<Prisma.sellersCreateWithoutBannersInput, Prisma.sellersUncheckedCreateWithoutBannersInput>
+  connectOrCreate?: Prisma.sellersCreateOrConnectWithoutBannersInput
+  connect?: Prisma.sellersWhereUniqueInput
+}
+
+export type sellersUpdateOneRequiredWithoutBannersNestedInput = {
+  create?: Prisma.XOR<Prisma.sellersCreateWithoutBannersInput, Prisma.sellersUncheckedCreateWithoutBannersInput>
+  connectOrCreate?: Prisma.sellersCreateOrConnectWithoutBannersInput
+  upsert?: Prisma.sellersUpsertWithoutBannersInput
+  connect?: Prisma.sellersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.sellersUpdateToOneWithWhereWithoutBannersInput, Prisma.sellersUpdateWithoutBannersInput>, Prisma.sellersUncheckedUpdateWithoutBannersInput>
+}
+
 export type sellersCreateWithoutStoreInput = {
   id?: string
   name: string
@@ -405,6 +426,7 @@ export type sellersCreateWithoutStoreInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateWithoutStoreInput = {
@@ -416,6 +438,7 @@ export type sellersUncheckedCreateWithoutStoreInput = {
   following?: Prisma.sellersCreatefollowingInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersCreateOrConnectWithoutStoreInput = {
@@ -442,6 +465,7 @@ export type sellersUpdateWithoutStoreInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateWithoutStoreInput = {
@@ -452,8 +476,100 @@ export type sellersUncheckedUpdateWithoutStoreInput = {
   following?: Prisma.sellersUpdatefollowingInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
 }
 
+export type sellersCreateWithoutBannersInput = {
+  id?: string
+  name: string
+  email: string
+  phone_number: string
+  password: string
+  following?: Prisma.sellersCreatefollowingInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  store?: Prisma.storesCreateNestedOneWithoutSellerInput
+}
+
+export type sellersUncheckedCreateWithoutBannersInput = {
+  id?: string
+  name: string
+  email: string
+  phone_number: string
+  password: string
+  following?: Prisma.sellersCreatefollowingInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
+}
+
+export type sellersCreateOrConnectWithoutBannersInput = {
+  where: Prisma.sellersWhereUniqueInput
+  create: Prisma.XOR<Prisma.sellersCreateWithoutBannersInput, Prisma.sellersUncheckedCreateWithoutBannersInput>
+}
+
+export type sellersUpsertWithoutBannersInput = {
+  update: Prisma.XOR<Prisma.sellersUpdateWithoutBannersInput, Prisma.sellersUncheckedUpdateWithoutBannersInput>
+  create: Prisma.XOR<Prisma.sellersCreateWithoutBannersInput, Prisma.sellersUncheckedCreateWithoutBannersInput>
+  where?: Prisma.sellersWhereInput
+}
+
+export type sellersUpdateToOneWithWhereWithoutBannersInput = {
+  where?: Prisma.sellersWhereInput
+  data: Prisma.XOR<Prisma.sellersUpdateWithoutBannersInput, Prisma.sellersUncheckedUpdateWithoutBannersInput>
+}
+
+export type sellersUpdateWithoutBannersInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.sellersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  store?: Prisma.storesUpdateOneWithoutSellerNestedInput
+}
+
+export type sellersUncheckedUpdateWithoutBannersInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.sellersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
+}
+
+
+/**
+ * Count Type SellersCountOutputType
+ */
+
+export type SellersCountOutputType = {
+  banners: number
+}
+
+export type SellersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  banners?: boolean | SellersCountOutputTypeCountBannersArgs
+}
+
+/**
+ * SellersCountOutputType without action
+ */
+export type SellersCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SellersCountOutputType
+   */
+  select?: Prisma.SellersCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * SellersCountOutputType without action
+ */
+export type SellersCountOutputTypeCountBannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.bannersWhereInput
+}
 
 
 export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -465,7 +581,9 @@ export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   following?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  banners?: boolean | Prisma.sellers$bannersArgs<ExtArgs>
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
+  _count?: boolean | Prisma.SellersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sellers"]>
 
 
@@ -483,12 +601,15 @@ export type sellersSelectScalar = {
 
 export type sellersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone_number" | "password" | "following" | "createdAt" | "updatedAt", ExtArgs["result"]["sellers"]>
 export type sellersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  banners?: boolean | Prisma.sellers$bannersArgs<ExtArgs>
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
+  _count?: boolean | Prisma.SellersCountOutputTypeDefaultArgs<ExtArgs>
 }
 
 export type $sellersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "sellers"
   objects: {
+    banners: Prisma.$bannersPayload<ExtArgs>[]
     store: Prisma.$storesPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -863,6 +984,7 @@ readonly fields: sellersFieldRefs;
  */
 export interface Prisma__sellersClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  banners<T extends Prisma.sellers$bannersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$bannersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$bannersPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   store<T extends Prisma.sellers$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$storeArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1268,6 +1390,30 @@ export type sellersAggregateRawArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
    */
   options?: runtime.InputJsonValue
+}
+
+/**
+ * sellers.banners
+ */
+export type sellers$bannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the banners
+   */
+  select?: Prisma.bannersSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the banners
+   */
+  omit?: Prisma.bannersOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.bannersInclude<ExtArgs> | null
+  where?: Prisma.bannersWhereInput
+  orderBy?: Prisma.bannersOrderByWithRelationInput | Prisma.bannersOrderByWithRelationInput[]
+  cursor?: Prisma.bannersWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BannersScalarFieldEnum | Prisma.BannersScalarFieldEnum[]
 }
 
 /**

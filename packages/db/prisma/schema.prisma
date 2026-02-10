@@ -83,14 +83,14 @@ model discount_codes {
 //////////////////////////////////////////////////////
 
 model sellers {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
   name         String
-  email        String   @unique
+  email        String    @unique
   phone_number String
   password     String
   following    String[]
-
-  store stores?
+  banners      banners[]
+  store        stores?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -214,4 +214,20 @@ model products {
 
   storeId String @db.ObjectId
   store   stores @relation(fields: [storeId], references: [id])
+}
+
+model banners {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  imageUrl String
+  fileId   String
+  isActive Boolean @default(true)
+
+  // Link to Seller
+  sellerId String  @db.ObjectId
+  seller   sellers @relation(fields: [sellerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("banners")
 }

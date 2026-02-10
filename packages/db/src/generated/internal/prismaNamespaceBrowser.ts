@@ -57,7 +57,8 @@ export const ModelName = {
   storeReviews: 'storeReviews',
   favorites: 'favorites',
   site_config: 'site_config',
-  products: 'products'
+  products: 'products',
+  banners: 'banners'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -199,6 +200,19 @@ export const ProductsScalarFieldEnum = {
 } as const
 
 export type ProductsScalarFieldEnum = (typeof ProductsScalarFieldEnum)[keyof typeof ProductsScalarFieldEnum]
+
+
+export const BannersScalarFieldEnum = {
+  id: 'id',
+  imageUrl: 'imageUrl',
+  fileId: 'fileId',
+  isActive: 'isActive',
+  sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BannersScalarFieldEnum = (typeof BannersScalarFieldEnum)[keyof typeof BannersScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -398,7 +398,8 @@ export const ModelName = {
   storeReviews: 'storeReviews',
   favorites: 'favorites',
   site_config: 'site_config',
-  products: 'products'
+  products: 'products',
+  banners: 'banners'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -414,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "images" | "users" | "discount_codes" | "sellers" | "stores" | "storeReviews" | "favorites" | "site_config" | "products"
+    modelProps: "images" | "users" | "discount_codes" | "sellers" | "stores" | "storeReviews" | "favorites" | "site_config" | "products" | "banners"
     txIsolationLevel: never
   }
   model: {
@@ -1084,6 +1085,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    banners: {
+      payload: Prisma.$bannersPayload<ExtArgs>
+      fields: Prisma.bannersFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.bannersFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.bannersFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        findFirst: {
+          args: Prisma.bannersFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.bannersFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        findMany: {
+          args: Prisma.bannersFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>[]
+        }
+        create: {
+          args: Prisma.bannersCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        createMany: {
+          args: Prisma.bannersCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.bannersDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        update: {
+          args: Prisma.bannersUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        deleteMany: {
+          args: Prisma.bannersDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.bannersUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.bannersUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$bannersPayload>
+        }
+        aggregate: {
+          args: Prisma.BannersAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBanners>
+        }
+        groupBy: {
+          args: Prisma.bannersGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BannersGroupByOutputType>[]
+        }
+        findRaw: {
+          args: Prisma.bannersFindRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        aggregateRaw: {
+          args: Prisma.bannersAggregateRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        count: {
+          args: Prisma.bannersCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BannersCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1234,6 +1309,19 @@ export const ProductsScalarFieldEnum = {
 } as const
 
 export type ProductsScalarFieldEnum = (typeof ProductsScalarFieldEnum)[keyof typeof ProductsScalarFieldEnum]
+
+
+export const BannersScalarFieldEnum = {
+  id: 'id',
+  imageUrl: 'imageUrl',
+  fileId: 'fileId',
+  isActive: 'isActive',
+  sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BannersScalarFieldEnum = (typeof BannersScalarFieldEnum)[keyof typeof BannersScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1450,6 +1538,7 @@ export type GlobalOmitConfig = {
   favorites?: Prisma.favoritesOmit
   site_config?: Prisma.site_configOmit
   products?: Prisma.productsOmit
+  banners?: Prisma.bannersOmit
 }
 
 /* Types for Logging */

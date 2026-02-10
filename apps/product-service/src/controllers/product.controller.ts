@@ -176,12 +176,83 @@ export const deleteDiscountCode = async (
   }
 };
 
+// Extend the Express Request type
+interface AuthRequest extends Request {
+  seller?: {
+    id: string;
+    // add other properties if your middleware attaches them (e.g., email, role)
+  };
+}
+
+export const uploadBanner = async (
+  req: AuthRequest, // Use the custom interface here
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { fileName } = req.body;
+    const sellerId = req.seller?.id;
+
+    if (!fileName) {
+      return next(new ValidationError("Banner image data is required"));
+    }
+
+    if (!sellerId) {
+      return next(new ValidationError("Only seller can create banners!"));
+    }
+
+    const response = await imagekit.upload({
+      file: fileName,
+      fileName: `banner-${sellerId}-${Date.now()}.jpg`,
+      folder: "/banners",
+    });
+
+    const newBanner = await prisma.banners.create({
+      data: {
+        imageUrl: response.url,
+        fileId: response.fileId,
+        sellerId: sellerId,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: newBanner,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// // GET BANNERS (Public)
+export const getActiveBanners = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  ) => {
+  try {
+    const banners = await prisma.banners.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json({
+      success: true,
+      banners,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
 //upload product image
 export const uploadProductImage = async (
   req: Request,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
     // ⚠️ Note: 'fileName' here actually contains the base64 image data string
     const { fileName } = req.body;
@@ -211,7 +282,7 @@ export const createProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
     /**
      * 1️⃣ Extract fields from request body

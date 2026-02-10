@@ -62,3 +62,8 @@ export type site_config = Prisma.site_configModel
  * 
  */
 export type products = Prisma.productsModel
+/**
+ * Model banners
+ * 
+ */
+export type banners = Prisma.bannersModel

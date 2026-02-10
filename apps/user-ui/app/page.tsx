@@ -38,8 +38,8 @@ export default function Page() {
       {/*<SiteHeader />*/}
 
       <main className="flex-1">
-        <HeroSection />
-        {/*<OfferCarousel />*/}
+        {/*<HeroSection />*/}
+        <OfferCarousel />
 
         <ProductCarouselSection
           title="Live-Cut. Fresh. Packed For You."

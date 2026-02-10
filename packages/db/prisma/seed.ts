@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Checking existing data...");
 
+
+
   const plainPassword = "123456";
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
@@ -603,6 +605,49 @@ async function main() {
     console.log("✅ Products with images seeded successfully!");
   } else {
     console.log("✅ Products already exist — skipping");
+  }
+
+  const existingBanners = await prisma.banners.findFirst({
+    where: { sellerId: seller.id },
+  });
+
+  if (!existingBanners) {
+    console.log("📸 Seeding banners...");
+
+    const bannerData = [
+      {
+        imageUrl: "https://ik.imagekit.io/pay/offer-3.jpg",
+        fileId: "offer-3.jpg",
+        isActive: true,
+        sellerId: seller.id,
+      },
+      {
+        imageUrl: "https://ik.imagekit.io/pay/offer-2.jpg",
+        fileId: "offer-2.jpg",
+        isActive: true,
+        sellerId: seller.id,
+      },
+      {
+        imageUrl: "https://ik.imagekit.io/pay/offer-1.jpg",
+        fileId: "offer-1.jpg",
+        isActive: true,
+        sellerId: seller.id,
+      },
+      {
+        imageUrl: "https://ik.imagekit.io/pay/offer-4.jpg",
+        fileId: "offer-4.jpg",
+        isActive: true,
+        sellerId: seller.id,
+      },
+    ];
+
+    await prisma.banners.createMany({
+      data: bannerData,
+    });
+
+    console.log("✅ Banners seeded successfully!");
+  } else {
+    console.log("✅ Banners already exist — skipping");
   }
 
   /**
