@@ -1,11 +1,11 @@
-import { sendEmail } from "@repo/libs/sendMail/index";
-import { sendPhoneOtp } from "@repo/libs/sendOtp/index";
-import redis from "@repo/libs/redis/index";
-import { OtpMessage } from "../types/otpMessage";
+import { sendEmail, sendPhoneOtp, redis } from "@repo/libs";
+
 import { ENV } from "@repo/env-config";
+import { OtpMessage } from "../types/otpMessage.js";
 /**
  * Main handler for processing OTP messages
  */
+
 export async function handleOtpMessage(data: OtpMessage): Promise<void> {
   const { userType, name, email, phone_number, template, otp } = data;
 
@@ -35,3 +35,5 @@ export async function handleOtpMessage(data: OtpMessage): Promise<void> {
     otp,
   );
 }
+
+

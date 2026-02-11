@@ -1,10 +1,9 @@
 import express from "express";
 import cors from "cors";
-import { errorMiddleware } from "@repo/error-handlers/error-middleware";
+import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
-import router from "./routes/auth.router";
-import { connectRabbitMQ } from "@repo/libs/rabbitmq/index";
-import { otpWorker } from "@repo/rabbitMQ-service/workers/otpWorker";
+import router from "./routes/auth.router.js";
+import { connectRabbitMQ } from "@repo/libs";
 
 const port = 6001;
 
@@ -32,7 +31,7 @@ app.use(errorMiddleware);
 
 const server = app.listen(port, async () => {
   await connectRabbitMQ();
-  await otpWorker();
+
   console.log(`Auth server is running at http://localhost:${port}/api`);
 });
 

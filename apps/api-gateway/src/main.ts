@@ -4,7 +4,7 @@ import morgan from "morgan";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import initalizeConfig from "./libs/initializeSiteConfig";
+import initalizeConfig from "./libs/initializeSiteConfig.js";
 import { ENV } from "@repo/env-config";
 
 const app = express();

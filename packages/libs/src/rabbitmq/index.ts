@@ -1,43 +1,57 @@
-import ampq, { Channel } from "amqplib";
+import * as amqp from "amqplib";
+import type { Channel, ChannelModel } from "amqplib";
+import { ENV } from "@repo/env-config";
 
+let connection: ChannelModel | null = null;
 let channel: Channel | null = null;
 
-export const connectRabbitMQ = async () => {
-  try {
-    // const connection = await ampq.connect({
-    //   protocol: process.env.RABBITMQ_PROTOCOL ?? "amqp",
-      // hostname: process.env.RABBITMQ_HOST_NAME,
-    //   port: Number(process.env.RABBITMQ_PORT ?? 5672),
-    //   username: process.env.RABBITMQ_USER_NAME,
-      // password: process.env.RABBITMQ_PASSWORD,
-    //   vhost: process.env.RABBITMQ_VHOST ?? "/", // IMPORTANT: leading slash
-    //   locale: "en_US",
-    //   frameMax: 0,
-    //   heartbeat: 60,
-    // });
-    // 
-    const connection = await ampq.connect(
-      "amqp://admin:mysecretpassword@localhost:5672"
-    );
+export const connectRabbitMQ = async (): Promise<Channel> => {
+  if (channel) return channel;
 
-    channel = await connection.createChannel();
+  const {
+    RABBITMQ_PROTOCOL,
+    RABBITMQ_HOST_NAME,
+    RABBITMQ_USER_NAME,
+    RABBITMQ_PASSWORD,
+    RABBITMQ_PORT,
+  } = ENV;
+
+  const url = `${RABBITMQ_PROTOCOL}://${RABBITMQ_USER_NAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST_NAME}:${RABBITMQ_PORT}`;
+
+  try {
+    connection = await amqp.connect(url); // ✅ ChannelModel
+    channel = await connection.createChannel(); // ✅ Channel
 
     console.log("✅ Connected to RabbitMQ");
+
+    connection.on("close", () => {
+      console.log("🔌 RabbitMQ connection closed");
+      connection = null;
+      channel = null;
+    });
+
+    connection.on("error", (err) => {
+      console.error("❌ RabbitMQ connection error:", err);
+    });
+
+    return channel;
   } catch (error) {
-    console.error("Error connecting to RabbitMQ:", error);
+    console.error("❌ Error connecting to RabbitMQ:", error);
+    throw error;
   }
-  return channel;
 };
 
-export const publishToQueue = async (queueName: string, message: any) => {
-  if (!channel) {
-    throw new Error("RabbitMQ channel not initialized.");
-    return;
-  }
+export const publishToQueue = async (
+  queueName: string,
+  message: unknown,
+): Promise<void> => {
+  const ch = await connectRabbitMQ();
 
-  await channel.assertQueue(queueName, { durable: true });
-  channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), {
+  await ch.assertQueue(queueName, { durable: true });
+
+  ch.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), {
     persistent: true,
   });
-  console.log(`📤 Message published to ${queueName}`);
+
+  console.log(`📤 Message published to queue: ${queueName}`);
 };

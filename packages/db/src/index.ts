@@ -1,4 +1,4 @@
-import { PrismaClient } from "./src/generated/client.js";
+import { PrismaClient } from "./generated/client.js";
 import { ENV } from "@repo/env-config";
 
 const globalForPrisma = globalThis as unknown as {
@@ -32,4 +32,4 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-export * from "./src/generated/client.js";
+export * from "./generated/client.js";

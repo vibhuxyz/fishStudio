@@ -9,9 +9,8 @@ import {
   slugValidator,
   uploadBanner,
   uploadProductImage,
-} from "../controllers/product.controller";
-import isAuthenticated from "@repo/middlewares/isAuthenticated";
-import { isSeller } from "@repo/middlewares/authorizeRole";
+} from "../controllers/product.controller.js";
+import { isAuthenticated, isSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
 
@@ -33,12 +32,7 @@ router.post(
   isSeller,
   uploadProductImage,
 );
-router.post(
-  "/upload-banner",
-  isAuthenticated,
-  isSeller,
-  uploadBanner,
-);
+router.post("/upload-banner", isAuthenticated, isSeller, uploadBanner);
 router.get("/get-banners", getActiveBanners);
 
 router.post("/create-product", isAuthenticated, isSeller, createProduct);

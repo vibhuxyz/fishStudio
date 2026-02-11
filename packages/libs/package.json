@@ -1,8 +1,17 @@
 {
   "name": "@repo/libs",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    }
+  },
   "devDependencies": {
     "@repo/env-config": "workspace:*",
     "@types/bun": "latest",
@@ -10,9 +19,6 @@
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "exports": {
-    "./*": "./src/*.ts"
   },
   "dependencies": {
     "@types/amqplib": "^0.10.8",

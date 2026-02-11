@@ -1,18 +1,23 @@
 {
   "name": "@repo/error-handlers",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    }
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@repo/typescript-config": "workspace:*"
   },
   "peerDependencies": {
     "typescript": "^5"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts"
   },
   "dependencies": {
     "@types/express": "^5.0.6",

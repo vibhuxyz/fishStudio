@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
-import { errorMiddleware } from "@repo/error-handlers/error-middleware";
+import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
-import router from "./routes/product.routes";
+import router from "./routes/product.routes.js";
 
 const port =  6002;
 

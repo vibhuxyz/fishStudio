@@ -1,24 +1,37 @@
-// import Redis from "ioredis";
+import { Redis } from "ioredis";
+import { ENV } from "@repo/env-config";
 
-// const redis = new Redis(process.env.REDIS_URL!);
+let redisClient: Redis | null = null;
 
-// export default redis;
-//
+function createRedis(): Redis {
+  const redis = new Redis(
+    ENV.REDIS_URL ?? "redis://:mysecretpassword@localhost:6379/1",
+  );
 
-import Redis from "ioredis";
-const REDIS_URL =
-  process.env.REDIS_URL || "redis://:mysecretpassword@localhost:6379/0";
+  redis.on("connect", () => console.log("✅ Redis connected"));
+  redis.on("ready", () => console.log("⚡ Redis ready"));
+  redis.on("error", (err) => console.error("[Redis Error]", err));
+  redis.on("close", () => {
+    console.log("🔌 Redis closed");
+    redisClient = null;
+  });
 
-if (!REDIS_URL) {
-  throw new Error("Redis URL not defined in config!");
+  return redis;
 }
 
-const redis = new Redis(REDIS_URL);
+export const redis: Redis = new Proxy({} as Redis, {
+  get(_, prop: keyof Redis) {
+    if (!redisClient) {
+      redisClient = createRedis();
+    }
 
-// Event listeners
-redis.on("connect", () => console.log("✅ Redis is connected"));
-redis.on("ready", () => console.log("⚡ Redis is ready to use"));
-redis.on("error", (err) => console.error("[ioredis] Error:", err));
-redis.on("close", () => console.log("[ioredis] Connection closed"));
+    const value = (redisClient as any)[prop];
 
-export default redis;
+    // if method → bind it
+    if (typeof value === "function") {
+      return value.bind(redisClient);
+    }
+
+    return value;
+  },
+});

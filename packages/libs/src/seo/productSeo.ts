@@ -1,4 +1,15 @@
-import slugify from "slugify";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
+// ⬇️ slugify is CommonJS, load it this way
+const slugify: (
+  input: string,
+  options?: {
+    lower?: boolean;
+    strict?: boolean;
+    trim?: boolean;
+  },
+) => string = require("slugify");
 
 /* ---------------- SLUG ---------------- */
 
@@ -22,36 +33,5 @@ export function generateProductSlug(input: {
       strict: true,
       trim: true,
     },
-  );
-}
-
-/* ---------------- TAGS ---------------- */
-
-export function generateProductTags(input: {
-  category: string;
-  subCategory: string;
-  size: string;
-  cuttingType: string;
-  pieceSize?: string;
-  origin?: string;
-}) {
-  const rawTags = [
-    input.category,
-    input.subCategory,
-    input.size,
-    input.cuttingType,
-    input.pieceSize && `${input.pieceSize}-cut`,
-    input.origin,
-  ];
-
-  return Array.from(
-    new Set(
-      rawTags.filter(Boolean).map((tag) =>
-        tag!
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, ""),
-      ),
-    ),
   );
 }

@@ -1,10 +1,15 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
     "rootDir": "src",
     "outDir": "dist",
+
+    "declaration": true,
     "baseUrl": ".",
-    "noEmit": false, // because its not a next js app
+    "noEmit": false,
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"],

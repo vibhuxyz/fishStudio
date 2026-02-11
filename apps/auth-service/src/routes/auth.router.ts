@@ -1,13 +1,13 @@
 import express, { Router } from "express";
 
-import isAuthenticated from "@repo/middlewares/isAuthenticated";
-import { isSeller, isUser } from "@repo/middlewares/authorizeRole";
+import { isAuthenticated, isSeller, isUser } from "@repo/middlewares";
+
 import {
   getUser,
   refreshToken,
   sendOtpToUser,
   verifyOtpAndLogin,
-} from "../controller/user.auth.controller";
+} from "../controller/user.auth.controller.js";
 import {
   createStore,
   getSeller,
@@ -15,7 +15,7 @@ import {
   logOutSeller,
   registerSeller,
   verifySeller,
-} from "../controller/seller.auth.controller";
+} from "../controller/seller.auth.controller.js";
 
 const router: Router = express.Router();
 

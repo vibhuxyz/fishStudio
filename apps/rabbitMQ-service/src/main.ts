@@ -1,5 +1,4 @@
-// apps/rabbitMQ-service/src/index.ts
-import { otpWorker } from "./workers";
+import { otpWorker } from "./workers/index.js";
 
 async function mainRabbitMQService() {
   try {

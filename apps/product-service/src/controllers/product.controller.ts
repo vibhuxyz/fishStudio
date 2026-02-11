@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "@repo/db";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { imagekit } from "@repo/libs/imagekit/index";
+import { imagekit } from "@repo/libs";
 
 export const slugValidator = async (
   req: Request,
@@ -229,7 +229,7 @@ export const getActiveBanners = async (
   req: Request,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
     const banners = await prisma.banners.findMany({
       where: { isActive: true },
@@ -244,8 +244,6 @@ export const getActiveBanners = async (
     next(error);
   }
 };
-
-
 
 //upload product image
 export const uploadProductImage = async (

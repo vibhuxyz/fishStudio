@@ -1,4 +1,4 @@
-import { AuthError } from "@repo/error-handlers/index";
+import { AuthError } from "@repo/error-handlers";
 import { Response, NextFunction } from "express";
 
 export const isSeller = (req: any, res: Response, next: NextFunction) => {

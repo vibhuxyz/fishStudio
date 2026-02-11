@@ -1,8 +1,12 @@
+import { connectRabbitMQ } from "@repo/libs";
 
-import { connectRabbitMQ } from "@repo/libs/rabbitmq/index";
-import { handleOtpMessage } from "../handlers/otpHandler";
-import { parseMessage, logMessageReceived } from "./messageProcessor";
-import { QUEUE_NAMES, QUEUE_OPTIONS, CONSUMER_OPTIONS } from "../config/queues";
+import {
+  QUEUE_NAMES,
+  QUEUE_OPTIONS,
+  CONSUMER_OPTIONS,
+} from "../config/queues.js";
+import { logMessageReceived, parseMessage } from "./messageProcessor.js";
+import { handleOtpMessage } from "../handlers/otpHandler.js";
 
 export const otpWorker = async () => {
   try {

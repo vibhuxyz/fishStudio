@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "@repo/db";
-import { AuthError, ValidationError } from "@repo/error-handlers/index";
+import { AuthError, ValidationError } from "@repo/error-handlers";
 import {
   checkOtpRestrictions,
   sendOtp,
   trackOtpRequests,
   validateRegistrationData,
   verifyOtp,
-} from "../utils/auth.helper";
+} from "../utils/auth.helper.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { setCookie } from "../utils/cookies/setCookie";
+import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 
 export const logOutSeller = async (req: any, res: Response) => {

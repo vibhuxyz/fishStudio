@@ -5,13 +5,13 @@ import {
   sendOtp,
   trackOtpRequests,
   verifyOtp,
-} from "../utils/auth.helper";
+} from "../utils/auth.helper.js";
 
 import jwt from "jsonwebtoken";
 const { JsonWebTokenError } = jwt;
 // import jwt, { JsonWebTokenError } from "jsonwebtoken";
-import { setCookie } from "../utils/cookies/setCookie";
-import { ValidationError } from "@repo/error-handlers/index";
+import { setCookie } from "../utils/cookies/setCookie.js";
+import { ValidationError } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
 export const sendOtpToUser = async (
   req: Request,

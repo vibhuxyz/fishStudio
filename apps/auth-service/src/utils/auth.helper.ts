@@ -1,12 +1,8 @@
 import crypto from "crypto";
-import { ValidationError } from "@repo/error-handlers/index";
-import redis from "@repo/libs/redis/index";
+import { ValidationError } from "@repo/error-handlers";
+import { redis, publishToQueue } from "@repo/libs";
 import { NextFunction, Request, Response } from "express";
-// import { sendEmail } from "./sendMail";
-// import prisma from "../../../../packages/libs/prisma";
 
-import { publishToQueue } from "@repo/libs/rabbitmq/index";
-// import { sendPhoneOtp } from "./sendOtp";
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const validateRegistrationData = (

@@ -1,5 +1,5 @@
 import { ConsumeMessage } from "amqplib";
-import { isValidOtpMessage, OtpMessage } from "../types/otpMessage";
+import { isValidOtpMessage, OtpMessage } from "../types/otpMessage.js";
 
 
 export function parseMessage(msg: ConsumeMessage): OtpMessage {

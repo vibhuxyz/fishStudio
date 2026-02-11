@@ -1,6 +1,13 @@
 {
   "name": "product-service",
-  "module": "main.ts",
+  "type": "module",
+  "private": true,
+  "main": "./dist/main.js",
+  "exports": {
+    ".": {
+      "default": "./dist/main.js"
+    }
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
@@ -19,8 +26,6 @@
   "peerDependencies": {
     "typescript": "^5"
   },
-  "private": true,
-  "type": "module",
   "dependencies": {
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
