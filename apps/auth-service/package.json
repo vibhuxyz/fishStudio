@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@repo/db": "workspace:*",
-    "@repo/rabbitMQ-service": "workspace:*",
+    "@repo/rabbitmq-service": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/middlewares": "workspace:*",
     "@repo/libs": "workspace:*",

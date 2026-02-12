@@ -9,9 +9,25 @@ import { ENV } from "@repo/env-config";
 
 const app = express();
 
+const allowedOrigins = ENV.CORS_ORIGINS
+  ? ENV.CORS_ORIGINS.split(",")
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: ["http://localhost:3001", "http://localhost:3000"],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        /\.vercel\.app$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     allowedHeaders: ["Authorization", "Content-Type"],
     credentials: true,
   }),
@@ -40,17 +56,19 @@ app.get("/gateway-health", (req, res) => {
   res.send({ message: "Welcome to api-gateway!" });
 });
 
-app.use("/auth", proxy("http://localhost:6001"));
-app.use("/product", proxy("http://localhost:6002"));
+const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
+const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 
-const port = ENV.PORT;
+app.use("/auth", proxy(authUrl));
+app.use("/product", proxy(productUrl));
 
-const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}`);
+const port = Number(ENV.PORT) || 8080;
 
+const server = app.listen(port, "0.0.0.0", () => {
+  console.log(`Gateway running on port ${port}`);
   try {
     initalizeConfig();
-    console.log("Site Config Initialized successfully");
+    console.log("Site Config Initialized");
   } catch (error) {
     console.log("Error initializing site config", error);
   }

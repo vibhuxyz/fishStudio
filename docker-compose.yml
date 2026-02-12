@@ -1,29 +1,59 @@
-version: "3.9"
-
 services:
-  auth-service:
-    build:
-      context: .
-      dockerfile: docker/auth-service/Dockerfile
-    env_file:
-      - .env.docker
-    ports:
-      - "8081:8080"
-
-  rabbitmq-service:
-    build:
-      context: .
-      dockerfile: docker/rabbitmq-service/Dockerfile
-    env_file:
-      - .env.docker
-    ports:
-      - "8082:8080"
-
+  # --- API GATEWAY (Entry Point) ---
   api-gateway:
-    build:
-      context: .
-      dockerfile: docker/api-gateway/Dockerfile
-    env_file:
-      - .env.docker
+    container_name: api-gateway
+    image: 10xdevian134/api-gateway:prod
+    restart: always
     ports:
-      - "8080:8080"
+      - "80:8080" # Public Port 80 -> Internal Port 8080
+    env_file: .env.prod
+    networks:
+      - fish-studio-net
+
+  # --- AUTH SERVICE ---
+  auth-service:
+    container_name: auth-service
+    image: 10xdevian134/auth-service:prod
+    restart: always
+    env_file: .env.prod
+    networks:
+      - fish-studio-net
+
+  # --- PRODUCT SERVICE ---
+  product-service:
+    container_name: product-service
+    image: 10xdevian134/product-service:prod
+    restart: always
+    env_file: .env.prod
+    networks:
+      - fish-studio-net
+
+  # --- RABBITMQ BROKER ---
+  rabbitmq-service:
+    container_name: rabbitmq-service
+    image: rabbitmq:3-management-alpine
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mysecretpassword
+    ports:
+      - "15672:15672" # Dashboard (Public)
+    expose:
+      - "5672" # Internal Communication (Private/Secure)
+    networks:
+      - fish-studio-net
+
+  # --- RABBITMQ WORKER ---
+  rabbitmq-worker:
+    container_name: rabbitmq-worker
+    image: 10xdevian134/rabbitmq-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+networks:
+  fish-studio-net:
+    driver: bridge

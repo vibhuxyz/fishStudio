@@ -1,5 +1,5 @@
 {
-  "name": "api-gateway",
+  "name": "@repo/api-gateway",
   "type": "module",
   "private": true,
   "main": "./dist/main.js",

@@ -25,7 +25,10 @@ export const ENV = {
   PORT: process.env.PORT || "8080",
 
   // Redis
-  REDIS_URL: logEnv("REDIS_DATABASE_URI", process.env.REDIS_DATABASE_URI),
+  REDIS_DATABASE_URL: logEnv(
+    "REDIS_DATABASE_URI",
+    process.env.REDIS_DATABASE_URL,
+  ),
 
   // ImageKit
   IMAGEKIT_PUBLIC_KEY: logEnv(
@@ -41,6 +44,18 @@ export const ENV = {
     process.env.IMAGEKIT_URL_ENDPOINT,
   ),
 
+  CORS_ORIGINS: logEnv(
+    "AUTH_SERVICE_URL",
+    process.env.CORS_ORIGINS || "http://localhost:3000",
+  ),
+  AUTH_SERVICE_URL: logEnv(
+    "IMAGEKIT_URL_ENDPOINT",
+    process.env.CORS_ORIGINS || "http://localhost:6001",
+  ),
+  PRODUCT_SERVICE_URL: logEnv(
+    "IMAGEKIT_URL_ENDPOINT",
+    process.env.PRODUCT_SERVICE_URL || "http://localhost:6002",
+  ),
   // Mail
   SMTP_HOST: logEnv("SMTP_HOST", process.env.SMTP_HOST),
   SMTP_PORT: logEnv("SMTP_PORT", process.env.SMTP_PORT),
