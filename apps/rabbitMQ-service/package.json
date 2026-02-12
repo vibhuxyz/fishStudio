@@ -1,5 +1,5 @@
 {
-  "name": "@repo/rabbitmq-service",
+  "name": "@repo/rabbitMQ-service",
   "type": "module",
   "private": true,
   "main": "./dist/main.js",
