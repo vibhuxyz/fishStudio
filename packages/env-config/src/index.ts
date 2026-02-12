@@ -50,7 +50,7 @@ export const ENV = {
   ),
   AUTH_SERVICE_URL: logEnv(
     "IMAGEKIT_URL_ENDPOINT",
-    process.env.CORS_ORIGINS || "http://localhost:6001",
+    process.env.AUTH_SERVICE_URL || "http://localhost:6001",
   ),
   PRODUCT_SERVICE_URL: logEnv(
     "IMAGEKIT_URL_ENDPOINT",
