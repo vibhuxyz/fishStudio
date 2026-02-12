@@ -1,36 +1,15 @@
 import express from "express";
-import cors from "cors";
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.router.js";
 import { connectRabbitMQ } from "@repo/libs";
-import { ENV } from "@repo/env-config";
 
 const port = 6001;
 const app = express();
 
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
-const allowedOrigins = ENV.CORS_ORIGINS
-  ? ENV.CORS_ORIGINS.split(",")
-  : ["http://localhost:3000", "http://localhost:3001"];
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    allowedHeaders: ["Authorization", "Content-Type"],
-    credentials: true,
-  }),
-);
-
-app.use(express.json());
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
