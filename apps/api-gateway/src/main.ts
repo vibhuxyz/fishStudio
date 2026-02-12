@@ -12,28 +12,33 @@ dns.setDefaultResultOrder("ipv4first");
 const app = express();
 
 const allowedOrigins = ENV.CORS_ORIGINS
-  ? ENV.CORS_ORIGINS.split(",")
+  ? ENV.CORS_ORIGINS.split(",").map((o: any) => o.trim())
   : ["http://localhost:3000"];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
+      // Allow requests with no origin (mobile apps, postman, server-to-server)
       if (!origin) return callback(null, true);
 
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        /\.vercel\.app$/.test(origin)
-      ) {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn(`CORS blocked for origin: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
-    allowedHeaders: ["Authorization", "Content-Type"],
     credentials: true,
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "ngrok-skip-browser-warning",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Explicitly allow methods
   }),
 );
+
+app.options("*", cors());
 
 app.use(morgan("dev"));
 app.use(express.json({ limit: "100mb" }));
@@ -64,14 +69,16 @@ const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 app.use(
   "/auth",
   proxy(authUrl, {
-    proxyReqPathResolver: (req : any) => req.url, // req.url is already stripped of the /auth prefix by express
+    proxyReqPathResolver: (req: any) => req.url, // req.url is already stripped of the /auth prefix by express
   }),
 );
 
-
-app.use("/product", proxy(productUrl, {
-  proxyReqPathResolver: (req : any) => req.url // req.url is already stripped of the /product prefix
-}));
+app.use(
+  "/product",
+  proxy(productUrl, {
+    proxyReqPathResolver: (req: any) => req.url, // req.url is already stripped of the /product prefix
+  }),
+);
 
 // app.use("/auth", proxy(authUrl));
 // app.use("/product", proxy(productUrl));
