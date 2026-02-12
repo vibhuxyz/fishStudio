@@ -5,6 +5,11 @@ import { runRedirectToLogin } from "./redirect";
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_SERVER_URI,
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+    // ✅ ADD THIS LINE to bypass ngrok warning page
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 let isRefreshing = false;
@@ -57,10 +62,16 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
+        // await axios.post(
+        //   `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
+        //   {},
+        //   { withCredentials: true },
+        // );
+        //
+        await axiosInstance.post(
+          `/auth/api/refresh-token`, // Using relative path since baseURL is set
           {},
-          { withCredentials: true },
+          { _retry: true } as any, // Mark this as a retry to avoid interceptor loops
         );
 
         isRefreshing = false;
