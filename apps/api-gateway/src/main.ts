@@ -15,40 +15,40 @@ const allowedOrigins = ENV.CORS_ORIGINS
   ? ENV.CORS_ORIGINS.split(",").map((o: any) => o.trim())
   : ["http://localhost:3000"];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, postman, server-to-server)
-      if (!origin) return callback(null, true);
+// 1. DYNAMIC CORS MIDDLEWARE
+// This handles both the Preflight (OPTIONS) and standard requests safely
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`CORS blocked for origin: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+  const corsOptions: any = {
     credentials: true,
     allowedHeaders: [
       "Authorization",
       "Content-Type",
       "ngrok-skip-browser-warning",
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Explicitly allow methods
-  }),
-);
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  };
 
-app.options(/.* /, cors());
-// OR
-app.options("(.*)", cors());
+  if (origin && allowedOrigins.includes(origin)) {
+    corsOptions.origin = origin;
+  } else {
+    corsOptions.origin = false;
+  }
+
+  // Handle preflight manually to bypass Express 5.x path-to-regexp errors
+  if (req.method === "OPTIONS") {
+    return cors(corsOptions)(req, res, next);
+  }
+
+  return cors(corsOptions)(req, res, next);
+});
 
 app.use(morgan("dev"));
-
 app.use(cookieParser());
 app.set("trust proxy", 1);
 
-// API rate limit
-
+// 2. RATE LIMITER
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: (req: any) => (req.user ? 1000 : 100),
@@ -60,39 +60,38 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
+// 3. HEALTH CHECK
 app.get("/gateway-health", (req, res) => {
   res.send({ message: "Welcome to api-gateway!" });
 });
 
+// 4. PROXY ROUTES
 const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
 const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 
 app.use(
   "/auth",
   proxy(authUrl, {
-    proxyReqPathResolver: (req: any) => req.url, // req.url is already stripped of the /auth prefix by express
+    proxyReqPathResolver: (req: any) => req.url,
   }),
 );
 
 app.use(
   "/product",
   proxy(productUrl, {
-    proxyReqPathResolver: (req: any) => req.url, // req.url is already stripped of the /product prefix
+    proxyReqPathResolver: (req: any) => req.url,
   }),
 );
-
-// app.use("/auth", proxy(authUrl));
-// app.use("/product", proxy(productUrl));
 
 const port = Number(ENV.PORT) || 8080;
 
 const server = app.listen(port, "0.0.0.0", () => {
-  console.log(`Gateway running on port ${port}`);
+  console.log(`🚀 Gateway running on 0.0.0.0:${port}`);
   try {
     initalizeConfig();
-    console.log("Site Config Initialized");
+    console.log("✅ Site Config Initialized");
   } catch (error) {
-    console.log("Error initializing site config", error);
+    console.log("❌ Error initializing site config", error);
   }
 });
 
