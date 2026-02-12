@@ -7,7 +7,6 @@ import { connectRabbitMQ } from "@repo/libs";
 import { ENV } from "@repo/env-config";
 
 const port = 6001;
-
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
@@ -19,9 +18,7 @@ const allowedOrigins = ENV.CORS_ORIGINS
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or internal docker calls)
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -37,19 +34,34 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
-  res.send({ message: "Hello API i am auth services" });
+  res.send({ message: "Hello API I am auth service" });
 });
 
+// IMPORTANT: This matches what your gateway expects
 app.use("/api", router);
 
 app.use(errorMiddleware);
 
-const server = app.listen(port, "0.0.0.0", async () => {
-  await connectRabbitMQ();
-  // Change localhost to 0.0.0.0 or just a generic message
-  console.log(`Auth server is running on port ${port}`);
-});
+// --- NEW STARTUP LOGIC ---
+const startServer = async () => {
+  try {
+    // 1. Connect to dependencies FIRST
+    console.log("Connecting to RabbitMQ...");
+    await connectRabbitMQ();
+    console.log("✅ Connected to RabbitMQ");
 
-server.on("error", (err) => {
-  console.log("Server error", err);
-});
+    // 2. Start listening ONLY after dependencies are ready
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log(`🚀 Auth server fully ready on 0.0.0.0:${port}`);
+    });
+
+    server.on("error", (err) => {
+      console.error("Critical Server Error:", err);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start Auth Service:", error);
+    process.exit(1); // Force container to restart if it fails
+  }
+};
+
+startServer();
