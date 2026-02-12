@@ -1,3 +1,4 @@
+"use client";
 import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
 
@@ -32,7 +33,7 @@ const onRefreshSuccess = () => {
 // Handle API requests
 axiosInstance.interceptors.request.use(
   (config) => config,
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Handle expired tokens and refresh logic
@@ -46,7 +47,7 @@ axiosInstance.interceptors.response.use(
     const isAuthRequired = originalRequest?.requireAuth === true;
 
     // prevent infinite retry loop
-     if (is401 && !isRetry && isAuthRequired) {
+    if (is401 && !isRetry && isAuthRequired) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));
@@ -59,7 +60,7 @@ axiosInstance.interceptors.response.use(
         await axios.post(
           `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         isRefreshing = false;
@@ -74,7 +75,7 @@ axiosInstance.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

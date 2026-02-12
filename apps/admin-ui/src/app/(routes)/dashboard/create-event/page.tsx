@@ -9,7 +9,7 @@ import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ColorSelector } from "@repo/ui";
 import { CustomProperties } from "@repo/ui";
-import { CustomSpecifications } from "@repo/ui";
+// import { CustomSpecifications } from "@repo/ui";
 import { Input } from "@repo/ui";
 import { RichTextEditor } from "@repo/ui";
 import { SizeSelector } from "@repo/ui";
@@ -339,9 +339,9 @@ const Page = () => {
                 <ColorSelector control={control} errors={errors} />
               </div>
 
-              <div className="mt-2">
+              {/*<div className="mt-2">
                 <CustomSpecifications control={control} errors={errors} />
-              </div>
+              </div>*/}
 
               <div className="mt-2">
                 <CustomProperties control={control} errors={errors} />
