@@ -5,7 +5,7 @@ services:
     image: 10xdevian134/api-gateway:prod
     restart: always
     ports:
-      - "80:8080" # Public Port 80 -> Internal Port 8080
+      - "80:8080" # Maps public traffic to Gateway
     env_file: .env.prod
     networks:
       - fish-studio-net
@@ -16,8 +16,12 @@ services:
     image: 10xdevian134/auth-service:prod
     restart: always
     env_file: .env.prod
+    expose:
+      - "6001"
     networks:
-      - fish-studio-net
+      fish-studio-net:
+        aliases:
+          - auth-service
 
   # --- PRODUCT SERVICE ---
   product-service:
@@ -25,8 +29,12 @@ services:
     image: 10xdevian134/product-service:prod
     restart: always
     env_file: .env.prod
+    expose:
+      - "6002"
     networks:
-      - fish-studio-net
+      fish-studio-net:
+        aliases:
+          - product-service
 
   # --- RABBITMQ BROKER ---
   rabbitmq-service:
@@ -37,11 +45,13 @@ services:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=mysecretpassword
     ports:
-      - "15672:15672" # Dashboard (Public)
+      - "15672:15672"
     expose:
-      - "5672" # Internal Communication (Private/Secure)
+      - "5672"
     networks:
-      - fish-studio-net
+      fish-studio-net:
+        aliases:
+          - rabbitmq-service
 
   # --- RABBITMQ WORKER ---
   rabbitmq-worker:

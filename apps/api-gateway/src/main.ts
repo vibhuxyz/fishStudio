@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import initalizeConfig from "./libs/initializeSiteConfig.js";
 import { ENV } from "@repo/env-config";
+import dns from "node:dns";
+dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 
@@ -59,8 +61,20 @@ app.get("/gateway-health", (req, res) => {
 const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
 const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 
-app.use("/auth", proxy(authUrl));
-app.use("/product", proxy(productUrl));
+app.use(
+  "/auth",
+  proxy(authUrl, {
+    proxyReqPathResolver: (req : any) => req.url, // req.url is already stripped of the /auth prefix by express
+  }),
+);
+
+
+app.use("/product", proxy(productUrl, {
+  proxyReqPathResolver: (req : any) => req.url // req.url is already stripped of the /product prefix
+}));
+
+// app.use("/auth", proxy(authUrl));
+// app.use("/product", proxy(productUrl));
 
 const port = Number(ENV.PORT) || 8080;
 
