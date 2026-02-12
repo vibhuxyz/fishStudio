@@ -4,6 +4,11 @@ import { runRedirectToLogin } from "./redirect";
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_SERVER_URI,
   withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+    // ✅ ADD THIS LINE to bypass ngrok warning page
+    "ngrok-skip-browser-warning": "true",
+  },
 });
 
 let isRefreshing = false;
@@ -32,7 +37,7 @@ const onRefreshSuccess = () => {
 // Handle API requests
 axiosInstance.interceptors.request.use(
   (config) => config,
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Handle expired tokens and refresh logic
@@ -46,7 +51,7 @@ axiosInstance.interceptors.response.use(
     const isAuthRequired = originalRequest?.requireAuth === true;
 
     // prevent infinite retry loop
-     if (is401 && !isRetry && isAuthRequired) {
+    if (is401 && !isRetry && isAuthRequired) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));
@@ -56,10 +61,16 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
+        // await axios.post(
+        //   `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
+        //   {},
+        //   { withCredentials: true },
+        // );
+        //
+        await axiosInstance.post(
+          `/auth/api/refresh-token`, // Using relative path since baseURL is set
           {},
-          { withCredentials: true }
+          { _retry: true } as any, // Mark this as a retry to avoid interceptor loops
         );
 
         isRefreshing = false;
@@ -74,7 +85,7 @@ axiosInstance.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;
