@@ -119,12 +119,12 @@ const Page = () => {
                   <td className="p-3 capitalize">
                     {discount.discountType === "percentage"
                       ? "Percentage (%)"
-                      : "Flat ($)"}
+                      : "Flat (₹)"}
                   </td>
                   <td className="p-3">
                     {discount.discountType === "percentage"
                       ? `${discount.discountValue}%`
-                      : `$${discount.discountValue}`}
+                      : `₹${discount.discountValue}`}
                   </td>
                   <td className="p-3">{discount.discountCode}</td>
                   <td className="p-3">

@@ -171,7 +171,7 @@ export const loginSeller = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const { email, password } = req.body;
 
@@ -224,7 +224,7 @@ export const getSeller = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const seller = req.seller;
     console.log(seller);

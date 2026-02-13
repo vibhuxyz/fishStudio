@@ -1,7 +1,7 @@
+import { ComingSoon } from "@repo/ui";
+
 export default function InboxPage() {
   return (
-    <div className="h-screen flex items-center justify-center text-gray-500">
-      Messaging is temporarily disabled
-    </div>
+    <ComingSoon emoji="💬" title="Chat System" />
   );
 }

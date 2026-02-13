@@ -191,12 +191,12 @@ export default function DashboardClient() {
 
       {/* Map + orders */}
       <div className="flex gap-8 mt-8">
-        <div className="w-[60%]">
+        {/*<div className="w-[60%]">
           <h2 className="text-white text-xl font-semibold mb-2">
             Visitor Distribution
           </h2>
           <GeographicalMap />
-        </div>
+        </div>*/}
 
         <div className="w-[40%]">
           <OrdersTable />

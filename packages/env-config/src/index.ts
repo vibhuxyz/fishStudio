@@ -46,7 +46,7 @@ export const ENV = {
 
   CORS_ORIGINS: logEnv(
     "AUTH_SERVICE_URL",
-    process.env.CORS_ORIGINS || "http://localhost:3000",
+    process.env.CORS_ORIGINS || "http://localhost:3000 , http://localhost:3001",
   ),
   AUTH_SERVICE_URL: logEnv(
     "IMAGEKIT_URL_ENDPOINT",

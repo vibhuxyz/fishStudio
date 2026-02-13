@@ -84,9 +84,10 @@ app.use(
 );
 
 const port = Number(ENV.PORT) || 8080;
+//
 
 const server = app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Gateway running on 0.0.0.0:${port}`);
+  console.log(`🚀 Gateway running on http://localhost:${port}`);
   try {
     initalizeConfig();
     console.log("✅ Site Config Initialized");
