@@ -1,3 +1,4 @@
+"use client";
 import { Controller } from "react-hook-form";
 
 const sizes = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
@@ -22,7 +23,7 @@ const SizeSelector = ({ control, errors }: any) => {
                     field.onChange(
                       isSelected
                         ? field.value.filter((s: string) => s !== size)
-                        : [...(field.value || []), size]
+                        : [...(field.value || []), size],
                     )
                   }
                   className={`px-3 py-1 rounded-lg font-Poppins transition-colors ${

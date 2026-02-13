@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { Controller, useFieldArray } from "react-hook-form";
 import Input from "../input";
