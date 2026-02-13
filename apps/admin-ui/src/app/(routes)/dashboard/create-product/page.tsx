@@ -206,6 +206,7 @@ const Page = () => {
     >
       {/* Heading & Breadcrumbs */}
       <h2 className="text-2xl py-2 font-semibold font-Poppins text-white">
+         <h1 className="text-red-900 text-4xl">Image upload is not Working Now so Create Product Without image In v1 we will fix</h1>
         Create Product
       </h2>
       <BreadCrumbs title="Create Product" />
@@ -213,6 +214,7 @@ const Page = () => {
       {/* Content Layout */}
       <div className="py-4 w-full flex gap-6">
         {/* Left side - Image upload section */}
+       
         <div className="md:w-[35%]">
           {images?.length > 0 && (
             <ImagePlaceHolder
