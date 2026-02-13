@@ -67,10 +67,10 @@ const ProductCard = ({ product }: { product: any }) => {
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-white">
-              ${product?.sale_price}
+              ₹{product?.sale_price}
             </span>
             <span className="text-sm text-gray-400 line-through">
-              ${product?.regular_price}
+              ₹{product?.regular_price}
             </span>
             {/* Discount Badge (only if discount > 0) */}
             {discount > 0 && (
