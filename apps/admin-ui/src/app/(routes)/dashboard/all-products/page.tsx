@@ -103,7 +103,7 @@ const ProductList = () => {
       {
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }: any) => <span>${row.original.sale_price}</span>,
+        cell: ({ row }: any) => <span>₹{row.original.sale_price}</span>,
       },
       {
         accessorKey: "stock",

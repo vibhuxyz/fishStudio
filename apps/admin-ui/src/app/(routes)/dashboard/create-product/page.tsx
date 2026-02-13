@@ -286,7 +286,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Tags *"
-                  placeholder="apple,flagship"
+                  placeholder="rohu,seafood"
                   {...register("tags", {
                     required: "Separate related products tags with a comma",
                   })}
@@ -370,7 +370,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Regular Price"
-                  placeholder="20$"
+                  placeholder="200₹"
                   {...register("regular_price", {
                     valueAsNumber: true,
                     min: { value: 1, message: "Price must be at least 1" },
@@ -388,7 +388,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Sale Price *"
-                  placeholder="15$"
+                  placeholder="15₹"
                   {...register("sale_price", {
                     required: "Sale Price is required",
                     valueAsNumber: true,
