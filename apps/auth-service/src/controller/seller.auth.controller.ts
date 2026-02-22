@@ -26,7 +26,7 @@ export const registerSeller = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     validateRegistrationData(req.body, "seller");
 
@@ -68,7 +68,7 @@ export const verifySeller = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const { email, otp, password, name, phone_number } = req.body;
 

@@ -35,6 +35,7 @@ export const checkOtpRestrictions = async (
       "Account locked due to multiple failed attempts! Try again 30 minutes later.",
     );
   }
+  
 
   if (await redis.get(`otp_spam_lock:${identifier}`)) {
     throw new ValidationError(
@@ -63,7 +64,7 @@ export const trackOtpRequests = async (
     );
   }
   await redis.set(otpRequestsKey, otpRequests + 1, "EX", 10 * 60); // count resets after 10 minutes
-  // await redis.set(`otp_cooldown:${identifier}`, "true", "EX", 60); // remove comment later to test the api
+  // x// remove comment later to test the api
 };
 
 export const sendOtp = async (
@@ -74,7 +75,7 @@ export const sendOtp = async (
     phone_number?: string;
     template?: string;
   },
-) => {
+  ) => {
   const otp = crypto.randomInt(1000, 9999).toString();
   //send otp email logic here
 

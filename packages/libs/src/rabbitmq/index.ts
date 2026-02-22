@@ -41,6 +41,8 @@ export const connectRabbitMQ = async (): Promise<Channel> => {
   }
 };
 
+
+
 export const publishToQueue = async (
   queueName: string,
   message: unknown,

@@ -32,7 +32,10 @@
     "format": "prettier --write \"**/*.{js,ts,jsx,tsx,md,json}\"",
     "check-format": "prettier --check \"**/*.{js,ts,jsx,tsx,md,json}\"",
     "check-types": "turbo run check-types",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:setup": "cd packages/db && bun run db:setup",
+    "db:migrate": "cd packages/db && bunx prisma db push",
+    "db:seed": "cd packages/db && bun run db:seed"
   },
   "workspaces": [
     "apps/*",

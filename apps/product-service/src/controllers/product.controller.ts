@@ -7,7 +7,7 @@ export const slugValidator = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     let { slug } = req.body;
 
@@ -49,7 +49,7 @@ export const getCategories = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const config = await prisma.site_config.findFirst();
 
@@ -78,7 +78,7 @@ export const createDiscountCodes = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const { public_name, discountType, discountValue, discountCode } = req.body;
 
@@ -124,7 +124,7 @@ export const getDiscountCodes = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const discount_codes = await prisma.discount_codes.findMany({
       where: {
@@ -147,7 +147,7 @@ export const deleteDiscountCode = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const { id } = req.params;
     const sellerId = req.seller?.id;
@@ -188,7 +188,7 @@ export const uploadBanner = async (
   req: AuthRequest, // Use the custom interface here
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const { fileName } = req.body;
     const sellerId = req.seller?.id;
@@ -229,7 +229,7 @@ export const getActiveBanners = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const banners = await prisma.banners.findMany({
       where: { isActive: true },
@@ -250,7 +250,7 @@ export const uploadProductImage = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     // ⚠️ Note: 'fileName' here actually contains the base64 image data string
     const { fileName } = req.body;
@@ -280,7 +280,7 @@ export const createProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     /**
      * 1️⃣ Extract fields from request body
@@ -457,7 +457,7 @@ export const getStoreProducts = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const products = await prisma.products.findMany({
       where: {
@@ -481,7 +481,7 @@ export const deleteProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+   ) => {
   try {
     const { productId } = req.params;
     const sellerId = req.seller?.store?.id;
@@ -523,7 +523,7 @@ export const restoreProduct = async (
   req: any,
   res: Response,
   next: NextFunction,
-) => {
+  ) => {
   try {
     const { productId } = req.params;
     const sellerId = req.seller?.shop?.is;

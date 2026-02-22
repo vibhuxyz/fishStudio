@@ -2,10 +2,12 @@ import express, { Router } from "express";
 import {
   createDiscountCodes,
   createProduct,
+  deleteProduct,
   getActiveBanners,
   getCategories,
   getDiscountCodes,
   getStoreProducts,
+  restoreProduct,
   slugValidator,
   uploadBanner,
   uploadProductImage,
@@ -46,8 +48,6 @@ router.post(
   uploadProductImage,
 );
 
-export default router;
-
 // router.delete(
 //   "/delete-discount-code/:id",
 //   isAuthenticated,
@@ -62,15 +62,19 @@ export default router;
 //   deleteProductImage,
 // );
 
-// router.delete(
-//   "/delete-product/:productId",
-//   isAuthenticated,
-//   isSeller,
-//   deleteProduct,
-// );
-// router.put(
-//   "/restore-product/:productId",
-//   isAuthenticated,
-//   isSeller,
-//   restoreProduct,
-// );
+router.delete(
+  "/delete-product/:productId",
+  isAuthenticated,
+  isSeller,
+  deleteProduct,
+);
+router.put(
+  "/restore-product/:productId",
+  isAuthenticated,
+  isSeller,
+  restoreProduct,
+);
+
+
+export default router;
+
