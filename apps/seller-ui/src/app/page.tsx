@@ -24,6 +24,7 @@ import XIcon from "../assets/icons/xIcon";
 import axiosInstance from "../utils/axiosInstance";
 import useSeller from "../hooks/useSeller";
 import YoutubeIcon from "../assets/icons/youtube-icons";
+import ComingSoon from "@/shared/components/ComingSoon";
 
 const TABS = ["Products", "Offers", "Reviews"];
 
@@ -111,7 +112,7 @@ const SellerProfile = () => {
                   <Image
                     src={
                       seller?.shop?.avatar ||
-                      "https://ik.imagekit.io/fz0xzwtey/avatar/amazon.jpeg"
+                      "https://ik.imagekit.io/pay/fishStudio.png?updatedAt=1770961830505"
                     }
                     alt="Seller Avatar"
                     layout="fill"
@@ -265,11 +266,17 @@ const SellerProfile = () => {
                 </div>
               )}
               {activeTab === "Offers" && (
-                <div className="m-auto grid grid-cols-1 md:grid-cols-3 gap-5">
+                // className="m-auto grid grid-cols-1 md:grid-cols-3 gap-5"
+
+                <div>
                   {events?.map((product: any) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
-                  {events?.length === 0 && <p>No offers available yet!</p>}
+                  {events?.length === 0 && (
+                    <p>
+                      <ComingSoon emoji="💩" title="Offer Will" />
+                    </p>
+                  )}
                 </div>
               )}
               {activeTab === "Reviews" && <div>No reviews available yet!</div>}

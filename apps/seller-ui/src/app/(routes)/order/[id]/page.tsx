@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import axiosInstance from "apps/seller-ui/src/utils/axiosInstance";
+
 import { useParams, useRouter } from "next/navigation";
+import axiosInstance from "@/utils/axiosInstance";
 
 const statuses = [
   "Ordered",
@@ -25,7 +26,7 @@ const Page = () => {
   const fetchOrder = async () => {
     try {
       const res = await axiosInstance.get(
-        `/order/api/get-order-details/${orderId}`
+        `/order/api/get-order-details/${orderId}`,
       );
       setOrder(res.data.order);
     } catch (err) {
@@ -37,7 +38,7 @@ const Page = () => {
   };
 
   const handleStatusChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
+    e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     const newStatus = e.target.value;
     setUpdating(true);
@@ -126,8 +127,8 @@ const Page = () => {
                   current
                     ? "text-blue-600"
                     : passed
-                    ? "text-green-600"
-                    : "text-gray-400"
+                      ? "text-green-600"
+                      : "text-gray-400"
                 }`}
               >
                 {step}
@@ -245,7 +246,7 @@ const Page = () => {
                               </span>{" "}
                               {value}
                             </span>
-                          )
+                          ),
                       )}
                     </div>
                   )}

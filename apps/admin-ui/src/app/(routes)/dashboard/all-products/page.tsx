@@ -147,7 +147,7 @@ const ProductList = () => {
               <BarChart size={18} />
             </button>
             <button
-              className="text-red-400 hover:text-red-300 transition"
+              className="text-red-400 hover:text-red-300 transition cursor-pointer"
               onClick={() => openDeleteModal(row.original)}
             >
               <Trash size={18} />

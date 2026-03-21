@@ -41,12 +41,12 @@ router.post("/create-product", isAuthenticated, isSeller, createProduct);
 
 router.get("/get-all-products", getStoreProducts);
 
-router.post(
-  "/upload-product-image",
-  isAuthenticated,
-  isSeller,
-  uploadProductImage,
-);
+// router.post(
+//   "/upload-product-image",
+//   isAuthenticated,
+//   isSeller,
+//   uploadProductImage,
+// );
 
 // router.delete(
 //   "/delete-discount-code/:id",
@@ -75,6 +75,4 @@ router.put(
   restoreProduct,
 );
 
-
 export default router;
-

@@ -5,7 +5,13 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Input, RichTextEditor } from "@repo/ui";
+import {
+  CoustomCuttingType,
+  CoustomPices,
+  CustomSizes,
+  Input,
+  RichTextEditor,
+} from "@repo/ui";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -106,17 +112,9 @@ const Page = () => {
   // Extract data from API response
   const categories = data?.categories || [];
   const subCategoriesData = data?.subCategories || {};
-  const sizes = data?.sizes || {};
-  const cuttingTypes = data?.cuttingTypes || [];
-  const pieceSizes = data?.pieceSizes || [];
-  const processingWeightLoss = data?.processingWeightLoss || {};
 
   // Watch form fields
   const selectedCategory = watch("category");
-  const selectedSubcategory = watch("subCategory");
-  const selectedCuttingType = watch("cuttingType");
-  const selectedSize = watch("sizes"); // CHANGED from "size" to "sizes"
-  const selectedPieceSize = watch("pieceSizes"); // CHANGED from "pieceSize" to "pieceSizes"
   const regularPrice = watch("regular_price");
 
   // Category mapping from display name to API key
@@ -124,10 +122,6 @@ const Page = () => {
     "Fresh Water": "freshWater",
     "Sea Fish": "seaFish",
     "Premium Sea Food": "premiumSeaFood",
-    "Meat & Poultry": "meatPoultry",
-    "Fry Ready": "fryReady",
-    "Moms Magic": "momsMagic",
-    "Rice & Spice": "riceSpice",
     "Pet Serve": "petServe",
   };
 
@@ -138,38 +132,63 @@ const Page = () => {
     return subCategoriesData[categoryKey] || [];
   }, [selectedCategory, subCategoriesData]);
 
-  // Memoized sizes based on selected subcategory
-  const availableSizes = useMemo(() => {
-    if (!selectedSubcategory) return sizes["default"] || [];
-    return sizes[selectedSubcategory] || sizes["default"] || [];
-  }, [selectedSubcategory, sizes]);
-
-  // Memoized processing weight loss based on selected cutting type
-  const processingInfo = useMemo(() => {
-    if (!selectedCuttingType) return null;
-    return (
-      processingWeightLoss[selectedCuttingType] ||
-      processingWeightLoss["default"]
-    );
-  }, [selectedCuttingType, processingWeightLoss]);
-
+  // ---------------------------------------------------------
+  // UPDATED SUBMIT LOGIC FOR IMAGES
+  // ---------------------------------------------------------
   const onSubmit = async (data: any) => {
     try {
       setLoading(true);
 
-      // Transform form data to match backend expectations
+      // 1. Filter valid images
+      const validImages = images.filter((img) => img !== null && img.base64);
+
+      // 2. Upload images
+      const uploadedImagesData = await Promise.all(
+        validImages.map(async (img) => {
+          if (!img?.base64) return null;
+
+          try {
+            // Send base64 data as 'fileName' to match backend destructuring
+            const uploadRes = await axiosInstance.post(
+              "/product/api/upload-product-image",
+              { fileName: img.base64 },
+              isProtected,
+            );
+
+            if (uploadRes.data.success) {
+              return {
+                fileId: uploadRes.data.fileId,
+                file_url: uploadRes.data.file_url,
+              };
+            }
+            return null;
+          } catch (err) {
+            console.error("Image upload failed", err);
+            return null;
+          }
+        }),
+      );
+
+      const finalImages = uploadedImagesData.filter(Boolean);
+
+      // 3. Prepare final payload
       const submitData = {
         ...data,
-        // Rename singular field names to plural to match backend
         sizes: data.sizes,
         cuttingTypes: data.cuttingType,
         pieceSizes: data.pieceSizes,
-        processingWeightLoss: processingInfo || {},
+        images: finalImages,
+        ...(data.processingWeightLoss &&
+          data.processingWeightLoss.trim() && {
+            processingWeightLoss: data.processingWeightLoss,
+          }),
       };
 
-      console.log("Submitting data:", submitData);
+      console.log("Submitting final payload:", submitData);
 
+      // 4. Create Product
       await axiosInstance.post("/product/api/create-product", submitData);
+
       toast.success("Product created successfully!");
       router.push("/dashboard/all-products");
     } catch (error: any) {
@@ -187,13 +206,16 @@ const Page = () => {
     >
       {/* Heading & Breadcrumbs */}
       <h2 className="text-2xl py-2 font-semibold font-Poppins text-white">
+         
         Create Product
+        <p className="text-red-900 text-4xl">Image upload is not Working Now so Create Product Without image In v1 we will fix</p>
       </h2>
       <BreadCrumbs title="Create Product" />
 
       {/* Content Layout */}
       <div className="py-4 w-full flex gap-6">
         {/* Left side - Image upload section */}
+       
         <div className="md:w-[35%]">
           {images?.length > 0 && (
             <ImagePlaceHolder
@@ -225,6 +247,7 @@ const Page = () => {
         <div className="md:w-[65%]">
           <div className="w-full flex gap-6">
             {/* LEFT COLUMN */}
+
             <div className="w-2/4">
               {/* Product Title Input */}
               <Input
@@ -266,7 +289,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Tags *"
-                  placeholder="apple,flagship"
+                  placeholder="rohu,seafood"
                   {...register("tags", {
                     required: "Separate related products tags with a comma",
                   })}
@@ -350,7 +373,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Regular Price"
-                  placeholder="20$"
+                  placeholder="200₹"
                   {...register("regular_price", {
                     valueAsNumber: true,
                     min: { value: 1, message: "Price must be at least 1" },
@@ -368,7 +391,7 @@ const Page = () => {
               <div className="mt-2">
                 <Input
                   label="Sale Price *"
-                  placeholder="15$"
+                  placeholder="15₹"
                   {...register("sale_price", {
                     required: "Sale Price is required",
                     valueAsNumber: true,
@@ -483,7 +506,6 @@ const Page = () => {
                   {errors.category.message as string}
                 </p>
               )}
-
               {/* Subcategory Dropdown */}
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
@@ -519,131 +541,34 @@ const Page = () => {
                   </p>
                 )}
               </div>
-
-              {/* Size Dropdown - CHANGED from "size" to "sizes" */}
+              {/* Coustom Sizes */}
               <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Size *
-                </label>
-                <Controller
-                  name="sizes"
-                  control={control}
-                  rules={{ required: "Size is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Size
-                      </option>
-                      {availableSizes?.map((size: string) => (
-                        <option key={size} value={size} className="bg-black">
-                          {size}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-                {errors.sizes && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.sizes.message as string}
-                  </p>
-                )}
+                <CustomSizes control={control} errors={errors} />
               </div>
 
-              {/* Cutting Type Dropdown */}
+              {/* Coustom Pices*/}
               <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Cutting Type *
-                </label>
-                <Controller
-                  name="cuttingType"
-                  control={control}
-                  rules={{ required: "Cutting type is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Cutting Type
-                      </option>
-                      {cuttingTypes?.map((cutting: any) => (
-                        <option
-                          key={cutting.id}
-                          value={cutting.id}
-                          className="bg-black"
-                        >
-                          {cutting.icon} {cutting.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-                {errors.cuttingType && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.cuttingType.message as string}
-                  </p>
-                )}
+                <CoustomPices control={control} errors={errors} />
               </div>
 
-              {/* Piece Size Dropdown - CHANGED from "pieceSize" to "pieceSizes" */}
+              {/* Coustom Cutting Type*/}
               <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Piece Size *
-                </label>
-                <Controller
-                  name="pieceSizes"
-                  control={control}
-                  rules={{ required: "Piece size is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Piece Size
-                      </option>
-                      {pieceSizes?.map((piece: any) => (
-                        <option
-                          key={piece.id}
-                          value={piece.id}
-                          className="bg-black"
-                        >
-                          {piece.name} ({piece.range})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-                {errors.pieceSizes && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.pieceSizes.message as string}
-                  </p>
-                )}
+                <CoustomCuttingType control={control} errors={errors} />
               </div>
 
               {/* Processing Weight Loss Info Display */}
-              {processingInfo && (
-                <div className="mt-2 p-3 bg-blue-900 rounded-md border border-blue-700">
-                  <p className="text-sm font-semibold text-blue-200">
-                    Processing Weight Loss Info
+              <div className="mt-3">
+                <Input
+                  label="Processing Weight Loss (optional)"
+                  placeholder="e.g., 5%, 10%, 15%"
+                  {...register("processingWeightLoss")}
+                />
+                {errors.processingWeightLoss && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.processingWeightLoss.message as string}
                   </p>
-                  {typeof processingInfo === "object" &&
-                  processingInfo.min !== undefined ? (
-                    <p className="text-xs text-blue-100 mt-1">
-                      Loss: {processingInfo.min}% - {processingInfo.max}%
-                      <br />
-                      {processingInfo.description}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-blue-100 mt-1">
-                      No weight loss for this cutting type
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="mt-2">
                 <label className="block font-semibold text-gray-300 mb-1">
@@ -676,7 +601,6 @@ const Page = () => {
                   </p>
                 )}
               </div>
-
               <div className="mt-3">
                 <label className="block font-semibold text-gray-300 mb-1">
                   Select Discount Codes (optional)
@@ -727,7 +651,7 @@ const Page = () => {
       <div className="mt-6 flex justify-end gap-3">
         <button
           type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           {loading ? "Creating..." : "Create"}

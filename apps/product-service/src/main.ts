@@ -1,5 +1,5 @@
 import express from "express";
-
+import "./jobs/product.cron.jobs.js"
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
