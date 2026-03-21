@@ -51,8 +51,8 @@ const GeographicalMap = () => {
         }}
       >
         <Geographies geography={geoUrl}>
-          {({ geographies }) =>
-            geographies.map((geo) => {
+          {({ geographies }: { geographies: any[] }) =>
+            geographies.map((geo: any) => {
               const countryName = geo.properties.name;
               const match = countryData.find((c) => c.name === countryName);
               const baseColor = getColor(countryName);
@@ -61,7 +61,7 @@ const GeographicalMap = () => {
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={(e: React.MouseEvent<SVGPathElement>) => {
                     setTooltipPosition({ x: e.pageX, y: e.pageY });
                     setHovered({
                       name: countryName,
@@ -69,7 +69,7 @@ const GeographicalMap = () => {
                       sellers: match?.sellers || 0,
                     });
                   }}
-                  onMouseMove={(e) => {
+                  onMouseMove={(e: React.MouseEvent<SVGPathElement>) => {
                     setTooltipPosition({ x: e.pageX, y: e.pageY });
                   }}
                   onMouseLeave={() => setHovered(null)}

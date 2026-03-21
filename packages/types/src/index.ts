@@ -1,1 +1,1 @@
-export type { BackendProduct, Product } from "./backend-product";
+export type { BackendProduct, Product, ProductSizePricing } from "./backend-product";

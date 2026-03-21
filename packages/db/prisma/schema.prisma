@@ -25,6 +25,23 @@ enum productStatus {
   Draft
 }
 
+enum sellerEventType {
+  FREE_DELIVERY
+  DISCOUNT
+  FLASH_SALE
+}
+
+model admins {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String           @unique
+  password  String
+  products  products[]
+  coupons   discount_codes[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
 //////////////////////////////////////////////////////
 // IMAGES (NO BACK-RELATIONS TO USER / STORE)
 //////////////////////////////////////////////////////
@@ -74,7 +91,10 @@ model discount_codes {
   discountType  String
   discountValue Float
   discountCode  String   @unique
-  sellerId      String   @db.ObjectId
+  sellerId      String?  @db.ObjectId
+  adminId       String?  @db.ObjectId
+  seller        sellers? @relation(fields: [sellerId], references: [id])
+  admin         admins?  @relation(fields: [adminId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -91,7 +111,9 @@ model sellers {
   password     String
   following    String[]
   banners      banners[]
+  events       seller_events[]
   store        stores?
+  coupons      discount_codes[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -193,6 +215,7 @@ model products {
 
   tags         String[]
   sizes        String[]
+  sizePricing  Json?
   cuttingTypes String[]
   pieceSizes   String[]
 
@@ -213,8 +236,16 @@ model products {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  storeId String @db.ObjectId
-  store   stores @relation(fields: [storeId], references: [id])
+  storeId String? @db.ObjectId
+  store   stores? @relation(fields: [storeId], references: [id])
+  adminId String? @db.ObjectId
+  admin   admins? @relation(fields: [adminId], references: [id])
+
+  catalogProductId String?    @db.ObjectId
+  catalogProduct   products?  @relation("catalog_variants", fields: [catalogProductId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  storeVariants    products[] @relation("catalog_variants")
+
+  @@index([catalogProductId])
 }
 
 model banners {
@@ -231,4 +262,23 @@ model banners {
   updatedAt DateTime @updatedAt
 
   @@map("banners")
+}
+
+model seller_events {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  sellerId    String          @db.ObjectId
+  seller      sellers         @relation(fields: [sellerId], references: [id])
+  title       String
+  description String?
+  type        sellerEventType
+  minOrder    Float?
+  discount    Float?
+  startTime   DateTime
+  endTime     DateTime
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([sellerId, startTime])
+  @@map("seller_events")
 }

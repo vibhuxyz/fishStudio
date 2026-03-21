@@ -25,19 +25,18 @@ import axiosInstance from "../utils/axiosInstance";
 import useSeller from "../hooks/useSeller";
 import YoutubeIcon from "../assets/icons/youtube-icons";
 import ComingSoon from "@/shared/components/ComingSoon";
+import { isProtected } from "@/utils/protected";
 
 const TABS = ["Products", "Offers", "Reviews"];
 
 const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-store-product"); // add s in the end if product
-  const products = res.data.products?.filter((i: any) => !i.starting_date);
-  return products;
+  const res = await axiosInstance.get("/product/api/get-owned-products", isProtected);
+  return Array.isArray(res.data.products) ? res.data.products : [];
 };
 
 const fetchEvents = async () => {
-  const res = await axiosInstance.get("/product/api/get-shop-products");
-  const products = res.data.products?.filter((i: any) => i.starting_date);
-  return products;
+  const res = await axiosInstance.get("/product/api/get-seller-events", isProtected);
+  return Array.isArray(res.data.events) ? res.data.events : [];
 };
 
 const SellerProfile = () => {
@@ -115,8 +114,9 @@ const SellerProfile = () => {
                       "https://ik.imagekit.io/pay/fishStudio.png?updatedAt=1770961830505"
                     }
                     alt="Seller Avatar"
-                    layout="fill"
-                    objectFit="cover"
+                    fill
+                    sizes="100px"
+                    className="object-cover"
                   />
                   {seller?.id && (
                     <label
@@ -266,11 +266,36 @@ const SellerProfile = () => {
                 </div>
               )}
               {activeTab === "Offers" && (
-                // className="m-auto grid grid-cols-1 md:grid-cols-3 gap-5"
-
-                <div>
-                  {events?.map((product: any) => (
-                    <ProductCard key={product.id} product={product} />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {events?.map((event: any) => (
+                    <div
+                      key={event.id}
+                      className="rounded-xl border border-slate-700 bg-slate-900/70 p-4"
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-lg font-semibold text-white">
+                          {event.title}
+                        </h3>
+                        <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs text-blue-300">
+                          {event.type}
+                        </span>
+                      </div>
+                      {event.description ? (
+                        <p className="mb-3 text-sm text-slate-300">
+                          {event.description}
+                        </p>
+                      ) : null}
+                      <div className="space-y-2 text-sm text-slate-400">
+                        <p>
+                          {new Date(event.startTime).toLocaleString()} to{" "}
+                          {new Date(event.endTime).toLocaleString()}
+                        </p>
+                        {event.minOrder ? (
+                          <p>Minimum order: Rs{event.minOrder}</p>
+                        ) : null}
+                        {event.discount ? <p>Discount: {event.discount}%</p> : null}
+                      </div>
+                    </div>
                   ))}
                   {events?.length === 0 && (
                     <p>

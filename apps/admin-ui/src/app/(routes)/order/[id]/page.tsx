@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
-
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import axiosInstance from "@/utils/axiosInstance";
+import {
+  adminQueryKeys,
+  type SellerOrder,
+  updateOrderDeliveryStatus,
+  useOrderDetail,
+} from "@/hooks/useAdminQueries";
 
 const statuses = [
   "Ordered",
@@ -17,48 +22,30 @@ const statuses = [
 const Page = () => {
   const params = useParams();
   const orderId = params.id as string;
-
-  const [order, setOrder] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const fetchOrder = async () => {
-    try {
-      const res = await axiosInstance.get(
-        `/order/api/get-order-details/${orderId}`,
+  const { data: order, isLoading } = useOrderDetail(orderId);
+
+  const updateStatusMutation = useMutation({
+    mutationFn: (deliveryStatus: string) =>
+      updateOrderDeliveryStatus(orderId, deliveryStatus),
+    onSuccess: (_, deliveryStatus) => {
+      queryClient.setQueryData(
+        adminQueryKeys.order(orderId),
+        (currentOrder: SellerOrder | null | undefined) =>
+          currentOrder
+            ? {
+                ...currentOrder,
+                deliveryStatus,
+              }
+            : currentOrder,
       );
-      setOrder(res.data.order);
-    } catch (err) {
-      setLoading(false);
-      console.error("Failed to fetch order details", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.orders });
+    },
+  });
 
-  const handleStatusChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const newStatus = e.target.value;
-    setUpdating(true);
-    try {
-      await axiosInstance.put(`/order/api/update-status/${order.id}`, {
-        deliveryStatus: newStatus,
-      });
-      setOrder((prev: any) => ({ ...prev, deliveryStatus: newStatus }));
-    } catch (err) {
-      console.error("Failed to update status", err);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  useEffect(() => {
-    if (orderId) fetchOrder();
-  }, [orderId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[40vh]">
         <Loader2 className="animate-spin w-6 h-6 text-gray-600" />
@@ -86,15 +73,14 @@ const Page = () => {
         Order #{order.id.slice(-6)}
       </h1>
 
-      {/* Status Selector */}
       <div className="mb-6">
         <label className="text-sm font-medium text-gray-300 mr-3">
           Update Delivery Status:
         </label>
         <select
           value={order.deliveryStatus}
-          onChange={handleStatusChange}
-          disabled={updating}
+          onChange={(event) => updateStatusMutation.mutate(event.target.value)}
+          disabled={updateStatusMutation.isPending}
           className="border bg-transparent text-gray-200 border-gray-300 rounded-md px-3 py-1 text-sm"
         >
           {statuses.map((status) => {
@@ -102,11 +88,7 @@ const Page = () => {
             const statusIndex = statuses.indexOf(status);
 
             return (
-              <option
-                key={status}
-                value={status}
-                disabled={statusIndex < currentIndex}
-              >
+              <option key={status} value={status} disabled={statusIndex < currentIndex}>
                 {status}
               </option>
             );
@@ -114,7 +96,6 @@ const Page = () => {
         </select>
       </div>
 
-      {/* Delivery Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
           {statuses.map((step, idx) => {
@@ -159,7 +140,6 @@ const Page = () => {
         </div>
       </div>
 
-      {/* Summary Info */}
       <div className="mb-6 space-y-1 text-sm text-gray-200">
         <p>
           <span className="font-semibold">Payment Status:</span>{" "}
@@ -167,18 +147,16 @@ const Page = () => {
         </p>
         <p>
           <span className="font-semibold">Total Paid:</span>{" "}
-          <span className="font-medium">${order.total.toFixed(2)}</span>
+          <span className="font-medium">${Number(order.total ?? 0).toFixed(2)}</span>
         </p>
 
         {order.discountAmount > 0 && (
           <p>
             <span className="font-semibold">Discount Applied:</span>{" "}
             <span className="text-green-400">
-              -${order.discountAmount.toFixed(2)} (
-              {order.couponCode?.discountType === "percentage"
+              -${Number(order.discountAmount).toFixed(2)} ({order.couponCode?.discountType === "percentage"
                 ? `${order.couponCode.discountValue}%`
-                : `$${order.couponCode.discountValue}`}{" "}
-              off)
+                : `$${order.couponCode?.discountValue}`} off)
             </span>
           </p>
         )}
@@ -186,9 +164,7 @@ const Page = () => {
         {order.couponCode && (
           <p>
             <span className="font-semibold">Coupon Used:</span>{" "}
-            <span className="text-blue-400">
-              {order.couponCode.public_name}
-            </span>
+            <span className="text-blue-400">{order.couponCode.public_name}</span>
           </p>
         )}
 
@@ -198,7 +174,6 @@ const Page = () => {
         </p>
       </div>
 
-      {/* Shipping Address */}
       {order.shippingAddress && (
         <div className="mb-6 text-sm text-gray-300">
           <h2 className="text-md font-semibold mb-2">Shipping Address</h2>
@@ -211,19 +186,16 @@ const Page = () => {
         </div>
       )}
 
-      {/* Order Items */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-300 mb-4">
-          Order Items
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-300 mb-4">Order Items</h2>
         <div className="space-y-4">
-          {order.items.map((item: any) => (
+          {order.items.map((item) => (
             <div
               key={item.productId}
               className="border border-gray-200 rounded-md p-4 flex items-center gap-4"
             >
               <img
-                src={item.product?.images[0]?.url || "/placeholder.png"}
+                src={item.product?.images?.[0]?.url || "/placeholder.png"}
                 alt={item.product?.title || "Product image"}
                 className="w-16 h-16 object-cover rounded-md border border-gray-200"
               />
@@ -231,28 +203,22 @@ const Page = () => {
                 <p className="font-medium text-gray-200">
                   {item.product?.title || "Unnamed Product"}
                 </p>
-                <p className="text-sm text-gray-300">
-                  Quantity: {item.quantity}
-                </p>
-                {item.selectedOptions &&
-                  Object.keys(item.selectedOptions).length > 0 && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {Object.entries(item.selectedOptions).map(
-                        ([key, value]: [string, any]) =>
-                          value && (
-                            <span key={key} className="mr-3">
-                              <span className="font-medium capitalize">
-                                {key}:
-                              </span>{" "}
-                              {value}
-                            </span>
-                          ),
-                      )}
-                    </div>
-                  )}
+                <p className="text-sm text-gray-300">Quantity: {item.quantity}</p>
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                  <div className="text-xs text-gray-400 mt-1">
+                    {Object.entries(item.selectedOptions).map(([key, value]) =>
+                      value ? (
+                        <span key={key} className="mr-3">
+                          <span className="font-medium capitalize">{key}:</span>{" "}
+                          {value}
+                        </span>
+                      ) : null,
+                    )}
+                  </div>
+                )}
               </div>
               <p className="text-sm font-semibold text-gray-200">
-                ${item.price.toFixed(2)}
+                ${Number(item.price ?? 0).toFixed(2)}
               </p>
             </div>
           ))}

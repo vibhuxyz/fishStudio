@@ -3,31 +3,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ProductDetailClient } from "./product-detail-client";
-// Import created above
-import { transformProduct } from "@/utils/product-utils"; // Use your shared utils
-import type { BackendProduct, Product } from "@repo/types";
 import { ProductViewSkeleton } from "@/components/shared/product-view-skeleton";
-
-// Data fetching helper
-async function getProducts(): Promise<Product[]> {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URI}/product/api/get-all-products`,
-      { next: { revalidate: 300 } },
-    );
-    if (!res.ok) throw new Error("Failed");
-    const data = await res.json();
-    return (data.products || []).map(transformProduct);
-  } catch (error) {
-    return [];
-  }
-}
-
-async function findProduct(slug: string) {
-  const products = await getProducts();
-  const decodedSlug = decodeURIComponent(slug);
-  return products.find((p) => p.slug === decodedSlug);
-}
+import {
+  fetchStorefrontProductBySlug,
+  fetchStorefrontProducts,
+} from "@/lib/storefront";
 
 // 1. Metadata Generation
 export async function generateMetadata({
@@ -36,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await findProduct(slug);
+  const product = await fetchStorefrontProductBySlug(decodeURIComponent(slug));
   if (!product) return { title: "Product Not Found" };
   return {
     title: `${product.name} - Fish Studio`,
@@ -47,11 +27,14 @@ export async function generateMetadata({
 
 // 2. Inner Component (Fetches Data)
 async function ProductContent({ slug }: { slug: string }) {
-  const product = await findProduct(slug);
+  const decodedSlug = decodeURIComponent(slug);
+  const [product, products] = await Promise.all([
+    fetchStorefrontProductBySlug(decodedSlug),
+    fetchStorefrontProducts(),
+  ]);
+
   if (!product) notFound();
 
-  // Get related products
-  const products = await getProducts();
   const relatedProducts = [
     ...products.filter(
       (p) => p.subCategory === product.subCategory && p.id !== product.id,

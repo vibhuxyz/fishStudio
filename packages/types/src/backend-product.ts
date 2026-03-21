@@ -1,3 +1,10 @@
+export interface ProductSizePricing {
+  size: string;
+  weightGrams: number;
+  salePrice: number;
+  regularPrice: number;
+}
+
 // 1. The shape of the raw JSON directly from your API
 export interface BackendProduct {
   id: string;
@@ -16,6 +23,7 @@ export interface BackendProduct {
 
   // Arrays for dropdown options
   sizes: string[];
+  sizePricing?: ProductSizePricing[] | null;
   cuttingTypes: string[];
   pieceSizes: string[];
   tags: string[];
@@ -38,6 +46,7 @@ export interface Product {
 
   weight: string; // Mapped from sizes[0] (Primary display weight)
   sizes: string[]; // Full list of available sizes/packs
+  sizePricing: ProductSizePricing[];
 
   rating: number; // Mapped from ratings
   totalSold: number;

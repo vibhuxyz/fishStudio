@@ -3,12 +3,55 @@ import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.router.js";
 import { connectRabbitMQ } from "@repo/libs";
+import cors from "cors";
+import { ENV } from "@repo/env-config";
 
-const port = 6001;
+const port = Number(ENV.AUTH_SERVICE_PORT) || 6001;
 const app = express();
+
+const defaultLocalOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+  "http://127.0.0.1:3003",
+];
+
+const allowedOrigins = [
+  ...new Set(
+    [
+      ...(ENV.CORS_ORIGINS
+        ? ENV.CORS_ORIGINS.split(",").map((origin: string) => origin.trim())
+        : []),
+      ...defaultLocalOrigins,
+    ].filter(Boolean),
+  ),
+];
 
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origin not allowed by CORS"));
+    },
+    credentials: true,
+    allowedHeaders: [
+      "Authorization",
+      "Content-Type",
+      "x-auth-role",
+      "ngrok-skip-browser-warning",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  }),
+);
 
 app.use(cookieParser());
 
@@ -31,7 +74,7 @@ const startServer = async () => {
 
     // 2. Start listening ONLY after dependencies are ready
     const server = app.listen(port, "0.0.0.0", () => {
-      console.log(`🚀 Auth server fully ready on 0.0.0.0:${port}`);
+      console.log(`🚀 Auth server fully ready on localhort :${port}`);
     });
 
     server.on("error", (err) => {

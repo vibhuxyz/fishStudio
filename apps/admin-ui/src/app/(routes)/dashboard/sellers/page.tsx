@@ -1,0 +1,92 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { Eye, Store, TicketPercent } from "lucide-react";
+
+import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import { useAdminSellers } from "@/hooks/useAdminQueries";
+
+const SellersPage = () => {
+  const { data: sellers = [], isLoading } = useAdminSellers();
+
+  return (
+    <DashboardPageShell
+      title="Sellers"
+      breadcrumbTitle="All Sellers"
+      description="Review sellers, their stores, and how much catalog inventory they currently carry."
+    >
+      <div className="rounded-xl bg-gray-900 p-5">
+        {isLoading ? (
+          <p className="text-gray-400">Loading sellers...</p>
+        ) : (
+          <table className="w-full text-white">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="p-3 text-left">Seller</th>
+                <th className="p-3 text-left">Store</th>
+                <th className="p-3 text-left">Products</th>
+                <th className="p-3 text-left">Coupons</th>
+                <th className="p-3 text-left">Joined</th>
+                <th className="p-3 text-left">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sellers.map((seller) => (
+                <tr
+                  key={seller.id}
+                  className="border-b border-gray-800 transition hover:bg-gray-800/40"
+                >
+                  <td className="p-3">
+                    <div className="flex flex-col">
+                      <span>{seller.name}</span>
+                      <span className="text-xs text-gray-400">{seller.email}</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <Store size={16} className="text-slate-400" />
+                      <div className="flex flex-col">
+                        <span>{seller.store?.name || "No store yet"}</span>
+                        <span className="text-xs text-gray-400">
+                          {seller.store?.city || seller.store?.address || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-3">{seller.totalProducts ?? 0}</td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <TicketPercent size={16} className="text-slate-400" />
+                      <span>{seller.totalCoupons ?? 0}</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    {seller.createdAt
+                      ? new Date(seller.createdAt).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="p-3">
+                    <Link
+                      href={`/dashboard/sellers/${seller.id}`}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
+                    >
+                      <Eye size={16} />
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {!isLoading && sellers.length === 0 && (
+          <p className="pt-4 text-center text-gray-400">No sellers found.</p>
+        )}
+      </div>
+    </DashboardPageShell>
+  );
+};
+
+export default SellersPage;

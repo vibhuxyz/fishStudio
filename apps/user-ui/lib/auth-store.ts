@@ -1,8 +1,11 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 
-interface User {
+export interface User {
+  id: string;
   name: string;
   phone: string;
   avatar?: string;
@@ -28,17 +31,19 @@ function getSnapshot(): User | null {
   return currentUser;
 }
 
-export function loginUser(phone: string) {
-  currentUser = {
-    name: `User ${phone.slice(-4)}`,
-    phone,
-  };
+export function setAuthenticatedUser(user: User | null) {
+  currentUser = user;
   emitChange();
 }
 
-export function logoutUser() {
-  currentUser = null;
-  emitChange();
+export async function logoutUser() {
+  try {
+    await axiosInstance.post("/auth/api/logout-user", {}, isProtected);
+  } catch {
+    // keep logout resilient even if the server already cleared the session
+  } finally {
+    setAuthenticatedUser(null);
+  }
 }
 
 export function useAuth() {

@@ -5,14 +5,19 @@ import { prisma } from "@repo/db";
 const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
   try {
     let token;
-    if (req.path.includes("seller")) {
+    const requestedRole = req.headers["x-auth-role"];
+
+    if (requestedRole === "admin" || req.path.includes("admin")) {
+      token = req.cookies["admin_access_token"];
+    } else if (requestedRole === "seller" || req.path.includes("seller")) {
       token = req.cookies["seller_access_token"];
-    } else if (req.path.includes("user")) {
+    } else if (requestedRole === "user" || req.path.includes("user")) {
       token = req.cookies["access_token"];
     } else {
       // fallback: use whichever exists
       token =
         req.cookies["seller_access_token"] ||
+        req.cookies["admin_access_token"] ||
         req.cookies["access_token"] ||
         req.headers.authorization?.split(" ")[1];
     }
@@ -27,7 +32,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       process.env.ACCESS_TOKEN_JWT_SECRET_KEY as string,
     ) as {
       id: string;
-      role: "user" | "seller";
+      role: "admin" | "user" | "seller";
     };
     if (!decode) {
       return res.status(401).json({
@@ -36,7 +41,12 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     }
     let account;
 
-    if (decode.role === "user") {
+    if (decode.role === "admin") {
+      account = await prisma.admins.findUnique({
+        where: { id: decode.id },
+      });
+      req.admin = account;
+    } else if (decode.role === "user") {
       account = await prisma.users.findUnique({
         where: { id: decode.id },
       });

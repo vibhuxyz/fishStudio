@@ -23,10 +23,14 @@ export const ENV = {
   DATABASE_URL: logEnv("DATABASE_URL", process.env.DATABASE_URL),
   JWT_SECRET: logEnv("JWT_SECRET", process.env.JWT_SECRET),
   PORT: process.env.PORT || "8080",
+  API_GATEWAY_PORT: process.env.API_GATEWAY_PORT || process.env.PORT || "8080",
+  AUTH_SERVICE_PORT: process.env.AUTH_SERVICE_PORT || "6001",
+  PRODUCT_SERVICE_PORT: process.env.PRODUCT_SERVICE_PORT || "6002",
+  ORDER_SERVICE_PORT: process.env.ORDER_SERVICE_PORT || "6004",
 
   // Redis
   REDIS_DATABASE_URL: logEnv(
-    "REDIS_DATABASE_URI",
+    "REDIS_DATABASE_URL",
     process.env.REDIS_DATABASE_URL,
   ),
 
@@ -45,16 +49,18 @@ export const ENV = {
   ),
 
   CORS_ORIGINS: logEnv(
-    "AUTH_SERVICE_URL",
+    "CORS_ORIGINS",
     process.env.CORS_ORIGINS || "http://localhost:3000 , http://localhost:3001",
   ),
   AUTH_SERVICE_URL: logEnv(
-    "IMAGEKIT_URL_ENDPOINT",
-    process.env.AUTH_SERVICE_URL || "http://localhost:6001",
+    "AUTH_SERVICE_URL",
+    process.env.AUTH_SERVICE_URL ||
+      `http://localhost:${process.env.AUTH_SERVICE_PORT || "6001"}`,
   ),
   PRODUCT_SERVICE_URL: logEnv(
-    "IMAGEKIT_URL_ENDPOINT",
-    process.env.PRODUCT_SERVICE_URL || "http://localhost:6002",
+    "PRODUCT_SERVICE_URL",
+    process.env.PRODUCT_SERVICE_URL ||
+      `http://localhost:${process.env.PRODUCT_SERVICE_PORT || "6002"}`,
   ),
   // Mail
   SMTP_HOST: logEnv("SMTP_HOST", process.env.SMTP_HOST),

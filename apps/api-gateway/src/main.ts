@@ -4,16 +4,34 @@ import morgan from "morgan";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import initalizeConfig from "./libs/initializeSiteConfig.js";
+// import initalizeConfig from "./libs/initializeSiteConfig.js";
 import { ENV } from "@repo/env-config";
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 
-const allowedOrigins = ENV.CORS_ORIGINS
-  ? ENV.CORS_ORIGINS.split(",").map((o: any) => o.trim())
-  : ["http://localhost:3000"];
+const defaultLocalOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+  "http://127.0.0.1:3003",
+];
+
+const allowedOrigins = [
+  ...new Set(
+    [
+      ...(ENV.CORS_ORIGINS
+        ? ENV.CORS_ORIGINS.split(",").map((o: string) => o.trim())
+        : []),
+      ...defaultLocalOrigins,
+    ].filter(Boolean),
+  ),
+];
 
 // 1. DYNAMIC CORS MIDDLEWARE
 // This handles both the Preflight (OPTIONS) and standard requests safely
@@ -25,6 +43,7 @@ app.use((req, res, next) => {
     allowedHeaders: [
       "Authorization",
       "Content-Type",
+      "x-auth-role",
       "ngrok-skip-browser-warning",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -83,17 +102,17 @@ app.use(
   }),
 );
 
-const port = Number(ENV.PORT) || 8080;
+const port = Number(ENV.API_GATEWAY_PORT) || 8080;
 //
 
 const server = app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 Gateway running on http://localhost:${port}`);
-  try {
-    initalizeConfig();
-    console.log("✅ Site Config Initialized");
-  } catch (error) {
-    console.log("❌ Error initializing site config", error);
-  }
+  // try {
+  //   initalizeConfig();
+  //   console.log("✅ Site Config Initialized");
+  // } catch (error) {
+  //   console.log("❌ Error initializing site config", error);
+  // }
 });
 
 server.on("error", console.error);

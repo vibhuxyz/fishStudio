@@ -1,5 +1,5 @@
 export interface OtpMessage {
-  userType: "user" | "seller";
+  userType: "admin" | "user" | "seller";
   name: string;
   email?: string;
   phone_number?: string;
@@ -16,7 +16,10 @@ export function isValidOtpMessage(data: any): data is OtpMessage {
 
   // Validate user type fields
   if (data.userType === "user" && !data.phone_number) return false;
-  if (data.userType === "seller" && (!data.email || !data.template))
+  if (
+    (data.userType === "seller" || data.userType === "admin") &&
+    (!data.email || !data.template)
+  )
     return false;
 
   return true;

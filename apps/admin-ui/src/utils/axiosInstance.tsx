@@ -1,11 +1,13 @@
 import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
+import { frontendEnv } from "@/config/env";
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_SERVER_URI,
+  baseURL: frontendEnv.apiUrl,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "x-auth-role": "admin",
     // ✅ ADD THIS LINE to bypass ngrok warning page
     "ngrok-skip-browser-warning": "true",
   },

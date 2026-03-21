@@ -1,6 +1,7 @@
+import { adminQueryKeys } from "@/hooks/useAdminQueries";
 import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 import { useQueryClient } from "@tanstack/react-query";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -18,8 +19,8 @@ const SidebarItem = ({ icon, title, isActive, href }: Props) => {
 
   const logoutHandler = async () => {
     try {
-      await axiosInstance.post("/auth/api/logout-seller");
-      queryClient.invalidateQueries({ queryKey: ["seller"] });
+      await axiosInstance.post("/auth/api/logout-admin", {}, isProtected);
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.account });
       router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);

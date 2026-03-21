@@ -354,16 +354,8 @@ export type imagesOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
-}
-
 export type EnumImageTypeFieldUpdateOperationsInput = {
   set?: $Enums.ImageType
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
 }
 
 export type NullableStringFieldUpdateOperationsInput = {

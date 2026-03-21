@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+import { frontendEnv } from "@/config/env";
 
 const CreateShop = ({
   sellerId,
@@ -46,7 +47,7 @@ const CreateShop = ({
       };
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/create-store`,
+        `${frontendEnv.apiUrl}/auth/api/create-store`,
         shopData,
         {
           headers: {

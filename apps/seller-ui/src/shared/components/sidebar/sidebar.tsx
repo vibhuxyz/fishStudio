@@ -102,7 +102,7 @@ const SidebarBarWrapper = () => {
             <SidebarMenu title="Products">
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/create-product"}
-                title="Create Product"
+                title="Add From Catalog"
                 href="/dashboard/create-product"
                 icon={
                   <SquarePlus
@@ -113,7 +113,7 @@ const SidebarBarWrapper = () => {
               />
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/all-products"}
-                title="All Products"
+                title="Shop Products"
                 href="/dashboard/all-products"
                 icon={
                   <PackageSearch

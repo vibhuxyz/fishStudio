@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
 import { Phone, ArrowRight, Shield } from "lucide-react";
-import { loginUser } from "@/lib/auth-store";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axiosInstance";
+import { setAuthenticatedUser } from "@/lib/auth-store";
+import { storefrontKeys } from "@/lib/storefront";
 
 interface LoginModalProps {
   open: boolean;
@@ -23,18 +27,69 @@ type Step = "phone" | "otp" | "success";
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", ""]); // Changed to 4 digits
   const [timer, setTimer] = useState(30);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const queryClient = useQueryClient();
+
+  const sendOtpMutation = useMutation({
+    mutationFn: async () => {
+      await axiosInstance.post("/auth/api/send-otp", {
+        phone_number: phone,
+      });
+    },
+    onSuccess: () => {
+      toast.success("OTP sent to your mobile number.");
+      setStep("otp");
+      setTimer(30);
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to send OTP. Please try again.",
+      );
+    },
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: async () => {
+      const otpValue = otp.join("");
+      const response = await axiosInstance.post("/auth/api/verify-otp", {
+        phone_number: phone,
+        otp: otpValue,
+      });
+
+      return response.data.user;
+    },
+    onSuccess: (user) => {
+      setAuthenticatedUser({
+        id: user.id,
+        name: user.name,
+        phone: user.phone_number,
+      });
+      queryClient.invalidateQueries({ queryKey: storefrontKeys.userSession });
+      toast.success("Logged in successfully.");
+      setStep("success");
+      window.setTimeout(() => {
+        onOpenChange(false);
+      }, 1500);
+    },
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message ||
+          "OTP verification failed. Please try again.",
+      );
+    },
+  });
+
+  const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;
 
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setStep("phone");
       setPhone("");
-      setOtp(["", "", "", "", "", ""]);
-      setIsLoading(false);
+      setOtp(["", "", "", ""]); // Changed to 4 digits
       setTimer(30);
     }
   }, [open]);
@@ -51,27 +106,21 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   const handleSendOtp = () => {
     if (phone.length < 10) return;
-    setIsLoading(true);
-    // Simulate OTP send
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep("otp");
-      setTimer(30);
-    }, 1000);
+    sendOtpMutation.mutate();
   };
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
       // Handle paste
-      const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+      const digits = value.replace(/\D/g, "").slice(0, 4).split("");
       const newOtp = [...otp];
       digits.forEach((digit, i) => {
-        if (index + i < 6) {
+        if (index + i < 4) {
           newOtp[index + i] = digit;
         }
       });
       setOtp(newOtp);
-      const nextIndex = Math.min(index + digits.length, 5);
+      const nextIndex = Math.min(index + digits.length, 3);
       otpRefs.current[nextIndex]?.focus();
       return;
     }
@@ -82,12 +131,15 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    if (value && index < 5) {
+    if (value && index < 3) {
       otpRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleOtpKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+  const handleOtpKeyDown = (
+    index: number,
+    e: KeyboardEvent<HTMLInputElement>,
+  ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
@@ -95,23 +147,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   const handleVerifyOtp = () => {
     const otpValue = otp.join("");
-    if (otpValue.length < 6) return;
-    setIsLoading(true);
-    // Simulate OTP verification
-    setTimeout(() => {
-      setIsLoading(false);
-      loginUser(phone);
-      setStep("success");
-      // Auto close after success
-      setTimeout(() => {
-        onOpenChange(false);
-      }, 2000);
-    }, 1000);
+    if (otpValue.length < 4) return;
+    verifyOtpMutation.mutate();
   };
 
   const handleResendOtp = () => {
     setTimer(30);
-    setOtp(["", "", "", "", "", ""]);
+    setOtp(["", "", "", ""]); // Changed to 4 digits
+    sendOtpMutation.mutate();
   };
 
   return (
@@ -177,7 +220,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 Verify OTP
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                We sent a 6-digit code to +91 {phone}
+                We sent a 4-digit code to +91 {phone}
               </DialogDescription>
             </DialogHeader>
 
@@ -186,7 +229,9 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 {otp.map((digit, i) => (
                   <Input
                     key={i}
-                    ref={(el) => { otpRefs.current[i] = el; }}
+                    ref={(el) => {
+                      otpRefs.current[i] = el;
+                    }}
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
@@ -206,7 +251,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               <Button
                 className="mt-5 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                 size="lg"
-                disabled={otp.join("").length < 6 || isLoading}
+                disabled={otp.join("").length < 4 || isLoading} // Changed to < 4
                 onClick={handleVerifyOtp}
               >
                 {isLoading ? "Verifying..." : "Verify & Continue"}

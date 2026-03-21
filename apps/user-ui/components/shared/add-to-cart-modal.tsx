@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/types";
+import { resolveProductSizePricing } from "@/lib/storefront";
 
 interface AddToCartModalProps {
   product: Product | null;
@@ -46,25 +47,50 @@ export function AddToCartModal({
     if (open && product) {
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
-      setSelectedSize(product.sizes?.[0] || "");
+      setSelectedSize(product.weight || product.sizes?.[0] || "");
       setQuantity(1);
       setIsImageLoading(true); // Reset image loader
     }
   }, [open, product]);
 
+  const { normalizedPricing, selected } = useMemo(() => {
+    if (!product) {
+      return {
+        normalizedPricing: [],
+        selected: {
+          size: "",
+          weightGrams: 0,
+          salePrice: 0,
+          regularPrice: 0,
+        },
+      };
+    }
+
+    return resolveProductSizePricing(product, selectedSize);
+  }, [product, selectedSize]);
+
   const totalPayable = useMemo(() => {
     if (!product) return 0;
-    return Number.parseFloat((product.price * quantity).toFixed(2));
-  }, [product, quantity]);
+    return Number.parseFloat((selected.salePrice * quantity).toFixed(2));
+  }, [product, quantity, selected.salePrice]);
 
   const handleAddToCart = () => {
     if (!product) return;
+    const customizedProduct = {
+      ...product,
+      price: selected.salePrice,
+      originalPrice:
+        selected.regularPrice > selected.salePrice
+          ? selected.regularPrice
+          : undefined,
+      weight: selected.size || product.weight,
+    };
     addToCart(
-      product,
+      customizedProduct,
       quantity,
       selectedCutting,
       selectedPieceSize,
-      selectedSize,
+      selected.size || selectedSize,
     );
     onOpenChange(false);
   };
@@ -124,9 +150,14 @@ export function AddToCartModal({
             </div>
 
             <p className="mt-2 text-lg font-bold text-primary">
-              Price: Rs. {product.price}{" "}
+              Price: Rs. {selected.salePrice || product.price}{" "}
+              {selected.regularPrice > selected.salePrice ? (
+                <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
+                  Rs. {selected.regularPrice}
+                </span>
+              ) : null}
               <span className="text-sm font-normal text-muted-foreground">
-                / {selectedSize || "unit"}
+                / {selected.size || selectedSize || "unit"}
               </span>
             </p>
 
@@ -189,9 +220,9 @@ export function AddToCartModal({
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.sizes.map((size) => (
-                      <SelectItem key={size} value={size}>
-                        {size}
+                    {normalizedPricing.map((sizePricing) => (
+                      <SelectItem key={sizePricing.size} value={sizePricing.size}>
+                        {sizePricing.size}
                       </SelectItem>
                     ))}
                   </SelectContent>

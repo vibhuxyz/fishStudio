@@ -1,9 +1,11 @@
 "use client";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState } from "react";
-import useSeller from "../hooks/useSeller";
-import { WebSocketProvider } from "../context/web-socket-context";
 import { Toaster } from "sonner";
+
+const FIVE_MINUTES = 1000 * 60 * 5;
+const THIRTY_MINUTES = 1000 * 60 * 30;
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const [queryClient] = useState(
@@ -12,7 +14,13 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         defaultOptions: {
           queries: {
             refetchOnWindowFocus: false,
-            staleTime: 1000 * 60 * 5,
+            refetchOnReconnect: false,
+            staleTime: FIVE_MINUTES,
+            gcTime: THIRTY_MINUTES,
+            retry: 1,
+          },
+          mutations: {
+            retry: false,
           },
         },
       }),
@@ -20,29 +28,9 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/*<ProvidersWithWebSocket>{children}</ProvidersWithWebSocket>*/}
       {children}
       <Toaster />
     </QueryClientProvider>
-  );
-};
-
-const ProvidersWithWebSocket = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
-  const { seller, isLoading } = useSeller();
-
-  if (isLoading) return null;
-
-  return (
-    <>
-      {seller && (
-        <WebSocketProvider seller={seller}>{children}</WebSocketProvider>
-      )}
-      {!seller && children}
-    </>
   );
 };
 

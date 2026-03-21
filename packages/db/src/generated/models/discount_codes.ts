@@ -41,6 +41,7 @@ export type Discount_codesMinAggregateOutputType = {
   discountValue: number | null
   discountCode: string | null
   sellerId: string | null
+  adminId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,6 +53,7 @@ export type Discount_codesMaxAggregateOutputType = {
   discountValue: number | null
   discountCode: string | null
   sellerId: string | null
+  adminId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -63,6 +65,7 @@ export type Discount_codesCountAggregateOutputType = {
   discountValue: number
   discountCode: number
   sellerId: number
+  adminId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -84,6 +87,7 @@ export type Discount_codesMinAggregateInputType = {
   discountValue?: true
   discountCode?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -95,6 +99,7 @@ export type Discount_codesMaxAggregateInputType = {
   discountValue?: true
   discountCode?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -106,6 +111,7 @@ export type Discount_codesCountAggregateInputType = {
   discountValue?: true
   discountCode?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -203,7 +209,8 @@ export type Discount_codesGroupByOutputType = {
   discountType: string
   discountValue: number
   discountCode: string
-  sellerId: string
+  sellerId: string | null
+  adminId: string | null
   createdAt: Date
   updatedAt: Date
   _count: Discount_codesCountAggregateOutputType | null
@@ -237,9 +244,12 @@ export type discount_codesWhereInput = {
   discountType?: Prisma.StringFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatFilter<"discount_codes"> | number
   discountCode?: Prisma.StringFilter<"discount_codes"> | string
-  sellerId?: Prisma.StringFilter<"discount_codes"> | string
+  sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
+  adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   createdAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
+  seller?: Prisma.XOR<Prisma.SellersNullableScalarRelationFilter, Prisma.sellersWhereInput> | null
+  admin?: Prisma.XOR<Prisma.AdminsNullableScalarRelationFilter, Prisma.adminsWhereInput> | null
 }
 
 export type discount_codesOrderByWithRelationInput = {
@@ -249,8 +259,11 @@ export type discount_codesOrderByWithRelationInput = {
   discountValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  seller?: Prisma.sellersOrderByWithRelationInput
+  admin?: Prisma.adminsOrderByWithRelationInput
 }
 
 export type discount_codesWhereUniqueInput = Prisma.AtLeast<{
@@ -262,9 +275,12 @@ export type discount_codesWhereUniqueInput = Prisma.AtLeast<{
   public_name?: Prisma.StringFilter<"discount_codes"> | string
   discountType?: Prisma.StringFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatFilter<"discount_codes"> | number
-  sellerId?: Prisma.StringFilter<"discount_codes"> | string
+  sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
+  adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   createdAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
+  seller?: Prisma.XOR<Prisma.SellersNullableScalarRelationFilter, Prisma.sellersWhereInput> | null
+  admin?: Prisma.XOR<Prisma.AdminsNullableScalarRelationFilter, Prisma.adminsWhereInput> | null
 }, "id" | "discountCode">
 
 export type discount_codesOrderByWithAggregationInput = {
@@ -274,6 +290,7 @@ export type discount_codesOrderByWithAggregationInput = {
   discountValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.discount_codesCountOrderByAggregateInput
@@ -292,7 +309,8 @@ export type discount_codesScalarWhereWithAggregatesInput = {
   discountType?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatWithAggregatesFilter<"discount_codes"> | number
   discountCode?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
-  sellerId?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
+  sellerId?: Prisma.StringNullableWithAggregatesFilter<"discount_codes"> | string | null
+  adminId?: Prisma.StringNullableWithAggregatesFilter<"discount_codes"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"discount_codes"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"discount_codes"> | Date | string
 }
@@ -303,9 +321,10 @@ export type discount_codesCreateInput = {
   discountType: string
   discountValue: number
   discountCode: string
-  sellerId: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  seller?: Prisma.sellersCreateNestedOneWithoutCouponsInput
+  admin?: Prisma.adminsCreateNestedOneWithoutCouponsInput
 }
 
 export type discount_codesUncheckedCreateInput = {
@@ -314,7 +333,8 @@ export type discount_codesUncheckedCreateInput = {
   discountType: string
   discountValue: number
   discountCode: string
-  sellerId: string
+  sellerId?: string | null
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -324,9 +344,10 @@ export type discount_codesUpdateInput = {
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  seller?: Prisma.sellersUpdateOneWithoutCouponsNestedInput
+  admin?: Prisma.adminsUpdateOneWithoutCouponsNestedInput
 }
 
 export type discount_codesUncheckedUpdateInput = {
@@ -334,7 +355,8 @@ export type discount_codesUncheckedUpdateInput = {
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -345,7 +367,8 @@ export type discount_codesCreateManyInput = {
   discountType: string
   discountValue: number
   discountCode: string
-  sellerId: string
+  sellerId?: string | null
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -355,7 +378,6 @@ export type discount_codesUpdateManyMutationInput = {
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -365,9 +387,20 @@ export type discount_codesUncheckedUpdateManyInput = {
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type Discount_codesListRelationFilter = {
+  every?: Prisma.discount_codesWhereInput
+  some?: Prisma.discount_codesWhereInput
+  none?: Prisma.discount_codesWhereInput
+}
+
+export type discount_codesOrderByRelationAggregateInput = {
+  _count?: Prisma.SortOrder
 }
 
 export type discount_codesCountOrderByAggregateInput = {
@@ -377,6 +410,7 @@ export type discount_codesCountOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -392,6 +426,7 @@ export type discount_codesMaxOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -403,6 +438,7 @@ export type discount_codesMinOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -411,12 +447,287 @@ export type discount_codesSumOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
 }
 
+export type discount_codesCreateNestedManyWithoutAdminInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput> | Prisma.discount_codesCreateWithoutAdminInput[] | Prisma.discount_codesUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutAdminInput | Prisma.discount_codesCreateOrConnectWithoutAdminInput[]
+  createMany?: Prisma.discount_codesCreateManyAdminInputEnvelope
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+}
+
+export type discount_codesUncheckedCreateNestedManyWithoutAdminInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput> | Prisma.discount_codesCreateWithoutAdminInput[] | Prisma.discount_codesUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutAdminInput | Prisma.discount_codesCreateOrConnectWithoutAdminInput[]
+  createMany?: Prisma.discount_codesCreateManyAdminInputEnvelope
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+}
+
+export type discount_codesUpdateManyWithoutAdminNestedInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput> | Prisma.discount_codesCreateWithoutAdminInput[] | Prisma.discount_codesUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutAdminInput | Prisma.discount_codesCreateOrConnectWithoutAdminInput[]
+  upsert?: Prisma.discount_codesUpsertWithWhereUniqueWithoutAdminInput | Prisma.discount_codesUpsertWithWhereUniqueWithoutAdminInput[]
+  createMany?: Prisma.discount_codesCreateManyAdminInputEnvelope
+  set?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  disconnect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  delete?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  update?: Prisma.discount_codesUpdateWithWhereUniqueWithoutAdminInput | Prisma.discount_codesUpdateWithWhereUniqueWithoutAdminInput[]
+  updateMany?: Prisma.discount_codesUpdateManyWithWhereWithoutAdminInput | Prisma.discount_codesUpdateManyWithWhereWithoutAdminInput[]
+  deleteMany?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+}
+
+export type discount_codesUncheckedUpdateManyWithoutAdminNestedInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput> | Prisma.discount_codesCreateWithoutAdminInput[] | Prisma.discount_codesUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutAdminInput | Prisma.discount_codesCreateOrConnectWithoutAdminInput[]
+  upsert?: Prisma.discount_codesUpsertWithWhereUniqueWithoutAdminInput | Prisma.discount_codesUpsertWithWhereUniqueWithoutAdminInput[]
+  createMany?: Prisma.discount_codesCreateManyAdminInputEnvelope
+  set?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  disconnect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  delete?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  update?: Prisma.discount_codesUpdateWithWhereUniqueWithoutAdminInput | Prisma.discount_codesUpdateWithWhereUniqueWithoutAdminInput[]
+  updateMany?: Prisma.discount_codesUpdateManyWithWhereWithoutAdminInput | Prisma.discount_codesUpdateManyWithWhereWithoutAdminInput[]
+  deleteMany?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+}
+
 export type FloatFieldUpdateOperationsInput = {
   set?: number
   increment?: number
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type discount_codesCreateNestedManyWithoutSellerInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput> | Prisma.discount_codesCreateWithoutSellerInput[] | Prisma.discount_codesUncheckedCreateWithoutSellerInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutSellerInput | Prisma.discount_codesCreateOrConnectWithoutSellerInput[]
+  createMany?: Prisma.discount_codesCreateManySellerInputEnvelope
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+}
+
+export type discount_codesUncheckedCreateNestedManyWithoutSellerInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput> | Prisma.discount_codesCreateWithoutSellerInput[] | Prisma.discount_codesUncheckedCreateWithoutSellerInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutSellerInput | Prisma.discount_codesCreateOrConnectWithoutSellerInput[]
+  createMany?: Prisma.discount_codesCreateManySellerInputEnvelope
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+}
+
+export type discount_codesUpdateManyWithoutSellerNestedInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput> | Prisma.discount_codesCreateWithoutSellerInput[] | Prisma.discount_codesUncheckedCreateWithoutSellerInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutSellerInput | Prisma.discount_codesCreateOrConnectWithoutSellerInput[]
+  upsert?: Prisma.discount_codesUpsertWithWhereUniqueWithoutSellerInput | Prisma.discount_codesUpsertWithWhereUniqueWithoutSellerInput[]
+  createMany?: Prisma.discount_codesCreateManySellerInputEnvelope
+  set?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  disconnect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  delete?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  update?: Prisma.discount_codesUpdateWithWhereUniqueWithoutSellerInput | Prisma.discount_codesUpdateWithWhereUniqueWithoutSellerInput[]
+  updateMany?: Prisma.discount_codesUpdateManyWithWhereWithoutSellerInput | Prisma.discount_codesUpdateManyWithWhereWithoutSellerInput[]
+  deleteMany?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+}
+
+export type discount_codesUncheckedUpdateManyWithoutSellerNestedInput = {
+  create?: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput> | Prisma.discount_codesCreateWithoutSellerInput[] | Prisma.discount_codesUncheckedCreateWithoutSellerInput[]
+  connectOrCreate?: Prisma.discount_codesCreateOrConnectWithoutSellerInput | Prisma.discount_codesCreateOrConnectWithoutSellerInput[]
+  upsert?: Prisma.discount_codesUpsertWithWhereUniqueWithoutSellerInput | Prisma.discount_codesUpsertWithWhereUniqueWithoutSellerInput[]
+  createMany?: Prisma.discount_codesCreateManySellerInputEnvelope
+  set?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  disconnect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  delete?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  connect?: Prisma.discount_codesWhereUniqueInput | Prisma.discount_codesWhereUniqueInput[]
+  update?: Prisma.discount_codesUpdateWithWhereUniqueWithoutSellerInput | Prisma.discount_codesUpdateWithWhereUniqueWithoutSellerInput[]
+  updateMany?: Prisma.discount_codesUpdateManyWithWhereWithoutSellerInput | Prisma.discount_codesUpdateManyWithWhereWithoutSellerInput[]
+  deleteMany?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+}
+
+export type discount_codesCreateWithoutAdminInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  seller?: Prisma.sellersCreateNestedOneWithoutCouponsInput
+}
+
+export type discount_codesUncheckedCreateWithoutAdminInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  sellerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type discount_codesCreateOrConnectWithoutAdminInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  create: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput>
+}
+
+export type discount_codesCreateManyAdminInputEnvelope = {
+  data: Prisma.discount_codesCreateManyAdminInput | Prisma.discount_codesCreateManyAdminInput[]
+}
+
+export type discount_codesUpsertWithWhereUniqueWithoutAdminInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  update: Prisma.XOR<Prisma.discount_codesUpdateWithoutAdminInput, Prisma.discount_codesUncheckedUpdateWithoutAdminInput>
+  create: Prisma.XOR<Prisma.discount_codesCreateWithoutAdminInput, Prisma.discount_codesUncheckedCreateWithoutAdminInput>
+}
+
+export type discount_codesUpdateWithWhereUniqueWithoutAdminInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  data: Prisma.XOR<Prisma.discount_codesUpdateWithoutAdminInput, Prisma.discount_codesUncheckedUpdateWithoutAdminInput>
+}
+
+export type discount_codesUpdateManyWithWhereWithoutAdminInput = {
+  where: Prisma.discount_codesScalarWhereInput
+  data: Prisma.XOR<Prisma.discount_codesUpdateManyMutationInput, Prisma.discount_codesUncheckedUpdateManyWithoutAdminInput>
+}
+
+export type discount_codesScalarWhereInput = {
+  AND?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+  OR?: Prisma.discount_codesScalarWhereInput[]
+  NOT?: Prisma.discount_codesScalarWhereInput | Prisma.discount_codesScalarWhereInput[]
+  id?: Prisma.StringFilter<"discount_codes"> | string
+  public_name?: Prisma.StringFilter<"discount_codes"> | string
+  discountType?: Prisma.StringFilter<"discount_codes"> | string
+  discountValue?: Prisma.FloatFilter<"discount_codes"> | number
+  discountCode?: Prisma.StringFilter<"discount_codes"> | string
+  sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
+  adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
+}
+
+export type discount_codesCreateWithoutSellerInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  admin?: Prisma.adminsCreateNestedOneWithoutCouponsInput
+}
+
+export type discount_codesUncheckedCreateWithoutSellerInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  adminId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type discount_codesCreateOrConnectWithoutSellerInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  create: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput>
+}
+
+export type discount_codesCreateManySellerInputEnvelope = {
+  data: Prisma.discount_codesCreateManySellerInput | Prisma.discount_codesCreateManySellerInput[]
+}
+
+export type discount_codesUpsertWithWhereUniqueWithoutSellerInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  update: Prisma.XOR<Prisma.discount_codesUpdateWithoutSellerInput, Prisma.discount_codesUncheckedUpdateWithoutSellerInput>
+  create: Prisma.XOR<Prisma.discount_codesCreateWithoutSellerInput, Prisma.discount_codesUncheckedCreateWithoutSellerInput>
+}
+
+export type discount_codesUpdateWithWhereUniqueWithoutSellerInput = {
+  where: Prisma.discount_codesWhereUniqueInput
+  data: Prisma.XOR<Prisma.discount_codesUpdateWithoutSellerInput, Prisma.discount_codesUncheckedUpdateWithoutSellerInput>
+}
+
+export type discount_codesUpdateManyWithWhereWithoutSellerInput = {
+  where: Prisma.discount_codesScalarWhereInput
+  data: Prisma.XOR<Prisma.discount_codesUpdateManyMutationInput, Prisma.discount_codesUncheckedUpdateManyWithoutSellerInput>
+}
+
+export type discount_codesCreateManyAdminInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  sellerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type discount_codesUpdateWithoutAdminInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  seller?: Prisma.sellersUpdateOneWithoutCouponsNestedInput
+}
+
+export type discount_codesUncheckedUpdateWithoutAdminInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type discount_codesUncheckedUpdateManyWithoutAdminInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type discount_codesCreateManySellerInput = {
+  id?: string
+  public_name: string
+  discountType: string
+  discountValue: number
+  discountCode: string
+  adminId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type discount_codesUpdateWithoutSellerInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  admin?: Prisma.adminsUpdateOneWithoutCouponsNestedInput
+}
+
+export type discount_codesUncheckedUpdateWithoutSellerInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type discount_codesUncheckedUpdateManyWithoutSellerInput = {
+  public_name?: Prisma.StringFieldUpdateOperationsInput | string
+  discountType?: Prisma.StringFieldUpdateOperationsInput | string
+  discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  discountCode?: Prisma.StringFieldUpdateOperationsInput | string
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -428,8 +739,11 @@ export type discount_codesSelect<ExtArgs extends runtime.Types.Extensions.Intern
   discountValue?: boolean
   discountCode?: boolean
   sellerId?: boolean
+  adminId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  seller?: boolean | Prisma.discount_codes$sellerArgs<ExtArgs>
+  admin?: boolean | Prisma.discount_codes$adminArgs<ExtArgs>
 }, ExtArgs["result"]["discount_codes"]>
 
 
@@ -441,22 +755,31 @@ export type discount_codesSelectScalar = {
   discountValue?: boolean
   discountCode?: boolean
   sellerId?: boolean
+  adminId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type discount_codesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "public_name" | "discountType" | "discountValue" | "discountCode" | "sellerId" | "createdAt" | "updatedAt", ExtArgs["result"]["discount_codes"]>
+export type discount_codesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "public_name" | "discountType" | "discountValue" | "discountCode" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["discount_codes"]>
+export type discount_codesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  seller?: boolean | Prisma.discount_codes$sellerArgs<ExtArgs>
+  admin?: boolean | Prisma.discount_codes$adminArgs<ExtArgs>
+}
 
 export type $discount_codesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "discount_codes"
-  objects: {}
+  objects: {
+    seller: Prisma.$sellersPayload<ExtArgs> | null
+    admin: Prisma.$adminsPayload<ExtArgs> | null
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     public_name: string
     discountType: string
     discountValue: number
     discountCode: string
-    sellerId: string
+    sellerId: string | null
+    adminId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["discount_codes"]>
@@ -822,6 +1145,8 @@ readonly fields: discount_codesFieldRefs;
  */
 export interface Prisma__discount_codesClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  seller<T extends Prisma.discount_codes$sellerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.discount_codes$sellerArgs<ExtArgs>>): Prisma.Prisma__sellersClient<runtime.Types.Result.GetResult<Prisma.$sellersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  admin<T extends Prisma.discount_codes$adminArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.discount_codes$adminArgs<ExtArgs>>): Prisma.Prisma__adminsClient<runtime.Types.Result.GetResult<Prisma.$adminsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -857,6 +1182,7 @@ export interface discount_codesFieldRefs {
   readonly discountValue: Prisma.FieldRef<"discount_codes", 'Float'>
   readonly discountCode: Prisma.FieldRef<"discount_codes", 'String'>
   readonly sellerId: Prisma.FieldRef<"discount_codes", 'String'>
+  readonly adminId: Prisma.FieldRef<"discount_codes", 'String'>
   readonly createdAt: Prisma.FieldRef<"discount_codes", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"discount_codes", 'DateTime'>
 }
@@ -876,6 +1202,10 @@ export type discount_codesFindUniqueArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * Filter, which discount_codes to fetch.
    */
   where: Prisma.discount_codesWhereUniqueInput
@@ -894,6 +1224,10 @@ export type discount_codesFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Ex
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * Filter, which discount_codes to fetch.
    */
   where: Prisma.discount_codesWhereUniqueInput
@@ -911,6 +1245,10 @@ export type discount_codesFindFirstArgs<ExtArgs extends runtime.Types.Extensions
    * Omit specific fields from the discount_codes
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
   /**
    * Filter, which discount_codes to fetch.
    */
@@ -960,6 +1298,10 @@ export type discount_codesFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Ext
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * Filter, which discount_codes to fetch.
    */
   where?: Prisma.discount_codesWhereInput
@@ -1008,6 +1350,10 @@ export type discount_codesFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * Filter, which discount_codes to fetch.
    */
   where?: Prisma.discount_codesWhereInput
@@ -1051,6 +1397,10 @@ export type discount_codesCreateArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * The data needed to create a discount_codes.
    */
   data: Prisma.XOR<Prisma.discount_codesCreateInput, Prisma.discount_codesUncheckedCreateInput>
@@ -1078,6 +1428,10 @@ export type discount_codesUpdateArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the discount_codes
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
   /**
    * The data needed to update a discount_codes.
    */
@@ -1119,6 +1473,10 @@ export type discount_codesUpsertArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
+  /**
    * The filter to search for the discount_codes to update in case it exists.
    */
   where: Prisma.discount_codesWhereUniqueInput
@@ -1144,6 +1502,10 @@ export type discount_codesDeleteArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the discount_codes
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
   /**
    * Filter which discount_codes to delete.
    */
@@ -1193,6 +1555,44 @@ export type discount_codesAggregateRawArgs<ExtArgs extends runtime.Types.Extensi
 }
 
 /**
+ * discount_codes.seller
+ */
+export type discount_codes$sellerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the sellers
+   */
+  select?: Prisma.sellersSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the sellers
+   */
+  omit?: Prisma.sellersOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.sellersInclude<ExtArgs> | null
+  where?: Prisma.sellersWhereInput
+}
+
+/**
+ * discount_codes.admin
+ */
+export type discount_codes$adminArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the admins
+   */
+  select?: Prisma.adminsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the admins
+   */
+  omit?: Prisma.adminsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.adminsInclude<ExtArgs> | null
+  where?: Prisma.adminsWhereInput
+}
+
+/**
  * discount_codes without action
  */
 export type discount_codesDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1204,4 +1604,8 @@ export type discount_codesDefaultArgs<ExtArgs extends runtime.Types.Extensions.I
    * Omit specific fields from the discount_codes
    */
   omit?: Prisma.discount_codesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.discount_codesInclude<ExtArgs> | null
 }

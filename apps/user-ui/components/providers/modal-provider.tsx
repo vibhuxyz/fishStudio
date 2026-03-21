@@ -5,12 +5,15 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import { AddToCartModal } from "@/components/shared/add-to-cart-modal";
 import { LoginModal } from "@/components/shared/login-modal";
 import { CartSidebar } from "@/components/shared/cart-sidebar";
 import { Product } from "@repo/types";
+import { setRedirectHandler } from "@/utils/redirect";
+import { useUserSession } from "@/hooks/useUserSession";
 
 interface ModalContextType {
   openLogin: () => void;
@@ -32,6 +35,7 @@ export function useModals(): ModalContextType {
 }
 
 export function ModalProvider({ children }: { children: ReactNode }) {
+  useUserSession();
   const [showLogin, setShowLogin] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showAddToCart, setShowAddToCart] = useState(false);
@@ -43,6 +47,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     setSelectedProduct(product);
     setShowAddToCart(true);
   }, []);
+
+  useEffect(() => {
+    setRedirectHandler(openLogin);
+  }, [openLogin]);
 
   return (
     <ModalContext value={{ openLogin, openCart, openAddToCart }}>

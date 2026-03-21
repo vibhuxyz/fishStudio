@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../../store/authStore";
 import Link from "next/link";
+import { frontendEnv } from "@/config/env";
 
 type FormData = {
   email: string;
@@ -33,7 +34,7 @@ const Login = () => {
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/login-seller`,
+        `${frontendEnv.apiUrl}/auth/api/login-seller`,
         data,
         { withCredentials: true },
       );

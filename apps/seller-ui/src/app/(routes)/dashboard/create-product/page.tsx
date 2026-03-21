@@ -1,663 +1,537 @@
 "use client";
-import BreadCrumbs from "@/shared/components/breadcrumbs";
-import ImagePlaceHolder from "@/shared/components/image-placeholder";
-import axiosInstance from "@/utils/axiosInstance";
-import { isProtected } from "@/utils/protected";
-import { Wand2 } from "lucide-react";
+
+import React, { useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  CoustomCuttingType,
-  CoustomPices,
-  CustomSizes,
-  Input,
-  RichTextEditor,
-} from "@repo/ui";
-
-import { useQuery } from "@tanstack/react-query";
-
-import React, { useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
+import BreadCrumbs from "@/shared/components/breadcrumbs";
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
+
+type CatalogProduct = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string;
+  subCategory: string;
+  short_description: string;
+  detailed_description: string;
+  tags: string[];
+  sizes: string[];
+  images: Array<{ url?: string | null }>;
+  alreadyAdded?: boolean;
+  sellerProductId?: string | null;
+};
+
+type SizePricingRow = {
+  size: string;
+  weightGrams: number;
+  regularPrice: number;
+  salePrice: number;
+};
+
+type DiscountCode = {
+  id: string;
+  public_name: string;
+  discountType: string;
+  discountValue: number;
+};
+
+type SellerCatalogFormValues = {
+  stock: number;
+  cash_on_delivery: "yes" | "no";
+  short_description: string;
+  detailed_description: string;
+  tags: string;
+  status: "Active" | "Draft" | "Pending";
+  discountCodes: string[];
+  sizePricing: SizePricingRow[];
+};
+
+const parseWeightToGrams = (size: string) => {
+  const match = size.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(kg|g|gm)/);
+  if (!match) return 0;
+
+  const amount = Number(match[1]);
+  return match[2] === "kg" ? Math.round(amount * 1000) : Math.round(amount);
+};
+
+const buildSizePricingRows = (sizes: string[]): SizePricingRow[] =>
+  sizes.map((size) => ({
+    size,
+    weightGrams: parseWeightToGrams(size),
+    regularPrice: 0,
+    salePrice: 0,
+  }));
+
+const fetchCatalogProducts = async (): Promise<CatalogProduct[]> => {
+  const res = await axiosInstance.get("/product/api/get-catalog-products", isProtected);
+  return Array.isArray(res.data.products) ? res.data.products : [];
+};
+
+const fetchDiscountCodes = async (): Promise<DiscountCode[]> => {
+  const res = await axiosInstance.get("/product/api/get-discount-codes", isProtected);
+  return Array.isArray(res.data.discount_codes) ? res.data.discount_codes : [];
+};
+
+const addProductToStore = async ({
+  catalogProductId,
+  payload,
+}: {
+  catalogProductId: string;
+  payload: SellerCatalogFormValues;
+}) => {
+  await axiosInstance.post(
+    `/product/api/add-catalog-product-to-store/${catalogProductId}`,
+    payload,
+    isProtected,
+  );
+};
+
 const Page = () => {
-  const {
-    register,
-    control,
-    watch,
-    setValue,
-    getValues,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-
-  const { onChange: formOnChange, ...restSlugProps } = register("slug", {
-    required: "Slug is required!",
-    pattern: {
-      value: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-      message:
-        "Invalid slug format! Use only lowercase letters, numbers, and dashes (e.g., product-slug).",
-    },
-    minLength: {
-      value: 3,
-      message: "Slug must be at least 3 characters long.",
-    },
-    maxLength: {
-      value: 50,
-      message: "Slug cannot be longer than 50 characters.",
-    },
-  });
-
-  const [images, setImages] = useState<
-    (null | { file: File; base64: string })[]
-  >([null]);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [slugValue, setSlugValue] = useState("");
-  const [isSlugChecking, setIsSlugChecking] = useState(false);
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
 
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (slugValue) {
-        setIsSlugChecking(true);
-        axiosInstance
-          .post("/product/api/slug-validator", { slug: slugValue }, isProtected)
-          .then((res) => {
-            if (res.data.available) {
-              toast.success("Slug is available and applied!");
-            } else {
-              setValue("slug", res.data.slug);
-              toast.info("Slug was taken. Suggested new one applied.");
-            }
-          })
-          .catch(() => {
-            toast.error("Error checking slug!");
-          })
-          .finally(() => {
-            setIsSlugChecking(false);
-          });
-      }
-    }, 3000);
-
-    return () => clearTimeout(delayDebounce);
-  }, [slugValue]);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      try {
-        const res = await axiosInstance.get(
-          "/product/api/get-categories",
-          isProtected,
-        );
-        return res.data;
-      } catch (error) {
-        console.log(error);
-      }
-    },
+  const {
+    data: catalogProducts = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["seller", "catalog-products"],
+    queryFn: fetchCatalogProducts,
     staleTime: 1000 * 60 * 5,
-    retry: 2,
+    retry: false,
   });
 
-  const { data: discountCodes = [], isLoading: discountLoading } = useQuery({
-    queryKey: ["shop-discounts"],
-    queryFn: async () => {
-      const res = await axiosInstance.get(
-        "/product/api/get-discount-codes",
-        isProtected,
-      );
-      return res?.data?.discount_codes || [];
+  const { data: discountCodes = [] } = useQuery({
+    queryKey: ["seller", "discounts"],
+    queryFn: fetchDiscountCodes,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { register, handleSubmit, reset, watch, setValue } =
+    useForm<SellerCatalogFormValues>({
+      defaultValues: {
+        stock: 0,
+        cash_on_delivery: "yes",
+        short_description: "",
+        detailed_description: "",
+        tags: "",
+        status: "Active",
+        discountCodes: [],
+        sizePricing: [],
+      },
+    });
+
+  const selectedDiscountCodes = watch("discountCodes") || [];
+  const selectedSizePricing = watch("sizePricing") || [];
+
+  const addMutation = useMutation({
+    mutationFn: addProductToStore,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["seller", "catalog-products"] });
+      queryClient.invalidateQueries({ queryKey: ["seller", "products"] });
+      toast.success("Product added to your shop.");
+      setSelectedProduct(null);
+      router.push("/dashboard/all-products");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to add product to store.");
     },
   });
 
-  // Extract data from API response
-  const categories = data?.categories || [];
-  const subCategoriesData = data?.subCategories || {};
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return catalogProducts;
 
-  // Watch form fields
-  const selectedCategory = watch("category");
-  const regularPrice = watch("regular_price");
+    return catalogProducts.filter((product) =>
+      [product.title, product.category, product.subCategory, product.short_description]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query)),
+    );
+  }, [catalogProducts, search]);
 
-  // Category mapping from display name to API key
-  const categoryKeyMap: { [key: string]: string } = {
-    "Fresh Water": "freshWater",
-    "Sea Fish": "seaFish",
-    "Premium Sea Food": "premiumSeaFood",
-    "Pet Serve": "petServe",
+  const openConfigureModal = (product: CatalogProduct) => {
+    setSelectedProduct(product);
+    reset({
+      stock: 0,
+      cash_on_delivery: "yes",
+      short_description: product.short_description || "",
+      detailed_description: product.detailed_description || "",
+      tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
+      status: "Active",
+      discountCodes: [],
+      sizePricing: buildSizePricingRows(product.sizes || []),
+    });
   };
 
-  // Memoized subcategories based on selected category
-  const subcategories = useMemo(() => {
-    if (!selectedCategory) return [];
-    const categoryKey = categoryKeyMap[selectedCategory];
-    return subCategoriesData[categoryKey] || [];
-  }, [selectedCategory, subCategoriesData]);
+  const onSubmit = (values: SellerCatalogFormValues) => {
+    if (!selectedProduct) return;
+    const hasInvalidPricing = values.sizePricing.some(
+      (entry) => entry.weightGrams <= 0 || entry.salePrice <= 0,
+    );
 
-  // ---------------------------------------------------------
-  // UPDATED SUBMIT LOGIC FOR IMAGES
-  // ---------------------------------------------------------
-  const onSubmit = async (data: any) => {
-    try {
-      setLoading(true);
-
-      // 1. Filter valid images
-      const validImages = images.filter((img) => img !== null && img.base64);
-
-      // 2. Upload images
-      const uploadedImagesData = await Promise.all(
-        validImages.map(async (img) => {
-          if (!img?.base64) return null;
-
-          try {
-            // Send base64 data as 'fileName' to match backend destructuring
-            const uploadRes = await axiosInstance.post(
-              "/product/api/upload-product-image",
-              { fileName: img.base64 },
-              isProtected,
-            );
-
-            if (uploadRes.data.success) {
-              return {
-                fileId: uploadRes.data.fileId,
-                file_url: uploadRes.data.file_url,
-              };
-            }
-            return null;
-          } catch (err) {
-            console.error("Image upload failed", err);
-            return null;
-          }
-        }),
-      );
-
-      const finalImages = uploadedImagesData.filter(Boolean);
-
-      // 3. Prepare final payload
-      const submitData = {
-        ...data,
-        sizes: data.sizes,
-        cuttingTypes: data.cuttingType,
-        pieceSizes: data.pieceSizes,
-        images: finalImages,
-        ...(data.processingWeightLoss &&
-          data.processingWeightLoss.trim() && {
-            processingWeightLoss: data.processingWeightLoss,
-          }),
-      };
-
-      console.log("Submitting final payload:", submitData);
-
-      // 4. Create Product
-      await axiosInstance.post("/product/api/create-product", submitData);
-
-      toast.success("Product created successfully!");
-      router.push("/dashboard/all-products");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to create product");
-      console.error(error);
-    } finally {
-      setLoading(false);
+    if (hasInvalidPricing) {
+      toast.error("Add a valid weight and sale price for each size.");
+      return;
     }
+
+    addMutation.mutate({
+      catalogProductId: selectedProduct.id,
+      payload: values,
+    });
   };
 
   return (
-    <form
-      className="w-full mx-auto p-8 shadow-md rounded-lg text-white"
-      onSubmit={handleSubmit(onSubmit)}
-    >
-      {/* Heading & Breadcrumbs */}
-      <h2 className="text-2xl py-2 font-semibold font-Poppins text-white">
-         
-        Create Product
-        <p className="text-red-900 text-4xl">Image upload is not Working Now so Create Product Without image In v1 we will fix</p>
-      </h2>
+    <div className="mx-auto w-full rounded-lg p-8 text-white shadow-md">
+      <div className="mb-1">
+        <h2 className="py-2 text-2xl font-semibold font-Poppins text-white">
+          Add Product From Catalog
+        </h2>
+        <p className="text-sm text-slate-400">
+          Choose an admin catalog product, then set your own seller price,
+          stock, coupon, and availability before it goes live in your shop.
+        </p>
+      </div>
       <BreadCrumbs title="Create Product" />
 
-      {/* Content Layout */}
-      <div className="py-4 w-full flex gap-6">
-        {/* Left side - Image upload section */}
-       
-        <div className="md:w-[35%]">
-          {images?.length > 0 && (
-            <ImagePlaceHolder
-              size="765 x 850"
-              small={false}
-              images={images}
-              setImages={setImages}
-              setValue={setValue}
-              index={0}
-            />
-          )}
+      <div className="mt-6 flex items-center rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+        <Search size={18} className="mr-2 text-slate-500" />
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search the admin catalog..."
+          className="w-full bg-transparent text-white outline-none"
+        />
+      </div>
 
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {images.slice(1).map((_, index) => (
-              <ImagePlaceHolder
-                size="765 x 850"
-                images={images}
-                setImages={setImages}
-                key={index}
-                small
-                setValue={setValue}
-                index={index + 1}
-              />
-            ))}
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {isLoading && (
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-6 text-slate-300">
+            Loading catalog products...
           </div>
-        </div>
+        )}
 
-        {/* Right side - form inputs */}
-        <div className="md:w-[65%]">
-          <div className="w-full flex gap-6">
-            {/* LEFT COLUMN */}
-
-            <div className="w-2/4">
-              {/* Product Title Input */}
-              <Input
-                label="Product Title *"
-                placeholder="Enter product title"
-                {...register("title", { required: "Title is required" })}
-              />
-              {errors.title && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.title.message as string}
-                </p>
-              )}
-
-              <div className="mt-2">
-                <Input
-                  type="textarea"
-                  rows={7}
-                  cols={10}
-                  label="Short Description * (Max 150 words)"
-                  placeholder="Enter product description for quick view"
-                  {...register("short_description", {
-                    required: "Description is required",
-                    validate: (value) => {
-                      const wordCount = value.trim().split(/\s+/).length;
-                      return (
-                        wordCount <= 150 ||
-                        `Description cannot exceed 150 words (Current: ${wordCount})`
-                      );
-                    },
-                  })}
+        {!isLoading &&
+          filteredProducts.map((product) => (
+            <div
+              key={product.id}
+              className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/70"
+            >
+              <div className="relative h-52 w-full bg-slate-900">
+                <Image
+                  src={product.images?.[0]?.url || "/placeholder.png"}
+                  alt={product.title}
+                  fill
+                  className="object-cover"
                 />
-                {errors.short_description && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.short_description.message as string}
-                  </p>
-                )}
               </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Tags *"
-                  placeholder="rohu,seafood"
-                  {...register("tags", {
-                    required: "Separate related products tags with a comma",
-                  })}
-                />
-                {errors.tags && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.tags.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <div className="relative">
-                  <Input
-                    label="Slug *"
-                    placeholder="product_slug"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setSlugValue(e.target.value);
-                      setValue("slug", e.target.value);
-                      formOnChange(e);
-                    }}
-                    value={watch("slug")}
-                    className="pr-10"
-                    {...restSlugProps}
-                  />
-
-                  <div className="absolute w-7 h-7 flex items-center justify-center bg-blue-600 !rounded shadow top-[70%] right-3 transform -translate-y-1/2 text-white cursor-pointer hover:bg-blue-700">
-                    <Wand2
-                      size={16}
-                      onClick={async () => {
-                        const title = getValues("title");
-                        if (!title) {
-                          toast.error(
-                            "Please enter a product title to generate a slug!",
-                          );
-                          return;
-                        }
-
-                        const rawSlug = title
-                          .toLowerCase()
-                          .trim()
-                          .replace(/[^a-z0-9\s-]/g, "")
-                          .replace(/\s+/g, "-")
-                          .replace(/-+/g, "-");
-
-                        try {
-                          const res = await axiosInstance.post(
-                            "/product/api/slug-validator",
-                            { slug: rawSlug },
-                          );
-                          const { available, suggestedSlug } = res.data;
-
-                          if (available) {
-                            setValue("slug", rawSlug);
-                            toast.success("Slug is available!");
-                          } else if (suggestedSlug) {
-                            setValue("slug", suggestedSlug);
-                            toast.info(
-                              "Slug not available, suggested new one!",
-                            );
-                          } else {
-                            toast.error(
-                              "Slug is already taken, try editing it.",
-                            );
-                          }
-                        } catch (err) {
-                          toast.error("Failed to validate slug. Try again.");
-                        }
-                      }}
-                    />
+              <div className="space-y-3 p-5">
+                <div>
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-white">
+                      {product.title}
+                    </h3>
+                    <span className="rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-300">
+                      {product.category}
+                    </span>
                   </div>
+                  <p className="text-sm text-slate-400">{product.subCategory}</p>
                 </div>
 
-                {errors.slug && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.slug.message as string}
-                  </p>
-                )}
-              </div>
+                <p className="line-clamp-3 text-sm text-slate-300">
+                  {product.short_description}
+                </p>
 
-              <div className="mt-2">
-                <Input
-                  label="Regular Price"
-                  placeholder="200₹"
-                  {...register("regular_price", {
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Price must be at least 1" },
-                    validate: (value) =>
-                      !isNaN(value) || "Only numbers are allowed",
-                  })}
+                <div className="flex flex-wrap gap-2">
+                  {(product.tags || []).slice(0, 4).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-300"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={product.alreadyAdded}
+                  onClick={() => openConfigureModal(product)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700"
+                >
+                  <Plus size={16} />
+                  {product.alreadyAdded ? "Already In Shop" : "Configure And Add"}
+                </button>
+              </div>
+            </div>
+          ))}
+
+        {!isLoading && isError && (
+          <div className="rounded-xl border border-rose-800 bg-rose-950/30 p-6 text-rose-200">
+            {error instanceof Error
+              ? error.message
+              : "We could not load the admin catalog right now."}
+          </div>
+        )}
+
+        {!isLoading && !isError && filteredProducts.length === 0 && (
+          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-6 text-slate-300">
+            No catalog products matched your search.
+          </div>
+        )}
+      </div>
+
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-6">
+          <div className="max-h-full w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950 p-6">
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-xl font-semibold text-white">
+                  Configure Shop Product
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  {selectedProduct.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedProduct(null)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <form
+              className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
+              onSubmit={handleSubmit(onSubmit)}
+            >
+              <div>
+                <label className="mb-1 block text-sm text-slate-300">Stock</label>
+                <input
+                  type="number"
+                  {...register("stock", { valueAsNumber: true })}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 />
-                {errors.regular_price && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.regular_price.message as string}
-                  </p>
-                )}
               </div>
 
-              <div className="mt-2">
-                <Input
-                  label="Sale Price *"
-                  placeholder="15₹"
-                  {...register("sale_price", {
-                    required: "Sale Price is required",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Sale Price must be at least 1" },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Only numbers are allowed";
-                      if (regularPrice && value >= regularPrice) {
-                        return "Sale Price must be less than Regular Price";
-                      }
-                      return true;
-                    },
-                  })}
-                />
-                {errors.sale_price && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.sale_price.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Stock *"
-                  placeholder="100"
-                  {...register("stock", {
-                    required: "Stock is required!",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Stock must be at least 1" },
-                    max: {
-                      value: 1000,
-                      message: "Stock cannot exceed 1,000",
-                    },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Only numbers are allowed!";
-                      if (!Number.isInteger(value))
-                        return "Stock must be a whole number!";
-                      return true;
-                    },
-                  })}
-                />
-                {errors.stock && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.stock.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Cash On Delivery *
+              <div>
+                <label className="mb-1 block text-sm text-slate-300">
+                  Cash On Delivery
                 </label>
                 <select
-                  {...register("cash_on_delivery", {
-                    required: "Cash on Delivery is required",
-                  })}
-                  defaultValue="yes"
-                  className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+                  {...register("cash_on_delivery")}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 >
-                  <option value="yes" className="bg-black">
+                  <option value="yes" className="bg-slate-950">
                     Yes
                   </option>
-                  <option value="no" className="bg-black">
+                  <option value="no" className="bg-slate-950">
                     No
                   </option>
                 </select>
-                {errors.cash_on_delivery && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.cash_on_delivery.message as string}
-                  </p>
-                )}
               </div>
-            </div>
 
-            {/* RIGHT COLUMN */}
-            <div className="w-2/4">
-              {/* Category Dropdown */}
-              <label className="block font-semibold text-gray-300 mb-1">
-                Category *
-              </label>
-              {isLoading ? (
-                <p className="text-gray-400">Loading categories...</p>
-              ) : isError ? (
-                <p className="text-red-500">Failed to load categories</p>
-              ) : (
-                <Controller
-                  name="category"
-                  control={control}
-                  rules={{ required: "Category is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
+              <div>
+                <label className="mb-1 block text-sm text-slate-300">Status</label>
+                <select
+                  {...register("status")}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                >
+                  <option value="Active" className="bg-slate-950">
+                    Active
+                  </option>
+                  <option value="Draft" className="bg-slate-950">
+                    Draft
+                  </option>
+                  <option value="Pending" className="bg-slate-950">
+                    Pending
+                  </option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Size-Based Pricing
+                </label>
+                <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                  {selectedSizePricing.map((entry, index) => (
+                    <div
+                      key={entry.size}
+                      className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
                     >
-                      <option value="" className="bg-black">
-                        Select Category
-                      </option>
-                      {categories?.map((category: string) => (
-                        <option
-                          value={category}
-                          key={category}
-                          className="bg-black"
-                        >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                />
-              )}
-              {errors.category && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.category.message as string}
-                </p>
-              )}
-              {/* Subcategory Dropdown */}
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Subcategory *
+                      <div>
+                        <p className="text-sm font-medium text-white">{entry.size}</p>
+                        <p className="text-xs text-slate-500">
+                          Price will be used for {entry.weightGrams || "selected"} gm
+                        </p>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Weight (gm)
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.weightGrams ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              weightGrams: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, {
+                              shouldDirty: true,
+                            });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Regular Price
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.regularPrice ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              regularPrice: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, {
+                              shouldDirty: true,
+                            });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Sale Price
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.salePrice ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              salePrice: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, {
+                              shouldDirty: true,
+                            });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm text-slate-300">
+                  Short Description
                 </label>
-                <Controller
-                  name="subCategory"
-                  control={control}
-                  rules={{ required: "Subcategory is required" }}
-                  render={({ field }) => (
-                    <select
-                      {...field}
-                      className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                    >
-                      <option value="" className="bg-black">
-                        Select Subcategory
-                      </option>
-                      {subcategories?.map((subcategory: string) => (
-                        <option
-                          key={subcategory}
-                          value={subcategory}
-                          className="bg-black"
-                        >
-                          {subcategory}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                <textarea
+                  rows={3}
+                  {...register("short_description")}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 />
-                {errors.subCategory && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.subCategory.message as string}
-                  </p>
-                )}
-              </div>
-              {/* Coustom Sizes */}
-              <div className="mt-2">
-                <CustomSizes control={control} errors={errors} />
               </div>
 
-              {/* Coustom Pices*/}
-              <div className="mt-2">
-                <CoustomPices control={control} errors={errors} />
-              </div>
-
-              {/* Coustom Cutting Type*/}
-              <div className="mt-2">
-                <CoustomCuttingType control={control} errors={errors} />
-              </div>
-
-              {/* Processing Weight Loss Info Display */}
-              <div className="mt-3">
-                <Input
-                  label="Processing Weight Loss (optional)"
-                  placeholder="e.g., 5%, 10%, 15%"
-                  {...register("processingWeightLoss")}
-                />
-                {errors.processingWeightLoss && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.processingWeightLoss.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Detailed Description * (Min 1 word)
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm text-slate-300">
+                  Detailed Description
                 </label>
-                <Controller
-                  name="detailed_description"
-                  control={control}
-                  rules={{
-                    required: "Detailed description is required!",
-                    validate: (value) => {
-                      const wordCount = value
-                        ?.split(/\s+/)
-                        .filter((word: string) => word).length;
-                      return (
-                        wordCount >= 1 || "Description must be at least 1 word!"
-                      );
-                    },
-                  }}
-                  render={({ field }) => (
-                    <RichTextEditor
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  )}
+                <textarea
+                  rows={5}
+                  {...register("detailed_description")}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 />
-                {errors.detailed_description && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.detailed_description.message as string}
-                  </p>
-                )}
               </div>
-              <div className="mt-3">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Select Discount Codes (optional)
-                </label>
 
-                {discountLoading ? (
-                  <p className="text-gray-400">Loading discount codes...</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {discountCodes?.map((code: any) => (
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm text-slate-300">Tags</label>
+                <input
+                  {...register("tags")}
+                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Seller Coupons
+                </label>
+                <div className="flex flex-wrap gap-2 rounded-md border border-slate-800 bg-slate-900/60 p-3">
+                  {discountCodes.length === 0 && (
+                    <p className="text-sm text-slate-400">
+                      No seller coupons yet. You can still add the product now
+                      and attach coupons later.
+                    </p>
+                  )}
+                  {discountCodes.map((discount) => {
+                    const isSelected = selectedDiscountCodes.includes(discount.id);
+
+                    return (
                       <button
-                        key={code.id}
+                        key={discount.id}
                         type="button"
-                        className={`px-3 py-1 rounded-md text-sm font-semibold border ${
-                          watch("discountCodes")?.includes(code.id)
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+                        className={`rounded-md border px-3 py-1 text-sm ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-600 text-white"
+                            : "border-slate-700 bg-slate-900 text-slate-300"
                         }`}
                         onClick={() => {
-                          const currentSelection = watch("discountCodes") || [];
-                          const updatedSelection = currentSelection?.includes(
-                            code.id,
-                          )
-                            ? currentSelection.filter(
-                                (id: string) => id !== code.id,
-                              )
-                            : [...currentSelection, code.id];
-                          setValue("discountCodes", updatedSelection);
+                          const nextValue = isSelected
+                            ? selectedDiscountCodes.filter((id) => id !== discount.id)
+                            : [...selectedDiscountCodes, discount.id];
+                          setValue("discountCodes", nextValue);
                         }}
                       >
-                        {code?.public_name} ({code.discountValue}
-                        {code.discountType === "percentage" ? "%" : "$"})
+                        {discount.public_name} ({discount.discountValue}
+                        {discount.discountType === "percentage" ? "%" : "Rs"})
                       </button>
-                    ))}
-                  </div>
-                )}
-                {discountCodes?.length === 0 && !discountLoading && (
-                  <p className="text-gray-400">
-                    No Discount codes available to add!
-                  </p>
-                )}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+
+              <div className="md:col-span-2 flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProduct(null)}
+                  className="rounded-md bg-slate-700 px-4 py-2 text-white hover:bg-slate-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addMutation.isPending}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {addMutation.isPending ? "Adding..." : "Add To Shop"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={loading}
-        >
-          {loading ? "Creating..." : "Create"}
-        </button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 };
 

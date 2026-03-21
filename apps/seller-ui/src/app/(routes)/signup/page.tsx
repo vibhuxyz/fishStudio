@@ -6,6 +6,7 @@ import Link from "next/link";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios, { AxiosError } from "axios";
+import { frontendEnv } from "@/config/env";
 
 // import StripeLogo from "@/assets/svgs/stripe-logo";
 import CreateShop from "../../../shared/modules/auth/create-shop";
@@ -44,7 +45,7 @@ const Signup = () => {
   const signupMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/seller-registration`,
+        `${frontendEnv.apiUrl}/auth/api/seller-registration`,
         data,
       );
       console.log("data", response.data);
@@ -64,7 +65,7 @@ const Signup = () => {
     mutationFn: async () => {
       if (!sellerData) return;
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/verify-seller`,
+        `${frontendEnv.apiUrl}/auth/api/verify-seller`,
         {
           ...sellerData,
           otp: otp.join(""),

@@ -49,6 +49,7 @@ export const AnyNull = runtime.objectEnumValues.instances.AnyNull
 
 
 export const ModelName = {
+  admins: 'admins',
   images: 'images',
   users: 'users',
   discount_codes: 'discount_codes',
@@ -58,7 +59,8 @@ export const ModelName = {
   favorites: 'favorites',
   site_config: 'site_config',
   products: 'products',
-  banners: 'banners'
+  banners: 'banners',
+  seller_events: 'seller_events'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -66,6 +68,18 @@ export type ModelName = (typeof ModelName)[keyof typeof ModelName]
 /*
  * Enums
  */
+
+export const AdminsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  password: 'password',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminsScalarFieldEnum = (typeof AdminsScalarFieldEnum)[keyof typeof AdminsScalarFieldEnum]
+
 
 export const ImagesScalarFieldEnum = {
   id: 'id',
@@ -99,6 +113,7 @@ export const Discount_codesScalarFieldEnum = {
   discountValue: 'discountValue',
   discountCode: 'discountCode',
   sellerId: 'sellerId',
+  adminId: 'adminId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -181,6 +196,7 @@ export const ProductsScalarFieldEnum = {
   detailed_description: 'detailed_description',
   tags: 'tags',
   sizes: 'sizes',
+  sizePricing: 'sizePricing',
   cuttingTypes: 'cuttingTypes',
   pieceSizes: 'pieceSizes',
   processingWeightLoss: 'processingWeightLoss',
@@ -196,7 +212,9 @@ export const ProductsScalarFieldEnum = {
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  storeId: 'storeId'
+  storeId: 'storeId',
+  adminId: 'adminId',
+  catalogProductId: 'catalogProductId'
 } as const
 
 export type ProductsScalarFieldEnum = (typeof ProductsScalarFieldEnum)[keyof typeof ProductsScalarFieldEnum]
@@ -213,6 +231,24 @@ export const BannersScalarFieldEnum = {
 } as const
 
 export type BannersScalarFieldEnum = (typeof BannersScalarFieldEnum)[keyof typeof BannersScalarFieldEnum]
+
+
+export const Seller_eventsScalarFieldEnum = {
+  id: 'id',
+  sellerId: 'sellerId',
+  title: 'title',
+  description: 'description',
+  type: 'type',
+  minOrder: 'minOrder',
+  discount: 'discount',
+  startTime: 'startTime',
+  endTime: 'endTime',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Seller_eventsScalarFieldEnum = (typeof Seller_eventsScalarFieldEnum)[keyof typeof Seller_eventsScalarFieldEnum]
 
 
 export const SortOrder = {

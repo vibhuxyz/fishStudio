@@ -16,17 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks/useCategories";
-
-const categoryKeyMap: Record<string, string> = {
-  "Fresh Water": "freshWater",
-  "Sea Fish": "seaFish",
-  "Premium Sea Food": "premiumSeaFood",
-  "Meat & Poultry": "meatPoultry",
-  "Fry Ready": "fryReady",
-  "Moms Magic": "momsMagic",
-  "Rice & Spice": "riceSpice",
-  "Pet Serve": "petServe",
-};
+import { getCategoryConfigKey } from "@/lib/storefront";
 
 const categoryIcons: Record<string, React.ReactNode> = {
   "Fresh Water": <Fish className="h-5 w-5" />,
@@ -48,11 +38,6 @@ interface CategoryMenuProps {
   onClose?: () => void;
 }
 
-interface CategoryMenuProps {
-  variant?: "horizontal" | "dropdown";
-  onClose?: () => void;
-}
-
 export function CategoryMenu({
   variant = "horizontal",
   onClose,
@@ -64,7 +49,7 @@ export function CategoryMenu({
 
   const getSubCategories = useCallback(
     (cat: string) => {
-      const key = categoryKeyMap[cat];
+      const key = getCategoryConfigKey(cat);
       if (!key) return [];
       return subCategoriesData[key] || [];
     },

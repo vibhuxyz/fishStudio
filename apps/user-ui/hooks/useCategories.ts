@@ -1,19 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "@/utils/axiosInstance";
-import { isProtected } from "@/utils/protected";
+import {
+  fetchStorefrontCategories,
+  storefrontKeys,
+} from "@/lib/storefront";
 
 export const useCategories = () => {
   return useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await axiosInstance.get(
-        "/product/api/get-categories",
-        isProtected,
-      );
-      return res.data;
-    },
+    queryKey: storefrontKeys.categories,
+    queryFn: fetchStorefrontCategories,
     staleTime: 1000 * 60 * 5,
     retry: 2,
   });

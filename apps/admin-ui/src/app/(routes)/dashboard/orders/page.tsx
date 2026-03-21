@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useMemo, useState } from "react";
 import {
   useReactTable,
@@ -6,34 +7,21 @@ import {
   getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Search, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-
+import { Eye } from "lucide-react";
 import Link from "next/link";
-
-import axiosInstance from "@/utils/axiosInstance";
-import BreadCrumbs from "@/shared/components/breadcrumbs";
-
-const fetchOrders = async () => {
-  const res = await axiosInstance.get("/order/api/get-seller-orders");
-  return res.data.orders;
-};
+import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import { type SellerOrder, useSellerOrders } from "@/hooks/useAdminQueries";
 
 const OrdersTable = () => {
   const [globalFilter, setGlobalFilter] = useState("");
-
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["seller-orders"],
-    queryFn: fetchOrders,
-    staleTime: 1000 * 60 * 5,
-  });
+  const { data: orders = [], isLoading } = useSellerOrders();
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "id",
         header: "Order ID",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-sm truncate">
             #{row.original.id.slice(-6).toUpperCase()}
           </span>
@@ -42,21 +30,21 @@ const OrdersTable = () => {
       {
         accessorKey: "user.name",
         header: "Buyer",
-        cell: ({ row }: any) => (
-          <span className="text-white">
-            {row.original.user?.name ?? "Guest"}
-          </span>
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-white">{row.original.user?.name ?? "Guest"}</span>
         ),
       },
       {
         accessorKey: "total",
         header: "Total",
-        cell: ({ row }: any) => <span>${row.original.total}</span>,
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span>${Number(row.original.total ?? 0).toFixed(2)}</span>
+        ),
       },
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               row.original.status === "Paid"
@@ -71,14 +59,15 @@ const OrdersTable = () => {
       {
         accessorKey: "createdAt",
         header: "Date",
-        cell: ({ row }: any) => {
-          const date = new Date(row.original.createdAt).toLocaleDateString();
-          return <span className="text-white text-sm">{date}</span>;
-        },
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-white text-sm">
+            {new Date(row.original.createdAt).toLocaleDateString()}
+          </span>
+        ),
       },
       {
         header: "Actions",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <Link
             href={`/order/${row.original.id}`}
             className="text-blue-400 hover:text-blue-300 transition"
@@ -102,25 +91,16 @@ const OrdersTable = () => {
   });
 
   return (
-    <div className="w-full min-h-screen p-8">
-      <h2 className="text-2xl text-white font-semibold mb-2">All Orders</h2>
-
-      {/* Breadcrumbs */}
-      <BreadCrumbs title="All Orders" />
-
-      {/* Search Bar */}
-      <div className="my-4 flex items-center bg-gray-900 p-2 rounded-md flex-1">
-        <Search size={18} className="text-gray-400 mr-2" />
-        <input
-          type="text"
-          placeholder="Search orders..."
-          className="w-full bg-transparent text-white outline-none"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
-      </div>
-
-      {/* Table */}
+    <DashboardPageShell
+      title="All Orders"
+      breadcrumbTitle="All Orders"
+      description="Track every order from one cached dataset shared across the admin dashboard."
+      search={{
+        value: globalFilter,
+        onChange: setGlobalFilter,
+        placeholder: "Search orders...",
+      }}
+    >
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
         {isLoading ? (
           <p className="text-center text-white">Loading orders...</p>
@@ -148,10 +128,7 @@ const OrdersTable = () => {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-3 text-sm">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -160,11 +137,11 @@ const OrdersTable = () => {
           </table>
         )}
 
-        {!isLoading && orders?.length === 0 && (
-          <p className="text-center py-3 text-white">No Orders found!</p>
+        {!isLoading && orders.length === 0 && (
+          <p className="text-center py-3 text-white">No orders found.</p>
         )}
       </div>
-    </div>
+    </DashboardPageShell>
   );
 };
 

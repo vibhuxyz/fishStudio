@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -24,6 +24,7 @@ import { ProductCarousel } from "@/components/shared/product-carousel";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/types";
+import { resolveProductSizePricing } from "@/lib/storefront";
 
 const BLUR_DATA =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCw4QDAsNEQ4SEBQSEBESFBcWFxcYGBsbGBshICD/2wBDAQMEBAUEBQkFBQkhEAsQISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISH/wAARCAAIAAgDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EAB8QAAICAgIDAQAAAAAAAAAAAAECAwQFEQASITFBcf/EABUBAQEAAAAAAAAAAAAAAAAAAAUG/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxExQf/aAAwDAQACEQMRAD8Al4/LZCnlKtaOysVeSRUVmQEqCdAnf0eXqd4bVTk7mO3LWIZB3i+y9c=";
@@ -44,14 +45,33 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
   const [selectedPieceSize, setSelectedPieceSize] = useState(
     product.pieceSizes?.[0] || "",
   );
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState(product.weight || product.sizes?.[0] || "");
 
-  // Default to 1 unit (e.g. 1 pack of 500g)
-  const [quantity, setQuantity] = useState(1);
+  const { normalizedPricing, selected } = useMemo(
+    () => resolveProductSizePricing(product, selectedSize),
+    [product, selectedSize],
+  );
+  const [selectedWeightGrams, setSelectedWeightGrams] = useState(
+    selected.weightGrams || 50,
+  );
 
-  const totalPayable = useMemo(() => {
-    return Number.parseFloat((product.price * quantity).toFixed(2));
-  }, [product, quantity]);
+  useEffect(() => {
+    setSelectedWeightGrams(selected.weightGrams || 50);
+  }, [selected.size, selected.weightGrams]);
+
+  const computedSalePrice = useMemo(() => {
+    const baseWeight = selected.weightGrams || 1;
+    const pricePerGram = selected.salePrice / baseWeight;
+    return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
+  }, [selected.salePrice, selected.weightGrams, selectedWeightGrams]);
+
+  const computedRegularPrice = useMemo(() => {
+    const baseWeight = selected.weightGrams || 1;
+    const pricePerGram = selected.regularPrice / baseWeight;
+    return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
+  }, [selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
+
+  const totalPayable = computedSalePrice;
 
   // Create a gallery. If backend only sends one image, we use that.
   // Duplicating it just to keep the carousel UI functional if it expects >1.
@@ -64,12 +84,22 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     // Basic validation to ensure options are selected
     if (!selectedCutting || !selectedPieceSize) return;
 
+    const customizedProduct = {
+      ...product,
+      price: computedSalePrice,
+      originalPrice:
+        computedRegularPrice > computedSalePrice
+          ? computedRegularPrice
+          : undefined,
+      weight: `${selectedWeightGrams} gm`,
+    };
+
     addToCart(
-      product,
-      quantity,
+      customizedProduct,
+      1,
       selectedCutting,
       selectedPieceSize,
-      selectedSize,
+      `${selected.size} | ${selectedWeightGrams} gm`,
     );
     modals.openCart();
   };
@@ -220,11 +250,16 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 </div>
 
                 <p className="mt-4 text-xl font-bold text-primary">
-                  Price: Rs. {product.price}
-                  {selectedSize ? (
+                  Price: Rs. {computedSalePrice.toFixed(2)}
+                  {computedRegularPrice > computedSalePrice ? (
+                    <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
+                      Rs. {computedRegularPrice.toFixed(2)}
+                    </span>
+                  ) : null}
+                  {selectedWeightGrams ? (
                     <span className="text-sm font-normal text-muted-foreground">
                       {" "}
-                      / {selectedSize}
+                      / {selectedWeightGrams} gm
                     </span>
                   ) : (
                     ""
@@ -295,9 +330,9 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                         <SelectValue placeholder="Select size" />
                       </SelectTrigger>
                       <SelectContent>
-                        {product.sizes.map((size) => (
-                          <SelectItem key={size} value={size}>
-                            {size}
+                        {normalizedPricing.map((sizePricing) => (
+                          <SelectItem key={sizePricing.size} value={sizePricing.size}>
+                            {sizePricing.size}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -319,35 +354,37 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   </div>
                 )}
 
-                {/* Quantity & Cart Actions */}
+                {/* Weight & Cart Actions */}
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
                       size="icon"
                       className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      onClick={() =>
+                        setSelectedWeightGrams(
+                          Math.max(50, selectedWeightGrams - 50),
+                        )
+                      }
                     >
                       <Minus className="h-4 w-4" />
-                      <span className="sr-only">Decrease quantity</span>
+                      <span className="sr-only">Decrease weight</span>
                     </Button>
                     <span className="min-w-[3rem] text-center text-lg font-bold text-foreground">
-                      {quantity}
+                      {selectedWeightGrams}g
                     </span>
                     <Button
                       variant="outline"
                       size="icon"
                       className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() => setQuantity(quantity + 1)}
+                      onClick={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
                     >
                       <Plus className="h-4 w-4" />
-                      <span className="sr-only">Increase quantity</span>
+                      <span className="sr-only">Increase weight</span>
                     </Button>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      Total Payable
-                    </p>
+                    <p className="text-sm text-muted-foreground">Total Payable</p>
                     <p className="text-2xl font-bold text-foreground">
                       Rs. {totalPayable.toFixed(2)}
                     </p>

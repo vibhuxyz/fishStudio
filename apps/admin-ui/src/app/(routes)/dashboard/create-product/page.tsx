@@ -1,5 +1,10 @@
 "use client";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
+import {
+  getCategoryConfigKey,
+  useAdminCategories,
+  validateProductSlug,
+} from "@/hooks/useAdminQueries";
 import ImagePlaceHolder from "@/shared/components/image-placeholder";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
@@ -12,12 +17,30 @@ import {
   Input,
   RichTextEditor,
 } from "@repo/ui";
-
-import { useQuery } from "@tanstack/react-query";
-
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
+
+type SlugFeedback = {
+  tone: "info" | "success" | "error";
+  message: string;
+};
+
+type ProductFormValues = {
+  title?: string;
+  slug?: string;
+  category?: string;
+  subCategory?: string;
+  short_description?: string;
+  detailed_description?: string;
+  tags?: string;
+  sizes?: unknown;
+  cuttingType?: unknown;
+  pieceSizes?: unknown;
+  processingWeightLoss?: string;
+  discountCodes?: string[];
+  [key: string]: unknown;
+};
 
 const Page = () => {
   const {
@@ -28,7 +51,7 @@ const Page = () => {
     getValues,
     handleSubmit,
     formState: { errors },
-  } = useForm();
+  } = useForm<ProductFormValues>();
 
   const { onChange: formOnChange, ...restSlugProps } = register("slug", {
     required: "Slug is required!",
@@ -54,101 +77,114 @@ const Page = () => {
   const router = useRouter();
   const [slugValue, setSlugValue] = useState("");
   const [isSlugChecking, setIsSlugChecking] = useState(false);
+  const [slugFeedback, setSlugFeedback] = useState<SlugFeedback | null>(null);
+  const lastValidatedSlug = useRef("");
+  const latestValidationRequest = useRef(0);
 
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (slugValue) {
-        setIsSlugChecking(true);
-        axiosInstance
-          .post("/product/api/slug-validator", { slug: slugValue }, isProtected)
-          .then((res) => {
-            if (res.data.available) {
-              toast.success("Slug is available and applied!");
-            } else {
-              setValue("slug", res.data.slug);
-              toast.info("Slug was taken. Suggested new one applied.");
-            }
-          })
-          .catch(() => {
-            toast.error("Error checking slug!");
-          })
-          .finally(() => {
-            setIsSlugChecking(false);
-          });
-      }
-    }, 3000);
+    const trimmedSlug = slugValue.trim();
 
-    return () => clearTimeout(delayDebounce);
-  }, [slugValue]);
+    if (!trimmedSlug || trimmedSlug.length < 3) {
+      setIsSlugChecking(false);
+      setSlugFeedback(null);
+      return;
+    }
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
+    if (trimmedSlug === lastValidatedSlug.current) {
+      return;
+    }
+
+    const requestId = latestValidationRequest.current + 1;
+    latestValidationRequest.current = requestId;
+
+    const delayDebounce = window.setTimeout(async () => {
+      setIsSlugChecking(true);
+      setSlugFeedback({
+        tone: "info",
+        message: "Checking slug availability...",
+      });
+
       try {
-        const res = await axiosInstance.get(
-          "/product/api/get-categories",
-          isProtected,
-        );
-        return res.data;
-      } catch (error) {
-        console.log(error);
+        const result = await validateProductSlug(trimmedSlug);
+
+        if (latestValidationRequest.current !== requestId) {
+          return;
+        }
+
+        if (result.available) {
+          lastValidatedSlug.current = trimmedSlug;
+          setSlugFeedback({
+            tone: "success",
+            message: "Slug is available.",
+          });
+          return;
+        }
+
+        const resolvedSlug = result.suggestedSlug || result.slug;
+
+        if (resolvedSlug && resolvedSlug !== trimmedSlug) {
+          lastValidatedSlug.current = resolvedSlug;
+          setSlugValue(resolvedSlug);
+          setValue("slug", resolvedSlug, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          setSlugFeedback({
+            tone: "info",
+            message: `"${resolvedSlug}" was applied because the original slug was already taken.`,
+          });
+          return;
+        }
+
+        setSlugFeedback({
+          tone: "error",
+          message: "We couldn't validate the slug right now.",
+        });
+      } catch {
+        if (latestValidationRequest.current === requestId) {
+          setSlugFeedback({
+            tone: "error",
+            message: "We couldn't validate the slug right now.",
+          });
+        }
+      } finally {
+        if (latestValidationRequest.current === requestId) {
+          setIsSlugChecking(false);
+        }
       }
-    },
-    staleTime: 1000 * 60 * 5,
-    retry: 2,
-  });
+    }, 800);
 
-  const { data: discountCodes = [], isLoading: discountLoading } = useQuery({
-    queryKey: ["shop-discounts"],
-    queryFn: async () => {
-      const res = await axiosInstance.get(
-        "/product/api/get-discount-codes",
-        isProtected,
-      );
-      return res?.data?.discount_codes || [];
-    },
-  });
+    return () => window.clearTimeout(delayDebounce);
+  }, [setValue, slugValue]);
 
-  // Extract data from API response
-  const categories = data?.categories || [];
-  const subCategoriesData = data?.subCategories || {};
+  const {
+    data: categoriesData,
+    isLoading,
+    isError,
+  } = useAdminCategories();
 
-  // Watch form fields
+  const categories = categoriesData?.categories || [];
+  const subCategoriesData = categoriesData?.subCategories || {};
+
   const selectedCategory = watch("category");
-  const regularPrice = watch("regular_price");
 
-  // Category mapping from display name to API key
-  const categoryKeyMap: { [key: string]: string } = {
-    "Fresh Water": "freshWater",
-    "Sea Fish": "seaFish",
-    "Premium Sea Food": "premiumSeaFood",
-    "Pet Serve": "petServe",
-  };
-
-  // Memoized subcategories based on selected category
   const subcategories = useMemo(() => {
     if (!selectedCategory) return [];
-    const categoryKey = categoryKeyMap[selectedCategory];
+    const categoryKey = getCategoryConfigKey(selectedCategory);
     return subCategoriesData[categoryKey] || [];
   }, [selectedCategory, subCategoriesData]);
 
-  // ---------------------------------------------------------
-  // UPDATED SUBMIT LOGIC FOR IMAGES
-  // ---------------------------------------------------------
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ProductFormValues) => {
     try {
       setLoading(true);
 
-      // 1. Filter valid images
       const validImages = images.filter((img) => img !== null && img.base64);
 
-      // 2. Upload images
       const uploadedImagesData = await Promise.all(
         validImages.map(async (img) => {
           if (!img?.base64) return null;
 
           try {
-            // Send base64 data as 'fileName' to match backend destructuring
             const uploadRes = await axiosInstance.post(
               "/product/api/upload-product-image",
               { fileName: img.base64 },
@@ -171,28 +207,34 @@ const Page = () => {
 
       const finalImages = uploadedImagesData.filter(Boolean);
 
-      // 3. Prepare final payload
       const submitData = {
         ...data,
         sizes: data.sizes,
         cuttingTypes: data.cuttingType,
         pieceSizes: data.pieceSizes,
         images: finalImages,
-        ...(data.processingWeightLoss &&
+        stock: 0,
+        sale_price: 0,
+        regular_price: 0,
+        cash_on_delivery: "yes",
+        ...(typeof data.processingWeightLoss === "string" &&
           data.processingWeightLoss.trim() && {
             processingWeightLoss: data.processingWeightLoss,
           }),
       };
 
-      console.log("Submitting final payload:", submitData);
-
-      // 4. Create Product
-      await axiosInstance.post("/product/api/create-product", submitData);
+      await axiosInstance.post(
+        "/product/api/create-product",
+        submitData,
+        isProtected,
+      );
 
       toast.success("Product created successfully!");
       router.push("/dashboard/all-products");
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Failed to create product");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create product";
+      toast.error(message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -271,6 +313,7 @@ const Page = () => {
                   {...register("short_description", {
                     required: "Description is required",
                     validate: (value) => {
+                      if (!value) return "Description is required";
                       const wordCount = value.trim().split(/\s+/).length;
                       return (
                         wordCount <= 150 ||
@@ -336,26 +379,34 @@ const Page = () => {
                           .replace(/-+/g, "-");
 
                         try {
-                          const res = await axiosInstance.post(
-                            "/product/api/slug-validator",
-                            { slug: rawSlug },
-                          );
-                          const { available, suggestedSlug } = res.data;
+                          const result = await validateProductSlug(rawSlug);
+                          const resolvedSlug =
+                            result.available ? rawSlug : result.suggestedSlug || result.slug;
 
-                          if (available) {
-                            setValue("slug", rawSlug);
-                            toast.success("Slug is available!");
-                          } else if (suggestedSlug) {
-                            setValue("slug", suggestedSlug);
-                            toast.info(
-                              "Slug not available, suggested new one!",
-                            );
-                          } else {
-                            toast.error(
-                              "Slug is already taken, try editing it.",
-                            );
+                          if (!resolvedSlug) {
+                            toast.error("Slug is already taken, try editing it.");
+                            return;
                           }
-                        } catch (err) {
+
+                          lastValidatedSlug.current = resolvedSlug;
+                          setSlugValue(resolvedSlug);
+                          setValue("slug", resolvedSlug, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
+
+                          if (result.available || resolvedSlug === rawSlug) {
+                            setSlugFeedback({
+                              tone: "success",
+                              message: "Slug is available.",
+                            });
+                          } else {
+                            setSlugFeedback({
+                              tone: "info",
+                              message: `"${resolvedSlug}" was applied because the original slug was already taken.`,
+                            });
+                          }
+                        } catch {
                           toast.error("Failed to validate slug. Try again.");
                         }
                       }}
@@ -368,100 +419,26 @@ const Page = () => {
                     {errors.slug.message as string}
                   </p>
                 )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Regular Price"
-                  placeholder="200₹"
-                  {...register("regular_price", {
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Price must be at least 1" },
-                    validate: (value) =>
-                      !isNaN(value) || "Only numbers are allowed",
-                  })}
-                />
-                {errors.regular_price && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.regular_price.message as string}
+                {!errors.slug && slugFeedback && (
+                  <p
+                    className={`text-xs mt-1 ${
+                      slugFeedback.tone === "success"
+                        ? "text-green-400"
+                        : slugFeedback.tone === "error"
+                          ? "text-red-400"
+                          : "text-slate-400"
+                    }`}
+                  >
+                    {isSlugChecking ? "Checking slug availability..." : slugFeedback.message}
                   </p>
                 )}
               </div>
 
-              <div className="mt-2">
-                <Input
-                  label="Sale Price *"
-                  placeholder="15₹"
-                  {...register("sale_price", {
-                    required: "Sale Price is required",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Sale Price must be at least 1" },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Only numbers are allowed";
-                      if (regularPrice && value >= regularPrice) {
-                        return "Sale Price must be less than Regular Price";
-                      }
-                      return true;
-                    },
-                  })}
-                />
-                {errors.sale_price && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.sale_price.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <Input
-                  label="Stock *"
-                  placeholder="100"
-                  {...register("stock", {
-                    required: "Stock is required!",
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Stock must be at least 1" },
-                    max: {
-                      value: 1000,
-                      message: "Stock cannot exceed 1,000",
-                    },
-                    validate: (value) => {
-                      if (isNaN(value)) return "Only numbers are allowed!";
-                      if (!Number.isInteger(value))
-                        return "Stock must be a whole number!";
-                      return true;
-                    },
-                  })}
-                />
-                {errors.stock && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.stock.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Cash On Delivery *
-                </label>
-                <select
-                  {...register("cash_on_delivery", {
-                    required: "Cash on Delivery is required",
-                  })}
-                  defaultValue="yes"
-                  className="w-full border outline-none border-gray-700 bg-transparent p-2 rounded-md text-white"
-                >
-                  <option value="yes" className="bg-black">
-                    Yes
-                  </option>
-                  <option value="no" className="bg-black">
-                    No
-                  </option>
-                </select>
-                {errors.cash_on_delivery && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.cash_on_delivery.message as string}
-                  </p>
-                )}
+              <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-sm text-slate-300">
+                Admin creates the catalog product here. Seller-specific price,
+                sale price, stock, coupons, and availability are now managed
+                from the seller dashboard after the seller adds this catalog
+                product to their shop.
               </div>
             </div>
 
@@ -580,8 +557,11 @@ const Page = () => {
                   rules={{
                     required: "Detailed description is required!",
                     validate: (value) => {
+                      if (!value) {
+                        return "Description must be at least 1 word!";
+                      }
                       const wordCount = value
-                        ?.split(/\s+/)
+                        .split(/\s+/)
                         .filter((word: string) => word).length;
                       return (
                         wordCount >= 1 || "Description must be at least 1 word!"
@@ -590,7 +570,7 @@ const Page = () => {
                   }}
                   render={({ field }) => (
                     <RichTextEditor
-                      value={field.value}
+                      value={field.value ?? ""}
                       onChange={field.onChange}
                     />
                   )}
@@ -598,48 +578,6 @@ const Page = () => {
                 {errors.detailed_description && (
                   <p className="text-red-500 text-xs mt-1">
                     {errors.detailed_description.message as string}
-                  </p>
-                )}
-              </div>
-              <div className="mt-3">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Select Discount Codes (optional)
-                </label>
-
-                {discountLoading ? (
-                  <p className="text-gray-400">Loading discount codes...</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {discountCodes?.map((code: any) => (
-                      <button
-                        key={code.id}
-                        type="button"
-                        className={`px-3 py-1 rounded-md text-sm font-semibold border ${
-                          watch("discountCodes")?.includes(code.id)
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
-                        }`}
-                        onClick={() => {
-                          const currentSelection = watch("discountCodes") || [];
-                          const updatedSelection = currentSelection?.includes(
-                            code.id,
-                          )
-                            ? currentSelection.filter(
-                                (id: string) => id !== code.id,
-                              )
-                            : [...currentSelection, code.id];
-                          setValue("discountCodes", updatedSelection);
-                        }}
-                      >
-                        {code?.public_name} ({code.discountValue}
-                        {code.discountType === "percentage" ? "%" : "$"})
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {discountCodes?.length === 0 && !discountLoading && (
-                  <p className="text-gray-400">
-                    No Discount codes available to add!
                   </p>
                 )}
               </div>

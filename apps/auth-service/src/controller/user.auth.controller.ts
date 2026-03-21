@@ -21,8 +21,8 @@ export const sendOtpToUser = async (
   try {
     const { name, phone_number } = req.body;
 
-    if (!name || !phone_number) {
-      throw new ValidationError("Name and phone number are required");
+    if (!phone_number) {
+      throw new ValidationError("Phone number is required");
     }
 
     // Check OTP restrictions
@@ -32,7 +32,10 @@ export const sendOtpToUser = async (
     await trackOtpRequests(phone_number, next);
 
     await sendOtp("user", {
-      name,
+      name:
+        typeof name === "string" && name.trim()
+          ? name.trim()
+          : `User ${String(phone_number).slice(-4)}`,
       phone_number,
     });
 
@@ -53,10 +56,8 @@ export const verifyOtpAndLogin = async (
   try {
     const { name, phone_number, otp } = req.body;
 
-    if (!name || !phone_number) {
-      return res.status(404).json({
-        message: "Name and phone number are required",
-      });
+    if (!phone_number || !otp) {
+      return next(new ValidationError("Phone number and OTP are required"));
     }
 
     // Validate OTP
@@ -72,7 +73,10 @@ export const verifyOtpAndLogin = async (
       // New user → create account
       user = await prisma.users.create({
         data: {
-          name,
+          name:
+            typeof name === "string" && name.trim()
+              ? name.trim()
+              : `User ${String(phone_number).slice(-4)}`,
           phone_number,
         },
       });
@@ -116,6 +120,7 @@ export const refreshToken = async (
 ) => {
   try {
     const refreshToken =
+      req.cookies["admin_refresh_token"] ||
       req.cookies["refresh_token"] ||
       req.cookies["seller_refresh_token"] ||
       req.headers.authorization?.split(" ")[1];
@@ -130,13 +135,17 @@ export const refreshToken = async (
     const decode = jwt.verify(
       refreshToken,
       ENV.REFRESH_TOKEN_JWT_SECRET_KEY! as string,
-    ) as { id: string; role: string };
+    ) as { id: string; role: "admin" | "seller" | "user" };
 
     if (!decode || !decode.id || !decode.role) {
       return new JsonWebTokenError("Forbidden ! Invalid refresh token.");
     }
 
-    if (decode.role === "user") {
+    if (decode.role === "admin") {
+      await prisma.admins.findUnique({
+        where: { id: decode.id! },
+      });
+    } else if (decode.role === "user") {
       await prisma.users.findUnique({
         where: { id: decode.id! },
       });
@@ -152,7 +161,9 @@ export const refreshToken = async (
       { expiresIn: "15m" },
     );
 
-    if (decode.role === "user") {
+    if (decode.role === "admin") {
+      setCookie(res, "admin_access_token", newAccessToken);
+    } else if (decode.role === "user") {
       setCookie(res, "access_token", newAccessToken);
     } else if (decode.role === "seller") {
       setCookie(res, "seller_access_token", newAccessToken);
@@ -176,4 +187,13 @@ export const getUser = async (req: any, res: Response, next: NextFunction) => {
   } catch (error) {
     next(error);
   }
+};
+
+export const logOutUser = async (req: any, res: Response) => {
+  res.clearCookie("access_token");
+  res.clearCookie("refresh_token");
+
+  res.status(201).json({
+    success: true,
+  });
 };

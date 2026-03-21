@@ -466,11 +466,6 @@ export type storesMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type StoresScalarRelationFilter = {
-  is?: Prisma.storesWhereInput
-  isNot?: Prisma.storesWhereInput
-}
-
 export type storesCreateNestedManyWithoutAvatarInput = {
   create?: Prisma.XOR<Prisma.storesCreateWithoutAvatarInput, Prisma.storesUncheckedCreateWithoutAvatarInput> | Prisma.storesCreateWithoutAvatarInput[] | Prisma.storesUncheckedCreateWithoutAvatarInput[]
   connectOrCreate?: Prisma.storesCreateOrConnectWithoutAvatarInput | Prisma.storesCreateOrConnectWithoutAvatarInput[]
@@ -567,10 +562,12 @@ export type storesCreateNestedOneWithoutProductsInput = {
   connect?: Prisma.storesWhereUniqueInput
 }
 
-export type storesUpdateOneRequiredWithoutProductsNestedInput = {
+export type storesUpdateOneWithoutProductsNestedInput = {
   create?: Prisma.XOR<Prisma.storesCreateWithoutProductsInput, Prisma.storesUncheckedCreateWithoutProductsInput>
   connectOrCreate?: Prisma.storesCreateOrConnectWithoutProductsInput
   upsert?: Prisma.storesUpsertWithoutProductsInput
+  disconnect?: boolean
+  delete?: Prisma.storesWhereInput | boolean
   connect?: Prisma.storesWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.storesUpdateToOneWithWhereWithoutProductsInput, Prisma.storesUpdateWithoutProductsInput>, Prisma.storesUncheckedUpdateWithoutProductsInput>
 }

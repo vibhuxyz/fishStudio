@@ -1,61 +1,15 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "@/utils/axiosInstance";
-import type { BackendProduct, Product } from "@repo/types";
-
-interface ProductsResponse {
-  success: boolean;
-  products: BackendProduct[];
-}
-
-// Helper to transform Backend Data -> Frontend Data
-export const transformProduct = (bp: BackendProduct): Product => {
-  return {
-    id: bp.id,
-    name: bp.title,
-    slug: bp.slug,
-    description: bp.short_description,
-
-    // Main image
-    image: bp.images?.[0]?.url || "/placeholder.svg",
-
-    // ✅ ADD THIS LINE HERE TOO (Crucial for Detail Page)
-    images: bp.images?.map((img) => img.url) || [],
-
-    price: bp.sale_price,
-    originalPrice:
-      bp.regular_price > bp.sale_price ? bp.regular_price : undefined,
-
-    // ... rest of your fields (sizes, cuttingTypes, etc.)
-    weight: bp.sizes?.[0] || "1kg",
-    sizes: bp.sizes || [],
-    rating: bp.ratings || 0,
-    totalSold: bp.totalSold || 0,
-    subCategory: bp.subCategory,
-    category: bp.category,
-    stock: bp.stock,
-    cuttingTypes: bp.cuttingTypes || [],
-    pieceSizes: bp.pieceSizes || [],
-    processingWeightLoss: bp.processingWeightLoss,
-    isBestseller: (bp.totalSold || 0) > 50,
-    isFavorite: Array.isArray(bp.favorites) && bp.favorites.length > 0,
-  };
-};
+import {
+  fetchStorefrontProducts,
+  storefrontKeys,
+} from "@/lib/storefront";
 
 export function useProducts() {
   const query = useQuery({
-    queryKey: ["products"],
-    queryFn: async () => {
-      const res = await axiosInstance.get<ProductsResponse>(
-        "/product/api/get-all-products",
-      );
-
-      if (!res.data.products) return [];
-
-      // Transform raw backend data to UI friendly data
-      return res.data.products.map(transformProduct);
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryKey: storefrontKeys.products,
+    queryFn: () => fetchStorefrontProducts(),
+    staleTime: 1000 * 60 * 5,
   });
 
   const allProducts = query.data || [];

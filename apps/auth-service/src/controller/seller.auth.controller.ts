@@ -14,8 +14,8 @@ import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 
 export const logOutSeller = async (req: any, res: Response) => {
-  res.clearCookie("seller-access-token");
-  res.clearCookie("seller-refresh-token");
+  res.clearCookie("seller_access_token");
+  res.clearCookie("seller_refresh_token");
 
   res.status(201).json({
     success: true,
@@ -68,9 +68,17 @@ export const verifySeller = async (
   req: Request,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
-    const { email, otp, password, name, phone_number } = req.body;
+    const {
+      email,
+      otp,
+      password,
+      name,
+      phone_number,
+      shop,
+      store,
+    } = req.body;
 
     if (!email || !otp || !password || !name || !phone_number) {
       return next(new ValidationError("All fields are required"));
@@ -96,15 +104,67 @@ export const verifySeller = async (
         password: hashedPassword,
         phone_number,
       },
-      select: {
-        id: true,
+      include: {
+        store: true,
       },
     });
+
+    const incomingStore = shop || store;
+
+    if (incomingStore) {
+      const {
+        name: storeName,
+        bio,
+        address,
+        opening_hours,
+        city,
+        pincode,
+      } = incomingStore;
+
+      if (
+        storeName &&
+        bio &&
+        address &&
+        opening_hours &&
+        city &&
+        pincode
+      ) {
+        await prisma.stores.create({
+          data: {
+            name: storeName,
+            bio,
+            address,
+            opening_hours,
+            city,
+            pincode,
+            sellerId: seller.id,
+          },
+        });
+      }
+    }
+
+    const accessToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
+      { expiresIn: "15m" },
+    );
+    const refreshToken = jwt.sign(
+      { id: seller.id, role: "seller" },
+      ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
+      { expiresIn: "7d" },
+    );
+
+    setCookie(res, "seller_refresh_token", refreshToken);
+    setCookie(res, "seller_access_token", accessToken);
 
     res.status(201).json({
       success: true,
       message: "Seller registration successful!",
-      seller,
+      seller: {
+        id: seller.id,
+        name: seller.name,
+        email: seller.email,
+      },
     });
   } catch (error) {
     next(error);
@@ -235,6 +295,118 @@ export const getSeller = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+export const getAllSellersForAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sellers = await prisma.sellers.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        store: {
+          include: {
+            products: {
+              include: {
+                images: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+            storeReviews: true,
+          },
+        },
+        coupons: true,
+        banners: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      sellers: sellers.map((seller) => ({
+        ...seller,
+        totalProducts: seller.store?.products.length ?? 0,
+        totalCoupons: seller.coupons.length,
+        totalBanners: seller.banners.length,
+        totalReviews: seller.store?.storeReviews.length ?? 0,
+      })),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getSellerDetailsForAdmin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sellerId =
+      typeof req.params.sellerId === "string" ? req.params.sellerId : "";
+
+    if (!sellerId) {
+      return next(new ValidationError("Seller id is required"));
+    }
+
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      include: {
+        store: {
+          include: {
+            products: {
+              include: {
+                images: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+            storeReviews: {
+              include: {
+                user: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+            },
+          },
+        },
+        coupons: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        banners: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+      },
+    });
+
+    if (!seller) {
+      return next(new ValidationError("Seller not found"));
+    }
+
+    return res.status(200).json({
+      success: true,
+      seller: {
+        ...seller,
+        totalProducts: seller.store?.products.length ?? 0,
+        totalCoupons: seller.coupons.length,
+        totalBanners: seller.banners.length,
+        totalReviews: seller.store?.storeReviews.length ?? 0,
+      },
+    });
+  } catch (error) {
+    return next(error);
   }
 };
 

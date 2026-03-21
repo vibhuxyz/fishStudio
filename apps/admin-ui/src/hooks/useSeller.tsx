@@ -1,18 +1,13 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import axiosInstance from "../utils/axiosInstance";
-import { useAuthStore } from "../store/authStore";
-import React from "react";
-import { isProtected } from "../utils/protected";
 
-// fetch seller data from API
-const fetchSeller = async () => {
-  const response = await axiosInstance.get(
-    "/auth/api/logged-in-seller",
-    isProtected
-  );
-  return response.data.seller;
-};
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "../store/authStore";
+import {
+  adminQueryKeys,
+  fetchAdminProfile,
+  type AdminProfile,
+} from "./useAdminQueries";
 
 const useSeller = () => {
   const { setLoggedIn, isLoggedIn } = useAuthStore();
@@ -21,15 +16,14 @@ const useSeller = () => {
     data: seller,
     isPending,
     isError,
-  } = useQuery({
-    queryKey: ["seller"],
-    queryFn: fetchSeller,
+  } = useQuery<AdminProfile | null>({
+    queryKey: adminQueryKeys.account,
+    queryFn: fetchAdminProfile,
     staleTime: 1000 * 60 * 5,
     retry: false,
-    enabled: isLoggedIn, // Only run query if seller should be logged in
+    enabled: isLoggedIn,
   });
 
-  // Update auth state based on query results
   React.useEffect(() => {
     if (seller) {
       setLoggedIn(true);

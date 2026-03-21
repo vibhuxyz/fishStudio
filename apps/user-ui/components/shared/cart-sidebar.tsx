@@ -126,6 +126,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {item.cuttingType.name} | {item.pieceSize.name}
+                                {item.size ? ` | ${item.size}` : ""}
                               </p>
                             </div>
                             <button

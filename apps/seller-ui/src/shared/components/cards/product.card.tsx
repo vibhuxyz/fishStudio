@@ -3,8 +3,14 @@ import { Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { frontendEnv } from "@/config/env";
 
 const ProductCard = ({ product }: { product: any }) => {
+  const firstImageUrl =
+    Array.isArray(product?.images) && product.images.length > 0
+      ? product.images[0]?.url
+      : null;
+
   // Calculate Discount
   const regularPrice = product?.regular_price || 0;
   const salePrice = product?.sale_price || 0;
@@ -25,19 +31,19 @@ const ProductCard = ({ product }: { product: any }) => {
     <div className="w-full min-h-[350px] p-3 bg-slate-700 rounded-lg shadow-md hover:shadow-lg transition duration-300">
       {/* Product Image */}
       <Link
-        href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${product?.slug}`}
+        href={`${frontendEnv.userUiUrl}/product/${product?.slug}`}
         className="block"
       >
         <div className="relative w-full h-[200px] rounded-md overflow-hidden">
           <Image
             src={
-              product?.images[0].url ||
+              firstImageUrl ||
               "https://ik.imagekit.io/fz0xzwtey/products/product-1741207782553-0_-RWfpGzfHt.jpg"
             }
             width={450}
             height={420}
             layout="intrinsic"
-            alt={product?.title}
+            alt={product?.title || "Product image"}
             className="hover:scale-105 transition duration-300 bg-black"
           />
         </div>
@@ -47,7 +53,7 @@ const ProductCard = ({ product }: { product: any }) => {
       <div className="mt-3">
         {/* Product Title */}
         <Link
-          href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${product?.slug}`}
+          href={`${frontendEnv.userUiUrl}/product/${product?.slug}`}
           className="block mt-1"
         >
           <h3 className="text-md font-semibold text-white truncate">
@@ -97,7 +103,7 @@ const ProductCard = ({ product }: { product: any }) => {
 
         {/* View Details Button */}
         <Link
-          href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${product?.slug}`}
+          href={`${frontendEnv.userUiUrl}/product/${product?.slug}`}
           className="mt-3 block bg-blue-600 text-center text-white py-2 rounded-md hover:bg-blue-700 transition"
         >
           View Details

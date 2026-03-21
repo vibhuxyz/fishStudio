@@ -29,8 +29,8 @@ export * from "./enums.js"
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more Images
- * const images = await prisma.images.findMany()
+ * // Fetch zero or more Admins
+ * const admins = await prisma.admins.findMany()
  * ```
  * 
  * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
@@ -52,6 +52,11 @@ path.join(process.cwd(), "src/generated/libquery_engine-linux-musl-arm64-openssl
 path.join(__dirname, "libquery_engine-linux-musl-openssl-3.0.x.so.node")
 path.join(process.cwd(), "src/generated/libquery_engine-linux-musl-openssl-3.0.x.so.node")
 
+/**
+ * Model admins
+ * 
+ */
+export type admins = Prisma.adminsModel
 /**
  * Model images
  * 
@@ -102,3 +107,8 @@ export type products = Prisma.productsModel
  * 
  */
 export type banners = Prisma.bannersModel
+/**
+ * Model seller_events
+ * 
+ */
+export type seller_events = Prisma.seller_eventsModel

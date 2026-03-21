@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { frontendEnv } from "@/config/env";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -23,7 +24,7 @@ export const WebSocketProvider = ({
   useEffect(() => {
     if (!seller?.id) return;
 
-    const ws = new WebSocket(process.env.NEXT_PUBLIC_CHATTING_WEBSOCKET_URI!);
+    const ws = new WebSocket(frontendEnv.chatWebsocketUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {

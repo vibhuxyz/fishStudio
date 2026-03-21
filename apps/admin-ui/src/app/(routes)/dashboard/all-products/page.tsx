@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useMemo, useState } from "react";
 import {
   useReactTable,
@@ -6,60 +7,56 @@ import {
   getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Search, Trash, Eye, Plus, BarChart, Star } from "lucide-react";
+import { Eye, Plus, BarChart, Pencil, RotateCcw, Star, Trash } from "lucide-react";
 import Link from "next/link";
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-
-import axiosInstance from "@/utils/axiosInstance";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
-import BreadCrumbs from "@/shared/components/breadcrumbs";
+import EditProductModal from "@/shared/components/modals/edit-product.modal";
 import AnalyticsModal from "@/shared/components/modals/analytics.modal";
-
-const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-all-products");
-  const products = res.data.products?.filter((i: any) => !i.starting_date);
-  return products;
-};
-
-const deleteProduct = async (productId: string) => {
-  await axiosInstance.delete(`/product/api/delete-product/${productId}`);
-};
-
-const restoreProduct = async (productId: string) => {
-  await axiosInstance.put(`/product/api/restore-product/${productId}`);
-};
+import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import {
+  adminQueryKeys,
+  deleteAdminProduct,
+  restoreAdminProduct,
+  type AdminProduct,
+  updateAdminProduct,
+  useAdminProducts,
+} from "@/hooks/useAdminQueries";
+import { frontendEnv } from "@/config/env";
 
 const ProductList = () => {
-  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState<AdminProduct | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["shop-products"],
-    queryFn: fetchProducts,
-    staleTime: 1000 * 60 * 5,
-  });
+  const { data: products = [], isLoading } = useAdminProducts();
 
-  // Delete Product Mutation
   const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
+    mutationFn: deleteAdminProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.products });
       setShowDeleteModal(false);
     },
   });
 
-  // Restore Product Mutation
   const restoreMutation = useMutation({
-    mutationFn: restoreProduct,
+    mutationFn: restoreAdminProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.products });
       setShowDeleteModal(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: updateAdminProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.products });
+      setShowEditModal(false);
     },
   });
 
@@ -68,13 +65,14 @@ const ProductList = () => {
       {
         accessorKey: "image",
         header: "Image",
-        cell: ({ row }: any) => {
+        cell: ({ row }: { row: { original: AdminProduct } }) => {
+          const imageUrl = row.original.images?.[0]?.url || "/file.svg";
           return (
             <Image
-              src={row.original.images[0]?.url}
-              alt={row.original.images[0]?.url}
-              width={200}
-              height={200}
+              src={imageUrl}
+              alt={row.original.title}
+              width={48}
+              height={48}
               className="w-12 h-12 rounded-md object-cover"
             />
           );
@@ -83,7 +81,7 @@ const ProductList = () => {
       {
         accessorKey: "name",
         header: "Product Name",
-        cell: ({ row }: any) => {
+        cell: ({ row }: { row: { original: AdminProduct } }) => {
           const truncatedTitle =
             row.original.title.length > 25
               ? `${row.original.title.substring(0, 25)}...`
@@ -91,7 +89,7 @@ const ProductList = () => {
 
           return (
             <Link
-              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
+              href={`${frontendEnv.userUiUrl}/product/${row.original.slug}`}
               className="text-blue-400 hover:underline"
               title={row.original.title}
             >
@@ -103,15 +101,15 @@ const ProductList = () => {
       {
         accessorKey: "price",
         header: "Price",
-        cell: ({ row }: any) => <span>₹{row.original.sale_price}</span>,
+        cell: ({ row }: { row: { original: AdminProduct } }) => (
+          <span>₹{row.original.sale_price}</span>
+        ),
       },
       {
         accessorKey: "stock",
         header: "Stock",
-        cell: ({ row }: any) => (
-          <span
-            className={row.original.stock < 10 ? "text-red-500" : "text-white"}
-          >
+        cell: ({ row }: { row: { original: AdminProduct } }) => (
+          <span className={row.original.stock < 10 ? "text-red-500" : "text-white"}>
             {row.original.stock} left
           </span>
         ),
@@ -123,34 +121,57 @@ const ProductList = () => {
       {
         accessorKey: "rating",
         header: "Rating",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: AdminProduct } }) => (
           <div className="flex items-center gap-1 text-yellow-400">
-            <Star fill="#fde047" size={18} />{" "}
+            <Star fill="#fde047" size={18} />
             <span className="text-white">{row.original.ratings || 5}</span>
           </div>
         ),
       },
       {
         header: "Actions",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: AdminProduct } }) => (
           <div className="flex gap-3">
             <Link
-              href={`${process.env.NEXT_PUBLIC_USER_UI_LINK}/product/${row.original.slug}`}
+              href={`${frontendEnv.userUiUrl}/product/${row.original.slug}`}
               className="text-blue-400 hover:text-blue-300 transition"
             >
               <Eye size={18} />
             </Link>
             <button
+              className="text-purple-400 hover:text-purple-300 transition"
+              onClick={() => {
+                setSelectedProduct(row.original);
+                setShowEditModal(true);
+              }}
+            >
+              <Pencil size={18} />
+            </button>
+            <button
               className="text-green-400 hover:text-green-300 transition"
-              onClick={() => openAnalytics(row.original)}
+              onClick={() => {
+                setAnalyticsData(row.original);
+                setShowAnalytics(true);
+              }}
             >
               <BarChart size={18} />
             </button>
             <button
-              className="text-red-400 hover:text-red-300 transition cursor-pointer"
-              onClick={() => openDeleteModal(row.original)}
+              className={`transition cursor-pointer ${
+                row.original.isDeleted
+                  ? "text-emerald-400 hover:text-emerald-300"
+                  : "text-red-400 hover:text-red-300"
+              }`}
+              onClick={() => {
+                setSelectedProduct(row.original);
+                setShowDeleteModal(true);
+              }}
             >
-              <Trash size={18} />
+              {row.original.isDeleted ? (
+                <RotateCcw size={18} />
+              ) : (
+                <Trash size={18} />
+              )}
             </button>
           </div>
         ),
@@ -169,48 +190,25 @@ const ProductList = () => {
     onGlobalFilterChange: setGlobalFilter,
   });
 
-  // Handle Opening Analytics Modal
-  const openAnalytics = (product: any) => {
-    setAnalyticsData(product);
-    setShowAnalytics(true);
-  };
-
-  const openDeleteModal = (product: any) => {
-    setSelectedProduct(product);
-    setShowDeleteModal(true);
-  };
-
   return (
-    <div className="w-full min-h-screen p-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-1">
-        <h2 className="text-2xl text-white font-semibold">All Products</h2>
+    <DashboardPageShell
+      title="All Products"
+      breadcrumbTitle="All Products"
+      description="Products, analytics, and destructive actions now share one source of truth for cache invalidation."
+      action={
         <Link
           href="/dashboard/create-product"
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus size={18} /> Add Product
         </Link>
-      </div>
-
-      {/* Breadcrumbs */}
-      <div className="mb-2">
-        <BreadCrumbs title="All Products" />
-      </div>
-
-      {/* Search Bar */}
-      <div className="mb-4 flex items-center bg-gray-900 p-2 rounded-md flex-1">
-        <Search size={18} className="text-gray-400 mr-2" />
-        <input
-          type="text"
-          placeholder="Search products..."
-          className="w-full bg-transparent text-white outline-none"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
-      </div>
-
-      {/* Table */}
+      }
+      search={{
+        value: globalFilter,
+        onChange: setGlobalFilter,
+        placeholder: "Search products...",
+      }}
+    >
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
         {isLoading ? (
           <p className="text-center text-white">Loading products...</p>
@@ -240,10 +238,7 @@ const ProductList = () => {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -252,28 +247,36 @@ const ProductList = () => {
           </table>
         )}
 
-        {!isLoading && products?.length === 0 && (
-          <p className="text-center py-3 text-white">No products found!</p>
+        {!isLoading && products.length === 0 && (
+          <p className="text-center py-3 text-white">No products found.</p>
         )}
 
-        {/* Analytics Modal */}
-        {showAnalytics && (
+        {showAnalytics && analyticsData && (
           <AnalyticsModal
             product={analyticsData}
             onClose={() => setShowAnalytics(false)}
           />
         )}
 
-        {showDeleteModal && (
+        {showDeleteModal && selectedProduct && (
           <DeleteConfirmationModal
             product={selectedProduct}
             onClose={() => setShowDeleteModal(false)}
-            onConfirm={() => deleteMutation.mutate(selectedProduct?.id)}
-            onRestore={() => restoreMutation.mutate(selectedProduct?.id)}
+            onConfirm={() => deleteMutation.mutate(selectedProduct.id)}
+            onRestore={() => restoreMutation.mutate(selectedProduct.id)}
+          />
+        )}
+
+        {showEditModal && selectedProduct && (
+          <EditProductModal
+            product={selectedProduct}
+            isSaving={updateMutation.isPending}
+            onClose={() => setShowEditModal(false)}
+            onSave={(values) => updateMutation.mutate(values)}
           />
         )}
       </div>
-    </div>
+    </DashboardPageShell>
   );
 };
 

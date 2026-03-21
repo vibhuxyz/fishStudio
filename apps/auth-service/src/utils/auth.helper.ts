@@ -7,7 +7,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const validateRegistrationData = (
   data: any,
-  userType: "user" | "seller",
+  userType: "admin" | "user" | "seller",
 ) => {
   // Implement validation logic based on userType
   const { name, email, password, phone_number } = data;
@@ -68,7 +68,7 @@ export const trackOtpRequests = async (
 };
 
 export const sendOtp = async (
-  userType: "user" | "seller",
+  userType: "admin" | "user" | "seller",
   data: {
     name: string;
     email?: string;
@@ -79,7 +79,7 @@ export const sendOtp = async (
   const otp = crypto.randomInt(1000, 9999).toString();
   //send otp email logic here
 
-  let identifier = userType === "user" ? data.phone_number : data.email;
+  const identifier = userType === "user" ? data.phone_number : data.email;
 
   try {
     await redis.set(`otp:${identifier}`, otp, "EX", 5 * 60);

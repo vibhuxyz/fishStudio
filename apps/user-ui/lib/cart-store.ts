@@ -1,6 +1,30 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CartItem, Product, CuttingType, PieceSize } from "./types";
+import type { Product } from "@repo/types";
+
+type CuttingType = {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+};
+
+type PieceSize = {
+  id: string;
+  name: string;
+  range?: string;
+  description?: string;
+  useCase?: string;
+};
+
+type CartItem = {
+  product: Product;
+  quantity: number;
+  cuttingType: CuttingType;
+  pieceSize: PieceSize;
+  size: string;
+  totalPayable: number;
+};
 
 interface CartState {
   items: CartItem[];
@@ -38,18 +62,38 @@ const DEFAULT_PIECE_SIZE: PieceSize = {
 
 const DEFAULT_SIZE = "500 gm - 1 Kg";
 
+const normalizeOption = (
+  option: CuttingType | PieceSize | string,
+  fallbackId: string,
+) => {
+  if (typeof option === "string") {
+    return {
+      id: option.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      name: option,
+    };
+  }
+
+  return {
+    id: option.id || fallbackId,
+    name: option.name || fallbackId,
+    ...option,
+  };
+};
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
 
       addItem: (product, quantity, cuttingType, pieceSize, size) => {
+    const normalizedCuttingType = normalizeOption(cuttingType, "cutting-type");
+    const normalizedPieceSize = normalizeOption(pieceSize, "piece-size");
     set((state) => {
       const existingIndex = state.items.findIndex(
         (item) =>
           item.product.id === product.id &&
-          item.cuttingType.id === cuttingType.id &&
-          item.pieceSize.id === pieceSize.id &&
+          item.cuttingType.id === normalizedCuttingType.id &&
+          item.pieceSize.id === normalizedPieceSize.id &&
           item.size === size
       );
 
@@ -71,8 +115,8 @@ export const useCartStore = create<CartState>()(
           {
             product,
             quantity,
-            cuttingType,
-            pieceSize,
+            cuttingType: normalizedCuttingType,
+            pieceSize: normalizedPieceSize,
             size,
             totalPayable: quantity * product.price,
           },
@@ -155,8 +199,8 @@ export const useCartStore = create<CartState>()(
 export function addToCart(
   product: Product,
   quantity: number,
-  cuttingType: CuttingType,
-  pieceSize: PieceSize,
+  cuttingType: CuttingType | string,
+  pieceSize: PieceSize | string,
   size: string
 ) {
   useCartStore.getState().addItem(product, quantity, cuttingType, pieceSize, size);

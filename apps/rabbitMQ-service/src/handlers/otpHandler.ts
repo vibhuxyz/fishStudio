@@ -18,8 +18,8 @@ export async function handleOtpMessage(data: OtpMessage): Promise<void> {
       console.log(`📱 DEV otp for ${userType} : ${otp}`);
     }
   }
-  // Handle seller OTP (email)
-  else if (userType === "seller" && email && template) {
+  // Handle seller/admin OTP (email)
+  else if ((userType === "seller" || userType === "admin") && email && template) {
     await sendEmail(email, "Verify your Email", template, {
       name,
       otp,
@@ -35,5 +35,4 @@ export async function handleOtpMessage(data: OtpMessage): Promise<void> {
     otp,
   );
 }
-
 

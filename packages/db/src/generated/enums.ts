@@ -25,3 +25,12 @@ export const productStatus = {
 } as const
 
 export type productStatus = (typeof productStatus)[keyof typeof productStatus]
+
+
+export const sellerEventType = {
+  FREE_DELIVERY: 'FREE_DELIVERY',
+  DISCOUNT: 'DISCOUNT',
+  FLASH_SALE: 'FLASH_SALE'
+} as const
+
+export type sellerEventType = (typeof sellerEventType)[keyof typeof sellerEventType]

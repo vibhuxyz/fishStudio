@@ -3,8 +3,9 @@ import "./jobs/product.cron.jobs.js"
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
+import { ENV } from "@repo/env-config";
 
-const port = 6002;
+const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6002;
 
 const app = express();
 

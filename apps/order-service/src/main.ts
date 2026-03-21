@@ -3,13 +3,16 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import { errorMiddleware } from "@repo/error-handlers/error-middleware";
+import { ENV } from "@repo/env-config";
 import router from "./routes/order.route";
 import { createOrder } from "./controllers/order.controller";
 
 const app = express();
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: ENV.CORS_ORIGINS
+      ? ENV.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+      : ["http://localhost:3000"],
     allowedHeaders: ["Authorization", "Content-Type"],
     credentials: true,
   }),
@@ -37,7 +40,7 @@ app.use("/api", router);
 
 app.use(errorMiddleware);
 
-const port = process.env.PORT || 6004;
+const port = Number(ENV.ORDER_SERVICE_PORT) || 6004;
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}/api`);
 });

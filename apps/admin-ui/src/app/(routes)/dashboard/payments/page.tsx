@@ -7,34 +7,21 @@ import {
   getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Search, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-
+import { Eye } from "lucide-react";
 import Link from "next/link";
-
-import axiosInstance from "@/utils/axiosInstance";
-import BreadCrumbs from "@/shared/components/breadcrumbs";
-
-const fetchOrders = async () => {
-  const res = await axiosInstance.get("/order/api/get-seller-orders");
-  return res.data.orders;
-};
+import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import { type SellerOrder, useSellerOrders } from "@/hooks/useAdminQueries";
 
 const SellerPayments = () => {
   const [globalFilter, setGlobalFilter] = useState("");
-
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["seller-orders"],
-    queryFn: fetchOrders,
-    staleTime: 1000 * 60 * 5,
-  });
+  const { data: orders = [], isLoading } = useSellerOrders();
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "id",
         header: "Order ID",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-sm">
             #{row.original.id.slice(-6).toUpperCase()}
           </span>
@@ -43,16 +30,14 @@ const SellerPayments = () => {
       {
         accessorKey: "user.name",
         header: "Buyer",
-        cell: ({ row }: any) => (
-          <span className="text-white">
-            {row.original.user?.name || "Guest"}
-          </span>
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-white">{row.original.user?.name || "Guest"}</span>
         ),
       },
       {
         header: "Seller Earning",
-        cell: ({ row }: any) => {
-          const sellerShare = row.original.total * 0.9;
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const sellerShare = Number(row.original.total ?? 0) * 0.9;
           return (
             <span className="text-green-400 font-medium">
               ${sellerShare.toFixed(2)}
@@ -62,17 +47,15 @@ const SellerPayments = () => {
       },
       {
         header: "Admin Fee",
-        cell: ({ row }: any) => {
-          const adminFee = row.original.total * 0.1;
-          return (
-            <span className="text-yellow-400">${adminFee.toFixed(2)}</span>
-          );
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const adminFee = Number(row.original.total ?? 0) * 0.1;
+          return <span className="text-yellow-400">${adminFee.toFixed(2)}</span>;
         },
       },
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium ${
               row.original.status === "Paid"
@@ -87,14 +70,15 @@ const SellerPayments = () => {
       {
         accessorKey: "createdAt",
         header: "Date",
-        cell: ({ row }: any) => {
-          const date = new Date(row.original.createdAt).toLocaleDateString();
-          return <span className="text-white text-sm">{date}</span>;
-        },
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-white text-sm">
+            {new Date(row.original.createdAt).toLocaleDateString()}
+          </span>
+        ),
       },
       {
         header: "Actions",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <Link
             href={`/order/${row.original.id}`}
             className="text-blue-400 hover:text-blue-300 transition"
@@ -118,21 +102,16 @@ const SellerPayments = () => {
   });
 
   return (
-    <div className="w-full min-h-screen p-8">
-      <h2 className="text-2xl text-white font-semibold mb-2">Payments</h2>
-      <BreadCrumbs title="Payments" />
-
-      <div className="my-4 flex items-center bg-gray-900 p-2 rounded-md flex-1">
-        <Search size={18} className="text-gray-400 mr-2" />
-        <input
-          type="text"
-          placeholder="Search payments..."
-          className="w-full bg-transparent text-white outline-none"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-        />
-      </div>
-
+    <DashboardPageShell
+      title="Payments"
+      breadcrumbTitle="Payments"
+      description="Reuse the shared orders query instead of hitting the backend again for payment reporting."
+      search={{
+        value: globalFilter,
+        onChange: setGlobalFilter,
+        placeholder: "Search payments...",
+      }}
+    >
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
         {isLoading ? (
           <p className="text-center text-white">Loading payments...</p>
@@ -160,10 +139,7 @@ const SellerPayments = () => {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="p-3">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
@@ -171,8 +147,12 @@ const SellerPayments = () => {
             </tbody>
           </table>
         )}
+
+        {!isLoading && orders.length === 0 && (
+          <p className="text-center py-3 text-white">No payments found.</p>
+        )}
       </div>
-    </div>
+    </DashboardPageShell>
   );
 };
 
