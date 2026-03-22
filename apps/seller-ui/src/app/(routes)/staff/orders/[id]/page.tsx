@@ -1,334 +1,289 @@
-"use client";
-
 import React, { useState } from "react";
-import { ArrowLeft, CheckCircle, XCircle, Package, MapPin, User, CreditCard } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, MapPin, User, CreditCard, Phone, Copy, AlertCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
-
-// TODO: replace mock fetch with real API once backend is ready:
-// const fetchOrder = async (id: string) => {
-//   const res = await axiosInstance.get(`/order/api/get-order-details/${id}`);
-//   return res.data.order;
-// };
-// const handleAction = async (orderId, action, rejectionReason?) => {
-//   return axiosInstance.put(`/order/api/accept-reject/${orderId}`, { action, rejectionReason });
-// };
 
 const StaffOrderDetailPage = () => {
   const params = useParams();
   const orderId = params.id as string;
   const router = useRouter();
+  const [copied, setCopied] = useState<string | null>(null);
 
   // Mock: find order from mock list
   const [order, setOrder] = useState<any>(() =>
     MOCK_ORDERS.find((o) => o.id === orderId) ?? null,
   );
 
-  const [actionLoading, setActionLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [reasonError, setReasonError] = useState("");
-  const [actionResult, setActionResult] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
 
-  const handleAccept = async () => {
-    setActionLoading(true);
-    setActionResult(null);
-    // TODO: replace with real API call
-    await new Promise((r) => setTimeout(r, 600));
-    setOrder((prev: any) => ({ ...prev, status: "Accepted", rejectionReason: null }));
-    setActionResult({ type: "success", message: "Order accepted successfully" });
-    setActionLoading(false);
+  const formatINR = (amount: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!rejectionReason.trim()) {
-      setReasonError("Please enter a rejection reason before submitting.");
+      setReasonError("Please enter a rejection reason.");
       return;
     }
-    setActionLoading(true);
-    setActionResult(null);
-    // TODO: replace with real API call
-    await new Promise((r) => setTimeout(r, 600));
     setOrder((prev: any) => ({
       ...prev,
       status: "Rejected",
       rejectionReason: rejectionReason.trim(),
       refundStatus: "Refunded",
     }));
-    setActionResult({ type: "success", message: "Order rejected and refund initiated" });
     setShowRejectModal(false);
     setRejectionReason("");
-    setActionLoading(false);
   };
 
   if (!order) {
     return (
-      <p className="text-center text-sm text-red-400 mt-20">
-        Order not found.
-      </p>
+      <p className="text-center text-sm text-red-400 mt-20">Order not found.</p>
     );
   }
 
-  const isActionable =
-    order.status !== "Accepted" && order.status !== "Rejected";
-
+  const isActionable = order.status !== "Processing" && order.status !== "Rejected" && order.status !== "Completed";
   const statusColorMap: Record<string, string> = {
-    Paid: "bg-blue-500/20 text-blue-300 border-blue-700",
-    Accepted: "bg-green-500/20 text-green-300 border-green-700",
+    New: "bg-amber-500/20 text-amber-300 border-amber-700",
+    Processing: "bg-blue-500/20 text-blue-300 border-blue-700",
+    Ready: "bg-teal-500/20 text-teal-300 border-teal-700",
+    Completed: "bg-green-500/20 text-green-300 border-green-700",
     Rejected: "bg-red-500/20 text-red-300 border-red-700",
-    Pending: "bg-yellow-500/20 text-yellow-300 border-yellow-700",
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="w-full min-h-screen bg-[#080b12] p-6">
       {/* Back */}
       <button
-        type="button"
+        onClick={() => router.back()}
         className="text-gray-400 hover:text-white flex items-center gap-2 text-sm mb-6 transition"
-        onClick={() => router.push("/staff/orders")}
       >
-        <ArrowLeft size={18} />
-        Back to Orders
+        <ArrowLeft size={18} /> Back to Orders
       </button>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            Order #{order.id.slice(-6).toUpperCase()}
-          </h1>
+          <h1 className="text-3xl font-bold text-white">Order #{order.id.slice(-6).toUpperCase()}</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Placed on {new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
-        <span
-          className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
-            statusColorMap[order.status] ?? "bg-gray-500/20 text-gray-300 border-gray-600"
-          }`}
-        >
+        <span className={`px-4 py-2 rounded-full text-sm font-bold border ${statusColorMap[order.status]}`}>
           {order.status}
         </span>
       </div>
 
-      {/* Status banners */}
-      {order.status === "Accepted" && (
-        <div className="flex items-center gap-3 bg-green-900/30 border border-green-700 rounded-xl px-5 py-4 mb-6">
-          <CheckCircle className="text-green-400 shrink-0" size={22} />
-          <div>
-            <p className="text-green-300 font-semibold">Order Accepted</p>
-            <p className="text-green-400 text-sm">This order has been confirmed and is being processed.</p>
-          </div>
-        </div>
-      )}
-      {order.status === "Rejected" && (
-        <div className="bg-red-900/30 border border-red-700 rounded-xl px-5 py-4 mb-6 space-y-1">
-          <div className="flex items-center gap-3">
-            <XCircle className="text-red-400 shrink-0" size={22} />
-            <p className="text-red-300 font-semibold">Order Rejected</p>
-          </div>
-          {order.rejectionReason && (
-            <p className="text-red-200 text-sm ml-9">
-              Reason shown to customer:{" "}
-              <span className="italic">{order.rejectionReason}</span>
-            </p>
-          )}
-          {order.refundStatus && (
-            <p className="text-green-300 text-sm ml-9">
-              Refund Status:{" "}
-              <span className="font-semibold">{order.refundStatus}</span>
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Action feedback */}
-      {actionResult && (
-        <div
-          className={`mb-6 px-5 py-3 rounded-xl text-sm font-medium border ${
-            actionResult.type === "success"
-              ? "bg-green-900/30 border-green-700 text-green-300"
-              : "bg-red-900/30 border-red-700 text-red-300"
-          }`}
-        >
-          {actionResult.message}
-        </div>
-      )}
-
-      {/* Accept / Reject buttons */}
+      {/* Action buttons */}
       {isActionable && (
-        <div className="flex items-center gap-3 mb-8">
+        <div className="flex items-center gap-3 mb-6">
           <button
-            type="button"
-            onClick={handleAccept}
-            disabled={actionLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg font-medium transition"
+            onClick={() => setOrder(prev => ({ ...prev, status: "Processing" }))}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
           >
-            <CheckCircle size={17} />
-            {actionLoading ? "Processing..." : "Accept Order"}
+            <CheckCircle size={18} />
+            Mark Processing
           </button>
           <button
-            type="button"
             onClick={() => setShowRejectModal(true)}
-            disabled={actionLoading}
-            className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg font-medium transition"
+            className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
           >
-            <XCircle size={17} />
+            <XCircle size={18} />
             Reject Order
           </button>
         </div>
       )}
 
-      {/* Info grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Customer */}
-        <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <User size={16} className="text-gray-400" />
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Customer</h3>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Customer Info */}
+        <div className="bg-[#0f1117] border border-gray-800 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <User size={18} className="text-gray-400" />
+            <h2 className="text-lg font-bold text-white">Customer Info</h2>
           </div>
-          <p className="text-white font-medium">{order.user?.name}</p>
-          <p className="text-gray-400 text-sm">{order.user?.email}</p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wide">Name</p>
+              <p className="text-white font-medium">{order.user?.name}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wide">Email</p>
+              <p className="text-white text-sm">{order.user?.email}</p>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Phone</p>
+                <button
+                  onClick={() => copyToClipboard(order.user?.phone, "phone")}
+                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
+                >
+                  <Copy size={12} />
+                  {copied === "phone" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="text-white text-sm font-mono">{order.user?.phone}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Shipping */}
-        {order.shippingAddress && (
-          <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin size={16} className="text-gray-400" />
-              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Shipping</h3>
+        {/* Shipping Address */}
+        <div className="bg-[#0f1117] border border-gray-800 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin size={18} className="text-gray-400" />
+            <h2 className="text-lg font-bold text-white">Delivery Address</h2>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wide">Name</p>
+              <p className="text-white font-medium">{order.shippingAddress?.name}</p>
             </div>
-            <p className="text-white font-medium">{order.shippingAddress.name}</p>
-            <p className="text-gray-400 text-sm">{order.shippingAddress.street}</p>
-            <p className="text-gray-400 text-sm">
-              {order.shippingAddress.city}, {order.shippingAddress.zip}
-            </p>
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wide">Address</p>
+              <p className="text-white text-sm">{order.shippingAddress?.street}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-gray-400 text-xs uppercase tracking-wide">City</p>
+                <p className="text-white text-sm">{order.shippingAddress?.city}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-xs uppercase tracking-wide">State</p>
+                <p className="text-white text-sm">{order.shippingAddress?.state}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wide">Pincode</p>
+              <div className="flex items-center justify-between">
+                <p className="text-white font-mono">{order.shippingAddress?.zip}</p>
+                <button
+                  onClick={() => copyToClipboard(order.shippingAddress?.zip, "zip")}
+                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
+                >
+                  <Copy size={12} />
+                  {copied === "zip" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Payment summary */}
-        <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CreditCard size={16} className="text-gray-400" />
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Payment</h3>
+        {/* Payment Summary */}
+        <div className="bg-[#0f1117] border border-gray-800 rounded-2xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard size={18} className="text-gray-400" />
+            <h2 className="text-lg font-bold text-white">Payment Summary</h2>
           </div>
-          <p className="text-white font-semibold text-lg">${order.total.toFixed(2)}</p>
-          <p className="text-gray-400 text-sm">Status: {order.status}</p>
-          {order.refundStatus && (
-            <p className="text-green-400 text-sm">Refund: {order.refundStatus}</p>
-          )}
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-400">Subtotal</span>
+              <span className="text-white">{formatINR(order.total * 0.9)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Delivery</span>
+              <span className="text-white">₹0</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>Tax</span>
+              <span>{formatINR(order.total * 0.1)}</span>
+            </div>
+            <div className="border-t border-gray-700 pt-3 flex justify-between">
+              <span className="text-gray-300 font-semibold">Total Amount</span>
+              <span className="text-white font-bold text-xl">{formatINR(order.total)}</span>
+            </div>
+            {order.refundStatus && (
+              <div className="bg-green-600/20 border border-green-700 rounded-lg p-2">
+                <p className="text-green-300 text-xs font-medium">Refund Status: {order.refundStatus}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Order items */}
-      <div className="bg-[#111827] border border-gray-800 rounded-xl p-5">
+      {/* Order Items */}
+      <div className="bg-[#0f1117] border border-gray-800 rounded-2xl p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Package size={18} className="text-gray-400" />
-          <h2 className="text-base font-semibold text-white">
-            Order Items ({order.items.length})
-          </h2>
+          <h2 className="text-lg font-bold text-white">Order Items ({order.items.length})</h2>
         </div>
         <div className="space-y-3">
           {order.items.map((item: any) => (
-            <div
-              key={item.productId}
-              className="flex items-center gap-4 bg-[#0d1117] border border-gray-800 rounded-lg p-4"
-            >
+            <div key={item.productId} className="flex items-center gap-4 bg-[#080b12] rounded-xl p-4 border border-gray-800">
               <img
                 src={item.product?.images?.[0]?.url ?? "/placeholder.png"}
-                alt={item.product?.title ?? "Product"}
+                alt={item.product?.title}
                 crossOrigin="anonymous"
-                className="w-14 h-14 object-cover rounded-lg border border-gray-700 shrink-0"
+                className="w-16 h-16 object-cover rounded-lg border border-gray-700 shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-white truncate">
-                  {item.product?.title ?? "Unnamed Product"}
-                </p>
-                <p className="text-sm text-gray-400">Qty: {item.quantity}</p>
-                {item.selectedOptions &&
-                  Object.keys(item.selectedOptions).length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {Object.entries(item.selectedOptions).map(
-                        ([key, value]: [string, any]) =>
-                          value ? (
-                            <span
-                              key={key}
-                              className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full"
-                            >
-                              {key}: {value}
-                            </span>
-                          ) : null,
-                      )}
-                    </div>
-                  )}
+                <p className="font-semibold text-white">{item.product?.title}</p>
+                <p className="text-gray-400 text-sm">Quantity: {item.quantity} {item.unit}</p>
+                {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {Object.entries(item.selectedOptions).map(([k, v]: [string, any]) =>
+                      v ? (
+                        <span key={k} className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded-full">
+                          {k}: {v}
+                        </span>
+                      ) : null
+                    )}
+                  </div>
+                )}
               </div>
-              <p className="text-white font-semibold shrink-0">
-                ${item.price.toFixed(2)}
-              </p>
+              <div className="text-right shrink-0">
+                <p className="text-white font-bold">{formatINR(item.price * item.quantity)}</p>
+                <p className="text-gray-400 text-xs">{formatINR(item.price)}/{item.unit}</p>
+              </div>
             </div>
           ))}
         </div>
-
-        {/* Total row */}
-        <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between items-center">
-          <span className="text-gray-400 font-medium">Order Total</span>
-          <span className="text-white font-bold text-lg">${order.total.toFixed(2)}</span>
-        </div>
       </div>
+
+      {/* Rejection reason if rejected */}
+      {order.status === "Rejected" && order.rejectionReason && (
+        <div className="bg-red-900/20 border border-red-700 rounded-2xl p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={20} className="text-red-400 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-red-300 font-semibold mb-1">Rejection Reason</h3>
+              <p className="text-red-200 text-sm">{order.rejectionReason}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm">
-          <div className="bg-[#111827] border border-gray-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-600/20 rounded-full flex items-center justify-center">
-                <XCircle className="text-red-400" size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">Reject Order</h3>
-                <p className="text-gray-400 text-sm">Order #{order.id.slice(-6).toUpperCase()}</p>
-              </div>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              You must provide a reason. This will be shown to the customer and an automatic refund will be issued.
-            </p>
-            <label className="block text-sm text-gray-300 mb-1.5 font-medium">
-              Rejection Reason <span className="text-red-400">*</span>
-            </label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-[#0f1117] border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Reject Order #{order.id.slice(-6).toUpperCase()}</h3>
+            <p className="text-gray-400 text-sm mb-4">Provide reason for rejection (will be shown to customer with refund):</p>
             <textarea
               rows={4}
               value={rejectionReason}
-              onChange={(e) => {
-                setRejectionReason(e.target.value);
-                setReasonError("");
-              }}
-              placeholder="e.g. Item is currently out of stock, unable to fulfil your order..."
-              className="w-full p-3 bg-[#0d1117] text-white border border-gray-700 rounded-xl resize-none outline-none focus:border-red-500 transition text-sm"
+              onChange={(e) => { setRejectionReason(e.target.value); setReasonError(""); }}
+              placeholder="e.g. Item out of stock, unable to fulfill..."
+              className="w-full p-3 bg-[#080b12] text-white border border-gray-700 rounded-lg resize-none outline-none focus:border-red-500 transition"
             />
-            {reasonError && (
-              <p className="text-red-400 text-xs mt-1">{reasonError}</p>
-            )}
-            <div className="flex gap-3 mt-5">
+            {reasonError && <p className="text-red-400 text-xs mt-1">{reasonError}</p>}
+            <div className="flex gap-3 mt-4">
               <button
-                type="button"
-                onClick={() => {
-                  setShowRejectModal(false);
-                  setRejectionReason("");
-                  setReasonError("");
-                }}
-                className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition text-sm"
+                onClick={() => { setShowRejectModal(false); setRejectionReason(""); setReasonError(""); }}
+                className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-800 transition"
               >
                 Cancel
               </button>
               <button
-                type="button"
                 onClick={handleReject}
-                disabled={actionLoading}
-                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl font-medium transition text-sm"
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
               >
-                {actionLoading ? "Rejecting..." : "Confirm Reject"}
+                Confirm Reject
               </button>
             </div>
           </div>
@@ -339,4 +294,5 @@ const StaffOrderDetailPage = () => {
 };
 
 export default StaffOrderDetailPage;
+
 

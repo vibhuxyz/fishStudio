@@ -513,6 +513,15 @@ const StaffOrdersPage = () => {
   const filteredOrders =
     activeFilter === "All" ? orders : orders.filter((o) => o.status === activeFilter);
 
+  // For "All" view, limit completed/rejected to 3 each
+  const displayOrders = activeFilter === "All" 
+    ? orders.map(o => {
+        if (o.status === "Completed" && orders.filter(x => x.status === "Completed").indexOf(o) >= 3) return null;
+        if (o.status === "Rejected" && orders.filter(x => x.status === "Rejected").indexOf(o) >= 3) return null;
+        return o;
+      }).filter(Boolean) as MockOrder[]
+    : filteredOrders;
+
   if (sellerNotLinked) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center">
@@ -586,7 +595,7 @@ const StaffOrdersPage = () => {
             <StatusColumn
               key={status}
               status={status}
-              orders={orders.filter((o) => o.status === status)}
+              orders={displayOrders.filter((o) => o.status === status)}
               onAccept={setAcceptTarget}
               onReject={setRejectTarget}
               onMarkReady={handleMarkReady}

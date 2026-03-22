@@ -7,7 +7,7 @@ import { Sidebar } from "../sidebar/sidebar.styles";
 import Link from "next/link";
 import SidebarItem from "../sidebar/sidebar.item";
 import SidebarMenu from "../sidebar/sidebar.menu";
-import { ListOrdered, LogOut } from "lucide-react";
+import { ListOrdered, LogOut, CheckCircle, XCircle } from "lucide-react";
 import useSidebar from "@/hooks/useSidebar";
 import Logo from "@/assets/svgs/logo";
 import useRequireStaff from "@/hooks/useRequireStaff";
@@ -77,6 +77,28 @@ const StaffSidebar = () => {
                   <ListOrdered
                     size={26}
                     color={getIconColor("/staff/orders")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/staff/orders/completed"}
+                title="Completed Orders"
+                href="/staff/orders/completed"
+                icon={
+                  <CheckCircle
+                    size={26}
+                    color={getIconColor("/staff/orders/completed")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/staff/orders/rejected"}
+                title="Rejected Orders"
+                href="/staff/orders/rejected"
+                icon={
+                  <XCircle
+                    size={26}
+                    color={getIconColor("/staff/orders/rejected")}
                   />
                 }
               />
