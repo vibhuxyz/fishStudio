@@ -14,6 +14,7 @@ import {
   Plus,
   ChevronRight,
   ArrowLeft,
+  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -30,9 +31,11 @@ import { toast } from "sonner";
 interface AddressModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When true, only shows the saved-addresses list (for cart "Change" button) */
+  savedAddressesOnly?: boolean;
 }
 
-type ModalView = "list" | "pincode" | "add" | "detect";
+type ModalView = "list" | "pincode" | "add";
 
 const ADDRESS_TYPE_ICONS: Record<AddressType, React.ReactNode> = {
   Home: <Home className="h-5 w-5" />,
@@ -40,7 +43,7 @@ const ADDRESS_TYPE_ICONS: Record<AddressType, React.ReactNode> = {
   Other: <MoreHorizontal className="h-5 w-5" />,
 };
 
-export function AddressModal({ open, onOpenChange }: AddressModalProps) {
+export function AddressModal({ open, onOpenChange, savedAddressesOnly = false }: AddressModalProps) {
   const { addresses, selectedAddressId, selectAddress, addAddress, removeAddress } =
     useAddressStore();
 
@@ -52,7 +55,6 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [detecting, setDetecting] = useState(false);
 
-  // New address form state
   const [form, setForm] = useState({
     label: "Home" as AddressType,
     name: "",
@@ -74,6 +76,7 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
       setPincodeError("");
       setNearbyAddresses([]);
       setSearchQuery("");
+      setForm({ label: "Home", name: "", phone: "", street: "", landmark: "", area: "", city: "", state: "", pincode: "" });
     }
   }, [open]);
 
@@ -97,41 +100,26 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
     }
     setPincodeValid(true);
     setNearbyAddresses(nearby);
-
-    // Pre-fill area/city/state in form if user proceeds to add
     const areaInfo = PINCODE_AREA_MAP[pincode]?.[0];
     if (areaInfo) {
-      setForm((f) => ({
-        ...f,
-        area: areaInfo.area,
-        city: areaInfo.city,
-        state: areaInfo.state,
-        pincode,
-      }));
+      setForm((f) => ({ ...f, area: areaInfo.area, city: areaInfo.city, state: areaInfo.state, pincode }));
     }
   };
 
   const handleDetectLocation = () => {
     setDetecting(true);
     if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser");
+      toast.error("Geolocation not supported by your browser");
       setDetecting(false);
       return;
     }
     navigator.geolocation.getCurrentPosition(
       () => {
-        // Mock: simulate detected address
-        toast.success("Location detected! Using nearest serviceable address.");
+        toast.success("Location detected!");
         setPincode("400002");
         setPincodeValid(true);
         setNearbyAddresses(getNearbyAddresses("400002"));
-        setForm((f) => ({
-          ...f,
-          area: "Marine Lines",
-          city: "Mumbai",
-          state: "Maharashtra",
-          pincode: "400002",
-        }));
+        setForm((f) => ({ ...f, area: "Marine Lines", city: "Mumbai", state: "Maharashtra", pincode: "400002" }));
         setView("pincode");
         setDetecting(false);
       },
@@ -144,10 +132,7 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
 
   const handleSelectNearby = (address: string) => {
     const parts = address.split(",");
-    setForm((f) => ({
-      ...f,
-      street: parts[0]?.trim() || "",
-    }));
+    setForm((f) => ({ ...f, street: parts[0]?.trim() || "" }));
     setView("add");
   };
 
@@ -163,13 +148,22 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
 
   const filteredAddresses = addresses.filter((a) =>
     searchQuery
-      ? `${a.street} ${a.area} ${a.city} ${a.name}`
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase())
+      ? `${a.street} ${a.area} ${a.city} ${a.name}`.toLowerCase().includes(searchQuery.toLowerCase())
       : true
   );
 
   if (!open) return null;
+
+  const getBackView = (): ModalView => {
+    if (view === "add") return "pincode";
+    return "list";
+  };
+
+  const getTitle = () => {
+    if (view === "list") return savedAddressesOnly ? "Deliver to" : "Change Location";
+    if (view === "pincode") return "Enter Pincode";
+    return "Add New Address";
+  };
 
   return (
     <AnimatePresence>
@@ -184,39 +178,34 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
             onClick={() => onOpenChange(false)}
           />
 
-          {/* Modal */}
+          {/* Bottom sheet */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-lg rounded-t-3xl bg-background shadow-2xl"
-            style={{ maxHeight: "90vh" }}
+            className="fixed bottom-0 left-0 right-0 z-50 mx-auto w-full max-w-lg rounded-t-3xl bg-background shadow-2xl"
+            style={{ maxHeight: "90dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
+            {/* Drag handle */}
+            <div className="flex justify-center pb-1 pt-3">
               <div className="h-1 w-12 rounded-full bg-border" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <div className="flex items-center gap-2">
                 {view !== "list" && (
                   <button
                     type="button"
-                    onClick={() => setView(view === "add" ? "pincode" : "list")}
+                    onClick={() => setView(getBackView())}
                     className="mr-1 flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted"
                   >
                     <ArrowLeft className="h-4 w-4" />
                   </button>
                 )}
-                <h2 className="text-lg font-bold text-foreground">
-                  {view === "list" && "Change Location"}
-                  {view === "pincode" && "Enter Pincode"}
-                  {view === "add" && "Add New Address"}
-                  {view === "detect" && "Detect Location"}
-                </h2>
+                <h2 className="text-lg font-bold text-foreground">{getTitle()}</h2>
               </div>
               <button
                 type="button"
@@ -227,49 +216,53 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
               </button>
             </div>
 
-            <div className="overflow-y-auto px-5 py-4" style={{ maxHeight: "calc(90vh - 100px)" }}>
+            <div className="overflow-y-auto px-5 py-4" style={{ maxHeight: "calc(90dvh - 90px)" }}>
 
               {/* === LIST VIEW === */}
               {view === "list" && (
                 <div className="space-y-4">
-                  {/* Detect + Add new */}
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1 gap-2 bg-offer-green text-white hover:bg-offer-green/90"
-                      onClick={handleDetectLocation}
-                      disabled={detecting}
-                    >
-                      <Navigation className="h-4 w-4" />
-                      {detecting ? "Detecting..." : "Detect my location"}
-                    </Button>
-                    <div className="flex flex-shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                      <div className="h-px w-6 bg-border" />
-                      OR
-                      <div className="h-px w-6 bg-border" />
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => setView("pincode")}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add new
-                    </Button>
-                  </div>
+                  {/* Only show detect+add when not in savedAddressesOnly mode */}
+                  {!savedAddressesOnly && (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          className="flex-1 gap-2 bg-offer-green text-white hover:bg-offer-green/90"
+                          onClick={handleDetectLocation}
+                          disabled={detecting}
+                        >
+                          <Navigation className="h-4 w-4" />
+                          {detecting ? "Detecting..." : "Detect my location"}
+                        </Button>
+                        <div className="flex flex-shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <div className="h-px w-5 bg-border" />
+                          OR
+                          <div className="h-px w-5 bg-border" />
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="flex-1 gap-2"
+                          onClick={() => setView("pincode")}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add new
+                        </Button>
+                      </div>
 
-                  {/* Search bar */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="search delivery location"
-                      className="h-11 rounded-full border-border pl-10"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+                      {/* Search bar */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder="Search delivery location"
+                          className="h-11 rounded-full border-border pl-10"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {/* Saved addresses */}
-                  {filteredAddresses.length > 0 && (
+                  {filteredAddresses.length > 0 ? (
                     <div>
                       <p className="mb-3 text-sm font-semibold text-foreground">Your saved addresses</p>
                       <div className="space-y-2">
@@ -281,18 +274,39 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
                             onSelect={() => {
                               selectAddress(address.id);
                               onOpenChange(false);
+                              toast.success(`Delivering to ${address.label}`);
                             }}
                             onRemove={() => removeAddress(address.id)}
                           />
                         ))}
                       </div>
                     </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <MapPin className="mx-auto mb-2 h-10 w-10 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">No saved addresses yet</p>
+                      {!savedAddressesOnly && (
+                        <Button
+                          variant="outline"
+                          className="mt-3 gap-2"
+                          onClick={() => setView("pincode")}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add your first address
+                        </Button>
+                      )}
+                    </div>
                   )}
 
-                  {filteredAddresses.length === 0 && searchQuery && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      No addresses found for "{searchQuery}"
-                    </p>
+                  {savedAddressesOnly && (
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 p-3 text-sm font-medium text-primary hover:bg-primary/5"
+                      onClick={() => setView("pincode")}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add new address
+                    </button>
                   )}
                 </div>
               )}
@@ -334,7 +348,7 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
                       className="space-y-3"
                     >
                       <p className="text-sm font-semibold text-foreground">
-                        Nearby addresses in pincode {pincode} (within 2 km)
+                        Nearby addresses in {pincode} (within 2 km)
                       </p>
                       {nearbyAddresses.map((item) => (
                         <button
@@ -394,19 +408,11 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-foreground">
-                        Full Name *
-                      </label>
-                      <Input
-                        placeholder="John Doe"
-                        value={form.name}
-                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      />
+                      <label className="mb-1 block text-xs font-medium text-foreground">Full Name *</label>
+                      <Input placeholder="John Doe" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-foreground">
-                        Phone Number *
-                      </label>
+                      <label className="mb-1 block text-xs font-medium text-foreground">Phone Number *</label>
                       <Input
                         placeholder="9876543210"
                         value={form.phone}
@@ -415,32 +421,16 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-foreground">
-                        House / Street / Flat *
-                      </label>
-                      <Input
-                        placeholder="Flat 3B, Marine Drive"
-                        value={form.street}
-                        onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))}
-                      />
+                      <label className="mb-1 block text-xs font-medium text-foreground">House / Street / Flat *</label>
+                      <Input placeholder="Flat 3B, Marine Drive" value={form.street} onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))} />
                     </div>
                     <div className="col-span-2">
-                      <label className="mb-1 block text-xs font-medium text-foreground">
-                        Landmark (Optional)
-                      </label>
-                      <Input
-                        placeholder="Near Fish Market"
-                        value={form.landmark}
-                        onChange={(e) => setForm((f) => ({ ...f, landmark: e.target.value }))}
-                      />
+                      <label className="mb-1 block text-xs font-medium text-foreground">Landmark (Optional)</label>
+                      <Input placeholder="Near Fish Market" value={form.landmark} onChange={(e) => setForm((f) => ({ ...f, landmark: e.target.value }))} />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-foreground">Area</label>
-                      <Input
-                        placeholder="Marine Lines"
-                        value={form.area}
-                        onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
-                      />
+                      <Input placeholder="Marine Lines" value={form.area} onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))} />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-foreground">Pincode</label>
@@ -454,26 +444,15 @@ export function AddressModal({ open, onOpenChange }: AddressModalProps) {
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-foreground">City</label>
-                      <Input
-                        placeholder="Mumbai"
-                        value={form.city}
-                        onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                      />
+                      <Input placeholder="Mumbai" value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} />
                     </div>
                     <div>
                       <label className="mb-1 block text-xs font-medium text-foreground">State</label>
-                      <Input
-                        placeholder="Maharashtra"
-                        value={form.state}
-                        onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-                      />
+                      <Input placeholder="Maharashtra" value={form.state} onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))} />
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full bg-offer-green text-white hover:bg-offer-green/90"
-                    onClick={handleSaveAddress}
-                  >
+                  <Button className="w-full bg-offer-green text-white hover:bg-offer-green/90" onClick={handleSaveAddress}>
                     Save Address
                   </Button>
                 </div>
@@ -503,11 +482,7 @@ function AddressCard({
         isSelected ? "border-offer-green bg-offer-green/5" : "border-border bg-background"
       }`}
     >
-      <button
-        type="button"
-        className="flex w-full items-start gap-3 text-left"
-        onClick={onSelect}
-      >
+      <button type="button" className="flex w-full items-start gap-3 text-left" onClick={onSelect}>
         <div
           className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
             isSelected ? "bg-offer-green/15 text-offer-green" : "bg-muted text-muted-foreground"
@@ -515,32 +490,29 @@ function AddressCard({
         >
           {ADDRESS_TYPE_ICONS[address.label]}
         </div>
-        <div className="flex-1">
-          <p className="font-semibold text-foreground">{address.label}</p>
-          <p className="text-xs leading-relaxed text-muted-foreground">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold text-foreground">{address.label}</p>
+            {isSelected && <CheckCircle2 className="h-4 w-4 text-offer-green" />}
+          </div>
+          <p className="mt-0.5 truncate text-xs leading-relaxed text-muted-foreground">
             {address.name}, {address.street}
             {address.landmark ? `, ${address.landmark}` : ""}, {address.area}, {address.city}
           </p>
         </div>
       </button>
       <div className="mt-2 flex items-center gap-3 pl-[52px]">
-        <button
-          type="button"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-        >
+        <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
           <Pencil className="h-3 w-3" />
           Edit
         </button>
         <button
           type="button"
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove();
-          }}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
         >
           <Trash2 className="h-3 w-3" />
-          Remove
+          Delete
         </button>
       </div>
     </div>

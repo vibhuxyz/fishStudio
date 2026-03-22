@@ -582,7 +582,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
             )}
           </motion.div>
 
-          <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
+          <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} savedAddressesOnly />
         </>
       )}
     </AnimatePresence>

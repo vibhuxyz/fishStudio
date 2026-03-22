@@ -46,8 +46,20 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Prevent horizontal overflow on all screens */
+    overflow-x: hidden;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    /* Full-height safe-area on iOS notch devices */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
   }
 }
 
