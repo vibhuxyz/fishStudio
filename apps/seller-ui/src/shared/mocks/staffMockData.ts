@@ -1,4 +1,29 @@
-// MOCK DATA — swap fetchOrders with real axiosInstance call once backend is live
+// MOCK DATA — swap with real axiosInstance calls once backend is live
+
+export const MOCK_STAFF_LIST = [
+  {
+    id: "staff_mock_001",
+    name: "Alex Johnson",
+    email: "alex@shop.com",
+    isActive: true,
+    createdAt: new Date("2025-01-15").toISOString(),
+  },
+  {
+    id: "staff_mock_002",
+    name: "Priya Sharma",
+    email: "priya.sharma@shop.com",
+    isActive: true,
+    createdAt: new Date("2025-02-03").toISOString(),
+  },
+  {
+    id: "staff_mock_003",
+    name: "Leo Nguyen",
+    email: "leo.nguyen@shop.com",
+    isActive: false,
+    createdAt: new Date("2025-03-10").toISOString(),
+  },
+];
+
 export const MOCK_STAFF = {
   id: "staff_mock_001",
   name: "Alex Johnson",
