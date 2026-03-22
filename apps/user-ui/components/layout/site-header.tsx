@@ -8,7 +8,6 @@ import {
   ShoppingCart,
   LayoutGrid,
   Fish,
-  LogOut,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -17,8 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { CategoryMenu } from "./category-menu";
 import { AnnouncementBar } from "./announcement-bar";
 import { useCart } from "@/lib/cart-store";
-import { useAuth, logoutUser } from "@/lib/auth-store";
+import { useAuth } from "@/lib/auth-store";
 import { useModals } from "@/components/providers/modal-provider";
+import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
+import { AddressModal } from "@/components/shared/address-modal";
 
 interface SiteHeaderProps {
   onLoginClick?: () => void;
@@ -30,13 +31,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { totalItems } = useCart();
-  const { user, isLoggedIn } = useAuth();
   const modals = useModals();
 
-  const handleLoginClick = onLoginClick ?? modals.openLogin;
   const handleCartClick = onCartClick ?? modals.openCart;
 
   useEffect(() => {
@@ -175,39 +175,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
           {/* Right actions */}
           <div className="flex flex-shrink-0 items-center gap-1">
-            {isLoggedIn && user ? (
-              <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="hidden flex-col md:flex">
-                  <span className="text-sm font-medium leading-tight text-foreground">
-                    {user.name}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    +91 {user.phone}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={logoutUser}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="sr-only">Log out</span>
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                onClick={handleLoginClick}
-              >
-                <User className="h-5 w-5" />
-                <span className="hidden md:inline">Log in/Sign up</span>
-              </Button>
-            )}
+            <UserProfileDropdown onAddressClick={() => setShowAddressModal(true)} />
 
             <button
               type="button"
@@ -232,6 +200,8 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
           <CategoryMenu variant="horizontal" />
         </div>
       </header>
+
+      <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
     </>
   );
 }

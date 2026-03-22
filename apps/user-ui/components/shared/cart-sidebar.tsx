@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Truck } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, Truck, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
@@ -240,19 +241,29 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                       </p>
                     </div>
                   </div>
-                  <Button
-                    className="rounded-lg bg-primary px-6 text-primary-foreground hover:bg-primary/90"
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        onOpenChange(false);
-                        onLoginClick?.();
-                      } else {
-                        // TODO: navigate to checkout page
-                      }
-                    }}
-                  >
-                    {isLoggedIn ? "Proceed to Checkout" : "Login to Checkout"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/cart"
+                      onClick={() => onOpenChange(false)}
+                      className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      View cart
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                    <Button
+                      className="rounded-lg bg-primary px-6 text-primary-foreground hover:bg-primary/90"
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          onOpenChange(false);
+                          onLoginClick?.();
+                        } else {
+                          // TODO: navigate to checkout page
+                        }
+                      }}
+                    >
+                      {isLoggedIn ? "Proceed to Checkout" : "Login to Checkout"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
