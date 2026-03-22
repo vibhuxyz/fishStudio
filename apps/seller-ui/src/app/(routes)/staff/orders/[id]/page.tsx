@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import { ArrowLeft, CheckCircle, XCircle, Package, MapPin, User, CreditCard, Phone, Copy, AlertCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";

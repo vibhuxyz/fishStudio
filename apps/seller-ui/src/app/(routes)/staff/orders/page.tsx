@@ -14,6 +14,11 @@ import {
   User,
   ChevronRight,
   X,
+  Eye,
+  Copy,
+  CreditCard,
+  Store,
+  Tag,
 } from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import { MOCK_ORDERS, MockOrder, OrderStatus } from "@/shared/mocks/staffMockData";
@@ -252,6 +257,209 @@ function RejectModal({
   );
 }
 
+// ─── Order Detail Modal ──────────────────────────────────────────────────────
+
+const MOCK_SELLER_DETAILS = {
+  name: "Rajan Fisheries Pvt. Ltd.",
+  email: "rajan@fishstudio.in",
+  phone: "+91 98400 12345",
+  store: { name: "FishStudio", address: "32, Fishing Harbour, Kochi, Kerala - 682001" },
+};
+
+function OrderDetailModal({ order, onClose }: { order: MockOrder; onClose: () => void }) {
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const copy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 1800);
+  };
+
+  const cfg = STATUS_CONFIG[order.status];
+  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const tax = Math.round(subtotal * 0.05);
+  const discount = order.total < subtotal ? subtotal - order.total : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="bg-[#0d1117] border border-gray-700/60 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-[#0d1117] z-10">
+          <div>
+            <h2 className="text-white font-bold text-lg">Order #{order.id.slice(-6).toUpperCase()}</h2>
+            <p className="text-gray-500 text-xs mt-0.5">
+              {new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+              {cfg.label}
+            </span>
+            <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Customer + Seller row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Customer */}
+            <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <User size={15} className="text-gray-400" />
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer</h3>
+              </div>
+              <p className="text-white font-semibold">{order.user.name}</p>
+              <p className="text-gray-400 text-sm mt-1">{order.user.email}</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-gray-300 text-sm font-mono flex items-center gap-1.5">
+                  <Phone size={12} className="text-gray-500" />
+                  {order.user.phone}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => copy(order.user.phone, "phone")}
+                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
+                >
+                  <Copy size={11} />
+                  {copied === "phone" ? "Copied!" : "Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* Seller */}
+            <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Store size={15} className="text-gray-400" />
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller</h3>
+              </div>
+              <p className="text-white font-semibold">{MOCK_SELLER_DETAILS.store.name}</p>
+              <p className="text-gray-400 text-sm mt-1">{MOCK_SELLER_DETAILS.name}</p>
+              <p className="text-gray-400 text-sm">{MOCK_SELLER_DETAILS.email}</p>
+              <p className="text-gray-300 text-sm font-mono mt-1">{MOCK_SELLER_DETAILS.phone}</p>
+            </div>
+          </div>
+
+          {/* Delivery Address */}
+          <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin size={15} className="text-gray-400" />
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Delivery Address</h3>
+              <button
+                type="button"
+                onClick={() => copy(`${order.shippingAddress.name}, ${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.zip}`, "addr")}
+                className="ml-auto text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
+              >
+                <Copy size={11} />
+                {copied === "addr" ? "Copied!" : "Copy Full Address"}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <div>
+                <p className="text-gray-500 text-xs">Name</p>
+                <p className="text-white text-sm font-medium">{order.shippingAddress.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Street</p>
+                <p className="text-white text-sm">{order.shippingAddress.street}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">City</p>
+                <p className="text-white text-sm">{order.shippingAddress.city}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">State</p>
+                <p className="text-white text-sm">{order.shippingAddress.state}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Pincode</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-white text-sm font-mono">{order.shippingAddress.zip}</p>
+                  <button type="button" onClick={() => copy(order.shippingAddress.zip, "pin")} className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition">
+                    <Copy size={10} />{copied === "pin" ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Order Items */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Fish size={15} className="text-teal-400" />
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Order Items ({order.items.length})</h3>
+            </div>
+            <div className="space-y-2">
+              {order.items.map((item) => (
+                <div key={item.productId} className="flex items-center gap-3 bg-[#0f1117] border border-gray-800 rounded-xl p-3">
+                  <div className="w-12 h-12 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
+                    <Fish size={20} className="text-teal-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-sm truncate">{item.product.title}</p>
+                    <p className="text-gray-400 text-xs mt-0.5">
+                      {item.quantity} {item.unit}
+                      {Object.keys(item.selectedOptions).length > 0 && ` · ${Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(", ")}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-white font-bold text-sm">{formatINR(item.price * item.quantity)}</p>
+                    <p className="text-gray-500 text-xs">{formatINR(item.price)}/{item.unit}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Payment Summary */}
+          <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard size={15} className="text-gray-400" />
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment Summary</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between text-gray-400">
+                <span>Subtotal</span><span>{formatINR(subtotal)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-green-400">
+                  <span className="flex items-center gap-1.5"><Tag size={12} /> Coupon Discount</span>
+                  <span>- {formatINR(discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-gray-400">
+                <span>GST (5%)</span><span>{formatINR(tax)}</span>
+              </div>
+              <div className="flex justify-between text-gray-400">
+                <span>Delivery</span><span className="text-green-400">Free</span>
+              </div>
+              <div className="border-t border-gray-700 pt-2 flex justify-between font-bold">
+                <span className="text-white">Total Paid</span>
+                <span className="text-white text-lg">{formatINR(order.total)}</span>
+              </div>
+            </div>
+            {order.refundStatus && (
+              <div className="mt-3 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
+                <p className="text-green-300 text-xs font-semibold">Refund Status: {order.refundStatus}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Rejection reason */}
+          {order.status === "Rejected" && order.rejectionReason && (
+            <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
+              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-1">Rejection Reason</p>
+              <p className="text-red-200 text-sm">{order.rejectionReason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Order Card ──────────────────────────────────────────────────────────────
 
 function OrderCard({
@@ -260,12 +468,14 @@ function OrderCard({
   onReject,
   onMarkReady,
   onMarkCompleted,
+  onViewDetails,
 }: {
   order: MockOrder;
   onAccept: (o: MockOrder) => void;
   onReject: (o: MockOrder) => void;
   onMarkReady: (id: string) => void;
   onMarkCompleted: (id: string) => void;
+  onViewDetails: (o: MockOrder) => void;
 }) {
   const cfg = STATUS_CONFIG[order.status];
 
@@ -325,6 +535,16 @@ function OrderCard({
           )}
         </div>
       )}
+
+      {/* View Details */}
+      <button
+        type="button"
+        onClick={() => onViewDetails(order)}
+        className="w-full flex items-center justify-center gap-1.5 py-2 mb-2 bg-[#1a1f2e] hover:bg-[#1e2540] border border-gray-700/50 hover:border-gray-600 text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition"
+      >
+        <Eye size={13} />
+        View Full Details
+      </button>
 
       {/* Action buttons */}
       {order.status === "New" && (
@@ -389,6 +609,7 @@ function StatusColumn({
   onReject,
   onMarkReady,
   onMarkCompleted,
+  onViewDetails,
 }: {
   status: OrderStatus;
   orders: MockOrder[];
@@ -396,6 +617,7 @@ function StatusColumn({
   onReject: (o: MockOrder) => void;
   onMarkReady: (id: string) => void;
   onMarkCompleted: (id: string) => void;
+  onViewDetails: (o: MockOrder) => void;
 }) {
   const cfg = STATUS_CONFIG[status];
   const COLUMN_ICONS: Record<OrderStatus, React.ReactNode> = {
@@ -433,6 +655,7 @@ function StatusColumn({
               onReject={onReject}
               onMarkReady={onMarkReady}
               onMarkCompleted={onMarkCompleted}
+              onViewDetails={onViewDetails}
             />
           ))
         )}
@@ -478,6 +701,7 @@ const StaffOrdersPage = () => {
   const [orders, setOrders] = useState<MockOrder[]>(MOCK_ORDERS);
   const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);
   const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
+  const [detailTarget, setDetailTarget] = useState<MockOrder | null>(null);
   const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
 
   const sellerNotLinked = !authLoading && staff && (!staff.isActive || !staff.sellerId);
@@ -600,6 +824,7 @@ const StaffOrdersPage = () => {
               onReject={setRejectTarget}
               onMarkReady={handleMarkReady}
               onMarkCompleted={handleMarkCompleted}
+              onViewDetails={setDetailTarget}
             />
           ))}
         </div>
@@ -619,6 +844,7 @@ const StaffOrdersPage = () => {
                 onReject={setRejectTarget}
                 onMarkReady={handleMarkReady}
                 onMarkCompleted={handleMarkCompleted}
+                onViewDetails={setDetailTarget}
               />
             ))
           )}
@@ -638,6 +864,12 @@ const StaffOrdersPage = () => {
           order={rejectTarget}
           onConfirm={handleRejectConfirm}
           onCancel={() => setRejectTarget(null)}
+        />
+      )}
+      {detailTarget && (
+        <OrderDetailModal
+          order={detailTarget}
+          onClose={() => setDetailTarget(null)}
         />
       )}
     </div>
