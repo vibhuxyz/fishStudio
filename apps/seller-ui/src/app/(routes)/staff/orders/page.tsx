@@ -1,199 +1,638 @@
 "use client";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  flexRender,
-} from "@tanstack/react-table";
-import { Search, Eye, ShieldAlert } from "lucide-react";
-import Link from "next/link";
-import BreadCrumbs from "@/shared/components/breadcrumbs";
+  CheckCircle,
+  XCircle,
+  Clock,
+  Package,
+  ShoppingBag,
+  ShieldAlert,
+  AlertTriangle,
+  Fish,
+  MapPin,
+  Phone,
+  User,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
-import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
+import { MOCK_ORDERS, MockOrder, OrderStatus } from "@/shared/mocks/staffMockData";
 
-// TODO: replace MOCK_ORDERS with real fetch once backend is ready:
-// const fetchOrders = async () => {
-//   const res = await axiosInstance.get("/order/api/get-seller-orders", {
-//     headers: { "x-auth-role": "staff" },
-//   });
-//   return res.data.orders;
-// };
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<
+  OrderStatus,
+  { label: string; color: string; bg: string; border: string; dot: string }
+> = {
+  New: {
+    label: "New Order",
+    color: "text-amber-400",
+    bg: "bg-amber-400/10",
+    border: "border-amber-400/30",
+    dot: "bg-amber-400",
+  },
+  Processing: {
+    label: "Processing",
+    color: "text-blue-400",
+    bg: "bg-blue-400/10",
+    border: "border-blue-400/30",
+    dot: "bg-blue-400",
+  },
+  Ready: {
+    label: "Ready to Pickup",
+    color: "text-teal-400",
+    bg: "bg-teal-400/10",
+    border: "border-teal-400/30",
+    dot: "bg-teal-400",
+  },
+  Completed: {
+    label: "Completed",
+    color: "text-green-400",
+    bg: "bg-green-400/10",
+    border: "border-green-400/30",
+    dot: "bg-green-400",
+  },
+  Rejected: {
+    label: "Rejected",
+    color: "text-red-400",
+    bg: "bg-red-400/10",
+    border: "border-red-400/30",
+    dot: "bg-red-400",
+  },
+};
+
+const COLUMN_ORDER: OrderStatus[] = ["New", "Processing", "Ready", "Completed", "Rejected"];
+
+const formatINR = (amount: number) =>
+  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+
+const timeAgo = (iso: string) => {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diff < 1) return "Just now";
+  if (diff < 60) return `${diff}m ago`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
+  return `${Math.floor(diff / 1440)}d ago`;
+};
+
+// ─── Accept Confirmation Modal ───────────────────────────────────────────────
+
+function AcceptModal({
+  order,
+  onConfirm,
+  onCancel,
+}: {
+  order: MockOrder;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+      <div className="bg-[#0f1117] border border-gray-700/60 rounded-2xl w-full max-w-lg shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} className="text-amber-400" />
+            <h3 className="text-white font-semibold text-base">Confirm Stock &amp; Accept Order</h3>
+          </div>
+          <button type="button" onClick={onCancel} className="text-gray-500 hover:text-white transition">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Customer info */}
+        <div className="px-5 pt-4 pb-2">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-[#1e2433] flex items-center justify-center shrink-0">
+              <User size={16} className="text-gray-400" />
+            </div>
+            <div>
+              <p className="text-white font-medium text-sm">{order.user.name}</p>
+              <p className="text-gray-400 text-xs flex items-center gap-1">
+                <Phone size={11} />
+                {order.user.phone}
+              </p>
+            </div>
+            <div className="ml-auto text-right">
+              <p className="text-white font-bold text-lg">{formatINR(order.total)}</p>
+              <p className="text-gray-500 text-xs">{order.items.length} item{order.items.length > 1 ? "s" : ""}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-1.5 text-xs text-gray-400 mb-4">
+            <MapPin size={12} className="mt-0.5 shrink-0" />
+            <span>{order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} — {order.shippingAddress.zip}</span>
+          </div>
+        </div>
+
+        {/* Items */}
+        <div className="px-5 pb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Order Items</p>
+          <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+            {order.items.map((item) => (
+              <div key={item.productId} className="flex items-center gap-3 bg-[#1a1f2e] rounded-xl p-3">
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#0f1117] shrink-0 flex items-center justify-center">
+                  <Fish size={22} className="text-teal-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{item.product.title}</p>
+                  <p className="text-gray-400 text-xs">
+                    {item.quantity} {item.unit}
+                    {Object.keys(item.selectedOptions).length > 0 &&
+                      ` · ${Object.values(item.selectedOptions).join(", ")}`}
+                  </p>
+                </div>
+                <p className="text-white font-semibold text-sm shrink-0">
+                  {formatINR(item.price * item.quantity)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Warning */}
+        <div className="mx-5 mb-4 bg-amber-400/10 border border-amber-400/25 rounded-xl px-4 py-3 flex items-start gap-2.5">
+          <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-amber-300 text-sm leading-relaxed">
+            Please verify all items are <strong>in stock</strong> before accepting. Once accepted, this order cannot be cancelled.
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="px-5 pb-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+          >
+            <CheckCircle size={16} />
+            Yes, Accept Order
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reject Modal ────────────────────────────────────────────────────────────
+
+function RejectModal({
+  order,
+  onConfirm,
+  onCancel,
+}: {
+  order: MockOrder;
+  onConfirm: (reason: string) => void;
+  onCancel: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = () => {
+    if (!reason.trim()) {
+      setError("Please enter a rejection reason.");
+      return;
+    }
+    onConfirm(reason.trim());
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+      <div className="bg-[#0f1117] border border-gray-700/60 rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <XCircle size={18} className="text-red-400" />
+            <h3 className="text-white font-semibold text-base">Reject Order #{order.id.slice(-6).toUpperCase()}</h3>
+          </div>
+          <button type="button" onClick={onCancel} className="text-gray-500 hover:text-white transition">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-gray-400 text-sm">
+            Provide a reason for the customer. An automatic refund of{" "}
+            <strong className="text-white">{formatINR(order.total)}</strong> will be initiated.
+          </p>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Rejection Reason *
+          </label>
+          <textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => { setReason(e.target.value); setError(""); }}
+            placeholder="e.g. Surmai is out of stock today. We cannot fulfil this order..."
+            className="w-full bg-[#1a1f2e] border border-gray-700 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-red-500/60 transition placeholder-gray-600"
+          />
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+        </div>
+        <div className="px-5 pb-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition font-medium text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+          >
+            <XCircle size={16} />
+            Reject &amp; Refund
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Order Card ──────────────────────────────────────────────────────────────
+
+function OrderCard({
+  order,
+  onAccept,
+  onReject,
+  onMarkReady,
+  onMarkCompleted,
+}: {
+  order: MockOrder;
+  onAccept: (o: MockOrder) => void;
+  onReject: (o: MockOrder) => void;
+  onMarkReady: (id: string) => void;
+  onMarkCompleted: (id: string) => void;
+}) {
+  const cfg = STATUS_CONFIG[order.status];
+
+  return (
+    <div className="bg-[#0f1117] border border-gray-800/60 rounded-2xl p-4 hover:border-gray-700 transition group">
+      {/* Top row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color} border ${cfg.border}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} animate-pulse`} />
+            {cfg.label}
+          </span>
+        </div>
+        <span className="text-gray-600 text-xs">{timeAgo(order.createdAt)}</span>
+      </div>
+
+      {/* Order ID + total */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-gray-400 text-xs font-mono">#{order.id.slice(-6).toUpperCase()}</p>
+        <p className="text-white font-bold text-base">{formatINR(order.total)}</p>
+      </div>
+
+      {/* Customer */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-7 h-7 rounded-full bg-[#1e2433] flex items-center justify-center">
+          <User size={13} className="text-gray-400" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-white text-sm font-medium truncate">{order.user.name}</p>
+          <p className="text-gray-500 text-xs flex items-center gap-1">
+            <MapPin size={10} />
+            {order.shippingAddress.city}, {order.shippingAddress.state}
+          </p>
+        </div>
+      </div>
+
+      {/* Items preview */}
+      <div className="space-y-1.5 mb-4">
+        {order.items.slice(0, 2).map((item) => (
+          <div key={item.productId} className="flex items-center gap-2 bg-[#1a1f2e] rounded-lg px-3 py-2">
+            <Fish size={14} className="text-teal-500 shrink-0" />
+            <span className="text-gray-200 text-xs truncate flex-1">{item.product.title}</span>
+            <span className="text-gray-400 text-xs shrink-0">{item.quantity} {item.unit}</span>
+          </div>
+        ))}
+        {order.items.length > 2 && (
+          <p className="text-gray-600 text-xs text-center">+{order.items.length - 2} more items</p>
+        )}
+      </div>
+
+      {/* Rejection info */}
+      {order.status === "Rejected" && order.rejectionReason && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
+          <p className="text-red-400 text-xs leading-relaxed">{order.rejectionReason}</p>
+          {order.refundStatus && (
+            <p className="text-green-400 text-xs mt-1 font-medium">Refund: {order.refundStatus}</p>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {order.status === "New" && (
+        <div className="flex gap-2 mt-1">
+          <button
+            type="button"
+            onClick={() => onAccept(order)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-semibold transition"
+          >
+            <CheckCircle size={14} />
+            Accept
+          </button>
+          <button
+            type="button"
+            onClick={() => onReject(order)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 hover:bg-red-600 border border-red-600/40 hover:border-red-500 text-red-400 hover:text-white rounded-xl text-xs font-semibold transition"
+          >
+            <XCircle size={14} />
+            Reject
+          </button>
+        </div>
+      )}
+
+      {order.status === "Processing" && (
+        <button
+          type="button"
+          onClick={() => onMarkReady(order.id)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 bg-teal-600/20 hover:bg-teal-600 border border-teal-600/40 hover:border-teal-500 text-teal-400 hover:text-white rounded-xl text-xs font-semibold transition"
+        >
+          <Package size={14} />
+          Mark as Ready to Pickup
+        </button>
+      )}
+
+      {order.status === "Ready" && (
+        <button
+          type="button"
+          onClick={() => onMarkCompleted(order.id)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 bg-green-600/20 hover:bg-green-600 border border-green-600/40 hover:border-green-500 text-green-400 hover:text-white rounded-xl text-xs font-semibold transition"
+        >
+          <CheckCircle size={14} />
+          Mark as Completed
+        </button>
+      )}
+
+      {order.status === "Processing" && (
+        <p className="text-center text-gray-600 text-xs mt-2 flex items-center justify-center gap-1">
+          <Clock size={11} />
+          Cannot cancel — order is being processed
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Column ──────────────────────────────────────────────────────────────────
+
+function StatusColumn({
+  status,
+  orders,
+  onAccept,
+  onReject,
+  onMarkReady,
+  onMarkCompleted,
+}: {
+  status: OrderStatus;
+  orders: MockOrder[];
+  onAccept: (o: MockOrder) => void;
+  onReject: (o: MockOrder) => void;
+  onMarkReady: (id: string) => void;
+  onMarkCompleted: (id: string) => void;
+}) {
+  const cfg = STATUS_CONFIG[status];
+  const COLUMN_ICONS: Record<OrderStatus, React.ReactNode> = {
+    New: <ShoppingBag size={15} className="text-amber-400" />,
+    Processing: <Clock size={15} className="text-blue-400" />,
+    Ready: <Package size={15} className="text-teal-400" />,
+    Completed: <CheckCircle size={15} className="text-green-400" />,
+    Rejected: <XCircle size={15} className="text-red-400" />,
+  };
+
+  return (
+    <div className="flex flex-col min-w-[300px] w-[300px]">
+      {/* Column header */}
+      <div className={`flex items-center gap-2 px-4 py-3 rounded-xl mb-3 ${cfg.bg} border ${cfg.border}`}>
+        {COLUMN_ICONS[status]}
+        <span className={`font-semibold text-sm ${cfg.color}`}>{cfg.label}</span>
+        <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
+          {orders.length}
+        </span>
+      </div>
+
+      {/* Cards */}
+      <div className="flex flex-col gap-3 flex-1">
+        {orders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-700 border-2 border-dashed border-gray-800 rounded-2xl">
+            <Fish size={24} className="mb-2 opacity-40" />
+            <p className="text-xs">No orders</p>
+          </div>
+        ) : (
+          orders.map((o) => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onAccept={onAccept}
+              onReject={onReject}
+              onMarkReady={onMarkReady}
+              onMarkCompleted={onMarkCompleted}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Stats bar ───────────────────────────────────────────────────────────────
+
+function StatsBar({ orders }: { orders: MockOrder[] }) {
+  const total = orders.reduce((s, o) => s + (o.status !== "Rejected" ? o.total : 0), 0);
+  const newCount = orders.filter((o) => o.status === "New").length;
+  const processingCount = orders.filter((o) => o.status === "Processing").length;
+  const completedCount = orders.filter((o) => o.status === "Completed").length;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      {[
+        { label: "New Orders", value: String(newCount), sub: "Awaiting action", color: "text-amber-400", icon: <ShoppingBag size={18} className="text-amber-400" /> },
+        { label: "Processing", value: String(processingCount), sub: "In kitchen", color: "text-blue-400", icon: <Clock size={18} className="text-blue-400" /> },
+        { label: "Completed Today", value: String(completedCount), sub: "Orders done", color: "text-green-400", icon: <CheckCircle size={18} className="text-green-400" /> },
+        { label: "Revenue", value: formatINR(total), sub: "Excl. rejected", color: "text-teal-400", icon: <Fish size={18} className="text-teal-400" /> },
+      ].map((s) => (
+        <div key={s.label} className="bg-[#0f1117] border border-gray-800 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#1a1f2e] flex items-center justify-center shrink-0">
+            {s.icon}
+          </div>
+          <div>
+            <p className={`font-bold text-lg leading-tight ${s.color}`}>{s.value}</p>
+            <p className="text-gray-500 text-xs">{s.label}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 const StaffOrdersPage = () => {
-  const [globalFilter, setGlobalFilter] = useState("");
   const { staff, isLoading: authLoading } = useRequireStaff();
+  const [orders, setOrders] = useState<MockOrder[]>(MOCK_ORDERS);
+  const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
+  const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
 
-  // TODO: swap with real useQuery once backend is ready
-  const orders = MOCK_ORDERS;
-  const isLoading = false;
+  const sellerNotLinked = !authLoading && staff && (!staff.isActive || !staff.sellerId);
 
-  const sellerNotLinked =
-    !authLoading && staff && (!staff.isActive || !staff.sellerId);
+  const handleAcceptConfirm = () => {
+    if (!acceptTarget) return;
+    setOrders((prev) =>
+      prev.map((o) => (o.id === acceptTarget.id ? { ...o, status: "Processing" } : o)),
+    );
+    setAcceptTarget(null);
+  };
 
-  const columns = useMemo(
-    () => [
-      {
-        accessorKey: "id",
-        header: "Order ID",
-        cell: ({ row }: any) => (
-          <span className="text-white text-sm truncate font-mono">
-            #{row.original.id.slice(-6).toUpperCase()}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "user.name",
-        header: "Customer",
-        cell: ({ row }: any) => (
-          <span className="text-white">{row.original.user?.name ?? "Guest"}</span>
-        ),
-      },
-      {
-        accessorKey: "total",
-        header: "Total",
-        cell: ({ row }: any) => (
-          <span className="text-white font-medium">${row.original.total.toFixed(2)}</span>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }: any) => {
-          const status = row.original.status;
-          const colorMap: Record<string, string> = {
-            Paid: "bg-blue-600",
-            Accepted: "bg-green-600",
-            Rejected: "bg-red-600",
-            Pending: "bg-yellow-500",
-          };
-          return (
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium text-white ${
-                colorMap[status] ?? "bg-gray-500"
-              }`}
-            >
-              {status}
-            </span>
-          );
-        },
-      },
-      {
-        accessorKey: "createdAt",
-        header: "Date",
-        cell: ({ row }: any) => {
-          const date = new Date(row.original.createdAt).toLocaleDateString();
-          return <span className="text-gray-300 text-sm">{date}</span>;
-        },
-      },
-      {
-        header: "Action",
-        cell: ({ row }: any) => (
-          <Link
-            href={`/staff/orders/${row.original.id}`}
-            className="text-blue-400 hover:text-blue-300 transition flex items-center gap-1 text-sm"
-          >
-            <Eye size={16} />
-            View
-          </Link>
-        ),
-      },
-    ],
-    [],
-  );
+  const handleRejectConfirm = (reason: string) => {
+    if (!rejectTarget) return;
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === rejectTarget.id
+          ? { ...o, status: "Rejected", rejectionReason: reason, refundStatus: "Refunded" }
+          : o,
+      ),
+    );
+    setRejectTarget(null);
+  };
 
-  const table = useReactTable({
-    data: orders,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: "includesString",
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
-  });
+  const handleMarkReady = (id: string) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "Ready" } : o)));
+  };
+
+  const handleMarkCompleted = (id: string) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "Completed" } : o)));
+  };
+
+  const filteredOrders =
+    activeFilter === "All" ? orders : orders.filter((o) => o.status === activeFilter);
 
   if (sellerNotLinked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
-        <ShieldAlert size={56} className="text-yellow-500 mb-4" />
-        <h2 className="text-2xl font-semibold text-white mb-2">
-          Access Not Granted
-        </h2>
-        <p className="text-gray-400 max-w-md">
-          Your account has not been activated by a seller yet. Please ask your
-          seller to search for your email and grant you access from their Staff
-          Management dashboard.
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4">
+          <ShieldAlert size={32} className="text-yellow-400" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Access Not Granted</h2>
+        <p className="text-gray-400 max-w-sm text-sm leading-relaxed">
+          Your staff account has not been activated by the seller yet. Please ask your seller to
+          grant you access from their Staff Management dashboard.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen p-8">
-      <h2 className="text-2xl text-white font-semibold mb-2">Shop Orders</h2>
-      <BreadCrumbs title="All Orders" />
+    <div className="w-full min-h-screen bg-[#080b12] p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Fish size={22} className="text-teal-400" />
+            <h1 className="text-xl font-bold text-white">Order Board</h1>
+          </div>
+          <p className="text-gray-500 text-sm">FishStudio — Staff Dashboard</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-400/10 border border-green-400/25 px-3 py-1.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            Live
+          </span>
+        </div>
+      </div>
 
-      <div className="my-4 flex items-center bg-[#1a1a2e] border border-gray-800 p-2.5 rounded-lg gap-2">
-        <Search size={18} className="text-gray-400 shrink-0" />
-        <input
-          type="text"
-          placeholder="Search by customer, status or order ID..."
-          className="w-full bg-transparent text-white outline-none text-sm placeholder-gray-500"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+      {/* Stats */}
+      <StatsBar orders={orders} />
+
+      {/* Filter tabs */}
+      <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
+        {(["All", ...COLUMN_ORDER] as const).map((s) => {
+          const isActive = activeFilter === s;
+          const cfg = s === "All" ? null : STATUS_CONFIG[s as OrderStatus];
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setActiveFilter(s as OrderStatus | "All")}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition border ${
+                isActive
+                  ? cfg
+                    ? `${cfg.bg} ${cfg.color} ${cfg.border}`
+                    : "bg-white/10 text-white border-white/20"
+                  : "bg-transparent text-gray-500 border-gray-800 hover:border-gray-600 hover:text-gray-300"
+              }`}
+            >
+              {s === "All" ? "All Orders" : STATUS_CONFIG[s as OrderStatus].label}
+              {s !== "All" && (
+                <span className="ml-1.5 opacity-70">
+                  {orders.filter((o) => o.status === s).length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Board */}
+      {activeFilter === "All" ? (
+        <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: "calc(100vh - 280px)" }}>
+          {COLUMN_ORDER.map((status) => (
+            <StatusColumn
+              key={status}
+              status={status}
+              orders={orders.filter((o) => o.status === status)}
+              onAccept={setAcceptTarget}
+              onReject={setRejectTarget}
+              onMarkReady={handleMarkReady}
+              onMarkCompleted={handleMarkCompleted}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredOrders.length === 0 ? (
+            <div className="col-span-3 flex flex-col items-center py-20 text-gray-700">
+              <Fish size={36} className="mb-3 opacity-30" />
+              <p className="text-sm">No orders in this status</p>
+            </div>
+          ) : (
+            filteredOrders.map((o) => (
+              <OrderCard
+                key={o.id}
+                order={o}
+                onAccept={setAcceptTarget}
+                onReject={setRejectTarget}
+                onMarkReady={handleMarkReady}
+                onMarkCompleted={handleMarkCompleted}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      {acceptTarget && (
+        <AcceptModal
+          order={acceptTarget}
+          onConfirm={handleAcceptConfirm}
+          onCancel={() => setAcceptTarget(null)}
         />
-      </div>
-
-      <div className="overflow-x-auto bg-[#111827] border border-gray-800 rounded-xl">
-        {isLoading ? (
-          <p className="text-center text-white py-8">Loading orders...</p>
-        ) : (
-          <table className="w-full text-white">
-            <thead className="bg-[#1a1a2e]">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-800"
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row, idx) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-gray-800 hover:bg-[#1e2433] transition ${
-                    idx % 2 === 0 ? "bg-[#111827]" : "bg-[#131b2e]"
-                  }`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 text-sm">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        {!isLoading && orders.length === 0 && (
-          <p className="text-center py-8 text-gray-400">No orders found.</p>
-        )}
-      </div>
+      )}
+      {rejectTarget && (
+        <RejectModal
+          order={rejectTarget}
+          onConfirm={handleRejectConfirm}
+          onCancel={() => setRejectTarget(null)}
+        />
+      )}
     </div>
   );
 };
 
 export default StaffOrdersPage;
-

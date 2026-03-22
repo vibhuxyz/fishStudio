@@ -3,17 +3,14 @@ import React from "react";
 
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="flex h-full bg-black min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-[280px] min-w-[250px] max-w-[300px] border-r border-r-slate-800 text-white p-4">
-        <div className="sticky top-0">
+    <div className="flex h-full bg-[#080b12] min-h-screen">
+      <aside className="w-[260px] min-w-[240px] max-w-[280px] border-r border-gray-800/60 text-white">
+        <div className="sticky top-0 h-screen overflow-y-auto">
           <StaffSidebar />
         </div>
       </aside>
-
-      {/* Main content area */}
-      <main className="flex-1">
-        <div className="overflow-auto">{children}</div>
+      <main className="flex-1 overflow-auto">
+        {children}
       </main>
     </div>
   );
