@@ -32,7 +32,16 @@ export function CartPageClient() {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
 
-  const { appliedCoupon, applyCoupon, removeCoupon, getDiscount } = useCouponStore();
+  const {
+    appliedCoupons,
+    autoApplied,
+    applyCoupon,
+    removeCoupon,
+    setAutoApplied,
+    isCouponApplied,
+    getTotalDiscount,
+    getDiscountForCoupon,
+  } = useCouponStore();
   const { getSelectedAddress } = useAddressStore();
   const selectedAddress = getSelectedAddress();
 
@@ -45,21 +54,23 @@ export function CartPageClient() {
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + item.totalPayable, 0);
-  const deliveryCharge = subtotal > 500 ? 0 : 40;
-  const handlingCharge = 8;
-  const discount = getDiscount(subtotal);
+  const deliveryCharge = subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
+  const handlingCharge = items.length > 0 ? 8 : 0;
+  const discount = getTotalDiscount(subtotal);
   const tip = showCustomTip ? (Number(customTip) || 0) : (selectedTip ?? 0);
   const donation = donationEnabled ? 1 : 0;
   const grandTotal = subtotal + deliveryCharge + handlingCharge - discount + tip + donation;
 
   // Auto-apply eligible coupon on mount / subtotal change
   useEffect(() => {
-    if (appliedCoupon) return;
+    if (autoApplied) return;
+    if (subtotal === 0) return;
     const autoCoupon = AVAILABLE_COUPONS.find(
-      (c) => c.autoApply && subtotal >= c.minOrderValue
+      (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
     );
     if (autoCoupon) {
       applyCoupon(autoCoupon);
+      setAutoApplied(true);
       toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
     }
   }, [subtotal]);
@@ -70,6 +81,10 @@ export function CartPageClient() {
     );
     if (!found) {
       toast.error("Invalid coupon code");
+      return;
+    }
+    if (isCouponApplied(found.code)) {
+      toast.info("Coupon already applied");
       return;
     }
     if (subtotal < found.minOrderValue) {
@@ -83,6 +98,10 @@ export function CartPageClient() {
   };
 
   const handleSelectCoupon = (coupon: Coupon) => {
+    if (isCouponApplied(coupon.code)) {
+      toast.info("Already applied");
+      return;
+    }
     if (subtotal < coupon.minOrderValue) {
       toast.error(`Minimum order ₹${coupon.minOrderValue} required for this coupon`);
       return;
@@ -92,8 +111,8 @@ export function CartPageClient() {
     toast.success(`Coupon ${coupon.code} applied!`);
   };
 
-  const handleRemoveCoupon = () => {
-    removeCoupon();
+  const handleRemoveCoupon = (code: string) => {
+    removeCoupon(code);
     toast.info("Coupon removed");
   };
 
@@ -200,109 +219,123 @@ export function CartPageClient() {
 
         {/* Coupon Section */}
         <div className="rounded-2xl border border-border bg-background shadow-sm">
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-offer-green" />
-                <div>
-                  <p className="text-sm font-semibold text-offer-green">{appliedCoupon.code} applied</p>
-                  <p className="text-xs text-muted-foreground">
-                    You save ₹{discount} on this order
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleRemoveCoupon}
-                className="text-xs font-medium text-destructive hover:underline"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <div>
-              {/* Input row */}
-              <div className="flex items-center gap-2 p-4">
-                <Tag className="h-5 w-5 flex-shrink-0 text-primary" />
-                <Input
-                  placeholder="Enter coupon code"
-                  className="h-9 flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleApplyCouponCode()}
-                />
-                <button
-                  type="button"
-                  onClick={handleApplyCouponCode}
-                  className="text-sm font-semibold text-primary disabled:opacity-40"
-                  disabled={!couponInput}
-                >
-                  Apply
-                </button>
-              </div>
-
-              {/* Toggle coupons list */}
-              <button
-                type="button"
-                className="flex w-full items-center justify-between border-t border-border px-4 py-3 text-sm font-medium text-foreground"
-                onClick={() => setShowCouponPanel(!showCouponPanel)}
-              >
-                <span>View all offers</span>
-                <ChevronRight className={`h-4 w-4 transition-transform ${showCouponPanel ? "rotate-90" : ""}`} />
-              </button>
-
-              <AnimatePresence>
-                {showCouponPanel && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-2 border-t border-border px-4 py-3">
-                      {AVAILABLE_COUPONS.map((coupon) => {
-                        const eligible = subtotal >= coupon.minOrderValue;
-                        return (
-                          <div
-                            key={coupon.code}
-                            className={`rounded-xl border p-3 ${eligible ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30"}`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-mono text-sm font-bold text-primary tracking-wider">{coupon.code}</span>
-                                  {coupon.badge && (
-                                    <span className="rounded-full bg-offer-green/10 px-2 py-0.5 text-[10px] font-semibold text-offer-green">
-                                      {coupon.badge}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="mt-0.5 text-xs text-muted-foreground">{coupon.description}</p>
-                                {!eligible && (
-                                  <p className="mt-0.5 text-[10px] text-destructive">
-                                    Add ₹{coupon.minOrderValue - subtotal} more to unlock
-                                  </p>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCoupon(coupon)}
-                                disabled={!eligible}
-                                className="flex-shrink-0 rounded-lg border border-primary bg-transparent px-3 py-1 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                Apply
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+          {/* Applied coupons list */}
+          {appliedCoupons.length > 0 && (
+            <div className="divide-y divide-border">
+              {appliedCoupons.map((coupon) => (
+                <div key={coupon.code} className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-offer-green" />
+                    <div>
+                      <p className="text-sm font-semibold text-offer-green">{coupon.code} applied</p>
+                      <p className="text-xs text-muted-foreground">
+                        Save ₹{getDiscountForCoupon(coupon, subtotal)}
+                      </p>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCoupon(coupon.code)}
+                    className="text-xs font-medium text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
             </div>
           )}
+
+          {/* Code input row */}
+          <div className={`flex items-center gap-2 px-4 py-3 ${appliedCoupons.length > 0 ? "border-t border-border" : ""}`}>
+            <Tag className="h-5 w-5 flex-shrink-0 text-primary" />
+            <Input
+              placeholder="Enter coupon code"
+              className="h-9 flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+              value={couponInput}
+              onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleApplyCouponCode()}
+            />
+            <button
+              type="button"
+              onClick={handleApplyCouponCode}
+              className="text-sm font-semibold text-primary disabled:opacity-40"
+              disabled={!couponInput}
+            >
+              Apply
+            </button>
+          </div>
+
+          {/* Toggle coupons list */}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between border-t border-border px-4 py-3 text-sm font-medium text-foreground"
+            onClick={() => setShowCouponPanel(!showCouponPanel)}
+          >
+            <span>View all offers</span>
+            <ChevronRight className={`h-4 w-4 transition-transform ${showCouponPanel ? "rotate-90" : ""}`} />
+          </button>
+
+          <AnimatePresence>
+            {showCouponPanel && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-2 border-t border-border px-4 py-3">
+                  {AVAILABLE_COUPONS.map((coupon) => {
+                    const eligible = subtotal >= coupon.minOrderValue;
+                    const applied = isCouponApplied(coupon.code);
+                    return (
+                      <div
+                        key={coupon.code}
+                        className={`rounded-xl border p-3 ${
+                          applied
+                            ? "border-offer-green/50 bg-offer-green/5"
+                            : eligible
+                              ? "border-primary/30 bg-primary/5"
+                              : "border-border bg-muted/30"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-bold tracking-wider text-primary">{coupon.code}</span>
+                              {coupon.badge && (
+                                <span className="rounded-full bg-offer-green/10 px-2 py-0.5 text-[10px] font-semibold text-offer-green">
+                                  {coupon.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{coupon.description}</p>
+                            {!eligible && !applied && (
+                              <p className="mt-0.5 text-[10px] text-destructive">
+                                Add ₹{coupon.minOrderValue - subtotal} more to unlock
+                              </p>
+                            )}
+                          </div>
+                          {applied ? (
+                            <span className="flex-shrink-0 text-xs font-semibold text-offer-green">Applied</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSelectCoupon(coupon)}
+                              disabled={!eligible}
+                              className="flex-shrink-0 rounded-lg border border-primary bg-transparent px-3 py-1 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              Apply
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Bill Details */}
@@ -333,7 +366,7 @@ export function CartPageClient() {
             </div>
             {discount > 0 && (
               <div className="flex justify-between">
-                <span className="text-offer-green">Coupon discount ({appliedCoupon?.code})</span>
+                <span className="text-offer-green">Coupon discount ({appliedCoupons.map((c) => c.code).join(", ")})</span>
                 <span className="font-semibold text-offer-green">-₹{discount}</span>
               </div>
             )}

@@ -1,13 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Truck, ExternalLink } from "lucide-react";
+import {
+  X,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Tag,
+  ChevronRight,
+  Info,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Navigation,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
+import { useCouponStore, AVAILABLE_COUPONS, type Coupon } from "@/lib/coupon-store";
+import { useAddressStore } from "@/lib/address-store";
+import { toast } from "sonner";
+import { AddressModal } from "@/components/shared/address-modal";
 
 interface CartSidebarProps {
   open: boolean;
@@ -15,15 +31,59 @@ interface CartSidebarProps {
   onLoginClick?: () => void;
 }
 
+const TIP_OPTIONS = [20, 30, 50];
+
 export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarProps) {
   const { isLoggedIn } = useAuth();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
 
-  const totalPrice = items.reduce((sum, item) => sum + item.totalPayable, 0);
-  const deliveryCharge = totalPrice > 500 ? 0 : 40;
-  const grandTotal = totalPrice + deliveryCharge;
+  const {
+    appliedCoupons,
+    autoApplied,
+    applyCoupon,
+    removeCoupon,
+    setAutoApplied,
+    isCouponApplied,
+    getTotalDiscount,
+    getDiscountForCoupon,
+  } = useCouponStore();
+
+  const { getSelectedAddress } = useAddressStore();
+
+  const [couponInput, setCouponInput] = useState("");
+  const [showCouponPanel, setShowCouponPanel] = useState(false);
+  const [selectedTip, setSelectedTip] = useState<number | null>(null);
+  const [customTip, setCustomTip] = useState("");
+  const [showCustomTip, setShowCustomTip] = useState(false);
+  const [donationEnabled, setDonationEnabled] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
+  const subtotal = items.reduce((sum, item) => sum + item.totalPayable, 0);
+  const deliveryCharge = subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
+  const handlingCharge = items.length > 0 ? 8 : 0;
+  const discount = getTotalDiscount(subtotal);
+  const tip = showCustomTip ? (Number(customTip) || 0) : (selectedTip ?? 0);
+  const donation = donationEnabled ? 1 : 0;
+  const grandTotal = subtotal + deliveryCharge + handlingCharge - discount + tip + donation;
+
+  const selectedAddress = getSelectedAddress();
+
+  // Auto-apply one eligible auto coupon when cart opens / subtotal changes
+  useEffect(() => {
+    if (!open) return;
+    if (autoApplied) return;
+    if (subtotal === 0) return;
+    const autoCoupon = AVAILABLE_COUPONS.find(
+      (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
+    );
+    if (autoCoupon) {
+      applyCoupon(autoCoupon);
+      setAutoApplied(true);
+      toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
+    }
+  }, [open, subtotal]);
 
   useEffect(() => {
     if (open) {
@@ -35,6 +95,33 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  const handleApplyCouponCode = () => {
+    const found = AVAILABLE_COUPONS.find(
+      (c) => c.code.toUpperCase() === couponInput.trim().toUpperCase()
+    );
+    if (!found) { toast.error("Invalid coupon code"); return; }
+    if (isCouponApplied(found.code)) { toast.info("Coupon already applied"); return; }
+    if (subtotal < found.minOrderValue) {
+      toast.error(`Minimum order ₹${found.minOrderValue} required`);
+      return;
+    }
+    applyCoupon(found);
+    setCouponInput("");
+    setShowCouponPanel(false);
+    toast.success(`Coupon ${found.code} applied!`);
+  };
+
+  const handleSelectCoupon = (coupon: Coupon) => {
+    if (isCouponApplied(coupon.code)) { toast.info("Already applied"); return; }
+    if (subtotal < coupon.minOrderValue) {
+      toast.error(`Minimum order ₹${coupon.minOrderValue} required`);
+      return;
+    }
+    applyCoupon(coupon);
+    setShowCouponPanel(false);
+    toast.success(`Coupon ${coupon.code} applied!`);
+  };
 
   return (
     <AnimatePresence>
@@ -60,9 +147,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="font-serif text-xl font-bold text-foreground">
-                Order Summary
-              </h2>
+              <h2 className="font-serif text-xl font-bold text-foreground">My Cart</h2>
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
@@ -73,8 +158,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
               </button>
             </div>
 
-            {/* Cart items */}
-            <div className="flex-1 overflow-y-auto px-5 py-4">
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -83,9 +168,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                   <p className="mt-4 font-serif text-lg font-semibold text-foreground">
                     Your cart is empty
                   </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Add items to get started
-                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">Add items to get started</p>
                   <Button
                     className="mt-6 bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => onOpenChange(false)}
@@ -94,180 +177,412 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
-                  <AnimatePresence mode="popLayout">
-                    {items.map((item, index) => (
-                      <motion.div
-                        key={`${item.product.id}-${item.cuttingType.id}-${item.pieceSize.id}-${item.size}`}
-                        layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: 100 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex gap-3 rounded-xl border border-border bg-card p-3"
-                      >
-                        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg">
-                          <Image
-                            src={item.product.image || "/placeholder.svg"}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                            loading="lazy"
-                          />
-                        </div>
+                <div className="space-y-3 px-4 py-4">
 
-                        <div className="flex flex-1 flex-col gap-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                                {item.product.subCategory}
-                              </p>
-                              <p className="text-sm font-semibold leading-tight text-card-foreground">
+                  {/* Delivery banner + items */}
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-3 border-b border-border pb-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/10">
+                        <Clock className="h-4 w-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Delivery in 30 minutes</p>
+                        <p className="text-xs text-muted-foreground">
+                          Shipment of {items.length} item{items.length > 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 space-y-3">
+                      <AnimatePresence mode="popLayout">
+                        {items.map((item, index) => (
+                          <motion.div
+                            key={`${item.product.id}-${item.cuttingType.id}-${item.pieceSize.id}-${item.size}`}
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: 100 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-center gap-3"
+                          >
+                            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-border">
+                              <Image
+                                src={item.product.image || "/placeholder.svg"}
+                                alt={item.product.name}
+                                fill
+                                className="object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">
                                 {item.product.name}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="truncate text-xs text-muted-foreground">
                                 {item.cuttingType.name} | {item.pieceSize.name}
-                                {item.size ? ` | ${item.size}` : ""}
+                              </p>
+                              <p className="text-sm font-bold text-foreground">
+                                ₹{item.totalPayable.toFixed(0)}
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeItem(index)}
-                              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                              <span className="sr-only">Remove item</span>
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-primary">
-                              {"Rs. "}
-                              {item.totalPayable.toFixed(0)}
-                            </span>
-
-                            <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/50 px-1">
+                            {/* Green quantity controls */}
+                            <div className="flex items-center gap-1 rounded-lg border border-offer-green bg-offer-green px-1 py-0.5">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  updateQuantity(index, item.quantity - 1)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded text-destructive transition-colors hover:bg-destructive/10"
+                                onClick={() => updateQuantity(index, item.quantity - 1)}
+                                className="flex h-7 w-7 items-center justify-center text-white"
                               >
-                                <Minus className="h-3.5 w-3.5" />
-                                <span className="sr-only">Decrease</span>
+                                <Minus className="h-3 w-3" />
                               </button>
-                              <span className="min-w-[24px] text-center text-sm font-semibold text-foreground">
+                              <span className="min-w-[18px] text-center text-sm font-bold text-white">
                                 {item.quantity}
                               </span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  updateQuantity(index, item.quantity + 1)
-                                }
-                                className="flex h-7 w-7 items-center justify-center rounded text-offer-green transition-colors hover:bg-offer-green/10"
+                                onClick={() => updateQuantity(index, item.quantity + 1)}
+                                className="flex h-7 w-7 items-center justify-center text-white"
                               >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span className="sr-only">Increase</span>
+                                <Plus className="h-3 w-3" />
                               </button>
                             </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Coupon section */}
+                  <div className="rounded-2xl border border-border bg-background">
+                    {/* Applied coupons */}
+                    {appliedCoupons.length > 0 && (
+                      <div className="space-y-0 divide-y divide-border">
+                        {appliedCoupons.map((coupon) => (
+                          <div key={coupon.code} className="flex items-center justify-between px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-offer-green" />
+                              <div>
+                                <p className="text-sm font-semibold text-offer-green">{coupon.code} applied</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Save ₹{getDiscountForCoupon(coupon, subtotal)}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeCoupon(coupon.code)}
+                              className="text-xs font-medium text-destructive hover:underline"
+                            >
+                              Remove
+                            </button>
                           </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Code entry row */}
+                    <div className="flex items-center gap-2 border-t border-border px-4 py-3 first:border-t-0">
+                      <Tag className="h-4 w-4 flex-shrink-0 text-primary" />
+                      <Input
+                        placeholder="Enter coupon code"
+                        className="h-8 flex-1 border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => e.key === "Enter" && handleApplyCouponCode()}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCouponCode}
+                        disabled={!couponInput}
+                        className="text-sm font-semibold text-primary disabled:opacity-40"
+                      >
+                        Apply
+                      </button>
+                    </div>
+
+                    {/* View all coupons toggle */}
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between border-t border-border px-4 py-3 text-sm font-medium text-foreground"
+                      onClick={() => setShowCouponPanel(!showCouponPanel)}
+                    >
+                      <span>View all offers</span>
+                      <ChevronRight className={`h-4 w-4 transition-transform ${showCouponPanel ? "rotate-90" : ""}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {showCouponPanel && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-2 border-t border-border px-4 pb-3 pt-2">
+                            {AVAILABLE_COUPONS.map((coupon) => {
+                              const eligible = subtotal >= coupon.minOrderValue;
+                              const applied = isCouponApplied(coupon.code);
+                              return (
+                                <div
+                                  key={coupon.code}
+                                  className={`rounded-xl border p-3 ${
+                                    applied
+                                      ? "border-offer-green/50 bg-offer-green/5"
+                                      : eligible
+                                        ? "border-primary/30 bg-primary/5"
+                                        : "border-border bg-muted/30"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-mono text-sm font-bold tracking-wider text-primary">
+                                          {coupon.code}
+                                        </span>
+                                        {coupon.badge && (
+                                          <span className="rounded-full bg-offer-green/10 px-2 py-0.5 text-[10px] font-semibold text-offer-green">
+                                            {coupon.badge}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="mt-0.5 text-xs text-muted-foreground">
+                                        {coupon.description}
+                                      </p>
+                                      {!eligible && !applied && (
+                                        <p className="mt-0.5 text-[10px] text-destructive">
+                                          Add ₹{coupon.minOrderValue - subtotal} more to unlock
+                                        </p>
+                                      )}
+                                    </div>
+                                    {applied ? (
+                                      <span className="flex-shrink-0 text-xs font-semibold text-offer-green">
+                                        Applied
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSelectCoupon(coupon)}
+                                        disabled={!eligible}
+                                        className="flex-shrink-0 rounded-lg border border-primary px-3 py-1 text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                                      >
+                                        Apply
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Bill Details */}
+                  <div className="rounded-2xl border border-border bg-background p-4">
+                    <h3 className="mb-3 text-sm font-bold text-foreground">Bill details</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Items total</span>
+                        <span className="text-foreground">₹{subtotal.toFixed(0)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          Delivery charge <Info className="h-3 w-3" />
+                        </span>
+                        <span className={deliveryCharge === 0 ? "font-semibold text-offer-green" : "text-foreground"}>
+                          {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          Handling charge <Info className="h-3 w-3" />
+                        </span>
+                        <span className="text-foreground">₹{handlingCharge}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-offer-green">
+                            Coupon discount ({appliedCoupons.map((c) => c.code).join(", ")})
+                          </span>
+                          <span className="font-semibold text-offer-green">-₹{discount}</span>
                         </div>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
+                      )}
+                      {tip > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Delivery tip</span>
+                          <span className="text-foreground">₹{tip}</span>
+                        </div>
+                      )}
+                      {donationEnabled && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Feeding India donation</span>
+                          <span className="text-foreground">₹1</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-border pt-2">
+                        <span className="font-bold text-foreground">Grand total</span>
+                        <span className="text-base font-bold text-foreground">₹{grandTotal.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Donation */}
+                  <div className="rounded-2xl border border-border bg-background p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-orange-50 text-xl">
+                        🍱
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">Feeding India donation</p>
+                        <p className="text-xs text-muted-foreground">
+                          Working towards a malnutrition free India.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">₹1</span>
+                        <button
+                          type="button"
+                          onClick={() => setDonationEnabled(!donationEnabled)}
+                          className={`flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
+                            donationEnabled ? "border-offer-green bg-offer-green text-white" : "border-border"
+                          }`}
+                        >
+                          {donationEnabled && (
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tip */}
+                  <div className="rounded-2xl border border-border bg-background p-4">
+                    <h3 className="text-sm font-semibold text-foreground">Tip your delivery partner</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      100% of your tip goes directly to your delivery partner.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {TIP_OPTIONS.map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTip(selectedTip === amount ? null : amount);
+                            setShowCustomTip(false);
+                            setCustomTip("");
+                          }}
+                          className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                            selectedTip === amount && !showCustomTip
+                              ? "border-offer-green bg-offer-green/10 text-offer-green"
+                              : "border-border text-foreground"
+                          }`}
+                        >
+                          <span>{amount === 20 ? "😁" : amount === 30 ? "😍" : "🥰"}</span>
+                          ₹{amount}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => { setShowCustomTip(!showCustomTip); setSelectedTip(null); }}
+                        className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                          showCustomTip ? "border-offer-green bg-offer-green/10 text-offer-green" : "border-border text-foreground"
+                        }`}
+                      >
+                        <span>👏</span> Custom
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {showCustomTip && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-3 overflow-hidden"
+                        >
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter amount"
+                              inputMode="numeric"
+                              value={customTip}
+                              onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))}
+                              className="h-9"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Cancellation policy */}
+                  <div className="rounded-2xl border border-border bg-background p-4">
+                    <h3 className="text-sm font-semibold text-foreground">Cancellation Policy</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Orders cannot be cancelled once packed for delivery. In case of unexpected delays, a refund will be provided, if applicable.
+                    </p>
+                  </div>
+
+                  {/* Bottom spacer for sticky footer */}
+                  <div className="h-4" />
                 </div>
               )}
             </div>
 
-            {/* Bill Details */}
+            {/* Sticky footer */}
             {items.length > 0 && (
-              <div className="border-t border-border bg-card">
-                <div className="px-5 py-4">
-                  <h3 className="mb-3 text-sm font-bold text-card-foreground">
-                    Bill Details
-                  </h3>
-                  <div className="flex flex-col gap-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="text-card-foreground">
-                        {"Rs. "}
-                        {totalPrice.toFixed(0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Delivery Charge
-                      </span>
-                      <span
-                        className={
-                          deliveryCharge === 0
-                            ? "font-medium text-offer-green"
-                            : "text-card-foreground"
-                        }
-                      >
-                        {deliveryCharge === 0
-                          ? "Free"
-                          : `Rs. ${deliveryCharge}`}
-                      </span>
-                    </div>
-                    {deliveryCharge > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Free delivery on orders above Rs. 500
+              <div className="border-t border-border bg-background">
+                {/* Delivering to */}
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-4 py-2 hover:bg-muted/50"
+                  onClick={() => setShowAddressModal(true)}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="h-4 w-4 flex-shrink-0 text-offer-green" />
+                    <div className="min-w-0 text-left">
+                      <p className="text-xs font-semibold text-foreground">
+                        Delivering to{" "}
+                        <span className="text-offer-green">{selectedAddress?.label ?? "Home"}</span>
                       </p>
-                    )}
-                    <div className="mt-1 flex justify-between border-t border-border pt-2">
-                      <span className="font-bold text-card-foreground">
-                        Total
-                      </span>
-                      <span className="text-lg font-bold text-primary">
-                        {"Rs. "}
-                        {grandTotal.toFixed(0)}
-                      </span>
+                      {selectedAddress && (
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {selectedAddress.name}, {selectedAddress.street}...
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
+                  <span className="ml-2 flex-shrink-0 text-xs font-semibold text-offer-green">Change</span>
+                </button>
 
-                <div className="flex items-center justify-between border-t border-border bg-background px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-offer-green" />
-                    <div>
-                      <p className="text-sm font-bold text-foreground">
-                        {"Rs. "}
-                        {grandTotal.toFixed(0)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        incl. taxes
-                      </p>
+                {/* Proceed to pay */}
+                <div className="px-4 pb-4">
+                  <Button
+                    className="w-full rounded-xl bg-offer-green py-4 text-base font-bold text-white hover:bg-offer-green/90"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onOpenChange(false);
+                        onLoginClick?.();
+                      }
+                    }}
+                  >
+                    <div className="flex w-full items-center justify-between">
+                      <span className="text-left">
+                        <span className="block text-lg font-bold">₹{grandTotal.toFixed(0)}</span>
+                        <span className="block text-xs opacity-80">TOTAL</span>
+                      </span>
+                      <span className="text-base font-bold">
+                        {isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href="/cart"
-                      onClick={() => onOpenChange(false)}
-                      className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                    >
-                      View cart
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
-                    <Button
-                      className="rounded-lg bg-primary px-6 text-primary-foreground hover:bg-primary/90"
-                      onClick={() => {
-                        if (!isLoggedIn) {
-                          onOpenChange(false);
-                          onLoginClick?.();
-                        } else {
-                          // TODO: navigate to checkout page
-                        }
-                      }}
-                    >
-                      {isLoggedIn ? "Proceed to Checkout" : "Login to Checkout"}
-                    </Button>
-                  </div>
+                  </Button>
                 </div>
               </div>
             )}
           </motion.div>
+
+          <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
         </>
       )}
     </AnimatePresence>

@@ -1,5 +1,3 @@
-"use client";
-
 import { create } from "zustand";
 
 export type Coupon = {
@@ -47,24 +45,59 @@ export const AVAILABLE_COUPONS: Coupon[] = [
 ];
 
 interface CouponState {
-  appliedCoupon: Coupon | null;
+  /** All coupons the user has applied. Max one auto-apply; manual ones stack. */
+  appliedCoupons: Coupon[];
+  /** True once the auto-apply logic has run for the current cart session */
+  autoApplied: boolean;
   applyCoupon: (coupon: Coupon) => void;
-  removeCoupon: () => void;
-  getDiscount: (subtotal: number) => number;
+  removeCoupon: (code: string) => void;
+  clearAllCoupons: () => void;
+  setAutoApplied: (val: boolean) => void;
+  isCouponApplied: (code: string) => boolean;
+  getTotalDiscount: (subtotal: number) => number;
+  getDiscountForCoupon: (coupon: Coupon, subtotal: number) => number;
 }
 
 export const useCouponStore = create<CouponState>((set, get) => ({
-  appliedCoupon: null,
+  appliedCoupons: [],
+  autoApplied: false,
 
-  applyCoupon: (coupon) => set({ appliedCoupon: coupon }),
+  applyCoupon: (coupon) => {
+    set((state) => {
+      // Don't double-apply the same code
+      if (state.appliedCoupons.some((c) => c.code === coupon.code)) {
+        return state;
+      }
+      return { appliedCoupons: [...state.appliedCoupons, coupon] };
+    });
+  },
 
-  removeCoupon: () => set({ appliedCoupon: null }),
+  removeCoupon: (code) => {
+    set((state) => ({
+      appliedCoupons: state.appliedCoupons.filter((c) => c.code !== code),
+      // If user removes an auto-apply coupon, let it stay removed
+      autoApplied: state.autoApplied && state.appliedCoupons.find((c) => c.code === code)?.autoApply
+        ? false
+        : state.autoApplied,
+    }));
+  },
 
-  getDiscount: (subtotal: number) => {
-    const { appliedCoupon } = get();
-    if (!appliedCoupon) return 0;
-    if (subtotal < appliedCoupon.minOrderValue) return 0;
-    if (appliedCoupon.discountType === "flat") return appliedCoupon.discountValue;
-    return Math.round((subtotal * appliedCoupon.discountValue) / 100);
+  clearAllCoupons: () => set({ appliedCoupons: [], autoApplied: false }),
+
+  setAutoApplied: (val) => set({ autoApplied: val }),
+
+  isCouponApplied: (code) => get().appliedCoupons.some((c) => c.code === code),
+
+  getDiscountForCoupon: (coupon: Coupon, subtotal: number): number => {
+    if (subtotal < coupon.minOrderValue) return 0;
+    if (coupon.discountType === "flat") return coupon.discountValue;
+    return Math.round((subtotal * coupon.discountValue) / 100);
+  },
+
+  getTotalDiscount: (subtotal: number): number => {
+    const { appliedCoupons, getDiscountForCoupon } = get();
+    return appliedCoupons.reduce((total, coupon) => {
+      return total + getDiscountForCoupon(coupon, subtotal);
+    }, 0);
   },
 }));
