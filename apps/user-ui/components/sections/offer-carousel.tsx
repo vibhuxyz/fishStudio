@@ -52,7 +52,20 @@ export function OfferCarousel() {
     );
   }
 
-  if (isError || banners.length === 0) return null;
+  if (isError || banners.length === 0) {
+    return (
+      <section className="w-full px-4 py-4 md:px-6">
+        <div
+          className="relative mx-auto flex max-w-7xl items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-primary/15 to-accent/20"
+          style={{ paddingBottom: "33.33%" }}
+        >
+          <p className="absolute inset-0 flex items-center justify-center text-sm font-semibold tracking-widest text-muted-foreground/60 uppercase">
+            Banner
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full px-4 py-4 md:px-6">
