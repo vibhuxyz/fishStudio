@@ -5,17 +5,27 @@ import { useAuthStore } from "../store/authStore";
 import React from "react";
 import { isProtected } from "../utils/protected";
 
-// fetch seller data from API
+// Fetch logged-in account — tries seller first, then staff
 const fetchSeller = async () => {
-  const response = await axiosInstance.get(
-    "/auth/api/logged-in-seller",
-    isProtected
-  );
-  return response.data.seller;
+  try {
+    const response = await axiosInstance.get("/auth/api/logged-in-seller", {
+      ...isProtected,
+      headers: { "x-auth-role": "seller" },
+    } as any);
+    return { ...response.data.seller, role: "seller" };
+  } catch {
+    // Fallback to staff
+    const staffResponse = await axiosInstance.get("/auth/api/logged-in-staff", {
+      ...isProtected,
+      headers: { "x-auth-role": "staff" },
+    } as any);
+    const staff = staffResponse.data.staff;
+    return { ...staff, role: "staff" };
+  }
 };
 
 const useSeller = () => {
-  const { setLoggedIn, isLoggedIn } = useAuthStore();
+  const { setLoggedIn, isLoggedIn, setRole } = useAuthStore();
 
   const {
     data: seller,
@@ -26,17 +36,18 @@ const useSeller = () => {
     queryFn: fetchSeller,
     staleTime: 1000 * 60 * 5,
     retry: false,
-    enabled: isLoggedIn, // Only run query if seller should be logged in
+    enabled: isLoggedIn,
   });
 
-  // Update auth state based on query results
   React.useEffect(() => {
     if (seller) {
       setLoggedIn(true);
+      setRole(seller.role ?? null);
     } else if (isError) {
       setLoggedIn(false);
+      setRole(null);
     }
-  }, [seller, isError, setLoggedIn]);
+  }, [seller, isError, setLoggedIn, setRole]);
 
   return { seller: seller as any, isLoading: isPending, isError };
 };

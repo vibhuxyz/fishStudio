@@ -23,6 +23,7 @@ import {
   Settings,
   SquarePlus,
   TicketPercent,
+  Users,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
@@ -180,6 +181,17 @@ const SidebarBarWrapper = () => {
               />
             </SidebarMenu>
             <SidebarMenu title="Extras">
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/staff-management"}
+                title="Staff Management"
+                href="/dashboard/staff-management"
+                icon={
+                  <Users
+                    size={22}
+                    color={getIconColor("/dashboard/staff-management")}
+                  />
+                }
+              />
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/discount-codes"}
                 title="Discount Codes"

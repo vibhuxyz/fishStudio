@@ -231,7 +231,7 @@ export const loginSeller = async (
   req: Request,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
     const { email, password } = req.body;
 
@@ -239,41 +239,76 @@ export const loginSeller = async (
       throw new ValidationError("All fields are required");
     }
 
-    const seller = await prisma.sellers.findUnique({
-      where: { email },
-    });
+    // Try seller first
+    const seller = await prisma.sellers.findUnique({ where: { email } });
 
-    if (!seller) {
-      throw new AuthError("seller not found!! Invalid Email or Password");
+    if (seller) {
+      const isPasswordMatch = await bcrypt.compare(password, seller.password!);
+      if (!isPasswordMatch) {
+        throw new AuthError("Invalid credentials — password incorrect");
+      }
+
+      const accessToken = jwt.sign(
+        { id: seller.id, role: "seller" },
+        ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
+        { expiresIn: "15m" },
+      );
+      const refreshToken = jwt.sign(
+        { id: seller.id, role: "seller" },
+        ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
+        { expiresIn: "7d" },
+      );
+
+      setCookie(res, "seller_refresh_token", refreshToken);
+      setCookie(res, "seller_access_token", accessToken);
+
+      return res.status(200).json({
+        success: true,
+        message: "Seller logged in successfully",
+        role: "seller",
+        user: { id: seller.id, name: seller.name, email: seller.email },
+      });
     }
 
-    // check password
-    const isPasswordMatch = await bcrypt.compare(password, seller.password!);
+    // Try staff
+    const staff = await prisma.staffs.findUnique({ where: { email } });
 
+    if (!staff) {
+      throw new AuthError("No account found with this email");
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, staff.password!);
     if (!isPasswordMatch) {
-      throw new AuthError("Invalid credentials Password Incorrect");
+      throw new AuthError("Invalid credentials — password incorrect");
     }
 
-    // generate access or refresh token
+    if (!staff.isActive || !staff.sellerId) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your staff account has not been activated by a seller yet. Please ask your seller to grant you access.",
+      });
+    }
+
     const accessToken = jwt.sign(
-      { id: seller.id, role: "seller" },
+      { id: staff.id, role: "staff" },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
       { expiresIn: "15m" },
     );
     const refreshToken = jwt.sign(
-      { id: seller.id, role: "seller" },
+      { id: staff.id, role: "staff" },
       ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
       { expiresIn: "7d" },
     );
 
-    // store the refresh and access token in an httponly secure
-    setCookie(res, "seller_refresh_token", refreshToken);
-    setCookie(res, "seller_access_token", accessToken);
+    setCookie(res, "staff_refresh_token", refreshToken);
+    setCookie(res, "staff_access_token", accessToken);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Seller logged in successfully",
-      user: { id: seller.id, name: seller.name, email: seller.email },
+      message: "Staff logged in successfully",
+      role: "staff",
+      user: { id: staff.id, name: staff.name, email: staff.email },
     });
   } catch (error) {
     next(error);

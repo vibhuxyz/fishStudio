@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 
-import { isAdmin, isAuthenticated, isSeller, isUser } from "@repo/middlewares";
+import { isAdmin, isAuthenticated, isSeller, isStaff, isUser } from "@repo/middlewares";
 import {
   getAdmin,
   loginAdmin,
@@ -26,6 +26,15 @@ import {
   registerSeller,
   verifySeller,
 } from "../controller/seller.auth.controller.js";
+import {
+  getMyStaffs,
+  getStaff,
+  logOutStaff,
+  registerStaff,
+  searchStaffByEmail,
+  updateStaffAccess,
+  verifyStaff,
+} from "../controller/staff.auth.controller.js";
 
 const router: Router = express.Router();
 
@@ -57,18 +66,17 @@ router.post("/verify-seller", verifySeller);
 router.post("/login-seller", loginSeller);
 router.post("/create-store", createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
-
-// router.post(
-//   "/create-stripe-link",
-//   isAuthenticated,
-//   isSeller,
-//   createStripeConnectLink,
-// );
-
 router.post("/logout-seller", isAuthenticated, isSeller, logOutSeller);
 
-// router.post("/forget-password-seller", userForgetPassword);
-// router.post("/reset-password-seller", resetUserPassword);
-// router.post("/verify-forget-password-seller", verifyUserForgetPassword);
+// staff routes
+router.post("/staff-registration", registerStaff);
+router.post("/verify-staff", verifyStaff);
+router.get("/logged-in-staff", isAuthenticated, isStaff, getStaff);
+router.post("/logout-staff", isAuthenticated, isStaff, logOutStaff);
+
+// seller staff management routes
+router.get("/seller/staffs", isAuthenticated, isSeller, getMyStaffs);
+router.get("/seller/staff/search", isAuthenticated, isSeller, searchStaffByEmail);
+router.put("/seller/staff/access", isAuthenticated, isSeller, updateStaffAccess);
 
 export default router;

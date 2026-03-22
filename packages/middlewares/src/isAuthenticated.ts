@@ -9,13 +9,18 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
 
     if (requestedRole === "admin" || req.path.includes("admin")) {
       token = req.cookies["admin_access_token"];
+    } else if (requestedRole === "staff") {
+      token = req.cookies["staff_access_token"];
     } else if (requestedRole === "seller" || req.path.includes("seller")) {
-      token = req.cookies["seller_access_token"];
+      token =
+        req.cookies["seller_access_token"] ||
+        req.cookies["staff_access_token"];
     } else if (requestedRole === "user" || req.path.includes("user")) {
       token = req.cookies["access_token"];
     } else {
       // fallback: use whichever exists
       token =
+        req.cookies["staff_access_token"] ||
         req.cookies["seller_access_token"] ||
         req.cookies["admin_access_token"] ||
         req.cookies["access_token"] ||
@@ -32,11 +37,11 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       process.env.ACCESS_TOKEN_JWT_SECRET_KEY as string,
     ) as {
       id: string;
-      role: "admin" | "user" | "seller";
+      role: "admin" | "user" | "seller" | "staff";
     };
     if (!decode) {
       return res.status(401).json({
-        message: "Anauthorized! Invalid token",
+        message: "Unauthorized! Invalid token",
       });
     }
     let account;
@@ -57,6 +62,16 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         include: { store: true },
       });
       req.seller = account;
+    } else if (decode.role === "staff") {
+      account = await prisma.staffs.findUnique({
+        where: { id: decode.id },
+        include: { seller: { include: { store: true } } },
+      });
+      req.staff = account;
+      // expose seller context for routes that use req.seller
+      if (account && (account as any).seller) {
+        req.seller = (account as any).seller;
+      }
     }
 
     if (!account) {
@@ -69,7 +84,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     return next();
   } catch (error) {
     return res.status(401).json({
-      message: "Anauthorized! Invalid token or expired",
+      message: "Unauthorized! Invalid token or expired",
     });
   }
 };

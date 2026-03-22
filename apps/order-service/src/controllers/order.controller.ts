@@ -410,43 +410,32 @@ export const createOrder = async (
   }
 };
 
-// get sellers orders
+// get sellers orders — accessible by seller AND staff (staff sees seller's shop orders)
 export const getSellerOrders = async (
   req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    // Both seller and staff land here. For staff, req.seller is their linked seller.
+    const sellerId = req.seller?.id;
+
     const shop = await prisma.shops.findUnique({
-      where: {
-        sellerId: req.seller.id,
-      },
+      where: { sellerId },
     });
 
     // fetch all orders for this shop
     const orders = await prisma.orders.findMany({
-      where: {
-        shopId: shop?.id,
-      },
+      where: { shopId: shop?.id },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
+          select: { id: true, name: true, email: true, avatar: true },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
-    res.status(201).json({
-      success: true,
-      orders,
-    });
+    res.status(201).json({ success: true, orders });
   } catch (error) {
     next(error);
   }
@@ -692,5 +681,86 @@ export const getAdminOrders = async (
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// accept or reject order (staff or seller)
+export const acceptOrRejectOrder = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { orderId } = req.params;
+    const { action, rejectionReason } = req.body;
+
+    if (!orderId || !action) {
+      return next(new ValidationError("orderId and action are required"));
+    }
+
+    if (action !== "accept" && action !== "reject") {
+      return next(new ValidationError("action must be 'accept' or 'reject'"));
+    }
+
+    if (action === "reject" && !rejectionReason?.trim()) {
+      return next(
+        new ValidationError("A rejection reason is required when rejecting an order"),
+      );
+    }
+
+    const existingOrder = await prisma.orders.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!existingOrder) {
+      return next(new NotFoundError("Order not found"));
+    }
+
+    let updatedOrder;
+
+    if (action === "accept") {
+      updatedOrder = await prisma.orders.update({
+        where: { id: orderId },
+        data: {
+          status: "Accepted",
+          rejectionReason: null,
+          refundStatus: null,
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // reject: update order status and set refund to "Pending"
+      updatedOrder = await prisma.orders.update({
+        where: { id: orderId },
+        data: {
+          status: "Rejected",
+          rejectionReason: rejectionReason.trim(),
+          refundStatus: "Pending",
+          updatedAt: new Date(),
+        },
+      });
+
+      // In a real implementation, trigger auto-refund via payment gateway here.
+      // For now we mark it as Pending so it can be tracked.
+      // Example: await stripeRefund(existingOrder.paymentIntentId);
+      // Then update refundStatus to "Refunded"
+
+      // Simulate auto-refund completion
+      await prisma.orders.update({
+        where: { id: orderId },
+        data: { refundStatus: "Refunded" },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        action === "accept"
+          ? "Order accepted successfully"
+          : "Order rejected and refund initiated",
+      order: updatedOrder,
+    });
+  } catch (error) {
+    return next(error);
   }
 };

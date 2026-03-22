@@ -1,10 +1,8 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-// import { useAuthStore } from "apps/store-ui/src/store/authStore";
 import axios, { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
-// import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,7 +16,7 @@ type FormData = {
 };
 
 const Login = () => {
-  const { setLoggedIn } = useAuthStore();
+  const { setLoggedIn, setRole } = useAuthStore();
   const queryClient = useQueryClient();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -43,14 +41,23 @@ const Login = () => {
     onSuccess: (data) => {
       setServerError(null);
       setLoggedIn(true);
+      const role = data.role as "seller" | "staff";
+      setRole(role);
       queryClient.invalidateQueries({ queryKey: ["seller"] });
-      router.push("/");
+
+      // Redirect based on role
+      if (role === "staff") {
+        router.push("/staff/orders");
+      } else {
+        router.push("/dashboard");
+      }
     },
     onError: (error: AxiosError) => {
-      const errorMessage =
-        (error.response?.data as { message?: string })?.message ||
-        "Invalid credentials!";
-      setServerError(errorMessage);
+      const errorData = error.response?.data as {
+        message?: string;
+        success?: boolean;
+      };
+      setServerError(errorData?.message || "Invalid credentials!");
     },
   });
 
@@ -73,15 +80,15 @@ const Login = () => {
             Login to Eshop
           </h3>
           <p className="text-center text-gray-500 mb-4">
-            Don't have an account?{" "}
-            <Link href={"/signup"} className="text-blue-500">
+            {"Don't have an account? "}
+            <Link href="/signup" className="text-blue-500">
               Sign up
             </Link>
           </p>
 
           <div className="flex items-center my-5 text-gray-400 text-sm">
             <div className="flex-1 border-t border-gray-300" />
-            <span className="px-3">or Sign in with Email</span>
+            <span className="px-3">Sign in with Email</span>
             <div className="flex-1 border-t border-gray-300" />
           </div>
 
@@ -89,8 +96,8 @@ const Login = () => {
             <label className="block text-gray-700 mb-1">Email</label>
             <input
               type="email"
-              placeholder="support@becodemy.com"
-              className="w-full p-2 border border-gray-300 outline-0 !rounded mb-1"
+              placeholder="you@example.com"
+              className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -99,19 +106,18 @@ const Login = () => {
                 },
               })}
             />
-
             {errors.email && (
               <p className="text-red-500 text-sm">
                 {String(errors.email.message)}
               </p>
             )}
 
-            <label className="block text-gray-700 mb-1">Password</label>
+            <label className="block text-gray-700 mb-1 mt-2">Password</label>
             <div className="relative">
               <input
                 type={passwordVisible ? "text" : "password"}
                 placeholder="Min. 6 characters"
-                className="w-full p-2 border border-gray-300 outline-0 !rounded mb-1"
+                className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
                 {...register("password", {
                   required: "Password is required",
                   minLength: {
@@ -120,7 +126,6 @@ const Login = () => {
                   },
                 })}
               />
-
               <button
                 type="button"
                 onClick={() => setPasswordVisible(!passwordVisible)}
@@ -128,14 +133,15 @@ const Login = () => {
               >
                 {passwordVisible ? <Eye /> : <EyeOff />}
               </button>
-              {errors.password && (
-                <p className="text-red-500 text-sm">
-                  {String(errors.password.message)}
-                </p>
-              )}
             </div>
+            {errors.password && (
+              <p className="text-red-500 text-sm">
+                {String(errors.password.message)}
+              </p>
+            )}
+
             <div className="flex justify-between items-center my-4">
-              <label className="flex items-center text-gray-600">
+              <label className="flex items-center text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
                   className="mr-2"
@@ -144,7 +150,7 @@ const Login = () => {
                 />
                 Remember me
               </label>
-              <Link href={"/forgot-password"} className="text-blue-500 text-sm">
+              <Link href="/forgot-password" className="text-blue-500 text-sm">
                 Forgot Password?
               </Link>
             </div>
@@ -154,7 +160,7 @@ const Login = () => {
               disabled={loginMutation.isPending}
               className="w-full text-lg cursor-pointer bg-black text-white py-2 rounded-lg"
             >
-              {loginMutation?.isPending ? "Loggin in..." : "Login"}
+              {loginMutation.isPending ? "Logging in..." : "Login"}
             </button>
 
             {serverError && (

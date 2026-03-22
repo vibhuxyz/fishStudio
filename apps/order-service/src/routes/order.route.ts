@@ -1,6 +1,7 @@
 import isAuthenticated from "@repo/middlewares/isAuthenticated";
 import express, { Router } from "express";
 import {
+  acceptOrRejectOrder,
   createPaymentIntent,
   createPaymentSession,
   getAdminOrders,
@@ -11,7 +12,7 @@ import {
   verifyCouponCode,
   verifyingPaymentSession,
 } from "../controllers/order.controller";
-import { isSeller } from "@repo/middlewares/authorizeRole";
+import { isSeller, isSellerOrStaff } from "@repo/middlewares/authorizeRole";
 
 const router: Router = express.Router();
 
@@ -23,8 +24,7 @@ router.get(
   verifyingPaymentSession,
 );
 
-
-router.get("/get-seller-orders", isAuthenticated, isSeller, getSellerOrders);
+router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, getSellerOrders);
 router.get("/get-order-details/:id", isAuthenticated, getOrderDetails);
 router.put(
   "/update-status/:orderId",
@@ -34,6 +34,13 @@ router.put(
 );
 router.put("/verify-coupon", isAuthenticated, verifyCouponCode);
 router.get("/get-user-orders", isAuthenticated, getUserOrders);
-// router.get("/get-admin-orders", isAuthenticated, isAdmin, getAdminOrders);
+
+// Accept or reject an order (staff or seller can do this)
+router.put(
+  "/accept-reject/:orderId",
+  isAuthenticated,
+  isSellerOrStaff,
+  acceptOrRejectOrder,
+);
 
 export default router;
