@@ -114,6 +114,25 @@ model sellers {
   events       seller_events[]
   store        stores?
   coupons      discount_codes[]
+  staffs       staffs[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// STAFFS
+//////////////////////////////////////////////////////
+
+model staffs {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  email    String  @unique
+  password String
+  isActive Boolean @default(false)
+
+  sellerId String?  @db.ObjectId
+  seller   sellers? @relation(fields: [sellerId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

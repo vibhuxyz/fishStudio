@@ -9,6 +9,9 @@ const useRequireAuth = () => {
   useEffect(() => {
     if (!isLoading && !seller) {
       router.replace("/login");
+    } else if (!isLoading && seller && seller.role === "staff") {
+      // Staff cannot access the seller dashboard — redirect to their own portal
+      router.replace("/staff/orders");
     }
   }, [seller, isLoading, router]);
 

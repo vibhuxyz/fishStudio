@@ -7,8 +7,7 @@ const axiosInstance = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    "x-auth-role": "seller",
-    // ✅ ADD THIS LINE to bypass ngrok warning page
+    // Default role — overridden per-request where needed
     "ngrok-skip-browser-warning": "true",
   },
 });
