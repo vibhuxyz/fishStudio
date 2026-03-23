@@ -85,7 +85,7 @@ const StaffOrderDetailPage = () => {
       {isActionable && (
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => setOrder(prev => ({ ...prev, status: "Processing" }))}
+            onClick={() => setOrder((prev:any) => ({ ...prev, status: "Processing" }))}
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
           >
             <CheckCircle size={18} />

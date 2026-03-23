@@ -54,6 +54,7 @@ export const ModelName = {
   users: 'users',
   discount_codes: 'discount_codes',
   sellers: 'sellers',
+  staffs: 'staffs',
   stores: 'stores',
   storeReviews: 'storeReviews',
   favorites: 'favorites',
@@ -133,6 +134,20 @@ export const SellersScalarFieldEnum = {
 } as const
 
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
+
+
+export const StaffsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  password: 'password',
+  isActive: 'isActive',
+  sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StaffsScalarFieldEnum = (typeof StaffsScalarFieldEnum)[keyof typeof StaffsScalarFieldEnum]
 
 
 export const StoresScalarFieldEnum = {

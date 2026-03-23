@@ -35,7 +35,7 @@
     "prepare": "husky",
     "db:setup": "cd packages/db && bun run db:setup",
     "db:migrate": "cd packages/db && bunx prisma db push",
-    "db:seed": "cd packages/db && bun run db:seed"
+    "db:seed": "cd packages/db && bun run prisma:seed"
   },
   "workspaces": [
     "apps/*",

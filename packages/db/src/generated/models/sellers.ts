@@ -206,6 +206,7 @@ export type sellersWhereInput = {
   events?: Prisma.Seller_eventsListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
   coupons?: Prisma.Discount_codesListRelationFilter
+  staffs?: Prisma.StaffsListRelationFilter
 }
 
 export type sellersOrderByWithRelationInput = {
@@ -221,6 +222,7 @@ export type sellersOrderByWithRelationInput = {
   events?: Prisma.seller_eventsOrderByRelationAggregateInput
   store?: Prisma.storesOrderByWithRelationInput
   coupons?: Prisma.discount_codesOrderByRelationAggregateInput
+  staffs?: Prisma.staffsOrderByRelationAggregateInput
 }
 
 export type sellersWhereUniqueInput = Prisma.AtLeast<{
@@ -239,6 +241,7 @@ export type sellersWhereUniqueInput = Prisma.AtLeast<{
   events?: Prisma.Seller_eventsListRelationFilter
   store?: Prisma.XOR<Prisma.StoresNullableScalarRelationFilter, Prisma.storesWhereInput> | null
   coupons?: Prisma.Discount_codesListRelationFilter
+  staffs?: Prisma.StaffsListRelationFilter
 }, "id" | "email">
 
 export type sellersOrderByWithAggregationInput = {
@@ -282,6 +285,7 @@ export type sellersCreateInput = {
   events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
   store?: Prisma.storesCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateInput = {
@@ -297,6 +301,7 @@ export type sellersUncheckedCreateInput = {
   events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUpdateInput = {
@@ -311,6 +316,7 @@ export type sellersUpdateInput = {
   events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateInput = {
@@ -325,6 +331,7 @@ export type sellersUncheckedUpdateInput = {
   events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUncheckedUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersCreateManyInput = {
@@ -424,6 +431,22 @@ export type sellersUpdatefollowingInput = {
   push?: string | string[]
 }
 
+export type sellersCreateNestedOneWithoutStaffsInput = {
+  create?: Prisma.XOR<Prisma.sellersCreateWithoutStaffsInput, Prisma.sellersUncheckedCreateWithoutStaffsInput>
+  connectOrCreate?: Prisma.sellersCreateOrConnectWithoutStaffsInput
+  connect?: Prisma.sellersWhereUniqueInput
+}
+
+export type sellersUpdateOneWithoutStaffsNestedInput = {
+  create?: Prisma.XOR<Prisma.sellersCreateWithoutStaffsInput, Prisma.sellersUncheckedCreateWithoutStaffsInput>
+  connectOrCreate?: Prisma.sellersCreateOrConnectWithoutStaffsInput
+  upsert?: Prisma.sellersUpsertWithoutStaffsInput
+  disconnect?: boolean
+  delete?: Prisma.sellersWhereInput | boolean
+  connect?: Prisma.sellersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.sellersUpdateToOneWithWhereWithoutStaffsInput, Prisma.sellersUpdateWithoutStaffsInput>, Prisma.sellersUncheckedUpdateWithoutStaffsInput>
+}
+
 export type sellersCreateNestedOneWithoutStoreInput = {
   create?: Prisma.XOR<Prisma.sellersCreateWithoutStoreInput, Prisma.sellersUncheckedCreateWithoutStoreInput>
   connectOrCreate?: Prisma.sellersCreateOrConnectWithoutStoreInput
@@ -478,6 +501,7 @@ export type sellersCreateWithoutCouponsInput = {
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
   events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
   store?: Prisma.storesCreateNestedOneWithoutSellerInput
+  staffs?: Prisma.staffsCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateWithoutCouponsInput = {
@@ -492,6 +516,7 @@ export type sellersUncheckedCreateWithoutCouponsInput = {
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
   events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
+  staffs?: Prisma.staffsUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersCreateOrConnectWithoutCouponsInput = {
@@ -521,6 +546,7 @@ export type sellersUpdateWithoutCouponsInput = {
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
   events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUpdateOneWithoutSellerNestedInput
+  staffs?: Prisma.staffsUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateWithoutCouponsInput = {
@@ -534,6 +560,81 @@ export type sellersUncheckedUpdateWithoutCouponsInput = {
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
   events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
+  staffs?: Prisma.staffsUncheckedUpdateManyWithoutSellerNestedInput
+}
+
+export type sellersCreateWithoutStaffsInput = {
+  id?: string
+  name: string
+  email: string
+  phone_number: string
+  password: string
+  following?: Prisma.sellersCreatefollowingInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
+  events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
+  store?: Prisma.storesCreateNestedOneWithoutSellerInput
+  coupons?: Prisma.discount_codesCreateNestedManyWithoutSellerInput
+}
+
+export type sellersUncheckedCreateWithoutStaffsInput = {
+  id?: string
+  name: string
+  email: string
+  phone_number: string
+  password: string
+  following?: Prisma.sellersCreatefollowingInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
+  events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
+  store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
+  coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutSellerInput
+}
+
+export type sellersCreateOrConnectWithoutStaffsInput = {
+  where: Prisma.sellersWhereUniqueInput
+  create: Prisma.XOR<Prisma.sellersCreateWithoutStaffsInput, Prisma.sellersUncheckedCreateWithoutStaffsInput>
+}
+
+export type sellersUpsertWithoutStaffsInput = {
+  update: Prisma.XOR<Prisma.sellersUpdateWithoutStaffsInput, Prisma.sellersUncheckedUpdateWithoutStaffsInput>
+  create: Prisma.XOR<Prisma.sellersCreateWithoutStaffsInput, Prisma.sellersUncheckedCreateWithoutStaffsInput>
+  where?: Prisma.sellersWhereInput
+}
+
+export type sellersUpdateToOneWithWhereWithoutStaffsInput = {
+  where?: Prisma.sellersWhereInput
+  data: Prisma.XOR<Prisma.sellersUpdateWithoutStaffsInput, Prisma.sellersUncheckedUpdateWithoutStaffsInput>
+}
+
+export type sellersUpdateWithoutStaffsInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.sellersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
+  events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
+  store?: Prisma.storesUpdateOneWithoutSellerNestedInput
+  coupons?: Prisma.discount_codesUpdateManyWithoutSellerNestedInput
+}
+
+export type sellersUncheckedUpdateWithoutStaffsInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  following?: Prisma.sellersUpdatefollowingInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
+  events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
+  store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
+  coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersCreateWithoutStoreInput = {
@@ -548,6 +649,7 @@ export type sellersCreateWithoutStoreInput = {
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
   events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
   coupons?: Prisma.discount_codesCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateWithoutStoreInput = {
@@ -562,6 +664,7 @@ export type sellersUncheckedCreateWithoutStoreInput = {
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
   events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersCreateOrConnectWithoutStoreInput = {
@@ -591,6 +694,7 @@ export type sellersUpdateWithoutStoreInput = {
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
   events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateWithoutStoreInput = {
@@ -604,6 +708,7 @@ export type sellersUncheckedUpdateWithoutStoreInput = {
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
   events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUncheckedUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersCreateWithoutBannersInput = {
@@ -618,6 +723,7 @@ export type sellersCreateWithoutBannersInput = {
   events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
   store?: Prisma.storesCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateWithoutBannersInput = {
@@ -632,6 +738,7 @@ export type sellersUncheckedCreateWithoutBannersInput = {
   events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersCreateOrConnectWithoutBannersInput = {
@@ -661,6 +768,7 @@ export type sellersUpdateWithoutBannersInput = {
   events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateWithoutBannersInput = {
@@ -674,6 +782,7 @@ export type sellersUncheckedUpdateWithoutBannersInput = {
   events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUncheckedUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersCreateWithoutEventsInput = {
@@ -688,6 +797,7 @@ export type sellersCreateWithoutEventsInput = {
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
   store?: Prisma.storesCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsCreateNestedManyWithoutSellerInput
 }
 
 export type sellersUncheckedCreateWithoutEventsInput = {
@@ -702,6 +812,7 @@ export type sellersUncheckedCreateWithoutEventsInput = {
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
   store?: Prisma.storesUncheckedCreateNestedOneWithoutSellerInput
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutSellerInput
+  staffs?: Prisma.staffsUncheckedCreateNestedManyWithoutSellerInput
 }
 
 export type sellersCreateOrConnectWithoutEventsInput = {
@@ -731,6 +842,7 @@ export type sellersUpdateWithoutEventsInput = {
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUpdateManyWithoutSellerNestedInput
 }
 
 export type sellersUncheckedUpdateWithoutEventsInput = {
@@ -744,6 +856,7 @@ export type sellersUncheckedUpdateWithoutEventsInput = {
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
   store?: Prisma.storesUncheckedUpdateOneWithoutSellerNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutSellerNestedInput
+  staffs?: Prisma.staffsUncheckedUpdateManyWithoutSellerNestedInput
 }
 
 
@@ -755,12 +868,14 @@ export type SellersCountOutputType = {
   banners: number
   events: number
   coupons: number
+  staffs: number
 }
 
 export type SellersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   banners?: boolean | SellersCountOutputTypeCountBannersArgs
   events?: boolean | SellersCountOutputTypeCountEventsArgs
   coupons?: boolean | SellersCountOutputTypeCountCouponsArgs
+  staffs?: boolean | SellersCountOutputTypeCountStaffsArgs
 }
 
 /**
@@ -794,6 +909,13 @@ export type SellersCountOutputTypeCountCouponsArgs<ExtArgs extends runtime.Types
   where?: Prisma.discount_codesWhereInput
 }
 
+/**
+ * SellersCountOutputType without action
+ */
+export type SellersCountOutputTypeCountStaffsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.staffsWhereInput
+}
+
 
 export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -808,6 +930,7 @@ export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   events?: boolean | Prisma.sellers$eventsArgs<ExtArgs>
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
   coupons?: boolean | Prisma.sellers$couponsArgs<ExtArgs>
+  staffs?: boolean | Prisma.sellers$staffsArgs<ExtArgs>
   _count?: boolean | Prisma.SellersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["sellers"]>
 
@@ -830,6 +953,7 @@ export type sellersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   events?: boolean | Prisma.sellers$eventsArgs<ExtArgs>
   store?: boolean | Prisma.sellers$storeArgs<ExtArgs>
   coupons?: boolean | Prisma.sellers$couponsArgs<ExtArgs>
+  staffs?: boolean | Prisma.sellers$staffsArgs<ExtArgs>
   _count?: boolean | Prisma.SellersCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -840,6 +964,7 @@ export type $sellersPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     events: Prisma.$seller_eventsPayload<ExtArgs>[]
     store: Prisma.$storesPayload<ExtArgs> | null
     coupons: Prisma.$discount_codesPayload<ExtArgs>[]
+    staffs: Prisma.$staffsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1217,6 +1342,7 @@ export interface Prisma__sellersClient<T, Null = never, ExtArgs extends runtime.
   events<T extends Prisma.sellers$eventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$eventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$seller_eventsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   store<T extends Prisma.sellers$storeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$storeArgs<ExtArgs>>): Prisma.Prisma__storesClient<runtime.Types.Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   coupons<T extends Prisma.sellers$couponsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$couponsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$discount_codesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  staffs<T extends Prisma.sellers$staffsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellers$staffsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$staffsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1712,6 +1838,30 @@ export type sellers$couponsArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.Discount_codesScalarFieldEnum | Prisma.Discount_codesScalarFieldEnum[]
+}
+
+/**
+ * sellers.staffs
+ */
+export type sellers$staffsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the staffs
+   */
+  select?: Prisma.staffsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the staffs
+   */
+  omit?: Prisma.staffsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.staffsInclude<ExtArgs> | null
+  where?: Prisma.staffsWhereInput
+  orderBy?: Prisma.staffsOrderByWithRelationInput | Prisma.staffsOrderByWithRelationInput[]
+  cursor?: Prisma.staffsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StaffsScalarFieldEnum | Prisma.StaffsScalarFieldEnum[]
 }
 
 /**

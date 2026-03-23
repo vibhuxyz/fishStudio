@@ -395,6 +395,7 @@ export const ModelName = {
   users: 'users',
   discount_codes: 'discount_codes',
   sellers: 'sellers',
+  staffs: 'staffs',
   stores: 'stores',
   storeReviews: 'storeReviews',
   favorites: 'favorites',
@@ -417,7 +418,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "admins" | "images" | "users" | "discount_codes" | "sellers" | "stores" | "storeReviews" | "favorites" | "site_config" | "products" | "banners" | "seller_events"
+    modelProps: "admins" | "images" | "users" | "discount_codes" | "sellers" | "staffs" | "stores" | "storeReviews" | "favorites" | "site_config" | "products" | "banners" | "seller_events"
     txIsolationLevel: never
   }
   model: {
@@ -788,6 +789,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.sellersCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.SellersCountAggregateOutputType> | number
+        }
+      }
+    }
+    staffs: {
+      payload: Prisma.$staffsPayload<ExtArgs>
+      fields: Prisma.staffsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.staffsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.staffsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        findFirst: {
+          args: Prisma.staffsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.staffsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        findMany: {
+          args: Prisma.staffsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>[]
+        }
+        create: {
+          args: Prisma.staffsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        createMany: {
+          args: Prisma.staffsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.staffsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        update: {
+          args: Prisma.staffsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        deleteMany: {
+          args: Prisma.staffsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.staffsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.staffsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$staffsPayload>
+        }
+        aggregate: {
+          args: Prisma.StaffsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStaffs>
+        }
+        groupBy: {
+          args: Prisma.staffsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffsGroupByOutputType>[]
+        }
+        findRaw: {
+          args: Prisma.staffsFindRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        aggregateRaw: {
+          args: Prisma.staffsAggregateRawArgs<ExtArgs>
+          result: Prisma.JsonObject
+        }
+        count: {
+          args: Prisma.staffsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StaffsCountAggregateOutputType> | number
         }
       }
     }
@@ -1392,6 +1467,20 @@ export const SellersScalarFieldEnum = {
 export type SellersScalarFieldEnum = (typeof SellersScalarFieldEnum)[keyof typeof SellersScalarFieldEnum]
 
 
+export const StaffsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  password: 'password',
+  isActive: 'isActive',
+  sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StaffsScalarFieldEnum = (typeof StaffsScalarFieldEnum)[keyof typeof StaffsScalarFieldEnum]
+
+
 export const StoresScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -1587,6 +1676,13 @@ export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMode
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -1618,13 +1714,6 @@ export type EnumproductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'productStatus[]'
  */
 export type ListEnumproductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'productStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1732,6 +1821,7 @@ export type GlobalOmitConfig = {
   users?: Prisma.usersOmit
   discount_codes?: Prisma.discount_codesOmit
   sellers?: Prisma.sellersOmit
+  staffs?: Prisma.staffsOmit
   stores?: Prisma.storesOmit
   storeReviews?: Prisma.storeReviewsOmit
   favorites?: Prisma.favoritesOmit

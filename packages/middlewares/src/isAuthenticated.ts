@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "@repo/db";
+import { ENV } from "@repo/env-config";
 
 const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -13,8 +14,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       token = req.cookies["staff_access_token"];
     } else if (requestedRole === "seller" || req.path.includes("seller")) {
       token =
-        req.cookies["seller_access_token"] ||
-        req.cookies["staff_access_token"];
+        req.cookies["seller_access_token"] || req.cookies["staff_access_token"];
     } else if (requestedRole === "user" || req.path.includes("user")) {
       token = req.cookies["access_token"];
     } else {
@@ -34,7 +34,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     // verify it
     const decode = jwt.verify(
       token,
-      process.env.ACCESS_TOKEN_JWT_SECRET_KEY as string,
+      ENV.ACCESS_TOKEN_JWT_SECRET_KEY as string,
     ) as {
       id: string;
       role: "admin" | "user" | "seller" | "staff";
@@ -63,6 +63,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       });
       req.seller = account;
     } else if (decode.role === "staff") {
+      //@ts-ignore
       account = await prisma.staffs.findUnique({
         where: { id: decode.id },
         include: { seller: { include: { store: true } } },

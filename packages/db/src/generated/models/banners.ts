@@ -399,10 +399,6 @@ export type bannersUncheckedUpdateManyWithoutSellerNestedInput = {
   deleteMany?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type bannersCreateWithoutSellerInput = {
   id?: string
   imageUrl: string

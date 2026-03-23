@@ -43,6 +43,11 @@ export type discount_codes = Prisma.discount_codesModel
  */
 export type sellers = Prisma.sellersModel
 /**
+ * Model staffs
+ * 
+ */
+export type staffs = Prisma.staffsModel
+/**
  * Model stores
  * 
  */
