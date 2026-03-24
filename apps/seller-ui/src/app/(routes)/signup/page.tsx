@@ -354,13 +354,14 @@ const Signup = () => {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 98765 43210"
+                      placeholder="98765 43210"
                       className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
+                      maxLength={10}
                       {...register("phone_number", {
                         required: "Phone Number is required",
                         pattern: {
-                          value: /^\+?[1-9]\d{1,14}$/,
-                          message: "Invalid phone number format",
+                          value: /^[6-9]\d{9}$/,
+                          message: "Enter valid 10-digit mobile number",
                         },
                       })}
                     />

@@ -83,7 +83,7 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {user?.name.charAt(0).toUpperCase()}
         </div>
-        <span className="hidden md:block">Account</span>
+        <span className="hidden max-w-[80px] truncate md:block">{user?.name?.split(" ")[0] ?? "Account"}</span>
         <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
@@ -107,9 +107,19 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
             </button>
 
             {/* User info */}
-            <div className="px-5 pb-3 pt-5">
-              <p className="text-base font-bold text-foreground">My Account</p>
-              <p className="text-sm text-muted-foreground">+91 {user?.phone}</p>
+            <div className="flex items-center gap-3 px-5 pb-4 pt-5">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+                {user?.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-bold text-foreground">{user?.name ?? "My Account"}</p>
+                {user?.phone && (
+                  <p className="text-xs text-muted-foreground">+91 {user.phone}</p>
+                )}
+                {user?.email && (
+                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                )}
+              </div>
             </div>
 
             {/* Divider */}
@@ -117,35 +127,17 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
 
             {/* Menu items */}
             <nav className="py-1">
-              {MENU_ITEMS.map(({ label, icon: Icon, href }) => {
-                if (label === "Saved Addresses" && onAddressClick) {
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      className="flex w-full items-center gap-3 px-5 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      onClick={() => {
-                        setOpen(false);
-                        onAddressClick();
-                      }}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </button>
-                  );
-                }
-                return (
-                  <Link
-                    key={label}
-                    href={href}
-                    className="flex items-center gap-3 px-5 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    onClick={() => setOpen(false)}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </Link>
-                );
-              })}
+              {MENU_ITEMS.map(({ label, icon: Icon, href }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="flex items-center gap-3 px-5 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </Link>
+              ))}
 
               <div className="h-px bg-border" />
 

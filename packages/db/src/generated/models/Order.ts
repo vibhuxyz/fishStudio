@@ -29,11 +29,13 @@ export type AggregateOrder = {
 export type OrderAvgAggregateOutputType = {
   totalAmount: number | null
   discountAmount: number | null
+  deliveryCharge: number | null
 }
 
 export type OrderSumAggregateOutputType = {
   totalAmount: number | null
   discountAmount: number | null
+  deliveryCharge: number | null
 }
 
 export type OrderMinAggregateOutputType = {
@@ -43,6 +45,13 @@ export type OrderMinAggregateOutputType = {
   totalAmount: number | null
   discountAmount: number | null
   couponCode: string | null
+  deliverySlot: string | null
+  deliveryName: string | null
+  deliveryPhone: string | null
+  deliveryAddress: string | null
+  deliveryCity: string | null
+  deliveryPincode: string | null
+  deliveryCharge: number | null
   status: $Enums.OrderStatus | null
   paymentStatus: $Enums.PaymentStatus | null
   paymentMethod: string | null
@@ -59,6 +68,13 @@ export type OrderMaxAggregateOutputType = {
   totalAmount: number | null
   discountAmount: number | null
   couponCode: string | null
+  deliverySlot: string | null
+  deliveryName: string | null
+  deliveryPhone: string | null
+  deliveryAddress: string | null
+  deliveryCity: string | null
+  deliveryPincode: string | null
+  deliveryCharge: number | null
   status: $Enums.OrderStatus | null
   paymentStatus: $Enums.PaymentStatus | null
   paymentMethod: string | null
@@ -75,6 +91,14 @@ export type OrderCountAggregateOutputType = {
   totalAmount: number
   discountAmount: number
   couponCode: number
+  deliverySlot: number
+  deliveryName: number
+  deliveryPhone: number
+  deliveryAddress: number
+  deliveryCity: number
+  deliveryPincode: number
+  deliveryCharge: number
+  billDetails: number
   status: number
   paymentStatus: number
   paymentMethod: number
@@ -89,11 +113,13 @@ export type OrderCountAggregateOutputType = {
 export type OrderAvgAggregateInputType = {
   totalAmount?: true
   discountAmount?: true
+  deliveryCharge?: true
 }
 
 export type OrderSumAggregateInputType = {
   totalAmount?: true
   discountAmount?: true
+  deliveryCharge?: true
 }
 
 export type OrderMinAggregateInputType = {
@@ -103,6 +129,13 @@ export type OrderMinAggregateInputType = {
   totalAmount?: true
   discountAmount?: true
   couponCode?: true
+  deliverySlot?: true
+  deliveryName?: true
+  deliveryPhone?: true
+  deliveryAddress?: true
+  deliveryCity?: true
+  deliveryPincode?: true
+  deliveryCharge?: true
   status?: true
   paymentStatus?: true
   paymentMethod?: true
@@ -119,6 +152,13 @@ export type OrderMaxAggregateInputType = {
   totalAmount?: true
   discountAmount?: true
   couponCode?: true
+  deliverySlot?: true
+  deliveryName?: true
+  deliveryPhone?: true
+  deliveryAddress?: true
+  deliveryCity?: true
+  deliveryPincode?: true
+  deliveryCharge?: true
   status?: true
   paymentStatus?: true
   paymentMethod?: true
@@ -135,6 +175,14 @@ export type OrderCountAggregateInputType = {
   totalAmount?: true
   discountAmount?: true
   couponCode?: true
+  deliverySlot?: true
+  deliveryName?: true
+  deliveryPhone?: true
+  deliveryAddress?: true
+  deliveryCity?: true
+  deliveryPincode?: true
+  deliveryCharge?: true
+  billDetails?: true
   status?: true
   paymentStatus?: true
   paymentMethod?: true
@@ -238,6 +286,14 @@ export type OrderGroupByOutputType = {
   totalAmount: number
   discountAmount: number
   couponCode: string | null
+  deliverySlot: string | null
+  deliveryName: string | null
+  deliveryPhone: string | null
+  deliveryAddress: string | null
+  deliveryCity: string | null
+  deliveryPincode: string | null
+  deliveryCharge: number
+  billDetails: runtime.JsonValue | null
   status: $Enums.OrderStatus
   paymentStatus: $Enums.PaymentStatus
   paymentMethod: string | null
@@ -277,6 +333,14 @@ export type OrderWhereInput = {
   totalAmount?: Prisma.FloatFilter<"Order"> | number
   discountAmount?: Prisma.FloatFilter<"Order"> | number
   couponCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliverySlot?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryName?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPhone?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCity?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPincode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCharge?: Prisma.FloatFilter<"Order"> | number
+  billDetails?: Prisma.JsonNullableFilter<"Order">
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFilter<"Order"> | $Enums.PaymentStatus
   paymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
@@ -296,6 +360,14 @@ export type OrderOrderByWithRelationInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   couponCode?: Prisma.SortOrder
+  deliverySlot?: Prisma.SortOrder
+  deliveryName?: Prisma.SortOrder
+  deliveryPhone?: Prisma.SortOrder
+  deliveryAddress?: Prisma.SortOrder
+  deliveryCity?: Prisma.SortOrder
+  deliveryPincode?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
+  billDetails?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentStatus?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
@@ -318,6 +390,14 @@ export type OrderWhereUniqueInput = Prisma.AtLeast<{
   totalAmount?: Prisma.FloatFilter<"Order"> | number
   discountAmount?: Prisma.FloatFilter<"Order"> | number
   couponCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliverySlot?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryName?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPhone?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCity?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPincode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCharge?: Prisma.FloatFilter<"Order"> | number
+  billDetails?: Prisma.JsonNullableFilter<"Order">
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFilter<"Order"> | $Enums.PaymentStatus
   paymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
@@ -337,6 +417,14 @@ export type OrderOrderByWithAggregationInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   couponCode?: Prisma.SortOrder
+  deliverySlot?: Prisma.SortOrder
+  deliveryName?: Prisma.SortOrder
+  deliveryPhone?: Prisma.SortOrder
+  deliveryAddress?: Prisma.SortOrder
+  deliveryCity?: Prisma.SortOrder
+  deliveryPincode?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
+  billDetails?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentStatus?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
@@ -361,6 +449,14 @@ export type OrderScalarWhereWithAggregatesInput = {
   totalAmount?: Prisma.FloatWithAggregatesFilter<"Order"> | number
   discountAmount?: Prisma.FloatWithAggregatesFilter<"Order"> | number
   couponCode?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliverySlot?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryName?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryPhone?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryAddress?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryCity?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryPincode?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
+  deliveryCharge?: Prisma.FloatWithAggregatesFilter<"Order"> | number
+  billDetails?: Prisma.JsonNullableWithAggregatesFilter<"Order">
   status?: Prisma.EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusWithAggregatesFilter<"Order"> | $Enums.PaymentStatus
   paymentMethod?: Prisma.StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -375,6 +471,14 @@ export type OrderCreateInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -394,6 +498,14 @@ export type OrderUncheckedCreateInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -408,6 +520,14 @@ export type OrderUpdateInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -426,6 +546,14 @@ export type OrderUncheckedUpdateInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -443,6 +571,14 @@ export type OrderCreateManyInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -456,6 +592,14 @@ export type OrderUpdateManyMutationInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -471,6 +615,14 @@ export type OrderUncheckedUpdateManyInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -497,6 +649,14 @@ export type OrderCountOrderByAggregateInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   couponCode?: Prisma.SortOrder
+  deliverySlot?: Prisma.SortOrder
+  deliveryName?: Prisma.SortOrder
+  deliveryPhone?: Prisma.SortOrder
+  deliveryAddress?: Prisma.SortOrder
+  deliveryCity?: Prisma.SortOrder
+  deliveryPincode?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
+  billDetails?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentStatus?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
@@ -509,6 +669,7 @@ export type OrderCountOrderByAggregateInput = {
 export type OrderAvgOrderByAggregateInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
 }
 
 export type OrderMaxOrderByAggregateInput = {
@@ -518,6 +679,13 @@ export type OrderMaxOrderByAggregateInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   couponCode?: Prisma.SortOrder
+  deliverySlot?: Prisma.SortOrder
+  deliveryName?: Prisma.SortOrder
+  deliveryPhone?: Prisma.SortOrder
+  deliveryAddress?: Prisma.SortOrder
+  deliveryCity?: Prisma.SortOrder
+  deliveryPincode?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentStatus?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
@@ -534,6 +702,13 @@ export type OrderMinOrderByAggregateInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
   couponCode?: Prisma.SortOrder
+  deliverySlot?: Prisma.SortOrder
+  deliveryName?: Prisma.SortOrder
+  deliveryPhone?: Prisma.SortOrder
+  deliveryAddress?: Prisma.SortOrder
+  deliveryCity?: Prisma.SortOrder
+  deliveryPincode?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentStatus?: Prisma.SortOrder
   paymentMethod?: Prisma.SortOrder
@@ -546,6 +721,7 @@ export type OrderMinOrderByAggregateInput = {
 export type OrderSumOrderByAggregateInput = {
   totalAmount?: Prisma.SortOrder
   discountAmount?: Prisma.SortOrder
+  deliveryCharge?: Prisma.SortOrder
 }
 
 export type OrderScalarRelationFilter = {
@@ -664,6 +840,14 @@ export type OrderCreateWithoutUserInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -681,6 +865,14 @@ export type OrderUncheckedCreateWithoutUserInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -726,6 +918,14 @@ export type OrderScalarWhereInput = {
   totalAmount?: Prisma.FloatFilter<"Order"> | number
   discountAmount?: Prisma.FloatFilter<"Order"> | number
   couponCode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliverySlot?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryName?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPhone?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryAddress?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCity?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryPincode?: Prisma.StringNullableFilter<"Order"> | string | null
+  deliveryCharge?: Prisma.FloatFilter<"Order"> | number
+  billDetails?: Prisma.JsonNullableFilter<"Order">
   status?: Prisma.EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFilter<"Order"> | $Enums.PaymentStatus
   paymentMethod?: Prisma.StringNullableFilter<"Order"> | string | null
@@ -740,6 +940,14 @@ export type OrderCreateWithoutStoreInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -757,6 +965,14 @@ export type OrderUncheckedCreateWithoutStoreInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -797,6 +1013,14 @@ export type OrderCreateWithoutOrderItemsInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -815,6 +1039,14 @@ export type OrderUncheckedCreateWithoutOrderItemsInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -844,6 +1076,14 @@ export type OrderUpdateWithoutOrderItemsInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -861,6 +1101,14 @@ export type OrderUncheckedUpdateWithoutOrderItemsInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -876,6 +1124,14 @@ export type OrderCreateManyUserInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -889,6 +1145,14 @@ export type OrderUpdateWithoutUserInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -905,6 +1169,14 @@ export type OrderUncheckedUpdateWithoutUserInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -920,6 +1192,14 @@ export type OrderUncheckedUpdateManyWithoutUserInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -935,6 +1215,14 @@ export type OrderCreateManyStoreInput = {
   totalAmount: number
   discountAmount?: number
   couponCode?: string | null
+  deliverySlot?: string | null
+  deliveryName?: string | null
+  deliveryPhone?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPincode?: string | null
+  deliveryCharge?: number
+  billDetails?: runtime.InputJsonValue | null
   status?: $Enums.OrderStatus
   paymentStatus?: $Enums.PaymentStatus
   paymentMethod?: string | null
@@ -948,6 +1236,14 @@ export type OrderUpdateWithoutStoreInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -964,6 +1260,14 @@ export type OrderUncheckedUpdateWithoutStoreInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -979,6 +1283,14 @@ export type OrderUncheckedUpdateManyWithoutStoreInput = {
   totalAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   discountAmount?: Prisma.FloatFieldUpdateOperationsInput | number
   couponCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliverySlot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryAddress?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryPincode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deliveryCharge?: Prisma.FloatFieldUpdateOperationsInput | number
+  billDetails?: runtime.InputJsonValue | runtime.InputJsonValue | null
   status?: Prisma.EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
   paymentStatus?: Prisma.EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1026,6 +1338,14 @@ export type OrderSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   totalAmount?: boolean
   discountAmount?: boolean
   couponCode?: boolean
+  deliverySlot?: boolean
+  deliveryName?: boolean
+  deliveryPhone?: boolean
+  deliveryAddress?: boolean
+  deliveryCity?: boolean
+  deliveryPincode?: boolean
+  deliveryCharge?: boolean
+  billDetails?: boolean
   status?: boolean
   paymentStatus?: boolean
   paymentMethod?: boolean
@@ -1048,6 +1368,14 @@ export type OrderSelectScalar = {
   totalAmount?: boolean
   discountAmount?: boolean
   couponCode?: boolean
+  deliverySlot?: boolean
+  deliveryName?: boolean
+  deliveryPhone?: boolean
+  deliveryAddress?: boolean
+  deliveryCity?: boolean
+  deliveryPincode?: boolean
+  deliveryCharge?: boolean
+  billDetails?: boolean
   status?: boolean
   paymentStatus?: boolean
   paymentMethod?: boolean
@@ -1057,7 +1385,7 @@ export type OrderSelectScalar = {
   updatedAt?: boolean
 }
 
-export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "storeId" | "totalAmount" | "discountAmount" | "couponCode" | "status" | "paymentStatus" | "paymentMethod" | "paymentRef" | "rejectionReason" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
+export type OrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "storeId" | "totalAmount" | "discountAmount" | "couponCode" | "deliverySlot" | "deliveryName" | "deliveryPhone" | "deliveryAddress" | "deliveryCity" | "deliveryPincode" | "deliveryCharge" | "billDetails" | "status" | "paymentStatus" | "paymentMethod" | "paymentRef" | "rejectionReason" | "createdAt" | "updatedAt", ExtArgs["result"]["order"]>
 export type OrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   store?: boolean | Prisma.storesDefaultArgs<ExtArgs>
@@ -1079,6 +1407,14 @@ export type $OrderPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     totalAmount: number
     discountAmount: number
     couponCode: string | null
+    deliverySlot: string | null
+    deliveryName: string | null
+    deliveryPhone: string | null
+    deliveryAddress: string | null
+    deliveryCity: string | null
+    deliveryPincode: string | null
+    deliveryCharge: number
+    billDetails: runtime.JsonValue | null
     status: $Enums.OrderStatus
     paymentStatus: $Enums.PaymentStatus
     paymentMethod: string | null
@@ -1487,6 +1823,14 @@ export interface OrderFieldRefs {
   readonly totalAmount: Prisma.FieldRef<"Order", 'Float'>
   readonly discountAmount: Prisma.FieldRef<"Order", 'Float'>
   readonly couponCode: Prisma.FieldRef<"Order", 'String'>
+  readonly deliverySlot: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryName: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryPhone: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryAddress: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryCity: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryPincode: Prisma.FieldRef<"Order", 'String'>
+  readonly deliveryCharge: Prisma.FieldRef<"Order", 'Float'>
+  readonly billDetails: Prisma.FieldRef<"Order", 'Json'>
   readonly status: Prisma.FieldRef<"Order", 'OrderStatus'>
   readonly paymentStatus: Prisma.FieldRef<"Order", 'PaymentStatus'>
   readonly paymentMethod: Prisma.FieldRef<"Order", 'String'>

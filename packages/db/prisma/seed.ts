@@ -11,7 +11,7 @@ const rl = readline.createInterface({
 });
 
 // Helper function to ask yes/no questions
-function askQuestion(query: any) {
+function askQuestion(query:any) {
   return new Promise((resolve) => {
     rl.question(query, (answer) => {
       resolve(answer.trim().toLowerCase() === "y");
@@ -21,6 +21,66 @@ function askQuestion(query: any) {
 
 async function main() {
   console.log("🌱 Checking existing data...");
+
+  /**
+   * 0️⃣ ADMIN ACCESS CODE
+   */
+  const adminAccessCodeExist = await prisma.signupAccessCode.findFirst({
+    where: { role: "ADMIN", email: null },
+  });
+
+  if (adminAccessCodeExist) {
+    console.log("✅ Admin Master Access Code already exists — skipping");
+  } else {
+    const shouldSeedCode = await askQuestion(
+      "❓ Do you want to seed the Admin Master Access Code (ADMIN2024)? (y/n): ",
+    );
+    if (shouldSeedCode) {
+      await prisma.signupAccessCode.create({
+        data: {
+          role: "ADMIN",
+          code: "ADMIN2024",
+          email: null,
+          expiresAt: null,
+        },
+      });
+      console.log(
+        "✅ Admin Master Access Code seeded successfully (Code: ADMIN2024)!",
+      );
+    } else {
+      console.log("⏭️  Skipped Admin Master Access Code.");
+    }
+  }
+
+  /**
+   * 0.1️⃣ ADMIN ACCOUNT
+   */
+  // Note: Assuming your admin model is named 'admins'. Change to 'admin' if needed.
+  let admin = await prisma.admins.findUnique({
+    where: { email: "fishstudio.admin@gmail.com" },
+  });
+
+  if (admin) {
+    console.log("✅ Admin already exists — skipping");
+  } else {
+    const shouldSeed = await askQuestion(
+      "❓ Do you want to seed the Admin account? (y/n): ",
+    );
+    if (shouldSeed) {
+      const plainPassword = "Fishstudio@12";
+      const hashedPassword = await bcrypt.hash(plainPassword, 10);
+      admin = await prisma.admins.create({
+        data: {
+          name: "Super Admin", // Assuming your schema has a name field
+          email: "fishstudio.admin@gmail.com",
+          password: hashedPassword,
+        },
+      });
+      console.log("✅ Admin account seeded successfully!");
+    } else {
+      console.log("⏭️  Skipped Admin account.");
+    }
+  }
 
   /**
    * 1️⃣ USER
@@ -94,7 +154,6 @@ async function main() {
       "❓ Do you want to seed the Fresh Fish Store? (y/n): ",
     );
     if (shouldSeed) {
-      // If we don't have a seller from above, try to find ANY seller in the database
       let targetSeller = seller || (await prisma.sellers.findFirst());
 
       if (!targetSeller) {
@@ -776,132 +835,158 @@ async function main() {
     } else {
       console.log("⏭️  Skipped Favorites.");
     }
-  } // <-- THIS WAS MISSING IN THE RIGHT SPOT
+  }
 
   /**
    * 9️⃣ VIP DATA (Vikram Seller & Target User)
    */
-  console.log("\n💎 Seeding VIP Data...");
+  const shouldSeedVip = await askQuestion(
+    "❓ Do you want to seed the VIP Data (Vikram Seller, VIP User, and Orders)? (y/n): ",
+  );
 
-  // VIP User
-  let vipUser = await prisma.users.upsert({
-    where: { phone_number: "9531421473" },
-    update: {},
-    create: {
-      name: "VIP User",
-      phone_number: "9531421473",
-      following: [],
-    },
-  });
+  if (shouldSeedVip) {
+    console.log("\n💎 Seeding VIP Data...");
 
-  // VIP Seller
-  const vikramEmail = "vikram.seller@gmail.com";
-  let vikramSeller = await prisma.sellers.findUnique({
-    where: { email: vikramEmail },
-  });
-
-  if (!vikramSeller) {
-    const hashedPassword = await bcrypt.hash("123456", 10);
-    vikramSeller = await prisma.sellers.create({
-      data: {
-        name: "Vikram Seller",
-        email: vikramEmail,
-        phone_number: "7777777777",
-        password: hashedPassword,
-        isApprovedByAdmin: true,
+    // VIP User
+    let vipUser = await prisma.users.upsert({
+      where: { phone_number: "9531421473" },
+      update: {},
+      create: {
+        name: "VIP User",
+        phone_number: "9531421473",
+        following: [],
       },
     });
-  }
 
-  // VIP Store
-  let vikramStore = await prisma.stores.findUnique({
-    where: { sellerId: vikramSeller.id },
-  });
-
-  if (!vikramStore) {
-    vikramStore = await prisma.stores.create({
-      data: {
-        name: "Vikram's Premium Shop",
-        bio: "Premium products for VIP customers",
-        address: "123 Premium Street",
-        city: "Mumbai",
-        pincode: "400001",
-        opening_hours: "9AM - 9PM",
-        sellerId: vikramSeller.id,
-      },
+    // VIP Seller
+    const vikramEmail = "vikram.seller@gmail.com";
+    let vikramSeller = await prisma.sellers.findUnique({
+      where: { email: vikramEmail },
     });
-  }
 
-  // VIP Products (5 products, 3 images each)
-  const vikramProductsRaw = [
-    { title: "Premium Gold Fish", slug: "premium-gold-fish", price: 500 },
-    { title: "Silver Lake Trout", slug: "silver-lake-trout", price: 300 },
-    { title: "Royal Blue Prawns", slug: "royal-blue-prawns", price: 600 },
-    { title: "Imperial Crab", slug: "imperial-crab", price: 1200 },
-    { title: "Gourmet Squid", slug: "gourmet-squid", price: 450 },
-  ];
-
-  const productIds: string[] = [];
-
-  for (const p of vikramProductsRaw) {
-    let product = await prisma.products.findUnique({ where: { slug: p.slug } });
-    if (!product) {
-      product = await prisma.products.create({
+    if (!vikramSeller) {
+      const hashedPassword = await bcrypt.hash("123456", 10);
+      vikramSeller = await prisma.sellers.create({
         data: {
-          title: p.title,
-          slug: p.slug,
-          category: "Premium",
-          subCategory: "Gourmet",
-          short_description: `High quality ${p.title} for your gourmet cooking.`,
-          detailed_description: `<p>Enjoy the finest ${p.title} sourced directly from premium waters.</p>`,
-          stock: 50,
-          sale_price: p.price,
-          regular_price: p.price + 100,
-          status: "Active",
-          storeId: vikramStore.id,
-          images: {
-            create: [
-              { file_id: `${p.slug}_1`, url: "https://ik.imagekit.io/pay/hilsa.jpg", type: "PRODUCT" },
-              { file_id: `${p.slug}_2`, url: "https://ik.imagekit.io/pay/rohu.jpg", type: "PRODUCT" },
-              { file_id: `${p.slug}_3`, url: "https://ik.imagekit.io/pay/katla.jpg", type: "PRODUCT" },
-            ],
-          },
+          name: "Vikram Seller",
+          email: vikramEmail,
+          phone_number: "7777777777",
+          password: hashedPassword,
+          isApprovedByAdmin: true,
         },
       });
     }
-    productIds.push(product.id);
-  }
 
-  // VIP Orders (5 orders)
-  const orderCount = await prisma.order.count({ where: { userId: vipUser.id, storeId: vikramStore.id } });
-  if (orderCount < 5) {
-    console.log("🛒 Creating VIP orders...");
-    for (let i = 0; i < 5; i++) {
-      const pid = productIds[i % productIds.length];
-      const p = vikramProductsRaw[i % vikramProductsRaw.length]!;
-      
-      await prisma.order.create({
+    // VIP Store
+    let vikramStore = await prisma.stores.findUnique({
+      where: { sellerId: vikramSeller.id },
+    });
+
+    if (!vikramStore) {
+      vikramStore = await prisma.stores.create({
         data: {
-          userId: vipUser.id,
-          storeId: vikramStore.id,
-          totalAmount: p.price - (i % 2 === 0 ? 50 : 0),
-          discountAmount: i % 2 === 0 ? 50 : 0,
-          couponCode: i % 2 === 0 ? "VIP50" : null,
-          status: i < 3 ? "DELIVERED" : (i === 3 ? "CANCELLED" : "PENDING"),
-          paymentStatus: i < 3 ? "COMPLETED" : (i === 3 ? "FAILED" : "PENDING"),
-          paymentMethod: i % 3 === 0 ? "UPI" : (i % 3 === 1 ? "CARD" : "COD"),
-          paymentRef: i % 3 === 2 ? null : `pay_${Math.random().toString(36).slice(2, 14).toUpperCase()}`,
-          createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)), // Spread over 5 days
-          orderItems: {
-            create: [{ productId: pid, quantity: 1, price: p.price }]
-          }
-        }
+          name: "Vikram's Premium Shop",
+          bio: "Premium products for VIP customers",
+          address: "123 Premium Street",
+          city: "Mumbai",
+          pincode: "400001",
+          opening_hours: "9AM - 9PM",
+          sellerId: vikramSeller.id,
+        },
       });
     }
+
+    // VIP Products (5 products, 3 images each)
+    const vikramProductsRaw = [
+      { title: "Premium Gold Fish", slug: "premium-gold-fish", price: 500 },
+      { title: "Silver Lake Trout", slug: "silver-lake-trout", price: 300 },
+      { title: "Royal Blue Prawns", slug: "royal-blue-prawns", price: 600 },
+      { title: "Imperial Crab", slug: "imperial-crab", price: 1200 },
+      { title: "Gourmet Squid", slug: "gourmet-squid", price: 450 },
+    ];
+
+    const productIds = [];
+
+    for (const p of vikramProductsRaw) {
+      let product = await prisma.products.findUnique({
+        where: { slug: p.slug },
+      });
+      if (!product) {
+        product = await prisma.products.create({
+          data: {
+            title: p.title,
+            slug: p.slug,
+            category: "Premium",
+            subCategory: "Gourmet",
+            short_description: `High quality ${p.title} for your gourmet cooking.`,
+            detailed_description: `<p>Enjoy the finest ${p.title} sourced directly from premium waters.</p>`,
+            stock: 50,
+            sale_price: p.price,
+            regular_price: p.price + 100,
+            status: "Active",
+            storeId: vikramStore.id,
+            images: {
+              create: [
+                {
+                  file_id: `${p.slug}_1`,
+                  url: "https://ik.imagekit.io/pay/hilsa.jpg",
+                  type: "PRODUCT",
+                },
+                {
+                  file_id: `${p.slug}_2`,
+                  url: "https://ik.imagekit.io/pay/rohu.jpg",
+                  type: "PRODUCT",
+                },
+                {
+                  file_id: `${p.slug}_3`,
+                  url: "https://ik.imagekit.io/pay/katla.jpg",
+                  type: "PRODUCT",
+                },
+              ],
+            },
+          },
+        });
+      }
+      productIds.push(product.id);
+    }
+
+    // VIP Orders (5 orders)
+    const orderCount = await prisma.order.count({
+      where: { userId: vipUser.id, storeId: vikramStore.id },
+    });
+    if (orderCount < 5) {
+      console.log("🛒 Creating VIP orders...");
+      for (let i = 0; i < 5; i++) {
+        const pid = productIds[i % productIds.length];
+        const p = vikramProductsRaw[i % vikramProductsRaw.length];
+
+        await prisma.order.create({
+          data: {
+            userId: vipUser.id,
+            storeId: vikramStore.id,
+            totalAmount: p.price - (i % 2 === 0 ? 50 : 0),
+            discountAmount: i % 2 === 0 ? 50 : 0,
+            couponCode: i % 2 === 0 ? "VIP50" : null,
+            status: i < 3 ? "DELIVERED" : i === 3 ? "CANCELLED" : "PENDING",
+            paymentStatus: i < 3 ? "COMPLETED" : i === 3 ? "FAILED" : "PENDING",
+            paymentMethod: i % 3 === 0 ? "UPI" : i % 3 === 1 ? "CARD" : "COD",
+            paymentRef:
+              i % 3 === 2
+                ? null
+                : `pay_${Math.random().toString(36).slice(2, 14).toUpperCase()}`,
+            createdAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // Spread over 5 days
+            orderItems: {
+              create: [{ productId: pid, quantity: 1, price: p.price }],
+            },
+          },
+        });
+      }
+    }
+
+    console.log("✅ VIP Data seeded successfully!");
+  } else {
+    console.log("⏭️  Skipped VIP Data.");
   }
-
-  console.log("✅ VIP Data seeded successfully!");
-
 
   console.log("\n🎉 Seeding process completed!");
 }

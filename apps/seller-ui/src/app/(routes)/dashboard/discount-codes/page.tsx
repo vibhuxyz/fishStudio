@@ -42,6 +42,7 @@ const Page = () => {
       discountType: "percentage",
       discountValue: "",
       discountCode: "",
+      minOrderValue: "",
     },
   });
 
@@ -108,6 +109,7 @@ const Page = () => {
                 <th className="p-3 text-left">Title</th>
                 <th className="p-3 text-left">Type</th>
                 <th className="p-3 text-left">Value</th>
+                <th className="p-3 text-left">Min Order</th>
                 <th className="p-3 text-left">Code</th>
                 <th className="p-3 text-left">Actions</th>
               </tr>
@@ -128,6 +130,9 @@ const Page = () => {
                     {discount.discountType === "percentage"
                       ? `${discount.discountValue}%`
                       : `₹${discount.discountValue}`}
+                  </td>
+                  <td className="p-3">
+                    {discount.minOrderValue > 0 ? `₹${discount.minOrderValue}` : "–"}
                   </td>
                   <td className="p-3">{discount.discountCode}</td>
                   <td className="p-3">
@@ -217,6 +222,18 @@ const Page = () => {
                     required: "Discount Code is required",
                   })}
                 />
+              </div>
+
+              <div className="mt-2">
+                {/* Min Order Value */}
+                <Input
+                  label="Minimum Order Value (₹)"
+                  type="number"
+                  min={0}
+                  placeholder="0 = no minimum"
+                  {...register("minOrderValue")}
+                />
+                <p className="text-gray-500 text-xs mt-0.5">Leave 0 if no minimum order is required</p>
               </div>
 
               <button

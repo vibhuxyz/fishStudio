@@ -74,10 +74,10 @@ const SidebarBarWrapper = () => {
           {!isCollapsed && (
             <div className="flex flex-col gap-0.5">
               <h3 className="text-2xl font-bold text-white tracking-tight leading-7">
-                {seller?.shop?.name || "Vikram Shop"}
+                {seller?.store?.name || "Vikram Shop"}
               </h3>
               <h5 className="text-sm text-gray-400 font-medium truncate max-w-[200px]">
-                {seller?.shop?.address || "Mumbai, India"}
+                {seller?.store?.address || "Mumbai, India"}
               </h5>
             </div>
           )}

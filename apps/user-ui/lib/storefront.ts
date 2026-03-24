@@ -15,7 +15,7 @@ export interface StorefrontCategories {
 }
 
 export const storefrontKeys = {
-  products: ["storefront", "products"] as const,
+  products: (storeId?: string) => ["storefront", "products", storeId].filter(Boolean) as string[],
   product: (slug: string) => ["storefront", "product", slug] as const,
   categories: ["storefront", "categories"] as const,
   banners: ["storefront", "banners"] as const,
@@ -149,9 +149,14 @@ export const transformProduct = (bp: BackendProduct): Product => {
 };
 
 export async function fetchStorefrontProducts(
+  storeId?: string,
   init?: RequestInit & { next?: { revalidate?: number } },
 ): Promise<Product[]> {
-  const response = await fetch(getStorefrontUrl("/product/api/get-all-products"), {
+  const url = storeId 
+    ? getStorefrontUrl(`/product/api/get-all-products?storeId=${storeId}`)
+    : getStorefrontUrl("/product/api/get-all-products");
+
+  const response = await fetch(url, {
     ...init,
     next: init?.next ?? { revalidate: 300 },
   });

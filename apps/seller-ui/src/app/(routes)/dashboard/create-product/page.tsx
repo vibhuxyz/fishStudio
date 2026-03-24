@@ -125,7 +125,7 @@ const Page = () => {
   const { register, handleSubmit, reset, watch, setValue } =
     useForm<SellerCatalogFormValues>({
       defaultValues: {
-        stock: 0,
+        stock: 100,
         cash_on_delivery: "yes",
         short_description: "",
         detailed_description: "",
@@ -167,7 +167,7 @@ const Page = () => {
   const openConfigureModal = (product: CatalogProduct) => {
     setSelectedProduct(product);
     reset({
-      stock: 0,
+      stock: 100,
       cash_on_delivery: "yes",
       short_description: product.short_description || "",
       detailed_description: product.detailed_description || "",
@@ -321,10 +321,10 @@ const Page = () => {
               onSubmit={handleSubmit(onSubmit)}
             >
               <div>
-                <label className="mb-1 block text-sm text-slate-300">Stock</label>
+                <label className="mb-1 block text-sm text-slate-300">Stock (min 1)</label>
                 <input
                   type="number"
-                  {...register("stock", { valueAsNumber: true })}
+                  {...register("stock", { valueAsNumber: true, min: { value: 1, message: "Stock must be at least 1" } })}
                   className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 />
               </div>

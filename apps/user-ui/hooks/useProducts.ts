@@ -5,10 +5,15 @@ import {
   storefrontKeys,
 } from "@/lib/storefront";
 
+import { useAddressStore } from "@/lib/address-store";
+
 export function useProducts() {
+  const { selectedLocation } = useAddressStore();
+  const storeId = selectedLocation?.storeId;
+
   const query = useQuery({
-    queryKey: storefrontKeys.products,
-    queryFn: () => fetchStorefrontProducts(),
+    queryKey: storefrontKeys.products(storeId),
+    queryFn: () => fetchStorefrontProducts(storeId),
     staleTime: 1000 * 60 * 5,
   });
 

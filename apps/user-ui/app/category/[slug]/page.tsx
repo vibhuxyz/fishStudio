@@ -40,14 +40,23 @@ export default function CategoryPage({
   const categorySlug = decodeURIComponent(slug);
 
   // 3. Filter products that belong to this category based on the URL slug
-  // We compare specific normalized versions to ensure matches
   const categoryProducts = useMemo(() => {
     return allProducts.filter((p) => {
-      // Normalize product category to slug format for comparison
-      const productCategorySlug = p.category
-        .toLowerCase()
-        .replace(/[\s&]+/g, "-");
-      return productCategorySlug === categorySlug;
+      if (!p.category) return false;
+
+      // Normalize both to compare
+      const normalize = (str: string) =>
+        str
+          .toLowerCase()
+          .trim()
+          .replace(/[&\s\-_]+/g, "-") // Handle spaces, ampersands, underscores, and hyphens consistently
+          .replace(/-+/g, "-") // Collapse multiple hyphens
+          .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+
+      const productCategorySlug = normalize(p.category);
+      const targetSlug = normalize(categorySlug);
+
+      return productCategorySlug === targetSlug;
     });
   }, [allProducts, categorySlug]);
 

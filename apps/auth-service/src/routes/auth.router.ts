@@ -13,6 +13,8 @@ import {
 } from "../controller/admin.auth.controller.js";
 
 import {
+  addUserAddress,
+  deleteUserAddress,
   getUser,
   logOutUser,
   refreshToken,
@@ -30,6 +32,9 @@ import {
   verifySeller,
   updateSellerApproval,
   verifySellerSignupCode,
+  checkPincode,
+  updateStore,
+  getServiceableAreas,
 } from "../controller/seller.auth.controller.js";
 import {
   getMyStaffs,
@@ -49,7 +54,13 @@ router.post("/verify-otp", verifyOtpAndLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 
+// user address routes
+router.post("/add-address", isAuthenticated, isUser, addUserAddress);
+router.delete("/delete-address/:addressId", isAuthenticated, isUser, deleteUserAddress);
+
 router.post("/refresh-token", refreshToken);
+router.get("/check-pincode", checkPincode);
+router.get("/serviceable-areas", getServiceableAreas);
 
 // admin routes
 router.post("/admin/verifycode", verifyAdminSignupCode);
@@ -86,6 +97,7 @@ router.post("/verify-seller", verifySeller);
 router.post("/login-seller", loginSeller);
 router.post("/create-store", createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
+router.post("/update-store", isAuthenticated, isSeller, updateStore);
 router.post("/logout-seller", isAuthenticated, isSeller, logOutSeller);
 
 // staff routes

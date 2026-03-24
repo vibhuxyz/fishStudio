@@ -54,6 +54,7 @@ export interface Product {
 
   subCategory: string;
   category: string;
+  storeId?: string;
 
   // Arrays for Modal Dropdowns
   cuttingTypes: string[];

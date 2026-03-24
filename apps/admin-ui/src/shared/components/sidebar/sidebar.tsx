@@ -22,6 +22,7 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
@@ -168,6 +169,17 @@ const SidebarBarWrapper = () => {
                   <TicketPercent
                     size={22}
                     color={getIconColor("/dashboard/discount-codes")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/banners"}
+                title="Banners"
+                href="/dashboard/banners"
+                icon={
+                  <ImageIcon
+                    size={22}
+                    color={getIconColor("/dashboard/banners")}
                   />
                 }
               />

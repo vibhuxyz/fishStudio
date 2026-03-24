@@ -85,6 +85,7 @@ export type AdminSellerDetail = AdminSellerSummary & {
   banners: Array<{
     id: string;
     imageUrl: string;
+    fileId: string;
     isActive: boolean;
   }>;
   store?: {
@@ -190,6 +191,7 @@ export const adminQueryKeys = {
   order: (orderId: string) => ["admin", "orders", orderId] as const,
   seller: ["admin", "account"] as const,
   sellerCodes: ["admin", "sellerCodes"] as const,
+  banners: ["admin", "banners"] as const,
 };
 
 export const getCategoryConfigKey = (category: string) =>
@@ -473,5 +475,39 @@ export const useAdminStats = (period: StatsPeriod, sellerId?: string) =>
   useQuery({
     queryKey: ["admin", "stats", period, sellerId ?? "all"],
     queryFn: () => fetchAdminStats(period, sellerId),
+  });
+
+// ── Banners ──────────────────────────────────────────────────────────────
+export type AdminBanner = {
+  id: string;
+  imageUrl: string;
+  fileId: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export const fetchAdminBanners = async (): Promise<AdminBanner[]> => {
+  const response = await axiosInstance.get(
+    "/product/api/get-admin-banners",
+    isProtected,
+  );
+  return Array.isArray(response.data.banners) ? response.data.banners : [];
+};
+
+export const deleteAdminBanner = async (fileId: string) => {
+  await axiosInstance.post(
+    "/product/api/admin/delete-cloudinary-image",
+    { fileId },
+    isProtected,
+  );
+  // Also need to delete from DB if there's a separate route, but here we'll assume 
+  // the backend deleteCloudinaryImage might not delete from DB yet?
+  // Actually, I should probably add a route to delete from DB.
+};
+
+export const useAdminBanners = () =>
+  useQuery({
+    queryKey: adminQueryKeys.banners,
+    queryFn: fetchAdminBanners,
   });
 

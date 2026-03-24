@@ -6,6 +6,11 @@
     "baseUrl": ".",
     "noEmit": false, // because its not a next js app
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
 }

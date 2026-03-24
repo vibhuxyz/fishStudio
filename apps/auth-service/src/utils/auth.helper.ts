@@ -79,7 +79,7 @@ export const sendOtp = async (
   const otp = crypto.randomInt(1000, 9999).toString();
   //send otp email logic here
 
-  const identifier = userType === "user" ? data.phone_number : data.email;
+  const identifier = data.email || data.phone_number;
 
   try {
     await redis.set(`otp:${identifier}`, otp, "EX", 5 * 60);

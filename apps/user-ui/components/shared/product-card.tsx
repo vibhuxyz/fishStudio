@@ -6,7 +6,9 @@ import Link from "next/link";
 import { Star, Heart, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
+import { isUserLoggedIn } from "@/lib/auth-store";
 import { Product } from "@repo/types";
+import { toast } from "sonner";
 
 // 8x8 warm-toned blur placeholder for a smooth loading effect
 const BLUR_DATA =
@@ -46,6 +48,11 @@ export function ProductCard({
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isUserLoggedIn()) {
+      toast.error("Please login to add items to cart");
+      modals.openLogin();
+      return;
+    }
     if (onAddToCart) {
       onAddToCart(product);
     } else {
@@ -56,6 +63,11 @@ export function ProductCard({
   const handleQuickIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!isUserLoggedIn()) {
+      toast.error("Please login to add items to cart");
+      modals.openLogin();
+      return;
+    }
     quickAdd(product);
   };
 
@@ -102,44 +114,70 @@ export function ProductCard({
     );
   }
 
+  const isOutOfStock = product.stock <= 0;
+
   if (variant === "compact") {
     return (
-      <div className="group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md">
-        <Link
-          href={`/product/${slug}`}
-          className="relative block aspect-square overflow-hidden bg-muted"
-        >
-          <Image
-            src={product.image || "/placeholder.svg"}
-            alt={product.name}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 768px) 50vw, 220px"
-            placeholder="blur"
-            blurDataURL={BLUR_DATA}
-            priority={priority}
-            loading={priority ? "eager" : "lazy"}
-          />
-        </Link>
-        <div className="flex flex-col gap-1 px-3 pb-3 pt-2.5">
-          <Link href={`/product/${slug}`}>
-            <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-              {product.subCategory}
-            </p>
-            <p className="truncate text-sm font-semibold text-card-foreground">
-              {product.name}
-            </p>
-          </Link>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-card-foreground">
-                {"Rs. "}
-                {product.price}
-              </span>
-              /{product.weight}
-            </p>
-            {renderCartButton()}
+      <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock ? "opacity-80" : ""}`}>
+        <div className="relative">
+          <div className={`relative block aspect-square overflow-hidden bg-muted ${isOutOfStock ? "pointer-events-none" : ""}`}>
+            {isOutOfStock ? (
+              <Image
+                src={product.image || "/placeholder.svg"}
+                alt={product.name}
+                fill
+                className="object-cover grayscale"
+                sizes="(max-width: 768px) 50vw, 220px"
+                placeholder="blur"
+                blurDataURL={BLUR_DATA}
+                priority={priority}
+                loading={priority ? "eager" : "lazy"}
+              />
+            ) : (
+              <Link href={`/product/${slug}`} className="relative block h-full w-full">
+                <Image
+                  src={product.image || "/placeholder.svg"}
+                  alt={product.name}
+                  fill
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  sizes="(max-width: 768px) 50vw, 220px"
+                  placeholder="blur"
+                  blurDataURL={BLUR_DATA}
+                  priority={priority}
+                  loading={priority ? "eager" : "lazy"}
+                />
+              </Link>
+            )}
           </div>
+          {isOutOfStock && (
+            <div className="absolute inset-x-0 bottom-0 bg-black/65 py-1.5 text-center backdrop-blur-[2px]">
+              <span className="text-[10px] font-bold tracking-wider text-white uppercase">Out of Stock</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 px-3 pb-3 pt-2.5">
+          <p className="truncate text-sm font-semibold text-card-foreground">
+            {isOutOfStock ? product.name : (
+              <Link href={`/product/${slug}`}>{product.name}</Link>
+            )}
+          </p>
+          {!isOutOfStock && (
+            <>
+              <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                {product.subCategory}
+              </p>
+              <div className="flex items-center justify-between min-h-[28px]">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-card-foreground">
+                    {"Rs. "}
+                    {product.price}
+                  </span>
+                  /{product.weight}
+                </p>
+                {renderCartButton()}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -147,66 +185,88 @@ export function ProductCard({
 
   /* Full variant (Bestsellers) */
   return (
-    <div className="group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md">
-      <Link
-        href={`/product/${slug}`}
-        className="relative block aspect-square overflow-hidden bg-muted"
-      >
-        <Image
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 768px) 50vw, 220px"
-          placeholder="blur"
-          blurDataURL={BLUR_DATA}
-          priority={priority}
-          loading={priority ? "eager" : "lazy"}
-        />
-        <button
-          type="button"
-          className="absolute right-2 top-2 z-10 text-pink-400 transition-transform hover:scale-110"
-          onClick={(e) => e.preventDefault()}
-        >
-          <Heart
-            className={`h-5 w-5 ${product.isFavorite ? "fill-pink-500 text-pink-500" : ""}`}
+    <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock ? "opacity-80" : ""}`}>
+      <div className="relative aspect-square overflow-hidden bg-muted">
+        {isOutOfStock ? (
+          <Image
+            src={product.image || "/placeholder.svg"}
+            alt={product.name}
+            fill
+            className="object-cover grayscale"
+            sizes="(max-width: 768px) 50vw, 220px"
+            placeholder="blur"
+            blurDataURL={BLUR_DATA}
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
           />
-          <span className="sr-only">Add to favorites</span>
-        </button>
-      </Link>
+        ) : (
+          <Link href={`/product/${slug}`} className="relative block h-full w-full">
+            <Image
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              sizes="(max-width: 768px) 50vw, 220px"
+              placeholder="blur"
+              blurDataURL={BLUR_DATA}
+              priority={priority}
+              loading={priority ? "eager" : "lazy"}
+            />
+            <button
+              type="button"
+              className="absolute right-2 top-2 z-10 text-pink-400 transition-transform hover:scale-110"
+              onClick={(e) => e.preventDefault()}
+            >
+              <Heart
+                className={`h-5 w-5 ${product.isFavorite ? "fill-pink-500 text-pink-500" : ""}`}
+              />
+              <span className="sr-only">Add to favorites</span>
+            </button>
+          </Link>
+        )}
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+            <span className="rounded-full bg-black/80 px-4 py-1.5 text-xs font-bold tracking-wider text-white uppercase shadow-lg border border-white/20">
+              Out of Stock
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
-        <div className="flex items-start justify-between gap-1">
-          <Link href={`/product/${slug}`}>
-            <h3 className="text-sm font-bold leading-tight text-card-foreground hover:text-primary">
+        <h3 className="text-sm font-bold leading-tight text-card-foreground">
+          {isOutOfStock ? product.name : (
+            <Link href={`/product/${slug}`} className="hover:text-primary">
               {product.name}
-            </h3>
-          </Link>
-          <div className="flex flex-shrink-0 items-center gap-0.5">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {product.rating}
-            </span>
-          </div>
-        </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {product.description}
-        </p>
-        <div className="mt-2 flex items-center justify-between">
-          <div className="flex items-baseline gap-1">
-            <span className="text-sm font-bold text-card-foreground">
-              {"Rs. "}
-              {product.price}
-            </span>
-            {product.originalPrice && (
-              <span className="text-[11px] text-muted-foreground line-through">
-                {"Rs. "}
-                {product.originalPrice}
-              </span>
-            )}
-          </div>
-          {renderCartButton()}
-        </div>
+            </Link>
+          )}
+        </h3>
+        {!isOutOfStock && (
+          <>
+            <div className="mt-0.5 flex items-center gap-1">
+              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+              <span className="text-xs font-medium text-muted-foreground">{product.rating}</span>
+            </div>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              {product.description}
+            </p>
+            <div className="mt-2 flex items-center justify-between min-h-[32px]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-bold text-card-foreground">
+                  {"Rs. "}
+                  {product.price}
+                </span>
+                {product.originalPrice && (
+                  <span className="text-[11px] text-muted-foreground line-through">
+                    {"Rs. "}
+                    {product.originalPrice}
+                  </span>
+                )}
+              </div>
+              {renderCartButton()}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

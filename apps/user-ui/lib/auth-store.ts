@@ -3,11 +3,15 @@
 import { useSyncExternalStore } from "react";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import { useCartStore } from "@/lib/cart-store";
+import { useAddressStore } from "@/lib/address-store";
+import { useCouponStore } from "@/lib/coupon-store";
 
 export interface User {
   id: string;
   name: string;
   phone: string;
+  email?: string;
   avatar?: string;
 }
 
@@ -36,6 +40,10 @@ export function setAuthenticatedUser(user: User | null) {
   emitChange();
 }
 
+export function isUserLoggedIn(): boolean {
+  return currentUser !== null;
+}
+
 export async function logoutUser() {
   try {
     await axiosInstance.post("/auth/api/logout-user", {}, isProtected);
@@ -43,6 +51,10 @@ export async function logoutUser() {
     // keep logout resilient even if the server already cleared the session
   } finally {
     setAuthenticatedUser(null);
+    // Clear all user-specific state on logout
+    useCartStore.getState().clearCart();
+    useCouponStore.getState().clearAllCoupons();
+    useAddressStore.getState().clearAddresses();
   }
 }
 

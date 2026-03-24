@@ -11,7 +11,7 @@ import jwt from "jsonwebtoken";
 const { JsonWebTokenError } = jwt;
 // import jwt, { JsonWebTokenError } from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie.js";
-import { ValidationError } from "@repo/error-handlers";
+import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
 export const sendOtpToUser = async (
   req: Request,
@@ -19,29 +19,42 @@ export const sendOtpToUser = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, phone_number } = req.body;
+    const { identifier } = req.body; // email OR phone_number
 
-    if (!phone_number) {
-      throw new ValidationError("Phone number is required");
+    if (!identifier) {
+      throw new ValidationError("Email or phone number is required");
     }
 
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+
+    // Check if user exists
+    const existingUser = isEmail
+      ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
+      : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
+
+    const isNewUser = !existingUser;
+
     // Check OTP restrictions
-    await checkOtpRestrictions(phone_number, next);
+    await checkOtpRestrictions(identifier.trim(), next);
+    await trackOtpRequests(identifier.trim(), next);
 
-    // Track OTP spam
-    await trackOtpRequests(phone_number, next);
-
-    await sendOtp("user", {
-      name:
-        typeof name === "string" && name.trim()
-          ? name.trim()
-          : `User ${String(phone_number).slice(-4)}`,
-      phone_number,
-    });
+    if (isEmail) {
+      await sendOtp("user", {
+        name: existingUser?.name || "User",
+        email: identifier.trim(),
+        template: "user-otp-mail",
+      });
+    } else {
+      await sendOtp("user", {
+        name: existingUser?.name || "User",
+        phone_number: identifier.trim(),
+      });
+    }
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully!",
+      isNewUser,
+      message: isEmail ? "OTP sent to your email." : "OTP sent to your mobile number.",
     });
   } catch (error) {
     return next(error);
@@ -54,32 +67,48 @@ export const verifyOtpAndLogin = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, phone_number, otp } = req.body;
+    const { identifier, otp, name } = req.body;
 
-    if (!phone_number || !otp) {
-      return next(new ValidationError("Phone number and OTP are required"));
+    if (!identifier || !otp) {
+      return next(new ValidationError("Identifier and OTP are required"));
     }
 
-    // Validate OTP
-    // await verifyOtpPhone(phone_number, otp, next);
-    await verifyOtp(phone_number, otp, next);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
 
-    // Check user exists
-    let user = await prisma.users.findUnique({
-      where: { phone_number },
-    });
+    // Validate OTP
+    await verifyOtp(identifier.trim(), otp, next);
+
+    // Find or create user
+    let user = isEmail
+      ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
+      : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
 
     if (!user) {
-      // New user → create account
-      user = await prisma.users.create({
-        data: {
-          name:
-            typeof name === "string" && name.trim()
-              ? name.trim()
-              : `User ${String(phone_number).slice(-4)}`,
-          phone_number,
-        },
-      });
+      const defaultName = isEmail ? identifier.split("@")[0] : `User ${identifier.slice(-4)}`;
+      try {
+        user = await prisma.users.create({
+          data: isEmail
+            ? {
+                email: identifier.trim(),
+                name: name || defaultName,
+              }
+            : {
+                phone_number: identifier.trim(),
+                name: name || defaultName,
+              },
+        });
+      } catch (createError: any) {
+        // Handle potential race condition or duplicate null clash
+        if (createError.code === "P2002") {
+          user = isEmail
+            ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
+            : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
+          
+          if (!user) throw createError; // Still not found? Throw original error
+        } else {
+          throw createError;
+        }
+      }
     }
 
     // Generate tokens
@@ -95,7 +124,6 @@ export const verifyOtpAndLogin = async (
       { expiresIn: "7d" },
     );
 
-    // Set secure httpOnly cookies
     setCookie(res, "access_token", accessToken);
     setCookie(res, "refresh_token", refreshToken);
 
@@ -106,10 +134,11 @@ export const verifyOtpAndLogin = async (
         id: user.id,
         name: user.name,
         phone_number: user.phone_number,
+        email: user.email,
       },
     });
-  } catch (errpr) {
-    return next(errpr);
+  } catch (error) {
+    return next(error);
   }
 };
 
@@ -190,6 +219,82 @@ export const getUser = async (req: any, res: Response, next: NextFunction) => {
     res.status(200).json({
       success: true,
       user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const addUserAddress = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { address } = req.body; // { id, name, phone, street, city, state, pincode, isDefault }
+
+    if (!address || !address.street || !address.city || !address.pincode) {
+      return next(new ValidationError("Address details are incomplete"));
+    }
+
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) return next(new NotFoundError("User not found"));
+
+    let addresses = (user.addresses as any[]) || [];
+
+    // If isDefault is true, unset other defaults
+    if (address.isDefault) {
+      addresses = addresses.map((addr) => ({ ...addr, isDefault: false }));
+    }
+
+    // Add new address with a generated ID if not present
+    const newAddress = {
+      ...address,
+      id: address.id || new Date().getTime().toString(),
+    };
+    addresses.push(newAddress);
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: { addresses },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address added successfully",
+      addresses: updatedUser.addresses,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUserAddress = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) return next(new NotFoundError("User not found"));
+
+    const addresses = ((user.addresses as any[]) || []).filter(
+      (addr) => addr.id !== addressId,
+    );
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: { addresses },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address deleted successfully",
+      addresses: updatedUser.addresses,
     });
   } catch (error) {
     next(error);

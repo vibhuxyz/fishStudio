@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Share2,
@@ -19,8 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
-import { useCouponStore, AVAILABLE_COUPONS, type Coupon } from "@/lib/coupon-store";
+import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
+import { axiosInstance } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +30,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const TIP_OPTIONS = [20, 30, 50];
 
 export function CartPageClient() {
+  const router = useRouter();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -41,8 +44,10 @@ export function CartPageClient() {
     isCouponApplied,
     getTotalDiscount,
     getDiscountForCoupon,
+    availableCoupons,
+    fetchAvailableCoupons,
   } = useCouponStore();
-  const { getSelectedAddress } = useAddressStore();
+  const { getSelectedAddress, selectedLocation, setSelectedLocation } = useAddressStore();
   const selectedAddress = getSelectedAddress();
 
   const [couponInput, setCouponInput] = useState("");
@@ -61,11 +66,38 @@ export function CartPageClient() {
   const donation = donationEnabled ? 1 : 0;
   const grandTotal = subtotal + deliveryCharge + handlingCharge - discount + tip + donation;
 
+  // Auto-resolve storeId from address pincode if selectedLocation is missing
+  useEffect(() => {
+    if (selectedLocation?.storeId) return;
+    const addr = getSelectedAddress();
+    if (!addr?.pincode) return;
+    axiosInstance
+      .get(`/auth/api/check-pincode?pincode=${addr.pincode}`)
+      .then(({ data }) => {
+        if (data.success && data.store?.id) {
+          setSelectedLocation({
+            storeId: data.store.id,
+            storeName: data.store.name,
+            pincode: addr.pincode,
+            city: addr.city || data.store.city || "",
+          });
+        }
+      })
+      .catch(() => {});
+  }, [selectedLocation?.storeId]);
+
+  // Fetch real coupons when storeId available
+  useEffect(() => {
+    if (selectedLocation?.storeId) {
+      fetchAvailableCoupons(selectedLocation.storeId);
+    }
+  }, [selectedLocation?.storeId]);
+
   // Auto-apply eligible coupon on mount / subtotal change
   useEffect(() => {
     if (autoApplied) return;
     if (subtotal === 0) return;
-    const autoCoupon = AVAILABLE_COUPONS.find(
+    const autoCoupon = availableCoupons.find(
       (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
     );
     if (autoCoupon) {
@@ -73,10 +105,10 @@ export function CartPageClient() {
       setAutoApplied(true);
       toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
     }
-  }, [subtotal]);
+  }, [subtotal, availableCoupons]);
 
   const handleApplyCouponCode = () => {
-    const found = AVAILABLE_COUPONS.find(
+    const found = availableCoupons.find(
       (c) => c.code.toUpperCase() === couponInput.toUpperCase()
     );
     if (!found) {
@@ -285,7 +317,10 @@ export function CartPageClient() {
                 className="overflow-hidden"
               >
                 <div className="space-y-2 border-t border-border px-4 py-3">
-                  {AVAILABLE_COUPONS.map((coupon) => {
+                  {availableCoupons.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">No offers available for your area</p>
+                  )}
+                  {availableCoupons.map((coupon) => {
                     const eligible = subtotal >= coupon.minOrderValue;
                     const applied = isCouponApplied(coupon.code);
                     return (
@@ -525,6 +560,7 @@ export function CartPageClient() {
 
           <button
             type="button"
+            onClick={() => router.push("/checkout")}
             className="flex w-full items-center justify-between rounded-2xl bg-offer-green px-5 py-3.5 text-white"
           >
             <div>

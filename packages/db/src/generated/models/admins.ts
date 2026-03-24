@@ -192,6 +192,7 @@ export type adminsWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"admins"> | Date | string
   products?: Prisma.ProductsListRelationFilter
   coupons?: Prisma.Discount_codesListRelationFilter
+  banners?: Prisma.BannersListRelationFilter
 }
 
 export type adminsOrderByWithRelationInput = {
@@ -203,6 +204,7 @@ export type adminsOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   products?: Prisma.productsOrderByRelationAggregateInput
   coupons?: Prisma.discount_codesOrderByRelationAggregateInput
+  banners?: Prisma.bannersOrderByRelationAggregateInput
 }
 
 export type adminsWhereUniqueInput = Prisma.AtLeast<{
@@ -217,6 +219,7 @@ export type adminsWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"admins"> | Date | string
   products?: Prisma.ProductsListRelationFilter
   coupons?: Prisma.Discount_codesListRelationFilter
+  banners?: Prisma.BannersListRelationFilter
 }, "id" | "email">
 
 export type adminsOrderByWithAggregationInput = {
@@ -252,6 +255,7 @@ export type adminsCreateInput = {
   updatedAt?: Date | string
   products?: Prisma.productsCreateNestedManyWithoutAdminInput
   coupons?: Prisma.discount_codesCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersCreateNestedManyWithoutAdminInput
 }
 
 export type adminsUncheckedCreateInput = {
@@ -263,6 +267,7 @@ export type adminsUncheckedCreateInput = {
   updatedAt?: Date | string
   products?: Prisma.productsUncheckedCreateNestedManyWithoutAdminInput
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type adminsUpdateInput = {
@@ -273,6 +278,7 @@ export type adminsUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.productsUpdateManyWithoutAdminNestedInput
   coupons?: Prisma.discount_codesUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUpdateManyWithoutAdminNestedInput
 }
 
 export type adminsUncheckedUpdateInput = {
@@ -283,6 +289,7 @@ export type adminsUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.productsUncheckedUpdateManyWithoutAdminNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 export type adminsCreateManyInput = {
@@ -382,6 +389,22 @@ export type adminsUpdateOneWithoutProductsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.adminsUpdateToOneWithWhereWithoutProductsInput, Prisma.adminsUpdateWithoutProductsInput>, Prisma.adminsUncheckedUpdateWithoutProductsInput>
 }
 
+export type adminsCreateNestedOneWithoutBannersInput = {
+  create?: Prisma.XOR<Prisma.adminsCreateWithoutBannersInput, Prisma.adminsUncheckedCreateWithoutBannersInput>
+  connectOrCreate?: Prisma.adminsCreateOrConnectWithoutBannersInput
+  connect?: Prisma.adminsWhereUniqueInput
+}
+
+export type adminsUpdateOneWithoutBannersNestedInput = {
+  create?: Prisma.XOR<Prisma.adminsCreateWithoutBannersInput, Prisma.adminsUncheckedCreateWithoutBannersInput>
+  connectOrCreate?: Prisma.adminsCreateOrConnectWithoutBannersInput
+  upsert?: Prisma.adminsUpsertWithoutBannersInput
+  disconnect?: boolean
+  delete?: Prisma.adminsWhereInput | boolean
+  connect?: Prisma.adminsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.adminsUpdateToOneWithWhereWithoutBannersInput, Prisma.adminsUpdateWithoutBannersInput>, Prisma.adminsUncheckedUpdateWithoutBannersInput>
+}
+
 export type adminsCreateWithoutCouponsInput = {
   id?: string
   name: string
@@ -390,6 +413,7 @@ export type adminsCreateWithoutCouponsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   products?: Prisma.productsCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersCreateNestedManyWithoutAdminInput
 }
 
 export type adminsUncheckedCreateWithoutCouponsInput = {
@@ -400,6 +424,7 @@ export type adminsUncheckedCreateWithoutCouponsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   products?: Prisma.productsUncheckedCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type adminsCreateOrConnectWithoutCouponsInput = {
@@ -425,6 +450,7 @@ export type adminsUpdateWithoutCouponsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.productsUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUpdateManyWithoutAdminNestedInput
 }
 
 export type adminsUncheckedUpdateWithoutCouponsInput = {
@@ -434,6 +460,7 @@ export type adminsUncheckedUpdateWithoutCouponsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.productsUncheckedUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutAdminNestedInput
 }
 
 export type adminsCreateWithoutProductsInput = {
@@ -444,6 +471,7 @@ export type adminsCreateWithoutProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   coupons?: Prisma.discount_codesCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersCreateNestedManyWithoutAdminInput
 }
 
 export type adminsUncheckedCreateWithoutProductsInput = {
@@ -454,6 +482,7 @@ export type adminsUncheckedCreateWithoutProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutAdminInput
+  banners?: Prisma.bannersUncheckedCreateNestedManyWithoutAdminInput
 }
 
 export type adminsCreateOrConnectWithoutProductsInput = {
@@ -479,6 +508,7 @@ export type adminsUpdateWithoutProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   coupons?: Prisma.discount_codesUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUpdateManyWithoutAdminNestedInput
 }
 
 export type adminsUncheckedUpdateWithoutProductsInput = {
@@ -487,6 +517,65 @@ export type adminsUncheckedUpdateWithoutProductsInput = {
   password?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutAdminNestedInput
+  banners?: Prisma.bannersUncheckedUpdateManyWithoutAdminNestedInput
+}
+
+export type adminsCreateWithoutBannersInput = {
+  id?: string
+  name: string
+  email: string
+  password: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  products?: Prisma.productsCreateNestedManyWithoutAdminInput
+  coupons?: Prisma.discount_codesCreateNestedManyWithoutAdminInput
+}
+
+export type adminsUncheckedCreateWithoutBannersInput = {
+  id?: string
+  name: string
+  email: string
+  password: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  products?: Prisma.productsUncheckedCreateNestedManyWithoutAdminInput
+  coupons?: Prisma.discount_codesUncheckedCreateNestedManyWithoutAdminInput
+}
+
+export type adminsCreateOrConnectWithoutBannersInput = {
+  where: Prisma.adminsWhereUniqueInput
+  create: Prisma.XOR<Prisma.adminsCreateWithoutBannersInput, Prisma.adminsUncheckedCreateWithoutBannersInput>
+}
+
+export type adminsUpsertWithoutBannersInput = {
+  update: Prisma.XOR<Prisma.adminsUpdateWithoutBannersInput, Prisma.adminsUncheckedUpdateWithoutBannersInput>
+  create: Prisma.XOR<Prisma.adminsCreateWithoutBannersInput, Prisma.adminsUncheckedCreateWithoutBannersInput>
+  where?: Prisma.adminsWhereInput
+}
+
+export type adminsUpdateToOneWithWhereWithoutBannersInput = {
+  where?: Prisma.adminsWhereInput
+  data: Prisma.XOR<Prisma.adminsUpdateWithoutBannersInput, Prisma.adminsUncheckedUpdateWithoutBannersInput>
+}
+
+export type adminsUpdateWithoutBannersInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  products?: Prisma.productsUpdateManyWithoutAdminNestedInput
+  coupons?: Prisma.discount_codesUpdateManyWithoutAdminNestedInput
+}
+
+export type adminsUncheckedUpdateWithoutBannersInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  products?: Prisma.productsUncheckedUpdateManyWithoutAdminNestedInput
   coupons?: Prisma.discount_codesUncheckedUpdateManyWithoutAdminNestedInput
 }
 
@@ -498,11 +587,13 @@ export type adminsUncheckedUpdateWithoutProductsInput = {
 export type AdminsCountOutputType = {
   products: number
   coupons: number
+  banners: number
 }
 
 export type AdminsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   products?: boolean | AdminsCountOutputTypeCountProductsArgs
   coupons?: boolean | AdminsCountOutputTypeCountCouponsArgs
+  banners?: boolean | AdminsCountOutputTypeCountBannersArgs
 }
 
 /**
@@ -529,6 +620,13 @@ export type AdminsCountOutputTypeCountCouponsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.discount_codesWhereInput
 }
 
+/**
+ * AdminsCountOutputType without action
+ */
+export type AdminsCountOutputTypeCountBannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.bannersWhereInput
+}
+
 
 export type adminsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -539,6 +637,7 @@ export type adminsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   updatedAt?: boolean
   products?: boolean | Prisma.admins$productsArgs<ExtArgs>
   coupons?: boolean | Prisma.admins$couponsArgs<ExtArgs>
+  banners?: boolean | Prisma.admins$bannersArgs<ExtArgs>
   _count?: boolean | Prisma.AdminsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["admins"]>
 
@@ -557,6 +656,7 @@ export type adminsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
 export type adminsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   products?: boolean | Prisma.admins$productsArgs<ExtArgs>
   coupons?: boolean | Prisma.admins$couponsArgs<ExtArgs>
+  banners?: boolean | Prisma.admins$bannersArgs<ExtArgs>
   _count?: boolean | Prisma.AdminsCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -565,6 +665,7 @@ export type $adminsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   objects: {
     products: Prisma.$productsPayload<ExtArgs>[]
     coupons: Prisma.$discount_codesPayload<ExtArgs>[]
+    banners: Prisma.$bannersPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -938,6 +1039,7 @@ export interface Prisma__adminsClient<T, Null = never, ExtArgs extends runtime.T
   readonly [Symbol.toStringTag]: "PrismaPromise"
   products<T extends Prisma.admins$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.admins$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   coupons<T extends Prisma.admins$couponsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.admins$couponsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$discount_codesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  banners<T extends Prisma.admins$bannersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.admins$bannersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$bannersPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1388,6 +1490,30 @@ export type admins$couponsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.Discount_codesScalarFieldEnum | Prisma.Discount_codesScalarFieldEnum[]
+}
+
+/**
+ * admins.banners
+ */
+export type admins$bannersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the banners
+   */
+  select?: Prisma.bannersSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the banners
+   */
+  omit?: Prisma.bannersOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.bannersInclude<ExtArgs> | null
+  where?: Prisma.bannersWhereInput
+  orderBy?: Prisma.bannersOrderByWithRelationInput | Prisma.bannersOrderByWithRelationInput[]
+  cursor?: Prisma.bannersWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BannersScalarFieldEnum | Prisma.BannersScalarFieldEnum[]
 }
 
 /**

@@ -509,10 +509,12 @@ export type sellersCreateNestedOneWithoutBannersInput = {
   connect?: Prisma.sellersWhereUniqueInput
 }
 
-export type sellersUpdateOneRequiredWithoutBannersNestedInput = {
+export type sellersUpdateOneWithoutBannersNestedInput = {
   create?: Prisma.XOR<Prisma.sellersCreateWithoutBannersInput, Prisma.sellersUncheckedCreateWithoutBannersInput>
   connectOrCreate?: Prisma.sellersCreateOrConnectWithoutBannersInput
   upsert?: Prisma.sellersUpsertWithoutBannersInput
+  disconnect?: boolean
+  delete?: Prisma.sellersWhereInput | boolean
   connect?: Prisma.sellersWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.sellersUpdateToOneWithWhereWithoutBannersInput, Prisma.sellersUpdateWithoutBannersInput>, Prisma.sellersUncheckedUpdateWithoutBannersInput>
 }

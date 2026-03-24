@@ -90,6 +90,7 @@ const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
 
 const proxyOptions = {
+  parseReqBody: false,
   proxyReqPathResolver: (req: any) => req.url,
   userResHeaderDecorator: (headers: any, userReq: any, userRes: any, proxyReq: any, proxyRes: any) => {
     // Force set-cookie to be an array so express handles it correctly without joining with commas

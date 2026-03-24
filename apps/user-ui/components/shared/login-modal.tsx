@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, type KeyboardEvent } from "react";
-import { Phone, ArrowRight, Shield } from "lucide-react";
+import { Phone, Mail, ArrowRight, Shield, User } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import axiosInstance from "@/utils/axiosInstance";
 import { setAuthenticatedUser } from "@/lib/auth-store";
+import { useAddressStore } from "@/lib/address-store";
 import { storefrontKeys } from "@/lib/storefront";
 
 interface LoginModalProps {
@@ -22,192 +23,196 @@ interface LoginModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Step = "phone" | "otp" | "success";
+type Step = "identifier" | "otp" | "success";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^[6-9]\d{9}$/;
 
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
-  const [step, setStep] = useState<Step>("phone");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState(["", "", "", ""]); // Changed to 4 digits
+  const [step, setStep] = useState<Step>("identifier");
+  const [identifier, setIdentifier] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const [timer, setTimer] = useState(30);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const queryClient = useQueryClient();
 
+  const isEmail = EMAIL_REGEX.test(identifier.trim());
+  const isPhone = PHONE_REGEX.test(identifier.trim());
+  const isValid = isEmail || isPhone;
+
   const sendOtpMutation = useMutation({
     mutationFn: async () => {
-      await axiosInstance.post("/auth/api/send-otp", {
-        phone_number: phone,
+      const { data } = await axiosInstance.post("/auth/api/send-otp", {
+        identifier: identifier.trim(),
       });
+      return data;
     },
-    onSuccess: () => {
-      toast.success("OTP sent to your mobile number.");
+    onSuccess: (data) => {
+      toast.success(data?.message || "OTP sent successfully.");
+      setIsNewUser(!!data.isNewUser);
       setStep("otp");
       setTimer(30);
     },
     onError: (error: any) => {
-      toast.error(
+      const msg =
         error?.response?.data?.message ||
-          "Failed to send OTP. Please try again.",
-      );
+        error?.message ||
+        "Failed to send OTP. Please try again.";
+      toast.error(msg);
     },
   });
 
   const verifyOtpMutation = useMutation({
     mutationFn: async () => {
-      const otpValue = otp.join("");
-      const response = await axiosInstance.post("/auth/api/verify-otp", {
-        phone_number: phone,
-        otp: otpValue,
+      const { data } = await axiosInstance.post("/auth/api/verify-otp", {
+        identifier: identifier.trim(),
+        otp: otp.join(""),
+        name: isNewUser ? fullName.trim() : undefined,
       });
-
-      return response.data.user;
+      return data;
     },
-    onSuccess: (user) => {
+    onSuccess: async (data) => {
       setAuthenticatedUser({
-        id: user.id,
-        name: user.name,
-        phone: user.phone_number,
+        id: data.user.id,
+        name: data.user.name,
+        phone: data.user.phone_number || "",
+        email: data.user.email || "",
       });
+      // Fetch full user data (with addresses) and populate address store
+      try {
+        const { data: userData } = await axiosInstance.get("/auth/api/logged-in-user");
+        if (userData?.user?.addresses) {
+          useAddressStore.getState().setAddresses(userData.user.addresses);
+        }
+      } catch (_) {}
       queryClient.invalidateQueries({ queryKey: storefrontKeys.userSession });
-      toast.success("Logged in successfully.");
+      toast.success("Logged in successfully! Welcome back 🐟");
       setStep("success");
-      window.setTimeout(() => {
-        onOpenChange(false);
-      }, 1500);
+      window.setTimeout(() => onOpenChange(false), 1500);
     },
     onError: (error: any) => {
-      toast.error(
+      const msg =
         error?.response?.data?.message ||
-          "OTP verification failed. Please try again.",
-      );
+        error?.message ||
+        "OTP verification failed. Please try again.";
+      toast.error(msg);
     },
   });
 
   const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;
 
-  // Reset state when modal opens
   useEffect(() => {
     if (open) {
-      setStep("phone");
-      setPhone("");
-      setOtp(["", "", "", ""]); // Changed to 4 digits
+      setStep("identifier");
+      setIdentifier("");
+      setFullName("");
+      setIsNewUser(false);
+      setOtp(["", "", "", ""]);
       setTimer(30);
     }
   }, [open]);
 
-  // OTP countdown timer
   useEffect(() => {
     if (step === "otp" && timer > 0) {
-      const interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
+      const interval = setInterval(() => setTimer((p) => p - 1), 1000);
       return () => clearInterval(interval);
     }
   }, [step, timer]);
 
   const handleSendOtp = () => {
-    if (phone.length < 10) return;
+    if (!isValid) return;
     sendOtpMutation.mutate();
   };
 
   const handleOtpChange = (index: number, value: string) => {
     if (value.length > 1) {
-      // Handle paste
       const digits = value.replace(/\D/g, "").slice(0, 4).split("");
       const newOtp = [...otp];
-      digits.forEach((digit, i) => {
-        if (index + i < 4) {
-          newOtp[index + i] = digit;
-        }
-      });
+      digits.forEach((d, i) => { if (index + i < 4) newOtp[index + i] = d; });
       setOtp(newOtp);
-      const nextIndex = Math.min(index + digits.length, 3);
-      otpRefs.current[nextIndex]?.focus();
+      otpRefs.current[Math.min(index + digits.length, 3)]?.focus();
       return;
     }
-
     if (!/^\d*$/.test(value)) return;
-
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-
-    if (value && index < 3) {
-      otpRefs.current[index + 1]?.focus();
-    }
+    if (value && index < 3) otpRefs.current[index + 1]?.focus();
   };
 
-  const handleOtpKeyDown = (
-    index: number,
-    e: KeyboardEvent<HTMLInputElement>,
-  ) => {
+  const handleOtpKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       otpRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleVerifyOtp = () => {
-    const otpValue = otp.join("");
-    if (otpValue.length < 4) return;
-    verifyOtpMutation.mutate();
-  };
-
   const handleResendOtp = () => {
     setTimer(30);
-    setOtp(["", "", "", ""]); // Changed to 4 digits
+    setOtp(["", "", "", ""]);
     sendOtpMutation.mutate();
   };
+
+  const inputType = identifier.includes("@") ? "email" : "tel";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        {step === "phone" && (
+        {step === "identifier" && (
           <>
             <DialogHeader>
               <DialogTitle className="font-serif text-xl text-foreground">
                 Log in or Sign up
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Enter your phone number to continue
+                Enter your email or phone number to continue
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
               <div className="relative">
-                <div className="absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4" />
-                  <span>+91</span>
-                  <span className="text-border">|</span>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground">
+                  {isEmail ? (
+                    <Mail className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Phone className="h-4 w-4" />
+                  )}
                 </div>
                 <Input
-                  type="tel"
-                  placeholder="Enter mobile number"
-                  className="h-12 pl-20 text-base"
-                  maxLength={10}
-                  value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSendOtp();
-                  }}
+                  type={inputType}
+                  placeholder="Email or mobile number"
+                  className="h-12 pl-10 text-base"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && isValid) handleSendOtp(); }}
+                  autoFocus
                 />
               </div>
 
+              {identifier.length > 0 && !isValid && (
+                <p className="text-xs text-destructive -mt-2">
+                  {identifier.includes("@")
+                    ? "Enter a valid email address"
+                    : "Enter a valid 10-digit mobile number starting with 6-9"}
+                </p>
+              )}
+
               <Button
-                className="mt-4 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                 size="lg"
-                disabled={phone.length < 10 || isLoading}
+                disabled={!isValid || isLoading}
                 onClick={handleSendOtp}
               >
                 {isLoading ? "Sending OTP..." : "Continue"}
                 {!isLoading && <ArrowRight className="h-4 w-4" />}
               </Button>
 
-              <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
+              <p className="text-center text-xs leading-relaxed text-muted-foreground">
                 By continuing, you agree to our{" "}
-                <span className="text-primary underline">Terms of Service</span>{" "}
+                <span className="text-primary underline cursor-pointer">Terms of Service</span>{" "}
                 and{" "}
-                <span className="text-primary underline">Privacy Policy</span>
+                <span className="text-primary underline cursor-pointer">Privacy Policy</span>
               </p>
             </div>
           </>
@@ -220,56 +225,79 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 Verify OTP
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                We sent a 4-digit code to +91 {phone}
+                We sent a 4-digit code to{" "}
+                <span className="font-medium text-foreground">
+                  {isEmail ? identifier : `+91 ${identifier}`}
+                </span>
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-4">
-              <div className="flex justify-center gap-2">
-                {otp.map((digit, i) => (
-                  <Input
-                    key={i}
-                    ref={(el) => {
-                      otpRefs.current[i] = el;
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    className="h-12 w-12 text-center text-lg font-semibold"
-                    value={digit}
-                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    onPaste={(e) => {
-                      e.preventDefault();
-                      const pasted = e.clipboardData.getData("text");
-                      handleOtpChange(i, pasted);
-                    }}
-                  />
-                ))}
+            <div className="mt-4 space-y-4">
+              {isNewUser && (
+                <div className="space-y-2 mb-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                    Enter Full Name
+                  </p>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      <User className="h-4 w-4" />
+                    </div>
+                    <Input
+                      placeholder="e.g. John Doe"
+                      className="h-12 pl-10 text-base"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Enter 4-digit OTP
+                </p>
+                <div className="flex justify-center gap-2">
+                  {otp.map((digit, i) => (
+                    <Input
+                      key={i}
+                      ref={(el) => { otpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      className="h-14 w-12 text-center text-xl font-bold"
+                      value={digit}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                      onPaste={(e) => {
+                        e.preventDefault();
+                        handleOtpChange(i, e.clipboardData.getData("text"));
+                      }}
+                      autoFocus={!isNewUser && i === 0}
+                    />
+                  ))}
+                </div>
               </div>
 
               <Button
-                className="mt-5 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="mt-2 w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                 size="lg"
-                disabled={otp.join("").length < 4 || isLoading} // Changed to < 4
-                onClick={handleVerifyOtp}
+                disabled={otp.join("").length < 4 || (isNewUser && !fullName.trim()) || isLoading}
+                onClick={() => verifyOtpMutation.mutate()}
               >
                 {isLoading ? "Verifying..." : "Verify & Continue"}
                 <Shield className="h-4 w-4" />
               </Button>
 
-              <div className="mt-4 text-center">
+              <div className="mt-2 text-center">
                 {timer > 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Resend OTP in{" "}
-                    <span className="font-medium text-foreground">
-                      {timer}s
-                    </span>
+                  <p className="text-xs text-muted-foreground">
+                    Resend OTP in <span className="font-medium text-foreground">{timer}s</span>
                   </p>
                 ) : (
                   <button
                     type="button"
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="text-xs font-medium text-primary hover:underline"
                     onClick={handleResendOtp}
                   >
                     Resend OTP
@@ -279,10 +307,10 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
               <button
                 type="button"
-                className="mt-3 block w-full text-center text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => setStep("phone")}
+                className="mt-2 block w-full text-center text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setStep("identifier")}
               >
-                Change phone number
+                Change email / phone number
               </button>
             </div>
           </>
@@ -297,8 +325,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               Welcome!
             </h3>
             <p className="mt-2 text-center text-sm text-muted-foreground">
-              You have been successfully logged in. Enjoy fresh fish and meat
-              delivered to your doorstep!
+              You have been successfully logged in. Enjoy fresh fish and meat delivered to your doorstep!
             </p>
           </div>
         )}

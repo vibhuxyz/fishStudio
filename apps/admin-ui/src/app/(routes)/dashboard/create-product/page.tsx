@@ -74,6 +74,7 @@ const Page = () => {
     (null | { file: File; base64: string })[]
   >([null]);
   const [loading, setLoading] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const router = useRouter();
   const [slugValue, setSlugValue] = useState("");
   const [isSlugChecking, setIsSlugChecking] = useState(false);
@@ -178,34 +179,40 @@ const Page = () => {
     try {
       setLoading(true);
 
-      const validImages = images.filter((img) => img !== null && img.base64);
+      const imagesWithIndex = images
+        .map((img, idx) => ({ ...img, originalIndex: idx }))
+        .filter((img) => img !== null && img?.base64);
 
-      const uploadedImagesData = await Promise.all(
-        validImages.map(async (img) => {
-          if (!img?.base64) return null;
+      if (imagesWithIndex.length === 0) {
+        toast.error("At least one product image is required!");
+        setLoading(false);
+        return;
+      }
 
-          try {
-            const uploadRes = await axiosInstance.post(
-              "/product/api/upload-product-image",
-              { fileName: img.base64 },
-              isProtected,
-            );
+      const productTitle = data.title;
+      const finalImages = [];
 
-            if (uploadRes.data.success) {
-              return {
-                fileId: uploadRes.data.fileId,
-                file_url: uploadRes.data.file_url,
-              };
-            }
-            return null;
-          } catch (err) {
-            console.error("Image upload failed", err);
-            return null;
-          }
-        }),
-      );
+      // Sequential Upload Images to Cloudinary
+      for (const imgData of imagesWithIndex) {
+        setUploadingIndex(imgData.originalIndex);
+        const uploadRes = await axiosInstance.post(
+          "/product/api/admin/upload-cloudinary-image",
+          {
+            images: [imgData.base64],
+            folder: "products",
+            productTitle,
+          },
+          isProtected,
+        );
 
-      const finalImages = uploadedImagesData.filter(Boolean);
+        if (uploadRes.data.success && uploadRes.data.images?.[0]) {
+          finalImages.push(uploadRes.data.images[0]);
+        } else {
+          throw new Error("Failed to upload one or more images.");
+        }
+      }
+
+      setUploadingIndex(null);
 
       const submitData = {
         ...data,
@@ -234,7 +241,15 @@ const Page = () => {
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to create product";
-      toast.error(message);
+
+      // Specific handling for 413 or large payload
+      if (message.includes("413") || message.toLowerCase().includes("large")) {
+        toast.error(
+          "Files are too large. Please upload smaller images (under 5MB each).",
+        );
+      } else {
+        toast.error(message);
+      }
       console.error(error);
     } finally {
       setLoading(false);
@@ -248,9 +263,7 @@ const Page = () => {
     >
       {/* Heading & Breadcrumbs */}
       <h2 className="text-2xl py-2 font-semibold font-Poppins text-white">
-         
         Create Product
-        <p className="text-red-900 text-4xl">Image upload is not Working Now so Create Product Without image In v1 we will fix</p>
       </h2>
       <BreadCrumbs title="Create Product" />
 
@@ -267,6 +280,7 @@ const Page = () => {
               setImages={setImages}
               setValue={setValue}
               index={0}
+              isUploading={uploadingIndex === 0}
             />
           )}
 
@@ -280,6 +294,7 @@ const Page = () => {
                 small
                 setValue={setValue}
                 index={index + 1}
+                isUploading={uploadingIndex === index + 1}
               />
             ))}
           </div>

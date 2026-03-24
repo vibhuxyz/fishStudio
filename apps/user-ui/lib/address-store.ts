@@ -18,54 +18,49 @@ export interface Address {
   lng?: number;
 }
 
+export interface SelectedLocation {
+  storeId: string;
+  storeName: string;
+  pincode: string;
+  city: string;
+  deliveryTimeMinutes?: number;
+}
+
 interface AddressState {
   addresses: Address[];
   selectedAddressId: string | null;
+  selectedLocation: SelectedLocation | null;
   addAddress: (address: Omit<Address, "id">) => void;
   updateAddress: (id: string, address: Partial<Address>) => void;
   removeAddress: (id: string) => void;
   selectAddress: (id: string) => void;
   getSelectedAddress: () => Address | null;
+  setSelectedLocation: (location: SelectedLocation | null) => void;
+  setAddresses: (addresses: Address[]) => void;
+  clearAddresses: () => void;
 }
-
-const MOCK_ADDRESSES: Address[] = [
-  {
-    id: "addr-1",
-    label: "Home",
-    name: "Rahul Sharma",
-    phone: "9876543210",
-    street: "42, Marine Drive, Flat 3B",
-    landmark: "Near Fish Market",
-    area: "Marine Lines",
-    city: "Mumbai",
-    state: "Maharashtra",
-    pincode: "400002",
-    lat: 18.9438,
-    lng: 72.8232,
-  },
-  {
-    id: "addr-2",
-    label: "Work",
-    name: "Rahul Sharma",
-    phone: "9876543210",
-    street: "BKC, Bandra Kurla Complex, Tower 1",
-    landmark: "HDFC Bank Building",
-    area: "Bandra East",
-    city: "Mumbai",
-    state: "Maharashtra",
-    pincode: "400051",
-    lat: 19.0596,
-    lng: 72.8656,
-  },
-];
 
 export const useAddressStore = create<AddressState>()(
   persist(
     (set, get) => ({
-      addresses: MOCK_ADDRESSES,
-      selectedAddressId: "addr-1",
+      addresses: [],
+      selectedAddressId: null,
+      selectedLocation: null,
 
-      addAddress: (address) => {
+      setSelectedLocation: (location: SelectedLocation | null) => set({ selectedLocation: location }),
+
+      setAddresses: (addresses: Address[]) =>
+        set((state) => {
+          const stillExists = addresses.some((a) => a.id === state.selectedAddressId);
+          return {
+            addresses,
+            selectedAddressId: stillExists
+              ? state.selectedAddressId
+              : (addresses[0]?.id ?? null),
+          };
+        }),
+
+      addAddress: (address: Omit<Address, "id">) => {
         const newAddress: Address = {
           ...address,
           id: `addr-${Date.now()}`,
@@ -76,7 +71,7 @@ export const useAddressStore = create<AddressState>()(
         }));
       },
 
-      updateAddress: (id, updated) => {
+      updateAddress: (id: string, updated: Partial<Address>) => {
         set((state) => ({
           addresses: state.addresses.map((a) =>
             a.id === id ? { ...a, ...updated } : a
@@ -84,7 +79,7 @@ export const useAddressStore = create<AddressState>()(
         }));
       },
 
-      removeAddress: (id) => {
+      removeAddress: (id: string) => {
         set((state) => {
           const filtered = state.addresses.filter((a) => a.id !== id);
           return {
@@ -97,52 +92,23 @@ export const useAddressStore = create<AddressState>()(
         });
       },
 
-      selectAddress: (id) => set({ selectedAddressId: id }),
+      selectAddress: (id: string) => set({ selectedAddressId: id }),
 
       getSelectedAddress: () => {
         const { addresses, selectedAddressId } = get();
         return addresses.find((a) => a.id === selectedAddressId) ?? null;
       },
+
+      clearAddresses: () =>
+        set({ addresses: [], selectedAddressId: null, selectedLocation: null }),
     }),
-    { name: "fish-studio-addresses" }
+    {
+      name: "fish-studio-addresses",
+      // Only persist selected location and selected ID — addresses come from DB on login
+      partialize: (state) => ({
+        selectedLocation: state.selectedLocation,
+        selectedAddressId: state.selectedAddressId,
+      }),
+    }
   )
 );
-
-// Nearby address mock data for pincode search (2km radius simulation)
-export const PINCODE_AREA_MAP: Record<string, { area: string; city: string; state: string }[]> = {
-  "400002": [
-    { area: "Marine Lines", city: "Mumbai", state: "Maharashtra" },
-    { area: "Churchgate", city: "Mumbai", state: "Maharashtra" },
-    { area: "Nariman Point", city: "Mumbai", state: "Maharashtra" },
-  ],
-  "400051": [
-    { area: "Bandra East", city: "Mumbai", state: "Maharashtra" },
-    { area: "BKC", city: "Mumbai", state: "Maharashtra" },
-    { area: "Kalina", city: "Mumbai", state: "Maharashtra" },
-  ],
-  "400001": [
-    { area: "Fort", city: "Mumbai", state: "Maharashtra" },
-    { area: "CST", city: "Mumbai", state: "Maharashtra" },
-    { area: "Ballard Estate", city: "Mumbai", state: "Maharashtra" },
-  ],
-  "110001": [
-    { area: "Connaught Place", city: "New Delhi", state: "Delhi" },
-    { area: "Janpath", city: "New Delhi", state: "Delhi" },
-    { area: "Patel Chowk", city: "New Delhi", state: "Delhi" },
-  ],
-  "600001": [
-    { area: "George Town", city: "Chennai", state: "Tamil Nadu" },
-    { area: "Rajaji Salai", city: "Chennai", state: "Tamil Nadu" },
-    { area: "Parry's Corner", city: "Chennai", state: "Tamil Nadu" },
-  ],
-};
-
-// Mock nearby addresses within 2km of selected pincode
-export function getNearbyAddresses(pincode: string): { address: string; distance: string }[] {
-  const areas = PINCODE_AREA_MAP[pincode];
-  if (!areas) return [];
-  return areas.map((a, i) => ({
-    address: `${a.area}, ${a.city}, ${a.state} - ${pincode}`,
-    distance: `${(0.3 + i * 0.6).toFixed(1)} km`,
-  }));
-}

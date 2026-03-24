@@ -19,6 +19,7 @@ interface ModalContextType {
   openLogin: () => void;
   openCart: () => void;
   openAddToCart: (product: Product) => void;
+  openAddress: () => void;
 }
 
 // Default no-op context so useModals never crashes even outside the provider
@@ -26,6 +27,7 @@ const defaultCtx: ModalContextType = {
   openLogin: () => {},
   openCart: () => {},
   openAddToCart: () => {},
+  openAddress: () => {},
 };
 
 const ModalContext = createContext<ModalContextType>(defaultCtx);
@@ -39,6 +41,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const [showLogin, setShowLogin] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showAddToCart, setShowAddToCart] = useState(false);
+  const [showAddress, setShowAddress] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const openLogin = useCallback(() => setShowLogin(true), []);
@@ -47,13 +50,14 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     setSelectedProduct(product);
     setShowAddToCart(true);
   }, []);
+  const openAddress = useCallback(() => setShowAddress(true), []);
 
   useEffect(() => {
     setRedirectHandler(openLogin);
   }, [openLogin]);
 
   return (
-    <ModalContext value={{ openLogin, openCart, openAddToCart }}>
+    <ModalContext value={{ openLogin, openCart, openAddToCart, openAddress }}>
       {children}
 
       <AddToCartModal

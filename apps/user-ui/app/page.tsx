@@ -1,7 +1,6 @@
 "use client";
 
 import { Component, type ReactNode } from "react";
-import { HeroSection } from "@/components/sections/hero-section";
 import { OfferCarousel } from "@/components/sections/offer-carousel";
 import { ProductCarouselSection } from "@/components/sections/product-carousel-section";
 import { TestimonialsSection } from "@/components/sections/testimonials-section";
@@ -112,9 +111,6 @@ export default function Page() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
-        <SectionErrorBoundary label="Hero">
-          <HeroSection />
-        </SectionErrorBoundary>
 
         <SectionErrorBoundary label="Banner">
           <OfferCarouselWithFallback />

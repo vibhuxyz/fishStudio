@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "@repo/db";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { imagekit } from "@repo/libs";
+import { imagekit, cloudinary } from "@repo/libs";
+import { ENV } from "@repo/env-config";
 
 interface AuthRequest extends Request {
   role?: "admin" | "seller" | "user";
@@ -47,7 +48,8 @@ const getSellerStore = (req: AuthRequest) => {
 
 const interleaveBanners = <
   T extends {
-    sellerId: string;
+    sellerId?: string | null;
+    adminId?: string | null;
   },
 >(
   items: T[],
@@ -55,9 +57,10 @@ const interleaveBanners = <
   const grouped = new Map<string, T[]>();
 
   for (const item of items) {
-    const sellerItems = grouped.get(item.sellerId) ?? [];
-    sellerItems.push(item);
-    grouped.set(item.sellerId, sellerItems);
+    const key = item.sellerId || item.adminId || "admin-global";
+    const memberItems = grouped.get(key) ?? [];
+    memberItems.push(item);
+    grouped.set(key, memberItems);
   }
 
   const groupedArrays = Array.from(grouped.values());
@@ -100,19 +103,24 @@ const mapProductWithActiveEvents = (product: any) => {
 };
 
 const isCatalogRootProduct = (
-  product: {
-    adminId?: string | null;
-    storeId?: string | null;
-    catalogProductId?: string | null;
-    isDeleted?: boolean | null;
-  } | null | undefined,
+  product:
+    | {
+        adminId?: string | null;
+        storeId?: string | null;
+        catalogProductId?: string | null;
+        isDeleted?: boolean | null;
+      }
+    | null
+    | undefined,
 ) => {
   if (!product) return false;
 
-  return Boolean(product.adminId) &&
+  return (
+    Boolean(product.adminId) &&
     !product.storeId &&
     !product.catalogProductId &&
-    product.isDeleted !== true;
+    product.isDeleted !== true
+  );
 };
 
 const normalizeDynamicValues = (items: unknown) => {
@@ -199,8 +207,16 @@ const normalizeSizePricing = (
         (entry as Record<string, unknown>).weight_grams;
 
       const salePrice = Number(rawSalePrice ?? fallbackSalePrice ?? 0);
-      const regularPrice = Number(rawRegularPrice ?? rawSalePrice ?? fallbackRegularPrice ?? fallbackSalePrice ?? 0);
-      const weightGrams = Number(rawWeightGrams ?? parseWeightToGrams(size) ?? 0);
+      const regularPrice = Number(
+        rawRegularPrice ??
+          rawSalePrice ??
+          fallbackRegularPrice ??
+          fallbackSalePrice ??
+          0,
+      );
+      const weightGrams = Number(
+        rawWeightGrams ?? parseWeightToGrams(size) ?? 0,
+      );
 
       return {
         size,
@@ -236,7 +252,9 @@ const normalizeSizePricing = (
   }));
 };
 
-const getDisplayPricesFromSizePricing = (sizePricing: NormalizedSizePricing[]) => {
+const getDisplayPricesFromSizePricing = (
+  sizePricing: NormalizedSizePricing[],
+) => {
   if (sizePricing.length === 0) {
     return {
       salePrice: 0,
@@ -374,14 +392,24 @@ export const getCategories = async (
       });
     }
 
+    const subCategories =
+      config.subCategories && typeof config.subCategories === "object"
+        ? (config.subCategories as Record<string, string[]>)
+        : {};
+
+    // Transform subCategories to use camelCase keys based on category names
+    const transformedSubCategories: Record<string, string[]> = {};
+    if (Array.isArray(config.categories)) {
+      config.categories.forEach((cat) => {
+        const key = getCategoryConfigKey(cat);
+        transformedSubCategories[key] = subCategories[cat] || [];
+      });
+    }
+
     return res.status(200).json({
       success: true,
       categories: config.categories,
-      subCategories: config.subCategories,
-      // sizes: config.sizes,
-      // cuttingTypes: config.cuttingTypes,
-      // pieceSizes: config.pieceSizes,
-      // processingWeightLoss: config.processingWeightLoss,
+      subCategories: transformedSubCategories,
     });
   } catch (error) {
     return next(error);
@@ -414,7 +442,9 @@ export const createCategory = async (
       });
     }
 
-    const categories = Array.isArray(config.categories) ? [...config.categories] : [];
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
     const subCategories =
       config.subCategories && typeof config.subCategories === "object"
         ? { ...(config.subCategories as Record<string, string[]>) }
@@ -429,9 +459,7 @@ export const createCategory = async (
     }
 
     categories.push(categoryName);
-    subCategories[categoryKey] = Array.isArray(subCategories[categoryKey])
-      ? subCategories[categoryKey]
-      : [];
+    subCategories[categoryName] = []; // Use display name as key for storage
 
     const updatedConfig = await prisma.site_config.update({
       where: { id: config.id },
@@ -476,7 +504,9 @@ export const createSubCategory = async (
     const categoryName = category.trim();
     const subCategoryName = name.trim();
     const categoryKey = getCategoryConfigKey(categoryName);
-    const categories = Array.isArray(config.categories) ? [...config.categories] : [];
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
 
     if (
       !categories.some(
@@ -492,20 +522,17 @@ export const createSubCategory = async (
         ? { ...(config.subCategories as Record<string, string[]>) }
         : {};
 
-    const existingSubCategories = Array.isArray(subCategories[categoryKey])
-      ? [...subCategories[categoryKey]]
-      : [];
+    const categorySubCategories = subCategories[categoryName] || []; // Use display name as key
 
     if (
-      existingSubCategories.some(
-        (entry) => entry.toLowerCase() === subCategoryName.toLowerCase(),
+      categorySubCategories.some(
+        (sub) => sub.toLowerCase() === subCategoryName.toLowerCase(),
       )
     ) {
       return next(new ValidationError("Subcategory already exists"));
     }
 
-    existingSubCategories.push(subCategoryName);
-    subCategories[categoryKey] = existingSubCategories;
+    subCategories[categoryName] = [...categorySubCategories, subCategoryName];
 
     const updatedConfig = await prisma.site_config.update({
       where: { id: config.id },
@@ -531,7 +558,7 @@ export const createDiscountCodes = async (
   next: NextFunction,
 ) => {
   try {
-    const { public_name, discountType, discountValue, discountCode } = req.body;
+    const { public_name, discountType, discountValue, discountCode, minOrderValue } = req.body;
 
     if (!public_name || !discountType || !discountValue || !discountCode) {
       return next(new ValidationError("All fields are required"));
@@ -557,6 +584,7 @@ export const createDiscountCodes = async (
         discountType,
         discountValue: parseFloat(discountValue),
         discountCode,
+        minOrderValue: minOrderValue ? parseFloat(minOrderValue) : 0,
         ...getSellerDiscountOwnerData(req),
       },
     });
@@ -662,7 +690,9 @@ export const createSellerEvent = async (
 
     if (!title || !type || !startTime || !endTime) {
       return next(
-        new ValidationError("Title, type, start time, and end time are required."),
+        new ValidationError(
+          "Title, type, start time, and end time are required.",
+        ),
       );
     }
 
@@ -685,7 +715,9 @@ export const createSellerEvent = async (
       (type === "DISCOUNT" || type === "FLASH_SALE") &&
       (discount === undefined || discount === null || Number(discount) <= 0)
     ) {
-      return next(new ValidationError("Discount amount is required for this event."));
+      return next(
+        new ValidationError("Discount amount is required for this event."),
+      );
     }
 
     const event = await prisma.seller_events.create({
@@ -774,11 +806,21 @@ export const updateSellerEvent = async (
     }
 
     if (existingEvent.sellerId !== req.seller.id) {
-      return next(new ValidationError("You are not authorized to update this event!"));
+      return next(
+        new ValidationError("You are not authorized to update this event!"),
+      );
     }
 
-    const { title, description, type, minOrder, discount, startTime, endTime, isActive } =
-      req.body;
+    const {
+      title,
+      description,
+      type,
+      minOrder,
+      discount,
+      startTime,
+      endTime,
+      isActive,
+    } = req.body;
 
     const updateData: Record<string, unknown> = {};
 
@@ -864,7 +906,9 @@ export const deleteSellerEvent = async (
     }
 
     if (event.sellerId !== req.seller.id) {
-      return next(new ValidationError("You are not authorized to delete this event!"));
+      return next(
+        new ValidationError("You are not authorized to delete this event!"),
+      );
     }
 
     await prisma.seller_events.delete({
@@ -883,51 +927,83 @@ export const deleteSellerEvent = async (
 };
 
 export const uploadBanner = async (
-  req: AuthRequest, // Use the custom interface here
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const { fileName } = req.body;
+    const { fileName, images } = req.body;
     const sellerId = req.seller?.id;
+    const adminId = req.admin?.id;
 
-    if (!fileName) {
+    const imageList = Array.isArray(images)
+      ? images
+      : fileName
+        ? [fileName]
+        : [];
+
+    if (imageList.length === 0) {
       return next(new ValidationError("Banner image data is required"));
     }
 
-    if (!sellerId) {
-      return next(new ValidationError("Only seller can create banners!"));
-    }
-
-    const existingBannerCount = await prisma.banners.count({
-      where: {
-        sellerId,
-      },
-    });
-
-    if (existingBannerCount >= 3) {
+    if (!sellerId && !adminId) {
       return next(
-        new ValidationError("A seller can upload a maximum of 3 banners."),
+        new ValidationError("Only seller or admin can create banners!"),
       );
     }
 
-    const response = await imagekit.upload({
-      file: fileName,
-      fileName: `banner-${sellerId}-${Date.now()}.jpg`,
-      folder: "/banners",
-    });
+    if (sellerId) {
+      const existingBannerCount = await prisma.banners.count({
+        where: {
+          sellerId,
+        },
+      });
 
-    const newBanner = await prisma.banners.create({
-      data: {
-        imageUrl: response.url,
-        fileId: response.fileId,
-        sellerId: sellerId,
-      },
-    });
+      if (existingBannerCount + imageList.length > 3) {
+        return next(
+          new ValidationError(
+            `A seller can upload a maximum of 3 banners. You already have ${existingBannerCount}.`,
+          ),
+        );
+      }
+    }
+
+    const createdBanners = [];
+    for (const img of imageList) {
+      let imageUrl, fileId;
+
+      if (adminId) {
+        const cloudFolder = `${ENV.CLOUDINARY_FOLDER || "wallet-app"}/banners`;
+        const response = await cloudinary.uploader.upload(img, {
+          folder: cloudFolder,
+          resource_type: "auto",
+        });
+        imageUrl = response.secure_url;
+        fileId = response.public_id;
+      } else {
+        const response = await imagekit.upload({
+          file: img,
+          fileName: `banner-${sellerId}-${Date.now()}.jpg`,
+          folder: "/banners",
+        });
+        imageUrl = response.url;
+        fileId = response.fileId;
+      }
+
+      const newBanner = await prisma.banners.create({
+        data: {
+          imageUrl,
+          fileId,
+          sellerId: sellerId || undefined,
+          adminId: adminId || undefined,
+        },
+      });
+      createdBanners.push(newBanner);
+    }
 
     res.status(201).json({
       success: true,
-      data: newBanner,
+      data: createdBanners.length === 1 ? createdBanners[0] : createdBanners,
     });
   } catch (error) {
     next(error);
@@ -990,7 +1066,9 @@ export const updateBanner = async (
     }
 
     if (existingBanner.sellerId !== req.seller.id) {
-      return next(new ValidationError("You are not authorized to update this banner!"));
+      return next(
+        new ValidationError("You are not authorized to update this banner!"),
+      );
     }
 
     const updateData: Record<string, unknown> = {};
@@ -1042,18 +1120,25 @@ export const deleteBanner = async (
       where: {
         id: bannerId,
       },
-      select: {
-        id: true,
-        sellerId: true,
-      },
     });
 
     if (!existingBanner) {
       return next(new NotFoundError("Banner not found!"));
     }
 
-    if (existingBanner.sellerId !== req.seller.id) {
-      return next(new ValidationError("You are not authorized to delete this banner!"));
+    if (req.role === "seller" && existingBanner.sellerId !== req.seller?.id) {
+      return next(
+        new ValidationError("You are not authorized to delete this banner!"),
+      );
+    }
+
+    // Delete from Cloudinary if fileId exists
+    if (existingBanner.fileId) {
+      try {
+        await cloudinary.uploader.destroy(existingBanner.fileId);
+      } catch (err) {
+        console.error("Cloudinary deletion failed for banner", err);
+      }
     }
 
     await prisma.banners.delete({
@@ -1092,6 +1177,34 @@ export const getActiveBanners = async (
   }
 };
 
+export const getAdminBanners = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (req.role !== "admin" || !req.admin?.id) {
+      return next(new ValidationError("Only admin can view these banners!"));
+    }
+
+    const banners = await prisma.banners.findMany({
+      where: {
+        adminId: req.admin.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      banners,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 //upload product image
 export const uploadProductImage = async (
   req: Request,
@@ -1123,6 +1236,92 @@ export const uploadProductImage = async (
   }
 };
 
+// Upload image to Cloudinary (Specifically for Admin Panel)
+export const uploadCloudinaryImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { images, fileName, folder = "products", productTitle } = req.body;
+
+    // Support both single 'fileName' (for backward compat) and multiple 'images'
+    const imageList = Array.isArray(images)
+      ? images
+      : fileName
+        ? [fileName]
+        : [];
+
+    if (imageList.length === 0) {
+      return next(new ValidationError("At least one image is required"));
+    }
+
+    const validFolders = ["banners", "products"];
+    const targetBaseFolder = validFolders.includes(folder)
+      ? folder
+      : "products";
+
+    // Create subfolder for products based on title
+    let cloudFolder = `${ENV.CLOUDINARY_FOLDER || "wallet-app"}/${targetBaseFolder}`;
+    if (targetBaseFolder === "products" && productTitle) {
+      const safeTitle = productTitle
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-zA-Z0-9-]/g, "");
+      cloudFolder += `/${safeTitle}`;
+    }
+
+    const uploadPromises = imageList.map(async (base64, index) => {
+      const response = await cloudinary.uploader.upload(base64, {
+        folder: cloudFolder,
+        public_id: `image${index + 1}`,
+        resource_type: "auto",
+        overwrite: true,
+      });
+      return {
+        file_url: response.secure_url,
+        fileId: response.public_id,
+      };
+    });
+
+    const results = await Promise.all(uploadPromises);
+
+    res.status(201).json({
+      success: true,
+      images: results,
+      // For single image compat
+      file_url: results[0]?.file_url,
+      fileId: results[0]?.fileId,
+    });
+  } catch (error) {
+    console.error("Cloudinary Upload Error:", error);
+    next(error);
+  }
+};
+
+export const deleteCloudinaryImage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { fileId } = req.body;
+    if (!fileId) {
+      return next(new ValidationError("fileId is required for deletion"));
+    }
+
+    const result = await cloudinary.uploader.destroy(fileId);
+
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error("Cloudinary Delete Error:", error);
+    next(error);
+  }
+};
+
 export const createProduct = async (
   req: AuthRequest,
   res: Response,
@@ -1130,7 +1329,9 @@ export const createProduct = async (
 ) => {
   try {
     if (req.role !== "admin" || !req.admin?.id) {
-      return next(new ValidationError("Only admin can create catalog products!"));
+      return next(
+        new ValidationError("Only admin can create catalog products!"),
+      );
     }
 
     /**
@@ -1160,9 +1361,6 @@ export const createProduct = async (
      */
     const requiredFields = {
       title,
-      sizes,
-      cuttingTypes,
-      pieceSizes,
       slug,
       short_description,
       category,
@@ -1217,9 +1415,9 @@ export const createProduct = async (
      * 5️⃣ Normalize dynamic fields
      * Convert [{ value: "500g" }] → ["500g"]
      */
-    const normalizedSizes = normalizeDynamicValues(sizes);
-    const normalizedPieceSizes = normalizeDynamicValues(pieceSizes);
-    const normalizedCuttingTypes = normalizeDynamicValues(cuttingTypes);
+    const normalizedSizes = sizes ? normalizeDynamicValues(sizes) : [];
+    const normalizedPieceSizes = pieceSizes ? normalizeDynamicValues(pieceSizes) : [];
+    const normalizedCuttingTypes = cuttingTypes ? normalizeDynamicValues(cuttingTypes) : [];
 
     /**
      * 6️⃣ Create product
@@ -1374,7 +1572,10 @@ export const addCatalogProductToStore = async (
       },
     });
 
-    if (!catalogProductCandidate || !isCatalogRootProduct(catalogProductCandidate)) {
+    if (
+      !catalogProductCandidate ||
+      !isCatalogRootProduct(catalogProductCandidate)
+    ) {
       return next(new NotFoundError("Catalog product not found!"));
     }
 
@@ -1390,7 +1591,9 @@ export const addCatalogProductToStore = async (
 
     if (existingStoreProduct) {
       return next(
-        new ValidationError("This product is already added to the seller store!"),
+        new ValidationError(
+          "This product is already added to the seller store!",
+        ),
       );
     }
 
@@ -1419,7 +1622,9 @@ export const addCatalogProductToStore = async (
       Number(sale_price ?? 0),
       Number(regular_price ?? sale_price ?? 0),
     );
-    const displayPrices = getDisplayPricesFromSizePricing(normalizedSizePricing);
+    const displayPrices = getDisplayPricesFromSizePricing(
+      normalizedSizePricing,
+    );
 
     const storeProduct = await prisma.products.create({
       data: {
@@ -1432,7 +1637,8 @@ export const addCatalogProductToStore = async (
             ? short_description
             : catalogProduct.short_description,
         detailed_description:
-          typeof detailed_description === "string" && detailed_description.trim()
+          typeof detailed_description === "string" &&
+          detailed_description.trim()
             ? detailed_description
             : catalogProduct.detailed_description,
         tags:
@@ -1449,7 +1655,8 @@ export const addCatalogProductToStore = async (
         cuttingTypes: catalogProduct.cuttingTypes,
         pieceSizes: catalogProduct.pieceSizes,
         processingWeightLoss:
-          typeof processingWeightLoss === "string" && processingWeightLoss.trim()
+          typeof processingWeightLoss === "string" &&
+          processingWeightLoss.trim()
             ? processingWeightLoss
             : catalogProduct.processingWeightLoss,
         stock: Number(stock ?? 0),
@@ -1460,8 +1667,7 @@ export const addCatalogProductToStore = async (
             ? cash_on_delivery
             : catalogProduct.cashOnDelivery,
         discount_codes: Array.isArray(discountCodes) ? discountCodes : [],
-        status:
-          status === "Draft" || status === "Pending" ? status : "Active",
+        status: status === "Draft" || status === "Pending" ? status : "Active",
         storeId: sellerStore.id,
         catalogProductId: catalogProduct.id,
         images: {
@@ -1494,33 +1700,65 @@ export const getStoreProducts = async (
   next: NextFunction,
 ) => {
   try {
-    const products = await prisma.products.findMany({
+    const { storeId } = req.query;
+
+    // 1. Fetch all catalog products (those created by admin)
+    const catalogProducts = await prisma.products.findMany({
       where: {
-        storeId: {
-          not: null,
-        },
-        catalogProductId: {
-          not: null,
-        },
+        adminId: { not: null },
+        catalogProductId: null,
         isDeleted: false,
         status: "Active",
       },
       include: {
         images: true,
-        store: {
+        storeVariants: {
+          where: {
+            ...(storeId ? { storeId: String(storeId) } : { id: { not: "" } }),
+            isDeleted: false,
+            status: "Active",
+          },
           include: {
-            seller: {
+            images: true,
+            store: {
               include: {
-                events: true,
+                seller: {
+                  include: {
+                    events: true,
+                  },
+                },
               },
             },
           },
         },
       },
     });
+
+    // 2. Transfrom: If a store variant exists for this catalog product, pick that.
+    // Otherwise, return the catalog product as 'out of stock' (defaulting stock to 0)
+    const finalProducts = catalogProducts.map((catalogProduct) => {
+      // Find a matching store variant
+      const variant = catalogProduct.storeVariants?.[0];
+
+      if (variant) {
+        // Return store-specific product
+        return {
+          ...variant,
+        };
+      }
+
+      // Return the catalog product but forced to zero stock
+      // and without store data (it will render as 'out of stock' on frontend)
+      return {
+        ...catalogProduct,
+        stock: 0,
+        store: null,
+      };
+    });
+
     res.status(200).json({
       success: true,
-      products: products.map(mapProductWithActiveEvents),
+      products: finalProducts.map(mapProductWithActiveEvents),
     });
   } catch (error) {
     return next(error);
@@ -1681,7 +1919,9 @@ export const updateProduct = async (
       ("adminId" in ownerFilter && product.adminId === ownerFilter.adminId);
 
     if (!hasAccess) {
-      return next(new ValidationError("You are not authorized to update this product!"));
+      return next(
+        new ValidationError("You are not authorized to update this product!"),
+      );
     }
 
     const {
@@ -1742,10 +1982,14 @@ export const updateProduct = async (
     if (typeof short_description === "string" && short_description.trim()) {
       updateData.short_description = short_description;
     }
-    if (typeof detailed_description === "string" && detailed_description.trim()) {
+    if (
+      typeof detailed_description === "string" &&
+      detailed_description.trim()
+    ) {
       updateData.detailed_description = detailed_description;
     }
-    if (typeof category === "string" && category.trim()) updateData.category = category;
+    if (typeof category === "string" && category.trim())
+      updateData.category = category;
     if (typeof subCategory === "string" && subCategory.trim()) {
       updateData.subCategory = subCategory;
     }
@@ -1786,12 +2030,14 @@ export const updateProduct = async (
     const normalizedPieceSizes = normalizeDynamicValues(pieceSizes);
     const normalizedCuttingTypes = normalizeDynamicValues(cuttingTypes);
 
-    if (normalizedSizes.length > 0) updateData.sizes = normalizedSizes;
-    if (normalizedPieceSizes.length > 0) {
-      updateData.pieceSizes = normalizedPieceSizes;
+    if (typeof sizes !== "undefined") {
+      updateData.sizes = sizes ? normalizeDynamicValues(sizes) : [];
     }
-    if (normalizedCuttingTypes.length > 0) {
-      updateData.cuttingTypes = normalizedCuttingTypes;
+    if (typeof pieceSizes !== "undefined") {
+      updateData.pieceSizes = pieceSizes ? normalizeDynamicValues(pieceSizes) : [];
+    }
+    if (typeof cuttingTypes !== "undefined") {
+      updateData.cuttingTypes = cuttingTypes ? normalizeDynamicValues(cuttingTypes) : [];
     }
 
     if (req.role === "seller") {
@@ -1809,7 +2055,9 @@ export const updateProduct = async (
           Number(sale_price ?? 0),
           Number(regular_price ?? sale_price ?? 0),
         );
-        const displayPrices = getDisplayPricesFromSizePricing(normalizedSizePricing);
+        const displayPrices = getDisplayPricesFromSizePricing(
+          normalizedSizePricing,
+        );
         updateData.sizePricing = normalizedSizePricing;
         updateData.sale_price = displayPrices.salePrice;
         updateData.regular_price = displayPrices.regularPrice;
@@ -1936,5 +2184,55 @@ export const restoreProduct = async (
       message: "Eror restoring product",
       error,
     });
+  }
+};
+
+export const getStorePublicOffers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const storeId = req.params.storeId as string;
+    if (!storeId) {
+      return res.status(400).json({ success: false, message: "storeId required" });
+    }
+
+    // Get store -> sellerId
+    const store = await prisma.stores.findUnique({
+      where: { id: storeId },
+      select: { sellerId: true },
+    });
+
+    if (!store) {
+      return res.status(200).json({ success: true, coupons: [], events: [] });
+    }
+
+    const now = new Date();
+
+    // Get active discount codes for this seller
+    const discountCodes = await prisma.discount_codes.findMany({
+      where: { sellerId: store.sellerId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Get active seller events (currently running)
+    const activeEvents = await prisma.seller_events.findMany({
+      where: {
+        sellerId: store.sellerId,
+        isActive: true,
+        startTime: { lte: now },
+        endTime: { gte: now },
+      },
+      orderBy: { startTime: "desc" },
+    });
+
+    return res.status(200).json({
+      success: true,
+      discountCodes,
+      activeEvents,
+    });
+  } catch (error) {
+    return next(error);
   }
 };

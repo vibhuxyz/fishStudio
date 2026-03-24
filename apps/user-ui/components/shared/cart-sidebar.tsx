@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -20,8 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
-import { useCouponStore, AVAILABLE_COUPONS, type Coupon } from "@/lib/coupon-store";
+import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
+import { axiosInstance } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddressModal } from "@/components/shared/address-modal";
 
@@ -34,6 +36,7 @@ interface CartSidebarProps {
 const TIP_OPTIONS = [20, 30, 50];
 
 export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarProps) {
+  const router = useRouter();
   const { isLoggedIn } = useAuth();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
@@ -42,15 +45,18 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   const {
     appliedCoupons,
     autoApplied,
+    availableCoupons,
+    isLoadingCoupons,
     applyCoupon,
     removeCoupon,
     setAutoApplied,
     isCouponApplied,
     getTotalDiscount,
     getDiscountForCoupon,
+    fetchAvailableCoupons,
   } = useCouponStore();
 
-  const { getSelectedAddress } = useAddressStore();
+  const { getSelectedAddress, selectedLocation, setSelectedLocation } = useAddressStore();
 
   const [couponInput, setCouponInput] = useState("");
   const [showCouponPanel, setShowCouponPanel] = useState(false);
@@ -61,7 +67,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + item.totalPayable, 0);
-  const deliveryCharge = subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
+  const isFreeDelivery = appliedCoupons.some(c => c.discountType === "free_delivery" && subtotal >= c.minOrderValue);
+  const deliveryCharge = isFreeDelivery || subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
   const handlingCharge = items.length > 0 ? 8 : 0;
   const discount = getTotalDiscount(subtotal);
   const tip = showCustomTip ? (Number(customTip) || 0) : (selectedTip ?? 0);
@@ -70,12 +77,40 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
 
   const selectedAddress = getSelectedAddress();
 
+  // Auto-resolve storeId from address pincode when selectedLocation is not set
+  useEffect(() => {
+    if (selectedLocation?.storeId) return; // already have it
+    const addr = getSelectedAddress();
+    if (!addr?.pincode) return;
+
+    axiosInstance
+      .get(`/auth/api/check-pincode?pincode=${addr.pincode}`)
+      .then(({ data }) => {
+        if (data.success && data.store?.id) {
+          setSelectedLocation({
+            storeId: data.store.id,
+            storeName: data.store.name,
+            pincode: addr.pincode,
+            city: addr.city || data.store.city || "",
+          });
+        }
+      })
+      .catch(() => {});
+  }, [selectedLocation?.storeId]);
+
+  // Fetch coupons from API when cart opens (or when storeId becomes available)
+  useEffect(() => {
+    if (open && selectedLocation?.storeId) {
+      fetchAvailableCoupons(selectedLocation.storeId);
+    }
+  }, [open, selectedLocation?.storeId]);
+
   // Auto-apply one eligible auto coupon when cart opens / subtotal changes
   useEffect(() => {
     if (!open) return;
     if (autoApplied) return;
     if (subtotal === 0) return;
-    const autoCoupon = AVAILABLE_COUPONS.find(
+    const autoCoupon = availableCoupons.find(
       (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
     );
     if (autoCoupon) {
@@ -83,7 +118,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
       setAutoApplied(true);
       toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
     }
-  }, [open, subtotal]);
+  }, [open, subtotal, availableCoupons]);
 
   useEffect(() => {
     if (open) {
@@ -97,7 +132,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   }, [open]);
 
   const handleApplyCouponCode = () => {
-    const found = AVAILABLE_COUPONS.find(
+    const found = availableCoupons.find(
       (c) => c.code.toUpperCase() === couponInput.trim().toUpperCase()
     );
     if (!found) { toast.error("Invalid coupon code"); return; }
@@ -186,7 +221,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                         <Clock className="h-4 w-4 text-accent" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Delivery in 30 minutes</p>
+                        <p className="text-sm font-semibold text-foreground">Delivery in {selectedLocation?.deliveryTimeMinutes ?? 30} minutes</p>
                         <p className="text-xs text-muted-foreground">
                           Shipment of {items.length} item{items.length > 1 ? "s" : ""}
                         </p>
@@ -319,7 +354,13 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           className="overflow-hidden"
                         >
                           <div className="space-y-2 border-t border-border px-4 pb-3 pt-2">
-                            {AVAILABLE_COUPONS.map((coupon) => {
+                            {isLoadingCoupons && (
+                              <p className="text-xs text-muted-foreground text-center py-2">Loading offers...</p>
+                            )}
+                            {!isLoadingCoupons && availableCoupons.length === 0 && (
+                              <p className="text-xs text-muted-foreground text-center py-2">No offers available for this store</p>
+                            )}
+                            {availableCoupons.map((coupon) => {
                               const eligible = subtotal >= coupon.minOrderValue;
                               const applied = isCouponApplied(coupon.code);
                               return (
@@ -564,6 +605,9 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                       if (!isLoggedIn) {
                         onOpenChange(false);
                         onLoginClick?.();
+                      } else {
+                        onOpenChange(false);
+                        router.push("/checkout");
                       }
                     }}
                   >

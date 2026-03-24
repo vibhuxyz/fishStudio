@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fish Studio - Seller Access Code</title>
+  <style type="text/css">
+    body { margin:0;padding:0;min-width:100%;font-family:Arial,sans-serif;font-size:16px;line-height:1.5;background-color:#fafafa;color:#222222; }
+    a { color:#6c3bff;text-decoration:none; }
+    .email-wrapper { max-width:600px;margin:20px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 0 10px rgba(0,0,0,0.05); }
+    .email-header { background:linear-gradient(135deg,#6c3bff,#5b2ee8);color:#ffffff;padding:24px;text-align:center; }
+    .email-header h1 { margin:0;font-size:22px;font-weight:700;letter-spacing:-0.5px; }
+    .email-header p { margin:4px 0 0;font-size:13px;opacity:0.85; }
+    .email-body { padding:28px 24px;background:#ffffff; }
+    .code-box { background:#f4f0ff;border:2px dashed #6c3bff;border-radius:10px;padding:20px;text-align:center;margin:20px 0; }
+    .code-box .code { font-size:32px;font-weight:800;letter-spacing:6px;color:#6c3bff;font-family:monospace; }
+    .code-box .label { font-size:12px;color:#888;margin-top:6px; }
+    .email-footer { padding:16px;background:#f6f6f6;text-align:center;font-size:13px;color:#666; }
+    p { margin:0 0 12px; }
+    @media only screen and (max-width:600px) { .email-wrapper { width:100%;margin:0;border-radius:0; } }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="email-header">
+      <h1>🐟 Fish Studio — Seller Portal</h1>
+      <p>You've been invited to join as a seller</p>
+    </div>
+    <div class="email-body">
+      <p>Hello,</p>
+      <p>An admin has granted you access to register as a seller on <strong>Fish Studio</strong>. Use the access code below during registration:</p>
+      <div class="code-box">
+        <div class="code"><%= otp %></div>
+        <div class="label">One-time access code · valid for 24 hours</div>
+      </div>
+      <p>To complete your seller registration, visit the seller sign-up page and enter this code when prompted.</p>
+      <p>If you were not expecting this invitation, please ignore this email.</p>
+    </div>
+    <div class="email-footer">
+      <p>Questions? Contact us at <a href="mailto:support@fishstudio.in">support@fishstudio.in</a></p>
+      <p style="margin-top:8px;">© Fish Studio. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

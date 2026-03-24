@@ -27,6 +27,7 @@ export type AggregateUsers = {
 export type UsersMinAggregateOutputType = {
   id: string | null
   phone_number: string | null
+  email: string | null
   name: string | null
   avatarId: string | null
   createdAt: Date | null
@@ -36,6 +37,7 @@ export type UsersMinAggregateOutputType = {
 export type UsersMaxAggregateOutputType = {
   id: string | null
   phone_number: string | null
+  email: string | null
   name: string | null
   avatarId: string | null
   createdAt: Date | null
@@ -45,8 +47,10 @@ export type UsersMaxAggregateOutputType = {
 export type UsersCountAggregateOutputType = {
   id: number
   phone_number: number
+  email: number
   name: number
   following: number
+  addresses: number
   avatarId: number
   createdAt: number
   updatedAt: number
@@ -57,6 +61,7 @@ export type UsersCountAggregateOutputType = {
 export type UsersMinAggregateInputType = {
   id?: true
   phone_number?: true
+  email?: true
   name?: true
   avatarId?: true
   createdAt?: true
@@ -66,6 +71,7 @@ export type UsersMinAggregateInputType = {
 export type UsersMaxAggregateInputType = {
   id?: true
   phone_number?: true
+  email?: true
   name?: true
   avatarId?: true
   createdAt?: true
@@ -75,8 +81,10 @@ export type UsersMaxAggregateInputType = {
 export type UsersCountAggregateInputType = {
   id?: true
   phone_number?: true
+  email?: true
   name?: true
   following?: true
+  addresses?: true
   avatarId?: true
   createdAt?: true
   updatedAt?: true
@@ -157,9 +165,11 @@ export type usersGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 
 export type UsersGroupByOutputType = {
   id: string
-  phone_number: string
+  phone_number: string | null
+  email: string | null
   name: string
   following: string[]
+  addresses: runtime.JsonValue[]
   avatarId: string | null
   createdAt: Date
   updatedAt: Date
@@ -188,9 +198,11 @@ export type usersWhereInput = {
   OR?: Prisma.usersWhereInput[]
   NOT?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   id?: Prisma.StringFilter<"users"> | string
-  phone_number?: Prisma.StringFilter<"users"> | string
+  phone_number?: Prisma.StringNullableFilter<"users"> | string | null
+  email?: Prisma.StringNullableFilter<"users"> | string | null
   name?: Prisma.StringFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  addresses?: Prisma.JsonNullableListFilter<"users">
   avatarId?: Prisma.StringNullableFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
@@ -203,8 +215,10 @@ export type usersWhereInput = {
 export type usersOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  addresses?: Prisma.SortOrder
   avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -217,11 +231,13 @@ export type usersOrderByWithRelationInput = {
 export type usersWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   phone_number?: string
+  email?: string
   AND?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   OR?: Prisma.usersWhereInput[]
   NOT?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   name?: Prisma.StringFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  addresses?: Prisma.JsonNullableListFilter<"users">
   avatarId?: Prisma.StringNullableFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
@@ -229,13 +245,15 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   storeReviews?: Prisma.StoreReviewsListRelationFilter
   favorites?: Prisma.FavoritesListRelationFilter
   orders?: Prisma.OrderListRelationFilter
-}, "id" | "phone_number">
+}, "id" | "phone_number" | "email">
 
 export type usersOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  addresses?: Prisma.SortOrder
   avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -249,9 +267,11 @@ export type usersScalarWhereWithAggregatesInput = {
   OR?: Prisma.usersScalarWhereWithAggregatesInput[]
   NOT?: Prisma.usersScalarWhereWithAggregatesInput | Prisma.usersScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"users"> | string
-  phone_number?: Prisma.StringWithAggregatesFilter<"users"> | string
+  phone_number?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  email?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   name?: Prisma.StringWithAggregatesFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  addresses?: Prisma.JsonNullableListFilter<"users">
   avatarId?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
@@ -259,9 +279,11 @@ export type usersScalarWhereWithAggregatesInput = {
 
 export type usersCreateInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
@@ -272,9 +294,11 @@ export type usersCreateInput = {
 
 export type usersUncheckedCreateInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -284,9 +308,11 @@ export type usersUncheckedCreateInput = {
 }
 
 export type usersUpdateInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
@@ -296,9 +322,11 @@ export type usersUpdateInput = {
 }
 
 export type usersUncheckedUpdateInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -309,26 +337,32 @@ export type usersUncheckedUpdateInput = {
 
 export type usersCreateManyInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type usersUpdateManyMutationInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type usersUncheckedUpdateManyInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -352,11 +386,28 @@ export type StringNullableListFilter<$PrismaModel = never> = {
   isEmpty?: boolean
 }
 
+export type JsonNullableListFilter<$PrismaModel = never> =
+| Prisma.PatchUndefined<
+    Prisma.Either<Required<JsonNullableListFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>,
+    Required<JsonNullableListFilterBase<$PrismaModel>>
+  >
+| Prisma.OptionalFlat<Omit<Required<JsonNullableListFilterBase<$PrismaModel>>, 'path'>>
+
+export type JsonNullableListFilterBase<$PrismaModel = never> = {
+  equals?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel> | null
+  has?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | null
+  hasEvery?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel>
+  hasSome?: runtime.InputJsonValue[] | Prisma.ListJsonFieldRefInput<$PrismaModel>
+  isEmpty?: boolean
+}
+
 export type usersCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   name?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  addresses?: Prisma.SortOrder
   avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -365,6 +416,7 @@ export type usersCountOrderByAggregateInput = {
 export type usersMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   name?: Prisma.SortOrder
   avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -374,6 +426,7 @@ export type usersMaxOrderByAggregateInput = {
 export type usersMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   name?: Prisma.SortOrder
   avatarId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -431,9 +484,18 @@ export type usersCreatefollowingInput = {
   set: string[]
 }
 
+export type usersCreateaddressesInput = {
+  set: runtime.InputJsonValue[]
+}
+
 export type usersUpdatefollowingInput = {
   set?: string[]
   push?: string | string[]
+}
+
+export type usersUpdateaddressesInput = {
+  set?: runtime.InputJsonValue[]
+  push?: runtime.InputJsonValue | runtime.InputJsonValue[]
 }
 
 export type usersCreateNestedOneWithoutStoreReviewsInput = {
@@ -480,9 +542,11 @@ export type usersUpdateOneRequiredWithoutOrdersNestedInput = {
 
 export type usersCreateWithoutAvatarInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   storeReviews?: Prisma.storeReviewsCreateNestedManyWithoutUserInput
@@ -492,9 +556,11 @@ export type usersCreateWithoutAvatarInput = {
 
 export type usersUncheckedCreateWithoutAvatarInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
@@ -532,9 +598,11 @@ export type usersScalarWhereInput = {
   OR?: Prisma.usersScalarWhereInput[]
   NOT?: Prisma.usersScalarWhereInput | Prisma.usersScalarWhereInput[]
   id?: Prisma.StringFilter<"users"> | string
-  phone_number?: Prisma.StringFilter<"users"> | string
+  phone_number?: Prisma.StringNullableFilter<"users"> | string | null
+  email?: Prisma.StringNullableFilter<"users"> | string | null
   name?: Prisma.StringFilter<"users"> | string
   following?: Prisma.StringNullableListFilter<"users">
+  addresses?: Prisma.JsonNullableListFilter<"users">
   avatarId?: Prisma.StringNullableFilter<"users"> | string | null
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
@@ -542,9 +610,11 @@ export type usersScalarWhereInput = {
 
 export type usersCreateWithoutStoreReviewsInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
@@ -554,9 +624,11 @@ export type usersCreateWithoutStoreReviewsInput = {
 
 export type usersUncheckedCreateWithoutStoreReviewsInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -581,9 +653,11 @@ export type usersUpdateToOneWithWhereWithoutStoreReviewsInput = {
 }
 
 export type usersUpdateWithoutStoreReviewsInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
@@ -592,9 +666,11 @@ export type usersUpdateWithoutStoreReviewsInput = {
 }
 
 export type usersUncheckedUpdateWithoutStoreReviewsInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -604,9 +680,11 @@ export type usersUncheckedUpdateWithoutStoreReviewsInput = {
 
 export type usersCreateWithoutFavoritesInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
@@ -616,9 +694,11 @@ export type usersCreateWithoutFavoritesInput = {
 
 export type usersUncheckedCreateWithoutFavoritesInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -643,9 +723,11 @@ export type usersUpdateToOneWithWhereWithoutFavoritesInput = {
 }
 
 export type usersUpdateWithoutFavoritesInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
@@ -654,9 +736,11 @@ export type usersUpdateWithoutFavoritesInput = {
 }
 
 export type usersUncheckedUpdateWithoutFavoritesInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -666,9 +750,11 @@ export type usersUncheckedUpdateWithoutFavoritesInput = {
 
 export type usersCreateWithoutOrdersInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
@@ -678,9 +764,11 @@ export type usersCreateWithoutOrdersInput = {
 
 export type usersUncheckedCreateWithoutOrdersInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -705,9 +793,11 @@ export type usersUpdateToOneWithWhereWithoutOrdersInput = {
 }
 
 export type usersUpdateWithoutOrdersInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
@@ -716,9 +806,11 @@ export type usersUpdateWithoutOrdersInput = {
 }
 
 export type usersUncheckedUpdateWithoutOrdersInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -728,17 +820,21 @@ export type usersUncheckedUpdateWithoutOrdersInput = {
 
 export type usersCreateManyAvatarInput = {
   id?: string
-  phone_number: string
+  phone_number?: string | null
+  email?: string | null
   name: string
   following?: Prisma.usersCreatefollowingInput | string[]
+  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
 }
 
 export type usersUpdateWithoutAvatarInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
@@ -747,9 +843,11 @@ export type usersUpdateWithoutAvatarInput = {
 }
 
 export type usersUncheckedUpdateWithoutAvatarInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
@@ -758,9 +856,11 @@ export type usersUncheckedUpdateWithoutAvatarInput = {
 }
 
 export type usersUncheckedUpdateManyWithoutAvatarInput = {
-  phone_number?: Prisma.StringFieldUpdateOperationsInput | string
+  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.usersUpdatefollowingInput | string[]
+  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -817,8 +917,10 @@ export type UsersCountOutputTypeCountOrdersArgs<ExtArgs extends runtime.Types.Ex
 export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   phone_number?: boolean
+  email?: boolean
   name?: boolean
   following?: boolean
+  addresses?: boolean
   avatarId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -834,14 +936,16 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 export type usersSelectScalar = {
   id?: boolean
   phone_number?: boolean
+  email?: boolean
   name?: boolean
   following?: boolean
+  addresses?: boolean
   avatarId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone_number" | "name" | "following" | "avatarId" | "createdAt" | "updatedAt", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone_number" | "email" | "name" | "following" | "addresses" | "avatarId" | "createdAt" | "updatedAt", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   avatar?: boolean | Prisma.users$avatarArgs<ExtArgs>
   storeReviews?: boolean | Prisma.users$storeReviewsArgs<ExtArgs>
@@ -860,9 +964,11 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    phone_number: string
+    phone_number: string | null
+    email: string | null
     name: string
     following: string[]
+    addresses: runtime.JsonValue[]
     avatarId: string | null
     createdAt: Date
     updatedAt: Date
@@ -1264,8 +1370,10 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
 export interface usersFieldRefs {
   readonly id: Prisma.FieldRef<"users", 'String'>
   readonly phone_number: Prisma.FieldRef<"users", 'String'>
+  readonly email: Prisma.FieldRef<"users", 'String'>
   readonly name: Prisma.FieldRef<"users", 'String'>
   readonly following: Prisma.FieldRef<"users", 'String[]'>
+  readonly addresses: Prisma.FieldRef<"users", 'Json[]'>
   readonly avatarId: Prisma.FieldRef<"users", 'String'>
   readonly createdAt: Prisma.FieldRef<"users", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"users", 'DateTime'>

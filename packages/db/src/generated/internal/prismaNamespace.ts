@@ -1653,8 +1653,10 @@ export type ImagesScalarFieldEnum = (typeof ImagesScalarFieldEnum)[keyof typeof 
 export const UsersScalarFieldEnum = {
   id: 'id',
   phone_number: 'phone_number',
+  email: 'email',
   name: 'name',
   following: 'following',
+  addresses: 'addresses',
   avatarId: 'avatarId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1668,6 +1670,7 @@ export const Discount_codesScalarFieldEnum = {
   public_name: 'public_name',
   discountType: 'discountType',
   discountValue: 'discountValue',
+  minOrderValue: 'minOrderValue',
   discountCode: 'discountCode',
   sellerId: 'sellerId',
   adminId: 'adminId',
@@ -1717,6 +1720,9 @@ export const StoresScalarFieldEnum = {
   city: 'city',
   pincode: 'pincode',
   opening_hours: 'opening_hours',
+  availableCities: 'availableCities',
+  cityDeliveryTimes: 'cityDeliveryTimes',
+  state: 'state',
   sellerId: 'sellerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1799,6 +1805,7 @@ export const BannersScalarFieldEnum = {
   fileId: 'fileId',
   isActive: 'isActive',
   sellerId: 'sellerId',
+  adminId: 'adminId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1831,6 +1838,14 @@ export const OrderScalarFieldEnum = {
   totalAmount: 'totalAmount',
   discountAmount: 'discountAmount',
   couponCode: 'couponCode',
+  deliverySlot: 'deliverySlot',
+  deliveryName: 'deliveryName',
+  deliveryPhone: 'deliveryPhone',
+  deliveryAddress: 'deliveryAddress',
+  deliveryCity: 'deliveryCity',
+  deliveryPincode: 'deliveryPincode',
+  deliveryCharge: 'deliveryCharge',
+  billDetails: 'billDetails',
   status: 'status',
   paymentStatus: 'paymentStatus',
   paymentMethod: 'paymentMethod',
@@ -1932,6 +1947,20 @@ export type ListEnumImageTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
 
 
 /**
+ * Reference to a field of type 'Json[]'
+ */
+export type ListJsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -1949,13 +1978,6 @@ export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMode
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
- * Reference to a field of type 'Json'
- */
-export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 

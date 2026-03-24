@@ -714,25 +714,26 @@ const StaffOrdersPage = () => {
       const res = await axiosInstance.get("/order/api/get-seller-orders");
       return res.data.orders.map((o: any): MockOrder => ({
         id: o.id,
-        status: o.status === "ACCEPTED" ? "Processing" :
-                o.status === "REJECTED" ? "Rejected" :
-                o.deliveryStatus === "Packed" ? "Ready" :
-                o.deliveryStatus === "Delivered" ? "Completed" : "New",
+        status: o.status === "ACCEPTED"  ? "Processing"
+               : o.status === "REJECTED"  ? "Rejected"
+               : o.status === "SHIPPED"   ? "Ready"
+               : o.status === "DELIVERED" ? "Completed"
+               : "New",
         createdAt: o.createdAt,
         total: o.totalAmount ?? 0,
         user: {
           id: o.user?.id || o.userId || "",
-          name: o.user?.name || "Customer",
-          phone: o.user?.phone_number || "-",
+          name: o.deliveryName || o.user?.name || "Customer",
+          phone: o.deliveryPhone || o.user?.phone_number || "-",
           email: o.user?.email || "-",
           avatar: o.user?.avatar || null,
         },
         shippingAddress: {
-          name: o.user?.name || "Customer",
-          street: o.shippingAddressId || "N/A",
-          city: "-",
+          name: o.deliveryName || o.user?.name || "Customer",
+          street: o.deliveryAddress || "N/A",
+          city: o.deliveryCity || "-",
           state: "-",
-          zip: "-"
+          zip: o.deliveryPincode || "-",
         },
         items: (o.orderItems || []).map((i: any) => ({
           productId: i.productId,
@@ -740,10 +741,10 @@ const StaffOrdersPage = () => {
           quantity: i.quantity,
           price: i.price,
           unit: "pc",
-          selectedOptions: {}
+          selectedOptions: {},
         })),
         rejectionReason: o.rejectionReason,
-        refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null
+        refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null,
       }));
     },
     enabled: canFetch,
@@ -785,12 +786,18 @@ const StaffOrdersPage = () => {
     rejectMutation.mutate({ orderId: rejectTarget.id, reason });
   };
 
+  const statusMutation = useMutation({
+    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) =>
+      axiosInstance.put(`/order/api/update-status/${orderId}`, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-orders"] }),
+  });
+
   const handleMarkReady = (id: string) => {
-    // Only local optimistic update required here, unless backend update needed.
+    statusMutation.mutate({ orderId: id, status: "SHIPPED" });
   };
 
   const handleMarkCompleted = (id: string) => {
-    // Only local optimistic update required here
+    statusMutation.mutate({ orderId: id, status: "DELIVERED" });
   };
 
   const filteredOrders =

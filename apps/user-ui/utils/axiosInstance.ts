@@ -50,10 +50,9 @@ axiosInstance.interceptors.response.use(
 
     const is401 = error?.response?.status === 401;
     const isRetry = originalRequest?._retry;
-    const isAuthRequired = originalRequest?.requireAuth === true;
 
     // prevent infinite retry loop
-    if (is401 && !isRetry && isAuthRequired) {
+    if (is401 && !isRetry) {
       if (isRefreshing) {
         return new Promise((resolve) => {
           subscribeTokenRefresh(() => resolve(axiosInstance(originalRequest)));

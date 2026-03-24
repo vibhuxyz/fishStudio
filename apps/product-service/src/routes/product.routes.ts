@@ -16,16 +16,20 @@ import {
   getDiscountCodes,
   getOwnedProductById,
   getOwnedProducts,
+  getAdminBanners,
   getSellerBanners,
   getSellerEvents,
   getStoreProductBySlug,
   getStoreProducts,
+  getStorePublicOffers,
   restoreProduct,
   slugValidator,
   updateBanner,
   updateProduct,
   updateSellerEvent,
   uploadBanner,
+  deleteCloudinaryImage,
+  uploadCloudinaryImage,
   uploadProductImage,
 } from "../controllers/product.controller.js";
 import { allowRoles, isAuthenticated, isSeller } from "@repo/middlewares";
@@ -103,7 +107,24 @@ router.post(
   allowRoles("admin", "seller"),
   uploadProductImage,
 );
-router.post("/upload-banner", isAuthenticated, isSeller, uploadBanner);
+router.post(
+  "/admin/upload-cloudinary-image",
+  isAuthenticated,
+  allowRoles("admin"),
+  uploadCloudinaryImage,
+);
+router.post(
+  "/admin/delete-cloudinary-image",
+  isAuthenticated,
+  allowRoles("admin"),
+  deleteCloudinaryImage,
+);
+router.post(
+  "/upload-banner",
+  isAuthenticated,
+  allowRoles("admin", "seller"),
+  uploadBanner,
+);
 
 router.get(
   "/get-seller-banners",
@@ -120,8 +141,14 @@ router.put(
 router.delete(
   "/delete-banner/:bannerId",
   isAuthenticated,
-  allowRoles("seller"),
+  allowRoles("admin", "seller"),
   deleteBanner,
+);
+router.get(
+  "/get-admin-banners",
+  isAuthenticated,
+  allowRoles("admin"),
+  getAdminBanners,
 );
 router.get("/get-banners", getActiveBanners);
 
@@ -134,6 +161,7 @@ router.post(
 
 router.get("/get-all-products", getStoreProducts);
 router.get("/get-product/:slug", getStoreProductBySlug);
+router.get("/public/store-offers/:storeId", getStorePublicOffers);
 router.get(
   "/get-catalog-products",
   isAuthenticated,

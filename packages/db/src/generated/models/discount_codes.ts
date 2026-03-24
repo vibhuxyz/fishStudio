@@ -28,10 +28,12 @@ export type AggregateDiscount_codes = {
 
 export type Discount_codesAvgAggregateOutputType = {
   discountValue: number | null
+  minOrderValue: number | null
 }
 
 export type Discount_codesSumAggregateOutputType = {
   discountValue: number | null
+  minOrderValue: number | null
 }
 
 export type Discount_codesMinAggregateOutputType = {
@@ -39,6 +41,7 @@ export type Discount_codesMinAggregateOutputType = {
   public_name: string | null
   discountType: string | null
   discountValue: number | null
+  minOrderValue: number | null
   discountCode: string | null
   sellerId: string | null
   adminId: string | null
@@ -51,6 +54,7 @@ export type Discount_codesMaxAggregateOutputType = {
   public_name: string | null
   discountType: string | null
   discountValue: number | null
+  minOrderValue: number | null
   discountCode: string | null
   sellerId: string | null
   adminId: string | null
@@ -63,6 +67,7 @@ export type Discount_codesCountAggregateOutputType = {
   public_name: number
   discountType: number
   discountValue: number
+  minOrderValue: number
   discountCode: number
   sellerId: number
   adminId: number
@@ -74,10 +79,12 @@ export type Discount_codesCountAggregateOutputType = {
 
 export type Discount_codesAvgAggregateInputType = {
   discountValue?: true
+  minOrderValue?: true
 }
 
 export type Discount_codesSumAggregateInputType = {
   discountValue?: true
+  minOrderValue?: true
 }
 
 export type Discount_codesMinAggregateInputType = {
@@ -85,6 +92,7 @@ export type Discount_codesMinAggregateInputType = {
   public_name?: true
   discountType?: true
   discountValue?: true
+  minOrderValue?: true
   discountCode?: true
   sellerId?: true
   adminId?: true
@@ -97,6 +105,7 @@ export type Discount_codesMaxAggregateInputType = {
   public_name?: true
   discountType?: true
   discountValue?: true
+  minOrderValue?: true
   discountCode?: true
   sellerId?: true
   adminId?: true
@@ -109,6 +118,7 @@ export type Discount_codesCountAggregateInputType = {
   public_name?: true
   discountType?: true
   discountValue?: true
+  minOrderValue?: true
   discountCode?: true
   sellerId?: true
   adminId?: true
@@ -208,6 +218,7 @@ export type Discount_codesGroupByOutputType = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue: number
   discountCode: string
   sellerId: string | null
   adminId: string | null
@@ -243,6 +254,7 @@ export type discount_codesWhereInput = {
   public_name?: Prisma.StringFilter<"discount_codes"> | string
   discountType?: Prisma.StringFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatFilter<"discount_codes"> | number
+  minOrderValue?: Prisma.FloatFilter<"discount_codes"> | number
   discountCode?: Prisma.StringFilter<"discount_codes"> | string
   sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
@@ -257,6 +269,7 @@ export type discount_codesOrderByWithRelationInput = {
   public_name?: Prisma.SortOrder
   discountType?: Prisma.SortOrder
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
@@ -275,6 +288,7 @@ export type discount_codesWhereUniqueInput = Prisma.AtLeast<{
   public_name?: Prisma.StringFilter<"discount_codes"> | string
   discountType?: Prisma.StringFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatFilter<"discount_codes"> | number
+  minOrderValue?: Prisma.FloatFilter<"discount_codes"> | number
   sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   createdAt?: Prisma.DateTimeFilter<"discount_codes"> | Date | string
@@ -288,6 +302,7 @@ export type discount_codesOrderByWithAggregationInput = {
   public_name?: Prisma.SortOrder
   discountType?: Prisma.SortOrder
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
@@ -308,6 +323,7 @@ export type discount_codesScalarWhereWithAggregatesInput = {
   public_name?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
   discountType?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatWithAggregatesFilter<"discount_codes"> | number
+  minOrderValue?: Prisma.FloatWithAggregatesFilter<"discount_codes"> | number
   discountCode?: Prisma.StringWithAggregatesFilter<"discount_codes"> | string
   sellerId?: Prisma.StringNullableWithAggregatesFilter<"discount_codes"> | string | null
   adminId?: Prisma.StringNullableWithAggregatesFilter<"discount_codes"> | string | null
@@ -320,6 +336,7 @@ export type discount_codesCreateInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -332,6 +349,7 @@ export type discount_codesUncheckedCreateInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   sellerId?: string | null
   adminId?: string | null
@@ -343,6 +361,7 @@ export type discount_codesUpdateInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -354,6 +373,7 @@ export type discount_codesUncheckedUpdateInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -366,6 +386,7 @@ export type discount_codesCreateManyInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   sellerId?: string | null
   adminId?: string | null
@@ -377,6 +398,7 @@ export type discount_codesUpdateManyMutationInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -386,6 +408,7 @@ export type discount_codesUncheckedUpdateManyInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -408,6 +431,7 @@ export type discount_codesCountOrderByAggregateInput = {
   public_name?: Prisma.SortOrder
   discountType?: Prisma.SortOrder
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
@@ -417,6 +441,7 @@ export type discount_codesCountOrderByAggregateInput = {
 
 export type discount_codesAvgOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
 }
 
 export type discount_codesMaxOrderByAggregateInput = {
@@ -424,6 +449,7 @@ export type discount_codesMaxOrderByAggregateInput = {
   public_name?: Prisma.SortOrder
   discountType?: Prisma.SortOrder
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
@@ -436,6 +462,7 @@ export type discount_codesMinOrderByAggregateInput = {
   public_name?: Prisma.SortOrder
   discountType?: Prisma.SortOrder
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
   discountCode?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
@@ -445,6 +472,7 @@ export type discount_codesMinOrderByAggregateInput = {
 
 export type discount_codesSumOrderByAggregateInput = {
   discountValue?: Prisma.SortOrder
+  minOrderValue?: Prisma.SortOrder
 }
 
 export type discount_codesCreateNestedManyWithoutAdminInput = {
@@ -544,6 +572,7 @@ export type discount_codesCreateWithoutAdminInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -555,6 +584,7 @@ export type discount_codesUncheckedCreateWithoutAdminInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   sellerId?: string | null
   createdAt?: Date | string
@@ -594,6 +624,7 @@ export type discount_codesScalarWhereInput = {
   public_name?: Prisma.StringFilter<"discount_codes"> | string
   discountType?: Prisma.StringFilter<"discount_codes"> | string
   discountValue?: Prisma.FloatFilter<"discount_codes"> | number
+  minOrderValue?: Prisma.FloatFilter<"discount_codes"> | number
   discountCode?: Prisma.StringFilter<"discount_codes"> | string
   sellerId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
   adminId?: Prisma.StringNullableFilter<"discount_codes"> | string | null
@@ -606,6 +637,7 @@ export type discount_codesCreateWithoutSellerInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -617,6 +649,7 @@ export type discount_codesUncheckedCreateWithoutSellerInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   adminId?: string | null
   createdAt?: Date | string
@@ -653,6 +686,7 @@ export type discount_codesCreateManyAdminInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   sellerId?: string | null
   createdAt?: Date | string
@@ -663,6 +697,7 @@ export type discount_codesUpdateWithoutAdminInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -673,6 +708,7 @@ export type discount_codesUncheckedUpdateWithoutAdminInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -683,6 +719,7 @@ export type discount_codesUncheckedUpdateManyWithoutAdminInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -694,6 +731,7 @@ export type discount_codesCreateManySellerInput = {
   public_name: string
   discountType: string
   discountValue: number
+  minOrderValue?: number
   discountCode: string
   adminId?: string | null
   createdAt?: Date | string
@@ -704,6 +742,7 @@ export type discount_codesUpdateWithoutSellerInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -714,6 +753,7 @@ export type discount_codesUncheckedUpdateWithoutSellerInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -724,6 +764,7 @@ export type discount_codesUncheckedUpdateManyWithoutSellerInput = {
   public_name?: Prisma.StringFieldUpdateOperationsInput | string
   discountType?: Prisma.StringFieldUpdateOperationsInput | string
   discountValue?: Prisma.FloatFieldUpdateOperationsInput | number
+  minOrderValue?: Prisma.FloatFieldUpdateOperationsInput | number
   discountCode?: Prisma.StringFieldUpdateOperationsInput | string
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -737,6 +778,7 @@ export type discount_codesSelect<ExtArgs extends runtime.Types.Extensions.Intern
   public_name?: boolean
   discountType?: boolean
   discountValue?: boolean
+  minOrderValue?: boolean
   discountCode?: boolean
   sellerId?: boolean
   adminId?: boolean
@@ -753,6 +795,7 @@ export type discount_codesSelectScalar = {
   public_name?: boolean
   discountType?: boolean
   discountValue?: boolean
+  minOrderValue?: boolean
   discountCode?: boolean
   sellerId?: boolean
   adminId?: boolean
@@ -760,7 +803,7 @@ export type discount_codesSelectScalar = {
   updatedAt?: boolean
 }
 
-export type discount_codesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "public_name" | "discountType" | "discountValue" | "discountCode" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["discount_codes"]>
+export type discount_codesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "public_name" | "discountType" | "discountValue" | "minOrderValue" | "discountCode" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["discount_codes"]>
 export type discount_codesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   seller?: boolean | Prisma.discount_codes$sellerArgs<ExtArgs>
   admin?: boolean | Prisma.discount_codes$adminArgs<ExtArgs>
@@ -777,6 +820,7 @@ export type $discount_codesPayload<ExtArgs extends runtime.Types.Extensions.Inte
     public_name: string
     discountType: string
     discountValue: number
+    minOrderValue: number
     discountCode: string
     sellerId: string | null
     adminId: string | null
@@ -1180,6 +1224,7 @@ export interface discount_codesFieldRefs {
   readonly public_name: Prisma.FieldRef<"discount_codes", 'String'>
   readonly discountType: Prisma.FieldRef<"discount_codes", 'String'>
   readonly discountValue: Prisma.FieldRef<"discount_codes", 'Float'>
+  readonly minOrderValue: Prisma.FieldRef<"discount_codes", 'Float'>
   readonly discountCode: Prisma.FieldRef<"discount_codes", 'String'>
   readonly sellerId: Prisma.FieldRef<"discount_codes", 'String'>
   readonly adminId: Prisma.FieldRef<"discount_codes", 'String'>

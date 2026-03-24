@@ -30,6 +30,7 @@ export type BannersMinAggregateOutputType = {
   fileId: string | null
   isActive: boolean | null
   sellerId: string | null
+  adminId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +41,7 @@ export type BannersMaxAggregateOutputType = {
   fileId: string | null
   isActive: boolean | null
   sellerId: string | null
+  adminId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +52,7 @@ export type BannersCountAggregateOutputType = {
   fileId: number
   isActive: number
   sellerId: number
+  adminId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -62,6 +65,7 @@ export type BannersMinAggregateInputType = {
   fileId?: true
   isActive?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -72,6 +76,7 @@ export type BannersMaxAggregateInputType = {
   fileId?: true
   isActive?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +87,7 @@ export type BannersCountAggregateInputType = {
   fileId?: true
   isActive?: true
   sellerId?: true
+  adminId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -164,7 +170,8 @@ export type BannersGroupByOutputType = {
   imageUrl: string
   fileId: string
   isActive: boolean
-  sellerId: string
+  sellerId: string | null
+  adminId: string | null
   createdAt: Date
   updatedAt: Date
   _count: BannersCountAggregateOutputType | null
@@ -195,10 +202,12 @@ export type bannersWhereInput = {
   imageUrl?: Prisma.StringFilter<"banners"> | string
   fileId?: Prisma.StringFilter<"banners"> | string
   isActive?: Prisma.BoolFilter<"banners"> | boolean
-  sellerId?: Prisma.StringFilter<"banners"> | string
+  sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
+  adminId?: Prisma.StringNullableFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"banners"> | Date | string
-  seller?: Prisma.XOR<Prisma.SellersScalarRelationFilter, Prisma.sellersWhereInput>
+  seller?: Prisma.XOR<Prisma.SellersNullableScalarRelationFilter, Prisma.sellersWhereInput> | null
+  admin?: Prisma.XOR<Prisma.AdminsNullableScalarRelationFilter, Prisma.adminsWhereInput> | null
 }
 
 export type bannersOrderByWithRelationInput = {
@@ -207,9 +216,11 @@ export type bannersOrderByWithRelationInput = {
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   seller?: Prisma.sellersOrderByWithRelationInput
+  admin?: Prisma.adminsOrderByWithRelationInput
 }
 
 export type bannersWhereUniqueInput = Prisma.AtLeast<{
@@ -220,10 +231,12 @@ export type bannersWhereUniqueInput = Prisma.AtLeast<{
   imageUrl?: Prisma.StringFilter<"banners"> | string
   fileId?: Prisma.StringFilter<"banners"> | string
   isActive?: Prisma.BoolFilter<"banners"> | boolean
-  sellerId?: Prisma.StringFilter<"banners"> | string
+  sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
+  adminId?: Prisma.StringNullableFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"banners"> | Date | string
-  seller?: Prisma.XOR<Prisma.SellersScalarRelationFilter, Prisma.sellersWhereInput>
+  seller?: Prisma.XOR<Prisma.SellersNullableScalarRelationFilter, Prisma.sellersWhereInput> | null
+  admin?: Prisma.XOR<Prisma.AdminsNullableScalarRelationFilter, Prisma.adminsWhereInput> | null
 }, "id">
 
 export type bannersOrderByWithAggregationInput = {
@@ -232,6 +245,7 @@ export type bannersOrderByWithAggregationInput = {
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.bannersCountOrderByAggregateInput
@@ -247,7 +261,8 @@ export type bannersScalarWhereWithAggregatesInput = {
   imageUrl?: Prisma.StringWithAggregatesFilter<"banners"> | string
   fileId?: Prisma.StringWithAggregatesFilter<"banners"> | string
   isActive?: Prisma.BoolWithAggregatesFilter<"banners"> | boolean
-  sellerId?: Prisma.StringWithAggregatesFilter<"banners"> | string
+  sellerId?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
+  adminId?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"banners"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"banners"> | Date | string
 }
@@ -259,7 +274,8 @@ export type bannersCreateInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  seller: Prisma.sellersCreateNestedOneWithoutBannersInput
+  seller?: Prisma.sellersCreateNestedOneWithoutBannersInput
+  admin?: Prisma.adminsCreateNestedOneWithoutBannersInput
 }
 
 export type bannersUncheckedCreateInput = {
@@ -267,7 +283,8 @@ export type bannersUncheckedCreateInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
-  sellerId: string
+  sellerId?: string | null
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -278,14 +295,16 @@ export type bannersUpdateInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  seller?: Prisma.sellersUpdateOneRequiredWithoutBannersNestedInput
+  seller?: Prisma.sellersUpdateOneWithoutBannersNestedInput
+  admin?: Prisma.adminsUpdateOneWithoutBannersNestedInput
 }
 
 export type bannersUncheckedUpdateInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -295,7 +314,8 @@ export type bannersCreateManyInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
-  sellerId: string
+  sellerId?: string | null
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -312,7 +332,8 @@ export type bannersUncheckedUpdateManyInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  sellerId?: Prisma.StringFieldUpdateOperationsInput | string
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -333,6 +354,7 @@ export type bannersCountOrderByAggregateInput = {
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -343,6 +365,7 @@ export type bannersMaxOrderByAggregateInput = {
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -353,8 +376,51 @@ export type bannersMinOrderByAggregateInput = {
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
+  adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type bannersCreateNestedManyWithoutAdminInput = {
+  create?: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput> | Prisma.bannersCreateWithoutAdminInput[] | Prisma.bannersUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.bannersCreateOrConnectWithoutAdminInput | Prisma.bannersCreateOrConnectWithoutAdminInput[]
+  createMany?: Prisma.bannersCreateManyAdminInputEnvelope
+  connect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+}
+
+export type bannersUncheckedCreateNestedManyWithoutAdminInput = {
+  create?: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput> | Prisma.bannersCreateWithoutAdminInput[] | Prisma.bannersUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.bannersCreateOrConnectWithoutAdminInput | Prisma.bannersCreateOrConnectWithoutAdminInput[]
+  createMany?: Prisma.bannersCreateManyAdminInputEnvelope
+  connect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+}
+
+export type bannersUpdateManyWithoutAdminNestedInput = {
+  create?: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput> | Prisma.bannersCreateWithoutAdminInput[] | Prisma.bannersUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.bannersCreateOrConnectWithoutAdminInput | Prisma.bannersCreateOrConnectWithoutAdminInput[]
+  upsert?: Prisma.bannersUpsertWithWhereUniqueWithoutAdminInput | Prisma.bannersUpsertWithWhereUniqueWithoutAdminInput[]
+  createMany?: Prisma.bannersCreateManyAdminInputEnvelope
+  set?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  disconnect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  delete?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  connect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  update?: Prisma.bannersUpdateWithWhereUniqueWithoutAdminInput | Prisma.bannersUpdateWithWhereUniqueWithoutAdminInput[]
+  updateMany?: Prisma.bannersUpdateManyWithWhereWithoutAdminInput | Prisma.bannersUpdateManyWithWhereWithoutAdminInput[]
+  deleteMany?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
+}
+
+export type bannersUncheckedUpdateManyWithoutAdminNestedInput = {
+  create?: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput> | Prisma.bannersCreateWithoutAdminInput[] | Prisma.bannersUncheckedCreateWithoutAdminInput[]
+  connectOrCreate?: Prisma.bannersCreateOrConnectWithoutAdminInput | Prisma.bannersCreateOrConnectWithoutAdminInput[]
+  upsert?: Prisma.bannersUpsertWithWhereUniqueWithoutAdminInput | Prisma.bannersUpsertWithWhereUniqueWithoutAdminInput[]
+  createMany?: Prisma.bannersCreateManyAdminInputEnvelope
+  set?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  disconnect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  delete?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  connect?: Prisma.bannersWhereUniqueInput | Prisma.bannersWhereUniqueInput[]
+  update?: Prisma.bannersUpdateWithWhereUniqueWithoutAdminInput | Prisma.bannersUpdateWithWhereUniqueWithoutAdminInput[]
+  updateMany?: Prisma.bannersUpdateManyWithWhereWithoutAdminInput | Prisma.bannersUpdateManyWithWhereWithoutAdminInput[]
+  deleteMany?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
 }
 
 export type bannersCreateNestedManyWithoutSellerInput = {
@@ -399,6 +465,65 @@ export type bannersUncheckedUpdateManyWithoutSellerNestedInput = {
   deleteMany?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
 }
 
+export type bannersCreateWithoutAdminInput = {
+  id?: string
+  imageUrl: string
+  fileId: string
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  seller?: Prisma.sellersCreateNestedOneWithoutBannersInput
+}
+
+export type bannersUncheckedCreateWithoutAdminInput = {
+  id?: string
+  imageUrl: string
+  fileId: string
+  isActive?: boolean
+  sellerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type bannersCreateOrConnectWithoutAdminInput = {
+  where: Prisma.bannersWhereUniqueInput
+  create: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput>
+}
+
+export type bannersCreateManyAdminInputEnvelope = {
+  data: Prisma.bannersCreateManyAdminInput | Prisma.bannersCreateManyAdminInput[]
+}
+
+export type bannersUpsertWithWhereUniqueWithoutAdminInput = {
+  where: Prisma.bannersWhereUniqueInput
+  update: Prisma.XOR<Prisma.bannersUpdateWithoutAdminInput, Prisma.bannersUncheckedUpdateWithoutAdminInput>
+  create: Prisma.XOR<Prisma.bannersCreateWithoutAdminInput, Prisma.bannersUncheckedCreateWithoutAdminInput>
+}
+
+export type bannersUpdateWithWhereUniqueWithoutAdminInput = {
+  where: Prisma.bannersWhereUniqueInput
+  data: Prisma.XOR<Prisma.bannersUpdateWithoutAdminInput, Prisma.bannersUncheckedUpdateWithoutAdminInput>
+}
+
+export type bannersUpdateManyWithWhereWithoutAdminInput = {
+  where: Prisma.bannersScalarWhereInput
+  data: Prisma.XOR<Prisma.bannersUpdateManyMutationInput, Prisma.bannersUncheckedUpdateManyWithoutAdminInput>
+}
+
+export type bannersScalarWhereInput = {
+  AND?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
+  OR?: Prisma.bannersScalarWhereInput[]
+  NOT?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
+  id?: Prisma.StringFilter<"banners"> | string
+  imageUrl?: Prisma.StringFilter<"banners"> | string
+  fileId?: Prisma.StringFilter<"banners"> | string
+  isActive?: Prisma.BoolFilter<"banners"> | boolean
+  sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
+  adminId?: Prisma.StringNullableFilter<"banners"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"banners"> | Date | string
+}
+
 export type bannersCreateWithoutSellerInput = {
   id?: string
   imageUrl: string
@@ -406,6 +531,7 @@ export type bannersCreateWithoutSellerInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  admin?: Prisma.adminsCreateNestedOneWithoutBannersInput
 }
 
 export type bannersUncheckedCreateWithoutSellerInput = {
@@ -413,6 +539,7 @@ export type bannersUncheckedCreateWithoutSellerInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -442,17 +569,41 @@ export type bannersUpdateManyWithWhereWithoutSellerInput = {
   data: Prisma.XOR<Prisma.bannersUpdateManyMutationInput, Prisma.bannersUncheckedUpdateManyWithoutSellerInput>
 }
 
-export type bannersScalarWhereInput = {
-  AND?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
-  OR?: Prisma.bannersScalarWhereInput[]
-  NOT?: Prisma.bannersScalarWhereInput | Prisma.bannersScalarWhereInput[]
-  id?: Prisma.StringFilter<"banners"> | string
-  imageUrl?: Prisma.StringFilter<"banners"> | string
-  fileId?: Prisma.StringFilter<"banners"> | string
-  isActive?: Prisma.BoolFilter<"banners"> | boolean
-  sellerId?: Prisma.StringFilter<"banners"> | string
-  createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"banners"> | Date | string
+export type bannersCreateManyAdminInput = {
+  id?: string
+  imageUrl: string
+  fileId: string
+  isActive?: boolean
+  sellerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type bannersUpdateWithoutAdminInput = {
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileId?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  seller?: Prisma.sellersUpdateOneWithoutBannersNestedInput
+}
+
+export type bannersUncheckedUpdateWithoutAdminInput = {
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileId?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type bannersUncheckedUpdateManyWithoutAdminInput = {
+  imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
+  fileId?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type bannersCreateManySellerInput = {
@@ -460,6 +611,7 @@ export type bannersCreateManySellerInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -470,12 +622,14 @@ export type bannersUpdateWithoutSellerInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  admin?: Prisma.adminsUpdateOneWithoutBannersNestedInput
 }
 
 export type bannersUncheckedUpdateWithoutSellerInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -484,6 +638,7 @@ export type bannersUncheckedUpdateManyWithoutSellerInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -496,9 +651,11 @@ export type bannersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   fileId?: boolean
   isActive?: boolean
   sellerId?: boolean
+  adminId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  seller?: boolean | Prisma.sellersDefaultArgs<ExtArgs>
+  seller?: boolean | Prisma.banners$sellerArgs<ExtArgs>
+  admin?: boolean | Prisma.banners$adminArgs<ExtArgs>
 }, ExtArgs["result"]["banners"]>
 
 
@@ -509,26 +666,30 @@ export type bannersSelectScalar = {
   fileId?: boolean
   isActive?: boolean
   sellerId?: boolean
+  adminId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type bannersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "imageUrl" | "fileId" | "isActive" | "sellerId" | "createdAt" | "updatedAt", ExtArgs["result"]["banners"]>
+export type bannersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "imageUrl" | "fileId" | "isActive" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["banners"]>
 export type bannersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  seller?: boolean | Prisma.sellersDefaultArgs<ExtArgs>
+  seller?: boolean | Prisma.banners$sellerArgs<ExtArgs>
+  admin?: boolean | Prisma.banners$adminArgs<ExtArgs>
 }
 
 export type $bannersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "banners"
   objects: {
-    seller: Prisma.$sellersPayload<ExtArgs>
+    seller: Prisma.$sellersPayload<ExtArgs> | null
+    admin: Prisma.$adminsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     imageUrl: string
     fileId: string
     isActive: boolean
-    sellerId: string
+    sellerId: string | null
+    adminId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["banners"]>
@@ -894,7 +1055,8 @@ readonly fields: bannersFieldRefs;
  */
 export interface Prisma__bannersClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  seller<T extends Prisma.sellersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.sellersDefaultArgs<ExtArgs>>): Prisma.Prisma__sellersClient<runtime.Types.Result.GetResult<Prisma.$sellersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  seller<T extends Prisma.banners$sellerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.banners$sellerArgs<ExtArgs>>): Prisma.Prisma__sellersClient<runtime.Types.Result.GetResult<Prisma.$sellersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  admin<T extends Prisma.banners$adminArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.banners$adminArgs<ExtArgs>>): Prisma.Prisma__adminsClient<runtime.Types.Result.GetResult<Prisma.$adminsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -929,6 +1091,7 @@ export interface bannersFieldRefs {
   readonly fileId: Prisma.FieldRef<"banners", 'String'>
   readonly isActive: Prisma.FieldRef<"banners", 'Boolean'>
   readonly sellerId: Prisma.FieldRef<"banners", 'String'>
+  readonly adminId: Prisma.FieldRef<"banners", 'String'>
   readonly createdAt: Prisma.FieldRef<"banners", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"banners", 'DateTime'>
 }
@@ -1298,6 +1461,44 @@ export type bannersAggregateRawArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
    */
   options?: runtime.InputJsonValue
+}
+
+/**
+ * banners.seller
+ */
+export type banners$sellerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the sellers
+   */
+  select?: Prisma.sellersSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the sellers
+   */
+  omit?: Prisma.sellersOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.sellersInclude<ExtArgs> | null
+  where?: Prisma.sellersWhereInput
+}
+
+/**
+ * banners.admin
+ */
+export type banners$adminArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the admins
+   */
+  select?: Prisma.adminsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the admins
+   */
+  omit?: Prisma.adminsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.adminsInclude<ExtArgs> | null
+  where?: Prisma.adminsWhereInput
 }
 
 /**
