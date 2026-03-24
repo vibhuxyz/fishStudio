@@ -35,7 +35,7 @@ import Home from "@/assets/icons/home";
 import Payment from "@/assets/icons/payment";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 
-const SidebarBarWrapper = () => {
+const SidebarBarWrapper = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } = useSidebar();
   const pathName = usePathname();
   const { seller } = useRequireAuth();
@@ -98,6 +98,7 @@ const SidebarBarWrapper = () => {
             icon={<Home fill={getIconColor("/dashboard")} />}
             isActive={activeSidebar === "/dashboard"}
             href="/dashboard"
+            onNavigate={onNavigate}
           />
           <div className="mt-6 block">
             <SidebarMenu title="Main Menu">
