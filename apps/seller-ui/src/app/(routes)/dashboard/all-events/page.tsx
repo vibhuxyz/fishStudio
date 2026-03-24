@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 
 type SellerEvent = {
   id: string;
@@ -45,6 +46,7 @@ const formatEventMeta = (event: SellerEvent) => {
 };
 
 const Page = () => {
+  useRequireAuth("event");
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: events = [], isLoading } = useQuery({

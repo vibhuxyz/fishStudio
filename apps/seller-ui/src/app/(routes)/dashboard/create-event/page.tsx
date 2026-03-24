@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 
 type SellerEventFormValues = {
   title: string;
@@ -250,6 +251,7 @@ const SellerEventForm = () => {
 };
 
 const Page = () => {
+  useRequireAuth("event");
   return (
     <Suspense fallback={<div className="min-h-screen w-full p-8 text-white">Loading event form...</div>}>
       <SellerEventForm />

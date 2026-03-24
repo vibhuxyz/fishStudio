@@ -3,22 +3,65 @@
 import React, { useState } from "react";
 import { Search, UserCheck, UserX, Loader2, Users } from "lucide-react";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
-import {
-  MOCK_STAFF_LIST,
-  MOCK_ORDERS,
-} from "@/shared/mocks/staffMockData";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "@/utils/axiosInstance";
 
-// TODO: replace mock data with real API calls when backend is ready:
-// const fetchMyStaffs = async () => (await axiosInstance.get("/auth/api/seller/staffs")).data.staffs;
-// const searchStaff = async (email: string) => (await axiosInstance.get(`/auth/api/seller/staff/search?email=${email}`)).data.staff;
-// const updateAccess = async ({ staffId, isActive }) => axiosInstance.put("/auth/api/seller/staff/access", { staffId, isActive });
+// Keeping mock orders just for the stats display
+import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
 
 const StaffManagementPage = () => {
+  const queryClient = useQueryClient();
   const [searchEmail, setSearchEmail] = useState("");
   const [searchResult, setSearchResult] = useState<any | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [staffList, setStaffList] = useState<any[]>(MOCK_STAFF_LIST);
+  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
+  
+  const { data: staffList = [], isLoading: isLoadingStaff } = useQuery({
+    queryKey: ["seller-staffs"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/auth/api/seller/staffs");
+      return res.data.staffs || [];
+    }
+  });
+
+  const searchStaffMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await axiosInstance.get(`/auth/api/seller/staff/search?email=${email}`);
+      return res.data.staff;
+    },
+    onSuccess: (data) => {
+      setSearchResult(data);
+      setSearchError(null);
+    },
+    onError: () => {
+      setSearchResult(null);
+      setSearchError("No staff account found with this email.");
+    }
+  });
+
+  const toggleAccessMutation = useMutation({
+    mutationFn: async (vars: { staffId: string, isActive: boolean }) => {
+      await axiosInstance.put("/auth/api/seller/staff/access", vars);
+      return vars;
+    },
+    onSuccess: (vars) => {
+      queryClient.invalidateQueries({ queryKey: ["seller-staffs"] });
+      if (searchResult && searchResult.id === vars.staffId) {
+        setSearchResult((prev: any) => ({ ...prev, isActive: vars.isActive }));
+      }
+      showFeedback(
+        "success",
+        vars.isActive
+          ? "Access granted successfully."
+          : "Access revoked successfully.",
+        vars.staffId,
+      );
+    },
+    onError: (err) => {
+      showFeedback("error", "Failed to update access.", "");
+    }
+  });
+
   const [actionFeedback, setActionFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -34,42 +77,13 @@ const StaffManagementPage = () => {
     setTimeout(() => setActionFeedback(null), 3000);
   };
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     if (!searchEmail.trim()) return;
-    setSearching(true);
-    setSearchError(null);
-    setSearchResult(null);
-    // Simulate network delay
-    await new Promise((r) => setTimeout(r, 400));
-    const found = MOCK_STAFF_LIST.find(
-      (s) => s.email.toLowerCase() === searchEmail.trim().toLowerCase(),
-    );
-    if (found) {
-      // Reflect any access changes already made
-      const current = staffList.find((s) => s.id === found.id) ?? found;
-      setSearchResult(current);
-    } else {
-      setSearchError("No staff account found with this email.");
-    }
-    setSearching(false);
+    searchStaffMutation.mutate(searchEmail.trim());
   };
 
   const handleAccessToggle = (staffId: string, makeActive: boolean) => {
-    setStaffList((prev) =>
-      prev.map((s) =>
-        s.id === staffId ? { ...s, isActive: makeActive } : s,
-      ),
-    );
-    if (searchResult && searchResult.id === staffId) {
-      setSearchResult((prev: any) => ({ ...prev, isActive: makeActive }));
-    }
-    showFeedback(
-      "success",
-      makeActive
-        ? "Access granted successfully."
-        : "Access revoked successfully.",
-      staffId,
-    );
+    toggleAccessMutation.mutate({ staffId, isActive: makeActive });
   };
 
   return (
@@ -88,7 +102,7 @@ const StaffManagementPage = () => {
         <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
           <p className="text-gray-400 text-sm mb-1">Active</p>
           <p className="text-2xl font-bold text-green-400">
-            {staffList.filter((s) => s.isActive).length}
+            {staffList.filter((s: any) => s.isActive).length}
           </p>
         </div>
         <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
@@ -121,10 +135,10 @@ const StaffManagementPage = () => {
           <button
             type="button"
             onClick={handleSearch}
-            disabled={searching || !searchEmail.trim()}
+            disabled={searchStaffMutation.isPending || !searchEmail.trim()}
             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition text-sm"
           >
-            {searching ? (
+            {searchStaffMutation.isPending ? (
               <Loader2 size={18} className="animate-spin" />
             ) : (
               "Search"
@@ -166,9 +180,7 @@ const StaffManagementPage = () => {
               ) : (
                 <button
                   type="button"
-                  onClick={() =>
-                    handleAccessToggle(searchResult.id, false)
-                  }
+                  onClick={() => setConfirmRevokeId(searchResult.id)}
                   className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm font-medium transition"
                 >
                   <UserX size={16} />
@@ -199,7 +211,11 @@ const StaffManagementPage = () => {
           My Staff Members
         </h3>
 
-        {staffList.length === 0 ? (
+        {isLoadingStaff ? (
+          <div className="bg-[#111827] border border-gray-800 rounded-xl p-8 flex justify-center text-gray-500">
+            <Loader2 className="animate-spin mx-auto mb-3" size={32} /> 
+          </div>
+        ) : staffList.length === 0 ? (
           <div className="bg-[#111827] border border-gray-800 rounded-xl p-8 text-center">
             <Users size={40} className="text-gray-600 mx-auto mb-3" />
             <p className="text-gray-400">No staff members yet.</p>
@@ -220,7 +236,7 @@ const StaffManagementPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {staffList.map((staff, idx) => (
+                {staffList.map((staff: any, idx: number) => (
                   <tr
                     key={staff.id}
                     className={`border-b border-gray-800 hover:bg-[#1e2433] transition ${
@@ -247,7 +263,7 @@ const StaffManagementPage = () => {
                       {staff.isActive ? (
                         <button
                           type="button"
-                          onClick={() => handleAccessToggle(staff.id, false)}
+                          onClick={() => setConfirmRevokeId(staff.id)}
                           className="flex items-center gap-1 px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white rounded-lg text-xs font-medium transition"
                         >
                           <UserX size={13} />
@@ -271,6 +287,35 @@ const StaffManagementPage = () => {
           </div>
         )}
       </div>
+
+      {/* Revoke Confirmation Modal */}
+      {confirmRevokeId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-2xl relative text-center">
+            <h2 className="mb-2 text-xl font-bold text-white">Revoke Access?</h2>
+            <p className="mb-6 text-sm text-gray-400">
+              Are you sure you want to revoke staff access? They will no longer be able to log in or manage orders.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setConfirmRevokeId(null)}
+                className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleAccessToggle(confirmRevokeId, false);
+                  setConfirmRevokeId(null);
+                }}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition"
+              >
+                Yes, Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,10 +5,18 @@ import Link from "next/link";
 import { Eye, Store, TicketPercent } from "lucide-react";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
-import { useAdminSellers } from "@/hooks/useAdminQueries";
+import { useAdminSellers, useSellerAccessCodes } from "@/hooks/useAdminQueries";
+import GiveAccessModal from "./GiveAccessModal";
+import GiveSignupAccessModal from "./GiveSignupAccessModal";
+import ViewCodeModal from "./ViewCodeModal";
 
 const SellersPage = () => {
   const { data: sellers = [], isLoading } = useAdminSellers();
+  const { data: sellerCodes = [], isLoading: isLoadingCodes } = useSellerAccessCodes();
+  const [selectedSellerId, setSelectedSellerId] = React.useState<string | null>(null);
+  const [viewingCode, setViewingCode] = React.useState<string | null>(null);
+
+  const [isGiveSignupAccessOpen, setIsGiveSignupAccessOpen] = React.useState(false);
 
   return (
     <DashboardPageShell
@@ -16,6 +24,14 @@ const SellersPage = () => {
       breadcrumbTitle="All Sellers"
       description="Review sellers, their stores, and how much catalog inventory they currently carry."
     >
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={() => setIsGiveSignupAccessOpen(true)}
+          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+        >
+          Generate Signup Access Code
+        </button>
+      </div>
       <div className="rounded-xl bg-gray-900 p-5">
         {isLoading ? (
           <p className="text-gray-400">Loading sellers...</p>
@@ -67,13 +83,22 @@ const SellersPage = () => {
                       : "-"}
                   </td>
                   <td className="p-3">
-                    <Link
-                      href={`/dashboard/sellers/${seller.id}`}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
-                    >
-                      <Eye size={16} />
-                      View
-                    </Link>
+                    {seller.isApprovedByAdmin ? (
+                      <Link
+                        href={`/dashboard/sellers/${seller.id}`}
+                        className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-600"
+                      >
+                        <Eye size={16} />
+                        View
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedSellerId(seller.id)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700"
+                      >
+                        Give Access
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -85,6 +110,77 @@ const SellersPage = () => {
           <p className="pt-4 text-center text-gray-400">No sellers found.</p>
         )}
       </div>
+
+      <div className="mt-8 rounded-xl bg-gray-900 p-5">
+        <h3 className="mb-4 text-lg font-bold text-white flex items-center gap-2">
+          <span>Pending Invitations</span>
+          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-500">{sellerCodes.length}</span>
+        </h3>
+        {isLoadingCodes ? (
+          <p className="text-gray-400">Loading invitations...</p>
+        ) : (
+          <table className="w-full text-white">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="p-3 text-left">Email</th>
+                <th className="p-3 text-left">Expires At</th>
+                <th className="p-3 text-left">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sellerCodes.map((invite) => (
+                <tr
+                  key={invite.id}
+                  className="border-b border-gray-800 transition hover:bg-gray-800/40"
+                >
+                  <td className="p-3">
+                    <div className="flex flex-col">
+                      <span>{invite.email}</span>
+                      <span className="text-xs text-amber-500">Pending Signup</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "-"}
+                  </td>
+                  <td className="p-3">
+                    <button
+                      onClick={() => setViewingCode(invite.code)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/20 px-3 py-2 text-sm text-green-400 transition hover:bg-green-600/30"
+                    >
+                      <Eye size={16} />
+                      View Code
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {!isLoadingCodes && sellerCodes.length === 0 && (
+          <p className="pt-4 text-center text-gray-400">No pending invitations found.</p>
+        )}
+      </div>
+
+      {selectedSellerId && (
+        <GiveAccessModal
+          sellerId={selectedSellerId}
+          onClose={() => setSelectedSellerId(null)}
+        />
+      )}
+
+      {isGiveSignupAccessOpen && (
+        <GiveSignupAccessModal
+          onClose={() => setIsGiveSignupAccessOpen(false)}
+        />
+      )}
+
+      {viewingCode && (
+        <ViewCodeModal
+          code={viewingCode}
+          onClose={() => setViewingCode(null)}
+        />
+      )}
     </DashboardPageShell>
   );
 };

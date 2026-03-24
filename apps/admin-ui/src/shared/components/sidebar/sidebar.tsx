@@ -10,6 +10,7 @@ import SidebarItem from "./sidebar.item";
 
 import SidebarMenu from "./sidebar.menu";
 import {
+  BarChart3,
   Blocks,
   BellRing,
   LogOut,
@@ -19,21 +20,27 @@ import {
   SquarePlus,
   TicketPercent,
   Users,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
 import Logo from "@/assets/svgs/logo";
 import Home from "@/assets/icons/home";
+import Payment from "@/assets/icons/payment";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 
 const SidebarBarWrapper = () => {
-  const { activeSidebar, setActiveSidebar } = useSidebar();
+  const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } = useSidebar();
   const pathName = usePathname();
   const { seller } = useRequireAuth();
 
   useEffect(() => {
     setActiveSidebar(pathName);
-  }, [pathName, setActiveSidebar]);
+    if (pathName === "/dashboard/analytics") {
+      setIsCollapsed(true);
+    }
+  }, [pathName, setActiveSidebar, setIsCollapsed]);
 
   const getIconColor = (route: string) =>
     activeSidebar === route ? "#0085ff" : "#969696";
@@ -48,34 +55,44 @@ const SidebarBarWrapper = () => {
         top: "0",
         overflowY: "scroll",
         scrollbarWidth: "none",
+        width: isCollapsed ? "80px" : "280px",
+        minWidth: isCollapsed ? "80px" : "250px",
+        transition: "width 0.3s ease, min-width 0.3s ease",
       }}
       className="sidebar-wrapper"
     >
       <Sidebar.Header>
-        <Box>
-          <Link href={"/"} className="flex justify-center text-center gap-2">
-            <Logo />
-            <Box>
-              <h3 className="text-xl font-medium text-[#ecedee]">
-                {seller?.name || "Admin Console"}
+        <div className={`flex items-start ${isCollapsed ? "justify-center" : "justify-between"} w-full px-2 pt-4`}>
+          {!isCollapsed && (
+            <div className="flex flex-col gap-0.5">
+              <h3 className="text-2xl font-bold text-white tracking-tight">
+                {seller?.name || "Vikram Admin"}
               </h3>
-              <h5 className="font-medium pl-2 text-xs text-[#ecedeecf] whitespace-nowrap overflow-hidden text-ellipsis max-w-[170px]">
-                {seller?.email || "Manage products and coupons"}
+              <h5 className="text-sm text-gray-400 font-medium lowercase">
+                {seller?.email || "vikram.admin@gmail.com"}
               </h5>
-            </Box>
-          </Link>
-        </Box>
+            </div>
+          )}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`text-slate-400 hover:text-white transition-all active:scale-95 ${isCollapsed ? "mt-2" : "mt-1.5"}`}
+            title="Toggle Sidebar"
+          >
+            {isCollapsed ? <PanelLeftOpen size={22} /> : <PanelLeftClose size={22} />}
+          </button>
+        </div>
       </Sidebar.Header>
-      <div className="block my-3 h-full">
-        <Sidebar.Body className="body sidebar">
+
+      <div className="block my-6 h-full px-2">
+        <Sidebar.Body className="body sidebar space-y-2">
           <SidebarItem
-            title="Dashboard"
+            title="Dashboard Overview"
             icon={<Home fill={getIconColor("/dashboard")} />}
             isActive={activeSidebar === "/dashboard"}
             href="/dashboard"
           />
-          <div className="mt-2 block">
-            <SidebarMenu title="Products">
+          <div className="mt-6 block">
+            <SidebarMenu title="Inventory">
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/create-product"}
                 title="Create Product"
@@ -110,6 +127,38 @@ const SidebarBarWrapper = () => {
                 }
               />
             </SidebarMenu>
+            
+            <SidebarMenu title="Sellers & Analytics">
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/sellers"}
+                title="Seller Management"
+                href="/dashboard/sellers"
+                icon={
+                  <Users
+                    size={22}
+                    color={getIconColor("/dashboard/sellers")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/analytics"}
+                title="Geo Analytics"
+                href="/dashboard/analytics"
+                icon={
+                  <BarChart3
+                    size={22}
+                    color={getIconColor("/dashboard/analytics")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/payments"}
+                title="Payment History"
+                href="/dashboard/payments"
+                icon={<Payment fill={getIconColor("/dashboard/payments")} />}
+              />
+            </SidebarMenu>
+
             <SidebarMenu title="Marketing">
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/discount-codes"}
@@ -119,19 +168,6 @@ const SidebarBarWrapper = () => {
                   <TicketPercent
                     size={22}
                     color={getIconColor("/dashboard/discount-codes")}
-                  />
-                }
-              />
-            </SidebarMenu>
-            <SidebarMenu title="Users">
-              <SidebarItem
-                isActive={activeSidebar === "/dashboard/sellers"}
-                title="Sellers"
-                href="/dashboard/sellers"
-                icon={
-                  <Users
-                    size={22}
-                    color={getIconColor("/dashboard/sellers")}
                   />
                 }
               />

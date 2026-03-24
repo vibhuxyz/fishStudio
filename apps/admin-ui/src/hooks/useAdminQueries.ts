@@ -61,12 +61,23 @@ export type AdminSellerSummary = {
   totalCoupons?: number;
   totalBanners?: number;
   totalReviews?: number;
+  isApprovedByAdmin?: boolean;
+  permissions?: string[];
   store?: {
     id: string;
     name: string;
     city?: string;
     address?: string;
   } | null;
+};
+
+export type AdminSellerAccessCode = {
+  id: string;
+  email: string | null;
+  role: string;
+  code: string;
+  expiresAt: string | null;
+  createdAt: string;
 };
 
 export type AdminSellerDetail = AdminSellerSummary & {
@@ -121,6 +132,10 @@ export type OrderItem = {
 export type SellerOrder = {
   id: string;
   total: number;
+  totalAmount?: number;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  paymentRef?: string | null;
   status: string;
   deliveryStatus: string;
   createdAt: string;
@@ -174,6 +189,7 @@ export const adminQueryKeys = {
   sellerDetail: (sellerId: string) => ["admin", "sellers", sellerId] as const,
   order: (orderId: string) => ["admin", "orders", orderId] as const,
   seller: ["admin", "account"] as const,
+  sellerCodes: ["admin", "sellerCodes"] as const,
 };
 
 export const getCategoryConfigKey = (category: string) =>
@@ -282,6 +298,11 @@ export const fetchAdminSellers = async (): Promise<AdminSellerSummary[]> => {
   return Array.isArray(response.data.sellers) ? response.data.sellers : [];
 };
 
+export const fetchSellerAccessCodes = async (): Promise<AdminSellerAccessCode[]> => {
+  const response = await axiosInstance.get("/auth/api/admin/seller-codes", isProtected);
+  return Array.isArray(response.data.codes) ? response.data.codes : [];
+};
+
 export const fetchAdminSellerDetail = async (
   sellerId: string,
 ): Promise<AdminSellerDetail | null> => {
@@ -301,6 +322,23 @@ export const validateProductSlug = async (
     isProtected,
   );
   return response.data ?? {};
+};
+
+export const updateSellerApproval = async ({
+  sellerId,
+  isApprovedByAdmin,
+  permissions,
+}: {
+  sellerId: string;
+  isApprovedByAdmin: boolean;
+  permissions: string[];
+}) => {
+  const response = await axiosInstance.put(
+    `/auth/api/admin/sellers/${sellerId}/approval`,
+    { isApprovedByAdmin, permissions },
+    isProtected
+  );
+  return response.data;
 };
 
 export const useAdminProducts = () =>
@@ -339,6 +377,12 @@ export const useAdminSellers = () =>
     queryFn: fetchAdminSellers,
   });
 
+export const useSellerAccessCodes = () =>
+  useQuery({
+    queryKey: adminQueryKeys.sellerCodes,
+    queryFn: fetchSellerAccessCodes,
+  });
+
 export const useAdminSellerDetail = (sellerId?: string) =>
   useQuery({
     queryKey: sellerId
@@ -354,3 +398,80 @@ export const useOrderDetail = (orderId?: string) =>
     queryFn: () => fetchOrderDetail(orderId as string),
     enabled: Boolean(orderId),
   });
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+export const useUpdateSellerApproval = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateSellerApproval,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.sellers });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.sellerDetail(variables.sellerId) });
+    },
+  });
+};
+
+// ── Analytics Types ────────────────────────────────────────────────────────
+export type PincodeRow = { 
+  pincode: string; 
+  orders: number; 
+  revenue: number;
+  products?: Record<string, { title: string; qty: number; revenue: number }>;
+  shops?: Array<{ 
+    id: string; 
+    name: string; 
+    sales: number; 
+    repetition: number;
+    products: Record<string, { title: string; qty: number; revenue: number; couponSpend: number }>;
+  }>;
+};
+export type ProductRow = { id: string; title: string; orders: number; revenue: number; image?: string };
+export type DetailedProductRow = ProductRow & {
+  deliveredQty: number;
+  cancelledQty: number;
+  pendingQty: number;
+  refundedQty: number;
+  refundedAmount: number;
+  couponSpend: number;
+  quantaSale: number;
+  repeatCustomers: number;
+  avgPrice: number;
+  orderIds: string[];
+  pincodeBreakdown: Record<string, number>;
+};
+
+export type StatsPayload = {
+  totalOrders: number;
+  totalDelivered: number;
+  totalCancelled: number;
+  totalRefunded: number;
+  totalPending: number;
+  totalAccepted: number;
+  totalRevenue: number;
+  totalRefundedAmount: number;
+  totalCouponSpend: number;
+  pincodeBreakdown: PincodeRow[];
+  heroProducts: ProductRow[];
+  needsImprovement: ProductRow[];
+  toRemove: ProductRow[];
+  allProductsBreakdown?: DetailedProductRow[];
+};
+export type SellerBreakdownRow = StatsPayload & { sellerId: string; name: string; email: string };
+export type AdminStatsResponse = { period: string; stats: StatsPayload; perSellerBreakdown?: SellerBreakdownRow[] };
+export type SellerStatsResponse = { period: string; stats: StatsPayload };
+export type StatsPeriod = "week" | "month" | "year";
+
+// ── Analytics Fetch Functions ──────────────────────────────────────────────
+export const fetchAdminStats = async (period: StatsPeriod, sellerId?: string): Promise<AdminStatsResponse> => {
+  const url = sellerId ? `/order/api/admin-stats/${sellerId}?period=${period}` : `/order/api/admin-stats?period=${period}`;
+  const res = await axiosInstance.get(url, isProtected);
+  return res.data;
+};
+
+// ── Analytics useQuery Hooks ───────────────────────────────────────────────
+export const useAdminStats = (period: StatsPeriod, sellerId?: string) =>
+  useQuery({
+    queryKey: ["admin", "stats", period, sellerId ?? "all"],
+    queryFn: () => fetchAdminStats(period, sellerId),
+  });
+

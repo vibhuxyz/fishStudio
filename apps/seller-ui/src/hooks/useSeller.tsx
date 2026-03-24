@@ -5,49 +5,53 @@ import { useAuthStore } from "../store/authStore";
 import React from "react";
 import { isProtected } from "../utils/protected";
 
-// Fetch logged-in account — tries seller first, then staff
-const fetchSeller = async () => {
-  try {
-    const response = await axiosInstance.get("/auth/api/logged-in-seller", {
-      ...isProtected,
-      headers: { "x-auth-role": "seller" },
-    } as any);
-    return { ...response.data.seller, role: "seller" };
-  } catch {
-    // Fallback to staff
-    const staffResponse = await axiosInstance.get("/auth/api/logged-in-staff", {
-      ...isProtected,
-      headers: { "x-auth-role": "staff" },
-    } as any);
-    const staff = staffResponse.data.staff;
-    return { ...staff, role: "staff" };
-  }
-};
-
 const useSeller = () => {
-  const { setLoggedIn, isLoggedIn, setRole } = useAuthStore();
+  const { setLoggedIn, isLoggedIn, role, setRole } = useAuthStore();
 
   const {
     data: seller,
     isPending,
     isError,
   } = useQuery({
-    queryKey: ["seller"],
-    queryFn: fetchSeller,
-    staleTime: 1000 * 60 * 5,
+    queryKey: ["seller", role],
+    queryFn: async () => {
+      // If we already know the user is a staff member, skip the seller fetch to avoid 401s
+      if (role === "staff") {
+        const staffResponse = await axiosInstance.get("/auth/api/logged-in-staff", {
+          ...isProtected,
+          headers: { "x-auth-role": "staff" },
+        } as any);
+        return { ...staffResponse.data.staff, role: "staff" };
+      }
+
+      try {
+        const response = await axiosInstance.get("/auth/api/logged-in-seller", {
+          ...isProtected,
+          headers: { "x-auth-role": "seller" },
+        } as any);
+        return { ...response.data.seller, role: "seller" };
+      } catch {
+        // Fallback to staff if role is unknown or seller failed
+        const staffResponse = await axiosInstance.get("/auth/api/logged-in-staff", {
+          ...isProtected,
+          headers: { "x-auth-role": "staff" },
+        } as any);
+        return { ...staffResponse.data.staff, role: "staff" };
+      }
+    },
+    staleTime: 1000 * 60 * 5,   // 5 min — don't refetch while cached
+    gcTime: 1000 * 60 * 5,      // 5 min — keep error cached, prevent loop on remount
     retry: false,
-    enabled: isLoggedIn,
   });
 
   React.useEffect(() => {
     if (seller) {
       setLoggedIn(true);
       setRole(seller.role ?? null);
-    } else if (isError) {
-      setLoggedIn(false);
-      setRole(null);
     }
-  }, [seller, isError, setLoggedIn, setRole]);
+    // Don't call setLoggedIn(false) on error — that causes an
+    // infinite loop because the store resets to true on next mount.
+  }, [seller, setLoggedIn, setRole]);
 
   return { seller: seller as any, isLoading: isPending, isError };
 };

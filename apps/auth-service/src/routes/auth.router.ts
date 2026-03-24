@@ -7,6 +7,9 @@ import {
   logOutAdmin,
   registerAdmin,
   verifyAdmin,
+  verifyAdminSignupCode,
+  generateSellerSignupCode,
+  getSellerSignupCodes,
 } from "../controller/admin.auth.controller.js";
 
 import {
@@ -25,6 +28,8 @@ import {
   logOutSeller,
   registerSeller,
   verifySeller,
+  updateSellerApproval,
+  verifySellerSignupCode,
 } from "../controller/seller.auth.controller.js";
 import {
   getMyStaffs,
@@ -47,6 +52,14 @@ router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 router.post("/refresh-token", refreshToken);
 
 // admin routes
+router.post("/admin/verifycode", verifyAdminSignupCode);
+router.post(
+  "/admin/generate-seller-code",
+  isAuthenticated,
+  isAdmin,
+  generateSellerSignupCode,
+);
+router.get("/admin/seller-codes", isAuthenticated, isAdmin, getSellerSignupCodes);
 router.post("/admin-registration", registerAdmin);
 router.post("/verify-admin", verifyAdmin);
 router.post("/login-admin", loginAdmin);
@@ -59,8 +72,15 @@ router.get(
   isAdmin,
   getSellerDetailsForAdmin,
 );
+router.put(
+  "/admin/sellers/:sellerId/approval",
+  isAuthenticated,
+  isAdmin,
+  updateSellerApproval,
+);
 
 // seller/store Routes
+router.post("/verify-seller-code", verifySellerSignupCode);
 router.post("/seller-registration", registerSeller);
 router.post("/verify-seller", verifySeller);
 router.post("/login-seller", loginSeller);

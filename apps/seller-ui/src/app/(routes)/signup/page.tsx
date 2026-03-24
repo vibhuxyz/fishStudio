@@ -23,6 +23,26 @@ const Signup = () => {
   const [sellerId, setSellerId] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+// --- Start Seller Signup Additions ---
+  const [accessCode, setAccessCode] = useState("");
+  const [codeVerifiedEmail, setCodeVerifiedEmail] = useState(""); 
+  const [codeVerified, setCodeVerified] = useState(false);
+
+  const verifyCodeMutation = useMutation({
+    mutationFn: async (data: { email: string; code: string }) => {
+      const response = await axios.post(
+        `${frontendEnv.apiUrl}/auth/api/verify-seller-code`,
+        data
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      setCodeVerified(true);
+      setCodeVerifiedEmail(variables.email);
+    },
+  });
+  // --- End Seller Signup Additions ---
+
   const {
     register,
     handleSubmit,
@@ -56,9 +76,11 @@ const Signup = () => {
 
   const signupMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Pass code if seller
+      const payload = selectedRole === "seller" ? { ...data, code: accessCode } : data;
       const response = await axios.post(
         `${frontendEnv.apiUrl}${registrationEndpoint}`,
-        data,
+        payload,
       );
       return response.data;
     },
@@ -72,12 +94,11 @@ const Signup = () => {
   const verifyOtpMutation = useMutation({
     mutationFn: async () => {
       if (!sellerData) return;
+      // Pass code if seller
+      const payload = selectedRole === "seller" ? { ...sellerData, otp: otp.join(""), code: accessCode } : { ...sellerData, otp: otp.join("") };
       const response = await axios.post(
         `${frontendEnv.apiUrl}${verifyEndpoint}`,
-        {
-          ...sellerData,
-          otp: otp.join(""),
-        },
+        payload,
       );
       return response.data;
     },
@@ -93,6 +114,10 @@ const Signup = () => {
   });
 
   const onSubmit = (data: any) => {
+    // If seller and code verified, override email to ensure it matches verified email
+    if (selectedRole === "seller" && codeVerified) {
+      data.email = codeVerifiedEmail;
+    }
     signupMutation.mutate(data);
   };
 
@@ -219,7 +244,50 @@ const Signup = () => {
 
       {/* Form card */}
       <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-        {(activeStep === 1 || isStaffFlow) && (
+        {selectedRole === "seller" && activeStep === 1 && !codeVerified ? (
+          <div>
+            <h3 className="text-2xl font-semibold text-center mb-4">
+              Seller Access Verification
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Please enter your email and the 6-digit access code provided by the administrator.
+            </p>
+            <label className="block text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              placeholder="Enter Email"
+              className="w-full p-2 border border-gray-300 outline-0 rounded mb-4"
+              value={codeVerifiedEmail}
+              onChange={(e) => setCodeVerifiedEmail(e.target.value)}
+            />
+            <label className="block text-gray-700 mb-1">Access Code</label>
+            <input
+              type="text"
+              placeholder="Enere 6-digit Code"
+              className="w-full p-2 border border-gray-300 outline-0 rounded mb-4"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+            />
+            <button
+              onClick={() => verifyCodeMutation.mutate({ email: codeVerifiedEmail, code: accessCode })}
+              disabled={!accessCode || !codeVerifiedEmail || verifyCodeMutation.isPending}
+              className="w-full text-lg cursor-pointer bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
+            >
+              {verifyCodeMutation.isPending ? "Verifying..." : "Verify Code"}
+            </button>
+            {verifyCodeMutation.isError && verifyCodeMutation.error instanceof AxiosError && (
+              <p className="text-red-500 text-sm mt-2 text-center">
+                {verifyCodeMutation.error.response?.data?.message || verifyCodeMutation.error.message}
+              </p>
+            )}
+            <p className="pt-6 text-center text-sm">
+              Already have an account?{" "}
+              <Link href="/login" className="text-blue-600">
+                Login
+              </Link>
+            </p>
+          </div>
+        ) : (activeStep === 1 || isStaffFlow) && (
           <>
             {!showOtp ? (
               <form onSubmit={handleSubmit(onSubmit)}>
@@ -240,24 +308,42 @@ const Signup = () => {
                   </p>
                 )}
 
-                <label className="block text-gray-700 mb-1 mt-2">Email</label>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value:
-                        /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm">
-                    {String(errors.email.message)}
-                  </p>
+                {(!codeVerified || isStaffFlow) && (
+                  <>
+                    <label className="block text-gray-700 mb-1 mt-2">Email</label>
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
+                      {...register("email", {
+                        required: "Email is required",
+                        pattern: {
+                          value:
+                            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+                          message: "Invalid email address",
+                        },
+                      })}
+                      disabled={selectedRole === "seller" && codeVerified}
+                      defaultValue={selectedRole === "seller" ? codeVerifiedEmail : ""}
+                    />
+                    {errors.email && (
+                      <p className="text-red-500 text-sm">
+                        {String(errors.email.message)}
+                      </p>
+                    )}
+                  </>
+                )}
+                {/* if it's a seller, we'll just show the disabled email without the react-hook-form register to avoid issues, or we pre-fill it and pass it to onSubmit */}
+                {selectedRole === "seller" && codeVerified && (
+                    <>
+                      <label className="block text-gray-700 mb-1 mt-2">Email</label>
+                      <input
+                        type="email"
+                        className="w-full p-2 border border-gray-300 bg-gray-100 text-gray-500 outline-0 rounded mb-1"
+                        value={codeVerifiedEmail}
+                        disabled
+                      />
+                    </>
                 )}
 
                 {/* Phone number only for seller */}

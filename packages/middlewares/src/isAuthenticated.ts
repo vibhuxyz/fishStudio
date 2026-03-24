@@ -83,9 +83,11 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     req.role = decode.role;
 
     return next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error("JWT Verification Error:", error.message);
     return res.status(401).json({
       message: "Unauthorized! Invalid token or expired",
+      error: error.message,
     });
   }
 };

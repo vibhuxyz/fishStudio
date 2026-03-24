@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import AnalyticsModal from "@/shared/components/modals/analytics.modal";
 import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
@@ -43,6 +44,7 @@ const restoreProduct = async (productId: string) => {
 };
 
 const ProductList = () => {
+  useRequireAuth("product");
   const router = useRouter();
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);

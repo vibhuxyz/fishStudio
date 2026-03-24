@@ -17,7 +17,7 @@ const signAdminTokens = (adminId: string) => {
   const accessToken = jwt.sign(
     { id: adminId, role: "admin" },
     ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-    { expiresIn: "15m" },
+    { expiresIn: "7d" },
   );
   const refreshToken = jwt.sign(
     { id: adminId, role: "admin" },
@@ -36,7 +36,19 @@ export const registerAdmin = async (
   try {
     validateRegistrationData(req.body, "admin");
 
-    const { name, email } = req.body;
+    const { name, email, code } = req.body;
+
+    if (!code) {
+      throw new ValidationError("Access code is required to register as admin");
+    }
+
+    const accessCode = await prisma.signupAccessCode.findFirst({
+      where: { role: "ADMIN", code },
+    });
+
+    if (!accessCode) {
+      throw new ValidationError("Invalid admin access code");
+    }
 
     const existingAdmin = await prisma.admins.findUnique({
       where: { email },
@@ -177,4 +189,107 @@ export const logOutAdmin = async (req: any, res: Response) => {
   res.status(201).json({
     success: true,
   });
+};
+
+import { publishToQueue } from "@repo/libs";
+
+export const verifyAdminSignupCode = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return next(new ValidationError("Access code is required"));
+    }
+
+    const accessCode = await prisma.signupAccessCode.findFirst({
+      where: { role: "ADMIN", code },
+    });
+
+    if (!accessCode) {
+      return next(new ValidationError("Invalid admin access code"));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Access code verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateSellerSignupCode = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return next(new ValidationError("Seller email is required"));
+    }
+
+    const existingCode = await prisma.signupAccessCode.findFirst({
+      where: { email, role: "SELLER" },
+    });
+
+    if (existingCode && existingCode.expiresAt && existingCode.expiresAt > new Date()) {
+       return next(new ValidationError("A code was already generated for this email within the last 24 hours."));
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    if (existingCode) {
+      await prisma.signupAccessCode.update({
+        where: { id: existingCode.id },
+        data: { code, expiresAt },
+      });
+    } else {
+      await prisma.signupAccessCode.create({
+        data: { email, role: "SELLER", code, expiresAt },
+      });
+    }
+
+    await publishToQueue("otp_queue", {
+      userType: "seller",
+      name: "Seller",
+      email,
+      template: "seller-access-code",
+      otp: code,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Signup access code generated and sent to ${email}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSellerSignupCodes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const codes = await prisma.signupAccessCode.findMany({
+      where: { role: "SELLER" },
+      orderBy: { createdAt: "desc" },
+    });
+    
+    // Auto-clean expired codes just in case cron hasn't run
+    const validCodes = codes.filter(c => !c.expiresAt || c.expiresAt > new Date());
+
+    res.status(200).json({
+      success: true,
+      codes: validCodes,
+    });
+  } catch (error) {
+    next(error);
+  }
 };

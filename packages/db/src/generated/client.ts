@@ -117,3 +117,18 @@ export type banners = Prisma.bannersModel
  * 
  */
 export type seller_events = Prisma.seller_eventsModel
+/**
+ * Model Order
+ * 
+ */
+export type Order = Prisma.OrderModel
+/**
+ * Model OrderItem
+ * 
+ */
+export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model SignupAccessCode
+ * 
+ */
+export type SignupAccessCode = Prisma.SignupAccessCodeModel

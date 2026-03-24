@@ -1,9 +1,18 @@
 {
   "name": "order-service",
-  "module": "index.ts",
   "type": "module",
   "private": true,
- 
+  "main": "./dist/main.js",
+  "exports": {
+    ".": {
+      "default": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js"
+  },
   "devDependencies": {
     "@repo/db": "workspace:*",
     "@repo/rabbitMQ-service": "workspace:*",
@@ -21,10 +30,15 @@
     "@types/body-parser": "^1.19.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
+    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
+    "@types/nodemailer": "^7.0.11",
     "body-parser": "^2.2.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "dotenv": "^17.3.1",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "nodemailer": "^8.0.3"
   }
 }

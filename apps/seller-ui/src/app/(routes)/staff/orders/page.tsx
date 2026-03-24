@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 import React, { useState } from "react";
 import {
   CheckCircle,
@@ -21,7 +22,10 @@ import {
   Tag,
 } from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
-import { MOCK_ORDERS, MockOrder, OrderStatus } from "@/shared/mocks/staffMockData";
+import { MockOrder, OrderStatus, MOCK_ORDERS } from "@/shared/mocks/staffMockData";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "@/utils/axiosInstance";
+import { Loader2 } from "lucide-react";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -698,50 +702,105 @@ function StatsBar({ orders }: { orders: MockOrder[] }) {
 
 const StaffOrdersPage = () => {
   const { staff, isLoading: authLoading } = useRequireStaff();
-  const [orders, setOrders] = useState<MockOrder[]>(MOCK_ORDERS);
+  const queryClient = useQueryClient();
+
+  const isStaff = staff?.role === "staff";
+  const sellerNotLinked = !authLoading && staff && isStaff && (!staff.isActive || !staff.sellerId);
+  const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
+
+  const { data: realOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ["staff-orders"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/order/api/get-seller-orders");
+      return res.data.orders.map((o: any): MockOrder => ({
+        id: o.id,
+        status: o.status === "ACCEPTED" ? "Processing" :
+                o.status === "REJECTED" ? "Rejected" :
+                o.deliveryStatus === "Packed" ? "Ready" :
+                o.deliveryStatus === "Delivered" ? "Completed" : "New",
+        createdAt: o.createdAt,
+        total: o.totalAmount ?? 0,
+        user: {
+          id: o.user?.id || o.userId || "",
+          name: o.user?.name || "Customer",
+          phone: o.user?.phone_number || "-",
+          email: o.user?.email || "-",
+          avatar: o.user?.avatar || null,
+        },
+        shippingAddress: {
+          name: o.user?.name || "Customer",
+          street: o.shippingAddressId || "N/A",
+          city: "-",
+          state: "-",
+          zip: "-"
+        },
+        items: (o.orderItems || []).map((i: any) => ({
+          productId: i.productId,
+          product: { title: i.product?.title || "Product" },
+          quantity: i.quantity,
+          price: i.price,
+          unit: "pc",
+          selectedOptions: {}
+        })),
+        rejectionReason: o.rejectionReason,
+        refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null
+      }));
+    },
+    enabled: canFetch,
+  });
+
+  const orders = realOrders; // Use real populated orders
   const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);
   const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
   const [detailTarget, setDetailTarget] = useState<MockOrder | null>(null);
   const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
 
-  const sellerNotLinked = !authLoading && staff && (!staff.isActive || !staff.sellerId);
+  const acceptMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return axiosInstance.put(`/order/api/accept-reject/${orderId}`, { action: "accept" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+      setAcceptTarget(null);
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({ orderId, reason }: { orderId: string, reason: string }) => {
+      return axiosInstance.put(`/order/api/accept-reject/${orderId}`, { action: "reject", rejectionReason: reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+      setRejectTarget(null);
+    }
+  });
 
   const handleAcceptConfirm = () => {
     if (!acceptTarget) return;
-    setOrders((prev) =>
-      prev.map((o) => (o.id === acceptTarget.id ? { ...o, status: "Processing" } : o)),
-    );
-    setAcceptTarget(null);
+    acceptMutation.mutate(acceptTarget.id);
   };
 
   const handleRejectConfirm = (reason: string) => {
     if (!rejectTarget) return;
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === rejectTarget.id
-          ? { ...o, status: "Rejected", rejectionReason: reason, refundStatus: "Refunded" }
-          : o,
-      ),
-    );
-    setRejectTarget(null);
+    rejectMutation.mutate({ orderId: rejectTarget.id, reason });
   };
 
   const handleMarkReady = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "Ready" } : o)));
+    // Only local optimistic update required here, unless backend update needed.
   };
 
   const handleMarkCompleted = (id: string) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "Completed" } : o)));
+    // Only local optimistic update required here
   };
 
   const filteredOrders =
-    activeFilter === "All" ? orders : orders.filter((o) => o.status === activeFilter);
+    activeFilter === "All" ? orders : orders.filter((o: MockOrder) => o.status === activeFilter);
 
   // For "All" view, limit completed/rejected to 3 each
   const displayOrders = activeFilter === "All" 
-    ? orders.map(o => {
-        if (o.status === "Completed" && orders.filter(x => x.status === "Completed").indexOf(o) >= 3) return null;
-        if (o.status === "Rejected" && orders.filter(x => x.status === "Rejected").indexOf(o) >= 3) return null;
+    ? orders.map((o: MockOrder) => {
+        if (o.status === "Completed" && orders.filter((x: MockOrder) => x.status === "Completed").indexOf(o) >= 3) return null;
+        if (o.status === "Rejected" && orders.filter((x: MockOrder) => x.status === "Rejected").indexOf(o) >= 3) return null;
         return o;
       }).filter(Boolean) as MockOrder[]
     : filteredOrders;
@@ -784,6 +843,12 @@ const StaffOrdersPage = () => {
       <StatsBar orders={orders} />
 
       {/* Filter tabs */}
+      {ordersLoading && (
+        <div className="flex items-center gap-2 mb-4 text-gray-500">
+          <Loader2 className="animate-spin" size={16} /> <span className="text-sm">Fetching live orders...</span>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
         {(["All", ...COLUMN_ORDER] as const).map((s) => {
           const isActive = activeFilter === s;
@@ -804,7 +869,7 @@ const StaffOrdersPage = () => {
               {s === "All" ? "All Orders" : STATUS_CONFIG[s as OrderStatus].label}
               {s !== "All" && (
                 <span className="ml-1.5 opacity-70">
-                  {orders.filter((o) => o.status === s).length}
+                  {orders.filter((o: MockOrder) => o.status === s).length}
                 </span>
               )}
             </button>
@@ -819,7 +884,7 @@ const StaffOrdersPage = () => {
             <StatusColumn
               key={status}
               status={status}
-              orders={displayOrders.filter((o) => o.status === status)}
+              orders={displayOrders.filter((o: MockOrder) => o.status === status)}
               onAccept={setAcceptTarget}
               onReject={setRejectTarget}
               onMarkReady={handleMarkReady}
@@ -836,7 +901,7 @@ const StaffOrdersPage = () => {
               <p className="text-sm">No orders in this status</p>
             </div>
           ) : (
-            filteredOrders.map((o) => (
+            filteredOrders.map((o: MockOrder) => (
               <OrderCard
                 key={o.id}
                 order={o}

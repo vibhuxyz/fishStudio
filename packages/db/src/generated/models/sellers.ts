@@ -30,6 +30,7 @@ export type SellersMinAggregateOutputType = {
   email: string | null
   phone_number: string | null
   password: string | null
+  isApprovedByAdmin: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,6 +41,7 @@ export type SellersMaxAggregateOutputType = {
   email: string | null
   phone_number: string | null
   password: string | null
+  isApprovedByAdmin: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -51,6 +53,8 @@ export type SellersCountAggregateOutputType = {
   phone_number: number
   password: number
   following: number
+  isApprovedByAdmin: number
+  permissions: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -63,6 +67,7 @@ export type SellersMinAggregateInputType = {
   email?: true
   phone_number?: true
   password?: true
+  isApprovedByAdmin?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -73,6 +78,7 @@ export type SellersMaxAggregateInputType = {
   email?: true
   phone_number?: true
   password?: true
+  isApprovedByAdmin?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -84,6 +90,8 @@ export type SellersCountAggregateInputType = {
   phone_number?: true
   password?: true
   following?: true
+  isApprovedByAdmin?: true
+  permissions?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -168,6 +176,8 @@ export type SellersGroupByOutputType = {
   phone_number: string
   password: string
   following: string[]
+  isApprovedByAdmin: boolean
+  permissions: runtime.JsonValue | null
   createdAt: Date
   updatedAt: Date
   _count: SellersCountAggregateOutputType | null
@@ -200,6 +210,8 @@ export type sellersWhereInput = {
   phone_number?: Prisma.StringFilter<"sellers"> | string
   password?: Prisma.StringFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
+  isApprovedByAdmin?: Prisma.BoolFilter<"sellers"> | boolean
+  permissions?: Prisma.JsonNullableFilter<"sellers">
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   banners?: Prisma.BannersListRelationFilter
@@ -216,6 +228,8 @@ export type sellersOrderByWithRelationInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  isApprovedByAdmin?: Prisma.SortOrder
+  permissions?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   banners?: Prisma.bannersOrderByRelationAggregateInput
@@ -235,6 +249,8 @@ export type sellersWhereUniqueInput = Prisma.AtLeast<{
   phone_number?: Prisma.StringFilter<"sellers"> | string
   password?: Prisma.StringFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
+  isApprovedByAdmin?: Prisma.BoolFilter<"sellers"> | boolean
+  permissions?: Prisma.JsonNullableFilter<"sellers">
   createdAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"sellers"> | Date | string
   banners?: Prisma.BannersListRelationFilter
@@ -251,6 +267,8 @@ export type sellersOrderByWithAggregationInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  isApprovedByAdmin?: Prisma.SortOrder
+  permissions?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.sellersCountOrderByAggregateInput
@@ -268,6 +286,8 @@ export type sellersScalarWhereWithAggregatesInput = {
   phone_number?: Prisma.StringWithAggregatesFilter<"sellers"> | string
   password?: Prisma.StringWithAggregatesFilter<"sellers"> | string
   following?: Prisma.StringNullableListFilter<"sellers">
+  isApprovedByAdmin?: Prisma.BoolWithAggregatesFilter<"sellers"> | boolean
+  permissions?: Prisma.JsonNullableWithAggregatesFilter<"sellers">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"sellers"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"sellers"> | Date | string
 }
@@ -279,6 +299,8 @@ export type sellersCreateInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
@@ -295,6 +317,8 @@ export type sellersUncheckedCreateInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
@@ -310,6 +334,8 @@ export type sellersUpdateInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
@@ -325,6 +351,8 @@ export type sellersUncheckedUpdateInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
@@ -341,6 +369,8 @@ export type sellersCreateManyInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -351,6 +381,8 @@ export type sellersUpdateManyMutationInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -361,6 +393,8 @@ export type sellersUncheckedUpdateManyInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -377,6 +411,8 @@ export type sellersCountOrderByAggregateInput = {
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
   following?: Prisma.SortOrder
+  isApprovedByAdmin?: Prisma.SortOrder
+  permissions?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -387,6 +423,7 @@ export type sellersMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  isApprovedByAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -397,6 +434,7 @@ export type sellersMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone_number?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  isApprovedByAdmin?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -429,6 +467,10 @@ export type sellersCreatefollowingInput = {
 export type sellersUpdatefollowingInput = {
   set?: string[]
   push?: string | string[]
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
 }
 
 export type sellersCreateNestedOneWithoutStaffsInput = {
@@ -496,6 +538,8 @@ export type sellersCreateWithoutCouponsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
@@ -511,6 +555,8 @@ export type sellersUncheckedCreateWithoutCouponsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
@@ -541,6 +587,8 @@ export type sellersUpdateWithoutCouponsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
@@ -555,6 +603,8 @@ export type sellersUncheckedUpdateWithoutCouponsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
@@ -570,6 +620,8 @@ export type sellersCreateWithoutStaffsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
@@ -585,6 +637,8 @@ export type sellersUncheckedCreateWithoutStaffsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
@@ -615,6 +669,8 @@ export type sellersUpdateWithoutStaffsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
@@ -629,6 +685,8 @@ export type sellersUncheckedUpdateWithoutStaffsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
@@ -644,6 +702,8 @@ export type sellersCreateWithoutStoreInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
@@ -659,6 +719,8 @@ export type sellersUncheckedCreateWithoutStoreInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
@@ -689,6 +751,8 @@ export type sellersUpdateWithoutStoreInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
@@ -703,6 +767,8 @@ export type sellersUncheckedUpdateWithoutStoreInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
@@ -718,6 +784,8 @@ export type sellersCreateWithoutBannersInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.seller_eventsCreateNestedManyWithoutSellerInput
@@ -733,6 +801,8 @@ export type sellersUncheckedCreateWithoutBannersInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   events?: Prisma.seller_eventsUncheckedCreateNestedManyWithoutSellerInput
@@ -763,6 +833,8 @@ export type sellersUpdateWithoutBannersInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.seller_eventsUpdateManyWithoutSellerNestedInput
@@ -777,6 +849,8 @@ export type sellersUncheckedUpdateWithoutBannersInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   events?: Prisma.seller_eventsUncheckedUpdateManyWithoutSellerNestedInput
@@ -792,6 +866,8 @@ export type sellersCreateWithoutEventsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersCreateNestedManyWithoutSellerInput
@@ -807,6 +883,8 @@ export type sellersUncheckedCreateWithoutEventsInput = {
   phone_number: string
   password: string
   following?: Prisma.sellersCreatefollowingInput | string[]
+  isApprovedByAdmin?: boolean
+  permissions?: runtime.InputJsonValue | null
   createdAt?: Date | string
   updatedAt?: Date | string
   banners?: Prisma.bannersUncheckedCreateNestedManyWithoutSellerInput
@@ -837,6 +915,8 @@ export type sellersUpdateWithoutEventsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUpdateManyWithoutSellerNestedInput
@@ -851,6 +931,8 @@ export type sellersUncheckedUpdateWithoutEventsInput = {
   phone_number?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.StringFieldUpdateOperationsInput | string
   following?: Prisma.sellersUpdatefollowingInput | string[]
+  isApprovedByAdmin?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  permissions?: runtime.InputJsonValue | runtime.InputJsonValue | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   banners?: Prisma.bannersUncheckedUpdateManyWithoutSellerNestedInput
@@ -924,6 +1006,8 @@ export type sellersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   phone_number?: boolean
   password?: boolean
   following?: boolean
+  isApprovedByAdmin?: boolean
+  permissions?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   banners?: boolean | Prisma.sellers$bannersArgs<ExtArgs>
@@ -943,11 +1027,13 @@ export type sellersSelectScalar = {
   phone_number?: boolean
   password?: boolean
   following?: boolean
+  isApprovedByAdmin?: boolean
+  permissions?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type sellersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone_number" | "password" | "following" | "createdAt" | "updatedAt", ExtArgs["result"]["sellers"]>
+export type sellersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone_number" | "password" | "following" | "isApprovedByAdmin" | "permissions" | "createdAt" | "updatedAt", ExtArgs["result"]["sellers"]>
 export type sellersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   banners?: boolean | Prisma.sellers$bannersArgs<ExtArgs>
   events?: boolean | Prisma.sellers$eventsArgs<ExtArgs>
@@ -973,6 +1059,8 @@ export type $sellersPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     phone_number: string
     password: string
     following: string[]
+    isApprovedByAdmin: boolean
+    permissions: runtime.JsonValue | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["sellers"]>
@@ -1378,6 +1466,8 @@ export interface sellersFieldRefs {
   readonly phone_number: Prisma.FieldRef<"sellers", 'String'>
   readonly password: Prisma.FieldRef<"sellers", 'String'>
   readonly following: Prisma.FieldRef<"sellers", 'String[]'>
+  readonly isApprovedByAdmin: Prisma.FieldRef<"sellers", 'Boolean'>
+  readonly permissions: Prisma.FieldRef<"sellers", 'Json'>
   readonly createdAt: Prisma.FieldRef<"sellers", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"sellers", 'DateTime'>
 }

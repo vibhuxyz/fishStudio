@@ -1,11 +1,12 @@
 "use client";
 
 import { useAtom } from "jotai";
-import { activeSideBarItem } from "../configs/constants";
+import { activeSideBarItem, isSidebarCollapsed } from "../configs/constants";
 
 const useSidebar = () => {
   const [activeSidebar, setActiveSidebar] = useAtom(activeSideBarItem);
-  return { activeSidebar, setActiveSidebar };
+  const [isCollapsed, setIsCollapsed] = useAtom(isSidebarCollapsed);
+  return { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed };
 };
 
 export default useSidebar;

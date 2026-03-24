@@ -22,6 +22,38 @@ export const logOutSeller = async (req: any, res: Response) => {
   });
 };
 
+export const verifySellerSignupCode = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return next(new ValidationError("Email and access code are required"));
+    }
+
+    const accessCode = await prisma.signupAccessCode.findFirst({
+      where: { role: "SELLER", email, code },
+    });
+
+    if (!accessCode) {
+      return next(new ValidationError("Invalid or expired access code"));
+    }
+
+    if (accessCode.expiresAt && accessCode.expiresAt < new Date()) {
+      return next(new ValidationError("This access code has expired. Please request a new one."));
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Seller access code verified successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const registerSeller = async (
   req: Request,
   res: Response,
@@ -30,10 +62,21 @@ export const registerSeller = async (
   try {
     validateRegistrationData(req.body, "seller");
 
-    const { name, email } = req.body;
+    const { name, email, code } = req.body;
 
     if (!name || !email) {
       throw new ValidationError("All fields are required");
+    }
+    if (!code) {
+      throw new ValidationError("Access code is required to register as seller");
+    }
+
+    const accessCode = await prisma.signupAccessCode.findFirst({
+      where: { role: "SELLER", email, code },
+    });
+
+    if (!accessCode || (accessCode.expiresAt && accessCode.expiresAt < new Date())) {
+      throw new ValidationError("Invalid or expired seller access code");
     }
 
     const existingSeller = await prisma.sellers.findUnique({
@@ -78,10 +121,11 @@ export const verifySeller = async (
       phone_number,
       shop,
       store,
+      code,
     } = req.body;
 
-    if (!email || !otp || !password || !name || !phone_number) {
-      return next(new ValidationError("All fields are required"));
+    if (!email || !otp || !password || !name || !phone_number || !code) {
+      return next(new ValidationError("All fields are required including code"));
     }
 
     const existingSeller = await prisma.sellers.findUnique({
@@ -92,6 +136,15 @@ export const verifySeller = async (
       return next(
         new ValidationError("Seller already exists with this email!"),
       );
+    }
+    
+    // Verify code again here just in case it expired before OTP step
+    const accessCode = await prisma.signupAccessCode.findFirst({
+      where: { role: "SELLER", email, code },
+    });
+
+    if (!accessCode || (accessCode.expiresAt && accessCode.expiresAt < new Date())) {
+      return next(new ValidationError("Invalid or expired seller access code"));
     }
 
     await verifyOtp(email, otp, next);
@@ -107,6 +160,11 @@ export const verifySeller = async (
       include: {
         store: true,
       },
+    });
+    
+    // Delete access code upon successful registration
+    await prisma.signupAccessCode.deleteMany({
+      where: { role: "SELLER", email },
     });
 
     const incomingStore = shop || store;
@@ -146,7 +204,7 @@ export const verifySeller = async (
     const accessToken = jwt.sign(
       { id: seller.id, role: "seller" },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
     const refreshToken = jwt.sign(
       { id: seller.id, role: "seller" },
@@ -251,7 +309,7 @@ export const loginSeller = async (
       const accessToken = jwt.sign(
         { id: seller.id, role: "seller" },
         ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-        { expiresIn: "15m" },
+        { expiresIn: "7d" },
       );
       const refreshToken = jwt.sign(
         { id: seller.id, role: "seller" },
@@ -266,7 +324,13 @@ export const loginSeller = async (
         success: true,
         message: "Seller logged in successfully",
         role: "seller",
-        user: { id: seller.id, name: seller.name, email: seller.email },
+        user: { 
+          id: seller.id, 
+          name: seller.name, 
+          email: seller.email,
+          isApprovedByAdmin: seller.isApprovedByAdmin,
+          permissions: seller.permissions
+        },
       });
     }
 
@@ -282,18 +346,13 @@ export const loginSeller = async (
       throw new AuthError("Invalid credentials — password incorrect");
     }
 
-    if (!staff.isActive || !staff.sellerId) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Your staff account has not been activated by a seller yet. Please ask your seller to grant you access.",
-      });
-    }
+    // Staff can log in even if inactive, but the frontend will restrict access.
+    // We removed the 403 block here.
 
     const accessToken = jwt.sign(
       { id: staff.id, role: "staff" },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
     const refreshToken = jwt.sign(
       { id: staff.id, role: "staff" },
@@ -308,7 +367,7 @@ export const loginSeller = async (
       success: true,
       message: "Staff logged in successfully",
       role: "staff",
-      user: { id: staff.id, name: staff.name, email: staff.email },
+      user: { id: staff.id, name: staff.name, email: staff.email, isActive: staff.isActive },
     });
   } catch (error) {
     next(error);
@@ -370,6 +429,8 @@ export const getAllSellersForAdmin = async (
         totalCoupons: seller.coupons.length,
         totalBanners: seller.banners.length,
         totalReviews: seller.store?.storeReviews.length ?? 0,
+        isApprovedByAdmin: seller.isApprovedByAdmin,
+        permissions: seller.permissions,
       })),
     });
   } catch (error) {
@@ -438,7 +499,41 @@ export const getSellerDetailsForAdmin = async (
         totalCoupons: seller.coupons.length,
         totalBanners: seller.banners.length,
         totalReviews: seller.store?.storeReviews.length ?? 0,
+        isApprovedByAdmin: seller.isApprovedByAdmin,
+        permissions: seller.permissions,
       },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateSellerApproval = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sellerId = req.params.sellerId as string;
+    const { isApprovedByAdmin, permissions } = req.body;
+
+    if (!sellerId) return next(new ValidationError("Seller id is required"));
+
+    const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
+    if (!seller) return next(new ValidationError("Seller not found"));
+
+    const updatedSeller = await prisma.sellers.update({
+      where: { id: sellerId },
+      data: {
+        isApprovedByAdmin: isApprovedByAdmin !== undefined ? isApprovedByAdmin : seller.isApprovedByAdmin,
+        permissions: permissions !== undefined ? permissions : seller.permissions,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Seller approval and permissions updated",
+      seller: updatedSeller,
     });
   } catch (error) {
     return next(error);
@@ -453,7 +548,7 @@ export const createRazorpayConnectLink = async (
   next: NextFunction,
 ) => {
   try {
-    const { sellerId } = req.body;
+    const sellerId = req.body.sellerId as string;
     if (!sellerId) {
       return next(new ValidationError("Seller id is required!!"));
     }

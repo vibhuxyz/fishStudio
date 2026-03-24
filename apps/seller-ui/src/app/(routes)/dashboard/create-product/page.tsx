@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 
 type CatalogProduct = {
   id: string;
@@ -97,6 +98,7 @@ const addProductToStore = async ({
 };
 
 const Page = () => {
+  useRequireAuth("product");
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");

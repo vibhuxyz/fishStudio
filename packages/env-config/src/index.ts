@@ -62,6 +62,11 @@ export const ENV = {
     process.env.PRODUCT_SERVICE_URL ||
       `http://localhost:${process.env.PRODUCT_SERVICE_PORT || "6002"}`,
   ),
+  ORDER_SERVICE_URL: logEnv(
+    "ORDER_SERVICE_URL",
+    process.env.ORDER_SERVICE_URL ||
+      `http://localhost:${process.env.ORDER_SERVICE_PORT || "6004"}`,
+  ),
   // Mail
   SMTP_HOST: logEnv("SMTP_HOST", process.env.SMTP_HOST),
   SMTP_PORT: logEnv("SMTP_PORT", process.env.SMTP_PORT),

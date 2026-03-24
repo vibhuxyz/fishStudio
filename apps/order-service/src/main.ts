@@ -2,10 +2,9 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-import { errorMiddleware } from "@repo/error-handlers/error-middleware";
+import { errorMiddleware } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
-import router from "./routes/order.route";
-import { createOrder } from "./controllers/order.controller";
+import router from "./routes/order.route.js";
 
 const app = express();
 app.use(
@@ -13,20 +12,12 @@ app.use(
     origin: ENV.CORS_ORIGINS
       ? ENV.CORS_ORIGINS.split(",").map((origin) => origin.trim())
       : ["http://localhost:3000"],
-    allowedHeaders: ["Authorization", "Content-Type"],
+    allowedHeaders: ["Authorization", "Content-Type", "x-auth-role", "ngrok-skip-browser-warning"],
     credentials: true,
   }),
 );
 
-app.post(
-  "/api/create-order",
-  bodyParser.raw({ type: "application/json" }),
-  (req, res, next) => {
-    (req as any).rawBody = req.body;
-    next();
-  },
-  createOrder,
-);
+// Webhook route removed
 
 app.use(express.json());
 app.use(cookieParser());

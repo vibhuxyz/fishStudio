@@ -24,6 +24,8 @@ const Signup = () => {
   const [timer, setTimer] = useState(60);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [adminData, setAdminData] = useState<SignupFormData | null>(null);
+  const [accessCode, setAccessCode] = useState("");
+  const [codeVerified, setCodeVerified] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -47,12 +49,25 @@ const Signup = () => {
       });
     }, 1000);
   };
+  
+  const verifyCodeMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await axios.post(
+        `${frontendEnv.apiUrl}/auth/api/admin/verifycode`,
+        { code }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      setCodeVerified(true);
+    },
+  });
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupFormData) => {
       const response = await axios.post(
         `${frontendEnv.apiUrl}/auth/api/admin-registration`,
-        data,
+        { ...data, code: accessCode },
       );
 
       return response.data;
@@ -75,6 +90,7 @@ const Signup = () => {
         {
           ...adminData,
           otp: otp.join(""),
+          code: accessCode,
         },
         { withCredentials: true },
       );
@@ -122,7 +138,42 @@ const Signup = () => {
   return (
     <div className="w-full bg-[#f1f1f1] flex flex-col items-center pt-10 min-h-screen">
       <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-        {!showOtp ? (
+        {!codeVerified ? (
+          <div>
+            <h3 className="text-2xl font-semibold text-center mb-4">
+              Admin Verification Step
+            </h3>
+            <p className="text-sm text-gray-500 text-center mb-6">
+              Please enter the master access code to continue registration.
+            </p>
+            <label className="block text-gray-700 mb-1">Access Code</label>
+            <input
+              type="text"
+              placeholder="Enter Access Code"
+              className="w-full p-2 border border-gray-300 outline-0 rounded mb-4"
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
+            />
+            <button
+              onClick={() => verifyCodeMutation.mutate(accessCode)}
+              disabled={!accessCode || verifyCodeMutation.isPending}
+              className="w-full text-lg cursor-pointer bg-black text-white py-2 rounded-lg disabled:opacity-50"
+            >
+              {verifyCodeMutation.isPending ? "Verifying..." : "Verify Code"}
+            </button>
+            {verifyCodeMutation.isError && verifyCodeMutation.error instanceof AxiosError && (
+              <p className="text-red-500 text-sm mt-2 text-center">
+                {verifyCodeMutation.error.response?.data?.message || verifyCodeMutation.error.message}
+              </p>
+            )}
+            <p className="pt-6 text-center text-sm">
+              Already have an account?{" "}
+              <Link href="/login" className="text-red-500">
+                Login
+              </Link>
+            </p>
+          </div>
+        ) : !showOtp ? (
           <form onSubmit={handleSubmit(onSubmit)}>
             <h3 className="text-2xl font-semibold text-center mb-4">
               Create Admin Account

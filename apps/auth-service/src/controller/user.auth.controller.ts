@@ -86,7 +86,7 @@ export const verifyOtpAndLogin = async (
     const accessToken = jwt.sign(
       { id: user.id, role: "user" },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "10m" },
+      { expiresIn: "7d" },
     );
 
     const refreshToken = jwt.sign(
@@ -123,6 +123,7 @@ export const refreshToken = async (
       req.cookies["admin_refresh_token"] ||
       req.cookies["refresh_token"] ||
       req.cookies["seller_refresh_token"] ||
+      req.cookies["staff_refresh_token"] ||
       req.headers.authorization?.split(" ")[1];
 
     if (!refreshToken) {
@@ -135,7 +136,7 @@ export const refreshToken = async (
     const decode = jwt.verify(
       refreshToken,
       ENV.REFRESH_TOKEN_JWT_SECRET_KEY! as string,
-    ) as { id: string; role: "admin" | "seller" | "user" };
+    ) as { id: string; role: "admin" | "seller" | "user" | "staff" };
 
     if (!decode || !decode.id || !decode.role) {
       return new JsonWebTokenError("Forbidden ! Invalid refresh token.");
@@ -153,12 +154,16 @@ export const refreshToken = async (
       await prisma.sellers.findUnique({
         where: { id: decode.id! },
       });
+    } else if (decode.role === "staff") {
+      await prisma.staffs.findUnique({
+        where: { id: decode.id! },
+      });
     }
 
     const newAccessToken = jwt.sign(
       { id: decode.id, role: decode.role },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY as string,
-      { expiresIn: "15m" },
+      { expiresIn: "7d" },
     );
 
     if (decode.role === "admin") {
@@ -167,6 +172,8 @@ export const refreshToken = async (
       setCookie(res, "access_token", newAccessToken);
     } else if (decode.role === "seller") {
       setCookie(res, "seller_access_token", newAccessToken);
+    } else if (decode.role === "staff") {
+      setCookie(res, "staff_access_token", newAccessToken);
     }
 
     return res.status(200).json({

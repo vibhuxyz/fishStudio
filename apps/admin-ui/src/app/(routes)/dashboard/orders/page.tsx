@@ -44,17 +44,21 @@ const OrdersTable = () => {
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }: { row: { original: SellerOrder } }) => (
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              row.original.status === "Paid"
-                ? "bg-green-600 text-white"
-                : "bg-yellow-500 text-white"
-            }`}
-          >
-            {row.original.status}
-          </span>
-        ),
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const status = row.original.status;
+          let color = "bg-yellow-500 text-white"; // default
+
+          if (status === "DELIVERED" || status === "Paid") color = "bg-emerald-600 text-white";
+          else if (status === "PENDING") color = "bg-amber-500 text-white";
+          else if (status === "REJECTED" || status === "CANCELLED") color = "bg-rose-600 text-white";
+          else if (status === "ACCEPTED" || status === "SHIPPED") color = "bg-blue-600 text-white";
+
+          return (
+            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${color}`}>
+              {status}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "createdAt",

@@ -421,10 +421,6 @@ export type staffsUncheckedUpdateManyWithoutSellerNestedInput = {
   deleteMany?: Prisma.staffsScalarWhereInput | Prisma.staffsScalarWhereInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type staffsCreateWithoutSellerInput = {
   id?: string
   name: string

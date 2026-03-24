@@ -1,46 +1,46 @@
-import isAuthenticated from "@repo/middlewares/isAuthenticated";
 import express, { Router } from "express";
 import {
   acceptOrRejectOrder,
-  createPaymentIntent,
-  createPaymentSession,
-  getAdminOrders,
-  getOrderDetails,
   getSellerOrders,
-  getUserOrders,
-  updateDeliveryStatus,
-  verifyCouponCode,
-  verifyingPaymentSession,
-} from "../controllers/order.controller";
-import { isSeller, isSellerOrStaff } from "@repo/middlewares/authorizeRole";
+} from "../controllers/order.controller.js";
+import { getSellerStats, getAdminStats } from "../controllers/stats.controller.js";
+import { allowRoles, isAuthenticated, isSellerOrStaff } from "@repo/middlewares";
 
 const router: Router = express.Router();
 
-router.post("/create-payment-intent", isAuthenticated, createPaymentIntent);
-router.post("/create-payment-session", isAuthenticated, createPaymentSession);
 router.get(
-  "/verifying-payment-session",
+  "/get-seller-orders",
   isAuthenticated,
-  verifyingPaymentSession,
+  isSellerOrStaff,
+  getSellerOrders,
 );
-
-router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, getSellerOrders);
-router.get("/get-order-details/:id", isAuthenticated, getOrderDetails);
-router.put(
-  "/update-status/:orderId",
-  isAuthenticated,
-  isSeller,
-  updateDeliveryStatus,
-);
-router.put("/verify-coupon", isAuthenticated, verifyCouponCode);
-router.get("/get-user-orders", isAuthenticated, getUserOrders);
-
-// Accept or reject an order (staff or seller can do this)
 router.put(
   "/accept-reject/:orderId",
   isAuthenticated,
   isSellerOrStaff,
   acceptOrRejectOrder,
+);
+
+// ── Analytics Routes ──────────────────────────────────────────────────────────
+router.get(
+  "/seller-stats",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  getSellerStats,
+);
+
+router.get(
+  "/admin-stats",
+  isAuthenticated,
+  allowRoles("admin"),
+  getAdminStats,
+);
+
+router.get(
+  "/admin-stats/:sellerId",
+  isAuthenticated,
+  allowRoles("admin"),
+  getAdminStats,
 );
 
 export default router;

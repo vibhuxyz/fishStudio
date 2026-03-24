@@ -2,12 +2,38 @@
 import React from "react";
 import { ArrowLeft, XCircle, Phone, MapPin, User, CreditCard, Package, Fish, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
+import { useQuery } from "@tanstack/react-query";
+import axiosInstance from "@/utils/axiosInstance";
+import useRequireStaff from "@/hooks/useRequireStaff";
 import Link from "next/link";
 
 const RejectedOrdersPage = () => {
   const router = useRouter();
-  const rejectedOrders = MOCK_ORDERS.filter((o) => o.status === "Rejected");
+  const { staff } = useRequireStaff();
+  
+  const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
+
+  const { data: rejectedOrders = [], isLoading } = useQuery({
+    queryKey: ["staff-orders"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/order/api/get-seller-orders");
+      const mapped = res.data.orders.map((o: any) => ({
+        id: o.id,
+        status: o.status === "ACCEPTED" ? "Processing" :
+                o.status === "REJECTED" ? "Rejected" :
+                o.deliveryStatus === "Packed" ? "Ready" :
+                o.deliveryStatus === "Delivered" ? "Completed" : "New",
+        createdAt: o.createdAt,
+        total: o.totalAmount ?? 0,
+        user: { name: o.user?.name || "Customer", phone: o.user?.phone_number || "-" },
+        shippingAddress: { city: "-" },
+        rejectionReason: o.rejectionReason,
+        refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null
+      }));
+      return mapped.filter((o: any) => o.status === "Rejected");
+    },
+    enabled: canFetch,
+  });
 
   const formatINR = (amount: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
@@ -43,7 +69,7 @@ const RejectedOrdersPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {rejectedOrders.map((order) => (
+          {rejectedOrders.map((order: any) => (
             <div key={order.id} className="bg-[#0f1117] border border-gray-800 rounded-xl p-5 hover:border-red-700/50 transition group cursor-pointer">
               <Link href={`/staff/orders/${order.id}`}>
                 <div className="flex items-start justify-between mb-4">

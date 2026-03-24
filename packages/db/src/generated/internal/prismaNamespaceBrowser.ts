@@ -61,7 +61,10 @@ export const ModelName = {
   site_config: 'site_config',
   products: 'products',
   banners: 'banners',
-  seller_events: 'seller_events'
+  seller_events: 'seller_events',
+  Order: 'Order',
+  OrderItem: 'OrderItem',
+  SignupAccessCode: 'SignupAccessCode'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -129,6 +132,8 @@ export const SellersScalarFieldEnum = {
   phone_number: 'phone_number',
   password: 'password',
   following: 'following',
+  isApprovedByAdmin: 'isApprovedByAdmin',
+  permissions: 'permissions',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -264,6 +269,49 @@ export const Seller_eventsScalarFieldEnum = {
 } as const
 
 export type Seller_eventsScalarFieldEnum = (typeof Seller_eventsScalarFieldEnum)[keyof typeof Seller_eventsScalarFieldEnum]
+
+
+export const OrderScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  storeId: 'storeId',
+  totalAmount: 'totalAmount',
+  discountAmount: 'discountAmount',
+  couponCode: 'couponCode',
+  status: 'status',
+  paymentStatus: 'paymentStatus',
+  paymentMethod: 'paymentMethod',
+  paymentRef: 'paymentRef',
+  rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
+
+
+export const OrderItemScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  productId: 'productId',
+  quantity: 'quantity',
+  price: 'price'
+} as const
+
+export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const SignupAccessCodeScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  role: 'role',
+  code: 'code',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SignupAccessCodeScalarFieldEnum = (typeof SignupAccessCodeScalarFieldEnum)[keyof typeof SignupAccessCodeScalarFieldEnum]
 
 
 export const SortOrder = {

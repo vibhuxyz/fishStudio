@@ -31,6 +31,22 @@ enum sellerEventType {
   FLASH_SALE
 }
 
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
 model admins {
   id        String           @id @default(auto()) @map("_id") @db.ObjectId
   name      String
@@ -80,6 +96,7 @@ model users {
 
   storeReviews storeReviews[]
   favorites    favorites[]
+  orders       Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -115,6 +132,9 @@ model sellers {
   store        stores?
   coupons      discount_codes[]
   staffs       staffs[]
+
+  isApprovedByAdmin Boolean @default(false)
+  permissions       Json?   
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -160,6 +180,7 @@ model stores {
   seller   sellers @relation(fields: [sellerId], references: [id])
 
   products products[]
+  orders   Order[]
 
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -250,6 +271,7 @@ model products {
   discount_codes String[]      @db.ObjectId
   status         productStatus @default(Active)
   isDeleted      Boolean?      @default(false)
+  orderItems     OrderItem[]
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())
@@ -300,4 +322,60 @@ model seller_events {
 
   @@index([sellerId, startTime])
   @@map("seller_events")
+}
+
+//////////////////////////////////////////////////////
+// ORDERS
+//////////////////////////////////////////////////////
+
+model Order {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   users  @relation(fields: [userId], references: [id])
+
+  storeId String @db.ObjectId
+  store   stores @relation(fields: [storeId], references: [id])
+
+  orderItems OrderItem[]
+
+  totalAmount    Float
+  discountAmount Float @default(0)
+  couponCode     String?
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod String?
+  paymentRef    String?
+
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId String   @db.ObjectId
+  product   products @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+}
+
+//////////////////////////////////////////////////////
+// SIGNUP ACCESS
+//////////////////////////////////////////////////////
+
+model SignupAccessCode {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String?
+  role      String    // "ADMIN" or "SELLER"
+  code      String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([email, role])
+  @@map("signup_access_codes")
 }

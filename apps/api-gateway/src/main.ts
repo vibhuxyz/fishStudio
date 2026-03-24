@@ -87,20 +87,22 @@ app.get("/gateway-health", (req, res) => {
 // 4. PROXY ROUTES
 const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
 const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
+const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
 
-app.use(
-  "/auth",
-  proxy(authUrl, {
-    proxyReqPathResolver: (req: any) => req.url,
-  }),
-);
+const proxyOptions = {
+  proxyReqPathResolver: (req: any) => req.url,
+  userResHeaderDecorator: (headers: any, userReq: any, userRes: any, proxyReq: any, proxyRes: any) => {
+    // Force set-cookie to be an array so express handles it correctly without joining with commas
+    if (proxyRes.headers["set-cookie"]) {
+      userRes.setHeader("set-cookie", proxyRes.headers["set-cookie"]);
+    }
+    return headers;
+  },
+};
 
-app.use(
-  "/product",
-  proxy(productUrl, {
-    proxyReqPathResolver: (req: any) => req.url,
-  }),
-);
+app.use("/auth", proxy(authUrl, proxyOptions));
+app.use("/product", proxy(productUrl, proxyOptions));
+app.use("/order", proxy(orderUrl, proxyOptions));
 
 const port = Number(ENV.API_GATEWAY_PORT) || 8080;
 //

@@ -64,6 +64,8 @@ app.use("/api", router);
 
 app.use(errorMiddleware);
 
+import { prisma } from "@repo/db";
+
 // --- NEW STARTUP LOGIC ---
 const startServer = async () => {
   try {
@@ -75,6 +77,26 @@ const startServer = async () => {
     // 2. Start listening ONLY after dependencies are ready
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`🚀 Auth server fully ready on localhort :${port}`);
+      
+      // Cleanup Task every hour
+      setInterval(async () => {
+        try {
+          console.log("Running hourly cleanup task...");
+          const resCodes = await prisma.signupAccessCode.deleteMany({
+            where: { expiresAt: { lt: new Date() } }
+          });
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const resSellers = await prisma.sellers.deleteMany({
+            where: { 
+              isApprovedByAdmin: false, 
+              createdAt: { lt: twentyFourHoursAgo }
+            }
+          });
+          console.log(`Cleanup run: deleted ${resCodes.count} expired codes and ${resSellers.count} unapproved expired sellers.`);
+        } catch (err) {
+          console.error("Cleanup task error:", err);
+        }
+      }, 1000 * 60 * 60); // 1 hour
     });
 
     server.on("error", (err) => {

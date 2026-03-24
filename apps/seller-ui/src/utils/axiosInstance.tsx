@@ -7,7 +7,8 @@ const axiosInstance = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    // Default role — overridden per-request where needed
+    // Tell the auth middleware to look for seller_access_token cookie
+    "x-auth-role": "seller",
     "ngrok-skip-browser-warning": "true",
   },
 });

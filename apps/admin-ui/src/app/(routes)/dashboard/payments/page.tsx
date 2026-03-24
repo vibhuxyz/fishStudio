@@ -29,52 +29,92 @@ const SellerPayments = () => {
       },
       {
         accessorKey: "user.name",
-        header: "Buyer",
+        header: "Customer & Items",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
-          <span className="text-white">{row.original.user?.name || "Guest"}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-white font-medium">{row.original.user?.name || "Guest"}</span>
+            <span className="text-gray-400 text-[10px] italic truncate max-w-[180px]">
+              {row.original.items?.map(i => i.product?.title).join(", ") || "No items"}
+            </span>
+          </div>
         ),
+      },
+      {
+        header: "Payment Details",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const method = row.original.paymentMethod;
+          const ref = row.original.paymentRef;
+          return (
+            <div className="flex flex-col">
+              <span className="text-gray-300 text-[10px] font-black uppercase">
+                {method === "COD" ? "Cash on Delivery" : method || "Online"}
+              </span>
+              {method === "COD" ? (
+                <span className="text-lime-500/80 text-[9px] font-bold">COLLECT ON ARRIVAL</span>
+              ) : (
+                ref ? (
+                  <span className="text-sky-400/80 text-[9px] font-mono font-bold tracking-tight">#{ref}</span>
+                ) : (
+                  <span className="text-amber-500/60 text-[9px] font-bold italic">REF. PENDING</span>
+                )
+              )}
+            </div>
+          );
+        },
       },
       {
         header: "Seller Earning",
         cell: ({ row }: { row: { original: SellerOrder } }) => {
-          const sellerShare = Number(row.original.total ?? 0) * 0.9;
+          const amount = row.original.totalAmount || row.original.total || 0;
           return (
-            <span className="text-green-400 font-medium">
-              ${sellerShare.toFixed(2)}
+            <span className="text-emerald-400 font-bold">
+              ₹{amount.toLocaleString()}
             </span>
           );
         },
       },
       {
-        header: "Admin Fee",
+        header: "Payment Status",
         cell: ({ row }: { row: { original: SellerOrder } }) => {
-          const adminFee = Number(row.original.total ?? 0) * 0.1;
-          return <span className="text-yellow-400">${adminFee.toFixed(2)}</span>;
+          const pStatus = row.original.paymentStatus;
+          const oStatus = row.original.status;
+          
+          let color = "bg-gray-800 text-gray-400";
+          let label = pStatus || "PENDING";
+
+          if (pStatus === "COMPLETED") {
+            color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30";
+            label = "SUCCESSFUL";
+          } else if (pStatus === "REFUNDED") {
+            color = "bg-rose-900/40 text-rose-500 border border-rose-900/30";
+            label = "REFUNDED";
+          } else if (oStatus === "REJECTED" || oStatus === "CANCELLED") {
+            color = "bg-amber-900/40 text-amber-500 border border-amber-900/30";
+            label = "REFUND PROCESSING";
+          } else {
+            color = "bg-amber-900/40 text-amber-500 border border-amber-900/30";
+            label = "PENDING";
+          }
+
+          return (
+            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${color}`}>
+              {label}
+            </span>
+          );
         },
       },
       {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }: { row: { original: SellerOrder } }) => (
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              row.original.status === "Paid"
-                ? "bg-green-600 text-white"
-                : "bg-yellow-500 text-white"
-            }`}
-          >
-            {row.original.status}
-          </span>
-        ),
-      },
-      {
         accessorKey: "createdAt",
-        header: "Date",
-        cell: ({ row }: { row: { original: SellerOrder } }) => (
-          <span className="text-white text-sm">
-            {new Date(row.original.createdAt).toLocaleDateString()}
-          </span>
-        ),
+        header: "Date & Time",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const date = new Date(row.original.createdAt);
+          return (
+            <div className="flex flex-col leading-tight">
+              <span className="text-white text-[10px] font-bold">{date.toLocaleDateString()}</span>
+              <span className="text-gray-500 text-[9px]">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          );
+        },
       },
       {
         header: "Actions",

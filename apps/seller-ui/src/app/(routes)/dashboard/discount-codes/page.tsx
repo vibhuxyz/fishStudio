@@ -2,7 +2,9 @@
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import DeleteDiscountCodeModal from "@/shared/components/modals/delete.discount-codes";
 import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import useRequireAuth from "@/hooks/useRequiredAuth";
 
 import { AxiosError } from "axios";
 import { Plus, Trash, X } from "lucide-react";
@@ -12,6 +14,7 @@ import { Controller, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
 const Page = () => {
+  useRequireAuth("coupon");
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedDiscount, setSelectedDiscount] = useState<any>();
@@ -21,7 +24,7 @@ const Page = () => {
   const { data: discountCodes = [], isLoading } = useQuery({
     queryKey: ["shop-discounts"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-discount-codes");
+      const res = await axiosInstance.get("/product/api/get-discount-codes", isProtected);
       console.log("discountCodes", res);
       return res?.data?.discount_codes || [];
     },
