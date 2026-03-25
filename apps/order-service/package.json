@@ -1,5 +1,5 @@
 {
-  "name": "order-service",
+  "name": "@repo/order-service",
   "type": "module",
   "private": true,
   "main": "./dist/main.js",
