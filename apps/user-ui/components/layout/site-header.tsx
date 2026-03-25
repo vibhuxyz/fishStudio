@@ -47,7 +47,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
  
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 300);
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -104,7 +104,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-border bg-background shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
 
           {/* ── Logo ── */}
@@ -133,20 +133,22 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         onClick={() => setShowAddressModal(true)}
         aria-label="Change delivery address"
       >
-        <span className="text-[10px] font-semibold text-foreground sm:text-xs">
-          {hydrated && (selectedLocation || selectedAddress) ? `Delivery ${deliveryLabel}` : (hasAddresses ? "Deliver to" : "Set Location")}
-        </span>
-        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-          <MapPin className="h-2.5 w-2.5 flex-shrink-0 text-offer-green" />
-          <span className="max-w-[100px] truncate font-medium text-foreground sm:max-w-[150px] md:max-w-[200px]">
-            {hydrated ? addressShort : "Select location"}
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] font-bold text-offer-green sm:text-xs">
+            {hydrated && (selectedLocation || selectedAddress) ? `Delivery ${deliveryLabel}` : (hasAddresses ? "Deliver to" : "Set Location")}
           </span>
           <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+        </div>
+        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+          <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+          <span className="max-w-[80px] truncate font-medium text-foreground xs:max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
+            {hydrated ? addressShort : "Select location"}
+          </span>
         </span>
       </button>
 
-              {/* ── Search Bar ── */}
-              <div className="relative flex min-w-0 flex-1 items-center" ref={dropdownRef}>
+      {/* ── Desktop Search Bar ── */}
+      <div className="relative hidden min-w-0 flex-1 items-center md:flex" ref={dropdownRef}>
                 <div className="relative flex w-full items-center">
                   <Input
                     type="text"
@@ -156,27 +158,6 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                   <div className="absolute right-1 flex items-center gap-0.5">
-                    <AnimatePresence>
-                      {isScrolled && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ duration: 0.15 }}
-                          onMouseEnter={handleIconEnter}
-                          onMouseLeave={handleIconLeave}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-8 w-8 sm:h-9 sm:w-9 ${showCategoryDropdown ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                          >
-                            <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" />
-                            <span className="sr-only">Categories</span>
-                          </Button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -189,17 +170,47 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 </div>
 
                 <AnimatePresence>
+                  {/* Search results or other search-related dropdowns could go here */}
+                </AnimatePresence>
+              </div>
+
+              {/* ── Category Icon on Scroll ── */}
+              <div className="relative">
+                <AnimatePresence>
+                  {isScrolled && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex-shrink-0"
+                      onMouseEnter={handleIconEnter}
+                      onMouseLeave={handleIconLeave}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-9 w-9 sm:h-10 sm:w-10 ${showCategoryDropdown ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
+                      >
+                        <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6" />
+                        <span className="sr-only">Categories</span>
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
                   {showCategoryDropdown && isScrolled && (
                     <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+                      initial={{ opacity: 0, y: 10, x: 20 }}
+                      animate={{ opacity: 1, y: 0, x: 0 }}
+                      exit={{ opacity: 0, y: 10, x: 20 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="absolute right-0 top-full z-50 mt-2"
                       onMouseEnter={handleDropdownEnter}
                       onMouseLeave={handleDropdownLeave}
                     >
-                      <CategoryMenu variant="dropdown" onClose={() => setShowCategoryDropdown(false)} />
+                      <CategoryMenu variant="mega" onClose={() => setShowCategoryDropdown(false)} />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -215,19 +226,19 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
               <button
                 type="button"
                 onClick={handleCartClick}
-                className={`relative flex h-9 items-center gap-1.5 rounded-lg px-2.5 transition-colors sm:h-10 sm:px-3 ${
+                className={`relative flex h-9 items-center gap-1.5 rounded-lg px-2 sm:h-10 sm:px-3 ${
                   hydrated && totalItems > 0
-                    ? "bg-offer-green text-white hover:bg-offer-green/90"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "bg-offer-green text-white hover:bg-offer-green/90 border border-offer-green"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
                 }`}
               >
                 <ShoppingCart className="h-4 w-4 flex-shrink-0 sm:h-5 sm:w-5" />
                 {hydrated && totalItems > 0 ? (
-                  <span className="hidden flex-col items-start sm:flex">
-                    <span className="text-[10px] font-semibold leading-none">
-                      {totalItems} item{totalItems > 1 ? "s" : ""}
+                  <span className="flex flex-col items-start text-left">
+                    <span className="text-[9px] font-semibold leading-none sm:text-[10px]">
+                      {totalItems} {totalItems > 1 ? "items" : "item"}
                     </span>
-                    <span className="text-xs font-bold leading-none">
+                    <span className="text-[10px] font-bold leading-none sm:text-xs">
                       ₹{(totalPrice ?? 0).toFixed(0)}
                     </span>
                   </span>
@@ -239,6 +250,22 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
             )}
           </div>
         </div>
+
+        {/* ── Mobile Search Row ── */}
+        {!isCheckoutPage && (
+          <div className="px-3 pb-2 md:hidden">
+            <div className="relative flex w-full items-center">
+              <Input
+                type="text"
+                placeholder="Search for any delicious..."
+                className="h-9 rounded-lg border-border bg-muted/50 pl-3 pr-10 text-xs"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Search className="absolute right-3 h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        )}
 
         {/* Category bar — hides on scroll or on checkout */}
         {!isCheckoutPage && (
@@ -252,6 +279,8 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       </header>
 
       <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
+      {/* Spacer to prevent content from going under the fixed header */}
+      <div className={`${isScrolled ? "h-[60px] md:h-[72px]" : "h-[108px] md:h-[120px]"}`} />
     </>
   );
 }

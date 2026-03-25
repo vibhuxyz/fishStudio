@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
   Fish,
   Drumstick,
   Flame,
@@ -34,7 +35,7 @@ function getCategorySlug(cat: string) {
 }
 
 interface CategoryMenuProps {
-  variant?: "horizontal" | "dropdown";
+  variant?: "horizontal" | "dropdown" | "mega";
   onClose?: () => void;
 }
 
@@ -204,6 +205,88 @@ export function CategoryMenu({
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+    );
+  }
+
+  /* Mega variant (Grid layout) */
+  if (variant === "mega") {
+    return (
+      <div className="w-[850px] max-w-[95vw] p-6 bg-background rounded-xl overflow-hidden shadow-2xl border border-border">
+        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            Shop by Categories
+          </h2>
+          <p className="text-sm text-muted-foreground">Hover on a category to see more</p>
+        </div>
+        
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {categories.slice(0, 8).map((cat) => {
+            const subs = getSubCategories(cat);
+            return (
+              <div 
+                key={cat} 
+                className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-secondary/50"
+                onMouseEnter={() => openCategory(cat)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm group-hover:shadow-md">
+                    {categoryIcons[cat] || <Fish className="h-6 w-6" />}
+                  </div>
+                  <div>
+                    <Link
+                      href={`/category/${getCategorySlug(cat)}`}
+                      className="text-sm font-bold tracking-tight text-foreground group-hover:text-primary transition-colors"
+                      onClick={onClose}
+                    >
+                      {cat}
+                    </Link>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      {subs.length} items
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subcategories list that appears on hover */}
+                <div className="overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-40">
+                  <div className="flex flex-col gap-1 px-1 pt-2 border-t border-border/20">
+                    {subs.slice(0, 4).map((sub) => (
+                      <Link
+                        key={sub}
+                        href={`/category/${getCategorySlug(cat)}?sub=${encodeURIComponent(sub)}`}
+                        className="text-[11px] text-muted-foreground hover:text-primary transition-colors hover:translate-x-1 duration-200"
+                        onClick={onClose}
+                      >
+                        {sub}
+                      </Link>
+                    ))}
+                    {subs.length > 4 && (
+                      <Link
+                        href={`/category/${getCategorySlug(cat)}`}
+                        className="text-[10px] font-semibold text-primary/70 hover:text-primary mt-1"
+                        onClick={onClose}
+                      >
+                        + View {subs.length - 4} more
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-center">
+          <Link 
+            href="/categories" 
+            className="text-sm font-semibold text-primary hover:underline flex items-center gap-1 group"
+            onClick={onClose}
+          >
+            Explore All Categories 
+            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
       </div>
     );
   }
