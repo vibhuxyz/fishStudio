@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 import { ProductCard } from "@/components/shared/product-card";
-import { useProducts } from "@/hooks/useProducts"; // Reuse your main hook
-import type { Product } from "@repo/types";
+import { useProducts } from "@/hooks/useProducts";
+import { useCategories } from "@/hooks/useCategories";
+import { getCategoryConfigKey } from "@/lib/storefront";
+import { CategoryBanner } from "@/components/sections/category-banner";
 
-// Helper to format category names for display (e.g. "fresh-water" -> "Fresh Water")
-const formatCategoryName = (slug: string) => {
-  return slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
+const normalize = (str: string) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/[&\s\-_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 
 export default function CategoryPage({
   params,
@@ -33,60 +35,69 @@ export default function CategoryPage({
     initialSub || null,
   );
 
-  // 1. Fetch ALL products using your existing hook
-  const { allProducts, isLoading } = useProducts();
+  const { allProducts, isLoading: productsLoading } = useProducts();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
 
-  // 2. Decode the slug (e.g., "fresh-water")
+  const isLoading = productsLoading || categoriesLoading;
+
   const categorySlug = decodeURIComponent(slug);
 
-  // 3. Filter products that belong to this category based on the URL slug
+  // Find the real category name from the API by matching the slug
+  const matchedCategory = useMemo(() => {
+    return (categoriesData?.categories ?? []).find(
+      (cat) => normalize(cat) === normalize(categorySlug),
+    ) ?? null;
+  }, [categoriesData, categorySlug]);
+
+  // Use the real name if found, otherwise fall back to slug-based title
+  const categoryDisplayName = matchedCategory ?? categorySlug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+
+  // Subcategories from the API for this category
+  const apiSubCategories = useMemo(() => {
+    if (!matchedCategory || !categoriesData) return [];
+    const key = getCategoryConfigKey(matchedCategory);
+    return categoriesData.subCategories[key] ?? [];
+  }, [matchedCategory, categoriesData]);
+
+  // Filter products that belong to this category
   const categoryProducts = useMemo(() => {
     return allProducts.filter((p) => {
       if (!p.category) return false;
-
-      // Normalize both to compare
-      const normalize = (str: string) =>
-        str
-          .toLowerCase()
-          .trim()
-          .replace(/[&\s\-_]+/g, "-") // Handle spaces, ampersands, underscores, and hyphens consistently
-          .replace(/-+/g, "-") // Collapse multiple hyphens
-          .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-
-      const productCategorySlug = normalize(p.category);
-      const targetSlug = normalize(categorySlug);
-
-      return productCategorySlug === targetSlug;
+      return normalize(p.category) === normalize(categorySlug);
     });
   }, [allProducts, categorySlug]);
 
-  // 4. Derive unique subcategories from the filtered products
+  // Subcategories for the sidebar: API subs first, then any extra from products
   const subCategories = useMemo(() => {
-    const subs = new Set(categoryProducts.map((p) => p.subCategory));
-    return Array.from(subs).sort();
-  }, [categoryProducts]);
+    const productSubs = categoryProducts
+      .map((p) => p.subCategory)
+      .filter((s): s is string => Boolean(s));
+    const merged = new Set([...apiSubCategories, ...productSubs]);
+    return Array.from(merged);
+  }, [apiSubCategories, categoryProducts]);
 
-  // 5. Filter again based on the active subcategory (if selected)
+  // Products filtered by active subcategory
   const displayedProducts = useMemo(() => {
     if (!activeSubCategory) return categoryProducts;
     return categoryProducts.filter((p) => p.subCategory === activeSubCategory);
   }, [categoryProducts, activeSubCategory]);
 
-  const categoryDisplayName = formatCategoryName(categorySlug);
-
-  // Loading State
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
         <main className="flex flex-1 items-center justify-center">
-          <p>Loading products...</p>
+          <p>Loading...</p>
         </main>
       </div>
     );
   }
 
-  // 404 State - No products found for this category
-  if (categoryProducts.length === 0) {
+  // Only show "not found" when the category doesn't exist in the API at all
+  const categoryExists = matchedCategory !== null || categoryProducts.length > 0;
+  if (!categoryExists) {
     return (
       <div className="flex min-h-screen flex-col">
         <main className="flex flex-1 items-center justify-center">
@@ -95,7 +106,7 @@ export default function CategoryPage({
               Category Not Found
             </h1>
             <p className="mt-2 text-muted-foreground">
-              We couldn't find any products for "{categoryDisplayName}".
+              We couldn&apos;t find any products for &quot;{categoryDisplayName}&quot;.
             </p>
             <Link href="/">
               <Button className="mt-4 bg-transparent" variant="outline">
@@ -127,155 +138,180 @@ export default function CategoryPage({
             </h1>
             <p className="mt-2 text-muted-foreground">
               Browse our fresh selection of {categoryDisplayName.toLowerCase()}{" "}
-              products. {categoryProducts.length} products available.
+              products.{categoryProducts.length > 0 ? ` ${categoryProducts.length} products available.` : ""}
             </p>
           </div>
         </div>
 
         <div className="mx-auto max-w-7xl px-4 py-8">
+          {matchedCategory && <CategoryBanner category={matchedCategory} />}
           <div className="flex flex-col gap-8 lg:flex-row">
             {/* Subcategory Sidebar */}
-            <aside className="w-full flex-shrink-0 lg:w-60">
-              <div className="sticky top-24 rounded-xl border border-border bg-card p-4">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-card-foreground">
-                  <Filter className="h-4 w-4" />
-                  Subcategories
-                </h3>
-                <div className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1">
-                  {/* "All" button */}
-                  <button
-                    type="button"
-                    className={`rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
-                      activeSubCategory === null
-                        ? "bg-primary font-semibold text-primary-foreground"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                    onClick={() => setActiveSubCategory(null)}
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span>All</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {categoryProducts.length}
-                      </Badge>
-                    </span>
-                  </button>
+            {subCategories.length > 0 && (
+              <aside className="w-full flex-shrink-0 lg:w-60">
+                <div className="sticky top-24 rounded-xl border border-border bg-card p-4">
+                  <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-card-foreground">
+                    <Filter className="h-4 w-4" />
+                    Subcategories
+                  </h3>
+                  <div className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1">
+                    <button
+                      type="button"
+                      className={`rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                        activeSubCategory === null
+                          ? "bg-primary font-semibold text-primary-foreground"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                      onClick={() => setActiveSubCategory(null)}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span>All</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {categoryProducts.length}
+                        </Badge>
+                      </span>
+                    </button>
 
-                  {/* SubCategory buttons */}
-                  {subCategories.map((sub) => {
-                    const count = categoryProducts.filter(
-                      (p) => p.subCategory === sub,
-                    ).length;
-                    const isActive = activeSubCategory === sub;
-                    return (
-                      <button
-                        key={sub}
-                        type="button"
-                        className={`rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
-                          isActive
-                            ? "bg-primary font-semibold text-primary-foreground"
-                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                        }`}
-                        onClick={() => setActiveSubCategory(sub)}
-                      >
-                        <span className="flex items-center justify-between gap-2">
-                          <span>{sub}</span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {count}
-                          </Badge>
-                        </span>
-                      </button>
-                    );
-                  })}
+                    {subCategories.map((sub) => {
+                      const count = categoryProducts.filter(
+                        (p) => p.subCategory === sub,
+                      ).length;
+                      const isActive = activeSubCategory === sub;
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          className={`rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
+                            isActive
+                              ? "bg-primary font-semibold text-primary-foreground"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          }`}
+                          onClick={() => setActiveSubCategory(sub)}
+                        >
+                          <span className="flex items-center justify-between gap-2">
+                            <span>{sub}</span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {count}
+                            </Badge>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            </aside>
+              </aside>
+            )}
 
             {/* Product Grid */}
             <div className="flex-1">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Showing{" "}
-                  <span className="font-semibold text-foreground">
-                    {displayedProducts.length}
-                  </span>{" "}
-                  {activeSubCategory
-                    ? `products in "${activeSubCategory}"`
-                    : "products"}
-                </p>
-              </div>
-
-              {activeSubCategory ? (
-                // Filtered View
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeSubCategory}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
-                  >
-                    {displayedProducts.map((product, index) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        priority={index < 8}
-                        variant="compact"
-                      />
-                    ))}
-                  </motion.div>
-                </AnimatePresence>
-              ) : (
-                // "All" View - Grouped by Subcategory
-                <div className="flex flex-col gap-10">
-                  {subCategories.map((sub) => {
-                    const subProducts = categoryProducts.filter(
-                      (p) => p.subCategory === sub,
-                    );
-                    if (subProducts.length === 0) return null;
-                    return (
-                      <section key={sub}>
-                        <div className="mb-4 flex items-center justify-between">
-                          <h2 className="font-serif text-xl font-bold text-foreground">
-                            {sub}
-                          </h2>
-                          <button
-                            type="button"
-                            className="text-sm font-medium text-primary hover:underline"
-                            onClick={() => setActiveSubCategory(sub)}
-                          >
-                            View all ({subProducts.length})
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                          {subProducts.map((product, index) => (
-                            <ProductCard
-                              key={product.id}
-                              product={product}
-                              priority={index < 4}
-                              variant="compact"
-                            />
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  })}
-                </div>
-              )}
-
-              {displayedProducts.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
+              {categoryProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
                   <p className="text-lg font-semibold text-foreground">
-                    No products found
+                    No products available yet
                   </p>
-                  <Button
-                    variant="outline"
-                    className="mt-4 bg-transparent"
-                    onClick={() => setActiveSubCategory(null)}
-                  >
-                    View All
-                  </Button>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Check back soon for products in this category.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Showing{" "}
+                      <span className="font-semibold text-foreground">
+                        {displayedProducts.length}
+                      </span>{" "}
+                      {activeSubCategory
+                        ? `products in "${activeSubCategory}"`
+                        : "products"}
+                    </p>
+                  </div>
+
+                  {activeSubCategory ? (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeSubCategory}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
+                      >
+                        {displayedProducts.map((product, index) => (
+                          <ProductCard
+                            key={product.id}
+                            product={product}
+                            priority={index < 8}
+                            variant="compact"
+                          />
+                        ))}
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <div className="flex flex-col gap-10">
+                      {subCategories.length > 0
+                        ? subCategories.map((sub) => {
+                            const subProducts = categoryProducts.filter(
+                              (p) => p.subCategory === sub,
+                            );
+                            if (subProducts.length === 0) return null;
+                            return (
+                              <section key={sub}>
+                                <div className="mb-4 flex items-center justify-between">
+                                  <h2 className="font-serif text-xl font-bold text-foreground">
+                                    {sub}
+                                  </h2>
+                                  <button
+                                    type="button"
+                                    className="text-sm font-medium text-primary hover:underline"
+                                    onClick={() => setActiveSubCategory(sub)}
+                                  >
+                                    View all ({subProducts.length})
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                                  {subProducts.map((product, index) => (
+                                    <ProductCard
+                                      key={product.id}
+                                      product={product}
+                                      priority={index < 4}
+                                      variant="compact"
+                                    />
+                                  ))}
+                                </div>
+                              </section>
+                            );
+                          })
+                        : (
+                          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                            {categoryProducts.map((product, index) => (
+                              <ProductCard
+                                key={product.id}
+                                product={product}
+                                priority={index < 4}
+                                variant="compact"
+                              />
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {displayedProducts.length === 0 && activeSubCategory && (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <p className="text-lg font-semibold text-foreground">
+                        No products found
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="mt-4 bg-transparent"
+                        onClick={() => setActiveSubCategory(null)}
+                      >
+                        View All
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

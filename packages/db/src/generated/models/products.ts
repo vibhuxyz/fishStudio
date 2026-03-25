@@ -49,7 +49,6 @@ export type ProductsMinAggregateOutputType = {
   category: string | null
   subCategory: string | null
   short_description: string | null
-  detailed_description: string | null
   processingWeightLoss: string | null
   stock: number | null
   sale_price: number | null
@@ -74,7 +73,6 @@ export type ProductsMaxAggregateOutputType = {
   category: string | null
   subCategory: string | null
   short_description: string | null
-  detailed_description: string | null
   processingWeightLoss: string | null
   stock: number | null
   sale_price: number | null
@@ -99,10 +97,11 @@ export type ProductsCountAggregateOutputType = {
   category: number
   subCategory: number
   short_description: number
-  detailed_description: number
   tags: number
   sizes: number
   sizePricing: number
+  cuttingTypePricing: number
+  pieceSizePricing: number
   cuttingTypes: number
   pieceSizes: number
   processingWeightLoss: number
@@ -148,7 +147,6 @@ export type ProductsMinAggregateInputType = {
   category?: true
   subCategory?: true
   short_description?: true
-  detailed_description?: true
   processingWeightLoss?: true
   stock?: true
   sale_price?: true
@@ -173,7 +171,6 @@ export type ProductsMaxAggregateInputType = {
   category?: true
   subCategory?: true
   short_description?: true
-  detailed_description?: true
   processingWeightLoss?: true
   stock?: true
   sale_price?: true
@@ -198,10 +195,11 @@ export type ProductsCountAggregateInputType = {
   category?: true
   subCategory?: true
   short_description?: true
-  detailed_description?: true
   tags?: true
   sizes?: true
   sizePricing?: true
+  cuttingTypePricing?: true
+  pieceSizePricing?: true
   cuttingTypes?: true
   pieceSizes?: true
   processingWeightLoss?: true
@@ -316,10 +314,11 @@ export type ProductsGroupByOutputType = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags: string[]
   sizes: string[]
   sizePricing: runtime.JsonValue | null
+  cuttingTypePricing: runtime.JsonValue | null
+  pieceSizePricing: runtime.JsonValue | null
   cuttingTypes: string[]
   pieceSizes: string[]
   processingWeightLoss: string | null
@@ -370,10 +369,11 @@ export type productsWhereInput = {
   category?: Prisma.StringFilter<"products"> | string
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
-  detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
   sizes?: Prisma.StringNullableListFilter<"products">
   sizePricing?: Prisma.JsonNullableFilter<"products">
+  cuttingTypePricing?: Prisma.JsonNullableFilter<"products">
+  pieceSizePricing?: Prisma.JsonNullableFilter<"products">
   cuttingTypes?: Prisma.StringNullableListFilter<"products">
   pieceSizes?: Prisma.StringNullableListFilter<"products">
   processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
@@ -408,10 +408,11 @@ export type productsOrderByWithRelationInput = {
   category?: Prisma.SortOrder
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
-  detailed_description?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
   sizePricing?: Prisma.SortOrder
+  cuttingTypePricing?: Prisma.SortOrder
+  pieceSizePricing?: Prisma.SortOrder
   cuttingTypes?: Prisma.SortOrder
   pieceSizes?: Prisma.SortOrder
   processingWeightLoss?: Prisma.SortOrder
@@ -449,10 +450,11 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   category?: Prisma.StringFilter<"products"> | string
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
-  detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
   sizes?: Prisma.StringNullableListFilter<"products">
   sizePricing?: Prisma.JsonNullableFilter<"products">
+  cuttingTypePricing?: Prisma.JsonNullableFilter<"products">
+  pieceSizePricing?: Prisma.JsonNullableFilter<"products">
   cuttingTypes?: Prisma.StringNullableListFilter<"products">
   pieceSizes?: Prisma.StringNullableListFilter<"products">
   processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
@@ -487,10 +489,11 @@ export type productsOrderByWithAggregationInput = {
   category?: Prisma.SortOrder
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
-  detailed_description?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
   sizePricing?: Prisma.SortOrder
+  cuttingTypePricing?: Prisma.SortOrder
+  pieceSizePricing?: Prisma.SortOrder
   cuttingTypes?: Prisma.SortOrder
   pieceSizes?: Prisma.SortOrder
   processingWeightLoss?: Prisma.SortOrder
@@ -526,10 +529,11 @@ export type productsScalarWhereWithAggregatesInput = {
   category?: Prisma.StringWithAggregatesFilter<"products"> | string
   subCategory?: Prisma.StringWithAggregatesFilter<"products"> | string
   short_description?: Prisma.StringWithAggregatesFilter<"products"> | string
-  detailed_description?: Prisma.StringWithAggregatesFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
   sizes?: Prisma.StringNullableListFilter<"products">
   sizePricing?: Prisma.JsonNullableWithAggregatesFilter<"products">
+  cuttingTypePricing?: Prisma.JsonNullableWithAggregatesFilter<"products">
+  pieceSizePricing?: Prisma.JsonNullableWithAggregatesFilter<"products">
   cuttingTypes?: Prisma.StringNullableListFilter<"products">
   pieceSizes?: Prisma.StringNullableListFilter<"products">
   processingWeightLoss?: Prisma.StringNullableWithAggregatesFilter<"products"> | string | null
@@ -557,10 +561,11 @@ export type productsCreateInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -592,10 +597,11 @@ export type productsUncheckedCreateInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -626,10 +632,11 @@ export type productsUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -660,10 +667,11 @@ export type productsUncheckedUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -695,10 +703,11 @@ export type productsCreateManyInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -725,10 +734,11 @@ export type productsUpdateManyMutationInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -752,10 +762,11 @@ export type productsUncheckedUpdateManyInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -803,10 +814,11 @@ export type productsCountOrderByAggregateInput = {
   category?: Prisma.SortOrder
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
-  detailed_description?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   sizes?: Prisma.SortOrder
   sizePricing?: Prisma.SortOrder
+  cuttingTypePricing?: Prisma.SortOrder
+  pieceSizePricing?: Prisma.SortOrder
   cuttingTypes?: Prisma.SortOrder
   pieceSizes?: Prisma.SortOrder
   processingWeightLoss?: Prisma.SortOrder
@@ -842,7 +854,6 @@ export type productsMaxOrderByAggregateInput = {
   category?: Prisma.SortOrder
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
-  detailed_description?: Prisma.SortOrder
   processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
@@ -867,7 +878,6 @@ export type productsMinOrderByAggregateInput = {
   category?: Prisma.SortOrder
   subCategory?: Prisma.SortOrder
   short_description?: Prisma.SortOrder
-  detailed_description?: Prisma.SortOrder
   processingWeightLoss?: Prisma.SortOrder
   stock?: Prisma.SortOrder
   sale_price?: Prisma.SortOrder
@@ -1153,10 +1163,11 @@ export type productsCreateWithoutAdminInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1187,10 +1198,11 @@ export type productsUncheckedCreateWithoutAdminInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1249,10 +1261,11 @@ export type productsScalarWhereInput = {
   category?: Prisma.StringFilter<"products"> | string
   subCategory?: Prisma.StringFilter<"products"> | string
   short_description?: Prisma.StringFilter<"products"> | string
-  detailed_description?: Prisma.StringFilter<"products"> | string
   tags?: Prisma.StringNullableListFilter<"products">
   sizes?: Prisma.StringNullableListFilter<"products">
   sizePricing?: Prisma.JsonNullableFilter<"products">
+  cuttingTypePricing?: Prisma.JsonNullableFilter<"products">
+  pieceSizePricing?: Prisma.JsonNullableFilter<"products">
   cuttingTypes?: Prisma.StringNullableListFilter<"products">
   pieceSizes?: Prisma.StringNullableListFilter<"products">
   processingWeightLoss?: Prisma.StringNullableFilter<"products"> | string | null
@@ -1280,10 +1293,11 @@ export type productsCreateWithoutImagesInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1314,10 +1328,11 @@ export type productsUncheckedCreateWithoutImagesInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1363,10 +1378,11 @@ export type productsUpdateWithoutImagesInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1396,10 +1412,11 @@ export type productsUncheckedUpdateWithoutImagesInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1430,10 +1447,11 @@ export type productsCreateWithoutStoreInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1464,10 +1482,11 @@ export type productsUncheckedCreateWithoutStoreInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1523,10 +1542,11 @@ export type productsCreateWithoutFavoritesInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1557,10 +1577,11 @@ export type productsUncheckedCreateWithoutFavoritesInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1606,10 +1627,11 @@ export type productsUpdateWithoutFavoritesInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1639,10 +1661,11 @@ export type productsUncheckedUpdateWithoutFavoritesInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1673,10 +1696,11 @@ export type productsCreateWithoutStoreVariantsInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1707,10 +1731,11 @@ export type productsUncheckedCreateWithoutStoreVariantsInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1746,10 +1771,11 @@ export type productsCreateWithoutCatalogProductInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1780,10 +1806,11 @@ export type productsUncheckedCreateWithoutCatalogProductInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1833,10 +1860,11 @@ export type productsUpdateWithoutStoreVariantsInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1866,10 +1894,11 @@ export type productsUncheckedUpdateWithoutStoreVariantsInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1916,10 +1945,11 @@ export type productsCreateWithoutOrderItemsInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1950,10 +1980,11 @@ export type productsUncheckedCreateWithoutOrderItemsInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -1999,10 +2030,11 @@ export type productsUpdateWithoutOrderItemsInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2032,10 +2064,11 @@ export type productsUncheckedUpdateWithoutOrderItemsInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2066,10 +2099,11 @@ export type productsCreateManyAdminInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -2095,10 +2129,11 @@ export type productsUpdateWithoutAdminInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2128,10 +2163,11 @@ export type productsUncheckedUpdateWithoutAdminInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2161,10 +2197,11 @@ export type productsUncheckedUpdateManyWithoutAdminInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2191,10 +2228,11 @@ export type productsCreateManyStoreInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -2220,10 +2258,11 @@ export type productsUpdateWithoutStoreInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2253,10 +2292,11 @@ export type productsUncheckedUpdateWithoutStoreInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2286,10 +2326,11 @@ export type productsUncheckedUpdateManyWithoutStoreInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2316,10 +2357,11 @@ export type productsCreateManyCatalogProductInput = {
   category: string
   subCategory: string
   short_description: string
-  detailed_description: string
   tags?: Prisma.productsCreatetagsInput | string[]
   sizes?: Prisma.productsCreatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsCreatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsCreatepieceSizesInput | string[]
   processingWeightLoss?: string | null
@@ -2345,10 +2387,11 @@ export type productsUpdateWithoutCatalogProductInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2378,10 +2421,11 @@ export type productsUncheckedUpdateWithoutCatalogProductInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2411,10 +2455,11 @@ export type productsUncheckedUpdateManyWithoutCatalogProductInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   subCategory?: Prisma.StringFieldUpdateOperationsInput | string
   short_description?: Prisma.StringFieldUpdateOperationsInput | string
-  detailed_description?: Prisma.StringFieldUpdateOperationsInput | string
   tags?: Prisma.productsUpdatetagsInput | string[]
   sizes?: Prisma.productsUpdatesizesInput | string[]
   sizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  cuttingTypePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
+  pieceSizePricing?: runtime.InputJsonValue | runtime.InputJsonValue | null
   cuttingTypes?: Prisma.productsUpdatecuttingTypesInput | string[]
   pieceSizes?: Prisma.productsUpdatepieceSizesInput | string[]
   processingWeightLoss?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2499,10 +2544,11 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   category?: boolean
   subCategory?: boolean
   short_description?: boolean
-  detailed_description?: boolean
   tags?: boolean
   sizes?: boolean
   sizePricing?: boolean
+  cuttingTypePricing?: boolean
+  pieceSizePricing?: boolean
   cuttingTypes?: boolean
   pieceSizes?: boolean
   processingWeightLoss?: boolean
@@ -2540,10 +2586,11 @@ export type productsSelectScalar = {
   category?: boolean
   subCategory?: boolean
   short_description?: boolean
-  detailed_description?: boolean
   tags?: boolean
   sizes?: boolean
   sizePricing?: boolean
+  cuttingTypePricing?: boolean
+  pieceSizePricing?: boolean
   cuttingTypes?: boolean
   pieceSizes?: boolean
   processingWeightLoss?: boolean
@@ -2564,7 +2611,7 @@ export type productsSelectScalar = {
   catalogProductId?: boolean
 }
 
-export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "detailed_description" | "tags" | "sizes" | "sizePricing" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "stock" | "sale_price" | "regular_price" | "totalSold" | "ratings" | "cashOnDelivery" | "discount_codes" | "status" | "isDeleted" | "deletedAt" | "createdAt" | "updatedAt" | "storeId" | "adminId" | "catalogProductId", ExtArgs["result"]["products"]>
+export type productsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "slug" | "category" | "subCategory" | "short_description" | "tags" | "sizes" | "sizePricing" | "cuttingTypePricing" | "pieceSizePricing" | "cuttingTypes" | "pieceSizes" | "processingWeightLoss" | "stock" | "sale_price" | "regular_price" | "totalSold" | "ratings" | "cashOnDelivery" | "discount_codes" | "status" | "isDeleted" | "deletedAt" | "createdAt" | "updatedAt" | "storeId" | "adminId" | "catalogProductId", ExtArgs["result"]["products"]>
 export type productsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   images?: boolean | Prisma.products$imagesArgs<ExtArgs>
   favorites?: boolean | Prisma.products$favoritesArgs<ExtArgs>
@@ -2594,10 +2641,11 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     category: string
     subCategory: string
     short_description: string
-    detailed_description: string
     tags: string[]
     sizes: string[]
     sizePricing: runtime.JsonValue | null
+    cuttingTypePricing: runtime.JsonValue | null
+    pieceSizePricing: runtime.JsonValue | null
     cuttingTypes: string[]
     pieceSizes: string[]
     processingWeightLoss: string | null
@@ -3021,10 +3069,11 @@ export interface productsFieldRefs {
   readonly category: Prisma.FieldRef<"products", 'String'>
   readonly subCategory: Prisma.FieldRef<"products", 'String'>
   readonly short_description: Prisma.FieldRef<"products", 'String'>
-  readonly detailed_description: Prisma.FieldRef<"products", 'String'>
   readonly tags: Prisma.FieldRef<"products", 'String[]'>
   readonly sizes: Prisma.FieldRef<"products", 'String[]'>
   readonly sizePricing: Prisma.FieldRef<"products", 'Json'>
+  readonly cuttingTypePricing: Prisma.FieldRef<"products", 'Json'>
+  readonly pieceSizePricing: Prisma.FieldRef<"products", 'Json'>
   readonly cuttingTypes: Prisma.FieldRef<"products", 'String[]'>
   readonly pieceSizes: Prisma.FieldRef<"products", 'String[]'>
   readonly processingWeightLoss: Prisma.FieldRef<"products", 'String'>

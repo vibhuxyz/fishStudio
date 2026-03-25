@@ -48,9 +48,14 @@ export const ENV = {
     process.env.IMAGEKIT_URL_ENDPOINT,
   ),
 
+  USER_UI_URL: logEnv("USER_UI_URL", process.env.USER_UI_URL || "http://localhost:3000"),
+  ADMIN_UI_URL: logEnv("ADMIN_UI_URL", process.env.ADMIN_UI_URL || "http://localhost:3001"),
+  SELLER_UI_URL: logEnv("SELLER_UI_URL", process.env.SELLER_UI_URL || "http://localhost:3002"),
+
   CORS_ORIGINS: logEnv(
     "CORS_ORIGINS",
-    process.env.CORS_ORIGINS || "http://localhost:3000 , http://localhost:3001",
+    process.env.CORS_ORIGINS || 
+    `${process.env.USER_UI_URL || "http://localhost:3000"},${process.env.ADMIN_UI_URL || "http://localhost:3001"},${process.env.SELLER_UI_URL || "http://localhost:3002"}`,
   ),
   AUTH_SERVICE_URL: logEnv(
     "AUTH_SERVICE_URL",
@@ -73,6 +78,7 @@ export const ENV = {
   SMTP_SERVICE: logEnv("SMTP_SERVICE", process.env.SMTP_SERVICE),
   SMTP_USER: logEnv("SMTP_USER", process.env.SMTP_USER),
   SMTP_PASS: logEnv("SMTP_PASS", process.env.SMTP_PASS),
+  SMTP_SENDER: logEnv("SMTP_SENDER", process.env.SMTP_SENDER || process.env.SMTP_USER),
 
   // Auth
   ACCESS_TOKEN_JWT_SECRET_KEY: logEnv(

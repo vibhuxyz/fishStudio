@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useMutation,
@@ -9,7 +10,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, Search, X } from "lucide-react";
+import { Eye, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import BreadCrumbs from "@/shared/components/breadcrumbs";
@@ -24,7 +25,6 @@ type CatalogProduct = {
   category: string;
   subCategory: string;
   short_description: string;
-  detailed_description: string;
   tags: string[];
   sizes: string[];
   images: Array<{ url?: string | null }>;
@@ -50,11 +50,12 @@ type SellerCatalogFormValues = {
   stock: number;
   cash_on_delivery: "yes" | "no";
   short_description: string;
-  detailed_description: string;
   tags: string;
-  status: "Active" | "Draft" | "Pending";
+  status: "Active" | "NonActive";
   discountCodes: string[];
   sizePricing: SizePricingRow[];
+  regular_price: number;
+  sale_price: number;
 };
 
 const parseWeightToGrams = (size: string) => {
@@ -72,6 +73,7 @@ const buildSizePricingRows = (sizes: string[]): SizePricingRow[] =>
     regularPrice: 0,
     salePrice: 0,
   }));
+
 
 const fetchCatalogProducts = async (): Promise<CatalogProduct[]> => {
   const res = await axiosInstance.get("/product/api/get-catalog-products", isProtected);
@@ -128,11 +130,12 @@ const Page = () => {
         stock: 100,
         cash_on_delivery: "yes",
         short_description: "",
-        detailed_description: "",
         tags: "",
         status: "Active",
         discountCodes: [],
         sizePricing: [],
+        regular_price: 0,
+        sale_price: 0,
       },
     });
 
@@ -170,23 +173,33 @@ const Page = () => {
       stock: 100,
       cash_on_delivery: "yes",
       short_description: product.short_description || "",
-      detailed_description: product.detailed_description || "",
       tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
       status: "Active",
       discountCodes: [],
       sizePricing: buildSizePricingRows(product.sizes || []),
+      regular_price: 0,
+      sale_price: 0,
     });
   };
 
   const onSubmit = (values: SellerCatalogFormValues) => {
     if (!selectedProduct) return;
-    const hasInvalidPricing = values.sizePricing.some(
-      (entry) => entry.weightGrams <= 0 || entry.salePrice <= 0,
-    );
 
-    if (hasInvalidPricing) {
-      toast.error("Add a valid weight and sale price for each size.");
-      return;
+    const hasSizes = (selectedProduct.sizes || []).length > 0;
+
+    if (hasSizes) {
+      const hasInvalidPricing = values.sizePricing.some(
+        (entry) => entry.weightGrams <= 0 || entry.salePrice <= 0,
+      );
+      if (hasInvalidPricing) {
+        toast.error("Add a valid weight and sale price for each size.");
+        return;
+      }
+    } else {
+      if (!values.sale_price || values.sale_price <= 0) {
+        toast.error("Add a valid sale price.");
+        return;
+      }
     }
 
     addMutation.mutate({
@@ -267,15 +280,29 @@ const Page = () => {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  disabled={product.alreadyAdded}
-                  onClick={() => openConfigureModal(product)}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-700"
-                >
-                  <Plus size={16} />
-                  {product.alreadyAdded ? "Already In Shop" : "Configure And Add"}
-                </button>
+                {product.alreadyAdded ? (
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 rounded-lg bg-slate-700 px-4 py-2 text-center text-sm text-slate-300">
+                      Already In Shop
+                    </span>
+                    <Link
+                      href={`/dashboard/products/${product.sellerProductId}`}
+                      className="flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-white transition hover:bg-emerald-700"
+                    >
+                      <Eye size={16} />
+                      View
+                    </Link>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => openConfigureModal(product)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+                  >
+                    <Plus size={16} />
+                    Configure And Add
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -353,125 +380,134 @@ const Page = () => {
                   className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 >
                   <option value="Active" className="bg-slate-950">
-                    Active
+                    Active – Ready to sell
                   </option>
-                  <option value="Draft" className="bg-slate-950">
-                    Draft
-                  </option>
-                  <option value="Pending" className="bg-slate-950">
-                    Pending
+                  <option value="NonActive" className="bg-slate-950">
+                    Non-Active – Coming Soon
                   </option>
                 </select>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="mb-2 block text-sm text-slate-300">
-                  Size-Based Pricing
-                </label>
-                <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                  {selectedSizePricing.map((entry, index) => (
-                    <div
-                      key={entry.size}
-                      className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-white">{entry.size}</p>
-                        <p className="text-xs text-slate-500">
-                          Price will be used for {entry.weightGrams || "selected"} gm
-                        </p>
+              {selectedSizePricing.length > 0 ? (
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm text-slate-300">
+                    Size-Based Pricing
+                  </label>
+                  <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                    {selectedSizePricing.map((entry, index) => (
+                      <div
+                        key={entry.size}
+                        className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-white">{entry.size}</p>
+                          <p className="text-xs text-slate-500">
+                            {entry.weightGrams || "—"} gm
+                          </p>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">
+                            Weight (gm)
+                          </label>
+                          <input
+                            type="number"
+                            value={entry.weightGrams ?? 0}
+                            onChange={(event) => {
+                              const nextRows = [...selectedSizePricing];
+                              nextRows[index] = {
+                                ...entry,
+                                weightGrams: Number(event.target.value || 0),
+                              };
+                              setValue("sizePricing", nextRows, { shouldDirty: true });
+                            }}
+                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">
+                            Regular Price
+                          </label>
+                          <input
+                            type="number"
+                            value={entry.regularPrice ?? 0}
+                            onChange={(event) => {
+                              const nextRows = [...selectedSizePricing];
+                              nextRows[index] = {
+                                ...entry,
+                                regularPrice: Number(event.target.value || 0),
+                              };
+                              setValue("sizePricing", nextRows, { shouldDirty: true });
+                            }}
+                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">
+                            Sale Price
+                          </label>
+                          <input
+                            type="number"
+                            value={entry.salePrice ?? 0}
+                            onChange={(event) => {
+                              const nextRows = [...selectedSizePricing];
+                              nextRows[index] = {
+                                ...entry,
+                                salePrice: Number(event.target.value || 0),
+                              };
+                              setValue("sizePricing", nextRows, { shouldDirty: true });
+                            }}
+                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label className="mb-1 block text-xs text-slate-400">
-                          Weight (gm)
-                        </label>
-                        <input
-                          type="number"
-                          value={entry.weightGrams ?? 0}
-                          onChange={(event) => {
-                            const nextRows = [...selectedSizePricing];
-                            nextRows[index] = {
-                              ...entry,
-                              weightGrams: Number(event.target.value || 0),
-                            };
-                            setValue("sizePricing", nextRows, {
-                              shouldDirty: true,
-                            });
-                          }}
-                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-xs text-slate-400">
-                          Regular Price
-                        </label>
-                        <input
-                          type="number"
-                          value={entry.regularPrice ?? 0}
-                          onChange={(event) => {
-                            const nextRows = [...selectedSizePricing];
-                            nextRows[index] = {
-                              ...entry,
-                              regularPrice: Number(event.target.value || 0),
-                            };
-                            setValue("sizePricing", nextRows, {
-                              shouldDirty: true,
-                            });
-                          }}
-                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1 block text-xs text-slate-400">
-                          Sale Price
-                        </label>
-                        <input
-                          type="number"
-                          value={entry.salePrice ?? 0}
-                          onChange={(event) => {
-                            const nextRows = [...selectedSizePricing];
-                            nextRows[index] = {
-                              ...entry,
-                              salePrice: Number(event.target.value || 0),
-                            };
-                            setValue("sizePricing", nextRows, {
-                              shouldDirty: true,
-                            });
-                          }}
-                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">Regular Price</label>
+                    <input
+                      type="number"
+                      {...register("regular_price", { valueAsNumber: true })}
+                      className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">Sale Price</label>
+                    <input
+                      type="number"
+                      {...register("sale_price", { valueAsNumber: true })}
+                      className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-300">
                   Short Description
+                  <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">locked</span>
                 </label>
                 <textarea
                   rows={3}
-                  {...register("short_description")}
-                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  value={selectedProduct?.short_description || ""}
+                  readOnly
+                  tabIndex={-1}
+                  className="w-full cursor-default select-none rounded-md border border-slate-800 bg-slate-900/30 px-3 py-2 text-slate-500 outline-none pointer-events-none resize-none"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm text-slate-300">
-                  Detailed Description
+                  Tags
+                  <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">locked</span>
                 </label>
-                <textarea
-                  rows={5}
-                  {...register("detailed_description")}
-                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm text-slate-300">Tags</label>
                 <input
-                  {...register("tags")}
-                  className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  value={Array.isArray(selectedProduct?.tags) ? selectedProduct.tags.join(", ") : ""}
+                  readOnly
+                  tabIndex={-1}
+                  className="w-full cursor-default select-none rounded-md border border-slate-800 bg-slate-900/30 px-3 py-2 text-slate-500 outline-none pointer-events-none"
                 />
               </div>
 

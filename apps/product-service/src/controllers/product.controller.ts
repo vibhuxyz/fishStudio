@@ -28,11 +28,11 @@ const getSellerDiscountOwnerData = (req: AuthRequest) => {
 
 const getOwnedProductFilter = (req: AuthRequest) => {
   if (req.role === "admin" && req.admin?.id) {
-    return { adminId: req.admin.id };
+    return { adminId: req.admin.id, isDeleted: false };
   }
 
   if (req.role === "seller" && req.seller?.store?.id) {
-    return { storeId: req.seller.store.id };
+    return { storeId: req.seller.store.id, isDeleted: false };
   }
 
   throw new ValidationError("Only admin or seller can manage products!");
@@ -275,6 +275,48 @@ const getDisplayPricesFromSizePricing = (
   };
 };
 
+const normalizeCuttingTypePricing = (
+  value: unknown,
+  allowedTypes: string[],
+): { cuttingType: string; salePrice: number; regularPrice: number }[] => {
+  if (!Array.isArray(allowedTypes) || allowedTypes.length === 0) return [];
+
+  const incoming = Array.isArray(value) ? value : [];
+  const map = new Map(
+    incoming.map((entry: any) => [entry?.cuttingType, entry]),
+  );
+
+  return allowedTypes.map((cuttingType) => {
+    const entry = map.get(cuttingType);
+    return {
+      cuttingType,
+      salePrice: Number(entry?.salePrice ?? 0),
+      regularPrice: Number(entry?.regularPrice ?? 0),
+    };
+  });
+};
+
+const normalizePieceSizePricing = (
+  value: unknown,
+  allowedPieceSizes: string[],
+): { pieceSize: string; salePrice: number; regularPrice: number }[] => {
+  if (!Array.isArray(allowedPieceSizes) || allowedPieceSizes.length === 0) return [];
+
+  const incoming = Array.isArray(value) ? value : [];
+  const map = new Map(
+    incoming.map((entry: any) => [entry?.pieceSize, entry]),
+  );
+
+  return allowedPieceSizes.map((pieceSize) => {
+    const entry = map.get(pieceSize);
+    return {
+      pieceSize,
+      salePrice: Number(entry?.salePrice ?? 0),
+      regularPrice: Number(entry?.regularPrice ?? 0),
+    };
+  });
+};
+
 const getRequiredParam = (
   value: string | string[] | undefined,
   label: string,
@@ -387,8 +429,10 @@ export const getCategories = async (
     const config = await prisma.site_config.findFirst();
 
     if (!config) {
-      return res.status(404).json({
-        message: "Categories not found!",
+      return res.status(200).json({
+        success: true,
+        categories: [],
+        subCategories: {},
       });
     }
 
@@ -558,7 +602,13 @@ export const createDiscountCodes = async (
   next: NextFunction,
 ) => {
   try {
-    const { public_name, discountType, discountValue, discountCode, minOrderValue } = req.body;
+    const {
+      public_name,
+      discountType,
+      discountValue,
+      discountCode,
+      minOrderValue,
+    } = req.body;
 
     if (!public_name || !discountType || !discountValue || !discountCode) {
       return next(new ValidationError("All fields are required"));
@@ -932,7 +982,7 @@ export const uploadBanner = async (
   next: NextFunction,
 ) => {
   try {
-    const { fileName, images } = req.body;
+    const { fileName, images, category } = req.body;
     const sellerId = req.seller?.id;
     const adminId = req.admin?.id;
 
@@ -952,17 +1002,19 @@ export const uploadBanner = async (
       );
     }
 
-    if (sellerId) {
+    if (sellerId && category) {
       const existingBannerCount = await prisma.banners.count({
         where: {
           sellerId,
+          category,
+          status: { not: "REJECTED" }, // Active or pending
         },
       });
 
       if (existingBannerCount + imageList.length > 3) {
         return next(
           new ValidationError(
-            `A seller can upload a maximum of 3 banners. You already have ${existingBannerCount}.`,
+            `A seller can upload a maximum of 3 banners per category. You already have ${existingBannerCount} for ${category}.`,
           ),
         );
       }
@@ -972,30 +1024,28 @@ export const uploadBanner = async (
     for (const img of imageList) {
       let imageUrl, fileId;
 
-      if (adminId) {
-        const cloudFolder = `${ENV.CLOUDINARY_FOLDER || "wallet-app"}/banners`;
-        const response = await cloudinary.uploader.upload(img, {
-          folder: cloudFolder,
-          resource_type: "auto",
-        });
-        imageUrl = response.secure_url;
-        fileId = response.public_id;
-      } else {
-        const response = await imagekit.upload({
-          file: img,
-          fileName: `banner-${sellerId}-${Date.now()}.jpg`,
-          folder: "/banners",
-        });
-        imageUrl = response.url;
-        fileId = response.fileId;
-      }
+      // Dynamic folder logic: homepage or category-specific
+      const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
+      const cloudFolder = category 
+        ? `${baseFolder}/category/${category}/images` 
+        : `${baseFolder}/homepage`;
+
+      const response = await cloudinary.uploader.upload(img, {
+        folder: cloudFolder,
+        resource_type: "auto",
+      });
+      imageUrl = response.secure_url;
+      fileId = response.public_id;
 
       const newBanner = await prisma.banners.create({
         data: {
           imageUrl,
           fileId,
+          category: category || null,
           sellerId: sellerId || undefined,
           adminId: adminId || undefined,
+          status: adminId ? "APPROVED" : "PENDING",
+          isActive: adminId ? true : false,
         },
       });
       createdBanners.push(newBanner);
@@ -1044,8 +1094,8 @@ export const updateBanner = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can update banners!"));
+    if (req.role !== "seller" && req.role !== "admin") {
+      return next(new ValidationError("Only seller or admin can update banners!"));
     }
 
     const bannerId = getRequiredParam(req.params.bannerId, "Banner id");
@@ -1058,6 +1108,7 @@ export const updateBanner = async (
       select: {
         id: true,
         sellerId: true,
+        category: true,
       },
     });
 
@@ -1065,7 +1116,7 @@ export const updateBanner = async (
       return next(new NotFoundError("Banner not found!"));
     }
 
-    if (existingBanner.sellerId !== req.seller.id) {
+    if (req.role === "seller" && existingBanner.sellerId !== req.seller?.id) {
       return next(
         new ValidationError("You are not authorized to update this banner!"),
       );
@@ -1078,14 +1129,18 @@ export const updateBanner = async (
     }
 
     if (fileName) {
-      const response = await imagekit.upload({
-        file: fileName,
-        fileName: `banner-${req.seller.id}-${Date.now()}.jpg`,
-        folder: "/banners",
+      const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
+      const cloudFolder = existingBanner.category 
+        ? `${baseFolder}/category/${existingBanner.category}/images` 
+        : `${baseFolder}/homepage`;
+
+      const response = await cloudinary.uploader.upload(fileName, {
+        folder: cloudFolder,
+        resource_type: "auto",
       });
 
-      updateData.imageUrl = response.url;
-      updateData.fileId = response.fileId;
+      updateData.imageUrl = response.secure_url;
+      updateData.fileId = response.public_id;
     }
 
     const banner = await prisma.banners.update({
@@ -1111,8 +1166,8 @@ export const deleteBanner = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can delete banners!"));
+    if (req.role !== "seller" && req.role !== "admin") {
+      return next(new ValidationError("Only seller or admin can delete banners!"));
     }
 
     const bannerId = getRequiredParam(req.params.bannerId, "Banner id");
@@ -1135,6 +1190,7 @@ export const deleteBanner = async (
     // Delete from Cloudinary if fileId exists
     if (existingBanner.fileId) {
       try {
+        // Since we are moving to Cloudinary for all banners
         await cloudinary.uploader.destroy(existingBanner.fileId);
       } catch (err) {
         console.error("Cloudinary deletion failed for banner", err);
@@ -1156,40 +1212,19 @@ export const deleteBanner = async (
   }
 };
 
-// // GET BANNERS (Public)
-export const getActiveBanners = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const banners = await prisma.banners.findMany({
-      where: { isActive: true },
-      orderBy: [{ sellerId: "asc" }, { createdAt: "asc" }],
-    });
-
-    res.status(200).json({
-      success: true,
-      banners: interleaveBanners(banners),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const getAdminBanners = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "admin" || !req.admin?.id) {
-      return next(new ValidationError("Only admin can view these banners!"));
+    if (req.role !== "admin") {
+      return next(new ValidationError("Only admin can view all banners!"));
     }
 
     const banners = await prisma.banners.findMany({
       where: {
-        adminId: req.admin.id,
+        adminId: { not: null },
       },
       orderBy: {
         createdAt: "desc",
@@ -1202,6 +1237,183 @@ export const getAdminBanners = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+export const getAllCategoryBanners = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (req.role !== "admin") {
+      return next(new ValidationError("Only admin can view all banners!"));
+    }
+
+    const banners = await prisma.banners.findMany({
+      where: {
+        category: {
+          not: null,
+        },
+      },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            store: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      banners,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getPendingBanners = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (req.role !== "admin") {
+      return next(new ValidationError("Only admin can view pending banners!"));
+    }
+
+    const banners = await prisma.banners.findMany({
+      where: {
+        status: "PENDING",
+      },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            store: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      banners,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const reviewBanner = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    if (req.role !== "admin") {
+      return next(new ValidationError("Only admin can review banners!"));
+    }
+
+    const { bannerId, action, rejectionReason } = req.body;
+
+    if (!bannerId || !action) {
+      return next(new ValidationError("Banner ID and action are required"));
+    }
+
+    const banner = await prisma.banners.findUnique({
+      where: { id: bannerId },
+    });
+
+    if (!banner) {
+      return next(new NotFoundError("Banner not found"));
+    }
+
+    if (action === "APPROVE") {
+      await prisma.banners.update({
+        where: { id: bannerId },
+        data: {
+          status: "APPROVED",
+          isActive: true,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Banner approved successfully",
+      });
+    } else if (action === "REJECT") {
+      // Delete from Cloudinary
+      if (banner.fileId) {
+        try {
+          await cloudinary.uploader.destroy(banner.fileId);
+        } catch (err) {
+          console.error("Cloudinary deletion failed during rejection", err);
+        }
+      }
+
+      // Delete from DB as per request: "if he rejected that banner then that will be deleted"
+      await prisma.banners.delete({
+        where: { id: bannerId },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Banner rejected and deleted successfully",
+      });
+    } else {
+      return next(new ValidationError("Invalid review action"));
+    }
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// // GET BANNERS (Public)
+export const getActiveBanners = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { category } = req.query;
+
+    const banners = await prisma.banners.findMany({
+      where: {
+        isActive: true,
+        status: "APPROVED",
+        category: category ? String(category) : null,
+      },
+      orderBy: [{ sellerId: "asc" }, { createdAt: "asc" }],
+    });
+
+    res.status(200).json({
+      success: true,
+      banners: interleaveBanners(banners),
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -1243,7 +1455,7 @@ export const uploadCloudinaryImage = async (
   next: NextFunction,
 ) => {
   try {
-    const { images, fileName, folder = "products", productTitle } = req.body;
+    const { images, fileName, folder = "products", productTitle, category } = req.body;
 
     // Support both single 'fileName' (for backward compat) and multiple 'images'
     const imageList = Array.isArray(images)
@@ -1262,13 +1474,19 @@ export const uploadCloudinaryImage = async (
       : "products";
 
     // Create subfolder for products based on title
-    let cloudFolder = `${ENV.CLOUDINARY_FOLDER || "wallet-app"}/${targetBaseFolder}`;
+    let cloudFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/${targetBaseFolder}`;
     if (targetBaseFolder === "products" && productTitle) {
       const safeTitle = productTitle
         .trim()
         .replace(/\s+/g, "-")
         .replace(/[^a-zA-Z0-9-]/g, "");
       cloudFolder += `/${safeTitle}`;
+    } else if (targetBaseFolder === "banners") {
+      if (category) {
+        cloudFolder += `/category/${category}/images`;
+      } else {
+        cloudFolder += `/homepage`;
+      }
     }
 
     const uploadPromises = imageList.map(async (base64, index) => {
@@ -1340,7 +1558,6 @@ export const createProduct = async (
     const {
       title,
       short_description,
-      detailed_description,
       sizes,
       cuttingTypes,
       pieceSizes,
@@ -1366,7 +1583,6 @@ export const createProduct = async (
       category,
       subCategory,
       tags,
-      detailed_description,
     };
 
     const missingFields = Object.entries(requiredFields)
@@ -1416,8 +1632,12 @@ export const createProduct = async (
      * Convert [{ value: "500g" }] → ["500g"]
      */
     const normalizedSizes = sizes ? normalizeDynamicValues(sizes) : [];
-    const normalizedPieceSizes = pieceSizes ? normalizeDynamicValues(pieceSizes) : [];
-    const normalizedCuttingTypes = cuttingTypes ? normalizeDynamicValues(cuttingTypes) : [];
+    const normalizedPieceSizes = pieceSizes
+      ? normalizeDynamicValues(pieceSizes)
+      : [];
+    const normalizedCuttingTypes = cuttingTypes
+      ? normalizeDynamicValues(cuttingTypes)
+      : [];
 
     /**
      * 6️⃣ Create product
@@ -1426,7 +1646,6 @@ export const createProduct = async (
       data: {
         title,
         short_description,
-        detailed_description,
 
         category,
         subCategory,
@@ -1601,11 +1820,12 @@ export const addCatalogProductToStore = async (
       regular_price,
       sale_price,
       sizePricing,
+      cuttingTypePricing,
+      pieceSizePricing,
       stock,
       cash_on_delivery,
       discountCodes,
       short_description,
-      detailed_description,
       tags,
       status,
       processingWeightLoss,
@@ -1616,15 +1836,25 @@ export const addCatalogProductToStore = async (
       sellerStore.id.slice(-6),
     );
 
-    const normalizedSizePricing = normalizeSizePricing(
-      sizePricing,
-      catalogProduct.sizes,
-      Number(sale_price ?? 0),
-      Number(regular_price ?? sale_price ?? 0),
-    );
-    const displayPrices = getDisplayPricesFromSizePricing(
-      normalizedSizePricing,
-    );
+    const hasSizes = Array.isArray(catalogProduct.sizes) && catalogProduct.sizes.length > 0;
+
+    let normalizedSizePricing: NormalizedSizePricing[] = [];
+    let displayPrices: { salePrice: number; regularPrice: number };
+
+    if (hasSizes) {
+      normalizedSizePricing = normalizeSizePricing(
+        sizePricing,
+        catalogProduct.sizes,
+        Number(sale_price ?? 0),
+        Number(regular_price ?? sale_price ?? 0),
+      );
+      displayPrices = getDisplayPricesFromSizePricing(normalizedSizePricing);
+    } else {
+      displayPrices = {
+        salePrice: Number(sale_price ?? 0),
+        regularPrice: Number(regular_price ?? sale_price ?? 0),
+      };
+    }
 
     const storeProduct = await prisma.products.create({
       data: {
@@ -1636,11 +1866,6 @@ export const addCatalogProductToStore = async (
           typeof short_description === "string" && short_description.trim()
             ? short_description
             : catalogProduct.short_description,
-        detailed_description:
-          typeof detailed_description === "string" &&
-          detailed_description.trim()
-            ? detailed_description
-            : catalogProduct.detailed_description,
         tags:
           typeof tags === "string"
             ? tags
@@ -1651,7 +1876,7 @@ export const addCatalogProductToStore = async (
               ? tags
               : catalogProduct.tags,
         sizes: catalogProduct.sizes,
-        sizePricing: normalizedSizePricing,
+        sizePricing: normalizedSizePricing.length > 0 ? normalizedSizePricing : undefined,
         cuttingTypes: catalogProduct.cuttingTypes,
         pieceSizes: catalogProduct.pieceSizes,
         processingWeightLoss:
@@ -1667,7 +1892,7 @@ export const addCatalogProductToStore = async (
             ? cash_on_delivery
             : catalogProduct.cashOnDelivery,
         discount_codes: Array.isArray(discountCodes) ? discountCodes : [],
-        status: status === "Draft" || status === "Pending" ? status : "Active",
+        status: status === "NonActive" ? "NonActive" : "Active",
         storeId: sellerStore.id,
         catalogProductId: catalogProduct.id,
         images: {
@@ -1700,9 +1925,30 @@ export const getStoreProducts = async (
   next: NextFunction,
 ) => {
   try {
-    const { storeId } = req.query;
+    const { storeId, pincode } = req.query;
+
+    let effectiveStoreId = storeId ? String(storeId) : null;
+
+    // If no storeId but pincode is provided, try to find a store for that pincode
+    if (!effectiveStoreId && pincode) {
+      const store = await prisma.stores.findFirst({
+        where: {
+          OR: [
+            { pincode: String(pincode) },
+            { availableCities: { has: String(pincode) } }, // Assuming pincode or city name
+          ],
+        },
+        select: { id: true },
+      });
+      if (store) {
+        effectiveStoreId = store.id;
+      }
+    }
 
     // 1. Fetch all catalog products (those created by admin)
+    //    Always fetch ALL active/nonactive store variants — we will prefer the
+    //    user's storeId in JS, but fall back to the first available variant so
+    //    a product never wrongly shows "Out of Stock" due to a stale storeId.
     const catalogProducts = await prisma.products.findMany({
       where: {
         adminId: { not: null },
@@ -1714,9 +1960,8 @@ export const getStoreProducts = async (
         images: true,
         storeVariants: {
           where: {
-            ...(storeId ? { storeId: String(storeId) } : { id: { not: "" } }),
             isDeleted: false,
-            status: "Active",
+            status: { in: ["Active", "NonActive"] },
           },
           include: {
             images: true,
@@ -1734,23 +1979,44 @@ export const getStoreProducts = async (
       },
     });
 
-    // 2. Transfrom: If a store variant exists for this catalog product, pick that.
-    // Otherwise, return the catalog product as 'out of stock' (defaulting stock to 0)
+    // 2. Transform: prefer the variant for the user's selected store.
+    //    If no exact match (stale storeId, different store, etc.) fall back
+    //    to the first available variant from any store.
+    //    Only return catalog-product-as-out-of-stock when NO store sells it yet.
+    const normalizedStoreId = effectiveStoreId ? String(effectiveStoreId) : null;
+
     const finalProducts = catalogProducts.map((catalogProduct) => {
-      // Find a matching store variant
-      const variant = catalogProduct.storeVariants?.[0];
+      const variants = catalogProduct.storeVariants ?? [];
+
+      // Prefer the user's specific store; otherwise take the first available variant
+      const variant =
+        (normalizedStoreId
+          ? variants.find((v) => v.storeId === normalizedStoreId)
+          : undefined) ?? variants[0];
+
+      // Base fields from the catalog root (Master Product)
+      const baseProductData = {
+        ...catalogProduct,
+        title: catalogProduct.title,
+        short_description: catalogProduct.short_description,
+        images: catalogProduct.images,
+      };
 
       if (variant) {
-        // Return store-specific product
-        return {
+        return { 
+          ...baseProductData,
           ...variant,
+          // Ensure we don't accidentally override the master title/images with variant ones
+          // unless your business logic says variants can have custom names/images.
+          // For now, let's keep catalog root as the brand source.
+          title: catalogProduct.title,
+          images: catalogProduct.images?.length ? catalogProduct.images : variant.images,
         };
       }
 
-      // Return the catalog product but forced to zero stock
-      // and without store data (it will render as 'out of stock' on frontend)
+      // No seller has added this catalog product yet — show as out of stock
       return {
-        ...catalogProduct,
+        ...baseProductData,
         stock: 0,
         store: null,
       };
@@ -1906,6 +2172,8 @@ export const updateProduct = async (
         storeId: true,
         adminId: true,
         sizes: true,
+        cuttingTypes: true,
+        pieceSizes: true,
       },
     });
 
@@ -1927,7 +2195,6 @@ export const updateProduct = async (
     const {
       title,
       short_description,
-      detailed_description,
       tags,
       category,
       subCategory,
@@ -1935,6 +2202,8 @@ export const updateProduct = async (
       sale_price,
       regular_price,
       sizePricing,
+      cuttingTypePricing,
+      pieceSizePricing,
       slug,
       sizes,
       pieceSizes,
@@ -1982,12 +2251,6 @@ export const updateProduct = async (
     if (typeof short_description === "string" && short_description.trim()) {
       updateData.short_description = short_description;
     }
-    if (
-      typeof detailed_description === "string" &&
-      detailed_description.trim()
-    ) {
-      updateData.detailed_description = detailed_description;
-    }
     if (typeof category === "string" && category.trim())
       updateData.category = category;
     if (typeof subCategory === "string" && subCategory.trim()) {
@@ -2009,7 +2272,7 @@ export const updateProduct = async (
     }
     if (
       typeof status === "string" &&
-      ["Active", "Pending", "Draft"].includes(status)
+      ["Active", "NonActive"].includes(status)
     ) {
       updateData.status = status;
     }
@@ -2034,10 +2297,14 @@ export const updateProduct = async (
       updateData.sizes = sizes ? normalizeDynamicValues(sizes) : [];
     }
     if (typeof pieceSizes !== "undefined") {
-      updateData.pieceSizes = pieceSizes ? normalizeDynamicValues(pieceSizes) : [];
+      updateData.pieceSizes = pieceSizes
+        ? normalizeDynamicValues(pieceSizes)
+        : [];
     }
     if (typeof cuttingTypes !== "undefined") {
-      updateData.cuttingTypes = cuttingTypes ? normalizeDynamicValues(cuttingTypes) : [];
+      updateData.cuttingTypes = cuttingTypes
+        ? normalizeDynamicValues(cuttingTypes)
+        : [];
     }
 
     if (req.role === "seller") {
@@ -2069,6 +2336,32 @@ export const updateProduct = async (
           updateData.regular_price = Number(regular_price);
         }
       }
+
+      if (Array.isArray(cuttingTypePricing)) {
+        const effectiveCuttingTypes =
+          normalizedCuttingTypes.length > 0
+            ? normalizedCuttingTypes
+            : Array.isArray(product.cuttingTypes)
+              ? product.cuttingTypes
+              : [];
+        updateData.cuttingTypePricing = normalizeCuttingTypePricing(
+          cuttingTypePricing,
+          effectiveCuttingTypes,
+        );
+      }
+
+      if (Array.isArray(pieceSizePricing)) {
+        const effectivePieceSizes =
+          normalizedPieceSizes.length > 0
+            ? normalizedPieceSizes
+            : Array.isArray(product.pieceSizes)
+              ? product.pieceSizes
+              : [];
+        updateData.pieceSizePricing = normalizePieceSizePricing(
+          pieceSizePricing,
+          effectivePieceSizes,
+        );
+      }
     }
 
     const updatedProduct = await prisma.products.update({
@@ -2096,6 +2389,12 @@ export const deleteProduct = async (
   next: NextFunction,
 ) => {
   try {
+    if (req.role === "seller") {
+      return next(
+        new ValidationError("Sellers cannot delete products. Use Active/NonActive status instead."),
+      );
+    }
+
     const productId = getRequiredParam(req.params.productId, "Product id");
     const ownerFilter = getOwnedProductFilter(req);
 
@@ -2195,7 +2494,9 @@ export const getStorePublicOffers = async (
   try {
     const storeId = req.params.storeId as string;
     if (!storeId) {
-      return res.status(400).json({ success: false, message: "storeId required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "storeId required" });
     }
 
     // Get store -> sellerId
@@ -2234,5 +2535,56 @@ export const getStorePublicOffers = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+export const validateCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { productIds } = req.body;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(200).json({ success: true, products: [] });
+    }
+
+    const products = await prisma.products.findMany({
+      where: {
+        id: { in: productIds },
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        stock: true,
+        sale_price: true,
+        regular_price: true,
+        images: {
+          take: 1,
+          select: { url: true },
+        },
+      },
+    });
+
+    const validatedProducts = products.map((p) => ({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      status: p.status,
+      stock: p.stock,
+      price: p.sale_price || p.regular_price,
+      image: p.images[0]?.url || "",
+    }));
+
+    res.status(200).json({
+      success: true,
+      products: validatedProducts,
+    });
+  } catch (error) {
+    next(error);
   }
 };

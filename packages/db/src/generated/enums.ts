@@ -20,8 +20,7 @@ export type ImageType = (typeof ImageType)[keyof typeof ImageType]
 
 export const productStatus = {
   Active: 'Active',
-  Pending: 'Pending',
-  Draft: 'Draft'
+  NonActive: 'NonActive'
 } as const
 
 export type productStatus = (typeof productStatus)[keyof typeof productStatus]

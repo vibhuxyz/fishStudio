@@ -9,30 +9,43 @@ import { OtpMessage } from "../types/otpMessage.js";
 export async function handleOtpMessage(data: OtpMessage): Promise<void> {
   const { userType, name, email, phone_number, template, otp } = data;
 
-  // Handle user OTP (phone)
+  let sent = false;
+
+  // 1. Handle phone OTP (User only)
   if (userType === "user" && phone_number) {
     if (ENV.NODE_ENV === "production") {
       await sendPhoneOtp(name, phone_number, otp);
       console.log(`📱 OTP sent to phone: ${phone_number}`);
     } else {
-      console.log(`📱 DEV otp for ${userType} : ${otp}`);
+      console.log(`📱 [DEV] OTP for ${phone_number}: ${otp}`);
     }
+    sent = true;
   }
-  // Handle seller/admin OTP (email)
-  else if ((userType === "seller" || userType === "admin") && email && template) {
-    await sendEmail(email, "Verify your Email", template, {
+
+  // 2. Handle email OTP (User, Seller, Admin)
+  if (email && template && !sent) {
+    await sendEmail(email, "Verify your Account", template, {
       name,
       otp,
     });
     console.log(`📧 OTP sent to email: ${email}`);
+    sent = true;
   }
 
-  // Store OTP status in Redis
-  await redis.set(`otp_status:${userType}`, "sent", "EX", 300);
-
-  console.log(
-    `✅ OTP sent to ${userType === "user" ? phone_number : email}`,
-    otp,
-  );
+  if (sent) {
+    // Store OTP status in Redis
+    try {
+       await redis.set(`otp_status:${userType}`, "sent", "EX", 300);
+    } catch (e) {
+       console.warn("⚠️ Redis not available for status tracking");
+    }
+    
+    console.log(
+      `✅ OTP successfully routed for ${userType}: ${phone_number || email}`,
+      otp,
+    );
+  } else {
+    console.error(`❌ Could not route OTP for ${userType} - missing contact info`, data);
+  }
 }
 

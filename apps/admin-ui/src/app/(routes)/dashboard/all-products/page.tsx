@@ -261,6 +261,7 @@ const ProductList = () => {
         {showDeleteModal && selectedProduct && (
           <DeleteConfirmationModal
             product={selectedProduct}
+            isLoading={deleteMutation.isPending || restoreMutation.isPending}
             onClose={() => setShowDeleteModal(false)}
             onConfirm={() => deleteMutation.mutate(selectedProduct.id)}
             onRestore={() => restoreMutation.mutate(selectedProduct.id)}

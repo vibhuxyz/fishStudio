@@ -6,6 +6,7 @@ const DeleteConfirmationModal = ({
   onClose,
   onConfirm,
   onRestore,
+  isLoading,
 }: any) => {
   return (
     <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
@@ -30,20 +31,29 @@ const DeleteConfirmationModal = ({
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 mt-6">
           <button
+            disabled={isLoading}
             onClick={onClose}
-            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-md text-white transition"
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-md text-white transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
+            disabled={isLoading}
             onClick={!product?.isDeleted ? onConfirm : onRestore}
             className={` ${
               product?.isDeleted
                 ? "bg-green-600 hover:bg-green-700"
                 : "bg-red-600 hover:bg-red-700"
-            } px-4 py-2 rounded-md text-white font-semibold transition`}
+            } px-4 py-2 rounded-md text-white font-semibold transition flex items-center justify-center gap-2 min-w-[100px] disabled:opacity-50`}
           >
-            {product?.isDeleted ? "Restore" : "Delete"}
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <span>{product?.isDeleted ? "Restoring..." : "Deleting..."}</span>
+              </>
+            ) : (
+              product?.isDeleted ? "Restore" : "Delete"
+            )}
           </button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import morgan from "morgan";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-// import initalizeConfig from "./libs/initializeSiteConfig.js";
+
 import { ENV } from "@repo/env-config";
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
@@ -27,8 +27,7 @@ const allowedOrigins = [
     [
       ...(ENV.CORS_ORIGINS
         ? ENV.CORS_ORIGINS.split(",").map((o: string) => o.trim())
-        : []),
-      ...defaultLocalOrigins,
+        : defaultLocalOrigins),
     ].filter(Boolean),
   ),
 ];
@@ -92,7 +91,13 @@ const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
 const proxyOptions = {
   parseReqBody: false,
   proxyReqPathResolver: (req: any) => req.url,
-  userResHeaderDecorator: (headers: any, userReq: any, userRes: any, proxyReq: any, proxyRes: any) => {
+  userResHeaderDecorator: (
+    headers: any,
+    userReq: any,
+    userRes: any,
+    proxyReq: any,
+    proxyRes: any,
+  ) => {
     // Force set-cookie to be an array so express handles it correctly without joining with commas
     if (proxyRes.headers["set-cookie"]) {
       userRes.setHeader("set-cookie", proxyRes.headers["set-cookie"]);
@@ -110,12 +115,6 @@ const port = Number(ENV.API_GATEWAY_PORT) || 8080;
 
 const server = app.listen(port, "0.0.0.0", () => {
   console.log(`🚀 Gateway running on http://localhost:${port}`);
-  // try {
-  //   initalizeConfig();
-  //   console.log("✅ Site Config Initialized");
-  // } catch (error) {
-  //   console.log("❌ Error initializing site config", error);
-  // }
 });
 
 server.on("error", console.error);

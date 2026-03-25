@@ -212,8 +212,6 @@ async function main() {
               subCategory: "Rui/Rohu",
               short_description:
                 "Fresh Bengali Rohu fish, perfect for traditional Bengali cuisine. Rich in omega-3 and protein.",
-              detailed_description:
-                "<p>Fresh and tasty Rohu fish, ideal for Bengali curries and traditional recipes. Known for its tender meat and rich flavor.</p>",
               tags: ["rohu", "fresh", "bengali", "traditional"],
               sizes: ["250g", "500g", "1kg"],
               cuttingTypes: ["Whole", "Curry Cut", "Fillet"],
@@ -248,8 +246,6 @@ async function main() {
               subCategory: "Katla/Catla",
               short_description:
                 "Fresh Katla fish with firm texture and mild flavor. Great for grilling and frying.",
-              detailed_description:
-                "<p>Healthy Katla fish, perfect for grilling, frying, or making delicious curry. High in protein and low in fat.</p>",
               tags: ["katla", "fresh", "healthy"],
               sizes: ["500g", "1kg", "2kg"],
               cuttingTypes: ["Whole", "Curry Cut", "Steaks"],
@@ -288,8 +284,6 @@ async function main() {
               subCategory: "Hilsa",
               short_description:
                 "Premium quality Hilsa fish, the king of fish in Bengali cuisine. Rich, oily, and flavorful.",
-              detailed_description:
-                "<p>Premium quality Hilsa fish, known for its rich taste and high omega-3 content. Perfect for special occasions and traditional Bengali preparations.</p>",
               tags: ["hilsa", "premium", "bengali", "special"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Whole", "Sliced"],
@@ -324,8 +318,6 @@ async function main() {
               subCategory: "Tilapia",
               short_description:
                 "Fresh Tilapia fish with mild flavor and firm texture. Healthy and versatile.",
-              detailed_description:
-                "<p>Healthy freshwater Tilapia, low in calories and high in protein. Perfect for grilling, baking, or frying.</p>",
               tags: ["tilapia", "fresh", "healthy", "versatile"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Whole", "Curry Cut", "Fillet"],
@@ -360,8 +352,6 @@ async function main() {
               subCategory: "Pabda",
               short_description:
                 "Fresh Pabda fish, small and delicate with soft texture. Perfect for Bengali style curry.",
-              detailed_description:
-                "<p>Soft and tasty Pabda fish, ideal for traditional Bengali preparations. Known for its delicate flavor and tender meat.</p>",
               tags: ["pabda", "fresh", "delicate", "bengali"],
               sizes: ["250g", "500g"],
               cuttingTypes: ["Whole"],
@@ -398,8 +388,6 @@ async function main() {
               subCategory: "Mackerel",
               short_description:
                 "Fresh sea Mackerel, rich in omega-3 fatty acids. Great for frying and grilling.",
-              detailed_description:
-                "<p>Rich in omega-3 and packed with nutrients. Perfect for shallow frying or grilling with minimal spices.</p>",
               tags: ["mackerel", "sea", "omega3", "healthy"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Whole", "Cleaned"],
@@ -434,8 +422,6 @@ async function main() {
               subCategory: "Prawn",
               short_description:
                 "Juicy sea prawns, perfect for curry and fry. Rich in protein and minerals.",
-              detailed_description:
-                "<p>Perfect for curry & fry. Fresh from the sea, these prawns are juicy, flavorful, and packed with protein.</p>",
               tags: ["prawn", "seafood", "protein", "premium"],
               sizes: ["250g", "500g", "1kg"],
               cuttingTypes: ["Whole", "Cleaned", "Deveined"],
@@ -470,8 +456,6 @@ async function main() {
               subCategory: "Pomfret",
               short_description:
                 "Fresh Pomfret fish with delicate flavor and fine texture. Premium quality.",
-              detailed_description:
-                "<p>Sea fresh Pomfret with delicate flavor and fine texture. Perfect for steaming, frying, or grilling.</p>",
               tags: ["pomfret", "sea", "premium", "delicate"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Whole", "Cleaned"],
@@ -506,8 +490,6 @@ async function main() {
               subCategory: "Sardine",
               short_description:
                 "Fresh sardine fish, high in protein and omega-3. Perfect for frying.",
-              detailed_description:
-                "<p>High protein sea fish, rich in omega-3 fatty acids. Perfect for shallow frying with spices.</p>",
               tags: ["sardine", "sea", "protein", "omega3"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Whole", "Cleaned"],
@@ -542,8 +524,6 @@ async function main() {
               subCategory: "Squid",
               short_description:
                 "Fresh squid rings, ideal for frying and grilling. Tender and flavorful.",
-              detailed_description:
-                "<p>Ideal for frying and grilling. Pre-cut into rings for your convenience. Tender, flavorful, and versatile.</p>",
               tags: ["squid", "seafood", "rings", "versatile"],
               sizes: ["500g", "1kg"],
               cuttingTypes: ["Rings", "Whole"],
@@ -580,8 +560,6 @@ async function main() {
               subCategory: "King Crab",
               short_description:
                 "Premium King Crab, luxury seafood item. Sweet and succulent meat.",
-              detailed_description:
-                "<p>Luxury seafood item with sweet, succulent meat. Perfect for special occasions and gourmet preparations.</p>",
               tags: ["crab", "premium", "luxury", "gourmet"],
               sizes: ["1kg", "2kg"],
               cuttingTypes: ["Whole", "Legs"],
@@ -616,8 +594,6 @@ async function main() {
               subCategory: "Lobster",
               short_description:
                 "Fresh premium lobster, restaurant-grade quality. Tender and flavorful.",
-              detailed_description:
-                "<p>Restaurant-grade lobster with tender, flavorful meat. Perfect for grilling, steaming, or making gourmet dishes.</p>",
               tags: ["lobster", "premium", "restaurant", "gourmet"],
               sizes: ["1kg", "2kg"],
               cuttingTypes: ["Whole", "Tails"],
@@ -654,8 +630,6 @@ async function main() {
               subCategory: "Pet Fish Selection",
               short_description:
                 "Nutritious fish mix for pets. Healthy and affordable pet food option.",
-              detailed_description:
-                "<p>Healthy mix for pets, packed with nutrients. Perfect for dogs and cats as a protein-rich meal supplement.</p>",
               tags: ["pet", "nutrition", "healthy", "affordable"],
               sizes: ["1kg", "2kg"],
               cuttingTypes: ["Whole", "Cut Pieces"],
@@ -690,8 +664,6 @@ async function main() {
               subCategory: "Chicken Offal",
               short_description:
                 "Protein-rich chicken offal for pets. Best for dogs and cats.",
-              detailed_description:
-                "<p>Best for dogs & cats. Rich in protein and essential nutrients. A healthy and economical pet food option.</p>",
               tags: ["pet", "chicken", "protein", "nutritious"],
               sizes: ["1kg", "2kg"],
               cuttingTypes: ["Cleaned", "Mixed"],
@@ -919,7 +891,6 @@ async function main() {
             category: "Premium",
             subCategory: "Gourmet",
             short_description: `High quality ${p.title} for your gourmet cooking.`,
-            detailed_description: `<p>Enjoy the finest ${p.title} sourced directly from premium waters.</p>`,
             stock: 50,
             sale_price: p.price,
             regular_price: p.price + 100,

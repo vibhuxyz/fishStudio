@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "@repo/types";
+import { axiosInstance } from "./utils";
 
 type CuttingType = {
   id: string;
@@ -31,8 +32,8 @@ interface CartState {
   addItem: (
     product: Product,
     quantity: number,
-    cuttingType: CuttingType,
-    pieceSize: PieceSize,
+    cuttingType: CuttingType | string,
+    pieceSize: PieceSize | string,
     size: string
   ) => void;
   removeItem: (index: number) => void;
@@ -43,6 +44,7 @@ interface CartState {
   totalItems: () => number;
   totalPrice: () => number;
   clearCart: () => void;
+  syncItems: () => Promise<void>;
 }
 
 const DEFAULT_CUTTING: CuttingType = {
@@ -73,11 +75,10 @@ const normalizeOption = (
     };
   }
 
-  return {
-    id: option.id || fallbackId,
-    name: option.name || fallbackId,
-    ...option,
-  };
+  const normalized = { ...option } as any;
+  if (!normalized.id) normalized.id = fallbackId;
+  if (!normalized.name) normalized.name = fallbackId;
+  return normalized;
 };
 
 export const useCartStore = create<CartState>()(
@@ -154,7 +155,10 @@ export const useCartStore = create<CartState>()(
     if (existingIndex >= 0) {
       state.updateQuantity(existingIndex, state.items[existingIndex].quantity + 0.5);
     } else {
-      state.addItem(product, 0.5, DEFAULT_CUTTING, DEFAULT_PIECE_SIZE, DEFAULT_SIZE);
+      const firstSize = product.sizes?.[0] || DEFAULT_SIZE;
+      const firstCutting = product.cuttingTypes?.[0] || DEFAULT_CUTTING.name;
+      const firstPieceSize = product.pieceSizes?.[0] || DEFAULT_PIECE_SIZE.name;
+      state.addItem(product, 0.5, firstCutting, firstPieceSize, firstSize);
     }
   },
 
@@ -188,6 +192,52 @@ export const useCartStore = create<CartState>()(
   },
 
   clearCart: () => set({ items: [] }),
+
+  syncItems: async () => {
+    const { items } = get();
+    if (items.length === 0) return;
+
+    try {
+      const productIds = Array.from(new Set(items.map((item) => item.product.id)));
+      const { data } = await axiosInstance.post("/product/api/validate-cart", { productIds });
+
+      if (data.success && data.products) {
+        const validatedProducts = data.products;
+        
+        set((state) => ({
+          items: state.items.map((item) => {
+            const fresh = validatedProducts.find((p: any) => p.id === item.product.id);
+            if (fresh) {
+              return {
+                ...item,
+                product: {
+                  ...item.product,
+                  status: fresh.status,
+                  stock: fresh.stock,
+                  price: fresh.price,
+                  name: fresh.title, // sync name too
+                  image: fresh.image || item.product.image,
+                },
+                totalPayable: item.quantity * fresh.price,
+              };
+            }
+            // If product not found in validation (meaning it was deleted/not found), 
+            // we mark it as inactive/out of stock
+            return {
+              ...item,
+              product: {
+                ...item.product,
+                status: "NonActive",
+                stock: 0,
+              },
+            };
+          }),
+        }));
+      }
+    } catch (error) {
+      console.error("Cart sync failed:", error);
+    }
+  },
     }),
     {
       name: "fish-studio-cart",

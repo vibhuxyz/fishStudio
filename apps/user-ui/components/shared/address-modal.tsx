@@ -29,6 +29,13 @@ import {
 import { toast } from "sonner";
 import { axiosInstance } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-store";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AddressModalProps {
   open: boolean;
@@ -48,6 +55,7 @@ interface StoreInfo {
   id: string;
   name: string;
   city: string;
+  state?: string;
   availableCities: string[];
   cityDeliveryTimes?: Record<string, number>;
 }
@@ -76,7 +84,7 @@ export function AddressModal({
 
   // All cities (primary + available), deduped
   const allCities = storeInfo
-    ? Array.from(new Set([storeInfo.city, ...storeInfo.availableCities]))
+    ? storeInfo.availableCities
     : [];
 
   const filteredCities = locationSearchQuery.trim()
@@ -102,7 +110,7 @@ export function AddressModal({
   // Reset on open
   useEffect(() => {
     if (open) {
-      setView(savedAddressesOnly ? "list" : "pincode");
+      setView(savedAddressesOnly && addresses.length > 0 ? "list" : "pincode");
       setPincode("");
       setPincodeError("");
       setLoading(false);
@@ -188,12 +196,18 @@ export function AddressModal({
       ...f,
       city,
       pincode,
+      state: storeInfo.state || "",
     }));
     setView("add");
   };
 
   const handleEnterManually = () => {
-    setForm((f) => ({ ...f, pincode }));
+    setForm((f) => ({
+      ...f,
+      pincode,
+      city: storeInfo?.city || "",
+      state: storeInfo?.state || "",
+    }));
     setView("add");
   };
 
@@ -338,6 +352,48 @@ export function AddressModal({
                         Search location
                       </button>
                     </div>
+
+                    {/* Saved Addresses (Shortcut in Pincode View) */}
+                    {addresses.length > 0 && !storeInfo && !pincodeError && (
+                      <div className="pt-2 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-foreground truncate">Saved Addresses</p>
+                          <button 
+                            onClick={() => setView("list")}
+                            className="text-xs font-semibold text-primary hover:underline"
+                          >
+                            View All
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {addresses.slice(0, 2).map((address) => (
+                            <AddressCard
+                              key={address.id}
+                              address={address}
+                              isSelected={address.id === selectedAddressId}
+                              onSelect={() => {
+                                selectAddress(address.id);
+                                onOpenChange(false);
+                                toast.success(`Delivering to ${address.label}`);
+                              }}
+                              onRemove={async () => {
+                                try {
+                                  const { data } = await axiosInstance.delete(
+                                    `/auth/api/delete-address/${address.id}`
+                                  );
+                                  if (data.success) {
+                                    setAddresses(data.addresses);
+                                    toast.success("Address removed");
+                                  }
+                                } catch {
+                                  toast.error("Failed to remove address");
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Coming soon */}
                     {pincodeError === "coming-soon" && (
@@ -587,28 +643,40 @@ export function AddressModal({
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-foreground">City *</label>
-                        <Input
-                          placeholder="Mumbai"
+                        <Select
                           value={form.city}
-                          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                        />
+                          onValueChange={(val) => setForm((f) => ({ ...f, city: val }))}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select City" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allCities.map((city) => (
+                              <SelectItem key={city} value={city}>
+                                {city}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-foreground">State</label>
                         <Input
                           placeholder="Bihar"
                           value={form.state}
-                          onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
+                          readOnly
+                          className="bg-muted"
                         />
                       </div>
                     </div>
 
-                    <Button
-                      className="w-full h-12 bg-offer-green text-white hover:bg-offer-green/90 font-bold text-base rounded-xl"
-                      onClick={handleSaveAddress}
-                    >
-                      Save Address
-                    </Button>
+                      <Button
+                        className="w-full h-12 bg-offer-green text-white hover:bg-offer-green/90 font-bold text-base rounded-xl"
+                        onClick={handleSaveAddress}
+                        disabled={loading}
+                      >
+                        {loading ? "Saving..." : "Save Address"}
+                      </Button>
                   </div>
                 )}
               </div>

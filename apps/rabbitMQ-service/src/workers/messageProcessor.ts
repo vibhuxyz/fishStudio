@@ -14,6 +14,6 @@ export function parseMessage(msg: ConsumeMessage): OtpMessage {
 
 
 export function logMessageReceived(data: OtpMessage): void {
-  const recipient = data.userType === "user" ? data.phone_number : data.email;
+  const recipient = data.phone_number || data.email || "unknown";
   console.log(`📨 Received OTP request for ${data.userType}: ${recipient}`);
 }

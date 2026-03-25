@@ -109,15 +109,61 @@ export const resolveProductSizePricing = (
   };
 };
 
+/**
+ * Resolves the displayed price based on selected size.
+ * If sizePricing has an entry for the selected size, uses it; otherwise falls back to product.price.
+ */
+export const resolvePrice = (
+  product: Pick<Product, "sizes" | "sizePricing" | "price" | "originalPrice">,
+  selectedSize?: string,
+): { salePrice: number; regularPrice: number; unit: string } => {
+  const fallback = {
+    salePrice: product.price,
+    regularPrice: product.originalPrice ?? product.price,
+    unit: selectedSize || "unit",
+  };
+
+  if (selectedSize && Array.isArray(product.sizePricing) && product.sizePricing.length > 0) {
+    const entry = product.sizePricing.find((e) => e.size === selectedSize);
+    if (entry && entry.salePrice > 0) {
+      return {
+        salePrice: entry.salePrice,
+        regularPrice: entry.regularPrice > 0 ? entry.regularPrice : entry.salePrice,
+        unit: entry.size,
+      };
+    }
+  }
+
+  return fallback;
+};
+
+/**
+ * Computes the default price for a product using the first available size.
+ */
+export const resolveDefaultPrice = (
+  product: Pick<Product, "sizes" | "sizePricing" | "price" | "originalPrice">,
+): { salePrice: number; regularPrice: number; unit: string } => {
+  return resolvePrice(product, product.sizes?.[0]);
+};
+
 export const transformProduct = (bp: BackendProduct): Product => {
-  const normalizedPricing = normalizeSizePricing(
+  const normalizedSizePricingData = normalizeSizePricing(
     bp.sizePricing,
     bp.sizes || [],
     bp.sale_price,
     bp.regular_price,
   );
-  const defaultSize = normalizedPricing[0]?.size || bp.sizes?.[0] || "1kg";
-  const defaultPricing = normalizedPricing[0];
+
+  const defaultSize = normalizedSizePricingData[0]?.size || bp.sizes?.[0] || "";
+
+  const partial = {
+    sizes: bp.sizes || [],
+    sizePricing: normalizedSizePricingData,
+    price: bp.sale_price,
+    originalPrice: bp.regular_price > bp.sale_price ? bp.regular_price : undefined,
+  };
+
+  const defaultResolved = resolvePrice(partial, defaultSize);
 
   return {
     id: bp.id,
@@ -126,15 +172,13 @@ export const transformProduct = (bp: BackendProduct): Product => {
     description: bp.short_description,
     image: bp.images?.[0]?.url || "/placeholder.svg",
     images: bp.images?.map((img) => img.url) || [],
-    price: defaultPricing?.salePrice ?? bp.sale_price,
-    originalPrice:
-      (defaultPricing?.regularPrice ?? bp.regular_price) >
-      (defaultPricing?.salePrice ?? bp.sale_price)
-        ? defaultPricing?.regularPrice ?? bp.regular_price
-        : undefined,
-    weight: defaultSize,
+    price: defaultResolved.salePrice,
+    originalPrice: defaultResolved.regularPrice > defaultResolved.salePrice ? defaultResolved.regularPrice : undefined,
+    weight: defaultSize || defaultResolved.unit,
     sizes: bp.sizes || [],
-    sizePricing: normalizedPricing,
+    sizePricing: normalizedSizePricingData,
+    cuttingTypePricing: Array.isArray(bp.cuttingTypePricing) ? bp.cuttingTypePricing : [],
+    pieceSizePricing: Array.isArray(bp.pieceSizePricing) ? bp.pieceSizePricing : [],
     rating: bp.ratings || 0,
     totalSold: bp.totalSold || 0,
     subCategory: bp.subCategory,
@@ -143,6 +187,7 @@ export const transformProduct = (bp: BackendProduct): Product => {
     cuttingTypes: bp.cuttingTypes || [],
     pieceSizes: bp.pieceSizes || [],
     processingWeightLoss: bp.processingWeightLoss,
+    status: bp.status === "NonActive" ? "NonActive" : "Active",
     isBestseller: (bp.totalSold || 0) > 50,
     isFavorite: Array.isArray(bp.favorites) && bp.favorites.length > 0,
   };
@@ -150,11 +195,15 @@ export const transformProduct = (bp: BackendProduct): Product => {
 
 export async function fetchStorefrontProducts(
   storeId?: string,
+  pincode?: string,
   init?: RequestInit & { next?: { revalidate?: number } },
 ): Promise<Product[]> {
-  const url = storeId 
-    ? getStorefrontUrl(`/product/api/get-all-products?storeId=${storeId}`)
-    : getStorefrontUrl("/product/api/get-all-products");
+  const queryParams = new URLSearchParams();
+  if (storeId) queryParams.append("storeId", storeId);
+  if (pincode) queryParams.append("pincode", pincode);
+
+  const queryString = queryParams.toString();
+  const url = getStorefrontUrl(`/product/api/get-all-products${queryString ? `?${queryString}` : ""}`);
 
   const response = await fetch(url, {
     ...init,
@@ -194,6 +243,25 @@ export async function fetchStorefrontProductBySlug(
 export async function fetchStorefrontBanners(): Promise<StorefrontBanner[]> {
   const response = await fetch(getStorefrontUrl("/product/api/get-banners"), {
     next: { revalidate: 600 },
+  });
+  const data = await parseJson<{
+    success: boolean;
+    banners?: StorefrontBanner[];
+  }>(response);
+
+  return Array.isArray(data.banners)
+    ? data.banners.filter((banner) => banner.isActive)
+    : [];
+}
+
+export async function fetchStorefrontCategoryBanners(
+  category: string,
+): Promise<StorefrontBanner[]> {
+  const url = getStorefrontUrl(
+    `/product/api/get-banners?category=${encodeURIComponent(category)}`,
+  );
+  const response = await fetch(url, {
+    next: { revalidate: 300 },
   });
   const data = await parseJson<{
     success: boolean;

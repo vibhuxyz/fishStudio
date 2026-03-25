@@ -64,12 +64,13 @@ export function TestimonialsSection() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="h-full w-full"
+                  className="relative h-full w-full"
                 >
                   <Image
                     src={testimonial.image || "/placeholder.svg"}
                     alt="Customer cooking"
                     fill
+                    sizes="(max-width: 768px) 320px, 384px"
                     className="object-cover"
                     loading="lazy"
                     placeholder="blur"

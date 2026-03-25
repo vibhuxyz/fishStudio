@@ -23,7 +23,7 @@ import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
 import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
-import { axiosInstance } from "@/lib/utils";
+import { axiosInstance, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddressModal } from "@/components/shared/address-modal";
 
@@ -41,6 +41,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const syncItems = useCartStore((s) => s.syncItems);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const {
     appliedCoupons,
@@ -100,8 +102,13 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
 
   // Fetch coupons from API when cart opens (or when storeId becomes available)
   useEffect(() => {
-    if (open && selectedLocation?.storeId) {
-      fetchAvailableCoupons(selectedLocation.storeId);
+    if (open) {
+      setIsSyncing(true);
+      syncItems().finally(() => setIsSyncing(false));
+      
+      if (selectedLocation?.storeId) {
+        fetchAvailableCoupons(selectedLocation.storeId);
+      }
     }
   }, [open, selectedLocation?.storeId]);
 
@@ -230,58 +237,82 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
 
                     <div className="mt-3 space-y-3">
                       <AnimatePresence mode="popLayout">
-                        {items.map((item, index) => (
-                          <motion.div
-                            key={`${item.product.id}-${item.cuttingType.id}-${item.pieceSize.id}-${item.size}`}
-                            layout
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, x: 100 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex items-center gap-3"
-                          >
-                            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-border">
-                              <Image
-                                src={item.product.image || "/placeholder.svg"}
-                                alt={item.product.name}
-                                fill
-                                className="object-cover"
-                                loading="lazy"
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate text-sm font-semibold text-foreground">
-                                {item.product.name}
-                              </p>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {item.cuttingType.name} | {item.pieceSize.name}
-                              </p>
-                              <p className="text-sm font-bold text-foreground">
-                                ₹{item.totalPayable.toFixed(0)}
-                              </p>
-                            </div>
-                            {/* Green quantity controls */}
-                            <div className="flex items-center gap-1 rounded-lg border border-offer-green bg-offer-green px-1 py-0.5">
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(index, item.quantity - 1)}
-                                className="flex h-7 w-7 items-center justify-center text-white"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="min-w-[18px] text-center text-sm font-bold text-white">
-                                {item.quantity}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => updateQuantity(index, item.quantity + 1)}
-                                className="flex h-7 w-7 items-center justify-center text-white"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </motion.div>
-                        ))}
+                        {items.map((item, index) => {
+                          const isInvalid = item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0);
+                          
+                          return (
+                            <motion.div
+                              key={`${item.product.id}-${item.cuttingType.id}-${item.pieceSize.id}-${item.size}`}
+                              layout
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: 100 }}
+                              transition={{ duration: 0.2 }}
+                              className={cn(
+                                "flex items-center gap-3 relative",
+                                isInvalid && "opacity-60 grayscale-[0.5]"
+                              )}
+                            >
+                              <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-border">
+                                <Image
+                                  src={item.product.image || "/placeholder.svg"}
+                                  alt={item.product.name}
+                                  fill
+                                  className="object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate text-sm font-semibold text-foreground">
+                                    {item.product.name}
+                                  </p>
+                                  {isInvalid && (
+                                    <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-bold text-destructive uppercase">
+                                      {item.product.stock <= 0 ? "Out of Stock" : "Inactive"}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {item.cuttingType.name} | {item.pieceSize.name}
+                                </p>
+                                <p className="text-sm font-bold text-foreground">
+                                  ₹{item.totalPayable.toFixed(0)}
+                                </p>
+                              </div>
+                              {/* Quantity Controls / Remove Button */}
+                              {isInvalid ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(index)}
+                                  className="flex h-8 items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-3 text-xs font-bold text-destructive hover:bg-destructive hover:text-white transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-1 rounded-lg border border-offer-green bg-offer-green px-1 py-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateQuantity(index, item.quantity - 0.5)}
+                                    className="flex h-7 w-7 items-center justify-center text-white"
+                                  >
+                                    <Minus className="h-3 w-3" />
+                                  </button>
+                                  <span className="min-w-[18px] text-center text-sm font-bold text-white">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateQuantity(index, item.quantity + 0.5)}
+                                    className="flex h-7 w-7 items-center justify-center text-white"
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
                   </div>
@@ -601,10 +632,17 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                 <div className="px-4 pb-4">
                   <Button
                     className="w-full rounded-xl bg-offer-green py-4 text-base font-bold text-white hover:bg-offer-green/90"
+                    disabled={items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
                     onClick={() => {
                       if (!isLoggedIn) {
                         onOpenChange(false);
                         onLoginClick?.();
+                      } else if (!selectedAddress) {
+                        setShowAddressModal(true);
+                        toast.info("Please add or select a delivery address", {
+                          description: "A delivery address is required to calculate charges and proceed.",
+                          icon: <MapPin className="h-4 w-4 text-primary" />,
+                        });
                       } else {
                         onOpenChange(false);
                         router.push("/checkout");
@@ -612,12 +650,21 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                     }}
                   >
                     <div className="flex w-full items-center justify-between">
-                      <span className="text-left">
-                        <span className="block text-lg font-bold">₹{grandTotal.toFixed(0)}</span>
-                        <span className="block text-xs opacity-80">TOTAL</span>
-                      </span>
+                      {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? (
+                        <span className="text-left">
+                          <span className="block text-sm font-bold uppercase">OUT OF STOCK</span>
+                          <span className="block text-[10px] opacity-80">REMOVE TO PROCEED</span>
+                        </span>
+                      ) : (
+                        <span className="text-left">
+                          <span className="block text-lg font-bold">₹{grandTotal.toFixed(0)}</span>
+                          <span className="block text-xs opacity-80">TOTAL</span>
+                        </span>
+                      )}
                       <span className="text-base font-bold">
-                        {isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
+                        {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
+                          ? "Invalid Cart" 
+                          : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
                       </span>
                     </div>
                   </Button>

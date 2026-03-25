@@ -5,6 +5,18 @@ export interface ProductSizePricing {
   regularPrice: number;
 }
 
+export interface ProductCuttingTypePricing {
+  cuttingType: string;
+  salePrice: number;
+  regularPrice: number;
+}
+
+export interface ProductPieceSizePricing {
+  pieceSize: string;
+  salePrice: number;
+  regularPrice: number;
+}
+
 // 1. The shape of the raw JSON directly from your API
 export interface BackendProduct {
   id: string;
@@ -13,7 +25,6 @@ export interface BackendProduct {
   category: string;
   subCategory: string;
   short_description: string;
-  detailed_description: string;
   images: { url: string; file_id: string }[];
   sale_price: number;
   regular_price: number;
@@ -24,13 +35,15 @@ export interface BackendProduct {
   // Arrays for dropdown options
   sizes: string[];
   sizePricing?: ProductSizePricing[] | null;
+  cuttingTypePricing?: ProductCuttingTypePricing[] | null;
+  pieceSizePricing?: ProductPieceSizePricing[] | null;
   cuttingTypes: string[];
   pieceSizes: string[];
   tags: string[];
 
   processingWeightLoss: string | null;
   favorites: any[];
-  status: string;
+  status: "Active" | "NonActive";
 }
 
 // 2. The transformed shape your Frontend Components use
@@ -47,6 +60,8 @@ export interface Product {
   weight: string; // Mapped from sizes[0] (Primary display weight)
   sizes: string[]; // Full list of available sizes/packs
   sizePricing: ProductSizePricing[];
+  cuttingTypePricing: ProductCuttingTypePricing[];
+  pieceSizePricing: ProductPieceSizePricing[];
 
   rating: number; // Mapped from ratings
   totalSold: number;
@@ -60,6 +75,8 @@ export interface Product {
   cuttingTypes: string[];
   pieceSizes: string[];
   processingWeightLoss: string | null;
+
+  status: "Active" | "NonActive";
 
   // Derived logic
   isBestseller: boolean;

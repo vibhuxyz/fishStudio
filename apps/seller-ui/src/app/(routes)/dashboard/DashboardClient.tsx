@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   useReactTable,
@@ -120,9 +121,18 @@ export default function DashboardClient() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Shop Insights</h1>
           <p className="text-gray-400 mt-1">Performance overview for your fish studio</p>
         </div>
-        <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-sm text-gray-300">
-          <Clock size={16} className="text-gray-500" />
-          Last updated: {new Date().toLocaleTimeString()}
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/staff" 
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+          >
+            <Users size={18} />
+            Go to Staff Page
+          </Link>
+          <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-sm text-gray-300">
+            <Clock size={16} className="text-gray-500" />
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
         </div>
       </header>
 

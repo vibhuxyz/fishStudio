@@ -739,6 +739,7 @@ export const checkPincode = async (
         id: true,
         name: true,
         city: true,
+        state: true,
         availableCities: true,
         cityDeliveryTimes: true,
       },

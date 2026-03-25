@@ -115,18 +115,19 @@ export function ProductCard({
   }
 
   const isOutOfStock = product.stock <= 0;
+  const isComingSoon = product.status === "NonActive";
 
   if (variant === "compact") {
     return (
-      <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock ? "opacity-80" : ""}`}>
+      <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
         <div className="relative">
-          <div className={`relative block aspect-square overflow-hidden bg-muted ${isOutOfStock ? "pointer-events-none" : ""}`}>
-            {isOutOfStock ? (
+          <div className={`relative block aspect-square overflow-hidden bg-muted ${isOutOfStock || isComingSoon ? "pointer-events-none" : ""}`}>
+            {isOutOfStock || isComingSoon ? (
               <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
                 fill
-                className="object-cover grayscale"
+                className={`object-cover ${isOutOfStock ? "grayscale" : ""}`}
                 sizes="(max-width: 768px) 50vw, 220px"
                 placeholder="blur"
                 blurDataURL={BLUR_DATA}
@@ -149,7 +150,12 @@ export function ProductCard({
               </Link>
             )}
           </div>
-          {isOutOfStock && (
+          {isComingSoon && (
+            <div className="absolute inset-x-0 bottom-0 bg-blue-900/80 py-1.5 text-center backdrop-blur-[2px]">
+              <span className="text-[10px] font-bold tracking-wider text-blue-200 uppercase">Coming Soon</span>
+            </div>
+          )}
+          {!isComingSoon && isOutOfStock && (
             <div className="absolute inset-x-0 bottom-0 bg-black/65 py-1.5 text-center backdrop-blur-[2px]">
               <span className="text-[10px] font-bold tracking-wider text-white uppercase">Out of Stock</span>
             </div>
@@ -157,11 +163,11 @@ export function ProductCard({
         </div>
         <div className="flex flex-col gap-1 px-3 pb-3 pt-2.5">
           <p className="truncate text-sm font-semibold text-card-foreground">
-            {isOutOfStock ? product.name : (
+            {isOutOfStock || isComingSoon ? product.name : (
               <Link href={`/product/${slug}`}>{product.name}</Link>
             )}
           </p>
-          {!isOutOfStock && (
+          {!isOutOfStock && !isComingSoon && (
             <>
               <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 {product.subCategory}
@@ -178,6 +184,11 @@ export function ProductCard({
               </div>
             </>
           )}
+          {isComingSoon && (
+            <p className="text-[10px] font-medium uppercase tracking-wider text-blue-400">
+              Available Soon
+            </p>
+          )}
         </div>
       </div>
     );
@@ -185,14 +196,14 @@ export function ProductCard({
 
   /* Full variant (Bestsellers) */
   return (
-    <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock ? "opacity-80" : ""}`}>
+    <div className={`group flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
       <div className="relative aspect-square overflow-hidden bg-muted">
-        {isOutOfStock ? (
+        {isOutOfStock || isComingSoon ? (
           <Image
             src={product.image || "/placeholder.svg"}
             alt={product.name}
             fill
-            className="object-cover grayscale"
+            className={`object-cover ${isOutOfStock ? "grayscale" : ""}`}
             sizes="(max-width: 768px) 50vw, 220px"
             placeholder="blur"
             blurDataURL={BLUR_DATA}
@@ -224,7 +235,14 @@ export function ProductCard({
             </button>
           </Link>
         )}
-        {isOutOfStock && (
+        {isComingSoon && (
+          <div className="absolute inset-0 flex items-center justify-center bg-blue-900/50 backdrop-blur-[1px]">
+            <span className="rounded-full bg-blue-900/90 px-4 py-1.5 text-xs font-bold tracking-wider text-blue-200 uppercase shadow-lg border border-blue-400/30">
+              Coming Soon
+            </span>
+          </div>
+        )}
+        {!isComingSoon && isOutOfStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
             <span className="rounded-full bg-black/80 px-4 py-1.5 text-xs font-bold tracking-wider text-white uppercase shadow-lg border border-white/20">
               Out of Stock
@@ -235,13 +253,13 @@ export function ProductCard({
 
       <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
         <h3 className="text-sm font-bold leading-tight text-card-foreground">
-          {isOutOfStock ? product.name : (
+          {isOutOfStock || isComingSoon ? product.name : (
             <Link href={`/product/${slug}`} className="hover:text-primary">
               {product.name}
             </Link>
           )}
         </h3>
-        {!isOutOfStock && (
+        {!isOutOfStock && !isComingSoon && (
           <>
             <div className="mt-0.5 flex items-center gap-1">
               <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
@@ -266,6 +284,11 @@ export function ProductCard({
               {renderCartButton()}
             </div>
           </>
+        )}
+        {isComingSoon && (
+          <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-blue-400">
+            Available Soon
+          </p>
         )}
       </div>
     </div>

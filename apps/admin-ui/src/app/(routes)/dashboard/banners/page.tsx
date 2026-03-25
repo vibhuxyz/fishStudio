@@ -15,6 +15,7 @@ const BannersPage = () => {
   const { data: banners = [], isLoading } = useAdminBanners();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const [newBannerImages, setNewBannerImages] = useState<any[]>([null]);
 
   const deleteMutation = useMutation({
@@ -42,6 +43,7 @@ const BannersPage = () => {
 
     try {
       setIsUploading(true);
+      setUploadedIndices([]);
       for (const imgData of imagesToUpload) {
         setUploadingIndex(imgData.originalIndex);
         await axiosInstance.post(
@@ -51,6 +53,7 @@ const BannersPage = () => {
           },
           isProtected
         );
+        setUploadedIndices(prev => [...prev, imgData.originalIndex]);
       }
       
       toast.success("Banners uploaded successfully");
@@ -62,6 +65,7 @@ const BannersPage = () => {
     } finally {
       setIsUploading(false);
       setUploadingIndex(null);
+      setUploadedIndices([]);
     }
   };
 
@@ -80,18 +84,28 @@ const BannersPage = () => {
           </div>
           
           <div className="space-y-4">
-            {newBannerImages.map((_, index) => (
-              <ImagePlaceHolder
-                key={index}
-                index={index}
-                size="1920 x 450"
-                small={true}
-                images={newBannerImages}
-                setImages={setNewBannerImages}
-                setValue={() => {}} // dummy for now
-                isUploading={uploadingIndex === index}
-              />
-            ))}
+            {newBannerImages.map((_, index) => {
+              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
+              if (isUploading) {
+                if (uploadingIndex === index) status = "uploading";
+                else if (uploadedIndices.includes(index)) status = "success";
+                else if (newBannerImages[index] && newBannerImages[index].base64) status = "waiting";
+              }
+
+              return (
+                <ImagePlaceHolder
+                  key={index}
+                  index={index}
+                  size="1920 x 450"
+                  small={true}
+                  images={newBannerImages}
+                  setImages={setNewBannerImages}
+                  setValue={() => {}} // dummy for now
+                  isUploading={status === "uploading"}
+                  uploadStatus={status}
+                />
+              );
+            })}
           </div>
 
           <button
@@ -129,18 +143,28 @@ const BannersPage = () => {
                   key={banner.id}
                   className="relative group bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-blue-500/30 transition-all"
                 >
-                  <img 
-                    src={banner.imageUrl} 
-                    alt="banner" 
-                    className="w-full h-40 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button
-                      onClick={() => deleteMutation.mutate(banner.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition transform hover:scale-110"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                  <div className="relative h-40 overflow-hidden">
+                    {deleteMutation.isPending && deleteMutation.variables === banner.id && (
+                      <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="animate-spin text-red-500" size={24} />
+                        <span className="text-white text-xs font-medium">Deleting...</span>
+                      </div>
+                    )}
+                    <img 
+                      src={banner.imageUrl} 
+                      alt="banner" 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    {!deleteMutation.isPending && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => deleteMutation.mutate(banner.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full shadow-lg transition transform hover:scale-110 flex items-center justify-center"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className="p-3 flex justify-between items-center text-xs text-gray-400">
                     <span>Uploaded on {new Date(banner.createdAt).toLocaleDateString()}</span>

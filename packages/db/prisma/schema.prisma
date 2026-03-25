@@ -21,8 +21,7 @@ enum ImageType {
 
 enum productStatus {
   Active
-  Pending
-  Draft
+  NonActive
 }
 
 enum sellerEventType {
@@ -255,15 +254,16 @@ model products {
   category             String
   subCategory          String
   short_description    String
-  detailed_description String
 
   images images[]
 
   tags         String[]
   sizes        String[]
-  sizePricing  Json?
-  cuttingTypes String[]
-  pieceSizes   String[]
+  sizePricing         Json?
+  cuttingTypePricing  Json?
+  pieceSizePricing    Json?
+  cuttingTypes        String[]
+  pieceSizes          String[]
 
   processingWeightLoss String?
   stock                Int
@@ -296,10 +296,13 @@ model products {
 }
 
 model banners {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  imageUrl String
-  fileId   String
-  isActive Boolean @default(true)
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  imageUrl        String
+  fileId          String
+  isActive        Boolean @default(false)
+  category        String?
+  status          String? @default("PENDING") // PENDING, APPROVED, REJECTED
+  rejectionReason String?
 
   // Link to Seller or Admin
   sellerId String?  @db.ObjectId

@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import Skeleton
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/select";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/types";
-import { resolveProductSizePricing } from "@/lib/storefront";
+import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
+import { useModals } from "@/components/providers/modal-provider";
+import { toast } from "sonner";
 
 interface AddToCartModalProps {
   product: Product | null;
@@ -34,68 +36,74 @@ export function AddToCartModal({
   open,
   onOpenChange,
 }: AddToCartModalProps) {
+  const modals = useModals();
   const [selectedCutting, setSelectedCutting] = useState<string>("");
   const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
-
-  // ✅ Image Loading State
   const [isImageLoading, setIsImageLoading] = useState(true);
 
-  // Reset state when the modal opens or product changes
+  // Default to first option in each dimension when modal opens
   useEffect(() => {
     if (open && product) {
+      setSelectedSize(product.sizes?.[0] || "");
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
-      setSelectedSize(product.weight || product.sizes?.[0] || "");
       setQuantity(1);
-      setIsImageLoading(true); // Reset image loader
+      setIsImageLoading(true);
     }
   }, [open, product]);
 
-  const { normalizedPricing, selected } = useMemo(() => {
-    if (!product) {
-      return {
-        normalizedPricing: [],
-        selected: {
-          size: "",
-          weightGrams: 0,
-          salePrice: 0,
-          regularPrice: 0,
-        },
-      };
-    }
+  // Normalized size pricing for the size dropdown
+  const normalizedSizePricing = useMemo(() => {
+    if (!product) return [];
+    return normalizeSizePricing(
+      product.sizePricing,
+      product.sizes,
+      product.price,
+      product.originalPrice ?? product.price,
+    );
+  }, [product]);
 
-    return resolveProductSizePricing(product, selectedSize);
+  // Resolve the displayed price based on selected size only
+  const resolved = useMemo(() => {
+    if (!product) return { salePrice: 0, regularPrice: 0, unit: "" };
+    return resolvePrice(product, selectedSize);
   }, [product, selectedSize]);
 
   const totalPayable = useMemo(() => {
-    if (!product) return 0;
-    return Number.parseFloat((selected.salePrice * quantity).toFixed(2));
-  }, [product, quantity, selected.salePrice]);
+    return Number.parseFloat((resolved.salePrice * quantity).toFixed(2));
+  }, [resolved.salePrice, quantity]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (shouldOpenCart = false) => {
     if (!product) return;
     const customizedProduct = {
       ...product,
-      price: selected.salePrice,
+      price: resolved.salePrice,
       originalPrice:
-        selected.regularPrice > selected.salePrice
-          ? selected.regularPrice
-          : undefined,
-      weight: selected.size || product.weight,
+        resolved.regularPrice > resolved.salePrice ? resolved.regularPrice : undefined,
+      weight: selectedSize || resolved.unit || product.weight,
     };
     addToCart(
       customizedProduct,
       quantity,
-      selectedCutting,
-      selectedPieceSize,
-      selected.size || selectedSize,
+      selectedCutting || "default",
+      selectedPieceSize || "default",
+      selectedSize || resolved.unit || product.weight,
     );
     onOpenChange(false);
+    if (shouldOpenCart) {
+      modals.openCart();
+    } else {
+      toast.success(`${product.name} added to cart`);
+    }
   };
 
   if (!product) return null;
+
+  const hasSizes = product.sizes && product.sizes.length > 0;
+  const hasCuttingTypes = product.cuttingTypes && product.cuttingTypes.length > 0;
+  const hasPieceSizes = product.pieceSizes && product.pieceSizes.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,14 +118,12 @@ export function AddToCartModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-6 md:flex-row">
-          {/* Product Image Section */}
+          {/* Product Image */}
           <div className="flex-shrink-0">
             <div className="relative h-48 w-full overflow-hidden rounded-xl md:h-56 md:w-56 bg-muted">
-              {/* ✅ Skeleton that shows while image is loading */}
               {isImageLoading && (
                 <Skeleton className="absolute inset-0 z-10 h-full w-full" />
               )}
-
               <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
@@ -127,7 +133,6 @@ export function AddToCartModal({
                 }`}
                 placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
-                // ✅ Hide skeleton when image is ready
                 onLoad={() => setIsImageLoading(false)}
               />
             </div>
@@ -140,7 +145,6 @@ export function AddToCartModal({
             </p>
             <h3 className="text-lg font-bold text-primary">{product.name}</h3>
 
-            {/* Description */}
             <p className="mt-1 text-sm text-muted-foreground">
               {product.description}
             </p>
@@ -149,28 +153,54 @@ export function AddToCartModal({
               <span>Product Code: {product.id.slice(-6).toUpperCase()}</span>
             </div>
 
+            {/* Resolved Price */}
             <p className="mt-2 text-lg font-bold text-primary">
-              Price: Rs. {selected.salePrice || product.price}{" "}
-              {selected.regularPrice > selected.salePrice ? (
+              Price: Rs. {resolved.salePrice || product.price}{" "}
+              {resolved.regularPrice > resolved.salePrice ? (
                 <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                  Rs. {selected.regularPrice}
+                  Rs. {resolved.regularPrice}
                 </span>
               ) : null}
-              <span className="text-sm font-normal text-muted-foreground">
-                / {selected.size || selectedSize || "unit"}
-              </span>
+              {resolved.unit && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {" "}/ {resolved.unit}
+                </span>
+              )}
             </p>
 
-            {/* 1. Cutting Type Selection */}
-            {product.cuttingTypes && product.cuttingTypes.length > 0 && (
+            {/* 1. Pack / Fish Size */}
+            {hasSizes && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-foreground">
+                  Pack / Fish Size
+                </label>
+                <Select value={selectedSize} onValueChange={setSelectedSize}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {normalizedSizePricing.map((entry) => (
+                      <SelectItem key={entry.size} value={entry.size}>
+                        {entry.size}
+                        {entry.salePrice > 0 && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            — Rs. {entry.salePrice}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* 2. Cutting Type */}
+            {hasCuttingTypes && (
               <div className="mt-4">
                 <label className="text-sm font-medium text-foreground">
                   Cutting Type
                 </label>
-                <Select
-                  value={selectedCutting}
-                  onValueChange={setSelectedCutting}
-                >
+                <Select value={selectedCutting} onValueChange={setSelectedCutting}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue placeholder="Select cutting type" />
                   </SelectTrigger>
@@ -185,16 +215,13 @@ export function AddToCartModal({
               </div>
             )}
 
-            {/* 2. Piece Size Selection */}
-            {product.pieceSizes && product.pieceSizes.length > 0 && (
+            {/* 3. Piece Size */}
+            {hasPieceSizes && (
               <div className="mt-4">
                 <label className="text-sm font-medium text-foreground">
                   Piece Size
                 </label>
-                <Select
-                  value={selectedPieceSize}
-                  onValueChange={setSelectedPieceSize}
-                >
+                <Select value={selectedPieceSize} onValueChange={setSelectedPieceSize}>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue placeholder="Select piece size" />
                   </SelectTrigger>
@@ -209,36 +236,13 @@ export function AddToCartModal({
               </div>
             )}
 
-            {/* 3. Fish/Pack Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
-              <div className="mt-4">
-                <label className="text-sm font-medium text-foreground">
-                  Pack / Fish Size
-                </label>
-                <Select value={selectedSize} onValueChange={setSelectedSize}>
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue placeholder="Select size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {normalizedPricing.map((sizePricing) => (
-                      <SelectItem key={sizePricing.size} value={sizePricing.size}>
-                        {sizePricing.size}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
             {/* Weight Loss Info */}
             {product.processingWeightLoss && (
               <div className="mt-3 flex items-start gap-2 rounded-md border border-border bg-muted/50 p-2.5">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
                   Processing weight loss:{" "}
-                  <span className="font-medium">
-                    {product.processingWeightLoss}
-                  </span>{" "}
+                  <span className="font-medium">{product.processingWeightLoss}</span>{" "}
                   (varies by cutting type).
                 </p>
               </div>
@@ -281,13 +285,13 @@ export function AddToCartModal({
             <div className="mt-5 flex gap-3">
               <Button
                 className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={handleAddToCart}
+                onClick={() => handleAddToCart(false)}
               >
                 Add to Cart
               </Button>
               <Button
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={handleAddToCart}
+                onClick={() => handleAddToCart(true)}
               >
                 Buy Now
               </Button>

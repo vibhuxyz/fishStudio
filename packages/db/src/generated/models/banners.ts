@@ -29,6 +29,9 @@ export type BannersMinAggregateOutputType = {
   imageUrl: string | null
   fileId: string | null
   isActive: boolean | null
+  category: string | null
+  status: string | null
+  rejectionReason: string | null
   sellerId: string | null
   adminId: string | null
   createdAt: Date | null
@@ -40,6 +43,9 @@ export type BannersMaxAggregateOutputType = {
   imageUrl: string | null
   fileId: string | null
   isActive: boolean | null
+  category: string | null
+  status: string | null
+  rejectionReason: string | null
   sellerId: string | null
   adminId: string | null
   createdAt: Date | null
@@ -51,6 +57,9 @@ export type BannersCountAggregateOutputType = {
   imageUrl: number
   fileId: number
   isActive: number
+  category: number
+  status: number
+  rejectionReason: number
   sellerId: number
   adminId: number
   createdAt: number
@@ -64,6 +73,9 @@ export type BannersMinAggregateInputType = {
   imageUrl?: true
   fileId?: true
   isActive?: true
+  category?: true
+  status?: true
+  rejectionReason?: true
   sellerId?: true
   adminId?: true
   createdAt?: true
@@ -75,6 +87,9 @@ export type BannersMaxAggregateInputType = {
   imageUrl?: true
   fileId?: true
   isActive?: true
+  category?: true
+  status?: true
+  rejectionReason?: true
   sellerId?: true
   adminId?: true
   createdAt?: true
@@ -86,6 +101,9 @@ export type BannersCountAggregateInputType = {
   imageUrl?: true
   fileId?: true
   isActive?: true
+  category?: true
+  status?: true
+  rejectionReason?: true
   sellerId?: true
   adminId?: true
   createdAt?: true
@@ -170,6 +188,9 @@ export type BannersGroupByOutputType = {
   imageUrl: string
   fileId: string
   isActive: boolean
+  category: string | null
+  status: string | null
+  rejectionReason: string | null
   sellerId: string | null
   adminId: string | null
   createdAt: Date
@@ -202,6 +223,9 @@ export type bannersWhereInput = {
   imageUrl?: Prisma.StringFilter<"banners"> | string
   fileId?: Prisma.StringFilter<"banners"> | string
   isActive?: Prisma.BoolFilter<"banners"> | boolean
+  category?: Prisma.StringNullableFilter<"banners"> | string | null
+  status?: Prisma.StringNullableFilter<"banners"> | string | null
+  rejectionReason?: Prisma.StringNullableFilter<"banners"> | string | null
   sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
   adminId?: Prisma.StringNullableFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
@@ -215,6 +239,9 @@ export type bannersOrderByWithRelationInput = {
   imageUrl?: Prisma.SortOrder
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -231,6 +258,9 @@ export type bannersWhereUniqueInput = Prisma.AtLeast<{
   imageUrl?: Prisma.StringFilter<"banners"> | string
   fileId?: Prisma.StringFilter<"banners"> | string
   isActive?: Prisma.BoolFilter<"banners"> | boolean
+  category?: Prisma.StringNullableFilter<"banners"> | string | null
+  status?: Prisma.StringNullableFilter<"banners"> | string | null
+  rejectionReason?: Prisma.StringNullableFilter<"banners"> | string | null
   sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
   adminId?: Prisma.StringNullableFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
@@ -244,6 +274,9 @@ export type bannersOrderByWithAggregationInput = {
   imageUrl?: Prisma.SortOrder
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -261,6 +294,9 @@ export type bannersScalarWhereWithAggregatesInput = {
   imageUrl?: Prisma.StringWithAggregatesFilter<"banners"> | string
   fileId?: Prisma.StringWithAggregatesFilter<"banners"> | string
   isActive?: Prisma.BoolWithAggregatesFilter<"banners"> | boolean
+  category?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
+  status?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
+  rejectionReason?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
   sellerId?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
   adminId?: Prisma.StringNullableWithAggregatesFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"banners"> | Date | string
@@ -272,6 +308,9 @@ export type bannersCreateInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   seller?: Prisma.sellersCreateNestedOneWithoutBannersInput
@@ -283,6 +322,9 @@ export type bannersUncheckedCreateInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   sellerId?: string | null
   adminId?: string | null
   createdAt?: Date | string
@@ -293,6 +335,9 @@ export type bannersUpdateInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   seller?: Prisma.sellersUpdateOneWithoutBannersNestedInput
@@ -303,6 +348,9 @@ export type bannersUncheckedUpdateInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -314,6 +362,9 @@ export type bannersCreateManyInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   sellerId?: string | null
   adminId?: string | null
   createdAt?: Date | string
@@ -324,6 +375,9 @@ export type bannersUpdateManyMutationInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -332,6 +386,9 @@ export type bannersUncheckedUpdateManyInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -353,6 +410,9 @@ export type bannersCountOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -364,6 +424,9 @@ export type bannersMaxOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -375,6 +438,9 @@ export type bannersMinOrderByAggregateInput = {
   imageUrl?: Prisma.SortOrder
   fileId?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  category?: Prisma.SortOrder
+  status?: Prisma.SortOrder
+  rejectionReason?: Prisma.SortOrder
   sellerId?: Prisma.SortOrder
   adminId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -470,6 +536,9 @@ export type bannersCreateWithoutAdminInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   seller?: Prisma.sellersCreateNestedOneWithoutBannersInput
@@ -480,6 +549,9 @@ export type bannersUncheckedCreateWithoutAdminInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   sellerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -518,6 +590,9 @@ export type bannersScalarWhereInput = {
   imageUrl?: Prisma.StringFilter<"banners"> | string
   fileId?: Prisma.StringFilter<"banners"> | string
   isActive?: Prisma.BoolFilter<"banners"> | boolean
+  category?: Prisma.StringNullableFilter<"banners"> | string | null
+  status?: Prisma.StringNullableFilter<"banners"> | string | null
+  rejectionReason?: Prisma.StringNullableFilter<"banners"> | string | null
   sellerId?: Prisma.StringNullableFilter<"banners"> | string | null
   adminId?: Prisma.StringNullableFilter<"banners"> | string | null
   createdAt?: Prisma.DateTimeFilter<"banners"> | Date | string
@@ -529,6 +604,9 @@ export type bannersCreateWithoutSellerInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   admin?: Prisma.adminsCreateNestedOneWithoutBannersInput
@@ -539,6 +617,9 @@ export type bannersUncheckedCreateWithoutSellerInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -574,6 +655,9 @@ export type bannersCreateManyAdminInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   sellerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -583,6 +667,9 @@ export type bannersUpdateWithoutAdminInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   seller?: Prisma.sellersUpdateOneWithoutBannersNestedInput
@@ -592,6 +679,9 @@ export type bannersUncheckedUpdateWithoutAdminInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -601,6 +691,9 @@ export type bannersUncheckedUpdateManyWithoutAdminInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sellerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -611,6 +704,9 @@ export type bannersCreateManySellerInput = {
   imageUrl: string
   fileId: string
   isActive?: boolean
+  category?: string | null
+  status?: string | null
+  rejectionReason?: string | null
   adminId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -620,6 +716,9 @@ export type bannersUpdateWithoutSellerInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   admin?: Prisma.adminsUpdateOneWithoutBannersNestedInput
@@ -629,6 +728,9 @@ export type bannersUncheckedUpdateWithoutSellerInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -638,6 +740,9 @@ export type bannersUncheckedUpdateManyWithoutSellerInput = {
   imageUrl?: Prisma.StringFieldUpdateOperationsInput | string
   fileId?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  rejectionReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   adminId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -650,6 +755,9 @@ export type bannersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   imageUrl?: boolean
   fileId?: boolean
   isActive?: boolean
+  category?: boolean
+  status?: boolean
+  rejectionReason?: boolean
   sellerId?: boolean
   adminId?: boolean
   createdAt?: boolean
@@ -665,13 +773,16 @@ export type bannersSelectScalar = {
   imageUrl?: boolean
   fileId?: boolean
   isActive?: boolean
+  category?: boolean
+  status?: boolean
+  rejectionReason?: boolean
   sellerId?: boolean
   adminId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type bannersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "imageUrl" | "fileId" | "isActive" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["banners"]>
+export type bannersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "imageUrl" | "fileId" | "isActive" | "category" | "status" | "rejectionReason" | "sellerId" | "adminId" | "createdAt" | "updatedAt", ExtArgs["result"]["banners"]>
 export type bannersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   seller?: boolean | Prisma.banners$sellerArgs<ExtArgs>
   admin?: boolean | Prisma.banners$adminArgs<ExtArgs>
@@ -688,6 +799,9 @@ export type $bannersPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     imageUrl: string
     fileId: string
     isActive: boolean
+    category: string | null
+    status: string | null
+    rejectionReason: string | null
     sellerId: string | null
     adminId: string | null
     createdAt: Date
@@ -1090,6 +1204,9 @@ export interface bannersFieldRefs {
   readonly imageUrl: Prisma.FieldRef<"banners", 'String'>
   readonly fileId: Prisma.FieldRef<"banners", 'String'>
   readonly isActive: Prisma.FieldRef<"banners", 'Boolean'>
+  readonly category: Prisma.FieldRef<"banners", 'String'>
+  readonly status: Prisma.FieldRef<"banners", 'String'>
+  readonly rejectionReason: Prisma.FieldRef<"banners", 'String'>
   readonly sellerId: Prisma.FieldRef<"banners", 'String'>
   readonly adminId: Prisma.FieldRef<"banners", 'String'>
   readonly createdAt: Prisma.FieldRef<"banners", 'DateTime'>

@@ -25,8 +25,7 @@ const allowedOrigins = [
     [
       ...(ENV.CORS_ORIGINS
         ? ENV.CORS_ORIGINS.split(",").map((origin: string) => origin.trim())
-        : []),
-      ...defaultLocalOrigins,
+        : defaultLocalOrigins),
     ].filter(Boolean),
   ),
 ];

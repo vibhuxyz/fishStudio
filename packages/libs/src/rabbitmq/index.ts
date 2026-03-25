@@ -16,11 +16,9 @@ export const connectRabbitMQ = async (): Promise<Channel> => {
     RABBITMQ_PORT,
   } = ENV;
 
-  // const url =
-  //   `${RABBITMQ_PROTOCOL}://${RABBITMQ_USER_NAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST_NAME}:${RABBITMQ_PORT}` ||
-  //   "amqp://guest:guest@localhost:5672";
-
-  const url = "amqp://guest:guest@localhost:5672";
+  const url =
+    `${RABBITMQ_PROTOCOL}://${RABBITMQ_USER_NAME}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST_NAME}:${RABBITMQ_PORT}` ||
+    "amqp://guest:guest@localhost:5672";
 
   try {
     connection = await amqp.connect(url); // ✅ ChannelModel

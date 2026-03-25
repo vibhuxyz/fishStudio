@@ -267,6 +267,12 @@ export default function OrderConfirmationPage() {
               <span>Delivery Charge</span>
               <span>₹{billDetails?.deliveryCharge ?? order.deliveryCharge ?? 0}</span>
             </div>
+            {billDetails?.extraCharge ? (
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Instant Delivery Fee</span>
+                <span>₹{billDetails.extraCharge}</span>
+              </div>
+            ) : null}
             {billDetails?.discount ? (
               <div className="flex justify-between text-xs text-offer-green">
                 <span>Discount</span>

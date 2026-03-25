@@ -25,6 +25,7 @@ import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/types";
 import { resolveProductSizePricing } from "@/lib/storefront";
+import { toast } from "sonner";
 
 const BLUR_DATA =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCw4QDAsNEQ4SEBQSEBESFBcWFxcYGBsbGBshICD/2wBDAQMEBAUEBQkFBQkhEAsQISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISH/wAARCAAIAAgDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EAB8QAAICAgIDAQAAAAAAAAAAAAECAwQFEQASITFBcf/EABUBAQEAAAAAAAAAAAAAAAAAAAUG/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxExQf/aAAwDAQACEQMRAD8Al4/LZCnlKtaOysVeSRUVmQEqCdAnf0eXqd4bVTk7mO3LWIZB3i+y9c=";
@@ -80,10 +81,10 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       ? product.images
       : [product.image || "/placeholder.svg"];
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (shouldOpenCart = false) => {
     // Basic validation to ensure options are selected
     if (!selectedCutting || !selectedPieceSize) return;
-
+ 
     const customizedProduct = {
       ...product,
       price: computedSalePrice,
@@ -93,7 +94,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
           : undefined,
       weight: `${selectedWeightGrams} gm`,
     };
-
+ 
     addToCart(
       customizedProduct,
       1,
@@ -101,7 +102,11 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       selectedPieceSize,
       `${selected.size} | ${selectedWeightGrams} gm`,
     );
-    modals.openCart();
+    if (shouldOpenCart) {
+      modals.openCart();
+    } else {
+      toast.success(`${product.name} added to cart`);
+    }
   };
 
   return (
@@ -395,14 +400,14 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   <Button
                     size="lg"
                     className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                    onClick={handleAddToCart}
+                    onClick={() => handleAddToCart(false)}
                   >
                     Add to cart
                   </Button>
                   <Button
                     size="lg"
                     className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleAddToCart}
+                    onClick={() => handleAddToCart(true)}
                   >
                     Buy Now
                   </Button>

@@ -31,7 +31,6 @@ const EditProductModal = ({
       category: product.category,
       subCategory: product.subCategory || "",
       short_description: product.short_description || "",
-      detailed_description: product.detailed_description || "",
       tags: product.tags?.join(", ") || "",
     },
   });
@@ -44,7 +43,6 @@ const EditProductModal = ({
       category: product.category,
       subCategory: product.subCategory || "",
       short_description: product.short_description || "",
-      detailed_description: product.detailed_description || "",
       tags: product.tags?.join(", ") || "",
     });
   }, [product, reset]);
@@ -159,17 +157,6 @@ const EditProductModal = ({
             <textarea
               rows={3}
               {...register("short_description")}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm text-gray-300 mb-1">
-              Detailed Description
-            </label>
-            <textarea
-              rows={6}
-              {...register("detailed_description")}
               className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
             />
           </div>

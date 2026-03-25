@@ -17,17 +17,21 @@ import {
   getOwnedProductById,
   getOwnedProducts,
   getAdminBanners,
+  getAllCategoryBanners,
+  getPendingBanners,
   getSellerBanners,
   getSellerEvents,
   getStoreProductBySlug,
   getStoreProducts,
   getStorePublicOffers,
   restoreProduct,
+  reviewBanner,
   slugValidator,
   updateBanner,
   updateProduct,
   updateSellerEvent,
   uploadBanner,
+  validateCart,
   deleteCloudinaryImage,
   uploadCloudinaryImage,
   uploadProductImage,
@@ -150,6 +154,24 @@ router.get(
   allowRoles("admin"),
   getAdminBanners,
 );
+router.get(
+  "/get-all-category-banners",
+  isAuthenticated,
+  allowRoles("admin"),
+  getAllCategoryBanners,
+);
+router.get(
+  "/get-pending-banners",
+  isAuthenticated,
+  allowRoles("admin"),
+  getPendingBanners,
+);
+router.post(
+  "/review-banner",
+  isAuthenticated,
+  allowRoles("admin"),
+  reviewBanner,
+);
 router.get("/get-banners", getActiveBanners);
 
 router.post(
@@ -160,6 +182,7 @@ router.post(
 );
 
 router.get("/get-all-products", getStoreProducts);
+router.post("/validate-cart", validateCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
 router.get("/public/store-offers/:storeId", getStorePublicOffers);
 router.get(

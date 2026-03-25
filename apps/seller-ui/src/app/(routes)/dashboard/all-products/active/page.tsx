@@ -3,15 +3,16 @@
 import React from "react";
 import InventoryProductList from "@/shared/components/inventory/product-list";
 
-const AllProductsPage = () => {
+const ActiveProductsPage = () => {
   return (
     <div className="min-h-screen w-full p-8">
       <InventoryProductList 
-        title="All Store Products"
-        description="Manage all products in your shop's inventory."
+        statusFilter="Active"
+        title="Active Products"
+        description="View and manage products that are currently active in your shop."
       />
     </div>
   );
 };
 
-export default AllProductsPage;
+export default ActiveProductsPage;

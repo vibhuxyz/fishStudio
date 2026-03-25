@@ -20,6 +20,7 @@ import {
   CreditCard,
   Store,
   Tag,
+  Zap,
 } from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import { MockOrder, OrderStatus, MOCK_ORDERS } from "@/shared/mocks/staffMockData";
@@ -264,13 +265,24 @@ function RejectModal({
 // ─── Order Detail Modal ──────────────────────────────────────────────────────
 
 const MOCK_SELLER_DETAILS = {
-  name: "Rajan Fisheries Pvt. Ltd.",
-  email: "rajan@fishstudio.in",
-  phone: "+91 98400 12345",
-  store: { name: "FishStudio", address: "32, Fishing Harbour, Kochi, Kerala - 682001" },
+  name: "Arjun (Manager)",
+  email: "manager@themarinemarket.com",
+  phone: "+91 91234 56780",
+  store: { 
+    name: "The Marine Market", 
+    address: "Bazar Peth, Near Fish Jetty, Mumbai" 
+  },
 };
 
-function OrderDetailModal({ order, onClose }: { order: MockOrder; onClose: () => void }) {
+function OrderDetailModal({ 
+  order, 
+  onClose,
+  staff
+}: { 
+  order: MockOrder; 
+  onClose: () => void;
+  staff: any;
+}) {
   const [copied, setCopied] = useState<string | null>(null);
 
   const copy = (text: string, key: string) => {
@@ -279,183 +291,179 @@ function OrderDetailModal({ order, onClose }: { order: MockOrder; onClose: () =>
     setTimeout(() => setCopied(null), 1800);
   };
 
-  const cfg = STATUS_CONFIG[order.status];
-  const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const tax = Math.round(subtotal * 0.05);
-  const discount = order.total < subtotal ? subtotal - order.total : 0;
+  const statusCfg = STATUS_CONFIG[order.status];
+  const billDetails = order.billDetails;
+
+  const storeInfo = staff?.seller?.store || staff?.store || MOCK_SELLER_DETAILS.store;
+
+  const slotLabel =
+    order.deliverySlot === "instant"
+      ? "⚡ Instant (30–45 mins)"
+      : order.deliverySlot === "morning"
+        ? "🌅 Morning (6 AM – 10 AM)"
+        : order.deliverySlot === "evening"
+          ? "🌆 Evening (5 PM – 9 PM)"
+          : "Standard Delivery";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-[#0d1117] border border-gray-700/60 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+      <div className="bg-[#0a0a0c] border border-gray-800/60 rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] scrollbar-hide">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-[#0d1117] z-10">
+        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-900 sticky top-0 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
           <div>
-            <h2 className="text-white font-bold text-lg">Order #{order.id.slice(-6).toUpperCase()}</h2>
-            <p className="text-gray-500 text-xs mt-0.5">
-              {new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order #{order.id.slice(-6).toUpperCase()}</h2>
+            <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
+              Placed on {new Date(order.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {cfg.label}
+          <div className="flex items-center gap-4">
+            <span className={`inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border}`}>
+              <span className={`w-2 h-2 rounded-full ${statusCfg.dot} animate-pulse`} />
+              {statusCfg.label}
             </span>
-            <button type="button" onClick={onClose} className="text-gray-500 hover:text-white transition">
+            <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white rounded-full transition-all active:scale-95">
               <X size={20} />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Customer + Seller row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Customer */}
-            <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <User size={15} className="text-gray-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer</h3>
-              </div>
-              <p className="text-white font-semibold">{order.user.name}</p>
-              <p className="text-gray-400 text-sm mt-1">{order.user.email}</p>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-gray-300 text-sm font-mono flex items-center gap-1.5">
-                  <Phone size={12} className="text-gray-500" />
-                  {order.user.phone}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => copy(order.user.phone, "phone")}
-                  className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
-                >
-                  <Copy size={11} />
-                  {copied === "phone" ? "Copied!" : "Copy"}
-                </button>
-              </div>
-            </div>
-
-            {/* Seller */}
-            <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Store size={15} className="text-gray-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seller</h3>
-              </div>
-              <p className="text-white font-semibold">{MOCK_SELLER_DETAILS.store.name}</p>
-              <p className="text-gray-400 text-sm mt-1">{MOCK_SELLER_DETAILS.name}</p>
-              <p className="text-gray-400 text-sm">{MOCK_SELLER_DETAILS.email}</p>
-              <p className="text-gray-300 text-sm font-mono mt-1">{MOCK_SELLER_DETAILS.phone}</p>
-            </div>
-          </div>
-
-          {/* Delivery Address */}
-          <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <MapPin size={15} className="text-gray-400" />
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Delivery Address</h3>
-              <button
-                type="button"
-                onClick={() => copy(`${order.shippingAddress.name}, ${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.state} - ${order.shippingAddress.zip}`, "addr")}
-                className="ml-auto text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition"
-              >
-                <Copy size={11} />
-                {copied === "addr" ? "Copied!" : "Copy Full Address"}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-              <div>
-                <p className="text-gray-500 text-xs">Name</p>
-                <p className="text-white text-sm font-medium">{order.shippingAddress.name}</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">Street</p>
-                <p className="text-white text-sm">{order.shippingAddress.street}</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">City</p>
-                <p className="text-white text-sm">{order.shippingAddress.city}</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">State</p>
-                <p className="text-white text-sm">{order.shippingAddress.state}</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">Pincode</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-white text-sm font-mono">{order.shippingAddress.zip}</p>
-                  <button type="button" onClick={() => copy(order.shippingAddress.zip, "pin")} className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition">
-                    <Copy size={10} />{copied === "pin" ? "Copied!" : "Copy"}
-                  </button>
+        <div className="p-8 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Column: Info Cards */}
+            <div className="space-y-6">
+              {/* Delivering To */}
+              <div className="flex items-start gap-4 group">
+                <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                  <MapPin size={22} />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Fish size={15} className="text-teal-400" />
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Order Items ({order.items.length})</h3>
-            </div>
-            <div className="space-y-2">
-              {order.items.map((item) => (
-                <div key={item.productId} className="flex items-center gap-3 bg-[#0f1117] border border-gray-800 rounded-xl p-3">
-                  <div className="w-12 h-12 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
-                    <Fish size={20} className="text-teal-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium text-sm truncate">{item.product.title}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      {item.quantity} {item.unit}
-                      {Object.keys(item.selectedOptions).length > 0 && ` · ${Object.entries(item.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(", ")}`}
+                <div className="flex-1">
+                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivering To</h3>
+                  <p className="text-white font-bold text-sm tracking-tight">{order.shippingAddress.name}</p>
+                  <p className="text-gray-400 text-xs leading-relaxed mt-1 italic">
+                    {order.shippingAddress.street}, {order.shippingAddress.city} – {order.shippingAddress.zip}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <p className="text-gray-200 text-xs font-black tracking-tight flex items-center gap-1.5">
+                      <Phone size={12} className="text-blue-500" />
+                      {order.user.phone}
                     </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-white font-bold text-sm">{formatINR(item.price * item.quantity)}</p>
-                    <p className="text-gray-500 text-xs">{formatINR(item.price)}/{item.unit}</p>
+                    <button
+                      type="button"
+                      onClick={() => copy(order.user.phone, "phone")}
+                      className="text-[10px] font-bold text-blue-500 hover:underline opacity-60 hover:opacity-100 transition"
+                    >
+                      {copied === "phone" ? "Copied!" : "Copy Number"}
+                    </button>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Delivery Slot */}
+              <div className="flex items-start gap-4 group">
+                <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                  {order.deliverySlot === "instant" ? <Zap size={22} /> : <Clock size={22} />}
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivery Slot</h3>
+                  <p className="text-white font-bold text-sm tracking-tight">{slotLabel}</p>
+                </div>
+              </div>
+
+              {/* Payment */}
+              <div className="flex items-start gap-4 group">
+                <div className="w-12 h-12 flex items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                  <CreditCard size={22} />
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Payment</h3>
+                  <p className="text-white font-bold text-sm tracking-tight">
+                    {order.paymentMethod === "COD" ? "Pay on Delivery (COD)" : (order.paymentMethod || "Online Payment")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Fulfilled By (Store info) */}
+              <div className="pt-6 border-t border-gray-900 flex items-start gap-4 opacity-70 hover:opacity-100 transition-opacity">
+                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-900 text-gray-500 group-hover:text-white transition-all">
+                  <Store size={18} />
+                </div>
+                <div>
+                  <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] mb-0.5">Fulfilled By</h3>
+                  <p className="text-gray-300 font-bold text-xs">{storeInfo.name}</p>
+                  <p className="text-gray-500 text-[10px]">{storeInfo.address}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Order Items & Bill Summary */}
+            <div className="space-y-6">
+              <div className="bg-[#0f0f12] border border-gray-900 rounded-[2rem] p-6 shadow-inner">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-6">Order Items</h3>
+                <div className="space-y-4 max-h-72 overflow-y-auto pr-2 scrollbar-hide">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4 group">
+                      <div className="w-14 h-14 rounded-2xl bg-black border border-gray-800 overflow-hidden shrink-0 group-hover:border-blue-500/50 transition-all duration-300">
+                        {item.product.images[0]?.url ? (
+                           <img src={item.product.images[0].url} alt={item.product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Fish size={20} className="text-gray-700" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-sm truncate tracking-tight">{item.product.title}</p>
+                        <p className="text-gray-500 text-[11px] font-medium mt-0.5">Qty: {item.quantity} × ₹{item.price}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-white font-black text-sm italic tracking-tighter">₹{item.price * item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bill Summary */}
+                <div className="mt-8 pt-6 border-t border-gray-900 space-y-3">
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tight">
+                    <span>Items Total</span>
+                    <span className="text-gray-400">₹{billDetails?.itemTotal ?? order.items.reduce((s, i) => s + i.price * i.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tight">
+                    <span>Delivery Charge</span>
+                    <span className="text-green-500">₹{billDetails?.deliveryCharge ?? 0}</span>
+                  </div>
+                  {billDetails?.extraCharge ? (
+                    <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tight">
+                      <span>Instant Fee</span>
+                      <span className="text-amber-500">₹{billDetails.extraCharge}</span>
+                    </div>
+                  ) : null}
+                  {billDetails?.discount ? (
+                    <div className="flex justify-between text-xs font-black text-emerald-500 uppercase tracking-tight italic">
+                      <span>Discount</span>
+                      <span>-₹{billDetails.discount}</span>
+                    </div>
+                  ) : null}
+                  
+                  <div className="pt-5 border-t border-gray-800 flex justify-between items-center group">
+                    <div className="space-y-0.5">
+                      <span className="block font-black uppercase italic tracking-tighter text-sm text-white group-hover:text-blue-500 transition-colors">Total Paid</span>
+                      <span className="block text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Inc. all taxes</span>
+                    </div>
+                    <span className="text-3xl font-black text-blue-600 tracking-tighter group-hover:scale-105 transition-transform duration-300">₹{order.total}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Payment Summary */}
-          <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard size={15} className="text-gray-400" />
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Payment Summary</h3>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-gray-400">
-                <span>Subtotal</span><span>{formatINR(subtotal)}</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-green-400">
-                  <span className="flex items-center gap-1.5"><Tag size={12} /> Coupon Discount</span>
-                  <span>- {formatINR(discount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-gray-400">
-                <span>GST (5%)</span><span>{formatINR(tax)}</span>
-              </div>
-              <div className="flex justify-between text-gray-400">
-                <span>Delivery</span><span className="text-green-400">Free</span>
-              </div>
-              <div className="border-t border-gray-700 pt-2 flex justify-between font-bold">
-                <span className="text-white">Total Paid</span>
-                <span className="text-white text-lg">{formatINR(order.total)}</span>
-              </div>
-            </div>
-            {order.refundStatus && (
-              <div className="mt-3 bg-green-500/10 border border-green-500/25 rounded-lg px-3 py-2">
-                <p className="text-green-300 text-xs font-semibold">Refund Status: {order.refundStatus}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Rejection reason */}
+          {/* Rejection Reason */}
           {order.status === "Rejected" && order.rejectionReason && (
-            <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3">
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-1">Rejection Reason</p>
-              <p className="text-red-200 text-sm">{order.rejectionReason}</p>
+            <div className="p-6 rounded-[1.5rem] bg-rose-500/5 border border-rose-500/10">
+              <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                <ShieldAlert size={14} /> Rejection Reason
+              </p>
+              <p className="text-rose-200/70 text-sm font-medium leading-relaxed italic">"{order.rejectionReason}"</p>
             </div>
           )}
         </div>
@@ -735,9 +743,15 @@ const StaffOrdersPage = () => {
           state: "-",
           zip: o.deliveryPincode || "-",
         },
+        deliverySlot: o.deliverySlot,
+        paymentMethod: o.paymentMethod,
+        billDetails: o.billDetails,
         items: (o.orderItems || []).map((i: any) => ({
           productId: i.productId,
-          product: { title: i.product?.title || "Product" },
+          product: { 
+            title: i.product?.title || "Product",
+            images: i.product?.images || []
+          },
           quantity: i.quantity,
           price: i.price,
           unit: "pc",
@@ -941,6 +955,7 @@ const StaffOrdersPage = () => {
       {detailTarget && (
         <OrderDetailModal
           order={detailTarget}
+          staff={staff}
           onClose={() => setDetailTarget(null)}
         />
       )}

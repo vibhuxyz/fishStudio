@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
 import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
-import { axiosInstance } from "@/lib/utils";
+import { axiosInstance, cn } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +34,8 @@ export function CartPageClient() {
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const syncItems = useCartStore((s) => s.syncItems);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const {
     appliedCoupons,
@@ -93,7 +95,12 @@ export function CartPageClient() {
     }
   }, [selectedLocation?.storeId]);
 
-  // Auto-apply eligible coupon on mount / subtotal change
+  // Sync cart items on mount
+  useEffect(() => {
+    setIsSyncing(true);
+    syncItems().finally(() => setIsSyncing(false));
+  }, []);
+
   useEffect(() => {
     if (autoApplied) return;
     if (subtotal === 0) return;
@@ -199,52 +206,78 @@ export function CartPageClient() {
 
           <div className="mt-3 space-y-3">
             <AnimatePresence mode="popLayout">
-              {items.map((item, index) => (
-                <motion.div
-                  key={`${item.product.id}-${index}`}
-                  layout
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: 50 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex items-center gap-3"
-                >
-                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-border">
-                    <Image
-                      src={item.product.image || "/placeholder.svg"}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold leading-tight text-foreground">{item.product.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.cuttingType.name} | {item.pieceSize.name}
-                      {item.size ? ` | ${item.size}` : ""}
-                    </p>
-                    <p className="mt-0.5 text-sm font-bold text-foreground">₹{item.totalPayable.toFixed(0)}</p>
-                  </div>
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-1 rounded-lg border border-offer-green bg-offer-green px-1 py-0.5">
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(index, item.quantity - 1)}
-                      className="flex h-7 w-7 items-center justify-center text-white"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="min-w-[20px] text-center text-sm font-bold text-white">{item.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(index, item.quantity + 1)}
-                      className="flex h-7 w-7 items-center justify-center text-white"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+              {items.map((item, index) => {
+                const isInvalid = item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0);
+                
+                return (
+                  <motion.div
+                    key={`${item.product.id}-${index}`}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: 50 }}
+                    transition={{ duration: 0.2 }}
+                    className={cn(
+                      "flex items-center gap-3",
+                      isInvalid && "opacity-60 grayscale-[0.5]"
+                    )}
+                  >
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border border-border">
+                      <Image
+                        src={item.product.image || "/placeholder.svg"}
+                        alt={item.product.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold leading-tight text-foreground">{item.product.name}</p>
+                        {isInvalid && (
+                          <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-bold text-destructive uppercase">
+                            {item.product.stock <= 0 ? "Out of Stock" : "Inactive"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {item.cuttingType.name} | {item.pieceSize.name}
+                        {item.size ? ` | ${item.size}` : ""}
+                      </p>
+                      <p className="mt-0.5 text-sm font-bold text-foreground">₹{item.totalPayable.toFixed(0)}</p>
+                    </div>
+                    {/* Quantity Controls / Remove Button */}
+                    <div className="flex items-center gap-2">
+                      {isInvalid ? (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="flex h-8 items-center justify-center rounded-lg border border-destructive bg-destructive/10 px-3 text-xs font-bold text-destructive hover:bg-destructive hover:text-white transition-colors"
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 rounded-lg border border-offer-green bg-offer-green px-1 py-0.5">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(index, item.quantity - 0.5)}
+                            className="flex h-7 w-7 items-center justify-center text-white"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="min-w-[20px] text-center text-sm font-bold text-white">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(index, item.quantity + 0.5)}
+                            className="flex h-7 w-7 items-center justify-center text-white"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         </div>
@@ -560,15 +593,23 @@ export function CartPageClient() {
 
           <button
             type="button"
+            disabled={items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
             onClick={() => router.push("/checkout")}
-            className="flex w-full items-center justify-between rounded-2xl bg-offer-green px-5 py-3.5 text-white"
+            className="flex w-full items-center justify-between rounded-2xl bg-offer-green px-5 py-3.5 text-white disabled:opacity-50"
           >
-            <div>
-              <p className="text-lg font-bold">₹{grandTotal.toFixed(0)}</p>
-              <p className="text-[10px] font-medium opacity-80">TOTAL</p>
-            </div>
+            {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? (
+              <div className="text-left">
+                <p className="text-lg font-bold">OUT OF STOCK</p>
+                <p className="text-[10px] font-medium opacity-80 uppercase">Remove items to proceed</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-lg font-bold">₹{grandTotal.toFixed(0)}</p>
+                <p className="text-[10px] font-medium opacity-80">TOTAL</p>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 font-semibold">
-              Proceed To Pay
+              {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? "Invalid Cart" : "Proceed To Pay"}
               <ChevronRight className="h-5 w-5" />
             </div>
           </button>

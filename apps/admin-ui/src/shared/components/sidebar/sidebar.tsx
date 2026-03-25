@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Image as ImageIcon,
+  ClipboardCheck,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
@@ -174,12 +175,23 @@ const SidebarBarWrapper = () => {
               />
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/banners"}
-                title="Banners"
+                title="Admin Banners"
                 href="/dashboard/banners"
                 icon={
                   <ImageIcon
                     size={22}
                     color={getIconColor("/dashboard/banners")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/banner-review"}
+                title="Category Banner & Review"
+                href="/dashboard/banner-review"
+                icon={
+                  <ClipboardCheck
+                    size={22}
+                    color={getIconColor("/dashboard/banner-review")}
                   />
                 }
               />

@@ -24,6 +24,12 @@ export function ProductCarousel({
   isLoading = false,
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Deduplicate products to prevent duplicate key errors in UI (defense in depth)
+  const uniqueProducts = Array.from(
+    new Map(products.map((p) => [p.id, p])).values(),
+  );
+
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -97,9 +103,9 @@ export function ProductCarousel({
               </div>
             ))
           : /* ✅ DATA STATE: Show Products with animation */
-            products.map((product, index) => (
+            uniqueProducts.map((product, index) => (
               <motion.div
-                key={product.id}
+                key={`${product.id}-${index}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}

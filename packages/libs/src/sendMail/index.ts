@@ -52,7 +52,7 @@ export const sendEmail = async (
     const html = await renderEmailTemplate(templateName, data);
 
     await transporter.sendMail({
-      from: `<${process.env.SMTP_SENDER}>`,
+      from: `<${ENV.SMTP_SENDER}>`,
       to,
       subject,
       html,

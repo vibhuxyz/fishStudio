@@ -32,7 +32,6 @@ type ProductFormValues = {
   category?: string;
   subCategory?: string;
   short_description?: string;
-  detailed_description?: string;
   tags?: string;
   sizes?: unknown;
   cuttingType?: unknown;
@@ -75,6 +74,7 @@ const Page = () => {
   >([null]);
   const [loading, setLoading] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const router = useRouter();
   const [slugValue, setSlugValue] = useState("");
   const [isSlugChecking, setIsSlugChecking] = useState(false);
@@ -207,12 +207,14 @@ const Page = () => {
 
         if (uploadRes.data.success && uploadRes.data.images?.[0]) {
           finalImages.push(uploadRes.data.images[0]);
+          setUploadedIndices((prev) => [...prev, imgData.originalIndex]);
         } else {
           throw new Error("Failed to upload one or more images.");
         }
       }
 
       setUploadingIndex(null);
+      setUploadedIndices([]);
 
       const submitData = {
         ...data,
@@ -253,6 +255,8 @@ const Page = () => {
       console.error(error);
     } finally {
       setLoading(false);
+      setUploadingIndex(null);
+      setUploadedIndices([]);
     }
   };
 
@@ -272,31 +276,52 @@ const Page = () => {
         {/* Left side - Image upload section */}
        
         <div className="md:w-[35%]">
-          {images?.length > 0 && (
-            <ImagePlaceHolder
-              size="765 x 850"
-              small={false}
-              images={images}
-              setImages={setImages}
-              setValue={setValue}
-              index={0}
-              isUploading={uploadingIndex === 0}
-            />
-          )}
+          {images?.length > 0 &&
+            (() => {
+              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
+              if (loading) {
+                if (uploadingIndex === 0) status = "uploading";
+                else if (uploadedIndices.includes(0)) status = "success";
+                else if (images[0] && images[0].base64) status = "waiting";
+              }
+              return (
+                <ImagePlaceHolder
+                  size="765 x 850"
+                  small={false}
+                  images={images}
+                  setImages={setImages}
+                  setValue={setValue}
+                  index={0}
+                  isUploading={status === "uploading"}
+                  uploadStatus={status}
+                />
+              );
+            })()}
 
           <div className="grid grid-cols-2 gap-3 mt-4">
-            {images.slice(1).map((_, index) => (
-              <ImagePlaceHolder
-                size="765 x 850"
-                images={images}
-                setImages={setImages}
-                key={index}
-                small
-                setValue={setValue}
-                index={index + 1}
-                isUploading={uploadingIndex === index + 1}
-              />
-            ))}
+            {images.slice(1).map((_, index) => {
+              const realIndex = index + 1;
+              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
+              if (loading) {
+                if (uploadingIndex === realIndex) status = "uploading";
+                else if (uploadedIndices.includes(realIndex)) status = "success";
+                else if (images[realIndex] && images[realIndex].base64)
+                  status = "waiting";
+              }
+              return (
+                <ImagePlaceHolder
+                  size="765 x 850"
+                  images={images}
+                  setImages={setImages}
+                  key={index}
+                  small
+                  setValue={setValue}
+                  index={realIndex}
+                  isUploading={status === "uploading"}
+                  uploadStatus={status}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -548,7 +573,6 @@ const Page = () => {
                 <CoustomCuttingType control={control} errors={errors} />
               </div>
 
-              {/* Processing Weight Loss Info Display */}
               <div className="mt-3">
                 <Input
                   label="Processing Weight Loss (optional)"
@@ -558,41 +582,6 @@ const Page = () => {
                 {errors.processingWeightLoss && (
                   <p className="text-red-500 text-xs mt-1">
                     {errors.processingWeightLoss.message as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-2">
-                <label className="block font-semibold text-gray-300 mb-1">
-                  Detailed Description * (Min 1 word)
-                </label>
-                <Controller
-                  name="detailed_description"
-                  control={control}
-                  rules={{
-                    required: "Detailed description is required!",
-                    validate: (value) => {
-                      if (!value) {
-                        return "Description must be at least 1 word!";
-                      }
-                      const wordCount = value
-                        .split(/\s+/)
-                        .filter((word: string) => word).length;
-                      return (
-                        wordCount >= 1 || "Description must be at least 1 word!"
-                      );
-                    },
-                  }}
-                  render={({ field }) => (
-                    <RichTextEditor
-                      value={field.value ?? ""}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-                {errors.detailed_description && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.detailed_description.message as string}
                   </p>
                 )}
               </div>

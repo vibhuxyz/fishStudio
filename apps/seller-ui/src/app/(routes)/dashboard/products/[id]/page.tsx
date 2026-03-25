@@ -35,7 +35,6 @@ type SellerOwnedProduct = {
   category: string;
   subCategory: string;
   short_description: string;
-  detailed_description: string;
   tags: string[];
   regular_price: number;
   sale_price: number;
@@ -43,7 +42,7 @@ type SellerOwnedProduct = {
   sizes: string[];
   sizePricing?: SizePricingRow[] | null;
   cashOnDelivery?: string | null;
-  status: "Active" | "Draft" | "Pending";
+  status: "Active" | "NonActive";
   discount_codes: string[];
   images: Array<{ id: string; url: string }>;
   catalogProduct?: {
@@ -58,13 +57,14 @@ type SellerProductFormValues = {
   title: string;
   slug: string;
   short_description: string;
-  detailed_description: string;
   tags: string;
   stock: number;
   cash_on_delivery: "yes" | "no";
-  status: "Active" | "Draft" | "Pending";
+  status: "Active" | "NonActive";
   discountCodes: string[];
   sizePricing: SizePricingRow[];
+  regular_price: number;
+  sale_price: number;
 };
 
 const parseWeightToGrams = (size: string) => {
@@ -89,6 +89,7 @@ const buildSizePricingRows = (
       salePrice: Number(existing?.salePrice ?? 0),
     };
   });
+
 
 const fetchOwnedProduct = async (productId: string): Promise<SellerOwnedProduct> => {
   const res = await axiosInstance.get(
@@ -137,13 +138,14 @@ const SellerProductDetailsPage = () => {
         title: "",
         slug: "",
         short_description: "",
-        detailed_description: "",
         tags: "",
         stock: 0,
         cash_on_delivery: "yes",
         status: "Active",
         discountCodes: [],
         sizePricing: [],
+        regular_price: 0,
+        sale_price: 0,
       },
     });
 
@@ -155,18 +157,16 @@ const SellerProductDetailsPage = () => {
       title: product.title ?? "",
       slug: product.slug ?? "",
       short_description: product.short_description ?? "",
-      detailed_description: product.detailed_description ?? "",
       tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
       stock: Number(product.stock ?? 0),
       cash_on_delivery: product.cashOnDelivery === "no" ? "no" : "yes",
-      status:
-        product.status === "Draft" || product.status === "Pending"
-          ? product.status
-          : "Active",
+      status: product.status === "NonActive" ? "NonActive" : "Active",
       discountCodes: Array.isArray(product.discount_codes)
         ? product.discount_codes
         : [],
       sizePricing: buildSizePricingRows(product.sizes || [], product.sizePricing),
+      regular_price: Number(product.regular_price ?? 0),
+      sale_price: Number(product.sale_price ?? 0),
     });
   }, [product, reset]);
 
@@ -186,12 +186,16 @@ const SellerProductDetailsPage = () => {
   });
 
   const onSubmit = (values: SellerProductFormValues) => {
-    const hasInvalidPricing = values.sizePricing.some(
-      (entry) => entry.weightGrams <= 0 || entry.salePrice <= 0,
-    );
-
-    if (hasInvalidPricing) {
-      toast.error("Add a valid weight and sale price for each size.");
+    if (values.sizePricing.length > 0) {
+      const hasInvalidPricing = values.sizePricing.some(
+        (entry) => entry.weightGrams <= 0 || entry.salePrice <= 0,
+      );
+      if (hasInvalidPricing) {
+        toast.error("Add a valid weight and sale price for each size.");
+        return;
+      }
+    } else if (!values.sale_price || values.sale_price <= 0) {
+      toast.error("Add a valid sale price.");
       return;
     }
 
@@ -323,18 +327,26 @@ const SellerProductDetailsPage = () => {
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm text-slate-300">Title</label>
+              <label className="mb-1 block text-sm text-slate-300">
+                Title
+                <span className="ml-2 text-xs text-slate-500">(read-only)</span>
+              </label>
               <input
-                {...register("title", { required: true })}
-                className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                {...register("title")}
+                readOnly
+                className="w-full cursor-not-allowed rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-slate-400 outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-1 block text-sm text-slate-300">Slug</label>
+              <label className="mb-1 block text-sm text-slate-300">
+                Slug
+                <span className="ml-2 text-xs text-slate-500">(read-only)</span>
+              </label>
               <input
-                {...register("slug", { required: true })}
-                className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                {...register("slug")}
+                readOnly
+                className="w-full cursor-not-allowed rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-slate-400 outline-none"
               />
             </div>
 
@@ -354,127 +366,137 @@ const SellerProductDetailsPage = () => {
                 className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
               >
                 <option value="Active" className="bg-slate-950">
-                  Active
+                  Active – Ready to sell
                 </option>
-                <option value="Draft" className="bg-slate-950">
-                  Draft
-                </option>
-                <option value="Pending" className="bg-slate-950">
-                  Pending
+                <option value="NonActive" className="bg-slate-950">
+                  Non-Active – Coming Soon
                 </option>
               </select>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-2 block text-sm text-slate-300">
-                Size-Based Pricing
-              </label>
-              <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                {selectedSizePricing.map((entry, index) => (
-                  <div
-                    key={entry.size}
-                    className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-white">{entry.size}</p>
-                      <p className="text-xs text-slate-500">
-                        Base weight {entry.weightGrams || 0} gm
-                      </p>
+            {selectedSizePricing.length > 0 ? (
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Size-Based Pricing
+                </label>
+                <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                  {selectedSizePricing.map((entry, index) => (
+                    <div
+                      key={entry.size}
+                      className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-white">{entry.size}</p>
+                        <p className="text-xs text-slate-500">
+                          {entry.weightGrams || 0} gm
+                        </p>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Weight (gm)
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.weightGrams ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              weightGrams: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, { shouldDirty: true });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Regular Price
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.regularPrice ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              regularPrice: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, { shouldDirty: true });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-slate-400">
+                          Sale Price
+                        </label>
+                        <input
+                          type="number"
+                          value={entry.salePrice ?? 0}
+                          onChange={(event) => {
+                            const nextRows = [...selectedSizePricing];
+                            nextRows[index] = {
+                              ...entry,
+                              salePrice: Number(event.target.value || 0),
+                            };
+                            setValue("sizePricing", nextRows, { shouldDirty: true });
+                          }}
+                          className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-slate-400">
-                        Weight (gm)
-                      </label>
-                      <input
-                        type="number"
-                        value={entry.weightGrams ?? 0}
-                        onChange={(event) => {
-                          const nextRows = [...selectedSizePricing];
-                          nextRows[index] = {
-                            ...entry,
-                            weightGrams: Number(event.target.value || 0),
-                          };
-                          setValue("sizePricing", nextRows, {
-                            shouldDirty: true,
-                          });
-                        }}
-                        className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-slate-400">
-                        Regular Price
-                      </label>
-                      <input
-                        type="number"
-                        value={entry.regularPrice ?? 0}
-                        onChange={(event) => {
-                          const nextRows = [...selectedSizePricing];
-                          nextRows[index] = {
-                            ...entry,
-                            regularPrice: Number(event.target.value || 0),
-                          };
-                          setValue("sizePricing", nextRows, {
-                            shouldDirty: true,
-                          });
-                        }}
-                        className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs text-slate-400">
-                        Sale Price
-                      </label>
-                      <input
-                        type="number"
-                        value={entry.salePrice ?? 0}
-                        onChange={(event) => {
-                          const nextRows = [...selectedSizePricing];
-                          nextRows[index] = {
-                            ...entry,
-                            salePrice: Number(event.target.value || 0),
-                          };
-                          setValue("sizePricing", nextRows, {
-                            shouldDirty: true,
-                          });
-                        }}
-                        className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm text-slate-300">Regular Price</label>
+                  <input
+                    type="number"
+                    {...register("regular_price", { valueAsNumber: true })}
+                    className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-slate-300">Sale Price</label>
+                  <input
+                    type="number"
+                    {...register("sale_price", { valueAsNumber: true })}
+                    className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  />
+                </div>
+              </>
+            )}
 
             <div className="md:col-span-2">
-              <label className="mb-1 block text-sm text-slate-300">Tags</label>
+              <label className="mb-1 block text-sm text-slate-300">
+                Tags
+                <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">locked</span>
+              </label>
               <input
-                {...register("tags")}
-                className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                value={Array.isArray(product?.tags) ? product.tags.join(", ") : product?.tags || ""}
+                readOnly
+                tabIndex={-1}
+                className="w-full cursor-default select-none rounded-md border border-slate-800 bg-slate-900/30 px-3 py-2 text-slate-500 outline-none pointer-events-none"
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm text-slate-300">
                 Short Description
+                <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">locked</span>
               </label>
               <textarea
                 rows={3}
-                {...register("short_description")}
-                className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                value={product?.short_description || ""}
+                readOnly
+                tabIndex={-1}
+                className="w-full cursor-default select-none rounded-md border border-slate-800 bg-slate-900/30 px-3 py-2 text-slate-500 outline-none pointer-events-none resize-none"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="mb-1 block text-sm text-slate-300">
-                Detailed Description
-              </label>
-              <textarea
-                rows={6}
-                {...register("detailed_description")}
-                className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-              />
-            </div>
 
             <div>
               <label className="mb-1 block text-sm text-slate-300">

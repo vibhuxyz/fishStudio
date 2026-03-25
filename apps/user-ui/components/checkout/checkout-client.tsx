@@ -178,6 +178,7 @@ export function CheckoutClient() {
         billDetails: {
           itemTotal: totalPrice,
           deliveryCharge,
+          extraCharge: slotExtraCharge,
           discount,
         },
         totalAmount: grandTotal,

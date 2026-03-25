@@ -18,13 +18,12 @@ export type SellerProductFormValues = {
   category: string;
   subCategory: string;
   short_description: string;
-  detailed_description: string;
   tags: string;
   regular_price: number;
   sale_price: number;
   stock: number;
   cash_on_delivery: "yes" | "no";
-  status: "Active" | "Draft" | "Pending";
+  status: "Active" | "NonActive";
   discountCodes: string[];
 };
 
@@ -52,16 +51,12 @@ const EditProductModal = ({
         category: product.category,
         subCategory: product.subCategory || "",
         short_description: product.short_description || "",
-        detailed_description: product.detailed_description || "",
         tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
         regular_price: Number(product.regular_price || 0),
         sale_price: Number(product.sale_price || 0),
         stock: Number(product.stock || 0),
         cash_on_delivery: product.cashOnDelivery === "no" ? "no" : "yes",
-        status:
-          product.status === "Draft" || product.status === "Pending"
-            ? product.status
-            : "Active",
+        status: product.status === "NonActive" ? "NonActive" : "Active",
         discountCodes: Array.isArray(product.discount_codes)
           ? product.discount_codes
           : [],
@@ -76,16 +71,12 @@ const EditProductModal = ({
       category: product.category,
       subCategory: product.subCategory || "",
       short_description: product.short_description || "",
-      detailed_description: product.detailed_description || "",
       tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
       regular_price: Number(product.regular_price || 0),
       sale_price: Number(product.sale_price || 0),
       stock: Number(product.stock || 0),
       cash_on_delivery: product.cashOnDelivery === "no" ? "no" : "yes",
-      status:
-        product.status === "Draft" || product.status === "Pending"
-          ? product.status
-          : "Active",
+      status: product.status === "NonActive" ? "NonActive" : "Active",
       discountCodes: Array.isArray(product.discount_codes)
         ? product.discount_codes
         : [],
@@ -117,18 +108,26 @@ const EditProductModal = ({
           <input type="hidden" {...register("productId")} />
 
           <div>
-            <label className="mb-1 block text-sm text-gray-300">Title</label>
+            <label className="mb-1 block text-sm text-gray-300">
+              Title
+              <span className="ml-2 text-xs text-gray-500">(read-only)</span>
+            </label>
             <input
-              {...register("title", { required: true })}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              {...register("title")}
+              readOnly
+              className="w-full cursor-not-allowed rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-gray-400 outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-gray-300">Slug</label>
+            <label className="mb-1 block text-sm text-gray-300">
+              Slug
+              <span className="ml-2 text-xs text-gray-500">(read-only)</span>
+            </label>
             <input
-              {...register("slug", { required: true })}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              {...register("slug")}
+              readOnly
+              className="w-full cursor-not-allowed rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-gray-400 outline-none"
             />
           </div>
 
@@ -186,46 +185,41 @@ const EditProductModal = ({
               className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
             >
               <option value="Active" className="bg-slate-950">
-                Active
+                Active – Ready to sell
               </option>
-              <option value="Draft" className="bg-slate-950">
-                Draft
-              </option>
-              <option value="Pending" className="bg-slate-950">
-                Pending
+              <option value="NonActive" className="bg-slate-950">
+                Non-Active – Coming Soon
               </option>
             </select>
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm text-gray-300">Tags</label>
+            <label className="mb-1 block text-sm text-gray-300">
+              Tags
+              <span className="ml-2 rounded bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-500">locked</span>
+            </label>
             <input
-              {...register("tags")}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              value={Array.isArray(product.tags) ? product.tags.join(", ") : product.tags || ""}
+              readOnly
+              tabIndex={-1}
+              className="w-full cursor-default select-none rounded-md border border-gray-800 bg-gray-900/30 px-3 py-2 text-gray-500 outline-none pointer-events-none"
             />
           </div>
 
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm text-gray-300">
               Short Description
+              <span className="ml-2 rounded bg-gray-800 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-gray-500">locked</span>
             </label>
             <textarea
               rows={3}
-              {...register("short_description")}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              value={product.short_description || ""}
+              readOnly
+              tabIndex={-1}
+              className="w-full cursor-default select-none rounded-md border border-gray-800 bg-gray-900/30 px-3 py-2 text-gray-500 outline-none pointer-events-none resize-none"
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-sm text-gray-300">
-              Detailed Description
-            </label>
-            <textarea
-              rows={5}
-              {...register("detailed_description")}
-              className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
-            />
-          </div>
 
           <div>
             <label className="mb-1 block text-sm text-gray-300">

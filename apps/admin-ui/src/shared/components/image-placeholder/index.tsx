@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const ImagePlaceHolder = ({
@@ -10,6 +10,7 @@ const ImagePlaceHolder = ({
   images,
   setImages,
   isUploading = false,
+  uploadStatus = "idle",
 }: {
   size: string;
   small?: boolean;
@@ -19,6 +20,7 @@ const ImagePlaceHolder = ({
   images: any;
   setImages: any;
   isUploading?: boolean;
+  uploadStatus?: "idle" | "waiting" | "uploading" | "success";
 }) => {
   const imagePreview = images[index]?.base64 || null;
 
@@ -83,11 +85,27 @@ const ImagePlaceHolder = ({
         small ? "h-[180px]" : "h-[450px]"
       } w-full bg-[#1e1e1e] border border-gray-600 rounded-lg flex flex-col justify-center items-center group transition-all hover:border-blue-500/50 overflow-hidden shadow-inner`}
     >
-      {/* Loading Overlay */}
-      {isUploading && (
+      {/* Loading Overlays */}
+      {isUploading && uploadStatus === "uploading" && (
         <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3">
           <Loader2 className="animate-spin text-blue-500" size={small ? 24 : 40} />
           <span className="text-white text-sm font-medium animate-pulse">Uploading...</span>
+        </div>
+      )}
+
+      {uploadStatus === "waiting" && (
+        <div className="absolute inset-0 z-10 bg-black/40 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
+          <Loader2 className="text-gray-400 opacity-50" size={small ? 20 : 32} />
+          <span className="text-gray-300 text-xs font-medium">Waiting...</span>
+        </div>
+      )}
+
+      {uploadStatus === "success" && (
+        <div className="absolute inset-0 z-10 bg-green-500/20 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2">
+          <div className="bg-green-500 rounded-full p-1 shadow-lg">
+            <Check className="text-white" size={small ? 14 : 20} />
+          </div>
+          <span className="text-green-400 text-xs font-bold font-secondary">Uploaded</span>
         </div>
       )}
 

@@ -10,14 +10,19 @@ import { useAddressStore } from "@/lib/address-store";
 export function useProducts() {
   const { selectedLocation } = useAddressStore();
   const storeId = selectedLocation?.storeId;
+  const pincode = selectedLocation?.pincode;
 
   const query = useQuery({
-    queryKey: storefrontKeys.products(storeId),
-    queryFn: () => fetchStorefrontProducts(storeId),
+    queryKey: storefrontKeys.products(storeId || pincode),
+    queryFn: () => fetchStorefrontProducts(storeId, pincode),
     staleTime: 1000 * 60 * 5,
   });
 
-  const allProducts = query.data || [];
+  const rawProducts = query.data || [];
+  // Deduplicate products by ID to prevent duplicate key errors in UI components
+  const allProducts = Array.from(
+    new Map(rawProducts.map((p) => [p.id, p])).values(),
+  );
 
   // Derive categories on the fly
   const bestsellerProducts = allProducts

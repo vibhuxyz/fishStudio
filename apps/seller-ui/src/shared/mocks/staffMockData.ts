@@ -48,7 +48,15 @@ export interface MockOrder {
   createdAt: string;
   rejectionReason: string | null;
   refundStatus: string | null;
-  user: { id: string; name: string; email: string; phone: string; avatar: null };
+  deliverySlot?: string;
+  paymentMethod?: string;
+  billDetails?: {
+    itemTotal: number;
+    deliveryCharge: number;
+    extraCharge?: number;
+    discount: number;
+  };
+  user: { id: string; name: string; email: string; phone: string; avatar: string | null };
   shippingAddress: { name: string; street: string; city: string; zip: string; state: string };
   items: {
     productId: string;

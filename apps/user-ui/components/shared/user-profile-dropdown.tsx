@@ -24,8 +24,6 @@ const QR_MOCK = "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=htt
 const MENU_ITEMS = [
   { label: "My Orders", icon: ShoppingBag, href: "/orders" },
   { label: "Saved Addresses", icon: MapPin, href: "/addresses" },
-  { label: "My Prescriptions", icon: FileText, href: "/prescriptions" },
-  { label: "E-Gift Cards", icon: Gift, href: "/gift-cards" },
   { label: "FAQ's", icon: HelpCircle, href: "/faqs" },
   { label: "Account Privacy", icon: ShieldCheck, href: "/privacy" },
 ] as const;

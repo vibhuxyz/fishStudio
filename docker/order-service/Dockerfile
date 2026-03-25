@@ -25,7 +25,7 @@ RUN bunx prisma generate
 WORKDIR /app
 
 # Build the specific service
-RUN bunx turbo run build --filter=@repo/product-service...
+RUN bunx turbo run build --filter=@repo/order-service...
 
 # ==========================================
 # 2. Runtime Stage (Uses Node)
@@ -45,12 +45,12 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 
 # 3. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
-COPY --from=builder /app/apps/product-service ./apps/product-service
+COPY --from=builder /app/apps/order-service ./apps/order-service
 
 # --- RUN FROM THE APP DIRECTORY ---
 # Node must run from inside the app folder so it finds the local node_modules (with Express v5) first
-WORKDIR /app/apps/product-service
+WORKDIR /app/apps/order-service
 
-EXPOSE 6003
+EXPOSE 6002
 
 CMD ["node", "dist/main.js"]

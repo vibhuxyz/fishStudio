@@ -28,6 +28,7 @@
   "scripts": {
     "build": "dotenv -e .env -- turbo run build",
     "dev": "dotenv -e .env -- turbo run dev",
+    "start": "turbo run start",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{js,ts,jsx,tsx,md,json}\"",
     "check-format": "prettier --check \"**/*.{js,ts,jsx,tsx,md,json}\"",

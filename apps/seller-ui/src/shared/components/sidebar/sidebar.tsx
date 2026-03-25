@@ -27,7 +27,14 @@ import {
   Users,
   PanelLeftClose,
   PanelLeftOpen,
+  Image as ImageIcon,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  XCircle,
+  LayoutList,
 } from "lucide-react";
+import CollapsibleSidebarItem from "./collapsible-sidebar-item";
 
 import useSidebar from "@/hooks/useSidebar";
 import Logo from "@/assets/svgs/logo";
@@ -133,14 +140,41 @@ const SidebarBarWrapper = () => {
                     />
                   }
                 />
-                <SidebarItem
-                  isActive={activeSidebar === "/dashboard/all-products"}
-                  title="Shop Products"
-                  href="/dashboard/all-products"
+                <CollapsibleSidebarItem
+                  title="All store products"
+                  basePath="/dashboard/all-products"
                   icon={
                     <PackageSearch
                       size={22}
                       color={getIconColor("/dashboard/all-products")}
+                    />
+                  }
+                  items={[
+                    {
+                      title: "Active Products",
+                      href: "/dashboard/all-products/active",
+                      icon: <CheckCircle2 size={16} color="#10b981" />,
+                    },
+                    {
+                      title: "In active products",
+                      href: "/dashboard/all-products/inactive",
+                      icon: <XCircle size={16} color="#ef4444" />,
+                    },
+                    {
+                      title: "All Products",
+                      href: "/dashboard/all-products",
+                      icon: <LayoutList size={16} color="#969696" />,
+                    },
+                  ]}
+                />
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/banners"}
+                  title="Category Banners"
+                  href="/dashboard/banners"
+                  icon={
+                    <ImageIcon
+                      size={22}
+                      color={getIconColor("/dashboard/banners")}
                     />
                   }
                 />
