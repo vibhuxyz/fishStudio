@@ -1,7 +1,8 @@
 name: Deploy FishStudio to Production
-
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-and-push:
@@ -21,6 +22,7 @@ jobs:
           docker build -f docker/api-gateway/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod .
           docker build -f docker/auth-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/auth-service:prod .
           docker build -f docker/product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service:prod .
+          docker build -f docker/order-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/order-service:prod .
           docker build -f docker/rabbitmq-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/rabbitmq-service:prod .
 
           docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
