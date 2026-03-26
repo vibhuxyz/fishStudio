@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { AuthRequest, getRequiredParam } from "./utils.js";
+import { createEventSchema, updateEventSchema, validate } from "@repo/zod-schema";
 
 export const createSellerEvent = async (
   req: AuthRequest,
@@ -12,34 +13,39 @@ export const createSellerEvent = async (
     if (req.role !== "seller" || !req.seller?.id) {
       return next(new ValidationError("Only seller can create events!"));
     }
-    const { title, description, type, minOrder, discount, startTime, endTime } =
-      req.body;
-    if (!title || !type || !startTime || !endTime) {
-      return next(
-        new ValidationError(
-          "Title, type, start time, and end time are required.",
-        ),
-      );
-    }
-    if (!["FREE_DELIVERY", "DISCOUNT", "FLASH_SALE"].includes(type)) {
-      return next(new ValidationError("Unsupported event type."));
-    }
+    const { title, description, type, minOrder, discount, startTime, endTime, firstOrderCoupon } =
+      validate(createEventSchema, req.body) as any;
     const startDate = new Date(startTime);
     const endDate = new Date(endTime);
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      return next(new ValidationError("Invalid event date range."));
+
+    // Auto-create a first-order coupon if provided with this event
+    let createdCoupon = null;
+    if (firstOrderCoupon) {
+      const existing = await prisma.discount_codes.findUnique({
+        where: { discountCode: firstOrderCoupon.discountCode },
+      });
+      if (existing) {
+        return next(
+          new ValidationError(
+            `Coupon code "${firstOrderCoupon.discountCode}" already exists. Choose a different code.`,
+          ),
+        );
+      }
+      createdCoupon = await prisma.discount_codes.create({
+        data: {
+          public_name: firstOrderCoupon.public_name,
+          discountType: firstOrderCoupon.discountType,
+          discountValue: firstOrderCoupon.discountValue,
+          discountCode: firstOrderCoupon.discountCode,
+          minOrderValue: firstOrderCoupon.minOrderValue ?? 0,
+          expiresAt: firstOrderCoupon.expiresAt ? new Date(firstOrderCoupon.expiresAt) : null,
+          maxUsesPerUser: 1, // always once per user
+          isFirstOrder: true,
+          sellerId: req.seller.id,
+        },
+      });
     }
-    if (endDate <= startDate) {
-      return next(new ValidationError("End time must be after start time."));
-    }
-    if (
-      (type === "DISCOUNT" || type === "FLASH_SALE") &&
-      (discount === undefined || discount === null || Number(discount) <= 0)
-    ) {
-      return next(
-        new ValidationError("Discount amount is required for this event."),
-      );
-    }
+
     const event = await prisma.seller_events.create({
       data: {
         sellerId: req.seller.id,
@@ -64,7 +70,10 @@ export const createSellerEvent = async (
     return res.status(201).json({
       success: true,
       event,
-      message: "Seller event created successfully!",
+      ...(createdCoupon ? { firstOrderCoupon: createdCoupon } : {}),
+      message: createdCoupon
+        ? "Event and first-order coupon created successfully!"
+        : "Seller event created successfully!",
     });
   } catch (error) {
     return next(error);
@@ -119,57 +128,16 @@ export const updateSellerEvent = async (
         new ValidationError("You are not authorized to update this event!"),
       );
     }
-    const {
-      title,
-      description,
-      type,
-      minOrder,
-      discount,
-      startTime,
-      endTime,
-      isActive,
-    } = req.body;
-    const updateData: Record<string, any> = {};
-    if (typeof title === "string" && title.trim()) {
-      updateData.title = title.trim();
+    const updateData = validate(updateEventSchema, req.body);
+    if (updateData.startTime) {
+      (updateData as any).startTime = new Date(updateData.startTime);
     }
-    if (typeof description === "string") {
-      updateData.description = description.trim() || null;
-    }
-    if (
-      typeof type === "string" &&
-      ["FREE_DELIVERY", "DISCOUNT", "FLASH_SALE"].includes(type)
-    ) {
-      updateData.type = type;
-    }
-    if (minOrder !== undefined) {
-      updateData.minOrder =
-        minOrder === null || minOrder === "" ? null : Number(minOrder);
-    }
-    if (discount !== undefined) {
-      updateData.discount =
-        discount === null || discount === "" ? null : Number(discount);
-    }
-    if (startTime) {
-      const nextStart = new Date(startTime);
-      if (Number.isNaN(nextStart.getTime())) {
-        return next(new ValidationError("Invalid event start time."));
-      }
-      updateData.startTime = nextStart;
-    }
-    if (endTime) {
-      const nextEnd = new Date(endTime);
-      if (Number.isNaN(nextEnd.getTime())) {
-        return next(new ValidationError("Invalid event end time."));
-      }
-      updateData.endTime = nextEnd;
-    }
-    if (typeof isActive === "boolean") {
-      updateData.isActive = isActive;
+    if (updateData.endTime) {
+      (updateData as any).endTime = new Date(updateData.endTime);
     }
     const updatedEvent = await prisma.seller_events.update({
       where: { id: eventId },
-      data: updateData,
+      data: updateData as any,
     });
     return res.status(200).json({
       success: true,

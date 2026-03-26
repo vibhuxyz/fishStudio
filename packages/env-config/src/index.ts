@@ -27,6 +27,8 @@ export const ENV = {
   AUTH_SERVICE_PORT: process.env.AUTH_SERVICE_PORT || "6001",
   PRODUCT_SERVICE_PORT: process.env.PRODUCT_SERVICE_PORT || "6002",
   ORDER_SERVICE_PORT: process.env.ORDER_SERVICE_PORT || "6004",
+  NOTIFICATION_SERVICE_PORT: process.env.NOTIFICATION_SERVICE_PORT || "6005",
+  WORKER_SERVICE_PORT: process.env.WORKER_SERVICE_PORT || "6006",
 
   // Redis
   REDIS_DATABASE_URL: logEnv(
@@ -71,6 +73,16 @@ export const ENV = {
     "ORDER_SERVICE_URL",
     process.env.ORDER_SERVICE_URL ||
       `http://localhost:${process.env.ORDER_SERVICE_PORT || "6004"}`,
+  ),
+  NOTIFICATION_SERVICE_URL: logEnv(
+    "NOTIFICATION_SERVICE_URL",
+    process.env.NOTIFICATION_SERVICE_URL ||
+      `http://localhost:${process.env.NOTIFICATION_SERVICE_PORT || "6005"}`,
+  ),
+  WORKER_SERVICE_URL: logEnv(
+    "WORKER_SERVICE_URL",
+    process.env.WORKER_SERVICE_URL ||
+      `http://localhost:${process.env.WORKER_SERVICE_PORT || "6006"}`,
   ),
   // Mail
   SMTP_HOST: logEnv("SMTP_HOST", process.env.SMTP_HOST),

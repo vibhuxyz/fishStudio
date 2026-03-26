@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
 import { AuthError, ValidationError } from "@repo/error-handlers";
 import {

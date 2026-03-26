@@ -2,6 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import { cloudinary } from "@repo/libs";
 import { ENV } from "@repo/env-config";
 import { ValidationError } from "@repo/error-handlers";
+import {
+  uploadProductImageSchema,
+  uploadCloudinaryImageSchema,
+  deleteCloudinaryImageSchema,
+  validate,
+} from "@repo/zod-schema";
 
 export const uploadProductImage = async (
   req: Request,
@@ -9,10 +15,7 @@ export const uploadProductImage = async (
   next: NextFunction,
 ) => {
   try {
-    const { fileName } = req.body;
-    if (!fileName) {
-      return next(new ValidationError("File data is required"));
-    }
+    const { fileName } = validate(uploadProductImageSchema, req.body);
     const response = await cloudinary.uploader.upload(fileName, {
       folder: "products",
       quality: "auto:good",
@@ -35,7 +38,10 @@ export const uploadCloudinaryImage = async (
   next: NextFunction,
 ) => {
   try {
-    const { images, fileName, folder = "products", productTitle, category } = req.body;
+    const { images, fileName, folder, productTitle, category } = validate(
+      uploadCloudinaryImageSchema,
+      req.body,
+    );
     const imageList = Array.isArray(images)
       ? images
       : fileName
@@ -45,13 +51,13 @@ export const uploadCloudinaryImage = async (
       return next(new ValidationError("At least one image is required"));
     }
     const validFolders = ["banners", "products", "categriy"];
-    const targetBaseFolder = validFolders.includes(folder)
-      ? folder
+    const targetBaseFolder = validFolders.includes(folder as string)
+      ? (folder as string)
       : "products";
     let cloudFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio"}/${targetBaseFolder}`;
     if (targetBaseFolder === "categriy") {
       cloudFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio"}/categriy/categoryImage/images`;
-    } else if (targetBaseFolder === "products" && productTitle) {
+    } else if (targetBaseFolder === "products" && typeof productTitle === "string") {
       const safeTitle = productTitle
         .trim()
         .replace(/\s+/g, "-")
@@ -98,10 +104,7 @@ export const deleteCloudinaryImage = async (
   next: NextFunction,
 ) => {
   try {
-    const { fileId } = req.body;
-    if (!fileId) {
-      return next(new ValidationError("fileId is required for deletion"));
-    }
+    const { fileId } = validate(deleteCloudinaryImageSchema, req.body);
     const result = await cloudinary.uploader.destroy(fileId);
     res.status(200).json({
       success: true,

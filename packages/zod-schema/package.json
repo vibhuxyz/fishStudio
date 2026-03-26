@@ -1,14 +1,36 @@
 {
   "name": "@repo/zod-schema",
-  "module": "index.ts",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./schemas": {
+      "types": "./dist/schemas/index.d.ts",
+      "default": "./dist/schemas/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "zod": "^3.24.1",
+    "@repo/error-handlers": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest",
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "tsup": "^8.5.0"
   },
   "peerDependencies": {
-    "@repo/typescript-config": "workspace:*",
     "typescript": "^5"
   }
 }

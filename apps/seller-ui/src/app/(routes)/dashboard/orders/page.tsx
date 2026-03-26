@@ -7,12 +7,15 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 import { Search, Eye } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import Link from "next/link";
+import { useEffect } from "react";
 
 import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
+import { SellerOrder } from "@repo/zod-schema";
+import useSeller from "@/hooks/useSeller";
 
 const fetchOrders = async (page: number) => {
   const res = await axiosInstance.get(`/order/api/get-seller-orders?page=${page}&limit=20`);
@@ -22,12 +25,66 @@ const fetchOrders = async (page: number) => {
 const OrdersTable = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
+  const { seller } = useSeller();
 
   const { data, isLoading } = useQuery({
     queryKey: ["seller-orders", page],
     queryFn: () => fetchOrders(page),
     staleTime: 1000 * 60 * 5,
   });
+
+  // WebSocket for Real-time Orders
+  useEffect(() => {
+    const storeId = seller?.store?.id;
+    if (!storeId) return;
+
+    // Use environment variable or default to localhost:6006
+    const wsUrl = process.env.NEXT_PUBLIC_WORKER_WS_URL || `ws://localhost:6006?storeId=${storeId}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      console.log("✅ Connected to Real-time Order Service");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "NEW_ORDER") {
+          console.log("📦 New order received via WebSocket:", data.payload);
+          // Invalidate query to refetch or manually push to list
+          // Refetching is safer to get fully hydrated data from server
+          queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
+          
+          // Optionally show a toast notification here
+          if (typeof window !== "undefined") {
+            // Check if browser supports notifications
+            if (Notification.permission === "granted") {
+              new Notification("New Order!", {
+                body: `You received a new order #${data.payload.id.slice(-6).toUpperCase()}`,
+              });
+            } else if (Notification.permission !== "denied") {
+              Notification.requestPermission();
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error processing WS message:", err);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("❌ WebSocket error:", error);
+    };
+
+    ws.onclose = () => {
+      console.log("🔌 Disconnected from Real-time Order Service");
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [seller?.store?.id, queryClient]);
 
   const orders = data?.orders ?? [];
   const pagination = data?.pagination;
@@ -37,7 +94,7 @@ const OrdersTable = () => {
       {
         accessorKey: "id",
         header: "Order ID",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-sm truncate">
             #{row.original.id.slice(-6).toUpperCase()}
           </span>
@@ -46,7 +103,7 @@ const OrdersTable = () => {
       {
         accessorKey: "user.name",
         header: "Buyer",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white">
             {row.original.user?.name ?? "Guest"}
           </span>
@@ -55,13 +112,13 @@ const OrdersTable = () => {
       {
         accessorKey: "total",
         header: "Total",
-        cell: ({ row }: any) => <span>${row.original.total}</span>,
+        cell: ({ row }: { row: { original: SellerOrder } }) => <span>${row.original.total}</span>,
       },
       {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }: any) => {
-          const status = row.original.status;
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const status = row.original.status as string;
           let color = "bg-yellow-500 text-white"; // default
 
           if (status === "DELIVERED" || status === "Paid") color = "bg-emerald-600 text-white";
@@ -79,14 +136,14 @@ const OrdersTable = () => {
       {
         accessorKey: "createdAt",
         header: "Date",
-        cell: ({ row }: any) => {
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
           const date = new Date(row.original.createdAt).toLocaleDateString();
           return <span className="text-white text-sm">{date}</span>;
         },
       },
       {
         header: "Actions",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
           <Link
             href={`/order/${row.original.id}`}
             className="text-blue-400 hover:text-blue-300 transition"

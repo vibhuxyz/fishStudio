@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { cloudinary } from "@repo/libs";
 import { ENV } from "@repo/env-config";
 import { AuthRequest, getRequiredParam, interleaveBanners } from "./utils.js";
+import { uploadBannerSchema, updateBannerSchema, reviewBannerSchema, validate } from "@repo/zod-schema";
 
 export const uploadBanner = async (
   req: AuthRequest,
@@ -11,7 +12,7 @@ export const uploadBanner = async (
   next: NextFunction,
 ) => {
   try {
-    const { fileName, images, category } = req.body;
+    const { fileName, images, category } = validate(uploadBannerSchema, req.body);
     const sellerId = req.seller?.id;
     const adminId = req.admin?.id;
     const imageList = Array.isArray(images)
@@ -114,7 +115,7 @@ export const updateBanner = async (
       return next(new ValidationError("Only seller or admin can update banners!"));
     }
     const bannerId = getRequiredParam(req.params.bannerId, "Banner id");
-    const { fileName, isActive } = req.body;
+    const { fileName, isActive } = validate(updateBannerSchema, req.body);
     const existingBanner = await prisma.banners.findUnique({
       where: { id: bannerId },
       select: { id: true, sellerId: true, category: true },
@@ -307,10 +308,7 @@ export const reviewBanner = async (
     if (req.role !== "admin") {
       return next(new ValidationError("Only admin can review banners!"));
     }
-    const { bannerId, action } = req.body;
-    if (!bannerId || !action) {
-      return next(new ValidationError("Banner ID and action are required"));
-    }
+    const { bannerId, action } = validate(reviewBannerSchema, req.body);
     const banner = await prisma.banners.findUnique({
       where: { id: bannerId },
     });

@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 
 export interface AuthRequest extends Request {
@@ -13,6 +13,9 @@ export interface AuthRequest extends Request {
       id: string;
       name?: string;
     } | null;
+  };
+  user?: {
+    id: string;
   };
 }
 

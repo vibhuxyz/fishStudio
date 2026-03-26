@@ -1,7 +1,10 @@
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { prisma } from "@repo/db";
+import { prismaPostgres } from "@repo/db-postgres";
+import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Response } from "express";
 import { invalidateSellerStatsCache } from "./utils.js";
+import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
+import { publishToQueue } from "@repo/libs";
 
 export const getSellerOrders = async (
   req: any,
@@ -19,58 +22,49 @@ export const getSellerOrders = async (
     const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
-      prisma.order.findMany({
+      prismaPostgres.order.findMany({
         where: { storeId },
         skip,
         take: limit,
-        select: {
-          id: true,
-          status: true,
-          paymentStatus: true,
-          paymentMethod: true,
-          totalAmount: true,
-          discountAmount: true,
-          couponCode: true,
-          deliverySlot: true,
-          deliveryName: true,
-          deliveryPhone: true,
-          deliveryAddress: true,
-          deliveryCity: true,
-          deliveryPincode: true,
-          deliveryCharge: true,
-          billDetails: true,
-          rejectionReason: true,
-          createdAt: true,
-          updatedAt: true,
-          user: {
-            select: { id: true, name: true, phone_number: true, email: true },
-          },
-          orderItems: {
-            select: {
-              id: true,
-              quantity: true,
-              price: true,
-              selectedOptions: true,
-              product: {
-                select: {
-                  id: true,
-                  title: true,
-                  slug: true,
-                  sale_price: true,
-                  images: { select: { url: true }, take: 1 },
-                },
-              },
-            },
-          },
+        include: {
+          orderItems: true,
         },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.order.count({ where: { storeId } }),
+      prismaPostgres.order.count({ where: { storeId } }),
     ]);
+
+    // Hydrate orders with Users and Products from Mongo
+    const userIds = [...new Set(orders.map(o => o.userId))];
+    const productIds = [...new Set(orders.flatMap(o => o.orderItems.map(oi => oi.productId)))];
+
+    const [users, products] = await Promise.all([
+      prismaMongo.users.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, name: true, phone_number: true, email: true },
+      }),
+      prismaMongo.products.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          sale_price: true,
+          images: { select: { url: true }, take: 1 },
+        },
+      }),
+    ]);
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+    const productMap = new Map(products.map(p => [p.id, p]));
 
     const mappedOrders = orders.map((o: any) => ({
       ...o,
-      items: o.orderItems,
+      user: userMap.get(o.userId),
+      items: o.orderItems.map((oi: any) => ({
+        ...oi,
+        product: productMap.get(oi.productId),
+      })),
       total: o.totalAmount,
     }));
 
@@ -99,13 +93,9 @@ export const acceptOrRejectOrder = async (
 ) => {
   try {
     const { orderId } = req.params;
-    const { action, rejectionReason } = req.body;
+    const { action, rejectionReason } = validate(acceptOrRejectOrderSchema, req.body);
 
-    if (!orderId || !action) return next(new ValidationError("orderId and action are required"));
-    if (action !== "accept" && action !== "reject") return next(new ValidationError("action must be 'accept' or 'reject'"));
-    if (action === "reject" && !rejectionReason?.trim()) return next(new ValidationError("A rejection reason is required"));
-
-    const existingOrder = await prisma.order.findUnique({ 
+    const existingOrder = await prismaPostgres.order.findUnique({ 
       where: { id: orderId },
       include: { orderItems: true }
     });
@@ -113,19 +103,25 @@ export const acceptOrRejectOrder = async (
 
     let updatedOrder;
     if (action === "accept") {
-      updatedOrder = await prisma.order.update({
+      updatedOrder = await prismaPostgres.order.update({
         where: { id: orderId },
         data: { status: "ACCEPTED", rejectionReason: null, updatedAt: new Date() },
       });
     } else {
-      updatedOrder = await prisma.order.update({
+      updatedOrder = await prismaPostgres.order.update({
         where: { id: orderId },
-        data: { status: "REJECTED", rejectionReason: rejectionReason.trim(), paymentStatus: "REFUNDED", updatedAt: new Date() },
+        data: { 
+          status: "REJECTED", 
+          rejectionReason: rejectionReason?.trim() || "Order rejected by seller", 
+          paymentStatus: "REFUNDED", 
+          updatedAt: new Date() 
+        },
       });
 
       try {
         for (const item of existingOrder.orderItems) {
-          await prisma.products.update({
+          // Products are in Mongo
+          await prismaMongo.products.update({
             where: { id: item.productId },
             data: { 
               stock: { increment: item.quantity },
@@ -139,6 +135,24 @@ export const acceptOrRejectOrder = async (
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
+
+    /* ── Notify User ── */
+    try {
+      const shortId = orderId.slice(-6).toUpperCase();
+      await publishToQueue("NOTIFICATION_QUEUE", {
+        userId: existingOrder.userId,
+        title: action === "accept" ? "Order Accepted" : "Order Rejected",
+        message: action === "accept" 
+          ? `Your order #${shortId} has been accepted by the store.` 
+          : `Your order #${shortId} was rejected. Reason: ${rejectionReason || "Order rejected by seller"}`,
+        type: action === "accept" ? "SUCCESS" : "ERROR",
+        category: "ORDER",
+        metadata: { orderId },
+        channels: ["IN_APP", "SMS"],
+      });
+    } catch (notifyErr) {
+      console.error("Failed to notify user of order status change:", notifyErr);
+    }
 
     return res.status(200).json({
       success: true,
@@ -157,22 +171,44 @@ export const updateOrderStatus = async (
 ) => {
   try {
     const { orderId } = req.params;
-    const { status } = req.body;
+    const { status } = validate(updateOrderStatusSchema, req.body);
 
-    const allowed = ["SHIPPED", "DELIVERED", "CANCELLED"];
-    if (!allowed.includes(status)) {
-      return next(new ValidationError(`Status must be one of: ${allowed.join(", ")}`));
-    }
-
-    const existing = await prisma.order.findUnique({ where: { id: orderId } });
+    const existing = await prismaPostgres.order.findUnique({ where: { id: orderId } });
     if (!existing) return next(new NotFoundError("Order not found"));
 
-    const updated = await prisma.order.update({
+    const updated = await prismaPostgres.order.update({
       where: { id: orderId },
       data: { status, updatedAt: new Date() },
     });
 
     await invalidateSellerStatsCache(req.seller?.id);
+
+    /* ── Notify User ── */
+    try {
+      const shortId = orderId.slice(-6).toUpperCase();
+      let title = "Order Update";
+      let message = `Your order #${shortId} status has been updated to ${status}.`;
+
+      if (status === "SHIPPED") {
+        title = "Order Shipped";
+        message = `Good news! Your order #${shortId} has been shipped.`;
+      } else if (status === "DELIVERED") {
+        title = "Order Delivered";
+        message = `Your order #${shortId} has been delivered. Enjoy!`;
+      }
+
+      await publishToQueue("NOTIFICATION_QUEUE", {
+        userId: existing.userId,
+        title,
+        message,
+        type: "INFO",
+        category: "ORDER",
+        metadata: { orderId },
+        channels: ["IN_APP"],
+      });
+    } catch (notifyErr) {
+      console.error("Failed to notify user of order status update:", notifyErr);
+    }
 
     return res.status(200).json({ success: true, order: updated });
   } catch (error) {

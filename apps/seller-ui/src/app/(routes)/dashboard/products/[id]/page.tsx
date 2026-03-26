@@ -14,58 +14,12 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { frontendEnv } from "@/config/env";
 
-type SizePricingRow = {
-  size: string;
-  weightGrams: number;
-  regularPrice: number;
-  salePrice: number;
-};
-
-type DiscountCode = {
-  id: string;
-  public_name: string;
-  discountType: string;
-  discountValue: number;
-};
-
-type SellerOwnedProduct = {
-  id: string;
-  title: string;
-  slug: string;
-  category: string;
-  subCategory: string;
-  short_description: string;
-  tags: string[];
-  regular_price: number;
-  sale_price: number;
-  stock: number;
-  sizes: string[];
-  sizePricing?: SizePricingRow[] | null;
-  cashOnDelivery?: string | null;
-  status: "Active" | "NonActive";
-  discount_codes: string[];
-  images: Array<{ id: string; url: string }>;
-  catalogProduct?: {
-    id: string;
-    title: string;
-    slug: string;
-  } | null;
-};
-
-type SellerProductFormValues = {
-  productId: string;
-  title: string;
-  slug: string;
-  short_description: string;
-  tags: string;
-  stock: number;
-  cash_on_delivery: "yes" | "no";
-  status: "Active" | "NonActive";
-  discountCodes: string[];
-  sizePricing: SizePricingRow[];
-  regular_price: number;
-  sale_price: number;
-};
+import {
+  SizePricingRow,
+  DiscountCode,
+  SellerOwnedProduct,
+  SellerProductFormValues,
+} from "@repo/zod-schema";
 
 const parseWeightToGrams = (size: string) => {
   const match = size.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(kg|g|gm)/);

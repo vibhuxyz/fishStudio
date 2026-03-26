@@ -1,11 +1,21 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
+import { redis } from "@repo/libs";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import {
   indexProduct,
   updateIndexedProduct,
   removeIndexedProduct,
 } from "../../lib/meilisearch.js";
+import {
+  productSchema,
+  updateProductSchema,
+  slugSchema,
+  addCatalogProductToStoreSchema,
+  updateProductStockSchema,
+  validateCartSchema,
+  validate,
+} from "@repo/zod-schema";
 
 import {
   AuthRequest,
@@ -29,10 +39,7 @@ export const slugValidator = async (
   next: NextFunction,
 ) => {
   try {
-    let { slug } = req.body;
-    if (!slug || typeof slug !== "string") {
-      return next(new ValidationError("Slug is required and must be a string."));
-    }
+    let { slug } = validate(slugSchema, req.body);
     slug = slug
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -53,6 +60,27 @@ export const slugValidator = async (
   }
 };
 
+/** 
+ * Helper to invalidate search and suggestion cache.
+ * Uses SCAN to find all keys matching 'search:*' and 'suggest:*' 
+ * and deletes them to ensure fresh data after product updates.
+ */
+async function invalidateSearchCache() {
+  try {
+    const stream = (redis as any).scanStream({ match: "search:*" });
+    stream.on("data", (keys: string[]) => {
+      if (keys.length) redis.del(...keys);
+    });
+    
+    const suggestStream = (redis as any).scanStream({ match: "suggest:*" });
+    suggestStream.on("data", (keys: string[]) => {
+      if (keys.length) redis.del(...keys);
+    });
+  } catch (error) {
+    console.error("[Cache Invalidation Error]", error);
+  }
+}
+
 export const createProduct = async (
   req: AuthRequest,
   res: Response,
@@ -70,27 +98,16 @@ export const createProduct = async (
       pieceSizes,
       processingWeightLoss,
       slug,
-      tags,
-      cash_on_delivery,
+      tags = [],
       category,
       subCategory,
       stock,
       sale_price,
       regular_price,
-      images = [],
-    } = req.body;
+      images,
+    } = validate(productSchema, req.body);
 
-    const requiredFields = { title, slug, short_description, category, subCategory, tags };
-    const missingFields = Object.entries(requiredFields).filter(([_, value]) => {
-      if (value === undefined || value === null) return true;
-      if (typeof value === "string" && value.trim() === "") return true;
-      if (Array.isArray(value) && value.length === 0) return true;
-      return false;
-    }).map(([key]) => key);
-
-    if (missingFields.length > 0) {
-      return next(new ValidationError(`Missing required fields: ${missingFields.join(", ")}`));
-    }
+    const cash_on_delivery = req.body.cash_on_delivery;
 
     const slugChecking = await prisma.products.findUnique({ where: { slug } });
     if (slugChecking) {
@@ -118,7 +135,7 @@ export const createProduct = async (
         storeId: null,
         catalogProductId: null,
         isDeleted: false,
-        tags: Array.isArray(tags) ? tags : tags.split(",").map((t: string) => t.trim()),
+        tags: tags as string[],
         discount_codes: [],
         stock: Number(stock ?? 0),
         sale_price: Number(sale_price ?? 0),
@@ -135,6 +152,7 @@ export const createProduct = async (
     });
 
     indexProduct(newProduct as any);
+    invalidateSearchCache();
     res.status(201).json({ success: true, message: "Product created successfully!", newProduct });
   } catch (error) {
     console.error(error);
@@ -215,7 +233,7 @@ export const addCatalogProductToStore = async (
       tags,
       status,
       processingWeightLoss,
-    } = req.body;
+    } = validate(addCatalogProductToStoreSchema, req.body);
 
     const uniqueSlug = await buildUniqueSlug(catalogProduct.slug, sellerStore.id.slice(-6));
     const hasSizes = Array.isArray(catalogProduct.sizes) && catalogProduct.sizes.length > 0;
@@ -271,6 +289,7 @@ export const addCatalogProductToStore = async (
     });
 
     indexProduct(storeProduct as any);
+    invalidateSearchCache();
     return res.status(201).json({ success: true, message: "Product added to seller store successfully!", product: storeProduct });
   } catch (error) {
     return next(error);
@@ -451,10 +470,11 @@ export const updateProduct = async (
 
     if (!hasAccess) return next(new ValidationError("You are not authorized to update this product!"));
 
+    const validated = validate(updateProductSchema, req.body);
     const {
       title, short_description, tags, category, subCategory, stock, sale_price, regular_price, sizePricing, cuttingTypePricing, pieceSizePricing,
       slug, sizes, pieceSizes, cuttingTypes, discountCodes, cash_on_delivery, processingWeightLoss, status
-    } = req.body;
+    } = validated;
 
     let resolvedSlug: string | null = null;
     if (slug) {
@@ -520,6 +540,7 @@ export const updateProduct = async (
 
     const updatedProduct = await prisma.products.update({ where: { id: productId }, data: updateData, include: { images: true } });
     updateIndexedProduct(updatedProduct as any);
+    invalidateSearchCache();
     return res.status(200).json({ success: true, message: "Product updated successfully!", product: updatedProduct });
   } catch (error) {
     return next(error);
@@ -544,6 +565,7 @@ export const deleteProduct = async (
 
     const deletedProduct = await prisma.products.update({ where: { id: productId }, data: { isDeleted: true, deletedAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
     removeIndexedProduct(productId);
+    invalidateSearchCache();
     return res.status(200).json({ message: "Product is scheduled for deletion in 24 hours.You can restore it within this time.", deletedAt: deletedProduct.deletedAt });
   } catch (error) {
     return next(error);
@@ -599,8 +621,7 @@ export const validateCart = async (
   next: NextFunction,
 ) => {
   try {
-    const { productIds } = req.body;
-    if (!Array.isArray(productIds) || productIds.length === 0) return res.status(200).json({ success: true, products: [] });
+    const { productIds } = validate(validateCartSchema, req.body);
     const products = await prisma.products.findMany({
       where: { id: { in: productIds }, isDeleted: false },
       select: { id: true, title: true, slug: true, status: true, stock: true, sale_price: true, regular_price: true, images: { take: 1, select: { url: true } } },
@@ -619,14 +640,14 @@ export const updateProductStock = async (
 ) => {
   try {
     const { productId } = req.params as { productId: string };
-    const { stockAdjustment } = req.body;
-    if (stockAdjustment === undefined || isNaN(Number(stockAdjustment))) return next(new ValidationError("Valid stockAdjustment is required"));
+    const { stockAdjustment } = validate(updateProductStockSchema, req.body);
     const adjustment = Number(stockAdjustment);
     const product = await prisma.products.findUnique({ where: { id: productId }, select: { id: true, storeId: true, adminId: true, stock: true } });
     if (!product) return next(new NotFoundError("Product not found"));
     const hasAccess = req.role === "admin" || (req.role === "seller" && product.storeId === req.seller?.store?.id);
     if (!hasAccess) return next(new ValidationError("Unauthorized to update this product's stock"));
     const updatedProduct = await prisma.products.update({ where: { id: productId }, data: { stock: { increment: adjustment } } });
+    invalidateSearchCache();
     res.status(200).json({ success: true, message: "Stock updated successfully", newStock: updatedProduct.stock });
   } catch (error) {
     next(error);

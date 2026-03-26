@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { AuthRequest, getCategoryConfigKey } from "./utils.js";
+import { categorySchema, subCategorySchema, validate } from "@repo/zod-schema";
 
 export const getCategories = async (
   _req: any,
@@ -50,10 +51,7 @@ export const createCategory = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, imageUrl } = req.body;
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return next(new ValidationError("Category name is required"));
-    }
+    const { name, imageUrl } = validate(categorySchema, req.body);
     const categoryName = name.trim();
     let config = await prisma.site_config.findFirst();
     if (!config) {
@@ -112,13 +110,7 @@ export const createSubCategory = async (
   next: NextFunction,
 ) => {
   try {
-    const { category, name } = req.body;
-    if (!category || typeof category !== "string" || !category.trim()) {
-      return next(new ValidationError("Category is required"));
-    }
-    if (!name || typeof name !== "string" || !name.trim()) {
-      return next(new ValidationError("Subcategory name is required"));
-    }
+    const { category, name } = validate(subCategorySchema, req.body);
     const config = await prisma.site_config.findFirst();
     if (!config) {
       return next(new NotFoundError("Site config not found"));

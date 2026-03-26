@@ -22,7 +22,7 @@
     "morgan": "^1.10.1"
   },
   "devDependencies": {
-    "@repo/db": "workspace:*",
+    "@repo/db-mongo": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/libs": "workspace:*",
     "@repo/typescript-config": "workspace:*",

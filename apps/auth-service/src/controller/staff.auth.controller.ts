@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { AuthError, ValidationError } from "@repo/error-handlers";
 import {
   checkOtpRestrictions,
@@ -12,6 +12,12 @@ import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 import { redis } from "@repo/libs";
+import {
+  validate,
+  registerStaffSchema,
+  verifyStaffSchema,
+  updateStaffAccessSchema,
+} from "@repo/zod-schema";
 
 // ─── Register staff (step 1 – send OTP) ───────────────────────────────────────
 export const registerStaff = async (
@@ -20,11 +26,7 @@ export const registerStaff = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, email } = req.body;
-
-    if (!name || !email) {
-      throw new ValidationError("Name and email are required");
-    }
+    const { name, email } = validate(registerStaffSchema, req.body);
 
     const existingStaff = await prisma.staffs.findUnique({ where: { email } });
     if (existingStaff) {
@@ -56,11 +58,7 @@ export const verifyStaff = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, email, password, otp } = req.body;
-
-    if (!name || !email || !password || !otp) {
-      return next(new ValidationError("All fields are required"));
-    }
+    const { name, email, password, otp } = validate(verifyStaffSchema, req.body);
 
     const existingStaff = await prisma.staffs.findUnique({ where: { email } });
     if (existingStaff) {
@@ -157,12 +155,8 @@ export const updateStaffAccess = async (
   next: NextFunction,
 ) => {
   try {
-    const { staffId, isActive } = req.body;
+    const { staffId, isActive } = validate(updateStaffAccessSchema, req.body);
     const sellerId = req.seller.id;
-
-    if (!staffId || typeof isActive !== "boolean") {
-      return next(new ValidationError("staffId and isActive are required"));
-    }
 
     const staff = await prisma.staffs.findUnique({ where: { id: staffId } });
 

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Product } from "@repo/types";
+import type { Product } from "@repo/zod-schema";
 import { axiosInstance } from "./utils";
 
 type CuttingType = {

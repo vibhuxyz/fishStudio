@@ -58,10 +58,13 @@ export function computeStats(orders: any[]) {
     }
   > = {};
 
+  const categoryMap: Record<string, { revenue: number, orders: number }> = {};
+
   const productMap: Record<
     string,
     {
       title: string;
+      category: string;
       orders: number;
       revenue: number;
       image?: string;
@@ -161,6 +164,7 @@ export function computeStats(orders: any[]) {
       if (!productMap[pid]) {
         productMap[pid] = {
           title: product?.title ?? "Unknown",
+          category: product?.category ?? "Uncategorized",
           orders: 0,
           revenue: 0,
           image: product?.images?.[0]?.url ?? null,
@@ -178,6 +182,13 @@ export function computeStats(orders: any[]) {
       }
       
       productMap[pid].orders++;
+      
+      const category = product?.category ?? "Uncategorized";
+      if (!categoryMap[category]) {
+        categoryMap[category] = { revenue: 0, orders: 0 };
+      }
+      categoryMap[category].orders++;
+
       productMap[pid].quantaSale += qty;
       productMap[pid].orderIds.push(order.id);
 
@@ -195,6 +206,7 @@ export function computeStats(orders: any[]) {
         productMap[pid].deliveredQty += qty;
         productMap[pid].revenue += itemRevenue;
         productMap[pid].couponSpend += itemDiscount;
+        categoryMap[category].revenue += itemRevenue;
       } else if (order.status === "CANCELLED" || order.status === "REJECTED") {
         productMap[pid].cancelledQty += qty;
       } else if (order.status === "PENDING") {
@@ -203,6 +215,7 @@ export function computeStats(orders: any[]) {
         productMap[pid].deliveredQty += qty; 
         productMap[pid].revenue += itemRevenue;
         productMap[pid].couponSpend += itemDiscount;
+        categoryMap[category].revenue += itemRevenue;
       }
 
       if (order.paymentStatus === "REFUNDED") {
@@ -255,5 +268,10 @@ export function computeStats(orders: any[]) {
     needsImprovement,
     toRemove,
     allProductsBreakdown: allProducts,
+    categoryBreakdown: Object.entries(categoryMap).map(([name, data]) => ({
+      name,
+      revenue: data.revenue,
+      orders: data.orders,
+    })),
   };
 }

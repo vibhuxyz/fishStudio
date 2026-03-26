@@ -35,8 +35,10 @@
     "check-types": "turbo run check-types",
     "prepare": "husky",
     "db:setup": "cd packages/db && bun run db:setup",
-    "db:migrate": "cd packages/db && bunx prisma db push",
-    "db:seed": "cd packages/db && bun run prisma:seed"
+    "db:generate": "cd packages/db-postgres && bunx prisma generate && cd ../db-mongo && bunx prisma generate",
+    "db:migrate": "cd packages/db-postgres && bunx prisma migrate dev && cd ../db-mongo && bunx prisma db push",
+    "db:seed": "cd packages/db-mongo && bun run db:seed",
+    "db:reset": "bun run scripts/reset-db.ts"
   },
   "workspaces": [
     "apps/*",

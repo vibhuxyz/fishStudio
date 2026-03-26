@@ -23,7 +23,7 @@ import {
 import { ProductCarousel } from "@/components/shared/product-carousel";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
-import type { Product } from "@repo/types";
+import type { Product } from "@repo/zod-schema";
 import { resolveProductSizePricing } from "@/lib/storefront";
 import { toast } from "sonner";
 

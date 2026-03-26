@@ -29,6 +29,8 @@ import {
   createDiscountCodes,
   deleteDiscountCode,
   getDiscountCodes,
+  toggleCouponStatus,
+  validateCoupon,
 } from "../controllers/product/coupon.controller.js";
 import {
   createSellerEvent,
@@ -100,6 +102,14 @@ router.delete(
   allowRoles("admin", "seller"),
   deleteDiscountCode,
 );
+router.patch(
+  "/toggle-discount-code/:id",
+  isAuthenticated,
+  allowRoles("admin", "seller"),
+  toggleCouponStatus,
+);
+// Public — called from checkout before order submit (auth optional for per-user limit check)
+router.post("/validate-coupon", validateCoupon);
 router.delete(
   "/delete-event/:eventId",
   isAuthenticated,

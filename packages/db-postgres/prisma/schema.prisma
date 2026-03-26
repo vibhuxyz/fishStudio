@@ -1,0 +1,121 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated-client"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id     String @id @default(cuid())
+  userId String // Reference to Mongo User ID
+  storeId String // Reference to Mongo Store ID
+
+  totalAmount    Float
+  discountAmount Float @default(0)
+  couponCode     String?
+  deliverySlot    String?   // "instant" | "morning" | "evening"
+
+  // Delivery details
+  deliveryName    String?
+  deliveryPhone   String?
+  deliveryAddress String?
+  deliveryCity    String?
+  deliveryPincode String?
+  deliveryCharge  Float   @default(0)
+  billDetails     Json?   // Snapshot of { itemTotal, deliveryCharge, discount, totalAmount }
+
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentMethod String?
+  paymentRef    String?
+
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderItems   OrderItem[]
+  payments     Payment[]
+  couponUsages CouponUsage[]
+
+  @@index([storeId])
+  @@index([userId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String   // Reference to Mongo Product ID
+  quantity  Int
+  price     Float
+  selectedOptions Json?
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  method        String        // "COD", "RAZORPAY", etc.
+  transactionId String?       @unique
+  metadata      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model CouponUsage {
+  id        String   @id @default(cuid())
+  couponId  String   // Reference to Mongo Coupon ID
+  userId    String   // Reference to Mongo User ID
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([couponId, userId])
+  @@index([orderId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String   // Reference to Mongo User ID
+  title     String
+  message   String
+  type      String   @default("INFO") // "INFO", "SUCCESS", "WARNING", "ERROR"
+  category  String?  // "ORDER", "SYSTEM", "PROMO", etc.
+  isRead    Boolean  @default(false)
+  metadata  Json?    // For deep linking, e.g., { orderId: "..." }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}

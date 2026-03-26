@@ -5,6 +5,7 @@ import { Search, UserCheck, UserX, Loader2, Users } from "lucide-react";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
+import { Staff } from "@repo/zod-schema";
 
 // Keeping mock orders just for the stats display
 import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
@@ -12,7 +13,7 @@ import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
 const StaffManagementPage = () => {
   const queryClient = useQueryClient();
   const [searchEmail, setSearchEmail] = useState("");
-  const [searchResult, setSearchResult] = useState<any | null>(null);
+  const [searchResult, setSearchResult] = useState<Staff | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
   
@@ -47,7 +48,7 @@ const StaffManagementPage = () => {
     onSuccess: (vars) => {
       queryClient.invalidateQueries({ queryKey: ["seller-staffs"] });
       if (searchResult && searchResult.id === vars.staffId) {
-        setSearchResult((prev: any) => ({ ...prev, isActive: vars.isActive }));
+        setSearchResult((prev: Staff | null) => (prev ? { ...prev, isActive: vars.isActive } : null));
       }
       showFeedback(
         "success",
@@ -102,7 +103,7 @@ const StaffManagementPage = () => {
         <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
           <p className="text-gray-400 text-sm mb-1">Active</p>
           <p className="text-2xl font-bold text-green-400">
-            {staffList.filter((s: any) => s.isActive).length}
+            {staffList.filter((s: Staff) => s.isActive).length}
           </p>
         </div>
         <div className="bg-[#111827] border border-gray-800 rounded-xl p-4">
@@ -236,7 +237,7 @@ const StaffManagementPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {staffList.map((staff: any, idx: number) => (
+                {staffList.map((staff: Staff, idx: number) => (
                   <tr
                     key={staff.id}
                     className={`border-b border-gray-800 hover:bg-[#1e2433] transition ${

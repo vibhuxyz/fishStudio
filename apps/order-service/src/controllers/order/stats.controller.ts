@@ -1,4 +1,5 @@
-import { prisma } from "@repo/db";
+import { prismaPostgres } from "@repo/db-postgres";
+import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
 import { redis } from "@repo/libs";
@@ -8,6 +9,36 @@ import {
   computeStats, 
   STATS_CACHE_TTL 
 } from "./utils.js";
+
+async function hydrateOrders(orders: any[]) {
+  if (orders.length === 0) return [];
+
+  const storeIds = [...new Set(orders.map(o => o.storeId))];
+  const productIds = [...new Set(orders.flatMap(o => o.orderItems.map((oi: any) => oi.productId)))];
+
+  const [stores, products] = await Promise.all([
+    prismaMongo.stores.findMany({
+      where: { id: { in: storeIds } },
+      include: { seller: { select: { id: true, name: true, email: true } } }
+    }),
+    prismaMongo.products.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, title: true, category: true, images: { take: 1 } }
+    })
+  ]);
+
+  const storeMap = new Map(stores.map(s => [s.id, s]));
+  const productMap = new Map(products.map(p => [p.id, p]));
+
+  return orders.map(o => ({
+    ...o,
+    store: storeMap.get(o.storeId),
+    orderItems: o.orderItems.map((oi: any) => ({
+      ...oi,
+      product: productMap.get(oi.productId)
+    }))
+  }));
+}
 
 export const getSellerStats = async (
   req: any,
@@ -40,18 +71,14 @@ export const getSellerStats = async (
 
     const since = getPeriodStart(period);
 
-    const orders = await prisma.order.findMany({
+    const ordersRaw = await prismaPostgres.order.findMany({
       where: { storeId, createdAt: { gte: since } },
       include: {
-        store: { select: { pincode: true, name: true, id: true } },
-        orderItems: {
-          include: {
-            product: { select: { id: true, title: true, images: { take: 1 } } },
-          },
-        },
+        orderItems: true
       },
     });
 
+    const orders = await hydrateOrders(ordersRaw);
     const stats = computeStats(orders);
 
     try {
@@ -96,25 +123,22 @@ export const getAdminStats = async (
 
     let storeId: string | undefined;
     if (sellerId) {
-      const store = await prisma.stores.findUnique({ where: { sellerId } });
+      // Stores are in Mongo
+      const store = await prismaMongo.stores.findUnique({ where: { sellerId } });
       storeId = store?.id;
     }
 
-    const orders = await prisma.order.findMany({
+    const ordersRaw = await prismaPostgres.order.findMany({
       where: {
         ...(storeId ? { storeId } : {}),
         createdAt: { gte: since },
       },
       include: {
-        store: { select: { pincode: true, name: true, id: true, seller: { select: { id: true, name: true, email: true } } } },
-        orderItems: {
-          include: {
-            product: { select: { id: true, title: true, images: { take: 1 } } },
-          },
-        },
+        orderItems: true
       },
     });
 
+    const orders = await hydrateOrders(ordersRaw);
     const stats = computeStats(orders);
 
     let perSellerBreakdown: any[] = [];

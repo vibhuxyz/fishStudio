@@ -1,6 +1,6 @@
 // "use client";
 import { ProductCarousel } from "@/components/shared/product-carousel";
-import { Product } from "@repo/types";
+import { Product } from "@repo/zod-schema";
 
 interface ProductCarouselSectionProps {
   title: string;

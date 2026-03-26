@@ -10,18 +10,20 @@
   },
   "scripts": {
     "dev": "bun --watch src/main.ts",
-    "build": "tsc",
+    "build": "tsup",
     "start": "node dist/main.js"
   },
   "devDependencies": {
-    "@repo/db": "workspace:*",
-    "@repo/rabbitMQ-service": "workspace:*",
+    "@repo/db-postgres": "workspace:*",
+    "@repo/db-mongo": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/middlewares": "workspace:*",
     "@repo/libs": "workspace:*",
     "@repo/error-handlers": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "tsup": "^8.5.0"
   },
   "peerDependencies": {
     "typescript": "^5"

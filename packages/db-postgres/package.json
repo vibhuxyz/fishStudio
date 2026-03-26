@@ -1,0 +1,30 @@
+{
+  "name": "@repo/db-postgres",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "@repo/libs": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "nanoid": "^5.0.7"
+  },
+  "devDependencies": {
+    "prisma": "^5.14.0",
+    "typescript": "^5.4.5",
+    "tsx": "^4.7.2"
+  }
+}

@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import cron from "node-cron";
 
 cron.schedule("0 * * * *", async () => {

@@ -1,4 +1,4 @@
-import type { BackendProduct, Product, ProductSizePricing } from "@repo/types";
+import type { BackendProduct, Product, ProductSizePricing } from "@repo/zod-schema";
 import { frontendEnv } from "@/lib/env";
 
 export interface StorefrontBanner {

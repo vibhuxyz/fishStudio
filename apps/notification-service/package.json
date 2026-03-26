@@ -1,0 +1,53 @@
+{
+  "name": "@repo/notification-service",
+  "type": "module",
+  "private": true,
+  "main": "./dist/main.js",
+  "exports": {
+    ".": {
+      "default": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsup",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "expo-server-sdk": "^3.11.0",
+    "express": "^5.2.1",
+    "express-http-proxy": "^2.1.2",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "ws": "^8.18.0"
+  },
+
+  "devDependencies": {
+    "@repo/db-mongo": "workspace:*",
+    "@repo/db-postgres": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
+    "@types/amqplib": "^0.10.8",
+    "@types/bun": "latest",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/express-http-proxy": "^1.6.7",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/morgan": "^1.9.10",
+    "@types/ws": "^8.5.14",
+    "tsup": "^8.5.0",
+    "tsx": "^4.21.0"
+  },
+
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

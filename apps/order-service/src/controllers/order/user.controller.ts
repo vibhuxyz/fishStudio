@@ -1,102 +1,293 @@
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { prisma } from "@repo/db";
+import { prismaPostgres } from "@repo/db-postgres";
+import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Request, Response } from "express";
+import { createOrderSchema, validate } from "@repo/zod-schema";
+import { publishToQueue } from "@repo/libs";
 
+/* ─── Helpers ─────────────────────────────────────────────────────────────── */
+
+/**
+ * Re-validates coupon server-side. Returns discount amount and freeDelivery flag.
+ * Throws ValidationError if coupon is invalid so the order is rejected cleanly.
+ */
+async function validateAndApplyCoupon(
+  couponCode: string,
+  userId: string,
+  storeId: string,
+  itemTotal: number,
+): Promise<{ couponId: string; discountAmount: number; freeDelivery: boolean }> {
+  const now = new Date();
+
+  // Coupons are in Mongo
+  const coupon = await prismaMongo.discount_codes.findFirst({
+    where: {
+      discountCode: couponCode.toUpperCase(),
+      isActive: true,
+      AND: [
+        { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+        {
+          OR: [
+            { adminId: { not: null } },
+            { seller: { store: { id: storeId } } },
+          ],
+        },
+      ],
+    },
+    include: { _count: { select: { usages: true } } },
+  });
+
+  if (!coupon) throw new ValidationError("Coupon code is invalid or expired");
+
+  if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
+    throw new ValidationError("This coupon has reached its usage limit");
+  }
+
+  // Coupon usages are in Postgres (Order-related)
+  const userCount = await prismaPostgres.couponUsage.count({
+    where: { couponId: coupon.id, userId },
+  });
+  if (userCount >= coupon.maxUsesPerUser) {
+    throw new ValidationError("You have already used this coupon");
+  }
+
+  if (itemTotal < coupon.minOrderValue) {
+    throw new ValidationError(
+      `Minimum order of ₹${coupon.minOrderValue} required for coupon ${couponCode}`,
+    );
+  }
+
+  let discountAmount = 0;
+  if (coupon.discountType === "percentage") {
+    discountAmount = Math.round((itemTotal * coupon.discountValue) / 100);
+  } else if (coupon.discountType === "fixed") {
+    discountAmount = Math.min(coupon.discountValue, itemTotal);
+  }
+
+  return {
+    couponId: coupon.id,
+    discountAmount,
+    freeDelivery: coupon.discountType === "free_delivery",
+  };
+}
+
+/* ─── Create order ────────────────────────────────────────────────────────── */
 export const createOrder = async (
   req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const userId = req.user?.id;
+    const userId = req.user?.id as string;
     const {
       storeId,
       items,
       deliveryDetails,
       billDetails,
       paymentMethod,
-      totalAmount,
-      discountAmount,
+      discountAmount: clientDiscount,
       couponCode,
       deliverySlot,
-    } = req.body;
+    } = validate(createOrderSchema, req.body);
 
-    if (!storeId || !items || !items.length || !deliveryDetails) {
-      return next(new ValidationError("Missing required order fields"));
+    /* ── 1. Re-fetch product prices from DB (never trust frontend prices) ── */
+    const productIds = items.map((i: any) => i.productId);
+    // Products are in Mongo
+    const dbProducts = await prismaMongo.products.findMany({
+      where: { id: { in: productIds }, isDeleted: false, status: "Active" },
+      select: { id: true, sale_price: true, stock: true },
+    });
+
+    const productMap = new Map(dbProducts.map((p) => [p.id, p]));
+    let itemTotal = 0;
+
+    for (const item of items) {
+      const dbProduct = productMap.get(item.productId);
+      if (!dbProduct) {
+        return next(new ValidationError(`Product ${item.productId} is no longer available`));
+      }
+      if (dbProduct.stock < item.quantity) {
+        return next(
+          new ValidationError(`Insufficient stock for one or more items`),
+        );
+      }
+      itemTotal += dbProduct.sale_price * item.quantity;
     }
 
-    const order = await prisma.order.create({
+    /* ── 2. Delivery charge (base ₹49, free above ₹500) ─────────────────── */
+    const slotExtraCharge = deliverySlot === "instant" ? 20 : 0;
+    let baseDeliveryCharge = itemTotal >= 500 ? 0 : 49;
+
+    /* ── 3. Validate coupon server-side ──────────────────────────────────── */
+    let couponId: string | null = null;
+    let couponDiscount = 0;
+
+    if (couponCode) {
+      const result = await validateAndApplyCoupon(
+        couponCode,
+        userId,
+        storeId,
+        itemTotal,
+      );
+      couponId = result.couponId;
+      couponDiscount = result.discountAmount;
+      if (result.freeDelivery) baseDeliveryCharge = 0;
+    }
+
+    const totalDelivery = baseDeliveryCharge + slotExtraCharge;
+    const totalDiscount = Math.min(couponDiscount, itemTotal); // cap at item total
+    const totalAmount = Math.max(0, itemTotal + totalDelivery - totalDiscount);
+
+    /* ── 4. Create order in Postgres ───────────────────── */
+    const order = await prismaPostgres.order.create({
       data: {
         userId,
         storeId,
         totalAmount,
-        discountAmount: discountAmount || 0,
-        couponCode,
+        discountAmount: totalDiscount,
+        couponCode: couponCode ?? null,
         deliveryName: deliveryDetails.name,
         deliveryPhone: deliveryDetails.phone,
         deliveryAddress: deliveryDetails.address,
         deliveryCity: deliveryDetails.city,
         deliveryPincode: deliveryDetails.pincode,
-        deliveryCharge: billDetails.deliveryCharge || 0,
-        billDetails,
-        deliverySlot: deliverySlot || "evening",
-        paymentMethod: paymentMethod || "COD",
+        deliveryCharge: totalDelivery,
+        billDetails: {
+          itemTotal,
+          deliveryCharge: baseDeliveryCharge,
+          slotExtraCharge,
+          discount: totalDiscount,
+          totalAmount,
+        },
+        deliverySlot: deliverySlot ?? "evening",
+        paymentMethod: paymentMethod ?? "COD",
         paymentStatus: paymentMethod === "COD" ? "PENDING" : "COMPLETED",
         orderItems: {
           create: items.map((item: any) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: item.price,
-            selectedOptions: item.selectedOptions || {},
+            price: productMap.get(item.productId)!.sale_price, // DB price
+            selectedOptions: item.selectedOptions ?? {},
           })),
         },
-      },
-      include: {
-        orderItems: {
-          include: {
-            product: true
+        payments: {
+          create: {
+            amount: totalAmount,
+            method: paymentMethod ?? "COD",
+            status: paymentMethod === "COD" ? "PENDING" : "COMPLETED",
           }
         }
-      }
+      },
+      include: {
+        orderItems: true,
+        payments: true,
+      },
     });
 
+    /* ── 5. Decrement stock in Mongo ───────────────────────────────────────── */
     try {
       for (const item of items) {
-        await prisma.products.update({
+        await prismaMongo.products.update({
           where: { id: item.productId },
-          data: { 
+          data: {
             stock: { decrement: item.quantity },
-            totalSold: { increment: item.quantity }
-          }
+            totalSold: { increment: item.quantity },
+          },
         });
       }
     } catch (stockError) {
       console.error("Failed to update stock during order creation:", stockError);
     }
 
+    /* ── 6. Record coupon usage (Postgres) & increment usedCount (Mongo) ─────── */
+    if (couponId) {
+      try {
+        await Promise.all([
+          prismaPostgres.couponUsage.create({
+            data: { couponId, userId, orderId: order.id },
+          }),
+          prismaMongo.discount_codes.update({
+            where: { id: couponId },
+            data: { usedCount: { increment: 1 } },
+          }),
+        ]);
+      } catch (couponErr) {
+        console.error("Failed to record coupon usage:", couponErr);
+      }
+    }
+
+    /* ── 7. Send notification via RabbitMQ ─────────────────────────────── */
     try {
-      const user = req.user as { phone_number?: string; name?: string } | undefined;
+      const user = req.user as { id: string; phone_number?: string; name?: string } | undefined;
       const shortId = order.id.slice(-6).toUpperCase();
       const slotLabel =
-        order.deliverySlot === "instant" ? "Instant (30-45 min)" :
-        order.deliverySlot === "morning" ? "Morning (6AM-10AM)" :
-        order.deliverySlot === "evening" ? "Evening (5PM-9PM)" : "Scheduled";
+        order.deliverySlot === "instant"
+          ? "Instant (30-45 min)"
+          : order.deliverySlot === "morning"
+            ? "Morning (6AM-10AM)"
+            : "Evening (5PM-9PM)";
 
-      const smsMessage =
+      const message =
         `Hi ${user?.name || "there"}! Your FishStudio order #${shortId} has been placed. ` +
-        `Total: ₹${order.totalAmount} | Slot: ${slotLabel} | Payment: ${order.paymentMethod}. ` +
+        `Total: ₹${order.totalAmount}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
+        `Slot: ${slotLabel} | Payment: ${order.paymentMethod}. ` +
         `We'll notify you once it's accepted.`;
 
-      if (process.env.NODE_ENV !== "production") {
-        console.log("\n📱 ─────────────────────────────────────────");
-        console.log(`   SMS → ${user?.phone_number}`);
-        console.log(`   ${smsMessage}`);
-        console.log("─────────────────────────────────────────\n");
-      } else {
-        console.log(`[SMS] Order #${shortId} confirmation queued for ${user?.phone_number}`);
+      // Main notification for user
+      await publishToQueue("NOTIFICATION_QUEUE", {
+        userId: user?.id,
+        title: "Order Placed Successfully",
+        message,
+        type: "SUCCESS",
+        category: "ORDER",
+        metadata: { orderId: order.id },
+        channels: ["IN_APP", "SMS"], 
+      });
+
+      // Special real-time event for staff/seller
+      await publishToQueue("ORDER_EVENTS", {
+        type: "ORDER_PLACED",
+        storeId,
+        orderId: order.id,
+        order: {
+          ...order,
+          shortId,
+          userName: user?.name || "Customer",
+        }
+      });
+
+      console.log(`[EVENT] Order #${shortId} notifications published`);
+
+      /* ── 8. Notify Seller & Staff (Lookups in Mongo) ───────────────────────── */
+      const store = await prismaMongo.stores.findUnique({
+        where: { id: storeId },
+        include: { seller: true }
+      });
+
+      if (store?.seller) {
+        const staffs = await prismaMongo.staffs.findMany({
+          where: { sellerId: store.sellerId, isActive: true }
+        });
+
+        const notifyTargets = [
+          { id: store.sellerId, name: store.seller.name, role: "Seller" },
+          ...staffs.map(s => ({ id: s.id, name: s.name, role: "Staff" }))
+        ];
+
+        for (const target of notifyTargets) {
+          await publishToQueue("NOTIFICATION_QUEUE", {
+            userId: target.id,
+            title: "New Order Received",
+            message: `New order #${shortId} received for ${store.name}. Total: ₹${order.totalAmount}`,
+            type: "INFO",
+            category: "ORDER",
+            metadata: { orderId: order.id },
+            channels: ["IN_APP"], 
+          });
+        }
       }
-    } catch (smsErr) {
-      console.error("[SMS] Failed to log SMS notification:", smsErr);
+    } catch (notificationErr) {
+      console.error("[EVENT] Failed to publish notifications:", notificationErr);
     }
 
     res.status(201).json({ success: true, orderId: order.id, order });
@@ -105,6 +296,7 @@ export const createOrder = async (
   }
 };
 
+/* ─── Get user orders ─────────────────────────────────────────────────────── */
 export const getUserOrders = async (
   req: any,
   res: Response,
@@ -112,32 +304,47 @@ export const getUserOrders = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const orders = await prisma.order.findMany({
+    // Orders in Postgres
+    const orders = await prismaPostgres.order.findMany({
       where: { userId },
       include: {
-        store: true,
-        orderItems: {
-          include: {
-            product: {
-              include: { images: true }
-            }
-          }
-        },
+        orderItems: true,
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // Hydrate orders with Stores and Products from Mongo
+    const storeIds = [...new Set(orders.map(o => o.storeId))];
+    const productIds = [...new Set(orders.flatMap(o => o.orderItems.map(oi => oi.productId)))];
+
+    const [stores, products] = await Promise.all([
+      prismaMongo.stores.findMany({ where: { id: { in: storeIds } } }),
+      prismaMongo.products.findMany({ 
+        where: { id: { in: productIds } },
+        include: { images: true }
+      })
+    ]);
+
+    const storeMap = new Map(stores.map(s => [s.id, s]));
+    const productMap = new Map(products.map(p => [p.id, p]));
+
     const mappedOrders = orders.map((o: any) => ({
       ...o,
-      items: o.orderItems,
+      store: storeMap.get(o.storeId),
+      items: o.orderItems.map((oi: any) => ({
+        ...oi,
+        product: productMap.get(oi.productId)
+      })),
       total: o.totalAmount,
     }));
-    res.status(200).json({ success: true, orders: mappedOrders });
 
+    res.status(200).json({ success: true, orders: mappedOrders });
   } catch (error) {
     next(error);
   }
 };
 
+/* ─── Get single order ────────────────────────────────────────────────────── */
 export const getOrderById = async (
   req: Request,
   res: Response,
@@ -145,30 +352,38 @@ export const getOrderById = async (
 ) => {
   try {
     const { orderId } = req.params;
-    const order = await prisma.order.findUnique({
+    // Order in Postgres
+    const order = await prismaPostgres.order.findUnique({
       where: { id: orderId as string },
       include: {
-        store: true,
-        orderItems: {
-          include: {
-            product: {
-              include: { images: true }
-            }
-          }
-        },
+        orderItems: true,
       },
     });
 
     if (!order) return next(new NotFoundError("Order not found"));
-    
+
+    // Hydrate with Store and Products from Mongo
+    const [store, products] = await Promise.all([
+      prismaMongo.stores.findUnique({ where: { id: order.storeId } }),
+      prismaMongo.products.findMany({ 
+        where: { id: { in: order.orderItems.map(oi => oi.productId) } },
+        include: { images: true }
+      })
+    ]);
+
+    const productMap = new Map(products.map(p => [p.id, p]));
+
     const orderData = {
       ...order,
-      items: order.orderItems,
+      store,
+      items: order.orderItems.map(oi => ({
+        ...oi,
+        product: productMap.get(oi.productId)
+      })),
       total: order.totalAmount,
     };
 
     res.status(200).json({ success: true, order: orderData });
-
   } catch (error) {
     next(error);
   }

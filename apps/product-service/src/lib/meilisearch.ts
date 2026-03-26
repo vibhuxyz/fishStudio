@@ -1,6 +1,6 @@
 import { MeiliSearch } from "meilisearch";
 import { ENV } from "@repo/env-config";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 
 export const meiliClient = new MeiliSearch({
   host: ENV.MEILISEARCH_HOST,

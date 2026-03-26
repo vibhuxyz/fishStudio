@@ -1,184 +1,50 @@
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import type {
+  AdminProfile,
+  AdminProduct,
+  DiscountCode,
+  CategoriesResponse,
+  AdminSellerSummary,
+  AdminSellerAccessCode,
+  AdminSellerDetail,
+  SellerOrder,
+  SlugValidationResponse,
+  DiscountCodePayload,
+  UpdateProductPayload,
+  AdminBanner,
+  StatsPeriod,
+  StatsPayload,
+  PincodeRow,
+  ProductRow,
+  AdminStatsResponse,
+  SellerStatsResponse,
+  DetailedProductRow,
+  SellerBreakdownRow,
+} from "@repo/zod-schema";
 
-export type AdminProfile = {
-  id: string;
-  name: string;
-  email: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export type AdminProduct = {
-  id: string;
-  title: string;
-  slug: string;
-  short_description?: string | null;
-  detailed_description?: string | null;
-  sale_price: number;
-  regular_price?: number | null;
-  stock: number;
-  category: string;
-  subCategory?: string | null;
-  tags?: string[];
-  status?: string;
-  isDeleted?: boolean | null;
-  deletedAt?: string | null;
-  ratings?: number | null;
-  starting_date?: string | null;
-  images: Array<{
-    url?: string | null;
-    file_url?: string | null;
-  }>;
-};
-
-export type DiscountCode = {
-  id: string;
-  public_name: string;
-  discountType: string;
-  discountValue: number;
-  discountCode: string;
-  seller?: {
-    id: string;
-    name: string;
-    email: string;
-  } | null;
-};
-
-export type CategoriesResponse = {
-  categories: string[];
-  subCategories: Record<string, string[]>;
-  categoryImages: Record<string, string>;
-};
-
-export type AdminSellerSummary = {
-  id: string;
-  name: string;
-  email: string;
-  phone_number?: string;
-  createdAt?: string;
-  totalProducts?: number;
-  totalCoupons?: number;
-  totalBanners?: number;
-  totalReviews?: number;
-  isApprovedByAdmin?: boolean;
-  permissions?: string[];
-  store?: {
-    id: string;
-    name: string;
-    city?: string;
-    address?: string;
-  } | null;
-};
-
-export type AdminSellerAccessCode = {
-  id: string;
-  email: string | null;
-  role: string;
-  code: string;
-  expiresAt: string | null;
-  createdAt: string;
-};
-
-export type AdminSellerDetail = AdminSellerSummary & {
-  coupons: DiscountCode[];
-  banners: Array<{
-    id: string;
-    imageUrl: string;
-    fileId: string;
-    isActive: boolean;
-  }>;
-  store?: {
-    id: string;
-    name: string;
-    bio?: string;
-    city?: string;
-    address?: string;
-    pincode?: string;
-    opening_hours?: string;
-    products: AdminProduct[];
-    storeReviews: Array<{
-      id: string;
-      rating: number;
-      reviews?: string | null;
-      user?: {
-        id: string;
-        name: string;
-      } | null;
-    }>;
-  } | null;
-};
-
-export type ShippingAddress = {
-  name?: string;
-  street?: string;
-  city?: string;
-  zip?: string;
-  country?: string;
-};
-
-export type OrderItem = {
-  productId: string;
-  quantity: number;
-  price: number;
-  selectedOptions?: Record<string, string>;
-  product?: {
-    title?: string;
-    images?: Array<{
-      url?: string | null;
-    }>;
-  } | null;
-};
-
-export type SellerOrder = {
-  id: string;
-  total: number;
-  totalAmount?: number;
-  paymentMethod?: string | null;
-  paymentStatus?: string | null;
-  paymentRef?: string | null;
-  status: string;
-  deliveryStatus: string;
-  createdAt: string;
-  discountAmount: number;
-  user?: {
-    name?: string | null;
-  } | null;
-  couponCode?: {
-    public_name?: string;
-    discountType?: string;
-    discountValue?: number;
-  } | null;
-  shippingAddress?: ShippingAddress | null;
-  items: OrderItem[];
-};
-
-export type SlugValidationResponse = {
-  available?: boolean;
-  slug?: string;
-  suggestedSlug?: string;
-};
-
-export type DiscountCodePayload = {
-  public_name: string;
-  discountType: string;
-  discountValue: string;
-  discountCode: string;
-};
-
-export type UpdateProductPayload = {
-  productId: string;
-  title: string;
-  slug: string;
-  category: string;
-  subCategory: string;
-  short_description: string;
-  detailed_description: string;
-  tags: string;
-  regular_price?: number;
-  sale_price?: number;
-  stock?: number;
+export type {
+  AdminProfile,
+  AdminProduct,
+  DiscountCode,
+  CategoriesResponse,
+  AdminSellerSummary,
+  AdminSellerAccessCode,
+  AdminSellerDetail,
+  SellerOrder,
+  SlugValidationResponse,
+  DiscountCodePayload,
+  UpdateProductPayload,
+  AdminBanner,
+  StatsPeriod,
+  StatsPayload,
+  PincodeRow,
+  ProductRow,
+  AdminStatsResponse,
+  SellerStatsResponse,
+  DetailedProductRow,
+  SellerBreakdownRow,
 };
 
 export const adminQueryKeys = {
@@ -418,56 +284,6 @@ export const useUpdateSellerApproval = () => {
   });
 };
 
-// ── Analytics Types ────────────────────────────────────────────────────────
-export type PincodeRow = { 
-  pincode: string; 
-  orders: number; 
-  revenue: number;
-  products?: Record<string, { title: string; qty: number; revenue: number }>;
-  shops?: Array<{ 
-    id: string; 
-    name: string; 
-    sales: number; 
-    repetition: number;
-    products: Record<string, { title: string; qty: number; revenue: number; couponSpend: number }>;
-  }>;
-};
-export type ProductRow = { id: string; title: string; orders: number; revenue: number; image?: string };
-export type DetailedProductRow = ProductRow & {
-  deliveredQty: number;
-  cancelledQty: number;
-  pendingQty: number;
-  refundedQty: number;
-  refundedAmount: number;
-  couponSpend: number;
-  quantaSale: number;
-  repeatCustomers: number;
-  avgPrice: number;
-  orderIds: string[];
-  pincodeBreakdown: Record<string, number>;
-};
-
-export type StatsPayload = {
-  totalOrders: number;
-  totalDelivered: number;
-  totalCancelled: number;
-  totalRefunded: number;
-  totalPending: number;
-  totalAccepted: number;
-  totalRevenue: number;
-  totalRefundedAmount: number;
-  totalCouponSpend: number;
-  pincodeBreakdown: PincodeRow[];
-  heroProducts: ProductRow[];
-  needsImprovement: ProductRow[];
-  toRemove: ProductRow[];
-  allProductsBreakdown?: DetailedProductRow[];
-};
-export type SellerBreakdownRow = StatsPayload & { sellerId: string; name: string; email: string };
-export type AdminStatsResponse = { period: string; stats: StatsPayload; perSellerBreakdown?: SellerBreakdownRow[] };
-export type SellerStatsResponse = { period: string; stats: StatsPayload };
-export type StatsPeriod = "week" | "month" | "year";
-
 // ── Analytics Fetch Functions ──────────────────────────────────────────────
 export const fetchAdminStats = async (period: StatsPeriod, sellerId?: string): Promise<AdminStatsResponse> => {
   const url = sellerId ? `/order/api/admin-stats/${sellerId}?period=${period}` : `/order/api/admin-stats?period=${period}`;
@@ -483,13 +299,6 @@ export const useAdminStats = (period: StatsPeriod, sellerId?: string) =>
   });
 
 // ── Banners ──────────────────────────────────────────────────────────────
-export type AdminBanner = {
-  id: string;
-  imageUrl: string;
-  fileId: string;
-  isActive: boolean;
-  createdAt: string;
-};
 
 export const fetchAdminBanners = async (): Promise<AdminBanner[]> => {
   const response = await axiosInstance.get(

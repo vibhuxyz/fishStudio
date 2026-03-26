@@ -87,6 +87,7 @@ app.get("/gateway-health", (req, res) => {
 const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
 const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
 const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
+const notificationUrl = ENV.NOTIFICATION_SERVICE_URL || "http://localhost:6005";
 
 const proxyOptions = {
   parseReqBody: false,
@@ -109,6 +110,7 @@ const proxyOptions = {
 app.use("/auth", proxy(authUrl, proxyOptions));
 app.use("/product", proxy(productUrl, proxyOptions));
 app.use("/order", proxy(orderUrl, proxyOptions));
+app.use("/notification", proxy(notificationUrl, proxyOptions));
 
 const port = Number(ENV.API_GATEWAY_PORT) || 8080;
 //

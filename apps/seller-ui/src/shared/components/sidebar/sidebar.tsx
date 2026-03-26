@@ -42,6 +42,7 @@ import Logo from "@/assets/svgs/logo";
 import Home from "@/assets/icons/home";
 import Payment from "@/assets/icons/payment";
 import useRequireAuth from "@/hooks/useRequiredAuth";
+import NotificationBell from "../notifications/NotificationBell";
 
 const SidebarBarWrapper = () => {
   const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } = useSidebar();
@@ -278,7 +279,7 @@ const SidebarBarWrapper = () => {
                 title="Notifications"
                 href="/dashboard/notifications"
                 icon={
-                  <BellRing
+                  <NotificationBell
                     size={24}
                     color={getIconColor("/dashboard/notifications")}
                   />

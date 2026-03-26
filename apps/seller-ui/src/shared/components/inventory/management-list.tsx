@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
+import { SellerOwnedProduct } from "@repo/zod-schema";
 
 interface Props {
   title: string;
@@ -107,7 +108,7 @@ const InventoryManagementList = ({ title, description }: Props) => {
       {
         accessorKey: "image",
         header: "Image",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOwnedProduct } }) => (
           <Image
             src={row.original.images?.[0]?.url || "/placeholder.png"}
             alt={row.original.title}
@@ -120,7 +121,7 @@ const InventoryManagementList = ({ title, description }: Props) => {
       {
         accessorKey: "title",
         header: "Product",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOwnedProduct } }) => (
           <div className="flex flex-col">
             <span className="font-bold text-white text-sm truncate max-w-[200px]">{row.original.title}</span>
             <span className="text-gray-500 text-[10px] uppercase tracking-wider font-mono">#{row.original.id.slice(-6)}</span>
@@ -130,14 +131,14 @@ const InventoryManagementList = ({ title, description }: Props) => {
       {
         accessorKey: "category",
         header: "Category",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOwnedProduct } }) => (
           <span className="text-gray-400 text-xs">{row.original.category}</span>
         )
       },
       {
         accessorKey: "currentStock",
         header: "Current Stock",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOwnedProduct } }) => (
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${row.original.stock <= 5 ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`} />
             <span className={`font-mono font-bold ${row.original.stock <= 5 ? "text-red-400" : "text-white"}`}>
@@ -149,7 +150,7 @@ const InventoryManagementList = ({ title, description }: Props) => {
       {
         id: "adjustment",
         header: "Add More Stock",
-        cell: ({ row }: any) => (
+        cell: ({ row }: { row: { original: SellerOwnedProduct } }) => (
           <div className="flex items-center gap-2">
             <div className="relative flex-1 max-w-[100px]">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">

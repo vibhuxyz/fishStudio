@@ -1,6 +1,7 @@
 import express, { Router } from "express";
 
 import { isAdmin, isAuthenticated, isSeller, isStaff, isUser } from "@repo/middlewares";
+import { authRateLimiter, otpRateLimiter } from "../middleware/rate-limiter.js";
 import {
   getAdmin,
   loginAdmin,
@@ -54,8 +55,8 @@ import {
 const router: Router = express.Router();
 
 router.get("/home", (req, res) => res.send("Hello World"));
-router.post("/send-otp", sendOtpToUser);
-router.post("/verify-otp", verifyOtpAndLogin);
+router.post("/send-otp", otpRateLimiter, sendOtpToUser);
+router.post("/verify-otp", authRateLimiter, verifyOtpAndLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 
@@ -68,7 +69,7 @@ router.get("/check-pincode", checkPincode);
 router.get("/serviceable-areas", getServiceableAreas);
 
 // admin routes
-router.post("/admin/verifycode", verifyAdminSignupCode);
+router.post("/admin/verifycode", authRateLimiter, verifyAdminSignupCode);
 router.post(
   "/admin/generate-seller-code",
   isAuthenticated,
@@ -77,8 +78,8 @@ router.post(
 );
 router.get("/admin/seller-codes", isAuthenticated, isAdmin, getSellerSignupCodes);
 router.post("/admin-registration", registerAdmin);
-router.post("/verify-admin", verifyAdmin);
-router.post("/login-admin", loginAdmin);
+router.post("/verify-admin", authRateLimiter, verifyAdmin);
+router.post("/login-admin", authRateLimiter, loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, isAdmin, getAdmin);
 router.post("/logout-admin", isAuthenticated, isAdmin, logOutAdmin);
 router.get("/admin/sellers", isAuthenticated, isAdmin, getAllSellersForAdmin);
@@ -96,10 +97,10 @@ router.put(
 );
 
 // seller/store Routes
-router.post("/verify-seller-code", verifySellerSignupCode);
+router.post("/verify-seller-code", authRateLimiter, verifySellerSignupCode);
 router.post("/seller-registration", registerSeller);
-router.post("/verify-seller", verifySeller);
-router.post("/login-seller", loginSeller);
+router.post("/verify-seller", authRateLimiter, verifySeller);
+router.post("/login-seller", authRateLimiter, loginSeller);
 router.post("/create-store", createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);

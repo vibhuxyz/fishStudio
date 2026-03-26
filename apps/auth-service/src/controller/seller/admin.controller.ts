@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
+import { updateSellerApprovalSchema, validate } from "@repo/zod-schema";
+import { publishToQueue } from "@repo/libs";
 
 export const getAllSellersForAdmin = async (
   req: Request,
@@ -114,7 +116,7 @@ export const updateSellerApproval = async (
 ) => {
   try {
     const sellerId = req.params.sellerId as string;
-    const { isApprovedByAdmin, permissions } = req.body;
+    const { isApprovedByAdmin, permissions } = validate(updateSellerApprovalSchema, req.body);
 
     if (!sellerId) return next(new ValidationError("Seller id is required"));
 
@@ -128,6 +130,31 @@ export const updateSellerApproval = async (
         permissions: permissions !== undefined ? permissions : seller.permissions,
       },
     });
+
+    /* ── Notify Seller ── */
+    try {
+      if (isApprovedByAdmin === true && seller.isApprovedByAdmin !== true) {
+        await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: sellerId,
+          title: "Account Approved",
+          message: "Congratulations! Your seller account has been approved by the admin. You can now start managing your store.",
+          type: "SUCCESS",
+          category: "SYSTEM",
+          channels: ["IN_APP", "EMAIL", "SMS"],
+        });
+      } else if (permissions !== undefined) {
+         await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: sellerId,
+          title: "Permissions Updated",
+          message: "Your seller permissions have been updated by the admin.",
+          type: "INFO",
+          category: "SYSTEM",
+          channels: ["IN_APP"],
+        });
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify seller of approval/permission update:", notifyErr);
+    }
 
     return res.status(200).json({
       success: true,

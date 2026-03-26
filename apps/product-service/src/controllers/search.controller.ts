@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
 import { redis } from "@repo/libs";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import {
   meiliClient,
   PRODUCTS_INDEX,

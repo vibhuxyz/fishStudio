@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
+import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
 
 export const createStore = async (
   req: Request,
@@ -19,20 +20,7 @@ export const createStore = async (
       state,
       availableCities,
       cityDeliveryTimes,
-    } = req.body;
-
-    if (
-      !name ||
-      !bio ||
-      !address ||
-      !opening_hours ||
-      !city ||
-      !sellerId ||
-      !pincode ||
-      !availableCities
-    ) {
-      return next(new ValidationError("All fields are required"));
-    }
+    } = validate(storeSchema, req.body);
 
     const storeData: any = {
       name,
@@ -67,17 +55,7 @@ export const updateStore = async (
 ) => {
   try {
     const sellerId = req.user?.id;
-    const {
-      name,
-      bio,
-      address,
-      opening_hours,
-      city,
-      pincode,
-      state,
-      availableCities,
-      cityDeliveryTimes,
-    } = req.body;
+    const validatedData = validate(updateStoreSchema, req.body);
 
     const store = await prisma.stores.findUnique({ where: { sellerId } });
     if (!store) {
@@ -87,15 +65,14 @@ export const updateStore = async (
     const updatedStore = await prisma.stores.update({
       where: { id: store.id },
       data: {
-        name: name || store.name,
-        bio: bio || store.bio,
-        address: address || store.address,
-        opening_hours: opening_hours || store.opening_hours,
-        city: city || store.city,
-        pincode: pincode || store.pincode,
-        ...(state !== undefined && { state: state || store.state }),
-        availableCities: availableCities || store.availableCities,
-        ...(cityDeliveryTimes !== undefined && { cityDeliveryTimes: cityDeliveryTimes }),
+        ...validatedData,
+        name: validatedData.name || store.name,
+        bio: validatedData.bio || store.bio,
+        address: validatedData.address || store.address,
+        opening_hours: validatedData.opening_hours || store.opening_hours,
+        city: validatedData.city || store.city,
+        pincode: validatedData.pincode || store.pincode,
+        availableCities: validatedData.availableCities || store.availableCities,
       },
     });
 

@@ -1,6 +1,6 @@
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
 import { redis } from "@repo/libs";
 

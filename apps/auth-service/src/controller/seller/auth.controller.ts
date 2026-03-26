@@ -1,18 +1,24 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import { AuthError, ValidationError } from "@repo/error-handlers";
 import {
   checkOtpRestrictions,
   sendOtp,
   trackOtpRequests,
-  validateRegistrationData,
   verifyOtp,
 } from "../../utils/auth.helper.js";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { setCookie } from "../../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
-import { redis } from "@repo/libs";
+import { redis, publishToQueue } from "@repo/libs";
+import {
+  sellerSignupCodeSchema,
+  registerSellerSchema,
+  verifySellerSchema,
+  loginSchema,
+  validate,
+} from "@repo/zod-schema";
 
 export const logOutSeller = async (req: any, res: Response) => {
   const token = req.cookies["seller_access_token"] || req.cookies["staff_access_token"];
@@ -33,10 +39,7 @@ export const verifySellerSignupCode = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) {
-      return next(new ValidationError("Email and access code are required"));
-    }
+    const { email, code } = validate(sellerSignupCodeSchema, req.body);
 
     const accessCode = await prisma.signupAccessCode.findFirst({
       where: { role: "SELLER", email, code },
@@ -65,16 +68,7 @@ export const registerSeller = async (
   next: NextFunction,
   ) => {
   try {
-    validateRegistrationData(req.body, "seller");
-
-    const { name, email, code } = req.body;
-
-    if (!name || !email) {
-      throw new ValidationError("All fields are required");
-    }
-    if (!code) {
-      throw new ValidationError("Access code is required to register as seller");
-    }
+    const { name, email, code } = validate(registerSellerSchema, req.body);
 
     const accessCode = await prisma.signupAccessCode.findFirst({
       where: { role: "SELLER", email, code },
@@ -127,11 +121,7 @@ export const verifySeller = async (
       shop,
       store,
       code,
-    } = req.body;
-
-    if (!email || !otp || !password || !name || !phone_number || !code) {
-      return next(new ValidationError("All fields are required including code"));
-    }
+    } = validate(verifySellerSchema, req.body);
 
     const existingSeller = await prisma.sellers.findUnique({
       where: { email },
@@ -223,6 +213,24 @@ export const verifySeller = async (
     setCookie(res, "seller_refresh_token", refreshToken);
     setCookie(res, "seller_access_token", accessToken);
 
+    /* ── Notify Admins for Approval ── */
+    try {
+      const admins = await prisma.admins.findMany({ select: { id: true, email: true, name: true } });
+      for (const admin of admins) {
+        await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: admin.id,
+          title: "New Seller Registration",
+          message: `New seller ${name} (${email}) has registered and requires approval.`,
+          type: "WARNING",
+          category: "SYSTEM",
+          metadata: { sellerId: seller.id },
+          channels: ["IN_APP", "EMAIL"],
+        });
+      }
+    } catch (adminNotifyErr) {
+      console.error("Failed to notify admins of new seller registration:", adminNotifyErr);
+    }
+
     res.status(201).json({
       success: true,
       message: "Seller registration successful!",
@@ -243,11 +251,7 @@ export const loginSeller = async (
   next: NextFunction,
 ) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      throw new ValidationError("All fields are required");
-    }
+    const { email, password } = validate(loginSchema, req.body);
 
     const seller = await prisma.sellers.findUnique({ where: { email } });
 

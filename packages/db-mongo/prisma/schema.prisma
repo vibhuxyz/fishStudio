@@ -1,0 +1,342 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./generated-client"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO_URL")
+}
+
+
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum ImageType {
+  PRODUCT
+  USER_AVATAR
+  STORE_AVATAR
+}
+
+enum productStatus {
+  Active
+  NonActive
+}
+
+enum sellerEventType {
+  FREE_DELIVERY
+  DISCOUNT
+  FLASH_SALE
+}
+
+model admins {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String           @unique
+  password  String
+  products  products[]
+  coupons   discount_codes[]
+  banners   banners[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// IMAGES (NO BACK-RELATIONS TO USER / STORE)
+//////////////////////////////////////////////////////
+
+model images {
+  id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  file_id String
+  url     String
+  type    ImageType @default(PRODUCT)
+
+  // Link to Product
+  productId String?   @db.ObjectId
+  // Fix applied here to break the cycle
+  product   products? @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  users     users[]
+  stores    stores[]
+
+  @@index([productId])
+}
+
+//////////////////////////////////////////////////////
+// USERS
+//////////////////////////////////////////////////////
+
+model users {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  phone_number String?  @unique
+  email        String?  @unique
+  name         String
+  following    String[]
+  addresses    Json[]   // Array of { id, name, phone, street, city, state, pincode, isDefault }
+
+  avatarId String? @db.ObjectId
+  avatar   images? @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  favorites    favorites[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model discount_codes {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  public_name   String
+  discountType  String   // "percentage" | "fixed" | "free_delivery"
+  discountValue Float
+  minOrderValue Float    @default(0)
+  discountCode  String   @unique
+
+  // New fields for better control
+  expiresAt      DateTime? // null = never expires
+  maxUses        Int?      // null = unlimited total uses
+  maxUsesPerUser Int       @default(1) // per-user limit
+  usedCount      Int       @default(0) // total times used
+  isActive       Boolean   @default(true)
+  isFirstOrder   Boolean   @default(false) // lifetime: only usable if user has no prior orders at this store
+
+  sellerId  String?  @db.ObjectId
+  adminId   String?  @db.ObjectId
+  seller    sellers? @relation(fields: [sellerId], references: [id])
+  admin     admins?  @relation(fields: [adminId], references: [id])
+  usages    coupon_usages[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sellerId])
+}
+
+model coupon_usages {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  couponId   String   @db.ObjectId
+  coupon     discount_codes @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId     String   @db.ObjectId
+  orderId    String   // Keep as string reference to Postgres
+  usedAt     DateTime @default(now())
+
+  @@index([couponId, userId])
+  @@map("coupon_usages")
+}
+
+//////////////////////////////////////////////////////
+// SELLERS
+//////////////////////////////////////////////////////
+
+model sellers {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String    @unique
+  phone_number String
+  password     String
+  following    String[]
+  banners      banners[]
+  events       seller_events[]
+  store        stores?
+  coupons      discount_codes[]
+  staffs       staffs[]
+
+  isApprovedByAdmin Boolean @default(false)
+  permissions       Json?   
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// STAFFS
+//////////////////////////////////////////////////////
+
+model staffs {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  email    String  @unique
+  password String
+  isActive Boolean @default(false)
+
+  sellerId String?  @db.ObjectId
+  seller   sellers? @relation(fields: [sellerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// STORES
+//////////////////////////////////////////////////////
+
+model stores {
+  id   String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  bio  String
+
+  avatarId String? @db.ObjectId
+  // Fix applied here to break the cycle
+  avatar   images? @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  address       String
+  city          String
+  pincode       String
+  opening_hours String
+  availableCities   String[] // Cities served by this store
+  cityDeliveryTimes Json?    // Map of city name -> delivery minutes e.g. {"Bathnaha": 20, "motipur": 10}
+  state             String?  // State of the store location
+
+  sellerId String  @unique @db.ObjectId
+  seller   sellers @relation(fields: [sellerId], references: [id])
+
+  products products[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// FAVORITES
+//////////////////////////////////////////////////////
+
+model favorites {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId
+  productId String @db.ObjectId
+
+  user    users    @relation(fields: [userId], references: [id])
+  product products @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+//////////////////////////////////////////////////////
+// SITE CONFIG
+//////////////////////////////////////////////////////
+
+model site_config {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories      String[]
+  subCategories   Json
+  categoryImages  Json     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("site_config")
+}
+
+//////////////////////////////////////////////////////
+// PRODUCTS
+//////////////////////////////////////////////////////
+
+model products {
+  id                   String @id @default(auto()) @map("_id") @db.ObjectId
+  title                String
+  slug                 String @unique
+  category             String
+  subCategory          String
+  short_description    String
+
+  images images[]
+
+  tags         String[]
+  sizes        String[]
+  sizePricing         Json?
+  cuttingTypePricing  Json?
+  pieceSizePricing    Json?
+  cuttingTypes        String[]
+  pieceSizes          String[]
+
+  processingWeightLoss String?
+  stock                Int
+  sale_price           Float
+  regular_price        Float
+  totalSold            Int         @default(0)
+  favorites            favorites[]
+  ratings              Float       @default(5)
+
+  cashOnDelivery String?
+  discount_codes String[]      @db.ObjectId
+  status         productStatus @default(Active)
+  isDeleted      Boolean?      @default(false)
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  storeId String? @db.ObjectId
+  store   stores? @relation(fields: [storeId], references: [id])
+  adminId String? @db.ObjectId
+  admin   admins? @relation(fields: [adminId], references: [id])
+
+  catalogProductId String?    @db.ObjectId
+  catalogProduct   products?  @relation("catalog_variants", fields: [catalogProductId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  storeVariants    products[] @relation("catalog_variants")
+
+  @@index([catalogProductId])
+  @@index([storeId])
+  @@index([adminId])
+}
+
+model banners {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  imageUrl        String
+  fileId          String
+  isActive        Boolean @default(false)
+  category        String?
+  status          String? @default("PENDING") // PENDING, APPROVED, REJECTED
+  rejectionReason String?
+
+  // Link to Seller or Admin
+  sellerId String?  @db.ObjectId
+  seller   sellers? @relation(fields: [sellerId], references: [id])
+  adminId  String?  @db.ObjectId
+  admin    admins?  @relation(fields: [adminId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("banners")
+}
+
+model seller_events {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  sellerId    String          @db.ObjectId
+  seller      sellers         @relation(fields: [sellerId], references: [id])
+  title       String
+  description String?
+  type        sellerEventType
+  minOrder    Float?
+  discount    Float?
+  startTime   DateTime
+  endTime     DateTime
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([sellerId, startTime])
+  @@map("seller_events")
+}
+
+// SIGNUP ACCESS
+//////////////////////////////////////////////////////
+
+model SignupAccessCode {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String?
+  role      String    // "ADMIN" or "SELLER"
+  code      String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([email, role])
+  @@map("signup_access_codes")
+}

@@ -7,7 +7,7 @@ import { Star, Heart, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { isUserLoggedIn } from "@/lib/auth-store";
-import { Product } from "@repo/types";
+import { Product } from "@repo/zod-schema";
 import { toast } from "sonner";
 
 // 8x8 warm-toned blur placeholder for a smooth loading effect

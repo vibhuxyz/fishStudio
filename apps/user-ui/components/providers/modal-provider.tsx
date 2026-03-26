@@ -11,7 +11,7 @@ import {
 import { AddToCartModal } from "@/components/shared/add-to-cart-modal";
 import { LoginModal } from "@/components/shared/login-modal";
 import { CartSidebar } from "@/components/shared/cart-sidebar";
-import { Product } from "@repo/types";
+import { Product } from "@repo/zod-schema";
 import { setRedirectHandler } from "@/utils/redirect";
 import { useUserSession } from "@/hooks/useUserSession";
 

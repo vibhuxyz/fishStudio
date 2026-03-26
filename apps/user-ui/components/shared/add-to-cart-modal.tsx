@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addToCart } from "@/lib/cart-store";
-import type { Product } from "@repo/types";
+import type { Product } from "@repo/zod-schema";
 import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
 import { useModals } from "@/components/providers/modal-provider";
 import { toast } from "sonner";

@@ -10,17 +10,20 @@
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
+    "build": "tsup",
     "start": "node dist/main.js"
   },
   "devDependencies": {
     "@repo/env-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@repo/db": "workspace:*",
+    "@repo/db-mongo": "workspace:*",
+    "@repo/db-postgres": "workspace:*",
     "@repo/middlewares": "workspace:*",
     "@repo/libs": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
     "@repo/error-handlers": "workspace:*",
     "@types/bun": "latest",
+    "tsup": "^8.5.0",
     "tsx": "^4.21.0"
   },
   "peerDependencies": {

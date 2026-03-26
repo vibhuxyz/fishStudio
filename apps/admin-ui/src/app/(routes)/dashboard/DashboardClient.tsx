@@ -42,6 +42,22 @@ const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), {
 const Legend = dynamic(() => import("recharts").then((m) => m.Legend), {
   ssr: false,
 });
+const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), {
+  ssr: false,
+});
+const Bar = dynamic(() => import("recharts").then((m) => m.Bar), {
+  ssr: false,
+});
+const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), {
+  ssr: false,
+});
+const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), {
+  ssr: false,
+});
+const CartesianGrid = dynamic(
+  () => import("recharts").then((m) => m.CartesianGrid),
+  { ssr: false },
+);
 
 const SalesChart = dynamic(
   () =>
@@ -104,10 +120,9 @@ export default function DashboardClient() {
         </div>
       </header>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
-          title="Total Revenue" 
+          title="Total GMV" 
           value={`₹${(stats?.totalRevenue || 0).toLocaleString()}`} 
           icon={TrendingUp} 
           trend="up" 
@@ -197,6 +212,75 @@ export default function DashboardClient() {
                   <p className="text-lg font-bold text-rose-400">{stats?.totalCancelled || 0}</p>
                 </div>
             </div>
+        </div>
+      </div>
+
+      {/* Category Breakdown & Seller Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl">
+          <h2 className="text-white text-xl font-bold mb-6">Category Sales Breakdown</h2>
+          <div className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={statsData?.categoryBreakdown || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="#9ca3af" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  stroke="#9ca3af" 
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `₹${value}`}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
+                  itemStyle={{ color: '#fff' }}
+                  formatter={(value) => `₹${value}`}
+                />
+                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl overflow-hidden">
+          <h2 className="text-white text-xl font-bold mb-6">Seller Performance Comparison</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="pb-4 font-medium text-gray-400">Seller</th>
+                  <th className="pb-4 font-medium text-gray-400">Revenue</th>
+                  <th className="pb-4 font-medium text-gray-400">Orders</th>
+                  <th className="pb-4 font-medium text-gray-400">Success Rate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {(statsData?.perSellerBreakdown || []).slice(0, 5).map((seller: any) => (
+                  <tr key={seller.sellerId} className="group hover:bg-white/5 transition-colors">
+                    <td className="py-4">
+                      <div className="font-medium text-white">{seller.name}</div>
+                      <div className="text-xs text-gray-500">{seller.email}</div>
+                    </td>
+                    <td className="py-4 text-white font-medium">₹{(seller.totalRevenue || 0).toLocaleString()}</td>
+                    <td className="py-4 text-gray-300">{seller.totalOrders}</td>
+                    <td className="py-4">
+                      <span className="text-emerald-400 font-medium">
+                        {seller.totalOrders > 0 
+                          ? ((seller.totalDelivered / seller.totalOrders) * 100).toFixed(1) 
+                          : 0}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

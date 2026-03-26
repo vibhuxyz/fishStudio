@@ -1,28 +1,16 @@
 import crypto from "crypto";
-import { ValidationError } from "@repo/error-handlers";
+import { ValidationError, RateLimitError } from "@repo/error-handlers";
 import { redis, publishToQueue } from "@repo/libs";
 import { NextFunction, Request, Response } from "express";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export const validateRegistrationData = (
-  data: any,
-  userType: "admin" | "user" | "seller",
-) => {
-  // Implement validation logic based on userType
-  const { name, email, password, phone_number } = data;
-
-  if (
-    !name ||
-    !email ||
-    !password ||
-    (userType === "seller" && !phone_number)
-  ) {
-    throw new ValidationError(`Missing required fields!`);
+export const validateRegistrationData = (data: any, role: string) => {
+  if (!data.name || !data.email) {
+    throw new ValidationError("Name and email are required");
   }
-
-  if (!emailRegex.test(email)) {
-    throw new ValidationError(`Invalid email format!`);
+  if (!emailRegex.test(data.email)) {
+    throw new ValidationError("Invalid email format");
   }
 };
 
@@ -31,20 +19,20 @@ export const checkOtpRestrictions = async (
   next: NextFunction,
 ) => {
   if (await redis.get(`otp_lock:${identifier}`)) {
-    throw new ValidationError(
+    throw new RateLimitError(
       "Account locked due to multiple failed attempts! Try again 30 minutes later.",
     );
   }
   
 
   if (await redis.get(`otp_spam_lock:${identifier}`)) {
-    throw new ValidationError(
-      "Too many OTP requests! Please try again after some time. In one Hour",
+    throw new RateLimitError(
+      "Too many OTP requests! Please try again after 30 minutes.",
     );
   }
 
   if (await redis.get(`otp_cooldown:${identifier}`)) {
-    throw new ValidationError(
+    throw new RateLimitError(
       "OTP request cooldown active! Please wait before requesting another OTP.",
     );
   }
@@ -59,8 +47,8 @@ export const trackOtpRequests = async (
 
   if (otpRequests >= 2) {
     await redis.set(`otp_spam_lock:${identifier}`, "locked", "EX", 30 * 60); // 30 minutes lock
-    throw new ValidationError(
-      "Too many OTP requests! Please try again after some time. In one Hour",
+    throw new RateLimitError(
+      "Too many OTP requests! Please try again after 30 minutes.",
     );
   }
   await redis.set(otpRequestsKey, otpRequests + 1, "EX", 10 * 60); // count resets after 10 minutes
@@ -96,6 +84,10 @@ export const sendOtp = async (
       otp,
     });
 
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DEV] OTP ${otp} published to otp_queue for ${identifier}`);
+    }
+
     return { success: true, message: "OTP request queued" };
   } catch (error) {
     console.error("Unified OTP Error:", error);
@@ -122,7 +114,7 @@ export const verifyOtp = async (
     if (failedAttampts >= 2) {
       await redis.set(`otp_lock:${identifier}`, "locked", "EX", 1800);
       await redis.del(`otp:${identifier}`, failedAttamtsKey);
-      throw new ValidationError(
+      throw new RateLimitError(
         "Too many failed attempts! Your account is locked Please try again after 30 minutes",
       );
     }

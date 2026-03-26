@@ -63,7 +63,7 @@ app.use("/api", router);
 
 app.use(errorMiddleware);
 
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 
 // --- NEW STARTUP LOGIC ---
 const startServer = async () => {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "@repo/db";
+import { prismaMongo as prisma } from "@repo/db-mongo";
 import {
   checkOtpRestrictions,
   sendOtp,
