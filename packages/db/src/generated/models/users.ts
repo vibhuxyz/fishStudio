@@ -207,7 +207,6 @@ export type usersWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
   avatar?: Prisma.XOR<Prisma.ImagesNullableScalarRelationFilter, Prisma.imagesWhereInput> | null
-  storeReviews?: Prisma.StoreReviewsListRelationFilter
   favorites?: Prisma.FavoritesListRelationFilter
   orders?: Prisma.OrderListRelationFilter
 }
@@ -223,7 +222,6 @@ export type usersOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   avatar?: Prisma.imagesOrderByWithRelationInput
-  storeReviews?: Prisma.storeReviewsOrderByRelationAggregateInput
   favorites?: Prisma.favoritesOrderByRelationAggregateInput
   orders?: Prisma.OrderOrderByRelationAggregateInput
 }
@@ -242,7 +240,6 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"users"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
   avatar?: Prisma.XOR<Prisma.ImagesNullableScalarRelationFilter, Prisma.imagesWhereInput> | null
-  storeReviews?: Prisma.StoreReviewsListRelationFilter
   favorites?: Prisma.FavoritesListRelationFilter
   orders?: Prisma.OrderListRelationFilter
 }, "id" | "phone_number" | "email">
@@ -287,7 +284,6 @@ export type usersCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
-  storeReviews?: Prisma.storeReviewsCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
 }
@@ -302,7 +298,6 @@ export type usersUncheckedCreateInput = {
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
 }
@@ -316,7 +311,6 @@ export type usersUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
-  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
 }
@@ -330,7 +324,6 @@ export type usersUncheckedUpdateInput = {
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -498,20 +491,6 @@ export type usersUpdateaddressesInput = {
   push?: runtime.InputJsonValue | runtime.InputJsonValue[]
 }
 
-export type usersCreateNestedOneWithoutStoreReviewsInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutStoreReviewsInput, Prisma.usersUncheckedCreateWithoutStoreReviewsInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutStoreReviewsInput
-  connect?: Prisma.usersWhereUniqueInput
-}
-
-export type usersUpdateOneRequiredWithoutStoreReviewsNestedInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutStoreReviewsInput, Prisma.usersUncheckedCreateWithoutStoreReviewsInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutStoreReviewsInput
-  upsert?: Prisma.usersUpsertWithoutStoreReviewsInput
-  connect?: Prisma.usersWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutStoreReviewsInput, Prisma.usersUpdateWithoutStoreReviewsInput>, Prisma.usersUncheckedUpdateWithoutStoreReviewsInput>
-}
-
 export type usersCreateNestedOneWithoutFavoritesInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutFavoritesInput, Prisma.usersUncheckedCreateWithoutFavoritesInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutFavoritesInput
@@ -549,7 +528,6 @@ export type usersCreateWithoutAvatarInput = {
   addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeReviews?: Prisma.storeReviewsCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
 }
@@ -563,7 +541,6 @@ export type usersUncheckedCreateWithoutAvatarInput = {
   addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
 }
@@ -608,76 +585,6 @@ export type usersScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"users"> | Date | string
 }
 
-export type usersCreateWithoutStoreReviewsInput = {
-  id?: string
-  phone_number?: string | null
-  email?: string | null
-  name: string
-  following?: Prisma.usersCreatefollowingInput | string[]
-  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
-  favorites?: Prisma.favoritesCreateNestedManyWithoutUserInput
-  orders?: Prisma.OrderCreateNestedManyWithoutUserInput
-}
-
-export type usersUncheckedCreateWithoutStoreReviewsInput = {
-  id?: string
-  phone_number?: string | null
-  email?: string | null
-  name: string
-  following?: Prisma.usersCreatefollowingInput | string[]
-  addresses?: Prisma.usersCreateaddressesInput | runtime.InputJsonValue[]
-  avatarId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
-  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
-}
-
-export type usersCreateOrConnectWithoutStoreReviewsInput = {
-  where: Prisma.usersWhereUniqueInput
-  create: Prisma.XOR<Prisma.usersCreateWithoutStoreReviewsInput, Prisma.usersUncheckedCreateWithoutStoreReviewsInput>
-}
-
-export type usersUpsertWithoutStoreReviewsInput = {
-  update: Prisma.XOR<Prisma.usersUpdateWithoutStoreReviewsInput, Prisma.usersUncheckedUpdateWithoutStoreReviewsInput>
-  create: Prisma.XOR<Prisma.usersCreateWithoutStoreReviewsInput, Prisma.usersUncheckedCreateWithoutStoreReviewsInput>
-  where?: Prisma.usersWhereInput
-}
-
-export type usersUpdateToOneWithWhereWithoutStoreReviewsInput = {
-  where?: Prisma.usersWhereInput
-  data: Prisma.XOR<Prisma.usersUpdateWithoutStoreReviewsInput, Prisma.usersUncheckedUpdateWithoutStoreReviewsInput>
-}
-
-export type usersUpdateWithoutStoreReviewsInput = {
-  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  following?: Prisma.usersUpdatefollowingInput | string[]
-  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
-  favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
-  orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
-}
-
-export type usersUncheckedUpdateWithoutStoreReviewsInput = {
-  phone_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  following?: Prisma.usersUpdatefollowingInput | string[]
-  addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
-  avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
-  orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
-}
-
 export type usersCreateWithoutFavoritesInput = {
   id?: string
   phone_number?: string | null
@@ -688,7 +595,6 @@ export type usersCreateWithoutFavoritesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
-  storeReviews?: Prisma.storeReviewsCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
 }
 
@@ -702,7 +608,6 @@ export type usersUncheckedCreateWithoutFavoritesInput = {
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -731,7 +636,6 @@ export type usersUpdateWithoutFavoritesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
-  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
 }
 
@@ -744,7 +648,6 @@ export type usersUncheckedUpdateWithoutFavoritesInput = {
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -758,7 +661,6 @@ export type usersCreateWithoutOrdersInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   avatar?: Prisma.imagesCreateNestedOneWithoutUsersInput
-  storeReviews?: Prisma.storeReviewsCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesCreateNestedManyWithoutUserInput
 }
 
@@ -772,7 +674,6 @@ export type usersUncheckedCreateWithoutOrdersInput = {
   avatarId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedCreateNestedManyWithoutUserInput
   favorites?: Prisma.favoritesUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -801,7 +702,6 @@ export type usersUpdateWithoutOrdersInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   avatar?: Prisma.imagesUpdateOneWithoutUsersNestedInput
-  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
 }
 
@@ -814,7 +714,6 @@ export type usersUncheckedUpdateWithoutOrdersInput = {
   avatarId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -837,7 +736,6 @@ export type usersUpdateWithoutAvatarInput = {
   addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
 }
@@ -850,7 +748,6 @@ export type usersUncheckedUpdateWithoutAvatarInput = {
   addresses?: Prisma.usersUpdateaddressesInput | runtime.InputJsonValue[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  storeReviews?: Prisma.storeReviewsUncheckedUpdateManyWithoutUserNestedInput
   favorites?: Prisma.favoritesUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -871,13 +768,11 @@ export type usersUncheckedUpdateManyWithoutAvatarInput = {
  */
 
 export type UsersCountOutputType = {
-  storeReviews: number
   favorites: number
   orders: number
 }
 
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  storeReviews?: boolean | UsersCountOutputTypeCountStoreReviewsArgs
   favorites?: boolean | UsersCountOutputTypeCountFavoritesArgs
   orders?: boolean | UsersCountOutputTypeCountOrdersArgs
 }
@@ -890,13 +785,6 @@ export type UsersCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extens
    * Select specific fields to fetch from the UsersCountOutputType
    */
   select?: Prisma.UsersCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * UsersCountOutputType without action
- */
-export type UsersCountOutputTypeCountStoreReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.storeReviewsWhereInput
 }
 
 /**
@@ -925,7 +813,6 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   createdAt?: boolean
   updatedAt?: boolean
   avatar?: boolean | Prisma.users$avatarArgs<ExtArgs>
-  storeReviews?: boolean | Prisma.users$storeReviewsArgs<ExtArgs>
   favorites?: boolean | Prisma.users$favoritesArgs<ExtArgs>
   orders?: boolean | Prisma.users$ordersArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
@@ -948,7 +835,6 @@ export type usersSelectScalar = {
 export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "phone_number" | "email" | "name" | "following" | "addresses" | "avatarId" | "createdAt" | "updatedAt", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   avatar?: boolean | Prisma.users$avatarArgs<ExtArgs>
-  storeReviews?: boolean | Prisma.users$storeReviewsArgs<ExtArgs>
   favorites?: boolean | Prisma.users$favoritesArgs<ExtArgs>
   orders?: boolean | Prisma.users$ordersArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
@@ -958,7 +844,6 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   name: "users"
   objects: {
     avatar: Prisma.$imagesPayload<ExtArgs> | null
-    storeReviews: Prisma.$storeReviewsPayload<ExtArgs>[]
     favorites: Prisma.$favoritesPayload<ExtArgs>[]
     orders: Prisma.$OrderPayload<ExtArgs>[]
   }
@@ -1336,7 +1221,6 @@ readonly fields: usersFieldRefs;
 export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   avatar<T extends Prisma.users$avatarArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$avatarArgs<ExtArgs>>): Prisma.Prisma__imagesClient<runtime.Types.Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  storeReviews<T extends Prisma.users$storeReviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$storeReviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$storeReviewsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   favorites<T extends Prisma.users$favoritesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$favoritesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$favoritesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orders<T extends Prisma.users$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1763,30 +1647,6 @@ export type users$avatarArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    */
   include?: Prisma.imagesInclude<ExtArgs> | null
   where?: Prisma.imagesWhereInput
-}
-
-/**
- * users.storeReviews
- */
-export type users$storeReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the storeReviews
-   */
-  select?: Prisma.storeReviewsSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the storeReviews
-   */
-  omit?: Prisma.storeReviewsOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.storeReviewsInclude<ExtArgs> | null
-  where?: Prisma.storeReviewsWhereInput
-  orderBy?: Prisma.storeReviewsOrderByWithRelationInput | Prisma.storeReviewsOrderByWithRelationInput[]
-  cursor?: Prisma.storeReviewsWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.StoreReviewsScalarFieldEnum | Prisma.StoreReviewsScalarFieldEnum[]
 }
 
 /**

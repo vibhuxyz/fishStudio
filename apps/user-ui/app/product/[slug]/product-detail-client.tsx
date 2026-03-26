@@ -82,9 +82,6 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
       : [product.image || "/placeholder.svg"];
 
   const handleAddToCart = (shouldOpenCart = false) => {
-    // Basic validation to ensure options are selected
-    if (!selectedCutting || !selectedPieceSize) return;
- 
     const customizedProduct = {
       ...product,
       price: computedSalePrice,
@@ -94,12 +91,12 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
           : undefined,
       weight: `${selectedWeightGrams} gm`,
     };
- 
+
     addToCart(
       customizedProduct,
       1,
-      selectedCutting,
-      selectedPieceSize,
+      selectedCutting || "default",
+      selectedPieceSize || "default",
       `${selected.size} | ${selectedWeightGrams} gm`,
     );
     if (shouldOpenCart) {
@@ -149,6 +146,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     src={productImages[currentImageIndex]}
                     alt={product.name}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover"
                     priority
                     loading="eager"

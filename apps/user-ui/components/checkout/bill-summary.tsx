@@ -9,6 +9,7 @@ interface BillSummaryProps {
   itemTotal: number;
   deliveryCharge: number;
   discount: number;
+  discountBreakdown?: { code: string; amount: number }[];
   extraCharge?: number;
   extraChargeLabel?: string;
   onPlaceOrder: () => void;
@@ -20,6 +21,7 @@ export function BillSummary({
   itemTotal,
   deliveryCharge,
   discount,
+  discountBreakdown,
   extraCharge = 0,
   extraChargeLabel = "Extra Charge",
   onPlaceOrder,
@@ -60,15 +62,25 @@ export function BillSummary({
           </div>
         )}
 
-        {discount > 0 && (
+        {discountBreakdown && discountBreakdown.length > 0 ? (
+          discountBreakdown.map((item) => (
+            <div key={item.code} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1.5 text-offer-green font-medium">
+                <Ticket className="h-4 w-4" />
+                <span>Coupon ({item.code})</span>
+              </div>
+              <span className="font-bold text-offer-green">-₹{item.amount.toFixed(0)}</span>
+            </div>
+          ))
+        ) : discount > 0 ? (
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5 text-offer-green font-medium">
               <Ticket className="h-4 w-4" />
               <span>Discount</span>
             </div>
-            <span className="font-bold text-offer-green">-₹{discount.toFixed(2)}</span>
+            <span className="font-bold text-offer-green">-₹{discount.toFixed(0)}</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="flex items-center justify-between py-1">

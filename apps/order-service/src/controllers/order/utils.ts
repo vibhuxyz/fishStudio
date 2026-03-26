@@ -1,10 +1,22 @@
-import { prisma } from "@repo/db";
-import { NextFunction, Request, Response } from "express";
-import { ValidationError } from "@repo/error-handlers";
+import { redis } from "@repo/libs";
 
-type Period = "week" | "month" | "year";
+export const STATS_CACHE_TTL = 120; // 2 minutes
 
-function getPeriodStart(period: Period): Date {
+export type Period = "week" | "month" | "year";
+
+export const invalidateSellerStatsCache = async (sellerId: string) => {
+  try {
+    await Promise.all([
+      redis.del(`stats:seller:${sellerId}:week`),
+      redis.del(`stats:seller:${sellerId}:month`),
+      redis.del(`stats:seller:${sellerId}:year`),
+    ]);
+  } catch {
+    // Non-fatal
+  }
+};
+
+export function getPeriodStart(period: Period): Date {
   const now = new Date();
   if (period === "week") {
     const d = new Date(now);
@@ -21,7 +33,7 @@ function getPeriodStart(period: Period): Date {
   }
 }
 
-function computeStats(orders: any[]) {
+export function computeStats(orders: any[]) {
   let totalRevenue = 0;
   let totalRefundedAmount = 0;
   let totalDelivered = 0;
@@ -88,7 +100,6 @@ function computeStats(orders: any[]) {
       totalRefundedAmount += amount;
     }
 
-    // Pincode grouping from store pincode
     const pincode = order.store?.pincode ?? "Unknown";
     const shopId = order.store?.id ?? "Unknown";
     const shopName = order.store?.name ?? "Unknown Store";
@@ -113,16 +124,14 @@ function computeStats(orders: any[]) {
       pincodeMap[pincode].shops[shopId].sales += amount;
     }
 
-    // Product grouping
     for (const item of order.orderItems ?? []) {
       const pid = item.productId;
       const product = item.product;
       const qty = item.quantity;
       const price = item.price;
       const itemRevenue = price * qty;
-      const itemDiscount = (discount / (order.orderItems.length || 1)); // Naive split
+      const itemDiscount = (discount / (order.orderItems.length || 1));
 
-      // Also track in pincode breakdown
       if (!pincodeMap[pincode].products[pid]) {
         pincodeMap[pincode].products[pid] = {
           title: product?.title ?? "Unknown",
@@ -135,7 +144,6 @@ function computeStats(orders: any[]) {
         pincodeMap[pincode].products[pid].revenue += itemRevenue;
       }
 
-      // Also track in per-shop product breakdown
       if (!pincodeMap[pincode].shops[shopId].products[pid]) {
         pincodeMap[pincode].shops[shopId].products[pid] = {
           title: product?.title ?? "Unknown",
@@ -173,19 +181,16 @@ function computeStats(orders: any[]) {
       productMap[pid].quantaSale += qty;
       productMap[pid].orderIds.push(order.id);
 
-      // Repeat customer tracking
       if (!productMap[pid].customerOrders[userId]) {
         productMap[pid].customerOrders[userId] = 0;
       }
       productMap[pid].customerOrders[userId]++;
       
-      // Breakdown by product
       if (!productMap[pid].pincodeBreakdown[pincode]) {
         productMap[pid].pincodeBreakdown[pincode] = 0;
       }
       productMap[pid].pincodeBreakdown[pincode]++;
 
-      // Quantities and Revenue
       if (order.status === "DELIVERED") {
         productMap[pid].deliveredQty += qty;
         productMap[pid].revenue += itemRevenue;
@@ -207,29 +212,18 @@ function computeStats(orders: any[]) {
     }
   }
 
-  // Sort products and attach computed stats
   const allProducts = Object.entries(productMap)
     .map(([id, data]) => {
       const repeatCustomers = Object.values(data.customerOrders).filter(v => v > 1).length;
       const avgPrice = data.deliveredQty > 0 ? data.revenue / data.deliveredQty : 0;
-      return { 
-        id, 
-        ...data, 
-        repeatCustomers, 
-        avgPrice 
-      };
+      return { id, ...data, repeatCustomers, avgPrice };
     })
     .sort((a, b) => b.orders - a.orders);
 
   const heroProducts = allProducts.slice(0, 5);
-  const needsImprovement = allProducts
-    .filter((p) => p.orders > 0 && p.orders <= 3)
-    .slice(0, 5);
-  const toRemove = allProducts
-    .filter((p) => p.orders === 0)
-    .slice(0, 5);
+  const needsImprovement = allProducts.filter((p) => p.orders > 0 && p.orders <= 3).slice(0, 5);
+  const toRemove = allProducts.filter((p) => p.orders === 0).slice(0, 5);
 
-  // Sort pincodes
   const pincodeBreakdown = Object.entries(pincodeMap)
     .map(([pincode, data]) => ({ 
       pincode, 
@@ -260,119 +254,6 @@ function computeStats(orders: any[]) {
     heroProducts,
     needsImprovement,
     toRemove,
-    allProductsBreakdown: allProducts, // Full detailed product list for Admin UI
+    allProductsBreakdown: allProducts,
   };
 }
-
-/* ─────────────── SELLER STATS ─────────────── */
-export const getSellerStats = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const period = (req.query.period as Period) || "month";
-    if (!["week", "month", "year"].includes(period)) {
-      return next(new ValidationError("period must be week, month, or year"));
-    }
-
-    const sellerId = req.seller?.id;
-    const store = await prisma.stores.findUnique({ where: { sellerId } });
-    if (!store) {
-      return res.status(200).json({ success: true, stats: null, message: "No store found" });
-    }
-
-    const since = getPeriodStart(period);
-
-    const orders = await prisma.order.findMany({
-      where: { storeId: store.id, createdAt: { gte: since } },
-      include: {
-        store: { select: { pincode: true } },
-        orderItems: {
-          include: {
-            product: { select: { id: true, title: true, images: { take: 1 } } },
-          },
-        },
-      },
-    });
-
-    const stats = computeStats(orders);
-
-    return res.status(200).json({ success: true, period, stats });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-/* ─────────────── ADMIN STATS (ALL or PER SELLER) ─────────────── */
-export const getAdminStats = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const period = (req.query.period as Period) || "month";
-    const sellerId = req.params.sellerId as string | undefined;
-
-    if (!["week", "month", "year"].includes(period)) {
-      return next(new ValidationError("period must be week, month, or year"));
-    }
-
-    const since = getPeriodStart(period);
-
-    let storeId: string | undefined;
-    if (sellerId) {
-      const store = await prisma.stores.findUnique({ where: { sellerId } });
-      storeId = store?.id;
-    }
-
-    const orders = await prisma.order.findMany({
-      where: {
-        ...(storeId ? { storeId } : {}),
-        createdAt: { gte: since },
-      },
-      include: {
-        store: { select: { pincode: true, seller: { select: { id: true, name: true, email: true } } } },
-        orderItems: {
-          include: {
-            product: { select: { id: true, title: true, images: { take: 1 } } },
-          },
-        },
-      },
-    });
-
-    const stats = computeStats(orders);
-
-    // Per-seller breakdown (only for all-sellers admin call)
-    let perSellerBreakdown: any[] = [];
-    if (!sellerId) {
-      const sellerMap: Record<string, { name: string; email: string; orders: any[] }> = {};
-      for (const order of orders) {
-        const seller = (order as any).store?.seller;
-        if (!seller) continue;
-        if (!sellerMap[seller.id]) {
-          sellerMap[seller.id] = { name: seller.name, email: seller.email, orders: [] };
-        }
-        sellerMap[seller.id]?.orders.push(order);
-      }
-
-      perSellerBreakdown = Object.entries(sellerMap).map(([sid, data]) => ({
-        sellerId: sid,
-        name: data.name,
-        email: data.email,
-        ...computeStats(data.orders),
-      }));
-
-      perSellerBreakdown.sort((a, b) => b.totalRevenue - a.totalRevenue);
-    }
-
-    return res.status(200).json({
-      success: true,
-      period,
-      stats,
-      ...(perSellerBreakdown.length ? { perSellerBreakdown } : {}),
-    });
-  } catch (error) {
-    return next(error);
-  }
-};

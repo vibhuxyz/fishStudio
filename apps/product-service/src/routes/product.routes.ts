@@ -1,41 +1,58 @@
 import express, { Router } from "express";
 import {
+  searchProducts,
+  searchSuggestions,
+  reindexProducts,
+} from "../controllers/search.controller.js";
+import {
   addCatalogProductToStore,
-  createCategory,
-  createDiscountCodes,
   createProduct,
-  createSellerEvent,
-  createSubCategory,
-  deleteBanner,
-  deleteDiscountCode,
   deleteProduct,
-  deleteSellerEvent,
-  getActiveBanners,
   getCatalogProducts,
-  getCategories,
-  getDiscountCodes,
   getOwnedProductById,
   getOwnedProducts,
-  getAdminBanners,
-  getAllCategoryBanners,
-  getPendingBanners,
-  getSellerBanners,
-  getSellerEvents,
   getStoreProductBySlug,
   getStoreProducts,
   getStorePublicOffers,
   restoreProduct,
-  reviewBanner,
   slugValidator,
-  updateBanner,
   updateProduct,
-  updateSellerEvent,
-  uploadBanner,
+  updateProductStock,
   validateCart,
+} from "../controllers/product/product.controller.js";
+import {
+  createCategory,
+  createSubCategory,
+  getCategories,
+} from "../controllers/product/category.controller.js";
+import {
+  createDiscountCodes,
+  deleteDiscountCode,
+  getDiscountCodes,
+} from "../controllers/product/coupon.controller.js";
+import {
+  createSellerEvent,
+  deleteSellerEvent,
+  getSellerEvents,
+  updateSellerEvent,
+} from "../controllers/product/event.controller.js";
+import {
+  deleteBanner,
+  getActiveBanners,
+  getAdminBanners,
+  getAllCategoryBanners,
+  getPendingBanners,
+  getSellerBanners,
+  reviewBanner,
+  updateBanner,
+  uploadBanner,
+} from "../controllers/product/banner.controller.js";
+import {
   deleteCloudinaryImage,
   uploadCloudinaryImage,
   uploadProductImage,
-} from "../controllers/product.controller.js";
+} from "../controllers/product/image.controller.js";
+
 import { allowRoles, isAuthenticated, isSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
@@ -181,6 +198,16 @@ router.post(
   createProduct,
 );
 
+// ── Search (public) ──────────────────────────────────────────────────────────
+router.get("/search", searchProducts);
+router.get("/search/suggestions", searchSuggestions);
+router.post(
+  "/admin/reindex-search",
+  isAuthenticated,
+  allowRoles("admin"),
+  reindexProducts,
+);
+
 router.get("/get-all-products", getStoreProducts);
 router.post("/validate-cart", validateCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
@@ -215,6 +242,13 @@ router.put(
   allowRoles("admin", "seller"),
   updateProduct,
 );
+router.put(
+  "/update-product-stock/:productId",
+  isAuthenticated,
+  allowRoles("admin", "seller"),
+  updateProductStock,
+);
+
 
 router.delete(
   "/delete-product/:productId",

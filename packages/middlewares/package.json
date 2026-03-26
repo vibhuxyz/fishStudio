@@ -17,6 +17,7 @@
     "@repo/typescript-config": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/libs": "workspace:*",
     "@repo/error-handlers": "workspace:*"
   },
   "peerDependencies": {

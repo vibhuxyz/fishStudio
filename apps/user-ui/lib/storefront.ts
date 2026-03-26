@@ -12,6 +12,7 @@ export interface StorefrontBanner {
 export interface StorefrontCategories {
   categories: string[];
   subCategories: Record<string, string[]>;
+  categoryImages: Record<string, string>;
 }
 
 export const storefrontKeys = {
@@ -281,6 +282,7 @@ export async function fetchStorefrontCategories(): Promise<StorefrontCategories>
     success?: boolean;
     categories?: string[];
     subCategories?: Record<string, string[]>;
+    categoryImages?: Record<string, string>;
   }>(response);
 
   return {
@@ -288,6 +290,10 @@ export async function fetchStorefrontCategories(): Promise<StorefrontCategories>
     subCategories:
       data.subCategories && typeof data.subCategories === "object"
         ? data.subCategories
+        : {},
+    categoryImages:
+      data.categoryImages && typeof data.categoryImages === "object"
+        ? data.categoryImages
         : {},
   };
 }

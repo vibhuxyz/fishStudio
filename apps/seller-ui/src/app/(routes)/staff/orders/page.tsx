@@ -137,8 +137,8 @@ function AcceptModal({
         <div className="px-5 pb-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Order Items</p>
           <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-            {order.items.map((item) => (
-              <div key={item.productId} className="flex items-center gap-3 bg-[#1a1f2e] rounded-xl p-3">
+            {order.items.map((item, idx) => (
+              <div key={`${item.productId}-${idx}`} className="flex items-center gap-3 bg-[#1a1f2e] rounded-xl p-3">
                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#0f1117] shrink-0 flex items-center justify-center">
                   <Fish size={22} className="text-teal-500" />
                 </div>
@@ -307,7 +307,7 @@ function OrderDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
-      <div className="bg-[#0a0a0c] border border-gray-800/60 rounded-[2rem] w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] scrollbar-hide">
+      <div className="bg-[#0a0a0c] border border-gray-800/60 rounded-[2rem] w-full max-w-[80vw] h-[92vh] overflow-y-auto shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] scrollbar-hide">
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-900 sticky top-0 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
           <div>
@@ -337,14 +337,14 @@ function OrderDetailModal({
                   <MapPin size={22} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivering To</h3>
-                  <p className="text-white font-bold text-sm tracking-tight">{order.shippingAddress.name}</p>
-                  <p className="text-gray-400 text-xs leading-relaxed mt-1 italic">
+                  <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivering To</h3>
+                  <p className="text-white font-bold text-base tracking-tight">{order.shippingAddress.name}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed mt-1 italic">
                     {order.shippingAddress.street}, {order.shippingAddress.city} – {order.shippingAddress.zip}
                   </p>
                   <div className="flex items-center gap-3 mt-2">
-                    <p className="text-gray-200 text-xs font-black tracking-tight flex items-center gap-1.5">
-                      <Phone size={12} className="text-blue-500" />
+                    <p className="text-gray-200 text-sm font-black tracking-tight flex items-center gap-1.5">
+                      <Phone size={14} className="text-blue-500" />
                       {order.user.phone}
                     </p>
                     <button
@@ -364,8 +364,8 @@ function OrderDetailModal({
                   {order.deliverySlot === "instant" ? <Zap size={22} /> : <Clock size={22} />}
                 </div>
                 <div>
-                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivery Slot</h3>
-                  <p className="text-white font-bold text-sm tracking-tight">{slotLabel}</p>
+                  <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Delivery Slot</h3>
+                  <p className="text-white font-bold text-base tracking-tight">{slotLabel}</p>
                 </div>
               </div>
 
@@ -375,8 +375,8 @@ function OrderDetailModal({
                   <CreditCard size={22} />
                 </div>
                 <div>
-                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Payment</h3>
-                  <p className="text-white font-bold text-sm tracking-tight">
+                  <h3 className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-1.5">Payment</h3>
+                  <p className="text-white font-bold text-base tracking-tight">
                     {order.paymentMethod === "COD" ? "Pay on Delivery (COD)" : (order.paymentMethod || "Online Payment")}
                   </p>
                 </div>
@@ -398,37 +398,52 @@ function OrderDetailModal({
             {/* Right Column: Order Items & Bill Summary */}
             <div className="space-y-6">
               <div className="bg-[#0f0f12] border border-gray-900 rounded-[2rem] p-6 shadow-inner">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-600 mb-6">Order Items</h3>
-                <div className="space-y-4 max-h-72 overflow-y-auto pr-2 scrollbar-hide">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-600 mb-6 font-mono">Order Items</h3>
+                <div className="space-y-4 max-h-[30rem] overflow-y-auto pr-2 scrollbar-hide">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4 group">
-                      <div className="w-14 h-14 rounded-2xl bg-black border border-gray-800 overflow-hidden shrink-0 group-hover:border-blue-500/50 transition-all duration-300">
-                        {item.product.images[0]?.url ? (
-                           <img src={item.product.images[0].url} alt={item.product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Fish size={20} className="text-gray-700" />
-                          </div>
-                        )}
+                    <div key={`${item.productId}-${idx}`} className="flex flex-col gap-2 group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-black border border-gray-800 overflow-hidden shrink-0 group-hover:border-blue-500/50 transition-all duration-300">
+                          {item.product.images[0]?.url ? (
+                             <img src={item.product.images[0].url} alt={item.product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Fish size={24} className="text-gray-700" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-lg truncate tracking-tight">{item.product.title}</p>
+                          <p className="text-gray-500 text-sm font-medium mt-0.5">Qty: {item.quantity} × ₹{item.price}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-white font-black text-lg italic tracking-tighter">₹{item.price * item.quantity}</p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-bold text-sm truncate tracking-tight">{item.product.title}</p>
-                        <p className="text-gray-500 text-[11px] font-medium mt-0.5">Qty: {item.quantity} × ₹{item.price}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-white font-black text-sm italic tracking-tighter">₹{item.price * item.quantity}</p>
-                      </div>
+                      
+                      {/* Customization Details */}
+                      {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                        <div className="ml-18 flex flex-wrap gap-2">
+                          {Object.entries(item.selectedOptions).map(([key, value]) => (
+                            value && (
+                              <span key={key} className="text-xs bg-blue-500/10 text-blue-400 px-2 py-1 rounded-md border border-blue-500/20 font-bold uppercase tracking-wider">
+                                {key}: {String(value)}
+                              </span>
+                            )
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
 
                 {/* Bill Summary */}
                 <div className="mt-8 pt-6 border-t border-gray-900 space-y-3">
-                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tight">
+                  <div className="flex justify-between text-sm font-bold text-gray-500 uppercase tracking-tight">
                     <span>Items Total</span>
                     <span className="text-gray-400">₹{billDetails?.itemTotal ?? order.items.reduce((s, i) => s + i.price * i.quantity, 0)}</span>
                   </div>
-                  <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-tight">
+                  <div className="flex justify-between text-sm font-bold text-gray-500 uppercase tracking-tight">
                     <span>Delivery Charge</span>
                     <span className="text-green-500">₹{billDetails?.deliveryCharge ?? 0}</span>
                   </div>
@@ -450,7 +465,7 @@ function OrderDetailModal({
                       <span className="block font-black uppercase italic tracking-tighter text-sm text-white group-hover:text-blue-500 transition-colors">Total Paid</span>
                       <span className="block text-[8px] font-black text-gray-600 uppercase tracking-[0.2em]">Inc. all taxes</span>
                     </div>
-                    <span className="text-3xl font-black text-blue-600 tracking-tighter group-hover:scale-105 transition-transform duration-300">₹{order.total}</span>
+                    <span className="text-4xl font-black text-blue-600 tracking-tighter group-hover:scale-105 transition-transform duration-300">₹{order.total}</span>
                   </div>
                 </div>
               </div>
@@ -474,7 +489,7 @@ function OrderDetailModal({
 
 // ─── Order Card ──────────────────────────────────────────────────────────────
 
-function OrderCard({
+export function OrderCard({
   order,
   onAccept,
   onReject,
@@ -489,6 +504,10 @@ function OrderCard({
   onMarkCompleted: (id: string) => void;
   onViewDetails: (o: MockOrder) => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   const cfg = STATUS_CONFIG[order.status];
 
   return (
@@ -501,7 +520,7 @@ function OrderCard({
             {cfg.label}
           </span>
         </div>
-        <span className="text-gray-600 text-xs">{timeAgo(order.createdAt)}</span>
+        <span className="text-gray-600 text-xs">{mounted ? timeAgo(order.createdAt) : "Recently"}</span>
       </div>
 
       {/* Order ID + total */}
@@ -526,11 +545,24 @@ function OrderCard({
 
       {/* Items preview */}
       <div className="space-y-1.5 mb-4">
-        {order.items.slice(0, 2).map((item) => (
-          <div key={item.productId} className="flex items-center gap-2 bg-[#1a1f2e] rounded-lg px-3 py-2">
-            <Fish size={14} className="text-teal-500 shrink-0" />
-            <span className="text-gray-200 text-xs truncate flex-1">{item.product.title}</span>
-            <span className="text-gray-400 text-xs shrink-0">{item.quantity} {item.unit}</span>
+        {order.items.slice(0, 2).map((item, idx) => (
+          <div key={`${item.productId}-${idx}`} className="bg-[#1a1f2e] rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Fish size={14} className="text-teal-500 shrink-0" />
+              <span className="text-gray-200 text-xs truncate flex-1">{item.product.title}</span>
+              <span className="text-gray-400 text-xs shrink-0">{item.quantity} {item.unit}</span>
+            </div>
+            {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {Object.entries(item.selectedOptions).map(([key, value]) => (
+                  value && (
+                    <span key={key} className="text-[9px] text-teal-500/70 font-medium">
+                      {key[0].toUpperCase()}: {String(value)}
+                    </span>
+                  )
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {order.items.length > 2 && (
@@ -709,6 +741,11 @@ function StatsBar({ orders }: { orders: MockOrder[] }) {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 const StaffOrdersPage = () => {
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { staff, isLoading: authLoading } = useRequireStaff();
   const queryClient = useQueryClient();
 
@@ -755,7 +792,7 @@ const StaffOrdersPage = () => {
           quantity: i.quantity,
           price: i.price,
           unit: "pc",
-          selectedOptions: {},
+          selectedOptions: i.selectedOptions || {},
         })),
         rejectionReason: o.rejectionReason,
         refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null,

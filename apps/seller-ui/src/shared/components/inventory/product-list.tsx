@@ -33,9 +33,9 @@ interface Props {
   description: string;
 }
 
-const fetchProducts = async () => {
-  const res = await axiosInstance.get("/product/api/get-owned-products", isProtected);
-  return Array.isArray(res.data.products) ? res.data.products : [];
+const fetchProducts = async (page: number) => {
+  const res = await axiosInstance.get(`/product/api/get-owned-products?page=${page}&limit=20`, isProtected);
+  return { products: Array.isArray(res.data.products) ? res.data.products : [], pagination: res.data.pagination };
 };
 
 const InventoryProductList = ({ statusFilter, title, description }: Props) => {
@@ -44,12 +44,16 @@ const InventoryProductList = ({ statusFilter, title, description }: Props) => {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const { data: allProducts = [], isLoading } = useQuery({
-    queryKey: ["seller", "products"],
-    queryFn: fetchProducts,
+  const { data, isLoading } = useQuery({
+    queryKey: ["seller", "products", page],
+    queryFn: () => fetchProducts(page),
     staleTime: 1000 * 60 * 5,
   });
+
+  const allProducts = data?.products ?? [];
+  const pagination = data?.pagination;
 
   const products = useMemo(() => {
     if (!statusFilter) return allProducts;
@@ -261,6 +265,32 @@ const InventoryProductList = ({ statusFilter, title, description }: Props) => {
           />
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-400">
+          <span>{pagination.total} total products</span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={!pagination.hasPrevPage}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-lg bg-gray-800 px-3 py-1.5 text-white disabled:opacity-40 hover:bg-gray-700 transition"
+            >
+              Prev
+            </button>
+            <span className="text-white font-medium">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <button
+              disabled={!pagination.hasNextPage}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-lg bg-gray-800 px-3 py-1.5 text-white disabled:opacity-40 hover:bg-gray-700 transition"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

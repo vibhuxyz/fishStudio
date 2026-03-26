@@ -22,20 +22,25 @@ import {
   verifyOtpAndLogin,
 } from "../controller/user.auth.controller.js";
 import {
-  createStore,
-  getAllSellersForAdmin,
   getSeller,
-  getSellerDetailsForAdmin,
   loginSeller,
   logOutSeller,
   registerSeller,
   verifySeller,
-  updateSellerApproval,
   verifySellerSignupCode,
+} from "../controller/seller/auth.controller.js";
+import {
+  createStore,
   checkPincode,
   updateStore,
   getServiceableAreas,
-} from "../controller/seller.auth.controller.js";
+} from "../controller/seller/store.controller.js";
+import {
+  getAllSellersForAdmin,
+  getSellerDetailsForAdmin,
+  updateSellerApproval,
+} from "../controller/seller/admin.controller.js";
+
 import {
   getMyStaffs,
   getStaff,

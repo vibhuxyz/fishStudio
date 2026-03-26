@@ -7,9 +7,10 @@ import {
   getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Eye, Plus, BarChart, Pencil, RotateCcw, Star, Trash } from "lucide-react";
+import { Eye, Plus, BarChart, Pencil, RotateCcw, Star, Trash, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
 import EditProductModal from "@/shared/components/modals/edit-product.modal";
@@ -24,6 +25,7 @@ import {
   useAdminProducts,
 } from "@/hooks/useAdminQueries";
 import { frontendEnv } from "@/config/env";
+import axiosInstance from "@/utils/axiosInstance";
 
 const ProductList = () => {
   const [analyticsData, setAnalyticsData] = useState<AdminProduct | null>(null);
@@ -32,7 +34,20 @@ const ProductList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
+  const [reindexing, setReindexing] = useState(false);
   const queryClient = useQueryClient();
+
+  const handleReindex = async () => {
+    setReindexing(true);
+    try {
+      const { data } = await axiosInstance.post("/product/api/admin/reindex-search");
+      toast.success(data.message || "Search index rebuilt");
+    } catch {
+      toast.error("Reindex failed");
+    } finally {
+      setReindexing(false);
+    }
+  };
 
   const { data: products = [], isLoading } = useAdminProducts();
 
@@ -196,12 +211,23 @@ const ProductList = () => {
       breadcrumbTitle="All Products"
       description="Products, analytics, and destructive actions now share one source of truth for cache invalidation."
       action={
-        <Link
-          href="/dashboard/create-product"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <Plus size={18} /> Add Product
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReindex}
+            disabled={reindexing}
+            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm"
+            title="Rebuild Meilisearch index from database"
+          >
+            <RefreshCw size={16} className={reindexing ? "animate-spin" : ""} />
+            {reindexing ? "Reindexing…" : "Rebuild Search"}
+          </button>
+          <Link
+            href="/dashboard/create-product"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+          >
+            <Plus size={18} /> Add Product
+          </Link>
+        </div>
       }
       search={{
         value: globalFilter,

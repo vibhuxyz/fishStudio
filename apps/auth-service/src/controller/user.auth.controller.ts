@@ -13,6 +13,7 @@ const { JsonWebTokenError } = jwt;
 import { setCookie } from "../utils/cookies/setCookie.js";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
+import { redis } from "@repo/libs";
 export const sendOtpToUser = async (
   req: Request,
   res: Response,
@@ -302,6 +303,10 @@ export const deleteUserAddress = async (
 };
 
 export const logOutUser = async (req: any, res: Response) => {
+  const token = req.cookies["access_token"];
+  if (token) {
+    try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
+  }
   res.clearCookie("access_token");
   res.clearCookie("refresh_token");
 

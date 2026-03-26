@@ -33,6 +33,7 @@ import {
   CheckCircle2,
   XCircle,
   LayoutList,
+  Boxes,
 } from "lucide-react";
 import CollapsibleSidebarItem from "./collapsible-sidebar-item";
 
@@ -137,6 +138,17 @@ const SidebarBarWrapper = () => {
                     <SquarePlus
                       size={24}
                       color={getIconColor("/dashboard/create-product")}
+                    />
+                  }
+                />
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/inventory"}
+                  title="Inventory Management"
+                  href="/dashboard/inventory"
+                  icon={
+                    <Boxes
+                      size={24}
+                      color={getIconColor("/dashboard/inventory")}
                     />
                   }
                 />

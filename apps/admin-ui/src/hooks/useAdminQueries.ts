@@ -49,6 +49,7 @@ export type DiscountCode = {
 export type CategoriesResponse = {
   categories: string[];
   subCategories: Record<string, string[]>;
+  categoryImages: Record<string, string>;
 };
 
 export type AdminSellerSummary = {
@@ -276,13 +277,17 @@ export const fetchCategories = async (): Promise<CategoriesResponse> => {
       response.data.subCategories && typeof response.data.subCategories === "object"
         ? response.data.subCategories
         : {},
+    categoryImages:
+      response.data.categoryImages && typeof response.data.categoryImages === "object"
+        ? response.data.categoryImages
+        : {},
   };
 };
 
-export const createAdminCategory = async (name: string) => {
+export const createAdminCategory = async (name: string, imageUrl?: string) => {
   await axiosInstance.post(
     "/product/api/create-category",
-    { name },
+    { name, imageUrl },
     isProtected,
   );
 };

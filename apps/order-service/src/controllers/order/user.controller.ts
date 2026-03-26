@@ -2,70 +2,6 @@ import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { prisma } from "@repo/db";
 import { NextFunction, Request, Response } from "express";
 
-export const getSellerOrders = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const sellerId = req.seller?.id;
-    const store = await prisma.stores.findUnique({ where: { sellerId } });
-    
-    // fetch all orders for this shop
-    const orders = await prisma.order.findMany({
-      where: { storeId: store?.id },
-      include: {
-        user: true,
-        orderItems: { include: { product: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    
-    res.status(200).json({ success: true, orders });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const acceptOrRejectOrder = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { orderId } = req.params;
-    const { action, rejectionReason } = req.body;
-
-    if (!orderId || !action) return next(new ValidationError("orderId and action are required"));
-    if (action !== "accept" && action !== "reject") return next(new ValidationError("action must be 'accept' or 'reject'"));
-    if (action === "reject" && !rejectionReason?.trim()) return next(new ValidationError("A rejection reason is required"));
-
-    const existingOrder = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!existingOrder) return next(new NotFoundError("Order not found"));
-
-    let updatedOrder;
-    if (action === "accept") {
-      updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: "ACCEPTED", rejectionReason: null, updatedAt: new Date() },
-      });
-    } else {
-      updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: "REJECTED", rejectionReason: rejectionReason.trim(), paymentStatus: "REFUNDED", updatedAt: new Date() },
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: action === "accept" ? "Order accepted successfully" : "Order rejected and refund initiated",
-      order: updatedOrder,
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
 export const createOrder = async (
   req: any,
   res: Response,
@@ -111,6 +47,7 @@ export const createOrder = async (
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
+            selectedOptions: item.selectedOptions || {},
           })),
         },
       },
@@ -123,13 +60,22 @@ export const createOrder = async (
       }
     });
 
-    // ── SMS Notification ──────────────────────────────────────────────────────
     try {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-        select: { phone_number: true, name: true },
-      });
+      for (const item of items) {
+        await prisma.products.update({
+          where: { id: item.productId },
+          data: { 
+            stock: { decrement: item.quantity },
+            totalSold: { increment: item.quantity }
+          }
+        });
+      }
+    } catch (stockError) {
+      console.error("Failed to update stock during order creation:", stockError);
+    }
 
+    try {
+      const user = req.user as { phone_number?: string; name?: string } | undefined;
       const shortId = order.id.slice(-6).toUpperCase();
       const slotLabel =
         order.deliverySlot === "instant" ? "Instant (30-45 min)" :
@@ -147,14 +93,11 @@ export const createOrder = async (
         console.log(`   ${smsMessage}`);
         console.log("─────────────────────────────────────────\n");
       } else {
-        // TODO: Replace with actual SMS provider (Twilio / AWS SNS / MSG91)
         console.log(`[SMS] Order #${shortId} confirmation queued for ${user?.phone_number}`);
       }
     } catch (smsErr) {
-      // Non-fatal: do not fail the order if SMS logging fails
       console.error("[SMS] Failed to log SMS notification:", smsErr);
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
     res.status(201).json({ success: true, orderId: order.id, order });
   } catch (error) {
@@ -183,37 +126,15 @@ export const getUserOrders = async (
       },
       orderBy: { createdAt: "desc" },
     });
-    res.status(200).json({ success: true, orders });
+    const mappedOrders = orders.map((o: any) => ({
+      ...o,
+      items: o.orderItems,
+      total: o.totalAmount,
+    }));
+    res.status(200).json({ success: true, orders: mappedOrders });
+
   } catch (error) {
     next(error);
-  }
-};
-
-export const updateOrderStatus = async (
-  req: any,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { orderId } = req.params;
-    const { status } = req.body;
-
-    const allowed = ["SHIPPED", "DELIVERED", "CANCELLED"];
-    if (!allowed.includes(status)) {
-      return next(new ValidationError(`Status must be one of: ${allowed.join(", ")}`));
-    }
-
-    const existing = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!existing) return next(new NotFoundError("Order not found"));
-
-    const updated = await prisma.order.update({
-      where: { id: orderId },
-      data: { status, updatedAt: new Date() },
-    });
-
-    return res.status(200).json({ success: true, order: updated });
-  } catch (error) {
-    return next(error);
   }
 };
 
@@ -239,7 +160,15 @@ export const getOrderById = async (
     });
 
     if (!order) return next(new NotFoundError("Order not found"));
-    res.status(200).json({ success: true, order });
+    
+    const orderData = {
+      ...order,
+      items: order.orderItems,
+      total: order.totalAmount,
+    };
+
+    res.status(200).json({ success: true, order: orderData });
+
   } catch (error) {
     next(error);
   }

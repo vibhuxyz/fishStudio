@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { prisma } from "@repo/db";
 import { ENV } from "@repo/env-config";
@@ -12,6 +12,7 @@ import {
   verifyOtp,
 } from "../utils/auth.helper.js";
 import { setCookie } from "../utils/cookies/setCookie.js";
+import { redis } from "@repo/libs";
 
 const signAdminTokens = (adminId: string) => {
   const accessToken = jwt.sign(
@@ -98,7 +99,7 @@ export const verifyAdmin = async (
 
     await verifyOtp(email, otp, next);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await argon2.hash(password);
 
     const admin = await prisma.admins.create({
       data: {
@@ -147,7 +148,7 @@ export const loginAdmin = async (
       throw new AuthError("Admin not found! Invalid email or password.");
     }
 
-    const isPasswordMatch = await bcrypt.compare(password, admin.password);
+    const isPasswordMatch = await argon2.verify(admin.password, password);
 
     if (!isPasswordMatch) {
       throw new AuthError("Invalid credentials. Password incorrect.");
@@ -183,6 +184,10 @@ export const getAdmin = async (req: any, res: Response, next: NextFunction) => {
 };
 
 export const logOutAdmin = async (req: any, res: Response) => {
+  const token = req.cookies["admin_access_token"];
+  if (token) {
+    try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
+  }
   res.clearCookie("admin_access_token");
   res.clearCookie("admin_refresh_token");
 

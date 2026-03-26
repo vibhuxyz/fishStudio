@@ -10,10 +10,11 @@ import Link from "next/link";
 const RejectedOrdersPage = () => {
   const router = useRouter();
   const { staff } = useRequireStaff();
+  const [timeFilter, setTimeFilter] = React.useState("all");
   
   const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
 
-  const { data: rejectedOrders = [], isLoading } = useQuery({
+  const { data: rawOrders = [], isLoading } = useQuery({
     queryKey: ["staff-orders"],
     queryFn: async () => {
       const res = await axiosInstance.get("/order/api/get-seller-orders");
@@ -35,6 +36,29 @@ const RejectedOrdersPage = () => {
     enabled: canFetch,
   });
 
+  const rejectedOrders = React.useMemo(() => {
+    const now = new Date();
+    return rawOrders.filter((order: any) => {
+      const orderDate = new Date(order.createdAt);
+      if (timeFilter === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(now.getDate() - 7);
+        return orderDate >= weekAgo;
+      }
+      if (timeFilter === "month") {
+        const monthAgo = new Date();
+        monthAgo.setMonth(now.getMonth() - 1);
+        return orderDate >= monthAgo;
+      }
+      if (timeFilter === "year") {
+        const yearAgo = new Date();
+        yearAgo.setFullYear(now.getFullYear() - 1);
+        return orderDate >= yearAgo;
+      }
+      return true;
+    });
+  }, [rawOrders, timeFilter]);
+
   const formatINR = (amount: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
 
@@ -51,13 +75,32 @@ const RejectedOrdersPage = () => {
       </button>
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-red-600/20 flex items-center justify-center">
-          <XCircle size={24} className="text-red-400" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-red-600/20 flex items-center justify-center">
+            <XCircle size={24} className="text-red-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">Rejected Orders</h1>
+            <p className="text-gray-400 text-sm">{rejectedOrders.length} orders cancelled with refund</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Rejected Orders</h1>
-          <p className="text-gray-400 text-sm">{rejectedOrders.length} orders cancelled with refund</p>
+
+        {/* Filter Selection */}
+        <div className="flex items-center bg-[#0f1117] border border-gray-800 rounded-lg p-1 self-start md:self-auto">
+          {["all", "week", "month", "year"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setTimeFilter(f)}
+              className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
+                timeFilter === f
+                  ? "bg-red-600 text-white shadow-lg"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -89,7 +89,7 @@ export function AddToCartModal({
       quantity,
       selectedCutting || "default",
       selectedPieceSize || "default",
-      selectedSize || resolved.unit || product.weight,
+      selectedSize || resolved.unit || product.weight || "unit",
     );
     onOpenChange(false);
     if (shouldOpenCart) {
@@ -128,11 +128,12 @@ export function AddToCartModal({
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
                 fill
+                sizes="(max-width: 768px) 100vw, 400px"
                 className={`object-cover transition-opacity duration-300 ${
                   isImageLoading ? "opacity-0" : "opacity-100"
                 }`}
                 placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
                 onLoad={() => setIsImageLoading(false)}
               />
             </div>

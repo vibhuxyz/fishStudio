@@ -111,6 +111,10 @@ export const ENV = {
   CLOUDINARY_FOLDER: logEnv("CLOUDINARY_FOLDER", process.env.CLOUDINARY_FOLDER),
 
   NODE_ENV: process.env.NODE_ENV || "development",
+
+  // Meilisearch (product-service only — no logEnv so other services don't error)
+  MEILISEARCH_HOST: process.env.MEILISEARCH_HOST || "http://localhost:7700",
+  MEILISEARCH_API_KEY: process.env.MEILISEARCH_API_KEY || "",
 };
 
 // Simple log to verify it's working when your app starts

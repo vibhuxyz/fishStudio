@@ -155,9 +155,9 @@ export const useCartStore = create<CartState>()(
     if (existingIndex >= 0) {
       state.updateQuantity(existingIndex, state.items[existingIndex].quantity + 0.5);
     } else {
-      const firstSize = product.sizes?.[0] || DEFAULT_SIZE;
-      const firstCutting = product.cuttingTypes?.[0] || DEFAULT_CUTTING.name;
-      const firstPieceSize = product.pieceSizes?.[0] || DEFAULT_PIECE_SIZE.name;
+      const firstSize = product.sizes?.[0] || product.weight || "unit";
+      const firstCutting = product.cuttingTypes?.[0] || "default";
+      const firstPieceSize = product.pieceSizes?.[0] || "default";
       state.addItem(product, 0.5, firstCutting, firstPieceSize, firstSize);
     }
   },

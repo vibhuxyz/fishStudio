@@ -81,12 +81,19 @@ const StatsCard = ({ title, value, icon: Icon, trend, trendValue, color }: any) 
 =========================== */
 
 export default function DashboardClient() {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { data: statsData } = useQuery({
     queryKey: ["seller", "stats", "month"],
     queryFn: async () => {
       const res = await axiosInstance.get(`/order/api/seller-stats?period=month`, isProtected);
       return res.data;
     },
+    staleTime: 1000 * 60 * 2, // 2 min — stats are cached on the server too
+    gcTime: 1000 * 60 * 5,
   });
 
   const { data: staffList = [] } = useQuery({
@@ -94,15 +101,19 @@ export default function DashboardClient() {
     queryFn: async () => {
       const res = await axiosInstance.get("/auth/api/seller/staffs", isProtected);
       return res.data.staffs || [];
-    }
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ["seller", "products"],
+  const { data: productsData } = useQuery({
+    queryKey: ["seller", "products", "count"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-owned-products", isProtected);
-      return res.data.products || [];
-    }
+      const res = await axiosInstance.get("/product/api/get-owned-products?page=1&limit=1", isProtected);
+      return res.data.pagination?.total ?? 0;
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 
   const stats = statsData?.stats;
@@ -129,9 +140,9 @@ export default function DashboardClient() {
             <Users size={18} />
             Go to Staff Page
           </Link>
-          <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-sm text-gray-300">
+          <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-sm text-gray-300 transition-opacity duration-300" style={{ opacity: mounted ? 1 : 0 }}>
             <Clock size={16} className="text-gray-500" />
-            Last updated: {new Date().toLocaleTimeString()}
+            Last updated: {mounted ? new Date().toLocaleTimeString() : "--:--:--"}
           </div>
         </div>
       </header>
@@ -162,7 +173,7 @@ export default function DashboardClient() {
         />
         <StatsCard 
           title="Shop Products" 
-          value={products.length} 
+          value={productsData ?? 0}
           icon={Package} 
           color="bg-indigo-500"
         />

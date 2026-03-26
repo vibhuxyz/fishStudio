@@ -7,7 +7,7 @@ import { Sidebar } from "../sidebar/sidebar.styles";
 import Link from "next/link";
 import SidebarItem from "../sidebar/sidebar.item";
 import SidebarMenu from "../sidebar/sidebar.menu";
-import { ListOrdered, LogOut, CheckCircle, XCircle } from "lucide-react";
+import { ListOrdered, LogOut, CheckCircle, XCircle, Boxes } from "lucide-react";
 import useSidebar from "@/hooks/useSidebar";
 import Logo from "@/assets/svgs/logo";
 import useRequireStaff from "@/hooks/useRequireStaff";
@@ -99,6 +99,17 @@ const StaffSidebar = () => {
                   <XCircle
                     size={26}
                     color={getIconColor("/staff/orders/rejected")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/staff/inventory"}
+                title="Inventory"
+                href="/staff/inventory"
+                icon={
+                  <Boxes
+                    size={26}
+                    color={getIconColor("/staff/inventory")}
                   />
                 }
               />

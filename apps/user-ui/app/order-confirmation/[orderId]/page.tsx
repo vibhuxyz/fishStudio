@@ -20,6 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OrderConfirmationPage() {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { orderId } = useParams();
   const router = useRouter();
 
@@ -74,13 +79,78 @@ export default function OrderConfirmationPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 space-y-6">
-        <Skeleton className="h-40 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Skeleton className="h-64 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
+      <div className="mx-auto max-w-3xl px-4 py-8 md:py-14 space-y-6">
+        {/* Success header skeleton */}
+        <div className="flex flex-col items-center space-y-3 mb-4">
+          <Skeleton className="h-20 w-20 rounded-full" />
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-5 w-72" />
         </div>
-        <Skeleton className="h-48 rounded-2xl" />
+
+        {/* Info cards grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Left card — order meta: date, address, slot, payment, status */}
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-start gap-3">
+                <Skeleton className="h-5 w-5 flex-shrink-0 rounded" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-2.5 w-20" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Right card — order items + bill */}
+          <div className="rounded-2xl border border-border bg-card p-6 flex flex-col justify-between">
+            <div>
+              <Skeleton className="mb-4 h-3 w-24" />
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 flex-shrink-0 rounded-lg" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-5 pt-4 border-t border-border space-y-2">
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+              <div className="flex justify-between">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-3 w-10" />
+              </div>
+              <div className="flex justify-between pt-2 border-t border-border">
+                <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-7 w-16" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Store info skeleton */}
+        <div className="rounded-2xl border border-border bg-card px-6 py-4 flex items-center gap-4">
+          <Skeleton className="h-6 w-6 flex-shrink-0 rounded" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-48" />
+          </div>
+        </div>
+
+        {/* Action buttons skeleton */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Skeleton className="h-14 w-full rounded-full sm:w-52" />
+          <Skeleton className="h-14 w-full rounded-full sm:w-48" />
+        </div>
       </div>
     );
   }
@@ -146,16 +216,22 @@ export default function OrderConfirmationPage() {
                 Order Placed
               </p>
               <p className="font-bold text-sm">
-                {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}{" "}
-                at{" "}
-                {new Date(order.createdAt).toLocaleTimeString("en-IN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {mounted ? (
+                  <>
+                    {new Date(order.createdAt).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}{" "}
+                    at{" "}
+                    {new Date(order.createdAt).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </>
+                ) : (
+                  "Loading date..."
+                )}
               </p>
             </div>
           </div>
@@ -246,8 +322,15 @@ export default function OrderConfirmationPage() {
                       {item.product?.title || "Product"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Qty: {item.quantity}
+                      Qty: {item.quantity} 
+                      {item.selectedOptions && (
+                        <>
+                          {" | "}
+                          {Object.values(item.selectedOptions).filter(Boolean).join(" | ")}
+                        </>
+                      )}
                     </p>
+
                   </div>
                   <span className="text-sm font-bold">
                     ₹{(item.price * item.quantity).toFixed(0)}
@@ -273,7 +356,14 @@ export default function OrderConfirmationPage() {
                 <span>₹{billDetails.extraCharge}</span>
               </div>
             ) : null}
-            {billDetails?.discount ? (
+            {billDetails?.discountBreakdown && Array.isArray(billDetails.discountBreakdown) ? (
+              (billDetails.discountBreakdown as any[]).map((item) => (
+                <div key={item.code} className="flex justify-between text-xs text-offer-green">
+                  <span>Coupon ({item.code})</span>
+                  <span>-₹{Number(item.amount).toFixed(0)}</span>
+                </div>
+              ))
+            ) : billDetails?.discount ? (
               <div className="flex justify-between text-xs text-offer-green">
                 <span>Discount</span>
                 <span>-₹{billDetails.discount}</span>

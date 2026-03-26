@@ -105,7 +105,7 @@ function ProductListCard({ title, icon, products, rankMode = false, isWarning = 
               )}
               <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden bg-gray-900 border border-gray-800 shadow-sm flex items-center justify-center">
                 {p.image ? (
-                  <Image src={p.image} alt={p.title} fill className="object-cover group-hover:scale-110 transition-transform" />
+                  <Image src={p.image} alt={p.title} fill sizes="48px" className="object-cover group-hover:scale-110 transition-transform" />
                 ) : (
                   <Package size={20} className="text-gray-600" />
                 )}

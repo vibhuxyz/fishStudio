@@ -279,6 +279,7 @@ const SellerProductDetailsPage = () => {
                     src={image.url || "/placeholder.png"}
                     alt={product.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, 400px"
                     className="object-cover"
                   />
                 </div>

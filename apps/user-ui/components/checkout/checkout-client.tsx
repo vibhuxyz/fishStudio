@@ -86,7 +86,7 @@ export function CheckoutClient() {
 
   // Auto-apply eligible coupon (including FirstOrder)
   useEffect(() => {
-    if (autoApplied || totalPrice === 0 || availableCoupons.length === 0) return;
+    if (appliedCoupons.length > 0 || autoApplied || totalPrice === 0 || availableCoupons.length === 0) return;
 
     // 1. Check for FIRSTORDER if user is new
     if (isNewUser) {
@@ -146,6 +146,10 @@ export function CheckoutClient() {
 
   // Cap discount so total never goes negative
   const rawDiscount = getTotalDiscount(totalPrice);
+  const discountBreakdown = appliedCoupons.map((c) => ({
+    code: c.code,
+    amount: useCouponStore.getState().getDiscountForCoupon(c, totalPrice),
+  }));
   const discount = Math.min(rawDiscount, totalPrice + totalDeliveryCost);
   const grandTotal = Math.max(0, totalPrice + totalDeliveryCost - discount);
 
@@ -167,7 +171,13 @@ export function CheckoutClient() {
           productId: item.product.id,
           quantity: item.quantity,
           price: item.totalPayable / item.quantity,
+          selectedOptions: {
+            cuttingType: item.cuttingType.name,
+            pieceSize: item.pieceSize.name,
+            size: item.size,
+          },
         })),
+
         deliveryDetails: {
           name: selectedAddress.name,
           phone: selectedAddress.phone,
@@ -180,6 +190,7 @@ export function CheckoutClient() {
           deliveryCharge,
           extraCharge: slotExtraCharge,
           discount,
+          discountBreakdown,
         },
         totalAmount: grandTotal,
         paymentMethod: "COD",
@@ -210,7 +221,41 @@ export function CheckoutClient() {
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-8">
 
+          {/* 0. Order Summary */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">0</div>
+              <h2 className="text-xl font-bold">Order Summary</h2>
+            </div>
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="divide-y divide-border">
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-4 p-4">
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-border">
+                      <img
+                        src={item.product?.image || "/placeholder.svg"}
+                        alt={item.product?.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold truncate">{item.product?.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.cuttingType.name} | {item.pieceSize.name} | {item.size}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs font-semibold">Qty: {item.quantity}</span>
+                        <span className="text-sm font-bold">₹{item.totalPayable.toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           {/* 1. Delivery Address – read-only, from cart sidebar */}
+
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
@@ -399,6 +444,7 @@ export function CheckoutClient() {
                 extraCharge={slotExtraCharge}
                 extraChargeLabel="Instant Delivery Fee"
                 discount={discount}
+                discountBreakdown={discountBreakdown}
                 onPlaceOrder={handlePlaceOrder}
                 isLoading={isPlacingOrder}
                 disabled={!selectedAddress || !selectedLocation?.storeId}

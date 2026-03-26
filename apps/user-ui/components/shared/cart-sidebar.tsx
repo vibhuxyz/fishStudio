@@ -115,7 +115,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   // Auto-apply one eligible auto coupon when cart opens / subtotal changes
   useEffect(() => {
     if (!open) return;
-    if (autoApplied) return;
+    if (appliedCoupons.length > 0 || autoApplied) return;
     if (subtotal === 0) return;
     const autoCoupon = availableCoupons.find(
       (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
@@ -274,8 +274,9 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   )}
                                 </div>
                                 <p className="truncate text-xs text-muted-foreground">
-                                  {item.cuttingType.name} | {item.pieceSize.name}
+                                  {item.cuttingType.name} | {item.pieceSize.name} | {item.size}
                                 </p>
+
                                 <p className="text-sm font-bold text-foreground">
                                   ₹{item.totalPayable.toFixed(0)}
                                 </p>
@@ -472,14 +473,20 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                         </span>
                         <span className="text-foreground">₹{handlingCharge}</span>
                       </div>
-                      {discount > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-offer-green">
-                            Coupon discount ({appliedCoupons.map((c) => c.code).join(", ")})
-                          </span>
-                          <span className="font-semibold text-offer-green">-₹{discount}</span>
-                        </div>
-                      )}
+                      {appliedCoupons.map((coupon) => {
+                        const amount = getDiscountForCoupon(coupon, subtotal);
+                        if (amount <= 0 && coupon.discountType !== "free_delivery") return null;
+                        return (
+                          <div key={coupon.code} className="flex justify-between">
+                            <span className="text-offer-green">
+                              Coupon ({coupon.code})
+                            </span>
+                            <span className="font-semibold text-offer-green">
+                              {coupon.discountType === "free_delivery" ? "FREE Delivery" : `-₹${amount.toFixed(0)}`}
+                            </span>
+                          </div>
+                        );
+                      })}
                       {tip > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Delivery tip</span>

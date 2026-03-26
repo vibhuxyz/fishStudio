@@ -2,6 +2,9 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "@repo/db";
 import { ENV } from "@repo/env-config";
+import { redis } from "@repo/libs";
+
+const AUTH_CACHE_TTL = 60; // seconds
 
 const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -31,6 +34,25 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         message: "Unauthorized! Token missing.",
       });
     }
+
+    // ── Redis cache check ──────────────────────────────────────────────────
+    const cacheKey = `auth:${token}`;
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        const data = JSON.parse(cached);
+        req.role = data.role;
+        if (data.seller) req.seller = data.seller;
+        if (data.staff) req.staff = data.staff;
+        if (data.admin) req.admin = data.admin;
+        if (data.user) req.user = data.user;
+        return next();
+      }
+    } catch {
+      // Redis unavailable — fall through to DB
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     // verify it
     const decode = jwt.verify(
       token,
@@ -81,6 +103,21 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       });
     }
     req.role = decode.role;
+
+    // ── Write to cache ─────────────────────────────────────────────────────
+    try {
+      const cacheData = {
+        role: decode.role,
+        seller: req.seller ?? null,
+        staff: req.staff ?? null,
+        admin: req.admin ?? null,
+        user: req.user ?? null,
+      };
+      await redis.set(cacheKey, JSON.stringify(cacheData), "EX", AUTH_CACHE_TTL);
+    } catch {
+      // Non-fatal: cache write failure doesn't block the request
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     return next();
   } catch (error: any) {

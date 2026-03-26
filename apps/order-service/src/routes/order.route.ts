@@ -2,12 +2,15 @@ import express, { Router } from "express";
 import {
   acceptOrRejectOrder,
   getSellerOrders,
+  updateOrderStatus,
+} from "../controllers/order/seller.controller.js";
+import {
   createOrder,
   getUserOrders,
   getOrderById,
-  updateOrderStatus,
-} from "../controllers/order.controller.js";
-import { getSellerStats, getAdminStats } from "../controllers/stats.controller.js";
+} from "../controllers/order/user.controller.js";
+import { getSellerStats, getAdminStats } from "../controllers/order/stats.controller.js";
+
 import { allowRoles, isAuthenticated, isSellerOrStaff } from "@repo/middlewares";
 
 const router: Router = express.Router();
@@ -24,6 +27,13 @@ router.get(
   isSellerOrStaff,
   getSellerOrders,
 );
+router.get(
+  "/get-order-details/:orderId",
+  isAuthenticated,
+  isSellerOrStaff,
+  getOrderById,
+);
+
 router.put(
   "/accept-reject/:orderId",
   isAuthenticated,

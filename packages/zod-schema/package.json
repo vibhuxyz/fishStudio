@@ -8,6 +8,7 @@
     "@repo/typescript-config": "workspace:*"
   },
   "peerDependencies": {
+    "@repo/typescript-config": "workspace:*",
     "typescript": "^5"
   }
 }

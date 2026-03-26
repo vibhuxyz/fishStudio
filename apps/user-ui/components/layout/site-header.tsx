@@ -1,90 +1,370 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart, LayoutGrid, Fish, MapPin, ChevronDown } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  ShoppingCart,
+  LayoutGrid,
+  Fish,
+  MapPin,
+  ChevronDown,
+  X,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CategoryMenu } from "./category-menu";
 import { useCart } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
 import { AddressModal } from "@/components/shared/address-modal";
+import { SearchModal } from "@/components/shared/search-modal";
 import { useAddressStore } from "@/lib/address-store";
 import { usePathname } from "next/navigation";
+import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
 
 interface SiteHeaderProps {
   onLoginClick?: () => void;
   onCartClick?: () => void;
 }
 
+/* ─── Search input ───────────────────────────────────────────────────────────
+   MUST be defined OUTSIDE SiteHeader so React does not remount it on every
+   re-render (which causes focus loss after the first keystroke).            */
+interface SearchInputProps {
+  value: string;
+  loading: boolean;
+  mobile?: boolean;
+  onChange: (v: string) => void;
+  onClear: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onFocus: () => void;
+}
+
+const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
+  ({ value, loading, mobile = false, onChange, onClear, onKeyDown, onFocus }, ref) => (
+    <div className="relative flex w-full items-center">
+      <div className="pointer-events-none absolute left-3 flex items-center">
+        {loading && value.length >= 1 ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <Search className="h-4 w-4 text-muted-foreground" />
+        )}
+      </div>
+      <input
+        ref={ref}
+        type="text"
+        value={value}
+        placeholder="Search for fish, meat, cuts…"
+        className={`w-full rounded-xl border border-border bg-muted/40 pl-9 pr-10 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary/20 ${
+          mobile ? "h-9 text-xs" : "h-10 sm:h-11"
+        }`}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+      />
+      {value && (
+        <button
+          type="button"
+          className="absolute right-2 rounded-full p-1 text-muted-foreground hover:text-foreground"
+          onClick={onClear}
+          tabIndex={-1}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  ),
+);
+SearchInput.displayName = "SearchInput";
+
+/* ─── Search panel ─────────────────────────────────────────────────────────── */
+function SearchPanel({
+  query,
+  suggestions,
+  results,
+  totalHits,
+  loading,
+  onSuggestionClick,
+  onProductClick,
+  onViewAll,
+}: {
+  query: string;
+  suggestions: SearchHit[];
+  results: SearchHit[];
+  totalHits: number;
+  loading: boolean;
+  onSuggestionClick: (slug: string) => void;
+  onProductClick: (slug: string) => void;
+  onViewAll: () => void;
+}) {
+  const hasContent = loading || suggestions.length > 0 || results.length > 0;
+  if (!hasContent) return null;
+
+  function highlight(text: string, q: string) {
+    const idx = text.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return <span>{text}</span>;
+    return (
+      <span>
+        {text.slice(0, idx)}
+        <strong className="font-bold text-foreground">
+          {text.slice(idx, idx + q.length)}
+        </strong>
+        {text.slice(idx + q.length)}
+      </span>
+    );
+  }
+
+  return (
+    <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[80vh] overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
+      {loading && results.length === 0 ? (
+        <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Searching…
+        </div>
+      ) : (
+        <div className="p-3">
+          {/* Suggestion rows */}
+          {suggestions.length > 0 && (
+            <ul className="mb-3 space-y-0.5">
+              {suggestions.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-muted/70"
+                    onClick={() => onSuggestionClick(s.slug)}
+                  >
+                    <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
+                      {s.imageUrl ? (
+                        <Image src={s.imageUrl} alt={s.title} fill sizes="36px" className="object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Fish className="h-4 w-4 text-muted-foreground/50" />
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {highlight(s.title, query)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Results grid */}
+          {results.length > 0 && (
+            <>
+              <div className="mb-3 flex items-center justify-between border-t border-border pt-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Showing results for{" "}
+                  <span className="text-foreground">"{query}"</span>
+                </p>
+                {totalHits > results.length && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    onClick={onViewAll}
+                  >
+                    View all {totalHits} <ArrowRight className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                {results.map((hit) => {
+                  const disc =
+                    hit.regular_price > 0 && hit.regular_price > hit.sale_price
+                      ? Math.round(
+                          ((hit.regular_price - hit.sale_price) / hit.regular_price) * 100,
+                        )
+                      : 0;
+                  return (
+                    <button
+                      key={hit.id}
+                      type="button"
+                      onClick={() => onProductClick(hit.slug)}
+                      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left transition-shadow hover:shadow-md"
+                    >
+                      <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                        {hit.imageUrl ? (
+                          <Image
+                            src={hit.imageUrl}
+                            alt={hit.title}
+                            fill
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Fish className="h-8 w-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        {disc > 0 && (
+                          <span className="absolute left-1.5 top-1.5 rounded-full bg-offer-green px-1.5 py-0.5 text-[9px] font-bold text-white">
+                            {disc}% OFF
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-0.5 px-2 pb-2 pt-1.5">
+                        <p className="line-clamp-2 text-xs font-semibold leading-snug text-foreground">
+                          {hit.title}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {hit.subCategory || hit.category}
+                        </p>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-foreground">
+                            ₹{hit.sale_price}
+                          </span>
+                          {disc > 0 && (
+                            <span className="text-[10px] text-muted-foreground line-through">
+                              ₹{hit.regular_price}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── SiteHeader ─────────────────────────────────────────────────────────── */
 export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { totalItems, totalPrice } = useCart();
   const modals = useModals();
+  const router = useRouter();
+  const pathname = usePathname();
+  const isCheckoutPage = pathname === "/checkout";
+  const isOrderConfirmationPage = pathname.startsWith("/order-confirmation");
+  const isCategoryOrProductPage = pathname.startsWith("/category") || pathname.startsWith("/product");
+  const shouldShowCategoryIcon = isScrolled || isCategoryOrProductPage;
+  const shouldHideCategoryBar = isScrolled || isCategoryOrProductPage || isCheckoutPage || isOrderConfirmationPage;
 
-  // FIX: Use selector to ensure re-render when selected address/location changes
+  const handleCartClick = onCartClick ?? modals.openCart;
+
+  const { suggestions, results, totalHits, loading, clear } =
+    useInstantSearch(searchQuery);
+
+  /* ── Effects ── */
+  useEffect(() => { setHydrated(true); }, []);
+
+  useEffect(() => {
+    const fn = () => setIsScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  // Close panel on outside click
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (
+        searchWrapRef.current &&
+        !searchWrapRef.current.contains(e.target as Node)
+      ) {
+        setPanelOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
+        setShowCategoryDropdown(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.length >= 1 && (loading || results.length > 0 || suggestions.length > 0)) {
+      setPanelOpen(true);
+    } else if (searchQuery.length < 1) {
+      setPanelOpen(false);
+    }
+  }, [searchQuery, loading, results, suggestions]);
+
+  /* ── Handlers ── */
+  const handleChange = (v: string) => {
+    setSearchQuery(v);
+    if (v.length >= 1) setPanelOpen(true);
+    else setPanelOpen(false);
+  };
+
+  const openSearchModal = (q: string) => {
+    if (!q.trim()) return;
+    setPanelOpen(false);
+    setSearchModalOpen(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") openSearchModal(searchQuery);
+    if (e.key === "Escape") { setPanelOpen(false); clear(); }
+  };
+
+  const handleSuggestionClick = (slug: string) => {
+    setPanelOpen(false);
+    setSearchQuery("");
+    clear();
+    router.push(`/product/${slug}`);
+  };
+
+  const handleProductClick = (slug: string) => {
+    setPanelOpen(false);
+    setSearchQuery("");
+    clear();
+    router.push(`/product/${slug}`);
+  };
+
+  const handleClear = () => {
+    setSearchQuery("");
+    clear();
+    setPanelOpen(false);
+    desktopInputRef.current?.focus();
+  };
+
+  const handleFocus = () => {
+    if (searchQuery.length >= 1) setPanelOpen(true);
+  };
+
+  /* ── Address display ── */
+  const hasAddresses = useAddressStore((s) => s.addresses.length > 0);
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const selectedAddress = useAddressStore((s) =>
     s.addresses.find((a) => a.id === s.selectedAddressId),
   );
-  const pathname = usePathname();
-  const isCheckoutPage = pathname === "/checkout";
- 
-  const handleCartClick = onCartClick ?? modals.openCart;
- 
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
- 
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 80);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
- 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowCategoryDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
- 
-  const handleIconEnter = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    setShowCategoryDropdown(true);
-  };
-  const handleIconLeave = () => {
-    hoverTimeoutRef.current = setTimeout(() => setShowCategoryDropdown(false), 250);
-  };
-  const handleDropdownEnter = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-  };
-  const handleDropdownLeave = () => {
-    hoverTimeoutRef.current = setTimeout(() => setShowCategoryDropdown(false), 250);
-  };
- 
-  const hasAddresses = useAddressStore((s) => s.addresses.length > 0);
   const deliveryLabel = (() => {
     if (!hydrated) return "...";
-    if (selectedAddress && selectedLocation?.deliveryTimeMinutes) {
+    if (selectedLocation?.deliveryTimeMinutes)
       return `in ${selectedLocation.deliveryTimeMinutes} min`;
-    }
-    if (selectedLocation?.deliveryTimeMinutes) {
-      return `in ${selectedLocation.deliveryTimeMinutes} min`;
-    }
     if (selectedLocation) return "soon";
     return "";
   })();
@@ -92,29 +372,45 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const addressLine = (() => {
     if (!hydrated) return "Select location";
     if (selectedAddress) {
-      const parts = [selectedAddress.street, selectedAddress.area, selectedAddress.city].filter(Boolean);
+      const parts = [
+        selectedAddress.street,
+        selectedAddress.area,
+        selectedAddress.city,
+      ].filter(Boolean);
       return parts.join(", ");
     }
-    if (selectedLocation) return `${selectedLocation.city} · ${selectedLocation.pincode}`;
+    if (selectedLocation)
+      return `${selectedLocation.city} · ${selectedLocation.pincode}`;
     return hasAddresses ? "Select saved address" : "Enter your address";
   })();
 
   const addressShort =
     addressLine.length > 32 ? addressLine.slice(0, 32) + "…" : addressLine;
 
+  const sharedInputProps = {
+    value: searchQuery,
+    loading,
+    onChange: handleChange,
+    onClear: handleClear,
+    onKeyDown: handleKeyDown,
+    onFocus: handleFocus,
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300">
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
 
-          {/* ── Logo ── */}
+          {/* Logo */}
           <Link href="/" className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
               <Fish className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
             </div>
             {!isCheckoutPage && (
               <div className="hidden flex-col lg:flex">
-                <span className="font-serif text-base font-bold leading-tight text-foreground">Fish Studio</span>
+                <span className="font-serif text-base font-bold leading-tight text-foreground">
+                  Fish Studio
+                </span>
                 <span className="text-[9px] text-muted-foreground">Fresh Fish & Meat</span>
               </div>
             )}
@@ -122,95 +418,123 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
           {isCheckoutPage ? (
             <div className="flex flex-1 items-center justify-center">
-              <span className="text-sm font-bold tracking-widest text-muted-foreground uppercase">Secure Checkout</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                Secure Checkout
+              </span>
             </div>
           ) : (
             <>
-      {/* ── Delivery address block (Blinkit-style) ── */}
-      <button
-        type="button"
-        className="flex min-w-0 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:px-3"
-        onClick={() => setShowAddressModal(true)}
-        aria-label="Change delivery address"
-      >
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] font-bold text-offer-green sm:text-xs">
-            {hydrated && (selectedLocation || selectedAddress) ? `Delivery ${deliveryLabel}` : (hasAddresses ? "Deliver to" : "Set Location")}
-          </span>
-          <ChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
-        </div>
-        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-          <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
-          <span className="max-w-[80px] truncate font-medium text-foreground xs:max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
-            {hydrated ? addressShort : "Select location"}
-          </span>
-        </span>
-      </button>
-
-      {/* ── Desktop Search Bar ── */}
-      <div className="relative hidden min-w-0 flex-1 items-center md:flex" ref={dropdownRef}>
-                <div className="relative flex w-full items-center">
-                  <Input
-                    type="text"
-                    placeholder="Search for any delicious..."
-                    className="h-9 rounded-lg border-border bg-muted/50 pl-3 pr-16 text-sm sm:h-11 sm:pl-4 sm:pr-24"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <div className="absolute right-1 flex items-center gap-0.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground sm:h-9 sm:w-9"
-                    >
-                      <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span className="sr-only">Search</span>
-                    </Button>
-                  </div>
+              {/* Delivery address */}
+              <button
+                type="button"
+                className="flex min-w-0 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:px-3"
+                onClick={() => setShowAddressModal(true)}
+              >
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-offer-green sm:text-xs">
+                    {hydrated && (selectedLocation || selectedAddress)
+                      ? `Delivery ${deliveryLabel}`
+                      : hasAddresses
+                        ? "Deliver to"
+                        : "Set Location"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </div>
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
+                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                  <span className="max-w-[80px] truncate font-medium text-foreground xs:max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
+                    {hydrated ? addressShort : "Select location"}
+                  </span>
+                </span>
+              </button>
 
+              {/* Desktop search */}
+              <div
+                ref={searchWrapRef}
+                className="relative hidden min-w-0 flex-1 md:block"
+              >
+                <SearchInput ref={desktopInputRef} {...sharedInputProps} />
                 <AnimatePresence>
-                  {/* Search results or other search-related dropdowns could go here */}
+                  {panelOpen && (
+                    <motion.div
+                      ref={panelRef}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.12 }}
+                    >
+                      <SearchPanel
+                        query={searchQuery}
+                        suggestions={suggestions}
+                        results={results}
+                        totalHits={totalHits}
+                        loading={loading}
+                        onSuggestionClick={handleSuggestionClick}
+                        onProductClick={handleProductClick}
+                        onViewAll={() => openSearchModal(searchQuery)}
+                      />
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </div>
 
-              {/* ── Category Icon on Scroll ── */}
-              <div className="relative">
+              {/* Category icon on scroll */}
+              <div className="relative" ref={dropdownRef}>
                 <AnimatePresence>
-                  {isScrolled && (
+                  {shouldShowCategoryIcon && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
-                      className="flex-shrink-0"
-                      onMouseEnter={handleIconEnter}
-                      onMouseLeave={handleIconLeave}
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        setShowCategoryDropdown(true);
+                      }}
+                      onMouseLeave={() => {
+                        hoverTimeoutRef.current = setTimeout(
+                          () => setShowCategoryDropdown(false),
+                          250,
+                        );
+                      }}
                     >
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-9 w-9 sm:h-10 sm:w-10 ${showCategoryDropdown ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary hover:bg-primary/5"}`}
+                        className={`h-9 w-9 sm:h-10 sm:w-10 ${
+                          showCategoryDropdown
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:text-primary hover:bg-primary/5"
+                        }`}
                       >
                         <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6" />
-                        <span className="sr-only">Categories</span>
                       </Button>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
                 <AnimatePresence>
-                  {showCategoryDropdown && isScrolled && (
+                  {showCategoryDropdown && shouldShowCategoryIcon && (
                     <motion.div
                       initial={{ opacity: 0, y: 10, x: 20 }}
                       animate={{ opacity: 1, y: 0, x: 0 }}
                       exit={{ opacity: 0, y: 10, x: 20 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute right-0 top-full z-50 mt-2"
-                      onMouseEnter={handleDropdownEnter}
-                      onMouseLeave={handleDropdownLeave}
+                      onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                      }}
+                      onMouseLeave={() => {
+                        hoverTimeoutRef.current = setTimeout(
+                          () => setShowCategoryDropdown(false),
+                          250,
+                        );
+                      }}
                     >
-                      <CategoryMenu variant="mega" onClose={() => setShowCategoryDropdown(false)} />
+                      <CategoryMenu
+                        variant="mega"
+                        onClose={() => setShowCategoryDropdown(false)}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -218,10 +542,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
             </>
           )}
 
-          {/* ── Right: Account + Cart ── */}
+          {/* Account + Cart */}
           <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
             <UserProfileDropdown onAddressClick={() => setShowAddressModal(true)} />
-
             {!isCheckoutPage && (
               <button
                 type="button"
@@ -232,7 +555,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
                 }`}
               >
-                <ShoppingCart className="h-4 w-4 flex-shrink-0 sm:h-5 sm:w-5" />
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                 {hydrated && totalItems > 0 ? (
                   <span className="flex flex-col items-start text-left">
                     <span className="text-[9px] font-semibold leading-none sm:text-[10px]">
@@ -245,33 +568,45 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 ) : (
                   <span className="hidden text-xs font-medium sm:inline">Cart</span>
                 )}
-                <span className="sr-only">Open cart</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Mobile Search Row ── */}
+        {/* Mobile search row */}
         {!isCheckoutPage && (
-          <div className="px-3 pb-2 md:hidden">
-            <div className="relative flex w-full items-center">
-              <Input
-                type="text"
-                placeholder="Search for any delicious..."
-                className="h-9 rounded-lg border-border bg-muted/50 pl-3 pr-10 text-xs"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <Search className="absolute right-3 h-4 w-4 text-muted-foreground" />
-            </div>
+          <div ref={searchWrapRef} className="px-3 pb-2 md:hidden">
+            <SearchInput mobile {...sharedInputProps} />
+            <AnimatePresence>
+              {panelOpen && (
+                <motion.div
+                  ref={panelRef}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  transition={{ duration: 0.12 }}
+                >
+                  <SearchPanel
+                    query={searchQuery}
+                    suggestions={suggestions}
+                    results={results}
+                    totalHits={totalHits}
+                    loading={loading}
+                    onSuggestionClick={handleSuggestionClick}
+                    onProductClick={handleProductClick}
+                    onViewAll={() => openSearchModal(searchQuery)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
-        {/* Category bar — hides on scroll or on checkout */}
+        {/* Category bar */}
         {!isCheckoutPage && (
           <div
             className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
-            style={{ maxHeight: isScrolled ? 0 : 200 }}
+            style={{ maxHeight: shouldHideCategoryBar ? 0 : 200 }}
           >
             <CategoryMenu variant="horizontal" />
           </div>
@@ -279,8 +614,18 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       </header>
 
       <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
-      {/* Spacer to prevent content from going under the fixed header */}
-      <div className={`${isScrolled ? "h-[60px] md:h-[72px]" : "h-[108px] md:h-[120px]"}`} />
+      <SearchModal
+        open={searchModalOpen}
+        initialQuery={searchQuery}
+        onClose={() => {
+          setSearchModalOpen(false);
+          clear();
+          setSearchQuery("");
+        }}
+      />
+      <div
+        className={`${shouldHideCategoryBar ? "h-[60px] md:h-[72px]" : "h-[140px] md:h-[152px]"}`}
+      />
     </>
   );
 }

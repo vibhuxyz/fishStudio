@@ -88,11 +88,6 @@ export type staffs = Prisma.staffsModel
  */
 export type stores = Prisma.storesModel
 /**
- * Model storeReviews
- * 
- */
-export type storeReviews = Prisma.storeReviewsModel
-/**
  * Model favorites
  * 
  */

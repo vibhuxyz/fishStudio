@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronLeft,
   ChevronRight,
@@ -47,6 +48,7 @@ export function CategoryMenu({
 
   const categories: string[] = data?.categories ?? [];
   const subCategoriesData: Record<string, string[]> = data?.subCategories ?? {};
+  const categoryImages: Record<string, string> = data?.categoryImages ?? {};
 
   const getSubCategories = useCallback(
     (cat: string) => {
@@ -122,14 +124,14 @@ export function CategoryMenu({
     const subCats = activeCategory ? getSubCategories(activeCategory) : [];
 
     return (
-      <div className="relative" onMouseLeave={startClose}>
+      <div className="relative">
         {/* Category nav row */}
-        <div className="relative flex h-12 items-center border-t border-border bg-background">
+        <div className="relative flex h-20 items-center border-t border-border bg-background">
           {canScrollLeft && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-0 z-10 h-full w-8 rounded-none bg-background/95 text-muted-foreground hover:text-primary"
+              className="absolute left-0 z-10 h-full w-8 rounded-none bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-colors"
               onClick={() => scroll("left")}
               aria-label="Scroll categories left"
             >
@@ -139,23 +141,33 @@ export function CategoryMenu({
 
           <nav
             ref={scrollRef}
-            className="hide-scrollbar mx-auto flex h-full items-center justify-center gap-1 overflow-x-auto px-10"
+            className="hide-scrollbar mx-auto flex h-full items-center justify-start gap-5 overflow-x-auto px-10"
             aria-label="Product categories"
           >
             {categories.map((cat) => (
               <Link
                 key={cat}
                 href={`/category/${getCategorySlug(cat)}`}
-                className={`flex flex-shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  activeCategory === cat
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-                onMouseEnter={() => openCategory(cat)}
-                onFocus={() => openCategory(cat)}
+                className="flex flex-col items-center gap-1 group transition-transform duration-200 hover:scale-105"
               >
-                <span className="text-primary">{categoryIcons[cat]}</span>
-                <span className="whitespace-nowrap">{cat}</span>
+                <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border bg-muted/20 shadow-sm group-hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
+                  {categoryImages[cat] ? (
+                    <Image
+                      src={categoryImages[cat]}
+                      alt={cat}
+                      fill
+                      sizes="48px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gray-50">
+                      <Fish className="h-5 w-5 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <span className="whitespace-nowrap text-[10px] font-bold tracking-tight text-muted-foreground/80 transition-colors group-hover:text-primary">
+                  {cat}
+                </span>
               </Link>
             ))}
           </nav>
@@ -164,7 +176,7 @@ export function CategoryMenu({
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 z-10 h-full w-8 rounded-none bg-background/95 text-muted-foreground hover:text-primary"
+              className="absolute right-0 z-10 h-full w-8 rounded-none bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-colors"
               onClick={() => scroll("right")}
               aria-label="Scroll categories right"
             >
@@ -172,39 +184,6 @@ export function CategoryMenu({
             </Button>
           )}
         </div>
-
-        {/* Subcategory panel - positioned so it connects seamlessly with the nav row above */}
-        <AnimatePresence>
-          {activeCategory && subCats.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute left-0 right-0 top-12 z-50 overflow-hidden border-b border-border bg-background shadow-lg"
-              onMouseEnter={keepOpen}
-              onMouseLeave={startClose}
-            >
-              <div className="mx-auto max-w-5xl px-6 py-4">
-                <h3 className="mb-3 text-sm font-semibold text-foreground">
-                  {activeCategory}
-                </h3>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                  {subCats.map((sub) => (
-                    <Link
-                      key={sub}
-                      href={`/category/${getCategorySlug(activeCategory)}?sub=${encodeURIComponent(sub)}`}
-                      className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                      onClick={onClose}
-                    >
-                      {sub}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   }
@@ -231,8 +210,19 @@ export function CategoryMenu({
                 onMouseEnter={() => openCategory(cat)}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm group-hover:shadow-md">
-                    {categoryIcons[cat] || <Fish className="h-6 w-6" />}
+                  <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/5 shadow-sm group-hover:shadow-md">
+                    {categoryImages[cat] ? (
+                      <Image
+                        src={categoryImages[cat]}
+                        alt={cat}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                    ) : (
+                      <span className="text-primary transition-colors group-hover:text-primary-foreground">
+                        {categoryIcons[cat] || <Fish className="h-6 w-6" />}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <Link
@@ -309,8 +299,12 @@ export function CategoryMenu({
             }`}
             onMouseEnter={() => openCategory(cat)}
           >
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-muted">
-              {categoryIcons[cat]}
+            <span className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+              {categoryImages[cat] ? (
+                <Image src={categoryImages[cat]} alt={cat} fill sizes="32px" className="object-cover" />
+              ) : (
+                categoryIcons[cat]
+              )}
             </span>
             <span>{cat}</span>
           </button>

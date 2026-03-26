@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { frontendEnv } from "@/lib/env";
 
 export type Coupon = {
@@ -27,7 +28,9 @@ interface CouponState {
   fetchAvailableCoupons: (storeId: string) => Promise<void>;
 }
 
-export const useCouponStore = create<CouponState>((set, get) => ({
+export const useCouponStore = create<CouponState>()(
+  persist(
+    (set, get) => ({
   appliedCoupons: [],
   autoApplied: false,
   availableCoupons: [],
@@ -144,4 +147,9 @@ export const useCouponStore = create<CouponState>((set, get) => ({
       return total + getDiscountForCoupon(coupon, subtotal);
     }, 0);
   },
-}));
+    }),
+    {
+      name: "fish-studio-coupons",
+    }
+  )
+);

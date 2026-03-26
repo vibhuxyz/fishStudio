@@ -140,8 +140,8 @@ export function ProductCard({
                   src={product.image || "/placeholder.svg"}
                   alt={product.name}
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  sizes="(max-width: 768px) 50vw, 220px"
                   placeholder="blur"
                   blurDataURL={BLUR_DATA}
                   priority={priority}

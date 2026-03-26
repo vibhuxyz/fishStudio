@@ -14,19 +14,23 @@ import Link from "next/link";
 import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 
-const fetchOrders = async () => {
-  const res = await axiosInstance.get("/order/api/get-seller-orders");
-  return res.data.orders;
+const fetchOrders = async (page: number) => {
+  const res = await axiosInstance.get(`/order/api/get-seller-orders?page=${page}&limit=20`);
+  return { orders: res.data.orders ?? [], pagination: res.data.pagination };
 };
 
 const OrdersTable = () => {
   const [globalFilter, setGlobalFilter] = useState("");
+  const [page, setPage] = useState(1);
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["seller-orders"],
-    queryFn: fetchOrders,
+  const { data, isLoading } = useQuery({
+    queryKey: ["seller-orders", page],
+    queryFn: () => fetchOrders(page),
     staleTime: 1000 * 60 * 5,
   });
+
+  const orders = data?.orders ?? [];
+  const pagination = data?.pagination;
 
   const columns = useMemo(
     () => [
@@ -168,6 +172,32 @@ const OrdersTable = () => {
           <p className="text-center py-3 text-white">No Orders found!</p>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-400">
+          <span>{pagination.total} total orders</span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={!pagination.hasPrevPage}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-lg bg-gray-800 px-3 py-1.5 text-white disabled:opacity-40 hover:bg-gray-700 transition"
+            >
+              Prev
+            </button>
+            <span className="text-white font-medium">
+              {pagination.page} / {pagination.totalPages}
+            </span>
+            <button
+              disabled={!pagination.hasNextPage}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-lg bg-gray-800 px-3 py-1.5 text-white disabled:opacity-40 hover:bg-gray-700 transition"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

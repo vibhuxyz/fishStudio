@@ -7,10 +7,11 @@ import {
   trackOtpRequests,
   verifyOtp,
 } from "../utils/auth.helper.js";
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
+import { redis } from "@repo/libs";
 
 // ─── Register staff (step 1 – send OTP) ───────────────────────────────────────
 export const registerStaff = async (
@@ -67,7 +68,7 @@ export const verifyStaff = async (
     }
 
     await verifyOtp(email, otp, next);
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await argon2.hash(password);
 
     const staff = await prisma.staffs.create({
       data: {
@@ -105,6 +106,10 @@ export const getStaff = async (
 
 // ─── Logout staff ─────────────────────────────────────────────────────────────
 export const logOutStaff = async (req: any, res: Response) => {
+  const token = req.cookies["staff_access_token"];
+  if (token) {
+    try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
+  }
   res.clearCookie("staff_access_token");
   res.clearCookie("staff_refresh_token");
   res.status(200).json({ success: true });

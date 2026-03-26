@@ -4,6 +4,7 @@ import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
 import { ENV } from "@repo/env-config";
+import { initMeilisearchIndex } from "./lib/meilisearch.js";
 
 const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6002;
 
@@ -25,6 +26,7 @@ app.use(errorMiddleware);
 // Bind to 0.0.0.0 so the API Gateway can reach it inside Docker
 const server = app.listen(port, "0.0.0.0", () => {
   console.log(`Product Service server is running on port ${port}`);
+  initMeilisearchIndex();
 });
 
 server.on("error", (err) => {

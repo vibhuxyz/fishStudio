@@ -22,7 +22,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     <QueryClientProvider client={queryClient}>
       {/*<ProvidersWithWebSocket>{children}</ProvidersWithWebSocket>*/}
       {children}
-      <Toaster />
+      <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 };

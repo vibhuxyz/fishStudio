@@ -361,7 +361,7 @@ const SellerDetailPage = () => {
                           <span className="text-xs font-bold text-amber-400 w-5">#{i + 1}</span>
                           <div className="relative h-8 w-8 shrink-0 rounded overflow-hidden bg-gray-800">
                             {p.image ? (
-                              <Image src={p.image} alt={p.title} fill className="object-cover" />
+                              <Image src={p.image} alt={p.title} fill sizes="48px" className="object-cover" />
                             ) : (
                               <Package size={14} className="m-auto text-gray-500 mt-1" />
                             )}

@@ -58,9 +58,28 @@ export default function OrdersPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-4">
-        <Skeleton className="h-8 w-40" />
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-3">
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3.5 w-20" />
+          </div>
+        </div>
+        {/* Order card skeletons matching real layout: image + info + status badge */}
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-28 w-full rounded-2xl" />
+          <div key={i} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4">
+            <Skeleton className="h-16 w-16 flex-shrink-0 rounded-xl" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-4 w-4 flex-shrink-0 rounded" />
+          </div>
         ))}
       </div>
     );
