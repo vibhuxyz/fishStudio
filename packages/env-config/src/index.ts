@@ -24,7 +24,7 @@ export const ENV = {
   PORT: process.env.PORT || "8080",
   API_GATEWAY_PORT: process.env.API_GATEWAY_PORT || process.env.PORT || "8080",
   AUTH_SERVICE_PORT: process.env.AUTH_SERVICE_PORT || "6001",
-  PRODUCT_SERVICE_PORT: process.env.PRODUCT_SERVICE_PORT || "6002",
+  PRODUCT_SERVICE_PORT: process.env.PRODUCT_SERVICE_PORT || "6003",
   ORDER_SERVICE_PORT: process.env.ORDER_SERVICE_PORT || "6004",
   NOTIFICATION_SERVICE_PORT: process.env.NOTIFICATION_SERVICE_PORT || "6005",
   WORKER_SERVICE_PORT: process.env.WORKER_SERVICE_PORT || "6006",
@@ -63,7 +63,7 @@ export const ENV = {
   PRODUCT_SERVICE_URL: logEnv(
     "PRODUCT_SERVICE_URL",
     process.env.PRODUCT_SERVICE_URL ||
-      `http://localhost:${process.env.PRODUCT_SERVICE_PORT || "6002"}`,
+      `http://localhost:${process.env.PRODUCT_SERVICE_PORT || "6003"}`,
   ),
   ORDER_SERVICE_URL: logEnv(
     "ORDER_SERVICE_URL",

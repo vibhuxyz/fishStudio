@@ -9,7 +9,7 @@ import router from "./routes/product.routes.js";
 import { ENV } from "@repo/env-config";
 import { initMeilisearchIndex } from "./lib/meilisearch.js";
 
-const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6002;
+const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6003;
 
 const app = express();
 

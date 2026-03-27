@@ -1,5 +1,4 @@
 services:
-  # --- API GATEWAY (Entry Point) ---
   api-gateway:
     container_name: api-gateway
     image: 10xdevian134/api-gateway:prod
@@ -8,12 +7,21 @@ services:
       dockerfile: docker/api-gateway/Dockerfile
     restart: always
     ports:
-      - "80:8080" # Maps public traffic to Gateway
+      - "80:8080"
     env_file: .env.prod
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+      - notification-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:6001
+      PRODUCT_SERVICE_URL: http://product-service:6003
+      ORDER_SERVICE_URL: http://order-service:6004
+      NOTIFICATION_SERVICE_URL: http://notification-service:6005
     networks:
       - fish-studio-net
 
-  # --- AUTH SERVICE ---
   auth-service:
     container_name: auth-service
     image: 10xdevian134/auth-service:prod
@@ -22,6 +30,8 @@ services:
       dockerfile: docker/auth-service/Dockerfile
     restart: always
     env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
     expose:
       - "6001"
     networks:
@@ -29,7 +39,6 @@ services:
         aliases:
           - auth-service
 
-  # --- PRODUCT SERVICE ---
   product-service:
     container_name: product-service
     image: 10xdevian134/product-service:prod
@@ -38,6 +47,8 @@ services:
       dockerfile: docker/product-service/Dockerfile
     restart: always
     env_file: .env.prod
+    depends_on:
+      - meilisearch
     expose:
       - "6003"
     networks:
@@ -45,7 +56,6 @@ services:
         aliases:
           - product-service
 
-  # --- PRODUCT SERVICE ---
   order-service:
     container_name: order-service
     image: 10xdevian134/order-service:prod
@@ -54,14 +64,32 @@ services:
       dockerfile: docker/order-service/Dockerfile
     restart: always
     env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
     expose:
-      - "6003"
+      - "6004"
     networks:
       fish-studio-net:
         aliases:
-          - product-service
+          - order-service
 
-  # --- RABBITMQ BROKER ---
+  notification-service:
+    container_name: notification-service
+    image: 10xdevian134/notification-service:prod
+    build:
+      context: .
+      dockerfile: docker/notification-service/Dockerfile
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    expose:
+      - "6005"
+    networks:
+      fish-studio-net:
+        aliases:
+          - notification-service
+
   rabbitmq-service:
     container_name: rabbitmq-service
     image: rabbitmq:3-management-alpine
@@ -78,7 +106,6 @@ services:
         aliases:
           - rabbitmq-service
 
-  # --- MEILISEARCH ---
   meilisearch:
     container_name: meilisearch
     image: getmeili/meilisearch:latest
@@ -94,9 +121,8 @@ services:
         aliases:
           - meilisearch
 
-  # --- RABBITMQ WORKER ---
   worker-service:
-    container_name: worker-worker
+    container_name: worker-service
     image: 10xdevian134/worker-service:prod
     build:
       context: .
@@ -106,7 +132,9 @@ services:
     depends_on:
       - rabbitmq-service
     networks:
-      - fish-studio-net
+      fish-studio-net:
+        aliases:
+          - worker-service
 
 networks:
   fish-studio-net:

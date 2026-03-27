@@ -85,7 +85,7 @@ app.get("/gateway-health", (req, res) => {
 
 // 4. PROXY ROUTES
 const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
-const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6002";
+const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6003";
 const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
 const notificationUrl = ENV.NOTIFICATION_SERVICE_URL || "http://localhost:6005";
 

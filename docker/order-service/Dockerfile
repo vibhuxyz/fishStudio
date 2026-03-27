@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
 
-FROM oven/bun:1 AS pruner
+FROM oven/bun:1.3.10 AS pruner
 WORKDIR /app
 COPY . .
 RUN bunx turbo prune --docker --scope=@repo/order-service
 
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.3.10 AS builder
 WORKDIR /app
 
 COPY --from=pruner /app/out/json/ .
@@ -40,6 +40,6 @@ COPY --from=builder /app/apps/order-service ./apps/order-service
 
 WORKDIR /app/apps/order-service
 
-EXPOSE 6002
+EXPOSE 6004
 
 CMD ["node", "dist/main.js"]
