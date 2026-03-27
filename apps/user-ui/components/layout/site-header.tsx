@@ -10,10 +10,14 @@ import {
   LayoutGrid,
   Fish,
   MapPin,
+  Home,
+  Briefcase,
+  MoreHorizontal,
   ChevronDown,
   X,
   Loader2,
   ArrowRight,
+  Clock3,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -391,24 +395,42 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
     // Priority 2: Backend status from CartStore if cart validation has run
     if (deliveryMetadata.isStoreOpen === false) {
-      return `Closed • Opens at ${deliveryMetadata.openingHours || "9 AM"}`;
+      return {
+        primary: "Delivery Scheduled order available",
+        secondary: `Opens at ${deliveryMetadata.openingHours || "9 AM"}`,
+      };
     }
 
     if (deliveryMetadata.cartDeliveryTime) {
-      return `Delivery in ${deliveryMetadata.cartDeliveryTime} min`;
+      return {
+        primary: `Delivery in ${deliveryMetadata.cartDeliveryTime} minutes`,
+        secondary: null,
+      };
     }
 
     // Priority 3: Fallback to initial location metadata if validation hasn't run or is fresh
     if (selectedLocation) {
       if (selectedLocation.isOpen === false) {
-        return `Closed • Opens at ${selectedLocation.opening_hours || "9 AM"}`;
+        return {
+          primary: "Delivery Scheduled order available",
+          secondary: `Opens at ${selectedLocation.opening_hours || "9 AM"}`,
+        };
       }
       if (selectedLocation.deliveryTimeMinutes) {
-        return `Delivery in ${selectedLocation.deliveryTimeMinutes} min`;
+        return {
+          primary: `Delivery in ${selectedLocation.deliveryTimeMinutes} minutes`,
+          secondary: null,
+        };
       }
-      return "Delivery soon";
+      return {
+        primary: "Delivery soon",
+        secondary: null,
+      };
     }
-    return "";
+    return {
+      primary: "",
+      secondary: null,
+    };
   })();
 
   const addressLine = (() => {
@@ -439,6 +461,20 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   const addressShort =
     addressLine.length > 32 ? addressLine.slice(0, 32) + "…" : addressLine;
+
+  const addressTypeLabel = selectedAddress?.label || null;
+  const addressTypeIcon = selectedAddress?.label === "Home"
+    ? Home
+    : selectedAddress?.label === "Work"
+      ? Briefcase
+      : MoreHorizontal;
+  const AddressTypeIcon = addressTypeIcon;
+
+  const serviceableAreaLabel = selectedLocation
+    ? `${selectedLocation.city} · ${selectedLocation.pincode}`
+    : selectedAddress
+      ? `${selectedAddress.city} · ${selectedAddress.pincode}`
+      : "Select location";
 
   const sharedInputProps = {
     value: searchQuery,
@@ -486,20 +522,41 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 className="flex min-w-0 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:px-3"
                 onClick={() => setShowAddressModal(true)}
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-bold text-offer-green sm:text-xs">
                     {hydrated && (selectedLocation || selectedAddress)
-                      ? `Delivery ${deliveryLabel}`
+                      ? deliveryLabel.primary
                       : hasAddresses
                         ? "Deliver to"
                         : "Set Location"}
                   </span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </div>
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground sm:text-[11px]">
-                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                {deliveryLabel.secondary ? (
+                  <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground sm:text-[11px]">
+                    <Clock3 className="h-3 w-3 flex-shrink-0" />
+                    {deliveryLabel.secondary}
+                  </span>
+                ) : null}
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                  {addressTypeLabel ? (
+                    <AddressTypeIcon className="h-2.5 w-2.5 flex-shrink-0" />
+                  ) : (
+                    <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                  )}
+                  {addressTypeLabel ? (
+                    <span className="max-w-[48px] truncate text-[9px] font-semibold uppercase tracking-wide text-foreground/80 xs:max-w-[64px] sm:max-w-[72px]">
+                      {addressTypeLabel}
+                    </span>
+                  ) : null}
                   <span className="max-w-[80px] truncate font-medium text-foreground xs:max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
                     {hydrated ? addressShort : "Select location"}
+                  </span>
+                </span>
+                <span className="flex items-center gap-1 text-[9px] text-muted-foreground/90">
+                  <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
+                  <span className="max-w-[150px] truncate">
+                    {serviceableAreaLabel}
                   </span>
                 </span>
               </button>

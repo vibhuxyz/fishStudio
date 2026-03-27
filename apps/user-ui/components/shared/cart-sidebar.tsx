@@ -259,12 +259,14 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           {deliveryMetadata.isStoreOpen ? (
                             <>Delivery in {deliveryMetadata.cartDeliveryTime || selectedLocation?.deliveryTimeMinutes || 30} minutes</>
                           ) : (
-                            <>Closed • Opens at {deliveryMetadata.openingHours || "9 AM"}</>
+                            <>Scheduled order available • Opens at {deliveryMetadata.openingHours || "9 AM"}</>
                           )}
                           {deliveryMetadata.storeName && ` from ${deliveryMetadata.storeName}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Shipment of {items.length} item{items.length > 1 ? "s" : ""}
+                          {deliveryMetadata.isStoreOpen
+                            ? `Shipment of ${items.length} item${items.length > 1 ? "s" : ""}`
+                            : "Quick delivery is off right now. You can place a scheduled order."}
                         </p>
                       </div>
                     </div>
@@ -690,7 +692,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                 <div className="px-4 pb-4">
                   <Button
                     className="w-full rounded-xl bg-offer-green py-4 text-base font-bold text-white hover:bg-offer-green/90"
-                    disabled={!deliveryMetadata.isServiceable || !deliveryMetadata.isStoreOpen || items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
+                    disabled={!deliveryMetadata.isServiceable || items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
                     onClick={() => {
                       if (!isLoggedIn) {
                         onOpenChange(false);
@@ -727,11 +729,11 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                       <span className="text-base font-bold">
                         {!deliveryMetadata.isServiceable
                           ? "Check Address"
-                          : !deliveryMetadata.isStoreOpen
-                            ? "Store Closed"
-                            : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
+                          : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
                               ? "Invalid Cart" 
-                              : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
+                              : !deliveryMetadata.isStoreOpen
+                                ? (isLoggedIn ? "Schedule Order >" : "Login to Checkout")
+                                : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
                       </span>
                     </div>
                   </Button>

@@ -35,6 +35,7 @@ export function CartPageClient() {
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const syncItems = useCartStore((s) => s.syncItems);
+  const deliveryMetadata = useCartStore((s) => s.deliveryMetadata);
   const [isSyncing, setIsSyncing] = useState(false);
 
   const {
@@ -199,8 +200,16 @@ export function CartPageClient() {
               <Clock className="h-5 w-5 text-accent" />
             </div>
             <div>
-              <p className="font-semibold text-foreground">Delivery in 30 minutes</p>
-              <p className="text-xs text-muted-foreground">Shipment of {items.length} item{items.length > 1 ? "s" : ""}</p>
+              <p className="font-semibold text-foreground">
+                {deliveryMetadata.isStoreOpen
+                  ? `Delivery in ${deliveryMetadata.cartDeliveryTime || selectedLocation?.deliveryTimeMinutes || 30} minutes`
+                  : `Scheduled order available • Opens at ${deliveryMetadata.openingHours || "9 AM"}`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {deliveryMetadata.isStoreOpen
+                  ? `Shipment of ${items.length} item${items.length > 1 ? "s" : ""}`
+                  : "Quick delivery is off right now. You can place a scheduled order."}
+              </p>
             </div>
           </div>
 

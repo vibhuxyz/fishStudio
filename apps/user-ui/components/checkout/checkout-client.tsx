@@ -50,6 +50,7 @@ export function CheckoutClient() {
   });
 
   const [selectedSlot, setSelectedSlot] = useState<string>("morning");
+  const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
 
   // Sync cart data to get latest delivery slots and fees
   const { syncItems } = useCartStore();
@@ -380,28 +381,54 @@ export function CheckoutClient() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">2</div>
               <h2 className="text-xl font-bold">Delivery Slot</h2>
             </div>
+            {!deliveryMetadata.isStoreOpen && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-900">
+                  Shop is closed right now. Scheduled ordering is still available.
+                </p>
+                <p className="mt-1 text-xs text-amber-700">
+                  Quick delivery is off. Please choose a morning or evening slot.
+                </p>
+              </div>
+            )}
             <div className="space-y-3">
               {/* Instant */}
-              {deliveryMetadata.availableSlots.includes("instant") && (
-                <div
-                  onClick={() => setSelectedSlot("instant")}
-                  className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
-                    selectedSlot === "instant" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">⚡</span>
-                    <div>
-                      <p className="font-bold text-sm">Instant Delivery (30-45 mins)</p>
-                      <p className="text-xs text-muted-foreground">Our rider will be at your doorstep shortly</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-destructive">+₹{deliveryMetadata.instantFee} extra</p>
-                    {selectedSlot === "instant" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
+              <div
+                onClick={() => {
+                  if (isInstantAvailable) {
+                    setSelectedSlot("instant");
+                  }
+                }}
+                className={`rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                  isInstantAvailable
+                    ? `cursor-pointer ${selectedSlot === "instant" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`
+                    : "cursor-not-allowed border-border bg-muted/40 opacity-70"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">⚡</span>
+                  <div>
+                    <p className="font-bold text-sm">Instant Delivery (30-45 mins)</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isInstantAvailable
+                        ? "Our rider will be at your doorstep shortly"
+                        : deliveryMetadata.isStoreOpen
+                          ? "Quick delivery is off right now"
+                          : "Quick delivery is off while the shop is closed"}
+                    </p>
                   </div>
                 </div>
-              )}
+                <div className="text-right">
+                  {isInstantAvailable ? (
+                    <>
+                      <p className="text-xs font-bold text-destructive">+₹{deliveryMetadata.instantFee} extra</p>
+                      {selectedSlot === "instant" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
+                    </>
+                  ) : (
+                    <p className="text-xs font-bold text-muted-foreground">Quick delivery off</p>
+                  )}
+                </div>
+              </div>
 
               {/* Morning */}
               <div
