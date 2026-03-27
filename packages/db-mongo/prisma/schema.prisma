@@ -63,6 +63,7 @@ model images {
   users     users[]
   stores    stores[]
 
+  @@unique([productId, file_id])
   @@index([productId])
 }
 
@@ -187,7 +188,15 @@ model stores {
   address       String
   city          String
   pincode       String
-  opening_hours String
+  opening_hours String   // e.g. "09:00"
+  closing_hours String   // e.g. "23:00"
+  
+  // Instant Delivery Settings
+  is_instant_delivery_enabled Boolean @default(true)
+  instant_delivery_fee      Float   @default(20)
+  instant_delivery_window_start String @default("11:00")
+  instant_delivery_window_end   String @default("19:00")
+
   availableCities   String[] // Cities served by this store
   cityDeliveryTimes Json?    // Map of city name -> delivery minutes e.g. {"Bathnaha": 20, "motipur": 10}
   state             String?  // State of the store location
@@ -241,7 +250,8 @@ model site_config {
 model products {
   id                   String @id @default(auto()) @map("_id") @db.ObjectId
   title                String
-  slug                 String @unique
+  slug                 String? @unique
+  isCatalog            Boolean @default(false)
   category             String
   subCategory          String
   short_description    String

@@ -16,7 +16,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await fetchStorefrontProductBySlug(decodeURIComponent(slug));
+  const { product } = await fetchStorefrontProductBySlug(decodeURIComponent(slug));
   if (!product) return { title: "Product Not Found" };
 
   const title = `${product.name} | Fish Studio`;
@@ -53,24 +53,16 @@ export async function generateMetadata({
 // 2. Inner Component (Fetches Data)
 async function ProductContent({ slug }: { slug: string }) {
   const decodedSlug = decodeURIComponent(slug);
-  const [product, products] = await Promise.all([
-    fetchStorefrontProductBySlug(decodedSlug),
-    fetchStorefrontProducts(),
-  ]);
+  const { product, relatedProducts, coupon } = await fetchStorefrontProductBySlug(decodedSlug);
 
   if (!product) notFound();
 
-  const relatedProducts = [
-    ...products.filter(
-      (p) => p.subCategory === product.subCategory && p.id !== product.id,
-    ),
-    ...products.filter(
-      (p) => p.category === product.category && p.id !== product.id,
-    ),
-  ].slice(0, 8);
-
   return (
-    <ProductDetailClient product={product} relatedProducts={relatedProducts} />
+    <ProductDetailClient 
+      product={product} 
+      relatedProducts={relatedProducts} 
+      coupon={coupon}
+    />
   );
 }
 

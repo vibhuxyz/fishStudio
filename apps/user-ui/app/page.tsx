@@ -53,7 +53,7 @@ function BannerFallbackCard() {
 
 // ---- Products section with its own error handling -------------------------
 function ProductSections() {
-  const { allProducts, displayBestsellers, displayFavorites, isLoading, isError } =
+  const { allProducts, displayBestsellers, displayFavorites, randomCategory, randomCategoryProducts, isLoading, isError } =
     useProducts();
 
   if (isError) {
@@ -82,11 +82,12 @@ function ProductSections() {
     <>
       <ProductCarouselSection
         title="Live-Cut. Fresh. Packed For You."
-        subtitle="Our Products"
+        subtitle="Customer Favorite Product"
         products={ourProducts}
         priorityImages
         variant="compact"
         isLoading={isLoading}
+        viewAllHref="/search"
       />
       <ProductCarouselSection
         title="Quick Delivery FAV"
@@ -94,6 +95,7 @@ function ProductSections() {
         products={displayFavorites}
         variant="compact"
         isLoading={isLoading}
+        viewAllHref="/search"
       />
       <ProductCarouselSection
         title="Live-Cut. Fresh. Packed For You."
@@ -101,7 +103,19 @@ function ProductSections() {
         products={displayBestsellers}
         variant="full"
         isLoading={isLoading}
+        viewAllHref="/search"
       />
+
+      {randomCategory && randomCategoryProducts.length > 0 && (
+        <ProductCarouselSection
+          title={`Best of ${randomCategory}`}
+          subtitle="Explore More"
+          products={randomCategoryProducts}
+          variant="compact"
+          isLoading={isLoading}
+          viewAllHref={`/category/${randomCategory.toLowerCase()}`}
+        />
+      )}
     </>
   );
 }

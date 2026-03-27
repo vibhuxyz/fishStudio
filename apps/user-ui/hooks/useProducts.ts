@@ -39,6 +39,15 @@ export function useProducts() {
 
   const favoriteProducts = allProducts.filter((p) => p.isFavorite).slice(0, 8);
 
+  // 3. Random Category Section (Rotates every 2 hours)
+  const categories = Array.from(new Set(allProducts.map((p) => p.category)));
+  const twoHourSeed = Math.floor(Date.now() / (1000 * 60 * 60 * 2));
+  const randomCategoryIndex = twoHourSeed % (categories.length || 1);
+  const randomCategory = categories[randomCategoryIndex] || "";
+  const randomCategoryProducts = allProducts
+    .filter((p) => p.category === randomCategory)
+    .slice(0, 8);
+
   // Helper functions exposed directly from the hook
   const getProductsByCategory = (category: string) =>
     allProducts.filter((p) => p.category === category);
@@ -48,6 +57,8 @@ export function useProducts() {
     allProducts,
     bestsellerProducts,
     favoriteProducts,
+    randomCategory,
+    randomCategoryProducts,
     getProductsByCategory,
     // Fallback logic: If no bestsellers, just show top products
     displayBestsellers:

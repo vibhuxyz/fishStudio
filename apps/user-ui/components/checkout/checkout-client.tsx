@@ -39,11 +39,43 @@ export function CheckoutClient() {
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<"instant" | "morning" | "evening">(() => {
-    const hour = new Date().getHours();
-    // 7am–3pm → default evening; otherwise → morning
-    return hour >= 7 && hour < 15 ? "evening" : "morning";
+  const [deliveryMetadata, setDeliveryMetadata] = useState<{
+    availableSlots: string[];
+    instantFee: number;
+    isStoreOpen: boolean;
+  }>({
+    availableSlots: ["morning", "evening"],
+    instantFee: 20,
+    isStoreOpen: true,
   });
+
+  const [selectedSlot, setSelectedSlot] = useState<string>("morning");
+
+  // Sync cart data to get latest delivery slots and fees
+  const { syncItems } = useCartStore();
+  useEffect(() => {
+    if (items.length > 0) {
+      syncItems().then((res) => {
+        if (res) {
+          setDeliveryMetadata({
+            availableSlots: res.availableSlots || ["morning", "evening"],
+            instantFee: res.instantFee || 20,
+            isStoreOpen: res.isStoreOpen !== false,
+          });
+          
+          // Auto-select best available slot
+          if (res.availableSlots?.includes("instant")) {
+            setSelectedSlot("instant");
+          } else {
+            // Default to evening if its daytime, otherwise morning
+            const hour = new Date().getHours();
+            const preferred = hour >= 7 && hour < 15 ? "evening" : "morning";
+            setSelectedSlot(res.availableSlots?.includes(preferred) ? preferred : (res.availableSlots?.[0] || "morning"));
+          }
+        }
+      });
+    }
+  }, [items.length]);
 
   // Check if user is new
   useEffect(() => {
@@ -134,7 +166,7 @@ export function CheckoutClient() {
     );
   }
 
-  const slotExtraCharge = selectedSlot === "instant" ? 20 : 0;
+  const slotExtraCharge = selectedSlot === "instant" ? deliveryMetadata.instantFee : 0;
   const baseDeliveryCharge = totalPrice > 500 ? 0 : 49;
   const isFreeDelivery = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && totalPrice >= c.minOrderValue
@@ -350,24 +382,26 @@ export function CheckoutClient() {
             </div>
             <div className="space-y-3">
               {/* Instant */}
-              <div
-                onClick={() => setSelectedSlot("instant")}
-                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
-                  selectedSlot === "instant" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">⚡</span>
-                  <div>
-                    <p className="font-bold text-sm">Instant Delivery (30-45 mins)</p>
-                    <p className="text-xs text-muted-foreground">Our rider will be at your doorstep shortly</p>
+              {deliveryMetadata.availableSlots.includes("instant") && (
+                <div
+                  onClick={() => setSelectedSlot("instant")}
+                  className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                    selectedSlot === "instant" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚡</span>
+                    <div>
+                      <p className="font-bold text-sm">Instant Delivery (30-45 mins)</p>
+                      <p className="text-xs text-muted-foreground">Our rider will be at your doorstep shortly</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-destructive">+₹{deliveryMetadata.instantFee} extra</p>
+                    {selectedSlot === "instant" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-bold text-destructive">+₹20 extra</p>
-                  {selectedSlot === "instant" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
-                </div>
-              </div>
+              )}
 
               {/* Morning */}
               <div

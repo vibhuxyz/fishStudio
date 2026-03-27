@@ -15,6 +15,11 @@ export const createStore = async (
       bio,
       address,
       opening_hours,
+      closing_hours,
+      is_instant_delivery_enabled,
+      instant_delivery_fee,
+      instant_delivery_window_start,
+      instant_delivery_window_end,
       sellerId,
       city,
       pincode,
@@ -30,6 +35,11 @@ export const createStore = async (
       city,
       pincode,
       opening_hours,
+      closing_hours,
+      is_instant_delivery_enabled,
+      instant_delivery_fee,
+      instant_delivery_window_start,
+      instant_delivery_window_end,
       availableCities,
       sellerId,
       ...(state !== undefined && { state }),
@@ -93,6 +103,7 @@ export const updateStore = async (
         bio: validatedData.bio || store.bio,
         address: validatedData.address || store.address,
         opening_hours: validatedData.opening_hours || store.opening_hours,
+        closing_hours: validatedData.closing_hours || store.closing_hours,
         city: validatedData.city || store.city,
         pincode: validatedData.pincode || store.pincode,
         availableCities: validatedData.availableCities || store.availableCities,
@@ -160,27 +171,44 @@ export const checkPincode = async (
           { availableCities: { has: String(pincode) } },
         ],
       },
-      select: {
-        id: true,
-        name: true,
-        city: true,
-        state: true,
-        availableCities: true,
-        cityDeliveryTimes: true,
-      },
-    });
-
-    if (!store) {
-      return res.status(200).json({
-        success: false,
-        message: "No store found for this pincode",
+          select: {
+          id: true,
+          name: true,
+          city: true,
+          state: true,
+          opening_hours: true,
+          closing_hours: true,
+          availableCities: true,
+          cityDeliveryTimes: true,
+        },
       });
-    }
 
-    res.status(200).json({
-      success: true,
-      store,
-    });
+      if (!store) {
+        return res.status(200).json({
+          success: false,
+          message: "No store found for this pincode",
+        });
+      }
+
+      // Calculate openness
+      const now = new Date();
+      const nowTotal = now.getHours() * 60 + now.getMinutes();
+      const toMins = (timeStr: string) => {
+        const [h, m] = timeStr.split(":").map(Number);
+        return (h || 0) * 60 + (m || 0);
+      };
+      
+      const openTotal = toMins(store.opening_hours || "09:00");
+      const closeTotal = toMins(store.closing_hours || "23:00");
+      const isOpen = nowTotal >= openTotal && nowTotal <= closeTotal;
+
+      res.status(200).json({
+        success: true,
+        store: {
+          ...store,
+          isOpen,
+        },
+      });
   } catch (error) {
     next(error);
   }

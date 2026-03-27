@@ -18,7 +18,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CategoryMenu } from "./category-menu";
-import { useCart } from "@/lib/cart-store";
+import { useCart, useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
 import { AddressModal } from "@/components/shared/address-modal";
@@ -105,8 +105,10 @@ function SearchPanel({
   onProductClick: (slug: string) => void;
   onViewAll: () => void;
 }) {
-  const hasContent = loading || suggestions.length > 0 || results.length > 0;
-  if (!hasContent) return null;
+  const hasMatches = suggestions.length > 0 || results.length > 0;
+  const showNoResults = !loading && query.length >= 2 && !hasMatches;
+
+  if (!loading && !hasMatches && !showNoResults) return null;
 
   function highlight(text: string, q: string) {
     const idx = text.toLowerCase().indexOf(q.toLowerCase());
@@ -115,8 +117,7 @@ function SearchPanel({
       <span>
         {text.slice(0, idx)}
         <strong className="font-bold text-foreground">
-          {text.slice(idx, idx + q.length)}
-        </strong>
+          {text.slice(idx, idx + q.length)}</strong>
         {text.slice(idx + q.length)}
       </span>
     );
@@ -124,10 +125,18 @@ function SearchPanel({
 
   return (
     <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[80vh] overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
-      {loading && results.length === 0 ? (
+      {loading && !hasMatches ? (
         <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Searching…
+        </div>
+      ) : showNoResults ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Fish className="mb-3 h-10 w-10 text-muted-foreground/20" />
+          <p className="text-sm font-medium text-foreground">No products found</p>
+          <p className="text-xs text-muted-foreground mt-1 px-4">
+            Try searching for "Rohu", "Pomfret", or "Hilsa"
+          </p>
         </div>
       ) : (
         <div className="p-3">
@@ -364,12 +373,41 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const selectedAddress = useAddressStore((s) =>
     s.addresses.find((a) => a.id === s.selectedAddressId),
   );
+  const { deliveryMetadata, syncItems } = useCartStore();
+  const locationVersion = useAddressStore((s) => s.locationVersion);
+
+  // Synchronize cart and header metadata whenever location changes
+  useEffect(() => {
+    syncItems();
+  }, [locationVersion]);
 
   const deliveryLabel = (() => {
     if (!hydrated) return "...";
-    if (selectedLocation?.deliveryTimeMinutes)
-      return `in ${selectedLocation.deliveryTimeMinutes} min`;
-    if (selectedLocation) return "soon";
+    
+    // Priority 1: Serviceability from backend
+    if (deliveryMetadata.isServiceable === false) {
+      return "Not serviceable";
+    }
+
+    // Priority 2: Backend status from CartStore if cart validation has run
+    if (deliveryMetadata.isStoreOpen === false) {
+      return `Closed • Opens at ${deliveryMetadata.openingHours || "9 AM"}`;
+    }
+
+    if (deliveryMetadata.cartDeliveryTime) {
+      return `Delivery in ${deliveryMetadata.cartDeliveryTime} min`;
+    }
+
+    // Priority 3: Fallback to initial location metadata if validation hasn't run or is fresh
+    if (selectedLocation) {
+      if (selectedLocation.isOpen === false) {
+        return `Closed • Opens at ${selectedLocation.opening_hours || "9 AM"}`;
+      }
+      if (selectedLocation.deliveryTimeMinutes) {
+        return `Delivery in ${selectedLocation.deliveryTimeMinutes} min`;
+      }
+      return "Delivery soon";
+    }
     return "";
   })();
 

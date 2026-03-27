@@ -70,10 +70,9 @@ export const uploadCloudinaryImage = async (
         cloudFolder += `/homepage`;
       }
     }
-    const uploadPromises = imageList.map(async (base64, index) => {
+    const uploadPromises = imageList.map(async (base64) => {
       const response = await cloudinary.uploader.upload(base64, {
         folder: cloudFolder,
-        public_id: `image${index + 1}`,
         resource_type: "auto",
         overwrite: true,
         quality: "auto:good",

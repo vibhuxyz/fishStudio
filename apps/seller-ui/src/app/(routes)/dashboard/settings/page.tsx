@@ -20,7 +20,12 @@ export default function SettingsPage() {
     address: "",
     city: "",
     pincode: "",
-    opening_hours: "",
+    opening_hours: "09:00",
+    closing_hours: "21:00",
+    is_instant_delivery_enabled: true,
+    instant_delivery_fee: 20,
+    instant_delivery_window_start: "11:00",
+    instant_delivery_window_end: "19:00",
   });
 
   const [cityDeliveries, setCityDeliveries] = useState<CityDelivery[]>([]);
@@ -30,12 +35,12 @@ export default function SettingsPage() {
   useEffect(() => {
     if (seller?.store) {
       setFormData({
-        name: seller.store.name || "",
-        bio: seller.store.bio || "",
-        address: seller.store.address || "",
-        city: seller.store.city || "",
-        pincode: seller.store.pincode || "",
-        opening_hours: seller.store.opening_hours || "",
+        opening_hours: seller.store.opening_hours || "09:00",
+        closing_hours: seller.store.closing_hours || "21:00",
+        is_instant_delivery_enabled: seller.store.is_instant_delivery_enabled ?? true,
+        instant_delivery_fee: seller.store.instant_delivery_fee ?? 20,
+        instant_delivery_window_start: seller.store.instant_delivery_window_start || "11:00",
+        instant_delivery_window_end: seller.store.instant_delivery_window_end || "19:00",
       });
 
       // Convert cityDeliveryTimes map back to array
@@ -168,17 +173,26 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium text-gray-300">Opening Hours</label>
+              <label className="text-sm font-medium text-gray-300">Opening Time</label>
               <input
-                type="text"
+                type="time"
                 value={formData.opening_hours}
                 onChange={(e) => setFormData((f) => ({ ...f, opening_hours: e.target.value }))}
-                placeholder="e.g. 8 AM – 8 PM"
-                className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
               />
             </div>
 
             <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-300">Closing Time</label>
+              <input
+                type="time"
+                value={formData.closing_hours}
+                onChange={(e) => setFormData((f) => ({ ...f, closing_hours: e.target.value }))}
+                className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="col-span-2 space-y-1">
               <label className="text-sm font-medium text-gray-300">Store Address</label>
               <input
                 type="text"
@@ -188,6 +202,66 @@ export default function SettingsPage() {
                 className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Delivery Configuration */}
+        <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+          <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
+            <Clock className="h-5 w-5 text-blue-400" />
+            <h2 className="text-lg font-semibold">Delivery Configuration</h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex items-center justify-between col-span-2 p-4 rounded-lg bg-gray-700/30 border border-gray-600/50">
+              <div>
+                <h3 className="font-medium text-white">Enable Instant Delivery</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Allow customers to choose fast 30-45 min delivery</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData(f => ({ ...f, is_instant_delivery_enabled: !f.is_instant_delivery_enabled }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.is_instant_delivery_enabled ? 'bg-blue-600' : 'bg-gray-600'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.is_instant_delivery_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {formData.is_instant_delivery_enabled && (
+              <>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-300">Instant Delivery Window (Start)</label>
+                  <input
+                    type="time"
+                    value={formData.instant_delivery_window_start}
+                    onChange={(e) => setFormData((f) => ({ ...f, instant_delivery_window_start: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-300">Instant Delivery Window (End)</label>
+                  <input
+                    type="time"
+                    value={formData.instant_delivery_window_end}
+                    onChange={(e) => setFormData((f) => ({ ...f, instant_delivery_window_end: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-1">
+                  <label className="text-sm font-medium text-gray-300">Instant Delivery Surcharge (₹)</label>
+                  <input
+                    type="number"
+                    value={formData.instant_delivery_fee}
+                    onChange={(e) => setFormData((f) => ({ ...f, instant_delivery_fee: Number(e.target.value) }))}
+                    placeholder="e.g. 20"
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <p className="text-[10px] text-gray-500 italic mt-1">This fee is added to the bill when Instant Delivery is selected.</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

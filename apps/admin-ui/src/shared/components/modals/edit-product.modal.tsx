@@ -1,8 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { X, Trash2, Plus, Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
 import {
   getCategoryConfigKey,
   useAdminCategories,
@@ -23,7 +27,10 @@ const EditProductModal = ({
   onClose,
   onSave,
 }: EditProductModalProps) => {
-  const { register, handleSubmit, reset, watch } = useForm<UpdateProductPayload>({
+  const [images, setImages] = useState(product.images || []);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const { register, handleSubmit, reset, watch, setValue } = useForm<UpdateProductPayload>({
     defaultValues: {
       productId: product.id,
       title: product.title,
@@ -45,7 +52,64 @@ const EditProductModal = ({
       short_description: product.short_description || "",
       tags: product.tags?.join(", ") || "",
     });
+    setImages(product.images || []);
   }, [product, reset]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (images.length + files.length > 5) {
+      toast.error("Max 5 images allowed");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Single file check
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} is too large (max 5MB)`);
+          continue;
+        }
+
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
+        const res = await axiosInstance.post(
+          "/product/api/admin/upload-cloudinary-image",
+          {
+            images: [base64],
+            folder: "products",
+            productTitle: product.title,
+          },
+          isProtected
+        );
+
+        if (res.data.success && res.data.images?.[0]) {
+          const newImg = {
+            url: res.data.images[0].file_url,
+            file_id: res.data.images[0].fileId,
+          };
+          setImages((prev) => [...prev, newImg]);
+        }
+      }
+      toast.success("Images uploaded");
+    } catch (err) {
+      toast.error("Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const selectedCategory = watch("category");
   const { data: categoryConfig } = useAdminCategories();
@@ -150,6 +214,49 @@ const EditProductModal = ({
             their shop.
           </div>
 
+          <div className="md:col-span-2 space-y-2">
+            <label className="block text-sm text-gray-300">Product Images (Max 5)</label>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+              {images.map((img, idx) => (
+                <div key={idx} className="relative aspect-square rounded-md overflow-hidden bg-gray-900 border border-gray-700 group">
+                  <Image
+                    src={img.url}
+                    alt={`Product ${idx}`}
+                    fill
+                    className="object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteImage(idx)}
+                    className="absolute top-1 right-1 p-1 bg-red-500/80 rounded flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+              {images.length < 5 && (
+                <label className="relative aspect-square rounded-md border-2 border-dashed border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-gray-500 hover:bg-gray-700/30 transition">
+                  {isUploading ? (
+                    <Loader2 className="animate-spin text-blue-500" size={24} />
+                  ) : (
+                    <>
+                      <Plus className="text-gray-400" size={24} />
+                      <span className="text-[10px] text-gray-500 mt-1 uppercase">Add</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                </label>
+              )}
+            </div>
+          </div>
+
           <div className="md:col-span-2">
             <label className="block text-sm text-gray-300 mb-1">
               Short Description
@@ -171,7 +278,8 @@ const EditProductModal = ({
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isUploading}
+              onClick={handleSubmit((values) => onSave({ ...values, images }))}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Changes"}

@@ -6,10 +6,13 @@ import React from "react";
 import { frontendEnv } from "@/config/env";
 
 const ProductCard = ({ product }: { product: any }) => {
-  const firstImageUrl =
-    Array.isArray(product?.images) && product.images.length > 0
-      ? product.images[0]?.url
-      : null;
+  const images = (Array.isArray(product?.images) && product.images.length > 0)
+    ? product.images
+    : (Array.isArray(product?.catalogProduct?.images) && product.catalogProduct.images.length > 0)
+      ? product.catalogProduct.images
+      : [];
+
+  const firstImageUrl = images.length > 0 ? images[0]?.url : null;
 
   // Calculate Discount
   const regularPrice = product?.regular_price || 0;

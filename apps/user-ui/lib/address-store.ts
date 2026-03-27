@@ -24,12 +24,15 @@ export interface SelectedLocation {
   pincode: string;
   city: string;
   deliveryTimeMinutes?: number;
+  isOpen?: boolean;
+  opening_hours?: string;
 }
 
 interface AddressState {
   addresses: Address[];
   selectedAddressId: string | null;
   selectedLocation: SelectedLocation | null;
+  locationVersion: number;
   addAddress: (address: Omit<Address, "id">) => void;
   updateAddress: (id: string, address: Partial<Address>) => void;
   removeAddress: (id: string) => void;
@@ -46,8 +49,13 @@ export const useAddressStore = create<AddressState>()(
       addresses: [],
       selectedAddressId: null,
       selectedLocation: null,
+      locationVersion: 0,
 
-      setSelectedLocation: (location: SelectedLocation | null) => set({ selectedLocation: location }),
+      setSelectedLocation: (location: SelectedLocation | null) =>
+        set((state) => ({
+          selectedLocation: location,
+          locationVersion: state.locationVersion + 1,
+        })),
 
       setAddresses: (addresses: Address[]) =>
         set((state) => {
@@ -68,6 +76,7 @@ export const useAddressStore = create<AddressState>()(
         set((state) => ({
           addresses: [...state.addresses, newAddress],
           selectedAddressId: newAddress.id,
+          locationVersion: state.locationVersion + 1,
         }));
       },
 
@@ -88,11 +97,16 @@ export const useAddressStore = create<AddressState>()(
               state.selectedAddressId === id
                 ? (filtered[0]?.id ?? null)
                 : state.selectedAddressId,
+            locationVersion: state.locationVersion + 1,
           };
         });
       },
 
-      selectAddress: (id: string) => set({ selectedAddressId: id }),
+      selectAddress: (id: string) =>
+        set((state) => ({
+          selectedAddressId: id,
+          locationVersion: state.locationVersion + 1,
+        })),
 
       getSelectedAddress: () => {
         const { addresses, selectedAddressId } = get();
@@ -100,7 +114,12 @@ export const useAddressStore = create<AddressState>()(
       },
 
       clearAddresses: () =>
-        set({ addresses: [], selectedAddressId: null, selectedLocation: null }),
+        set({
+          addresses: [],
+          selectedAddressId: null,
+          selectedLocation: null,
+          locationVersion: 0,
+        }),
     }),
     {
       name: "fish-studio-addresses",

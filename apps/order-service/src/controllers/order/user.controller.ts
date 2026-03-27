@@ -126,8 +126,46 @@ export const createOrder = async (
       itemTotal += dbProduct.sale_price * item.quantity;
     }
 
-    /* ── 2. Delivery charge (base ₹49, free above ₹500) ─────────────────── */
-    const slotExtraCharge = deliverySlot === "instant" ? 20 : 0;
+    /* ── 2. Fetch Store for Delivery Details ──────────────────────────── */
+    const store = await prismaMongo.stores.findUnique({
+      where: { id: storeId },
+      select: { 
+        instant_delivery_fee: true, 
+        opening_hours: true, 
+        closing_hours: true,
+        is_instant_delivery_enabled: true,
+        instant_delivery_window_start: true,
+        instant_delivery_window_end: true
+      }
+    });
+
+    if (!store) {
+      return next(new ValidationError("Store not found"));
+    }
+
+    // Server-side slot validation
+    if (deliverySlot === "instant") {
+      const now = new Date();
+      const nowTotal = now.getHours() * 60 + now.getMinutes();
+      const toMins = (timeStr: string) => {
+        const [h, m] = timeStr.split(":").map(Number);
+        return (h || 0) * 60 + (m || 0);
+      };
+
+      const openTotal = toMins(store.opening_hours || "09:00");
+      const closeTotal = toMins(store.closing_hours || "23:00");
+      const isStoreOpen = nowTotal >= openTotal && nowTotal <= closeTotal;
+
+      const instantStart = toMins(store.instant_delivery_window_start || "11:00");
+      const instantEnd = toMins(store.instant_delivery_window_end || "19:00");
+      const isInstantAvailable = isStoreOpen && store.is_instant_delivery_enabled && nowTotal >= instantStart && nowTotal <= instantEnd;
+
+      if (!isInstantAvailable) {
+        return next(new ValidationError("Instant delivery is not available currently. Please select a scheduled slot."));
+      }
+    }
+
+    const slotExtraCharge = deliverySlot === "instant" ? (store.instant_delivery_fee || 20) : 0;
     let baseDeliveryCharge = itemTotal >= 500 ? 0 : 49;
 
     /* ── 3. Validate coupon server-side ──────────────────────────────────── */

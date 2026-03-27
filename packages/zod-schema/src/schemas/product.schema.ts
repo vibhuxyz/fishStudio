@@ -90,7 +90,13 @@ export const updateProductStockSchema = z.object({
 });
 
 export const validateCartSchema = z.object({
-  productIds: z.array(z.string()).min(1, "At least one product ID is required"),
+  cartItems: z.array(z.object({
+    productId: z.string(),
+    quantity: z.number().nonnegative(),
+  })).min(1, "At least one item is required"),
+  pincode: z.string().min(6, "Pincode is required"),
+  city: z.string().optional(),
+  storeId: z.string().optional(),
 });
 
 export const updateProductSchema = productSchema.partial();

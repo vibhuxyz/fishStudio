@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { frontendEnv } from "@/lib/env";
+import { useAddressStore } from "@/lib/address-store";
 
 export interface SearchHit {
   id: string;
@@ -23,12 +24,13 @@ export interface SearchResult {
 
 export async function fetchSearch(
   q: string,
-  opts?: { category?: string; sort?: string; limit?: number },
+  opts?: { storeId?: string; category?: string; sort?: string; limit?: number },
   signal?: AbortSignal,
 ): Promise<SearchResult> {
   const params = new URLSearchParams({ q });
   if (opts?.category) params.set("category", opts.category);
   if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.storeId) params.set("storeId", opts.storeId);
   params.set("limit", String(opts?.limit ?? 10));
 
   const url = `${frontendEnv.apiUrl}/product/api/search?${params}`;
@@ -54,6 +56,7 @@ export function useInstantSearch(query: string, debounceMs = 220) {
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const storeId = useAddressStore((s) => s.selectedLocation?.storeId);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -78,10 +81,10 @@ export function useInstantSearch(query: string, debounceMs = 220) {
         // Suggestions (limit 5) + full results (limit 8) in parallel
         const [suggestRes, searchRes] = await Promise.all([
           fetch(
-            `${frontendEnv.apiUrl}/product/api/search/suggestions?q=${encodeURIComponent(q)}`,
+            `${frontendEnv.apiUrl}/product/api/search/suggestions?q=${encodeURIComponent(q)}${storeId ? `&storeId=${storeId}` : ""}`,
             { credentials: "include", signal },
           ).then((r) => r.json()),
-          fetchSearch(q, { limit: 8 }, signal),
+          fetchSearch(q, { storeId, limit: 8 }, signal),
         ]);
 
         setSuggestions(
@@ -99,7 +102,7 @@ export function useInstantSearch(query: string, debounceMs = 220) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query, debounceMs]);
+  }, [query, debounceMs, storeId]);
 
   const clear = useCallback(() => {
     setSuggestions([]);
@@ -122,6 +125,7 @@ export function usePageSearch(
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const storeId = useAddressStore((s) => s.selectedLocation?.storeId);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -141,7 +145,7 @@ export function usePageSearch(
       try {
         const res = await fetchSearch(
           q,
-          { category: opts.category, sort: opts.sort, limit: 20 },
+          { storeId, category: opts.category, sort: opts.sort, limit: 20 },
           abortRef.current.signal,
         );
         setHits(res.hits);
@@ -156,7 +160,7 @@ export function usePageSearch(
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query, opts.category, opts.sort, debounceMs]);
+  }, [query, opts.category, opts.sort, debounceMs, storeId]);
 
   return { hits, totalHits, loading };
 }

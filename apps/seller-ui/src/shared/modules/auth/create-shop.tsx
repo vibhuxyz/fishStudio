@@ -35,6 +35,7 @@ const CreateShop = ({
       address: "",
       pincode: "",
       opening_hours: "",
+      closing_hours: "",
       website: "",
       category: "",
     },
@@ -296,18 +297,37 @@ const CreateShop = ({
           )}
         </div>
 
-        {/* Opening Hours */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Opening Hours *</label>
-          <input
-            type="text"
-            placeholder="e.g. 9 AM - 9 PM"
-            className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-            {...register("opening_hours", { required: "Opening hours required" })}
-          />
-          {errors.opening_hours && (
-            <p className="text-red-500 text-xs mt-1">{String(errors.opening_hours.message)}</p>
-          )}
+        {/* Opening & Closing Hours */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Clock size={14} className="text-gray-400" />
+              Opening Time *
+            </label>
+            <input
+              type="time"
+              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm transition-all focus:border-blue-500 font-inter cursor-pointer"
+              {...register("opening_hours", { required: "Opening time required" })}
+            />
+            {errors.opening_hours && (
+              <p className="text-red-500 text-xs mt-1">{String(errors.opening_hours.message)}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+              <Clock size={14} className="text-gray-400" />
+              Closing Time *
+            </label>
+            <input
+              type="time"
+              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm transition-all focus:border-blue-500 font-inter cursor-pointer"
+              {...register("closing_hours", { required: "Closing time required" })}
+            />
+            {errors.closing_hours && (
+              <p className="text-red-500 text-xs mt-1">{String(errors.closing_hours.message)}</p>
+            )}
+          </div>
         </div>
 
         {submitError && (

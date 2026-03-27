@@ -38,10 +38,7 @@ const TIP_OPTIONS = [20, 30, 50];
 export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarProps) {
   const router = useRouter();
   const { isLoggedIn } = useAuth();
-  const items = useCartStore((s) => s.items);
-  const removeItem = useCartStore((s) => s.removeItem);
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
-  const syncItems = useCartStore((s) => s.syncItems);
+  const { items, syncItems, cartStoreId, removeItem, updateQuantity, deliveryMetadata } = useCartStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const {
@@ -58,7 +55,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
     fetchAvailableCoupons,
   } = useCouponStore();
 
-  const { getSelectedAddress, selectedLocation, setSelectedLocation } = useAddressStore();
+  const { getSelectedAddress, selectedLocation, setSelectedLocation, locationVersion } = useAddressStore();
 
   const [couponInput, setCouponInput] = useState("");
   const [showCouponPanel, setShowCouponPanel] = useState(false);
@@ -67,6 +64,9 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
   const [showCustomTip, setShowCustomTip] = useState(false);
   const [donationEnabled, setDonationEnabled] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+
+
+
 
   const subtotal = items.reduce((sum, item) => sum + item.totalPayable, 0);
   const isFreeDelivery = appliedCoupons.some(c => c.discountType === "free_delivery" && subtotal >= c.minOrderValue);
@@ -94,23 +94,40 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
             storeName: data.store.name,
             pincode: addr.pincode,
             city: addr.city || data.store.city || "",
+            deliveryTimeMinutes: (data.store.cityDeliveryTimes as any)?.[addr.city || data.store.city || ""],
           });
         }
       })
       .catch(() => {});
   }, [selectedLocation?.storeId]);
 
-  // Fetch coupons from API when cart opens (or when storeId becomes available)
+  // Sync cart and fetch coupons whenever location changes OR cart opens
   useEffect(() => {
     if (open) {
       setIsSyncing(true);
-      syncItems().finally(() => setIsSyncing(false));
+      syncItems()
+        .then((res: any) => {
+          if (res) {
+            // Metadata is already set in the global store by syncItems()
+
+            // If store ID changed or items availability changed, notify user
+            const storeChanged = res.storeId && cartStoreId && res.storeId !== cartStoreId;
+            const cartStateChanged = res.hasCartChanged && items.length > 0;
+
+            if (storeChanged || cartStateChanged) {
+              toast.info("Your cart has changed based on location", {
+                description: "Pricing and availability updated for your area.",
+              });
+            }
+          }
+        })
+        .finally(() => setIsSyncing(false));
       
       if (selectedLocation?.storeId) {
         fetchAvailableCoupons(selectedLocation.storeId);
       }
     }
-  }, [open, selectedLocation?.storeId]);
+  }, [open, locationVersion, selectedLocation?.storeId]);
 
   // Auto-apply one eligible auto coupon when cart opens / subtotal changes
   useEffect(() => {
@@ -202,6 +219,16 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
 
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto">
+              {!deliveryMetadata.isServiceable && (
+                <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+                  <MapPin className="mx-auto mb-2 h-6 w-6 text-red-500" />
+                  <p className="text-sm font-bold text-red-900">We don't deliver here yet</p>
+                  <p className="mt-1 text-xs text-red-700">
+                    {deliveryMetadata.nearbyHint || "This location is currently outside our service area. Please try another address."}
+                  </p>
+                </div>
+              )}
+
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -228,12 +255,30 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                         <Clock className="h-4 w-4 text-accent" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">Delivery in {selectedLocation?.deliveryTimeMinutes ?? 30} minutes</p>
+                        <p className="text-sm font-semibold text-foreground">
+                          {deliveryMetadata.isStoreOpen ? (
+                            <>Delivery in {deliveryMetadata.cartDeliveryTime || selectedLocation?.deliveryTimeMinutes || 30} minutes</>
+                          ) : (
+                            <>Closed • Opens at {deliveryMetadata.openingHours || "9 AM"}</>
+                          )}
+                          {deliveryMetadata.storeName && ` from ${deliveryMetadata.storeName}`}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           Shipment of {items.length} item{items.length > 1 ? "s" : ""}
                         </p>
                       </div>
                     </div>
+                    
+                    {deliveryMetadata.nearbyHint && (
+                      <div className="mt-3 rounded-lg bg-amber-50 p-2.5 border border-amber-100">
+                        <div className="flex gap-2">
+                          <MapPin className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                          <p className="text-xs text-amber-700 font-medium">
+                            {deliveryMetadata.nearbyHint}
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="mt-3 space-y-3">
                       <AnimatePresence mode="popLayout">
@@ -270,6 +315,11 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   {isInvalid && (
                                     <span className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-bold text-destructive uppercase">
                                       {item.product.stock <= 0 ? "Out of Stock" : "Inactive"}
+                                    </span>
+                                  )}
+                                  {item.product.stock !== undefined && item.product.stock > 0 && item.product.stock < item.quantity && (
+                                    <span className="rounded bg-amber-500/10 px-1 py-0.5 text-[10px] font-bold text-amber-600 uppercase">
+                                      Only {item.product.stock} left
                                     </span>
                                   )}
                                 </div>
@@ -640,7 +690,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                 <div className="px-4 pb-4">
                   <Button
                     className="w-full rounded-xl bg-offer-green py-4 text-base font-bold text-white hover:bg-offer-green/90"
-                    disabled={items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
+                    disabled={!deliveryMetadata.isServiceable || !deliveryMetadata.isStoreOpen || items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
                     onClick={() => {
                       if (!isLoggedIn) {
                         onOpenChange(false);
@@ -658,7 +708,11 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                     }}
                   >
                     <div className="flex w-full items-center justify-between">
-                      {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? (
+                      {!deliveryMetadata.isServiceable ? (
+                        <span className="text-left font-bold uppercase tracking-wide">
+                          LOCATION NOT SERVICEABLE
+                        </span>
+                      ) : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? (
                         <span className="text-left">
                           <span className="block text-sm font-bold uppercase">OUT OF STOCK</span>
                           <span className="block text-[10px] opacity-80">REMOVE TO PROCEED</span>
@@ -669,10 +723,15 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           <span className="block text-xs opacity-80">TOTAL</span>
                         </span>
                       )}
+                      
                       <span className="text-base font-bold">
-                        {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
-                          ? "Invalid Cart" 
-                          : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
+                        {!deliveryMetadata.isServiceable
+                          ? "Check Address"
+                          : !deliveryMetadata.isStoreOpen
+                            ? "Store Closed"
+                            : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
+                              ? "Invalid Cart" 
+                              : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
                       </span>
                     </div>
                   </Button>

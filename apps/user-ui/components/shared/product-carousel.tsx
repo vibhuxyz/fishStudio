@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "./product-card";
@@ -14,6 +15,7 @@ interface ProductCarouselProps {
   priorityImages?: boolean;
   variant?: "compact" | "full";
   isLoading?: boolean;
+  viewAllHref?: string;
 }
 
 export function ProductCarousel({
@@ -22,6 +24,7 @@ export function ProductCarousel({
   priorityImages = false,
   variant = "compact",
   isLoading = false,
+  viewAllHref,
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -109,16 +112,34 @@ export function ProductCarousel({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="w-[180px] flex-shrink-0 md:w-[200px]"
+                className="w-[240px] flex-shrink-0"
               >
                 <ProductCard
-                  product={product}
+                  product={product as any}
                   onAddToCart={onAddToCart}
                   priority={priorityImages && index < 4}
                   variant={variant}
                 />
               </motion.div>
             ))}
+
+        {/* ✅ VIEW ALL CARD: Shown at the end if viewAllHref is provided */}
+        {!isLoading && viewAllHref && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: uniqueProducts.length * 0.05 }}
+            className="w-[240px] flex-shrink-0"
+          >
+            <Link
+              href={viewAllHref}
+              className="flex h-[380px] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30 transition-colors hover:bg-muted/50"
+            >
+              <span className="text-lg font-bold text-primary">View All</span>
+              <p className="mt-1 text-xs text-muted-foreground">See full collection</p>
+            </Link>
+          </motion.div>
+        )}
       </div>
     </div>
   );

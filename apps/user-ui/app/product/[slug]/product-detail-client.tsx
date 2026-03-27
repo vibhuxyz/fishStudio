@@ -10,6 +10,7 @@ import {
   Plus,
   Star,
   Info,
+  BadgePercent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +25,11 @@ import { ProductCarousel } from "@/components/shared/product-carousel";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
-import { resolveProductSizePricing } from "@/lib/storefront";
+import {
+  fetchStorefrontProductBySlug,
+  resolveProductSizePricing,
+} from "@/lib/storefront";
+import { useAddressStore } from "@/lib/address-store";
 import { toast } from "sonner";
 
 const BLUR_DATA =
@@ -33,32 +38,100 @@ const BLUR_DATA =
 interface Props {
   product: Product;
   relatedProducts: Product[];
+  coupon?: any;
 }
 
-export function ProductDetailClient({ product, relatedProducts }: Props) {
+export function ProductDetailClient({ product, relatedProducts, coupon }: Props) {
   const modals = useModals();
+  const selectedLocation = useAddressStore((s) => s.selectedLocation);
+  const [resolvedProduct, setResolvedProduct] = useState(product);
+  const [resolvedRelatedProducts, setResolvedRelatedProducts] = useState(relatedProducts);
+  const [resolvedCoupon, setResolvedCoupon] = useState(coupon);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Initialize state with the first available option from the backend data
   const [selectedCutting, setSelectedCutting] = useState(
-    product.cuttingTypes?.[0] || "",
+    resolvedProduct.cuttingTypes?.[0] || "",
   );
   const [selectedPieceSize, setSelectedPieceSize] = useState(
-    product.pieceSizes?.[0] || "",
+    resolvedProduct.pieceSizes?.[0] || "",
   );
-  const [selectedSize, setSelectedSize] = useState(product.weight || product.sizes?.[0] || "");
+  const [selectedSize, setSelectedSize] = useState(
+    resolvedProduct.weight || resolvedProduct.sizes?.[0] || "",
+  );
 
   const { normalizedPricing, selected } = useMemo(
-    () => resolveProductSizePricing(product, selectedSize),
-    [product, selectedSize],
+    () => resolveProductSizePricing(resolvedProduct, selectedSize),
+    [resolvedProduct, selectedSize],
   );
   const [selectedWeightGrams, setSelectedWeightGrams] = useState(
     selected.weightGrams || 50,
   );
 
+  // Create a gallery. If backend only sends one image, we use that.
+  // Duplicating it just to keep the carousel UI functional if it expects >1.
+  const productImages =
+    resolvedProduct.images && resolvedProduct.images.length > 0
+      ? resolvedProduct.images
+      : [resolvedProduct.image || "/placeholder.svg"];
+
+  useEffect(() => {
+    setResolvedProduct(product);
+    setResolvedRelatedProducts(relatedProducts);
+    setResolvedCoupon(coupon);
+  }, [product, relatedProducts, coupon]);
+
+  useEffect(() => {
+    if (!selectedLocation?.storeId && !selectedLocation?.pincode && !selectedLocation?.city) {
+      return;
+    }
+
+    let cancelled = false;
+
+    fetchStorefrontProductBySlug(product.slug, {
+      storeId: selectedLocation?.storeId,
+      pincode: selectedLocation?.pincode,
+      city: selectedLocation?.city,
+    })
+      .then((data) => {
+        if (cancelled || !data.product) return;
+        setResolvedProduct(data.product);
+        setResolvedRelatedProducts(data.relatedProducts);
+        setResolvedCoupon(data.coupon || null);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    product.slug,
+    selectedLocation?.storeId,
+    selectedLocation?.pincode,
+    selectedLocation?.city,
+  ]);
+
+  // Auto-rotate product images
+  useEffect(() => {
+    if (productImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % productImages.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [productImages.length]);
+
   useEffect(() => {
     setSelectedWeightGrams(selected.weightGrams || 50);
   }, [selected.size, selected.weightGrams]);
+
+  useEffect(() => {
+    setSelectedCutting(resolvedProduct.cuttingTypes?.[0] || "");
+    setSelectedPieceSize(resolvedProduct.pieceSizes?.[0] || "");
+    setSelectedSize(resolvedProduct.weight || resolvedProduct.sizes?.[0] || "");
+  }, [resolvedProduct]);
 
   const computedSalePrice = useMemo(() => {
     const baseWeight = selected.weightGrams || 1;
@@ -74,16 +147,11 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
   const totalPayable = computedSalePrice;
 
-  // Create a gallery. If backend only sends one image, we use that.
-  // Duplicating it just to keep the carousel UI functional if it expects >1.
-  const productImages =
-    product.images && product.images.length > 0
-      ? product.images
-      : [product.image || "/placeholder.svg"];
 
   const handleAddToCart = (shouldOpenCart = false) => {
     const customizedProduct = {
       ...product,
+      ...resolvedProduct,
       price: computedSalePrice,
       originalPrice:
         computedRegularPrice > computedSalePrice
@@ -102,7 +170,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
     if (shouldOpenCart) {
       modals.openCart();
     } else {
-      toast.success(`${product.name} added to cart`);
+      toast.success(`${resolvedProduct.name} added to cart`);
     }
   };
 
@@ -118,23 +186,23 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
             <span>/</span>
             <Link
               href={`/category/${encodeURIComponent(
-                product.category.toLowerCase().replace(/[\s&]+/g, "-"),
+                resolvedProduct.category.toLowerCase().replace(/[\s&]+/g, "-"),
               )}`}
               className="transition-colors hover:text-foreground"
             >
-              {product.category}
+              {resolvedProduct.category}
             </Link>
             <span>/</span>
             <Link
               href={`/category/${encodeURIComponent(
-                product.category.toLowerCase().replace(/[\s&]+/g, "-"),
-              )}?sub=${encodeURIComponent(product.subCategory)}`}
+                resolvedProduct.category.toLowerCase().replace(/[\s&]+/g, "-"),
+              )}?sub=${encodeURIComponent(resolvedProduct.subCategory)}`}
               className="transition-colors hover:text-foreground"
             >
-              {product.subCategory}
+              {resolvedProduct.subCategory}
             </Link>
             <span>/</span>
-            <span className="font-medium text-foreground">{product.name}</span>
+            <span className="font-medium text-foreground">{resolvedProduct.name}</span>
           </nav>
 
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-10">
@@ -144,7 +212,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 <div className="relative h-72 w-full overflow-hidden rounded-xl md:h-80 md:w-96">
                   <Image
                     src={productImages[currentImageIndex]}
-                    alt={product.name}
+                    alt={resolvedProduct.name}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover"
@@ -169,7 +237,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     >
                       <Image
                         src={img}
-                        alt={`${product.name} thumbnail ${i + 1}`}
+                        alt={`${resolvedProduct.name} thumbnail ${i + 1}`}
                         width={64}
                         height={64}
                         className="h-full w-full object-cover"
@@ -216,23 +284,33 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
               {/* Right - Details */}
               <div className="flex-1">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {product.subCategory}
+                  {resolvedProduct.subCategory}
                 </p>
                 <h1 className="mt-1 font-serif text-2xl font-bold text-primary md:text-3xl">
-                  {product.name}
+                  {resolvedProduct.name}
                 </h1>
-                <div
-                  className="mt-2 text-base text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: product.description }}
-                />
+                <div className="mt-2 text-sm text-muted-foreground md:text-base">
+                  <div
+                    className={`relative ${!isExpanded ? "line-clamp-3" : ""}`}
+                    dangerouslySetInnerHTML={{ __html: resolvedProduct.description }}
+                  />
+                  {resolvedProduct.description.length > 180 && (
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="mt-1 text-sm font-semibold text-primary hover:underline"
+                    >
+                      {isExpanded ? "See Less" : "See More"}
+                    </button>
+                  )}
+                </div>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
                   {/* Displaying shortened ID */}
                   <span>
-                    Product Code: {product.id.slice(-6).toUpperCase()}
+                    Product Code: {resolvedProduct.id.slice(-6).toUpperCase()}
                   </span>
-                  {product.processingWeightLoss && (
-                    <span>Weight Loss: {product.processingWeightLoss}</span>
+                  {resolvedProduct.processingWeightLoss && (
+                    <span>Weight Loss: {resolvedProduct.processingWeightLoss}</span>
                   )}
                 </div>
 
@@ -241,16 +319,38 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                     <Star
                       key={i}
                       className={`h-4 w-4 ${
-                        i < Math.floor(product.rating)
+                        i < Math.floor(resolvedProduct.rating)
                           ? "fill-amber-400 text-amber-400"
                           : "text-border"
                       }`}
                     />
                   ))}
                   <span className="text-sm text-muted-foreground">
-                    ({product.rating} rating)
+                    ({resolvedProduct.rating} rating)
                   </span>
                 </div>
+
+                {/* Coupon Banner */}
+                {resolvedCoupon && (
+                  <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-green-100 bg-[#E8F5E9] p-4 shadow-sm md:p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+                        <BadgePercent className="h-6 w-6 text-green-700" />
+                      </div>
+                      <div>
+                        <p className="text-base font-bold text-green-950 md:text-lg">
+                          {resolvedCoupon.public_name}
+                        </p>
+                        <p className="text-xs font-medium text-green-700/80">
+                          {resolvedCoupon.isFirstOrder ? "*For First Order" : "*Limited Time Offer"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 rounded-full bg-[#1B5E20] px-4 py-2 text-sm font-bold text-white shadow-md md:px-6 md:py-2.5 md:text-base">
+                      Code : {resolvedCoupon.discountCode}
+                    </div>
+                  </div>
+                )}
 
                 <p className="mt-4 text-xl font-bold text-primary">
                   Price: Rs. {computedSalePrice.toFixed(2)}
@@ -271,7 +371,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
                   {/* Cutting Type Dropdown */}
-                  {product.cuttingTypes && product.cuttingTypes.length > 0 && (
+                  {resolvedProduct.cuttingTypes && resolvedProduct.cuttingTypes.length > 0 && (
                     <div>
                       <label className="text-sm font-medium text-foreground">
                         Cutting Type
@@ -284,7 +384,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                           <SelectValue placeholder="Select cutting type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {product.cuttingTypes.map((ct) => (
+                          {resolvedProduct.cuttingTypes.map((ct) => (
                             <SelectItem key={ct} value={ct}>
                               {ct}
                             </SelectItem>
@@ -295,7 +395,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                   )}
 
                   {/* Piece Size Dropdown */}
-                  {product.pieceSizes && product.pieceSizes.length > 0 && (
+                  {resolvedProduct.pieceSizes && resolvedProduct.pieceSizes.length > 0 && (
                     <div>
                       <label className="text-sm font-medium text-foreground">
                         Piece Size
@@ -308,7 +408,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                           <SelectValue placeholder="Select piece size" />
                         </SelectTrigger>
                         <SelectContent>
-                          {product.pieceSizes.map((ps) => (
+                          {resolvedProduct.pieceSizes.map((ps) => (
                             <SelectItem key={ps} value={ps}>
                               {ps}
                             </SelectItem>
@@ -320,7 +420,7 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 </div>
 
                 {/* Fish Size Dropdown */}
-                {product.sizes && product.sizes.length > 0 && (
+                {resolvedProduct.sizes && resolvedProduct.sizes.length > 0 && (
                   <div className="mt-4">
                     <label className="text-sm font-medium text-foreground">
                       Fish / Pack Size
@@ -344,13 +444,13 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
                 )}
 
                 {/* Weight Loss Info Banner */}
-                {product.processingWeightLoss && (
+                {resolvedProduct.processingWeightLoss && (
                   <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3">
                     <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       Processing weight loss:{" "}
                       <span className="font-medium">
-                        {product.processingWeightLoss}
+                        {resolvedProduct.processingWeightLoss}
                       </span>
                       . Varies based on cutting type selected.
                     </p>
@@ -415,17 +515,17 @@ export function ProductDetailClient({ product, relatedProducts }: Props) {
           </div>
 
           {/* Related products */}
-          {relatedProducts.length > 0 && (
+          {resolvedRelatedProducts.length > 0 && (
             <section className="mt-10 px-0 py-10">
               <div className="mb-6 text-center">
                 <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                  More from {product.subCategory} & {product.category}
+                  More from {resolvedProduct.subCategory} & {resolvedProduct.category}
                 </p>
                 <h2 className="mt-1 font-serif text-2xl font-bold text-foreground md:text-3xl">
                   You May Also Like
                 </h2>
               </div>
-              <ProductCarousel products={relatedProducts} variant="compact" />
+              <ProductCarousel products={resolvedRelatedProducts} variant="compact" />
             </section>
           )}
         </div>

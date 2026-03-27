@@ -29,6 +29,7 @@ export interface BackendProduct {
   sale_price: number;
   regular_price: number;
   stock: number;
+  storeId?: string;
   totalSold: number;
   ratings: number;
 

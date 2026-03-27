@@ -30,6 +30,7 @@ type CartItem = {
 
 interface CartState {
   items: CartItem[];
+  cartStoreId: string | null;
   addItem: (
     product: Product,
     quantity: number,
@@ -45,7 +46,15 @@ interface CartState {
   totalItems: () => number;
   totalPrice: () => number;
   clearCart: () => void;
-  syncItems: () => Promise<void>;
+  syncItems: () => Promise<any>;
+  deliveryMetadata: {
+    cartDeliveryTime: number | null;
+    isStoreOpen: boolean;
+    storeName: string | null;
+    isServiceable: boolean;
+    nearbyHint: string | null;
+    openingHours: string | null;
+  };
 }
 
 const DEFAULT_CUTTING: CuttingType = {
@@ -86,6 +95,15 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      cartStoreId: null,
+      deliveryMetadata: {
+        cartDeliveryTime: null,
+        isStoreOpen: true,
+        storeName: null,
+        isServiceable: true,
+        nearbyHint: null,
+        openingHours: null,
+      },
 
       addItem: (product, quantity, cuttingType, pieceSize, size) => {
     const normalizedCuttingType = normalizeOption(cuttingType, "cutting-type");
@@ -233,32 +251,57 @@ export const useCartStore = create<CartState>()(
     const { items } = get();
     if (items.length === 0) return;
 
-    try {
-      const productIds = Array.from(new Set(items.map((item) => item.product.id)));
-      const { data } = await axiosInstance.post("/product/api/validate-cart", { productIds });
+    // Get pincode from address store
+    const { selectedLocation, getSelectedAddress } = (await import("./address-store")).useAddressStore.getState();
+    const pincode = selectedLocation?.pincode || getSelectedAddress()?.pincode;
+    const city = selectedLocation?.city || getSelectedAddress()?.city;
 
-      if (data.success && data.products) {
-        const validatedProducts = data.products;
+    if (!pincode) return;
+
+    try {
+      const cartItems = items.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+      }));
+
+      const { data } = await axiosInstance.post("/product/api/validate-cart", {
+        cartItems,
+        pincode,
+        city,
+        storeId: selectedLocation?.storeId || undefined,
+      });
+
+      if (data.success && data.items) {
+        const validatedItems = data.items;
         
         set((state) => ({
+          cartStoreId: data.storeId || state.cartStoreId,
+          deliveryMetadata: {
+            cartDeliveryTime: data.cartDeliveryTime || null,
+            isStoreOpen: data.isStoreOpen !== false,
+            storeName: data.storeName || data.store?.name || null,
+            isServiceable: data.isServiceable !== false,
+            nearbyHint: data.nearbyHint || null,
+            openingHours: data.openingHours || data.store?.opening_hours || null,
+          },
           items: state.items.map((item) => {
-            const fresh = validatedProducts.find((p: any) => p.id === item.product.id);
+            const fresh = validatedItems.find((p: any) => p.productId === item.product.id);
             if (fresh) {
               return {
                 ...item,
                 product: {
                   ...item.product,
-                  status: fresh.status,
-                  stock: fresh.stock,
+                  id: fresh.resolvedProductId || item.product.id,
+                  storeId: data.storeId || item.product.storeId,
+                  stock: fresh.availableQty,
                   price: fresh.price,
-                  name: fresh.title, // sync name too
+                  // Mark as inactive if not in stock or not enough qty
+                  status: fresh.inStock ? "Active" : "NonActive",
                   image: fresh.image || item.product.image,
                 },
                 totalPayable: item.quantity * fresh.price,
               };
             }
-            // If product not found in validation (meaning it was deleted/not found), 
-            // we mark it as inactive/out of stock
             return {
               ...item,
               product: {
@@ -269,9 +312,20 @@ export const useCartStore = create<CartState>()(
             };
           }),
         }));
+
+        // Also update coupons/events in coupon-store if data is returned
+        if (data.coupons || data.events) {
+          const { setAvailableCoupons, setAvailableEvents } = (await import("./coupon-store")).useCouponStore.getState() as any;
+          if (data.coupons && setAvailableCoupons) setAvailableCoupons(data.coupons);
+          if (data.events && setAvailableEvents) setAvailableEvents(data.events);
+        }
+
+        return data;
       }
+      return null;
     } catch (error) {
       console.error("Cart sync failed:", error);
+      return null;
     }
   },
     }),

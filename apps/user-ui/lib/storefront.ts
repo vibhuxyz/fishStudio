@@ -201,6 +201,7 @@ export const transformProduct = (bp: BackendProduct): Product => {
     subCategory: bp.subCategory,
     category: bp.category,
     stock: bp.stock,
+    storeId: (bp as any).storeId ?? undefined,
     cuttingTypes: bp.cuttingTypes || [],
     pieceSizes: bp.pieceSizes || [],
     processingWeightLoss: bp.processingWeightLoss,
@@ -237,11 +238,17 @@ export async function fetchStorefrontProducts(
 
 export async function fetchStorefrontProductBySlug(
   slug: string,
+  params?: { storeId?: string; pincode?: string; city?: string },
   init?: RequestInit & { next?: { revalidate?: number } },
-): Promise<Product | null> {
+): Promise<{ product: Product | null; relatedProducts: Product[]; coupon?: any }> {
   const encodedSlug = encodeURIComponent(slug);
+  const query = new URLSearchParams();
+  if (params?.storeId) query.set("storeId", params.storeId);
+  if (params?.pincode) query.set("pincode", params.pincode);
+  if (params?.city) query.set("city", params.city);
+  const qs = query.toString();
   const response = await fetch(
-    getStorefrontUrl(`/product/api/get-product/${encodedSlug}`),
+    getStorefrontUrl(`/product/api/get-product/${encodedSlug}${qs ? `?${qs}` : ""}`),
     {
       ...init,
       next: init?.next ?? { revalidate: 300 },
@@ -249,14 +256,23 @@ export async function fetchStorefrontProductBySlug(
   );
 
   if (response.status === 404) {
-    return null;
+    return { product: null, relatedProducts: [] };
   }
 
-  const data = await parseJson<{ success: boolean; product?: BackendProduct }>(
-    response,
-  );
+  const data = await parseJson<{
+    success: boolean;
+    product?: BackendProduct;
+    relatedProducts?: BackendProduct[];
+    coupon?: any;
+  }>(response);
 
-  return data.product ? transformProduct(data.product) : null;
+  return {
+    product: data.product ? transformProduct(data.product) : null,
+    relatedProducts: Array.isArray(data.relatedProducts)
+      ? data.relatedProducts.map(transformProduct)
+      : [],
+    coupon: data.coupon || null,
+  };
 }
 
 export async function fetchStorefrontBanners(): Promise<StorefrontBanner[]> {

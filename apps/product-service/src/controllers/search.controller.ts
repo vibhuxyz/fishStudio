@@ -5,7 +5,8 @@ import { prismaMongo as prisma } from "@repo/db-mongo";
 import {
   meiliClient,
   PRODUCTS_INDEX,
-  reindexAllProducts,
+  clearAndReindexAll,
+  initMeilisearchIndex,
 } from "../lib/meilisearch.js";
 
 interface AuthRequest extends Request {
@@ -19,19 +20,19 @@ const SUGGEST_CACHE_TTL = 300;  // 5 min
 /** MongoDB regex search — used as fallback when Meilisearch has no results */
 async function mongoSearch(
   q: string,
-  opts: { category?: string; sort?: string; limit: number },
+  opts: { storeId?: string; category?: string; sort?: string; limit: number },
 ) {
   const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const where: any = {
     isDeleted: false,
     // Only store variants have a product detail page
-    storeId: { not: null },
+    storeId: opts.storeId ? opts.storeId : { not: null },
     catalogProductId: { not: null },
     OR: [
-      { title: { contains: escaped, mode: "insensitive" } },
-      { short_description: { contains: escaped, mode: "insensitive" } },
-      { subCategory: { contains: escaped, mode: "insensitive" } },
-      { category: { contains: escaped, mode: "insensitive" } },
+      { title: { startsWith: escaped, mode: "insensitive" } },
+      { short_description: { contains: ` ${escaped}`, mode: "insensitive" } }, // Match as a word start in description
+      { subCategory: { startsWith: escaped, mode: "insensitive" } },
+      { category: { startsWith: escaped, mode: "insensitive" } },
     ],
   };
 
@@ -46,20 +47,50 @@ async function mongoSearch(
     where,
     orderBy,
     take: opts.limit,
-    include: { images: { take: 1 } },
+    include: {
+      images: { take: 1 },
+      catalogProduct: {
+        select: { id: true, slug: true, images: { take: 1 } },
+      },
+    },
   });
 
   return products.map((p) => ({
     id: p.id,
     title: p.title,
-    slug: p.slug,
+    slug: p.catalogProduct?.slug || p.slug,
     category: p.category,
     subCategory: p.subCategory ?? "",
     sale_price: p.sale_price,
     regular_price: p.regular_price,
-    imageUrl: p.images?.[0]?.url ?? null,
+    imageUrl: p.images?.[0]?.url || p.catalogProduct?.images?.[0]?.url || null,
     ratings: p.ratings ?? 0,
+    catalogId: p.catalogProductId || p.id,
   }));
+}
+
+function dedupeHits<T extends {
+  slug?: string | null;
+  catalogId?: string | null;
+  sale_price?: number | null;
+}>(hits: T[]) {
+  const unique = new Map<string, T>();
+
+  for (const hit of hits) {
+    const key = hit.catalogId || hit.slug || "";
+    if (!key) continue;
+
+    const existing = unique.get(key);
+    if (
+      !existing ||
+      Number(hit.sale_price ?? Number.MAX_SAFE_INTEGER) <
+        Number(existing.sale_price ?? Number.MAX_SAFE_INTEGER)
+    ) {
+      unique.set(key, hit);
+    }
+  }
+
+  return Array.from(unique.values());
 }
 
 export const searchProducts = async (
@@ -72,12 +103,13 @@ export const searchProducts = async (
     const limit = Math.min(Number(req.query.limit) || 10, 20);
     const category = (req.query.category as string) || "";
     const sort = (req.query.sort as string) || "";
+    const storeId = (req.query.storeId as string) || "";
 
     if (!q) {
       return res.json({ success: true, hits: [], query: "", estimatedTotalHits: 0 });
     }
 
-    const cacheKey = `search:${q.toLowerCase()}:${category}:${sort}:${limit}`;
+    const cacheKey = `search:${q.toLowerCase()}:${category}:${sort}:${limit}:${storeId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
       return res.json({ success: true, ...JSON.parse(cached), fromCache: true });
@@ -85,6 +117,7 @@ export const searchProducts = async (
 
     const filters: string[] = ["isDeleted = false", "isStoreVariant = true"];
     if (category) filters.push(`category = "${category}"`);
+    if (storeId) filters.push(`storeId = "${storeId}"`);
 
     const sortParam: string[] = [];
     if (sort === "price_asc") sortParam.push("sale_price:asc");
@@ -103,7 +136,7 @@ export const searchProducts = async (
         attributesToRetrieve: [
           "id", "title", "slug", "category", "subCategory",
           "sale_price", "regular_price", "imageUrl", "tags",
-          "short_description", "ratings",
+          "short_description", "ratings", "catalogId",
         ],
       });
 
@@ -115,7 +148,7 @@ export const searchProducts = async (
 
     // Fallback to MongoDB if Meilisearch returned nothing
     if (hits.length === 0) {
-      hits = await mongoSearch(q, { category, sort, limit });
+      hits = await mongoSearch(q, { storeId, category, sort, limit });
       estimatedTotalHits = hits.length;
 
       // Background: index these products so next search uses Meilisearch
@@ -130,6 +163,9 @@ export const searchProducts = async (
         );
       }
     }
+
+    hits = dedupeHits(hits).slice(0, limit);
+    estimatedTotalHits = hits.length;
 
     const payload = { hits, query: q, estimatedTotalHits };
     await redis.setex(cacheKey, SEARCH_CACHE_TTL, JSON.stringify(payload));
@@ -147,12 +183,13 @@ export const searchSuggestions = async (
 ) => {
   try {
     const q = ((req.query.q as string) || "").trim();
+    const storeId = (req.query.storeId as string) || "";
 
-    if (!q) {
+    if (!q || q.length < 2) {
       return res.json({ success: true, suggestions: [] });
     }
 
-    const cacheKey = `suggest:${q.toLowerCase()}`;
+    const cacheKey = `suggest:${q.toLowerCase()}:${storeId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
       return res.json({ success: true, suggestions: JSON.parse(cached) });
@@ -162,11 +199,14 @@ export const searchSuggestions = async (
 
     try {
       const index = meiliClient.index(PRODUCTS_INDEX);
-      const result = await index.search(q, {
-        limit: 6,
-        filter: "isDeleted = false AND isStoreVariant = true",
-        attributesToRetrieve: ["id", "title", "slug", "category", "imageUrl", "sale_price"],
-      });
+      const filters = ["isDeleted = false", "isStoreVariant = true"];
+      if (storeId) filters.push(`storeId = "${storeId}"`);
+
+        const result = await index.search(q, {
+          limit: 6,
+          filter: filters.join(" AND "),
+          attributesToRetrieve: ["id", "title", "slug", "category", "imageUrl", "sale_price", "catalogId"],
+        });
       suggestions = result.hits.map((h: any) => ({
         id: h.id,
         title: h.title,
@@ -174,6 +214,7 @@ export const searchSuggestions = async (
         category: h.category,
         imageUrl: h.imageUrl,
         sale_price: h.sale_price,
+        catalogId: h.catalogId,
       }));
     } catch {
       // Meilisearch unavailable — fall through to MongoDB
@@ -181,7 +222,7 @@ export const searchSuggestions = async (
 
     // MongoDB fallback
     if (suggestions.length === 0) {
-      const products = await mongoSearch(q, { limit: 6 });
+      const products = await mongoSearch(q, { storeId, limit: 6 });
       suggestions = products.map((p) => ({
         id: p.id,
         title: p.title,
@@ -189,8 +230,11 @@ export const searchSuggestions = async (
         category: p.category,
         imageUrl: p.imageUrl,
         sale_price: p.sale_price,
+        catalogId: p.catalogId,
       }));
     }
+
+    suggestions = dedupeHits(suggestions).slice(0, 6);
 
     await redis.setex(cacheKey, SUGGEST_CACHE_TTL, JSON.stringify(suggestions));
     return res.json({ success: true, suggestions });
@@ -208,10 +252,27 @@ export const reindexProducts = async (
     if (req.role !== "admin") {
       return next(new ValidationError("Only admin can trigger reindex"));
     }
-    const count = await reindexAllProducts();
+    
+    // 1. Flush Redis cache first to avoid stale results during/after reindexing
+    try {
+      const keys = await redis.keys("search:*");
+      const suggestKeys = await redis.keys("suggest:*");
+      const all = [...keys, ...suggestKeys];
+      if (all.length > 0) {
+        await redis.del(...all);
+        console.log(`[Cache] Flushed ${all.length} search/suggest keys`);
+      }
+    } catch (err) {
+      console.error("[Cache] Flush failed during reindex:", err);
+    }
+
+    // 2. Clear Meilisearch and rebuild from scratch
+    await initMeilisearchIndex(); // Ensure settings like typo tolerance are updated
+    const count = await clearAndReindexAll();
+    
     return res.json({
       success: true,
-      message: `Reindexed ${count} products successfully`,
+      message: `Reindexed ${count} products and flushed cache successfully`,
     });
   } catch (error) {
     return next(error);

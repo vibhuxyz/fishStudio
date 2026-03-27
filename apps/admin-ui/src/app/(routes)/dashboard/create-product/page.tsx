@@ -1,6 +1,7 @@
 "use client";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import {
+  adminQueryKeys,
   getCategoryConfigKey,
   useAdminCategories,
   validateProductSlug,
@@ -10,6 +11,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Wand2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CoustomCuttingType,
   CoustomPices,
@@ -76,6 +78,7 @@ const Page = () => {
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [slugValue, setSlugValue] = useState("");
   const [isSlugChecking, setIsSlugChecking] = useState(false);
   const [slugFeedback, setSlugFeedback] = useState<SlugFeedback | null>(null);
@@ -238,6 +241,7 @@ const Page = () => {
         isProtected,
       );
 
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.products });
       toast.success("Product created successfully!");
       router.push("/dashboard/all-products");
     } catch (error: unknown) {

@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useAddressStore,
   type Address,
@@ -69,6 +70,7 @@ export function AddressModal({
     useAddressStore();
   const { setSelectedLocation } = useAddressStore();
   const { isLoggedIn } = useAuth();
+  const queryClient = useQueryClient();
 
   const [view, setView] = useState<ModalView>("list");
   const [pincode, setPincode] = useState("");
@@ -77,16 +79,26 @@ export function AddressModal({
 
   /** Select a saved address and resolve its store for product/banner filtering */
   const handleSelectSavedAddress = async (address: Address) => {
+    // 1. Mark as selected address immediately
     selectAddress(address.id);
 
-    // Clear stale location IMMEDIATELY so useProducts uses the new address's pincode
-    // while we resolve the correct store in the background.
-    setSelectedLocation(null);
+    // 2. Clear stale location and invalidate queries immediately
+    // Update selectedLocation with at least the pincode so header can show "soon" or try to resolve
+    setSelectedLocation({
+      storeId: "",
+      storeName: "",
+      pincode: address.pincode,
+      city: address.city,
+    });
+
+    // Invalidate queries to refresh store-specific data
+    queryClient.invalidateQueries({ queryKey: ["store"] });
+    queryClient.invalidateQueries({ queryKey: ["storefront"] });
 
     onOpenChange(false);
     toast.success(`Delivering to ${address.label}`);
 
-    // Resolve the store for this address's pincode in the background
+    // 3. Resolve the actual store for this address's pincode in the background
     try {
       const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${address.pincode}`);
       const data = res.data;
@@ -98,11 +110,14 @@ export function AddressModal({
           pincode: address.pincode,
           city,
           deliveryTimeMinutes: data.store.cityDeliveryTimes?.[city],
+          isOpen: data.store.isOpen,
+          opening_hours: data.store.opening_hours,
         });
+        // Refetch store queries now that we have the full store data
+        queryClient.invalidateQueries({ queryKey: ["store"] });
       }
-      // If no matching store, selectedLocation stays null — products use address pincode
     } catch {
-      // API failed — selectedLocation stays null, products will use address pincode
+      // API failed — selectedLocation stays with just pincode
     }
   };
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
@@ -217,8 +232,12 @@ export function AddressModal({
       pincode,
       city,
       deliveryTimeMinutes: deliveryMins,
+      isOpen: (storeInfo as any).isOpen,
+      opening_hours: (storeInfo as any).opening_hours,
     };
     setSelectedLocation(location);
+    queryClient.invalidateQueries({ queryKey: ["store"] });
+    queryClient.invalidateQueries({ queryKey: ["storefront"] });
 
     // Close modal immediately — products & banners update based on pincode
     onOpenChange(false);
@@ -238,6 +257,8 @@ export function AddressModal({
         pincode,
         city,
         deliveryTimeMinutes: deliveryMins,
+        isOpen: (storeInfo as any).isOpen,
+        opening_hours: (storeInfo as any).opening_hours,
       });
     }
     setForm((f) => ({

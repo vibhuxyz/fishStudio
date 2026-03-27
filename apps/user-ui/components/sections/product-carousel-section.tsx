@@ -9,6 +9,7 @@ interface ProductCarouselSectionProps {
   priorityImages?: boolean;
   variant?: "compact" | "full";
   isLoading?: boolean;
+  viewAllHref?: string;
 }
 
 /**
@@ -23,6 +24,7 @@ export function ProductCarouselSection({
   priorityImages = false,
   variant = "compact",
   isLoading = false,
+  viewAllHref,
 }: ProductCarouselSectionProps) {
   if (!isLoading && products.length === 0) return null;
 
@@ -47,6 +49,7 @@ export function ProductCarouselSection({
           priorityImages={priorityImages}
           variant={variant}
           isLoading={isLoading}
+          viewAllHref={viewAllHref}
         />
       </div>
     </section>
