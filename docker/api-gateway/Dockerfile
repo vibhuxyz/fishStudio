@@ -1,44 +1,57 @@
-# syntax=docker/dockerfile:1.7
-
-FROM oven/bun:1.3.10 AS pruner
+# ==========================================
+# 1. Builder Stage (Uses Bun)
+# ==========================================
+FROM oven/bun:1 AS builder
 WORKDIR /app
+
+# Copy the entire monorepo context
 COPY . .
-RUN bunx turbo prune --docker --scope=@repo/api-gateway
 
-FROM oven/bun:1.3.10 AS builder
+# Install dependencies (creates node_modules with symlinks)
+RUN bun install --frozen-lockfile
+
+# --- FIX: Generate Prisma Client for Docker ---
+# Switch to the database package directory
+# Switch to the database package directory
+WORKDIR /app/packages/db-postgres
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_0LSmuGOPyjg9@ep-square-violet-ak8f7sdn-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env
+RUN bunx prisma generate
+
+
+WORKDIR /app/packages/db-mongo
+
+RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
+RUN bunx prisma generate
+
+# Switch back to root to continue the build
 WORKDIR /app
+# --------------------------------------------
 
-COPY --from=pruner /app/out/json/ .
-RUN --mount=type=cache,id=bun-api-gateway,target=/root/.bun/install/cache,sharing=locked \
-  HUSKY=0 bun install
+# Build the specific service (and its dependencies like @repo/db)
+RUN bunx turbo run build --filter=@repo/api-gateway...
 
-COPY --from=pruner /app/out/full/ .
-
-RUN if [ -f /app/packages/db-postgres/prisma/schema.prisma ]; then \
-      cd /app/packages/db-postgres && \
-      echo 'POSTGRES_URL="postgresql://neondb_owner:npg_MsRnr7wHNp6d@ep-polished-truth-am0cmpdb-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env && \
-      bunx prisma generate --schema prisma/schema.prisma; \
-    fi
-
-RUN if [ -f /app/packages/db-mongo/prisma/schema.prisma ]; then \
-      cd /app/packages/db-mongo && \
-      echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env && \
-      bunx prisma generate --schema prisma/schema.prisma; \
-    fi
-
-WORKDIR /app
-RUN --mount=type=cache,id=turbo-api-gateway,target=/root/.cache/turbo,sharing=locked \
-  bunx turbo run build --filter=@repo/api-gateway...
-
+# ==========================================
+# 2. Runtime Stage (Uses Node)
+# ==========================================
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Set production environment
 ENV NODE_ENV=production
 
+# 1. Copy Root node_modules (Shared hoisted dependencies)
 COPY --from=builder /app/node_modules ./node_modules
+
+# 2. Copy Shared Packages
+# This creates /app/packages/db which contains the 'dist' (code) AND
+# the 'src/generated' (Prisma binary engines) created in the builder stage.
 COPY --from=builder /app/packages ./packages
+
+# 3. Copy the specific App
 COPY --from=builder /app/apps/api-gateway ./apps/api-gateway
 
+# Run from the app directory so it resolves dependencies correctly
 WORKDIR /app/apps/api-gateway
 
 EXPOSE 8080
