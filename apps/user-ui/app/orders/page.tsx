@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { axiosInstance } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-store";
@@ -29,8 +29,46 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export default function OrdersPage() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const modals = useModals();
+  const queryClient = useQueryClient();
+
+  // WebSocket: instantly refresh order list when status changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const wsUrl = `${wsBase}?userId=${user.id}`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "ORDER_STATUS_UPDATE") {
+            queryClient.invalidateQueries({ queryKey: ["user-orders"] });
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [user?.id, queryClient]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["user-orders"],
@@ -120,6 +158,9 @@ export default function OrdersPage() {
         <div className="space-y-3">
           {data.map((order: any) => {
             const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
+            const primaryItem = order.items?.[0];
+            const itemCount = order.items?.length ?? 0;
+
             return (
               <Link
                 key={order.id}
@@ -128,9 +169,9 @@ export default function OrdersPage() {
               >
                 {/* Image / Icon */}
                 <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 border border-border">
-                  {order.orderItems?.[0]?.product?.images?.[0]?.url ? (
+                  {primaryItem?.product?.images?.[0]?.url ? (
                     <img
-                      src={order.orderItems[0].product.images[0].url}
+                      src={primaryItem.product.images[0].url}
                       alt="Product"
                       className="h-full w-full object-cover"
                     />
@@ -144,8 +185,8 @@ export default function OrdersPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-bold text-foreground text-sm line-clamp-1">
-                        {order.orderItems?.[0]?.product?.title || `Order #${order.id?.slice(-6).toUpperCase()}`}
-                        {order.orderItems?.length > 1 && ` + ${order.orderItems.length - 1} more`}
+                        {primaryItem?.product?.title || `Order #${order.id?.slice(-6).toUpperCase()}`}
+                        {itemCount > 1 && ` + ${itemCount - 1} more`}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -167,7 +208,7 @@ export default function OrdersPage() {
                     </span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground font-medium">
-                    {order.orderItems?.length ?? 0} item{(order.orderItems?.length ?? 0) !== 1 ? "s" : ""} · ₹{order.totalAmount}
+                    {itemCount} item{itemCount !== 1 ? "s" : ""} · ₹{order.totalAmount}
                   </p>
                   <div className="mt-1 flex items-center justify-between">
                     <p className="text-[11px] text-muted-foreground">

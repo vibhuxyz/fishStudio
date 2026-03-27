@@ -95,7 +95,8 @@ export function ProductCard({
           <button
             type="button"
             onClick={handleQuickIncrement}
-            className="flex h-7 w-7 items-center justify-center rounded-r-md text-primary-foreground transition-colors hover:bg-primary/80"
+            disabled={product.stock !== undefined && cartQty + 0.5 > product.stock}
+            className="flex h-7 w-7 items-center justify-center rounded-r-md text-primary-foreground transition-colors hover:bg-primary/80 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="h-3.5 w-3.5" />
             <span className="sr-only">Increase quantity</span>

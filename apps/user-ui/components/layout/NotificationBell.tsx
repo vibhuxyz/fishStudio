@@ -3,6 +3,7 @@
 import React from "react";
 import { Bell } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/lib/auth-store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,8 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 
 const NotificationBell = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { user } = useAuth();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications(user?.id);
 
   return (
     <DropdownMenu>

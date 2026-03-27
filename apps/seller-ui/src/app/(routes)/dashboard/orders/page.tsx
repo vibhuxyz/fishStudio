@@ -34,55 +34,56 @@ const OrdersTable = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // WebSocket for Real-time Orders
+  // WebSocket for Real-time Orders — with auto-reconnect
   useEffect(() => {
     const storeId = seller?.store?.id;
     if (!storeId) return;
 
-    // Use environment variable or default to localhost:6006
-    const wsUrl = process.env.NEXT_PUBLIC_WORKER_WS_URL || `ws://localhost:6006?storeId=${storeId}`;
-    const ws = new WebSocket(wsUrl);
+    const wsBase = process.env.NEXT_PUBLIC_WORKER_WS_URL?.replace(/\?.*$/, "") || "ws://localhost:6006";
+    const wsUrl = `${wsBase}?storeId=${storeId}`;
 
-    ws.onopen = () => {
-      console.log("✅ Connected to Real-time Order Service");
-    };
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === "NEW_ORDER") {
-          console.log("📦 New order received via WebSocket:", data.payload);
-          // Invalidate query to refetch or manually push to list
-          // Refetching is safer to get fully hydrated data from server
-          queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
-          
-          // Optionally show a toast notification here
-          if (typeof window !== "undefined") {
-            // Check if browser supports notifications
-            if (Notification.permission === "granted") {
-              new Notification("New Order!", {
-                body: `You received a new order #${data.payload.id.slice(-6).toUpperCase()}`,
-              });
-            } else if (Notification.permission !== "denied") {
-              Notification.requestPermission();
-            }
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("✅ Seller: connected to real-time order service");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "NEW_ORDER") {
+            console.log("📦 New order received via WebSocket:", data.payload);
+            queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
           }
+        } catch (err) {
+          console.error("Error processing WS message:", err);
         }
-      } catch (err) {
-        console.error("Error processing WS message:", err);
-      }
+      };
+
+      ws.onerror = (error) => {
+        console.error("❌ Seller WS error:", error);
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) {
+          console.log("🔌 Seller WS closed — reconnecting in 3s");
+          reconnectTimeout = setTimeout(connect, 3000);
+        }
+      };
     };
 
-    ws.onerror = (error) => {
-      console.error("❌ WebSocket error:", error);
-    };
-
-    ws.onclose = () => {
-      console.log("🔌 Disconnected from Real-time Order Service");
-    };
+    connect();
 
     return () => {
-      ws.close();
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
     };
   }, [seller?.store?.id, queryClient]);
 

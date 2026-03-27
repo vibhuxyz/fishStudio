@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
-import { redis } from "@repo/libs";
+import { publishToQueue, redis } from "@repo/libs";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import {
   indexProduct,
@@ -131,9 +131,7 @@ export const createProduct = async (
         ...(processingWeightLoss && { processingWeightLoss }),
         cashOnDelivery: cash_on_delivery || "yes",
         slug,
-        adminId: req.admin.id,
-        storeId: null,
-        catalogProductId: null,
+        admin: { connect: { id: req.admin.id } },
         isDeleted: false,
         tags: tags as string[],
         discount_codes: [],
@@ -142,8 +140,8 @@ export const createProduct = async (
         regular_price: Number(regular_price ?? 0),
         images: {
           create: images.map((img: any) => ({
-            file_id: img.fileId,
-            url: img.file_url,
+            file_id: img.file_id,
+            url: img.url,
             type: "PRODUCT",
           })),
         },
@@ -215,7 +213,6 @@ export const addCatalogProductToStore = async (
     const catalogProduct = catalogProductCandidate;
     const existingStoreProduct = await prisma.products.findFirst({
       where: { storeId: sellerStore.id, catalogProductId },
-      select: { id: true },
     });
 
     if (existingStoreProduct) {
@@ -275,8 +272,8 @@ export const addCatalogProductToStore = async (
         cashOnDelivery: typeof cash_on_delivery === "string" ? cash_on_delivery : catalogProduct.cashOnDelivery,
         discount_codes: Array.isArray(discountCodes) ? discountCodes : [],
         status: status === "NonActive" ? "NonActive" : "Active",
-        storeId: sellerStore.id,
-        catalogProductId: catalogProduct.id,
+        store: { connect: { id: sellerStore.id } },
+        catalogProduct: { connect: { id: catalogProduct.id } },
         images: {
           create: catalogProduct.images.map((img) => ({
             file_id: img.file_id,
@@ -302,43 +299,132 @@ export const getStoreProducts = async (
   next: NextFunction,
 ) => {
   try {
-    const { storeId, pincode } = req.query;
-    let effectiveStoreId = storeId ? String(storeId) : null;
+    const { storeId, pincode, city } = req.query;
 
-    if (!effectiveStoreId && pincode) {
-      const store = await prisma.stores.findFirst({
-        where: { OR: [{ pincode: String(pincode) }, { availableCities: { has: String(pincode) } }] },
-        select: { id: true },
-      });
-      if (store) effectiveStoreId = store.id;
-    }
-
-    const catalogProducts = await prisma.products.findMany({
-      where: { adminId: { not: null }, catalogProductId: null, isDeleted: false, status: "Active" },
+    // ── 1. Fetch ALL catalog root products (admin-created templates) ─────
+    const adminProducts = await prisma.products.findMany({
+      where: {
+        adminId: { not: null },
+        isDeleted: false,
+      },
       include: {
         images: true,
-        storeVariants: {
-          where: { isDeleted: false, status: { in: ["Active", "NonActive"] } },
-          include: {
-            images: true,
-            store: { include: { seller: { include: { events: true } } } },
-          },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const catalogProducts = adminProducts.filter(isCatalogRootProduct);
+
+    // ── 2. Handle No Location Provided ──────────────────────────────────
+    if (!storeId && !pincode && !city) {
+      return res.status(200).json({
+        success: true,
+        products: catalogProducts.map((p) => ({
+          ...p,
+          stock: 0,
+          inStock: false,
+          activeEvents: [],
+        })),
+      });
+    }
+
+    // ── 3. Find Shop By Pincode/StoreId/City (1 Pincode = 1 Shop) ───────
+    const store = await prisma.stores.findFirst({
+      where: {
+        OR: [
+          pincode ? { pincode: String(pincode) } : null,
+          pincode ? { availableCities: { has: String(pincode) } } : null,
+          storeId ? { id: String(storeId) } : null,
+          city ? { city: { equals: String(city), mode: "insensitive" } } : null,
+          city ? { availableCities: { has: String(city) } } : null,
+        ].filter(Boolean) as any,
+      },
+      include: {
+        seller: {
+          include: { events: true },
         },
       },
     });
 
-    const normalizedStoreId = effectiveStoreId ? String(effectiveStoreId) : null;
-    const finalProducts = catalogProducts.map((catalogProduct) => {
-      const variants = catalogProduct.storeVariants ?? [];
-      const variant = (normalizedStoreId ? variants.find((v) => v.storeId === normalizedStoreId) : undefined) ?? variants[0];
-      const baseProductData = { ...catalogProduct, title: catalogProduct.title, short_description: catalogProduct.short_description, images: catalogProduct.images };
-      if (variant) {
-        return { ...baseProductData, ...variant, title: catalogProduct.title, images: catalogProduct.images?.length ? catalogProduct.images : variant.images };
-      }
-      return { ...baseProductData, stock: 0, store: null };
+    // ── 4. If No Shop Found ─────────────────────────────────────────────
+    if (!store) {
+      return res.status(200).json({
+        success: true,
+        products: catalogProducts.map((p) => ({
+          ...p,
+          stock: 0,
+          inStock: false,
+          activeEvents: [],
+        })),
+      });
+    }
+
+    // Prepare store-wide active events
+    const now = new Date();
+    const activeEvents =
+      store.seller?.events?.filter(
+        (e: any) =>
+          e.isActive &&
+          new Date(e.startTime) <= now &&
+          new Date(e.endTime) >= now,
+      ) || [];
+
+    // ── 5. Fetch Store Products (adopted variants) ─────────────────────
+    const variants = await prisma.products.findMany({
+      where: {
+        storeId: store.id,
+        catalogProductId: { not: null },
+        isDeleted: false,
+      },
+      include: {
+        images: true,
+      },
     });
 
-    res.status(200).json({ success: true, products: finalProducts.map(mapProductWithActiveEvents) });
+    // ── 6. Merge Catalog + Store Products ───────────────────────────────
+    const mergedProducts = catalogProducts.map((catalog) => {
+      const variant = variants.find((v) => v.catalogProductId === catalog.id);
+
+      if (variant) {
+        return {
+          ...catalog,
+          id: variant.id, // Return the variant's ID for cart/order processing
+          catalogProductId: catalog.id,
+          stock: variant.stock,
+          sale_price: variant.sale_price,
+          regular_price: variant.regular_price,
+          storeId: variant.storeId,
+          inStock: (variant.stock ?? 0) > 0,
+          images: catalog.images?.length ? catalog.images : variant.images,
+          activeEvents,
+          store: {
+            id: store.id,
+            name: store.name,
+            pincode: store.pincode,
+          },
+        };
+      }
+
+      // Catalog product not adopted by store — show as out of stock
+      return {
+        ...catalog,
+        stock: 0,
+        inStock: false,
+        storeId: store.id,
+        activeEvents,
+        store: {
+          id: store.id,
+          name: store.name,
+          pincode: store.pincode,
+        },
+      };
+    });
+
+    // ── 7. Return Response ──────────────────────────────────────────────
+    return res.status(200).json({
+      success: true,
+      products: mergedProducts,
+    });
   } catch (error) {
     return next(error);
   }
@@ -497,8 +583,7 @@ export const updateProduct = async (
     if (typeof subCategory === "string" && subCategory.trim()) updateData.subCategory = subCategory;
     if (typeof resolvedSlug === "string" && resolvedSlug.trim()) updateData.slug = resolvedSlug;
     if (typeof processingWeightLoss === "string") updateData.processingWeightLoss = processingWeightLoss;
-    if (typeof tags === "string") updateData.tags = tags.split(",").map((t: string) => t.trim()).filter(Boolean);
-    else if (Array.isArray(tags)) updateData.tags = tags;
+    if (Array.isArray(tags)) updateData.tags = tags;
     if (typeof status === "string" && ["Active", "NonActive"].includes(status)) updateData.status = status;
 
     if (req.role === "seller") {
@@ -541,6 +626,27 @@ export const updateProduct = async (
     const updatedProduct = await prisma.products.update({ where: { id: productId }, data: updateData, include: { images: true } });
     updateIndexedProduct(updatedProduct as any);
     invalidateSearchCache();
+
+    // Broadcast real-time stock update when a seller changes the stock level
+    if (req.role === "seller" && typeof updateData.stock !== "undefined") {
+      try {
+        // Include catalogProductId so user-ui can match both variant and catalog products
+        const fullProduct = await prisma.products.findUnique({
+          where: { id: productId },
+          select: { id: true, stock: true, catalogProductId: true },
+        });
+        await publishToQueue("ORDER_EVENTS", {
+          type: "STOCK_UPDATE",
+          productId: updatedProduct.id,
+          catalogProductId: fullProduct?.catalogProductId || null,
+          stock: updatedProduct.stock,
+          message: `Stock for product ${updatedProduct.id} updated to ${updatedProduct.stock}`,
+        });
+      } catch (publishError) {
+        console.error("[updateProduct] Failed to publish stock update:", publishError);
+      }
+    }
+
     return res.status(200).json({ success: true, message: "Product updated successfully!", product: updatedProduct });
   } catch (error) {
     return next(error);
@@ -646,7 +752,21 @@ export const updateProductStock = async (
     if (!product) return next(new NotFoundError("Product not found"));
     const hasAccess = req.role === "admin" || (req.role === "seller" && product.storeId === req.seller?.store?.id);
     if (!hasAccess) return next(new ValidationError("Unauthorized to update this product's stock"));
-    const updatedProduct = await prisma.products.update({ where: { id: productId }, data: { stock: { increment: adjustment } } });
+    const updatedProduct = await prisma.products.update({ where: { id: productId }, data: { stock: { increment: adjustment } }, select: { id: true, stock: true, catalogProductId: true } });
+
+    // Broadcast stock update via RabbitMQ -> Worker -> WebSocket
+    try {
+      await publishToQueue("ORDER_EVENTS", {
+        type: "STOCK_UPDATE",
+        productId: updatedProduct.id,
+        catalogProductId: updatedProduct.catalogProductId || null,
+        stock: updatedProduct.stock,
+        message: `Stock for product ${productId} updated to ${updatedProduct.stock}`,
+      });
+    } catch (publishError) {
+      console.error("[updateProductStock] ❌ Failed to publish stock update:", publishError);
+    }
+
     invalidateSearchCache();
     res.status(200).json({ success: true, message: "Stock updated successfully", newStock: updatedProduct.stock });
   } catch (error) {

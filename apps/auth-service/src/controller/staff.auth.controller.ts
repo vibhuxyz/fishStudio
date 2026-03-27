@@ -142,7 +142,12 @@ export const searchStaffByEmail = async (
       return res.status(404).json({ success: false, message: "Staff not found with this email" });
     }
 
-    res.status(200).json({ success: true, staff });
+    const requestingSellerId = req.seller?.id;
+    // True when this staff is already linked to a DIFFERENT seller's shop
+    const isInAnotherShop =
+      !!staff.sellerId && staff.sellerId !== requestingSellerId;
+
+    res.status(200).json({ success: true, staff: { ...staff, isInAnotherShop } });
   } catch (error) {
     next(error);
   }
@@ -162,6 +167,11 @@ export const updateStaffAccess = async (
 
     if (!staff) {
       return next(new ValidationError("Staff not found"));
+    }
+
+    // Prevent a seller from poaching staff that already belongs to a different shop
+    if (isActive && staff.sellerId && staff.sellerId !== sellerId) {
+      return next(new ValidationError("this staff is in another shop, hire other staff"));
     }
 
     // If granting access: link seller → staff. If revoking: unlink

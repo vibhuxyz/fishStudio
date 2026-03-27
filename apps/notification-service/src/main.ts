@@ -1,4 +1,7 @@
 import express from "express";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
@@ -11,14 +14,54 @@ import { startNotificationConsumer } from "./consumers/notification.consumer.js"
 const app = express();
 const port = Number(ENV.NOTIFICATION_SERVICE_PORT) || 6005;
 
+const defaultLocalOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+  "http://127.0.0.1:3002",
+  "http://127.0.0.1:3003",
+];
+
+const allowedOrigins = [
+  ...new Set(
+    (ENV.CORS_ORIGINS
+      ? ENV.CORS_ORIGINS.split(",").map((o: string) => o.trim())
+      : defaultLocalOrigins
+    ).filter(Boolean)
+  ),
+];
+
+app.set("trust proxy", 1);
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please slow down." },
+}));
+
 // Middleware
-app.use(express.json());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+}));
+app.use(compression() as any);
+app.use(express.json({ limit: "512kb" }));
 app.use(morgan("dev"));
 app.use(cookieParser());
-app.use(cors({
-    origin: "*", // Adjust as needed
-    credentials: true
-}));
+app.use((req: any, res: any, next: any) => {
+  const origin = req.headers.origin;
+  const corsOptions: any = {
+    credentials: true,
+    allowedHeaders: ["Authorization", "Content-Type", "x-auth-role", "ngrok-skip-browser-warning"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    origin: origin && allowedOrigins.includes(origin) ? origin : false,
+  };
+  cors(corsOptions)(req, res, next);
+});
 
 // Routes
 app.get("/", (req, res) => {

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { X, ShieldAlert } from "lucide-react";
-import { useAdminSellerDetail, useUpdateSellerApproval, AdminSellerSummary } from "@/hooks/useAdminQueries";
+import {
+  useAdminSellerDetail,
+  useUpdateSellerApproval,
+  AdminSellerSummary,
+} from "@/hooks/useAdminQueries";
 import { useRouter } from "next/navigation";
 
 const PERMISSION_OPTIONS = [
@@ -55,7 +59,9 @@ export default function GiveAccessModal({
     }
 
     setPermissions((prev) =>
-      prev.includes(permId) ? prev.filter((p) => p !== permId) : [...prev, permId]
+      prev.includes(permId)
+        ? prev.filter((p) => p !== permId)
+        : [...prev, permId],
     );
   };
 
@@ -73,7 +79,7 @@ export default function GiveAccessModal({
           onClose();
           router.push(`/dashboard/sellers/${sellerId}`);
         },
-      }
+      },
     );
   };
 
@@ -90,7 +96,7 @@ export default function GiveAccessModal({
           onClose();
           router.push(`/dashboard/sellers/${sellerId}`);
         },
-      }
+      },
     );
   };
 
@@ -107,7 +113,7 @@ export default function GiveAccessModal({
           onClose();
           router.push(`/dashboard/sellers/${sellerId}`);
         },
-      }
+      },
     );
   };
 
@@ -123,7 +129,9 @@ export default function GiveAccessModal({
             <X size={20} />
           </button>
 
-          <h2 className="mb-4 text-xl font-bold text-white">Give Access to Seller</h2>
+          <h2 className="mb-4 text-xl font-bold text-white">
+            Give Access to Seller
+          </h2>
 
           {isLoading ? (
             <p className="text-gray-400">Loading seller details...</p>
@@ -143,23 +151,30 @@ export default function GiveAccessModal({
                 </div>
                 <div>
                   <p className="text-gray-500">Phone</p>
-                  <p className="font-medium text-white">{sellerDetail.phone_number || "N/A"}</p>
+                  <p className="font-medium text-white">
+                    {sellerDetail.phone_number || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Shop Name</p>
-                  <p className="font-medium text-white">{sellerDetail.store?.name || "No Store"}</p>
+                  <p className="font-medium text-white">
+                    {sellerDetail.store?.name || "No Store"}
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-gray-500">Shop Address</p>
                   <p className="font-medium text-white">
                     {sellerDetail.store?.address || "No Address"}
-                    {sellerDetail.store?.city ? `, ${sellerDetail.store?.city}` : ""}
+                    {sellerDetail.store?.city
+                      ? `, ${sellerDetail.store?.city}`
+                      : ""}
                   </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-gray-500">Total Products / Coupons</p>
                   <p className="font-medium text-white">
-                    {sellerDetail.totalProducts ?? 0} Products, {sellerDetail.totalCoupons ?? 0} Coupons
+                    {sellerDetail.totalProducts ?? 0} Products,{" "}
+                    {sellerDetail.totalCoupons ?? 0} Coupons
                   </p>
                 </div>
               </div>
@@ -168,7 +183,9 @@ export default function GiveAccessModal({
               <div className="flex items-center justify-between rounded-xl bg-gray-950/50 p-4 border border-gray-800">
                 <div>
                   <p className="font-medium text-white">Admin Approval</p>
-                  <p className="text-xs text-gray-400">Give access to seller dashboard</p>
+                  <p className="text-xs text-gray-400">
+                    Give access to seller dashboard
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -216,23 +233,31 @@ export default function GiveAccessModal({
               <X size={20} />
             </button>
 
-            <h2 className="mb-2 text-xl font-bold text-white">Feature Permissions</h2>
+            <h2 className="mb-2 text-xl font-bold text-white">
+              Feature Permissions
+            </h2>
             <p className="mb-6 text-sm text-gray-400">
-              Select which dashboard features this seller can manage. Selecting "Full Access" will allow unconditional access.
+              Select which dashboard features this seller can manage. Selecting
+              "Full Access" will allow unconditional access.
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               {PERMISSION_OPTIONS.map((opt) => {
                 const isChecked = permissions.includes(opt.id);
                 return (
-                  <label key={opt.id} className="flex items-center gap-3 cursor-pointer rounded-lg bg-gray-950/50 p-3 border border-gray-800 hover:border-gray-700">
+                  <label
+                    key={opt.id}
+                    className="flex items-center gap-3 cursor-pointer rounded-lg bg-gray-950/50 p-3 border border-gray-800 hover:border-gray-700"
+                  >
                     <input
                       type="checkbox"
                       className="h-5 w-5 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
                       checked={isChecked}
                       onChange={() => handleTogglePermission(opt.id)}
                     />
-                    <span className="text-sm font-medium text-gray-200">{opt.label}</span>
+                    <span className="text-sm font-medium text-gray-200">
+                      {opt.label}
+                    </span>
                   </label>
                 );
               })}
@@ -264,9 +289,12 @@ export default function GiveAccessModal({
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 text-red-500">
               <ShieldAlert size={32} />
             </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Grant Full Access?</h3>
+            <h3 className="mb-2 text-lg font-bold text-white">
+              Grant Full Access?
+            </h3>
             <p className="mb-6 text-sm text-gray-400">
-              Are you sure you want to give full access to this seller? They will be able to manage all restricted features unconditionally.
+              Are you sure you want to give full access to this seller? They
+              will be able to manage all restricted features unconditionally.
             </p>
             <div className="flex justify-center gap-3">
               <button

@@ -5,13 +5,21 @@ import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchStorefrontCategoryBanners } from "@/lib/storefront";
+import { useAddressStore } from "@/lib/address-store";
 
 export function CategoryBanner({ category }: { category: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const selectedLocation = useAddressStore((s) => s.selectedLocation);
+  const selectedAddress = useAddressStore((s) =>
+    s.addresses.find((a) => a.id === s.selectedAddressId),
+  );
+  const storeId = selectedLocation?.storeId;
+  const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+
   const { data: banners = [], isLoading } = useQuery({
-    queryKey: ["category-banners", category],
-    queryFn: () => fetchStorefrontCategoryBanners(category),
+    queryKey: ["category-banners", category, storeId, pincode],
+    queryFn: () => fetchStorefrontCategoryBanners(category, { storeId, pincode }),
     staleTime: 1000 * 60 * 5,
     enabled: !!category,
   });

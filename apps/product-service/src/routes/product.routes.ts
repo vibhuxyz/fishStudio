@@ -43,6 +43,7 @@ import {
   getActiveBanners,
   getAdminBanners,
   getAllCategoryBanners,
+  getAnnouncementBanners,
   getPendingBanners,
   getSellerBanners,
   reviewBanner,
@@ -62,7 +63,7 @@ const router: Router = express.Router();
 router.post(
   "/slug-validator",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   slugValidator,
 );
 
@@ -135,7 +136,7 @@ router.post(
 router.post(
   "/upload-product-image",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   uploadProductImage,
 );
 router.post(
@@ -200,6 +201,7 @@ router.post(
   reviewBanner,
 );
 router.get("/get-banners", getActiveBanners);
+router.get("/get-announcement-banners", getAnnouncementBanners);
 
 router.post(
   "/create-product",
@@ -237,25 +239,25 @@ router.post(
 router.get(
   "/get-owned-products",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   getOwnedProducts,
 );
 router.get(
   "/get-owned-product/:productId",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   getOwnedProductById,
 );
 router.put(
   "/update-product/:productId",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   updateProduct,
 );
 router.put(
   "/update-product-stock/:productId",
   isAuthenticated,
-  allowRoles("admin", "seller"),
+  allowRoles("admin", "seller", "staff"),
   updateProductStock,
 );
 

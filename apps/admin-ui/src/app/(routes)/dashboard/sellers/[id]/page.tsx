@@ -7,7 +7,8 @@ import { useParams } from "next/navigation";
 import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, IndianRupee, Mail, MapPin, Package, Phone, RefreshCw, ShoppingCart, Store, TicketPercent, TrendingDown, Trophy, Search } from "lucide-react";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
-import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, StatsPeriod, DetailedProductRow } from "@/hooks/useAdminQueries";
+import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, useAdminSellerOrders, StatsPeriod, DetailedProductRow, SellerOrder } from "@/hooks/useAdminQueries";
+import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender } from "@tanstack/react-table";
 import ProductDetailModal from "@/shared/components/analytics/ProductDetailModal";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
@@ -32,7 +33,9 @@ const SellerDetailPage = () => {
   const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>("month");
   const [selectedProduct, setSelectedProduct] = useState<DetailedProductRow | null>(null);
   const { data: statsData, isLoading: isLoadingStats } = useAdminStats(statsPeriod, sellerId);
+  const { data: ordersData, isLoading: isLoadingOrders } = useAdminSellerOrders(sellerId);
   const stats = statsData?.stats;
+  const orders = ordersData?.orders || [];
 
   const handleToggleApproval = () => {
     if (!seller) return;
@@ -57,6 +60,90 @@ const SellerDetailPage = () => {
       permissions: newPerms,
     });
   };
+
+  const columns = React.useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "Order ID",
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-white text-[10px] font-mono tracking-tighter">
+            #{row.original.id.slice(-6).toUpperCase()}
+          </span>
+        ),
+      },
+      {
+        header: "Payment Details",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const method = row.original.paymentMethod;
+          const ref = row.original.paymentRef;
+          return (
+            <div className="flex flex-col">
+              <span className="text-gray-300 text-[10px] font-black uppercase whitespace-nowrap">
+                {method === "COD" ? "Cash on Delivery" : method || "Online"}
+              </span>
+              {method !== "COD" && ref && (
+                <span className="text-sky-400 text-[9px] font-mono tracking-tight truncate max-w-[80px]">#{ref}</span>
+              ) }
+            </div>
+          );
+        },
+      },
+      {
+        header: "Total",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const amount = row.original.totalAmount || row.original.total || 0;
+          return (
+            <span className="text-emerald-400 font-bold text-xs whitespace-nowrap">
+              ₹{amount.toLocaleString()}
+            </span>
+          );
+        },
+      },
+      {
+        header: "Status",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const pStatus = row.original.paymentStatus;
+          const oStatus = row.original.status;
+          let color = "bg-gray-800 text-gray-400";
+          let label = pStatus || "PENDING";
+          if (pStatus === "COMPLETED") { color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30"; label = "SUCCESSFUL"; }
+          else if (pStatus === "REFUNDED") { color = "bg-rose-900/40 text-rose-500 border border-rose-900/30"; label = "REFUNDED"; }
+          else if (oStatus === "REJECTED") { color = "bg-amber-900/40 text-amber-500 border border-amber-900/30"; label = "REJECT/REFUND"; }
+          return (
+            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${color}`}>
+              {label}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Date",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const date = new Date(row.original.createdAt);
+          return (
+            <span className="text-gray-400 text-[9px] whitespace-nowrap">{date.toLocaleDateString()}</span>
+          );
+        },
+      },
+      {
+        header: "Link",
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <Link href={`/dashboard/orders/${row.original.id}`} className="text-blue-400 hover:text-white transition">
+            <ShoppingCart size={14} />
+          </Link>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: orders,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   return (
     <DashboardPageShell
@@ -461,6 +548,45 @@ const SellerDetailPage = () => {
                   </div>
                 )}
               </div>
+            )}
+          </div>
+
+          <div className="rounded-xl bg-gray-900 border border-gray-800 p-5">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+              <IndianRupee size={18} className="text-emerald-500" />
+              Order & Payment History
+            </h3>
+            {isLoadingOrders ? (
+              <p className="text-gray-500 text-sm">Loading order history...</p>
+            ) : orders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[10px] text-white">
+                  <thead>
+                    {table.getHeaderGroups().map((group) => (
+                      <tr key={group.id} className="border-b border-gray-800 text-gray-400 uppercase font-black tracking-widest">
+                        {group.headers.map((header) => (
+                          <th key={header.id} className="p-2 text-left">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="border-b border-gray-800/50 hover:bg-slate-900/50 transition cursor-default">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="p-2">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm py-4 italic text-center">No orders found for this seller.</p>
             )}
           </div>
         </div>

@@ -15,19 +15,19 @@ const RejectedOrdersPage = () => {
   const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
 
   const { data: rawOrders = [], isLoading } = useQuery({
-    queryKey: ["staff-orders"],
+    queryKey: ["staff-orders", "rejected"],
     queryFn: async () => {
       const res = await axiosInstance.get("/order/api/get-seller-orders");
-      const mapped = res.data.orders.map((o: any) => ({
+      const mapped = (res.data.orders || []).map((o: any) => ({
         id: o.id,
-        status: o.status === "ACCEPTED" ? "Processing" :
-                o.status === "REJECTED" ? "Rejected" :
-                o.deliveryStatus === "Packed" ? "Ready" :
-                o.deliveryStatus === "Delivered" ? "Completed" : "New",
+        status: o.status === "REJECTED" ? "Rejected" :
+                o.status === "DELIVERED" ? "Completed" :
+                o.status === "SHIPPED" ? "Ready" :
+                o.status === "ACCEPTED" ? "Processing" : "New",
         createdAt: o.createdAt,
         total: o.totalAmount ?? 0,
         user: { name: o.user?.name || "Customer", phone: o.user?.phone_number || "-" },
-        shippingAddress: { city: "-" },
+        shippingAddress: { city: o.deliveryCity || "-" },
         rejectionReason: o.rejectionReason,
         refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null
       }));

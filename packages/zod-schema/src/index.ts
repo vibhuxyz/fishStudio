@@ -1,7 +1,7 @@
 import { z, ZodSchema } from "zod";
 import { ValidationError } from "@repo/error-handlers";
 
-export const validate = <T>(schema: ZodSchema<T>, data: unknown): T => {
+export const validate = <T>(schema: z.ZodType<T, any, any>, data: unknown): T => {
   const result = schema.safeParse(data);
   if (!result.success) {
     const errorMessages = result.error.errors.map((e) => e.message).join(", ");

@@ -23,10 +23,12 @@ import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
 import { AddressModal } from "@/components/shared/address-modal";
 import { SearchModal } from "@/components/shared/search-modal";
-import NotificationBell from "./NotificationBell";
+// import NotificationBell from "./NotificationBell"; // Removed as per request
 import { useAddressStore } from "@/lib/address-store";
 import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
+import { useAnnouncement, } from "@/components/providers/announcement-provider";
+import { BAR_HEIGHT } from "@/utils/constants";
 
 interface SiteHeaderProps {
   onLoginClick?: () => void;
@@ -261,11 +263,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const modals = useModals();
   const router = useRouter();
   const pathname = usePathname();
+  const { visible: announcementVisible } = useAnnouncement();
+  const topOffset = announcementVisible ? BAR_HEIGHT : 0;
+  const isHomePage = pathname === "/";
   const isCheckoutPage = pathname === "/checkout";
-  const isOrderConfirmationPage = pathname.startsWith("/order-confirmation");
-  const isCategoryOrProductPage = pathname.startsWith("/category") || pathname.startsWith("/product");
-  const shouldShowCategoryIcon = isScrolled || isCategoryOrProductPage;
-  const shouldHideCategoryBar = isScrolled || isCategoryOrProductPage || isCheckoutPage || isOrderConfirmationPage;
+  const shouldShowCategoryIcon = isScrolled || !isHomePage;
+  const shouldHideCategoryBar = isScrolled || !isHomePage;
 
   const handleCartClick = onCartClick ?? modals.openCart;
 
@@ -372,6 +375,19 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   const addressLine = (() => {
     if (!hydrated) return "Select location";
+    // selectedLocation (set when user picks pincode/city) takes priority
+    if (selectedLocation) {
+      // If there's a saved address matching this location, show the full address
+      if (selectedAddress && selectedAddress.pincode === selectedLocation.pincode) {
+        const parts = [
+          selectedAddress.street,
+          selectedAddress.area,
+          selectedAddress.city,
+        ].filter(Boolean);
+        if (parts.length > 0) return parts.join(", ");
+      }
+      return `${selectedLocation.city} · ${selectedLocation.pincode}`;
+    }
     if (selectedAddress) {
       const parts = [
         selectedAddress.street,
@@ -380,8 +396,6 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       ].filter(Boolean);
       return parts.join(", ");
     }
-    if (selectedLocation)
-      return `${selectedLocation.city} · ${selectedLocation.pincode}`;
     return hasAddresses ? "Select saved address" : "Enter your address";
   })();
 
@@ -399,7 +413,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300">
+      <header
+        className="fixed left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300"
+        style={{ top: topOffset }}
+      >
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
 
           {/* Logo */}
@@ -545,7 +562,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
           {/* Account + Cart */}
           <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
-            <NotificationBell />
+            {/* <NotificationBell /> */} 
             <UserProfileDropdown onAddressClick={() => setShowAddressModal(true)} />
             {!isCheckoutPage && (
               <button
@@ -626,7 +643,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         }}
       />
       <div
-        className={`${shouldHideCategoryBar ? "h-[60px] md:h-[72px]" : "h-[140px] md:h-[152px]"}`}
+        style={{ height: (shouldHideCategoryBar ? 60 : 140) + topOffset }}
+        className="md:hidden"
+      />
+      <div
+        style={{ height: (shouldHideCategoryBar ? 72 : 152) + topOffset }}
+        className="hidden md:block"
       />
     </>
   );

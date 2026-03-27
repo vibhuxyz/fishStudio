@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
+import { publishToQueue } from "@repo/libs";
 
 export const createStore = async (
   req: Request,
@@ -38,6 +39,28 @@ export const createStore = async (
     await prisma.stores.create({
       data: storeData,
     });
+
+    // Notify all admins that this seller has set up their shop and needs approval
+    try {
+      const seller = await prisma.sellers.findUnique({
+        where: { id: sellerId },
+        select: { name: true, email: true },
+      });
+      const admins = await prisma.admins.findMany({ select: { id: true } });
+      for (const admin of admins) {
+        await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: admin.id,
+          title: "Seller Shop Created",
+          message: `Seller ${seller?.name ?? "Unknown"} (${seller?.email ?? sellerId}) has set up their shop and is awaiting approval.`,
+          type: "WARNING",
+          category: "SYSTEM",
+          metadata: { sellerId },
+          channels: ["IN_APP", "EMAIL"],
+        });
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify admins of new store creation:", notifyErr);
+    }
 
     res.status(201).json({
       success: true,
@@ -131,7 +154,12 @@ export const checkPincode = async (
     }
 
     const store = await prisma.stores.findFirst({
-      where: { pincode: String(pincode) },
+      where: {
+        OR: [
+          { pincode: String(pincode) },
+          { availableCities: { has: String(pincode) } },
+        ],
+      },
       select: {
         id: true,
         name: true,

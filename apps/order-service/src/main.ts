@@ -1,4 +1,7 @@
 import express from "express";
+import helmet from "helmet";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
@@ -7,6 +10,11 @@ import { ENV } from "@repo/env-config";
 import router from "./routes/order.route.js";
 
 const app = express();
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+}));
+app.use(compression() as any);
 app.use(
   cors({
     origin: ENV.CORS_ORIGINS
@@ -17,7 +25,14 @@ app.use(
   }),
 );
 
-// Webhook route removed
+app.set("trust proxy", 1);
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please slow down." },
+}));
 
 app.use(express.json());
 app.use(cookieParser());

@@ -8,15 +8,18 @@ import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-she
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
+import { useAdminAccount } from "@/hooks/useAdminQueries";
+
 
 const CategoryBannerReviewPage = () => {
   useRequireAuth();
+  const { data: admin } = useAdminAccount();
   const queryClient = useQueryClient();
+
   const [selectedBanner, setSelectedBanner] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [filter, setFilter] = useState("ALL"); // ALL, PENDING, APPROVED, REJECTED
-
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["admin", "all-category-banners"],
     queryFn: async () => {
@@ -24,6 +27,45 @@ const CategoryBannerReviewPage = () => {
       return res.data.banners || [];
     },
   });
+
+  // WebSocket: refresh banner list when a seller uploads
+  React.useEffect(() => {
+    if (!admin?.id) return;
+
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const wsUrl = `${wsBase}?adminId=${admin.id}`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "BANNER_SUBMITTED") {
+            queryClient.invalidateQueries({ queryKey: ["admin", "all-category-banners"] });
+            toast.info(data.payload?.message || "New banner submitted for review!");
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [admin?.id, queryClient]);
+
 
   const reviewMutation = useMutation({
     mutationFn: async (data: { bannerId: string; action: "APPROVE" | "REJECT"; rejectionReason?: string }) => {
@@ -56,7 +98,10 @@ const CategoryBannerReviewPage = () => {
 
   const bannersByCategory = useMemo(() => {
     return filteredBanners.reduce((acc: any, banner: any) => {
-      const cat = banner.category || "General";
+      let cat = banner.category;
+      if (!cat && banner.bannerType === "announcement") cat = "Announcements";
+      else cat = cat || "General";
+      
       if (!acc[cat]) acc[cat] = [];
       acc[cat].push(banner);
       return acc;
@@ -129,12 +174,21 @@ const CategoryBannerReviewPage = () => {
                         banner.status === 'PENDING' ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-gray-800'
                       }`}
                     >
-                      <div className="relative aspect-video">
-                        <img 
-                          src={banner.imageUrl} 
-                          alt="Banner" 
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="relative aspect-video bg-gray-950 flex flex-col items-center justify-center p-4">
+                        {banner.imageUrl ? (
+                          <img 
+                            src={banner.imageUrl} 
+                            alt="Banner" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center space-y-1">
+                            <AlertCircle size={32} className="mx-auto text-blue-500/50 mb-2" />
+                            <p className="text-white text-xs font-bold line-clamp-1 italic italic-none">{banner.title}</p>
+                            <p className="text-gray-400 text-[10px] line-clamp-1 italic italic-none">{banner.subtitle}</p>
+                            {banner.price && <p className="text-emerald-400 text-[10px] font-bold italic italic-none">₹{banner.price}</p>}
+                          </div>
+                        )}
                         <div className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                           banner.status === 'APPROVED' ? 'bg-green-500 text-black' : 
                           banner.status === 'REJECTED' ? 'bg-red-500 text-white' : 
@@ -202,12 +256,24 @@ const CategoryBannerReviewPage = () => {
             <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Banner Preview</label>
-                <div className="aspect-[21/9] bg-gray-950 rounded-lg overflow-hidden border border-gray-800">
-                   <img 
-                    src={selectedBanner.imageUrl} 
-                    alt="Banner Preview" 
-                    className="w-full h-full object-cover"
-                  />
+                <div className="aspect-[21/9] bg-gray-950 rounded-lg overflow-hidden border border-gray-800 flex items-center justify-center p-8">
+                   {selectedBanner.imageUrl ? (
+                     <img 
+                       src={selectedBanner.imageUrl} 
+                       alt="Banner Preview" 
+                       className="w-full h-full object-cover"
+                     />
+                   ) : (
+                     <div className="text-center space-y-2 max-w-md">
+                        <p className="text-3xl font-black text-white italic italic-none">{selectedBanner.title}</p>
+                        <p className="text-lg text-gray-400 font-medium italic italic-none">{selectedBanner.subtitle}</p>
+                        {selectedBanner.price && (
+                          <div className="mt-4 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full inline-block">
+                             <span className="text-emerald-400 font-bold italic italic-none">Special Price: ₹{selectedBanner.price}</span>
+                          </div>
+                        )}
+                     </div>
+                   )}
                 </div>
               </div>
 

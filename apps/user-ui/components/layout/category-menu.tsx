@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks/useCategories";
 import { getCategoryConfigKey } from "@/lib/storefront";
+import { useAddressStore } from "@/lib/address-store";
 
 const categoryIcons: Record<string, React.ReactNode> = {
   "Fresh Water": <Fish className="h-5 w-5" />,
@@ -45,6 +46,7 @@ export function CategoryMenu({
   onClose,
 }: CategoryMenuProps) {
   const { data, isLoading } = useCategories();
+  const pincode = useAddressStore((s: any) => s.selectedLocation?.pincode || s.addresses.find((a: any) => a.id === s.selectedAddressId)?.pincode);
 
   const categories: string[] = data?.categories ?? [];
   const subCategoriesData: Record<string, string[]> = data?.subCategories ?? {};
@@ -108,6 +110,12 @@ export function CategoryMenu({
     };
   }, [checkScrollButtons]);
 
+  if (!pincode) return null;
+
+  if (isLoading) {
+    return <CategoryMenuSkeleton />;
+  }
+
   const scroll = (direction: "left" | "right") => {
     scrollRef.current?.scrollBy({
       left: direction === "left" ? -200 : 200,
@@ -115,9 +123,6 @@ export function CategoryMenu({
     });
   };
 
-  if (isLoading) {
-    return <CategoryMenuSkeleton />;
-  }
 
   /* Horizontal variant */
   if (variant === "horizontal") {

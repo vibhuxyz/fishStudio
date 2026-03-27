@@ -3,7 +3,7 @@ import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 
 export interface AuthRequest extends Request {
-  role?: "admin" | "seller" | "user";
+  role?: "admin" | "seller" | "user" | "staff";
   admin?: {
     id: string;
   };
@@ -14,6 +14,10 @@ export interface AuthRequest extends Request {
       name?: string;
     } | null;
   };
+  staff?: {
+    id: string;
+    sellerId: string;
+  }
   user?: {
     id: string;
   };
@@ -30,14 +34,14 @@ export const getOwnedProductFilter = (req: AuthRequest) => {
   if (req.role === "admin" && req.admin?.id) {
     return { adminId: req.admin.id, isDeleted: false };
   }
-  if (req.role === "seller" && req.seller?.store?.id) {
+  if ((req.role === "seller" || req.role === "staff") && req.seller?.store?.id) {
     return { storeId: req.seller.store.id, isDeleted: false };
   }
-  throw new ValidationError("Only admin or seller can manage products!");
+  throw new ValidationError("Only admin, seller, or authorized staff can manage products!");
 };
 
 export const getSellerStore = (req: AuthRequest) => {
-  if (req.role === "seller" && req.seller?.store?.id) {
+  if ((req.role === "seller" || req.role === "staff") && req.seller?.store?.id) {
     return req.seller.store;
   }
   throw new ValidationError("Seller store is required");

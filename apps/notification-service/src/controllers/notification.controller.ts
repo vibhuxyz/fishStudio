@@ -1,9 +1,13 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { NotificationService } from "../services/notification.service.js";
+
+// isAuthenticated populates req.user (users), req.seller (sellers), or req.admin (admins)
+const getUserId = (req: any): string | null =>
+  req.user?.id ?? req.seller?.id ?? req.admin?.id ?? null;
 
 export const getNotifications = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -17,9 +21,9 @@ export const getNotifications = async (req: any, res: Response, next: NextFuncti
 
 export const markAsRead = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserId(req);
     const { id } = req.params;
-    
+
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -33,7 +37,7 @@ export const markAsRead = async (req: any, res: Response, next: NextFunction) =>
 
 export const markAllAsRead = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }

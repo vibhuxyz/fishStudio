@@ -305,7 +305,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   <button
                                     type="button"
                                     onClick={() => updateQuantity(index, item.quantity + 0.5)}
-                                    className="flex h-7 w-7 items-center justify-center text-white"
+                                    disabled={item.product.stock !== undefined && (useCartStore.getState().getProductQty(item.product.id) + 0.5) > item.product.stock}
+                                    className="flex h-7 w-7 items-center justify-center text-white disabled:opacity-40 disabled:cursor-not-allowed"
                                   >
                                     <Plus className="h-3 w-3" />
                                   </button>

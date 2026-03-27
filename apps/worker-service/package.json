@@ -16,7 +16,9 @@
   },
   "dependencies": {
     "amqplib": "^0.10.9",
-    "ws": "^8.18.0"
+    "node-cron": "^4.2.1",
+    "ws": "^8.18.0",
+    "@repo/jobs": "workspace:*"
   },
   "devDependencies": {
     "@repo/db-postgres": "workspace:*",

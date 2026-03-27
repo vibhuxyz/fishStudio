@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "@repo/zod-schema";
 import { axiosInstance } from "./utils";
+import { toast } from "sonner";
 
 type CuttingType = {
   id: string;
@@ -101,6 +102,14 @@ export const useCartStore = create<CartState>()(
       if (existingIndex >= 0) {
         const updated = [...state.items];
         const existing = updated[existingIndex];
+        
+        // Stock check for total quantity of this product in cart
+        const currentTotalQty = get().getProductQty(product.id);
+        if (product.stock !== undefined && currentTotalQty + quantity > product.stock) {
+          toast.error(`Cannot add more than ${product.stock} available units`);
+          return {};
+        }
+
         const newQty = existing.quantity + quantity;
         updated[existingIndex] = {
           ...existing,
@@ -108,6 +117,12 @@ export const useCartStore = create<CartState>()(
           totalPayable: newQty * product.price,
         };
         return { items: updated };
+      }
+
+      // Stock check for new item
+      if (product.stock !== undefined && quantity > product.stock) {
+        toast.error(`Only ${product.stock} units available in stock`);
+        return {};
       }
 
       return {
@@ -137,6 +152,20 @@ export const useCartStore = create<CartState>()(
       get().removeItem(index);
       return;
     }
+
+    const item = get().items[index];
+    if (!item) return;
+
+    // Calculate total quantity of this product in cart excluding the current item's old quantity
+    const otherItemsQty = get().items
+      .filter((it, i) => it.product.id === item.product.id && i !== index)
+      .reduce((sum, it) => sum + it.quantity, 0);
+
+    if (item.product.stock !== undefined && otherItemsQty + quantity > item.product.stock) {
+      toast.error(`Limit reached: Only ${item.product.stock} units available`);
+      return;
+    }
+
     set((state) => ({
       items: state.items.map((item, i) =>
         i === index
@@ -148,6 +177,13 @@ export const useCartStore = create<CartState>()(
 
   quickAdd: (product) => {
     const state = get();
+    const currentQty = state.getProductQty(product.id);
+    
+    if (product.stock !== undefined && currentQty + 0.5 > product.stock) {
+      toast.error(`Limit reached: ${product.stock} units available`);
+      return;
+    }
+
     const existingIndex = state.items.findIndex(
       (item) => item.product.id === product.id
     );

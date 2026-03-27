@@ -13,7 +13,7 @@ COPY . .
 RUN bun install --frozen-lockfile
 
 # Build the specific service
-RUN bunx turbo run build --filter=@repo/rabbitMQ-service...
+RUN bunx turbo run build --filter=@repo/worker-service...
 
 # ==========================================
 # 2. Runtime Stage (Uses Node)
@@ -33,12 +33,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
 
 # 3. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
-COPY --from=builder /app/apps/rabbitMQ-service ./apps/rabbitMQ-service
+COPY --from=builder /app/apps/worker-service ./apps/worker-service
 
 # --- RUN FROM THE APP DIRECTORY ---
 # Node must run from inside the app folder so it finds the local node_modules (with Express v5) first
-WORKDIR /app/apps/rabbitMQ-service
-
-
+WORKDIR /app/apps/worker-service
 
 CMD ["node", "dist/main.js"]

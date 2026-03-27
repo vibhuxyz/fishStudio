@@ -1,6 +1,7 @@
 import React from "react";
 import { BellRing } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
+import useSeller from "@/hooks/useSeller";
 
 interface NotificationBellProps {
   color?: string;
@@ -8,7 +9,10 @@ interface NotificationBellProps {
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ color = "#969696", size = 24 }) => {
-  const { unreadCount } = useNotifications();
+  const { seller } = useSeller();
+  // staff has sellerId; seller has id directly
+  const sellerId = seller?.sellerId || seller?.id;
+  const { unreadCount } = useNotifications(sellerId);
 
   return (
     <div className="relative inline-flex items-center">

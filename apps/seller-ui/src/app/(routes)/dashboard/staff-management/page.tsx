@@ -5,7 +5,9 @@ import { Search, UserCheck, UserX, Loader2, Users } from "lucide-react";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { Staff } from "@repo/zod-schema";
+import type { Staff } from "@repo/zod-schema";
+
+type StaffSearchResult = Staff & { isInAnotherShop?: boolean };
 
 // Keeping mock orders just for the stats display
 import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
@@ -13,7 +15,7 @@ import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
 const StaffManagementPage = () => {
   const queryClient = useQueryClient();
   const [searchEmail, setSearchEmail] = useState("");
-  const [searchResult, setSearchResult] = useState<Staff | null>(null);
+  const [searchResult, setSearchResult] = useState<StaffSearchResult | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
   
@@ -152,27 +154,35 @@ const StaffManagementPage = () => {
         )}
 
         {searchResult && (
-          <div className="mt-4 border border-gray-700 rounded-xl p-4 flex items-center justify-between bg-[#0d1117]">
+          <div className={`mt-4 border rounded-xl p-4 flex items-center justify-between bg-[#0d1117] ${searchResult.isInAnotherShop ? "border-amber-700/60" : "border-gray-700"}`}>
             <div>
               <p className="text-white font-medium">{searchResult.name}</p>
               <p className="text-gray-400 text-sm">{searchResult.email}</p>
-              <span
-                className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  searchResult.isActive
-                    ? "bg-green-900/60 text-green-300"
-                    : "bg-gray-700 text-gray-400"
-                }`}
-              >
-                {searchResult.isActive ? "Active" : "Not Active"}
-              </span>
+              {searchResult.isInAnotherShop ? (
+                <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-900/60 text-amber-300">
+                  Already in another shop
+                </span>
+              ) : (
+                <span
+                  className={`inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                    searchResult.isActive
+                      ? "bg-green-900/60 text-green-300"
+                      : "bg-gray-700 text-gray-400"
+                  }`}
+                >
+                  {searchResult.isActive ? "Active" : "Not Active"}
+                </span>
+              )}
             </div>
             <div>
-              {!searchResult.isActive ? (
+              {searchResult.isInAnotherShop ? (
+                <p className="text-amber-400 text-sm font-medium max-w-[200px] text-right">
+                  This staff is working at another shop. Please hire other staff.
+                </p>
+              ) : !searchResult.isActive ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    handleAccessToggle(searchResult.id, true)
-                  }
+                  onClick={() => handleAccessToggle(searchResult.id, true)}
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
                 >
                   <UserCheck size={16} />

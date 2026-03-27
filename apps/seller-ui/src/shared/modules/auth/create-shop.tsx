@@ -90,7 +90,10 @@ const CreateShop = ({
       const response = await axios.post(
         `${frontendEnv.apiUrl}/auth/api/create-store`,
         shopData,
-        { headers: { "Content-Type": "application/json" } },
+        { 
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true
+        },
       );
       return response.data;
     },

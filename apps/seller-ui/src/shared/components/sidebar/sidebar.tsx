@@ -45,7 +45,8 @@ import useRequireAuth from "@/hooks/useRequiredAuth";
 import NotificationBell from "../notifications/NotificationBell";
 
 const SidebarBarWrapper = () => {
-  const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } = useSidebar();
+  const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } =
+    useSidebar();
   const pathName = usePathname();
   const { seller } = useRequireAuth();
 
@@ -60,7 +61,8 @@ const SidebarBarWrapper = () => {
     activeSidebar === route ? "#0085ff" : "#969696";
 
   const perms = seller?.permissions || [];
-  const hasPerm = (p: string) => perms.includes("full_access") || perms.includes(p);
+  const hasPerm = (p: string) =>
+    perms.includes("full_access") || perms.includes(p);
 
   return (
     <Box
@@ -79,7 +81,9 @@ const SidebarBarWrapper = () => {
       className="sidebar-wrapper"
     >
       <Sidebar.Header>
-        <div className={`flex items-start ${isCollapsed ? "justify-center" : "justify-between"} w-full px-2 pt-4`}>
+        <div
+          className={`flex items-start ${isCollapsed ? "justify-center" : "justify-between"} w-full px-2 pt-4`}
+        >
           {!isCollapsed && (
             <div className="flex flex-col gap-0.5">
               <h3 className="text-2xl font-bold text-white tracking-tight leading-7">
@@ -90,12 +94,16 @@ const SidebarBarWrapper = () => {
               </h5>
             </div>
           )}
-          <button 
+          <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`text-slate-400 hover:text-white transition-all active:scale-95 ${isCollapsed ? "mt-2" : "mt-1.5"}`}
             title="Toggle Sidebar"
           >
-            {isCollapsed ? <PanelLeftOpen size={22} /> : <PanelLeftClose size={22} />}
+            {isCollapsed ? (
+              <PanelLeftOpen size={22} />
+            ) : (
+              <PanelLeftClose size={22} />
+            )}
           </button>
         </div>
       </Sidebar.Header>
@@ -108,6 +116,19 @@ const SidebarBarWrapper = () => {
             isActive={activeSidebar === "/dashboard"}
             href="/dashboard"
           />
+
+          <SidebarItem
+            isActive={activeSidebar === "/dashboard/notifications"}
+            title="Notifications"
+            href="/dashboard/notifications"
+            icon={
+              <NotificationBell
+                size={24}
+                color={getIconColor("/dashboard/notifications")}
+              />
+            }
+          />
+
           <div className="mt-6 block">
             <SidebarMenu title="Main Menu">
               <SidebarItem
@@ -220,7 +241,19 @@ const SidebarBarWrapper = () => {
             </SidebarMenu>
 
             {hasPerm("event") && (
-              <SidebarMenu title="Events">
+              <SidebarMenu title="Events & Coupons">
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/discount-codes"}
+                  title="Discount Codes"
+                  href="/dashboard/discount-codes"
+                  icon={
+                    <TicketPercent
+                      size={22}
+                      color={getIconColor("/dashboard/discount-codes")}
+                    />
+                  }
+                />
+
                 <SidebarItem
                   isActive={activeSidebar === "/dashboard/create-event"}
                   title="Create Event"
@@ -258,33 +291,9 @@ const SidebarBarWrapper = () => {
                   />
                 }
               />
-              {hasPerm("coupon") && (
-                <SidebarItem
-                  isActive={activeSidebar === "/dashboard/discount-codes"}
-                  title="Discount Codes"
-                  href="/dashboard/discount-codes"
-                  icon={
-                    <TicketPercent
-                      size={22}
-                      color={getIconColor("/dashboard/discount-codes")}
-                    />
-                  }
-                />
-              )}
             </SidebarMenu>
 
             <SidebarMenu title="Account">
-              <SidebarItem
-                isActive={activeSidebar === "/dashboard/notifications"}
-                title="Notifications"
-                href="/dashboard/notifications"
-                icon={
-                  <NotificationBell
-                    size={24}
-                    color={getIconColor("/dashboard/notifications")}
-                  />
-                }
-              />
               <SidebarItem
                 isActive={activeSidebar === "/logout"}
                 title="Logout"

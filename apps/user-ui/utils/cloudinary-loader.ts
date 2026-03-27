@@ -5,9 +5,9 @@ export default function cloudinaryLoader({
   width,
   quality,
 }: ImageLoaderProps) {
-  // If it's not a Cloudinary URL, return as is
+  // If it's not a Cloudinary URL, return as is (but with width param to satisfy Next.js warning)
   if (!src.includes("res.cloudinary.com")) {
-    return src;
+    return src.includes("?") ? `${src}&w=${width}` : `${src}?w=${width}`;
   }
 
   // Parameters for Cloudinary transformation

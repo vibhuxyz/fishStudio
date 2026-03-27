@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import axiosInstance from "../utils/axiosInstance";
 
 export interface Notification {
@@ -14,8 +15,45 @@ export interface Notification {
   updatedAt: string;
 }
 
-export const useNotifications = () => {
+export const useNotifications = (adminId?: string) => {
   const queryClient = useQueryClient();
+
+  // WebSocket: instantly refresh admin bell on relevant events
+  useEffect(() => {
+    if (!adminId) return;
+
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const wsUrl = `${wsBase}?adminId=${adminId}`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "NEW_NOTIFICATION") {
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [adminId, queryClient]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["notifications"],

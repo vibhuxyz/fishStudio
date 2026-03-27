@@ -28,6 +28,14 @@ export const sendOtpToUser = async (
 
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
 
+    // Synchronous guard: phone OTP not available without Fast2SMS key in production
+    if (!isEmail && ENV.NODE_ENV === "production" && (!ENV.FAST2SMS_API_KEY || ENV.FAST2SMS_API_KEY === "your_api_key_here")) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone OTP is coming soon. Please use your email to log in.",
+      });
+    }
+
     // Check if user exists
     const existingUser = isEmail
       ? await prisma.users.findUnique({ where: { email: identifier.trim() } })

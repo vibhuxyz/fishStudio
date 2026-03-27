@@ -15,19 +15,19 @@ const CompletedOrdersPage = () => {
   const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
 
   const { data: rawOrders = [], isLoading } = useQuery({
-    queryKey: ["staff-orders"],
+    queryKey: ["staff-orders", "completed"],
     queryFn: async () => {
       const res = await axiosInstance.get("/order/api/get-seller-orders");
-      const mapped = res.data.orders.map((o: any) => ({
+      const mapped = (res.data.orders || []).map((o: any) => ({
         id: o.id,
-        status: o.status === "ACCEPTED" ? "Processing" :
+        status: o.status === "DELIVERED" ? "Completed" :
+                o.status === "SHIPPED" ? "Ready" :
                 o.status === "REJECTED" ? "Rejected" :
-                o.deliveryStatus === "Packed" ? "Ready" :
-                o.deliveryStatus === "Delivered" ? "Completed" : "New",
+                o.status === "ACCEPTED" ? "Processing" : "New",
         createdAt: o.createdAt,
         total: o.totalAmount ?? 0,
         user: { name: o.user?.name || "Customer", phone: o.user?.phone_number || "-" },
-        shippingAddress: { city: "-" }
+        shippingAddress: { city: o.deliveryCity || "-" }
       }));
       return mapped.filter((o: any) => o.status === "Completed");
     },

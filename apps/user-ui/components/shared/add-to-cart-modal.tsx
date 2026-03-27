@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addToCart } from "@/lib/cart-store";
+import { addToCart, useCartStore } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
 import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
 import { useModals } from "@/components/providers/modal-provider";
@@ -269,6 +269,7 @@ export function AddToCartModal({
                   size="icon"
                   className="h-8 w-8 rounded-full bg-transparent"
                   onClick={() => setQuantity(quantity + 1)}
+                  disabled={product.stock !== undefined && (useCartStore.getState().getProductQty(product.id) + quantity) >= product.stock}
                 >
                   <Plus className="h-3 w-3" />
                   <span className="sr-only">Increase quantity</span>

@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-store";
+
 import {
   CheckCircle2,
   Package,
@@ -27,6 +29,8 @@ export default function OrderConfirmationPage() {
 
   const { orderId } = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const {
     data: order,
@@ -40,6 +44,45 @@ export default function OrderConfirmationPage() {
     },
     enabled: !!orderId,
   });
+
+  // WebSocket: refresh order when status changes
+  React.useEffect(() => {
+    if (!user?.id || !orderId) return;
+
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const wsUrl = `${wsBase}?userId=${user.id}`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          // Worker broadcasts { type: "ORDER_STATUS_UPDATE", payload: { orderId, status } }
+          if (data.type === "ORDER_STATUS_UPDATE" && data.payload?.orderId === orderId) {
+            queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [user?.id, orderId, queryClient]);
+
 
   const getStatusConfig = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -305,7 +348,7 @@ export default function OrderConfirmationPage() {
               Order Items
             </h3>
             <div className="space-y-3">
-              {(order.orderItems || []).map((item: any) => (
+              {(order.items || []).map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3">
                   {item.product?.images?.[0]?.url && (
                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-border">

@@ -34,7 +34,8 @@ import useRequireAuth from "@/hooks/useRequiredAuth";
 import NotificationBell from "../notifications/NotificationBell";
 
 const SidebarBarWrapper = () => {
-  const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } = useSidebar();
+  const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } =
+    useSidebar();
   const pathName = usePathname();
   const { seller } = useRequireAuth();
 
@@ -65,7 +66,9 @@ const SidebarBarWrapper = () => {
       className="sidebar-wrapper"
     >
       <Sidebar.Header>
-        <div className={`flex items-start ${isCollapsed ? "justify-center" : "justify-between"} w-full px-2 pt-4`}>
+        <div
+          className={`flex items-start ${isCollapsed ? "justify-center" : "justify-between"} w-full px-2 pt-4`}
+        >
           {!isCollapsed && (
             <div className="flex flex-col gap-0.5">
               <h3 className="text-2xl font-bold text-white tracking-tight">
@@ -76,12 +79,16 @@ const SidebarBarWrapper = () => {
               </h5>
             </div>
           )}
-          <button 
+          <button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`text-slate-400 hover:text-white transition-all active:scale-95 ${isCollapsed ? "mt-2" : "mt-1.5"}`}
             title="Toggle Sidebar"
           >
-            {isCollapsed ? <PanelLeftOpen size={22} /> : <PanelLeftClose size={22} />}
+            {isCollapsed ? (
+              <PanelLeftOpen size={22} />
+            ) : (
+              <PanelLeftClose size={22} />
+            )}
           </button>
         </div>
       </Sidebar.Header>
@@ -93,6 +100,18 @@ const SidebarBarWrapper = () => {
             icon={<Home fill={getIconColor("/dashboard")} />}
             isActive={activeSidebar === "/dashboard"}
             href="/dashboard"
+          />
+
+          <SidebarItem
+            isActive={activeSidebar === "/dashboard/notifications"}
+            title="Notifications"
+            href="/dashboard/notifications"
+            icon={
+              <NotificationBell
+                size={24}
+                color={getIconColor("/dashboard/notifications")}
+              />
+            }
           />
           <div className="mt-6 block">
             <SidebarMenu title="Inventory">
@@ -130,17 +149,14 @@ const SidebarBarWrapper = () => {
                 }
               />
             </SidebarMenu>
-            
+
             <SidebarMenu title="Sellers & Analytics">
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/sellers"}
                 title="Seller Management"
                 href="/dashboard/sellers"
                 icon={
-                  <Users
-                    size={22}
-                    color={getIconColor("/dashboard/sellers")}
-                  />
+                  <Users size={22} color={getIconColor("/dashboard/sellers")} />
                 }
               />
               <SidebarItem
@@ -206,28 +222,6 @@ const SidebarBarWrapper = () => {
                   <Settings
                     size={22}
                     color={getIconColor("/dashboard/settings")}
-                  />
-                }
-              />
-              <SidebarItem
-                isActive={activeSidebar === "/edit-profile"}
-                title="Profile"
-                href="/edit-profile"
-                icon={
-                  <Pencil
-                    size={22}
-                    color={getIconColor("/edit-profile")}
-                  />
-                }
-              />
-              <SidebarItem
-                isActive={activeSidebar === "/dashboard/notifications"}
-                title="Notifications"
-                href="/dashboard/notifications"
-                icon={
-                  <NotificationBell
-                    size={24}
-                    color={getIconColor("/dashboard/notifications")}
                   />
                 }
               />

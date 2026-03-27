@@ -18,8 +18,10 @@ export const deliveryDetailsSchema = z.object({
 export const billDetailsSchema = z.object({
   itemTotal: z.number().nonnegative(),
   deliveryCharge: z.number().nonnegative().default(0),
+  extraCharge: z.number().nonnegative().optional().default(0),
   discount: z.number().nonnegative().default(0),
-  totalAmount: z.number().nonnegative(),
+  totalAmount: z.number().nonnegative().optional(),
+  discountBreakdown: z.array(z.any()).optional(),
 });
 
 export const createOrderSchema = z.object({

@@ -12,15 +12,20 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>FishStudio Notification</h2>
+            <h2><%= ORG_NAME %> Notification</h2>
         </div>
         <div class="content">
             <p>Hi <%= name %>,</p>
             <h3><%= title %></h3>
             <p><%= message %></p>
+            
+            <div style="border-top:1px solid #f3f4f6;padding-top:16px;margin-top:24px;">
+                <p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">You are receiving this notification from <%= ORG_NAME %>.</p>
+            </div>
         </div>
         <div class="footer">
-            <p>&copy; 2026 FishStudio. All rights reserved.</p>
+            <p>&copy; 2026 <%= ORG_NAME %>. All rights reserved.</p>
+            <p style="margin:4px 0 0;font-size:11px;color:#cbd5e1;">Contact: <%= ORG_EMAIL %></p>
         </div>
     </div>
 </body>

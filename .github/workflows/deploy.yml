@@ -20,9 +20,12 @@ jobs:
           docker build -f docker/auth-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/auth-service:prod .
           docker build -f docker/product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service:prod .
           docker build -f docker/order-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/order-service:prod .
-          docker build -f docker/rabbitmq-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/rabbitmq-service:prod .
+          docker build -f docker/notification-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notification-service:prod .
+          docker build -f docker/worker-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/worker-service:prod .
 
           docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
           docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:prod
           docker push ${{ secrets.DOCKER_USERNAME }}/product-service:prod
-          docker push ${{ secrets.DOCKER_USERNAME }}/rabbitmq-service:prod
+          docker push ${{ secrets.DOCKER_USERNAME }}/order-service:prod
+          docker push ${{ secrets.DOCKER_USERNAME }}/notification-service:prod
+          docker push ${{ secrets.DOCKER_USERNAME }}/worker-service:prod

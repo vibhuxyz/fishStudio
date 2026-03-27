@@ -12,14 +12,16 @@ RUN bun install --frozen-lockfile
 
 # --- FIX: Generate Prisma Client for Docker ---
 # Switch to the database package directory
-WORKDIR /app/packages/db
+# Switch to the database package directory
+WORKDIR /app/packages/db-postgres
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_0LSmuGOPyjg9@ep-square-violet-ak8f7sdn-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env
+RUN bunx prisma generate
 
-# 1. Create a dummy .env file inside packages/db so Prisma validation passes
-RUN echo 'DATABASE_URL="mongodb+srv://nitishEcom:bCLfa2iQZLxuKu4t@ecommerce.rijjvwk.mongodb.net/fishStudioDEV?authSource=admin"' > .env
-
-# 2. Generate the client.
-# This reads schema.prisma, downloads the "linux-musl" engine (crucial for Alpine),
-# and places the generated client into ../src/generated (or your configured output)
+# 2. GENERATE MONGO CLIENT
+WORKDIR /app/packages/db-mongo
+# Dummy env for Mongo validation
+RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/wallet?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
 RUN bunx prisma generate
 
 # Switch back to root to continue the build

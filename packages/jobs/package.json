@@ -1,0 +1,21 @@
+{
+  "name": "@repo/jobs",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "node-cron": "^4.2.1",
+    "@repo/db-mongo": "workspace:*",
+    "@repo/db-postgres": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5"
+  }
+}

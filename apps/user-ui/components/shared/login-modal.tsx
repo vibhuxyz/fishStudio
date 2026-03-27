@@ -34,7 +34,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [fullName, setFullName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
-  const [timer, setTimer] = useState(30);
+  const [timer, setTimer] = useState(120);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const queryClient = useQueryClient();
 
@@ -53,7 +53,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       toast.success(data?.message || "OTP sent successfully.");
       setIsNewUser(!!data.isNewUser);
       setStep("otp");
-      setTimer(30);
+      setTimer(120);
     },
     onError: (error: any) => {
       const msg =
@@ -110,7 +110,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setFullName("");
       setIsNewUser(false);
       setOtp(["", "", "", ""]);
-      setTimer(30);
+      setTimer(120);
     }
   }, [open]);
 
@@ -149,7 +149,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   };
 
   const handleResendOtp = () => {
-    setTimer(30);
+    setTimer(120);
     setOtp(["", "", "", ""]);
     sendOtpMutation.mutate();
   };

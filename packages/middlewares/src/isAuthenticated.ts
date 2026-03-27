@@ -4,7 +4,7 @@ import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
 import { redis } from "@repo/libs";
 
-const AUTH_CACHE_TTL = 60; // seconds
+const AUTH_CACHE_TTL = 300; // 5 minutes — reduces DB lookups per authenticated user
 
 const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
   try {
@@ -30,7 +30,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         req.headers.authorization?.split(" ")[1];
     }
     if (!token) {
-      return res.status(404).json({
+      return res.status(401).json({
         message: "Unauthorized! Token missing.",
       });
     }

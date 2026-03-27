@@ -6,6 +6,13 @@ import { isProtected } from "@/utils/protected";
 import { useCartStore } from "@/lib/cart-store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+import { QueryClient } from "@tanstack/react-query";
+
+// Shared reference so logoutUser can invalidate cache
+let _queryClient: QueryClient | null = null;
+export function setQueryClientRef(qc: QueryClient) {
+  _queryClient = qc;
+}
 
 export interface User {
   id: string;
@@ -55,6 +62,12 @@ export async function logoutUser() {
     useCartStore.getState().clearCart();
     useCouponStore.getState().clearAllCoupons();
     useAddressStore.getState().clearAddresses();
+    // Invalidate all cached data so stale products/banners are cleared immediately
+    if (_queryClient) {
+      _queryClient.invalidateQueries({ queryKey: ["storefront"] });
+      _queryClient.invalidateQueries({ queryKey: ["announcement-banners"] });
+      _queryClient.invalidateQueries({ queryKey: ["category-banners"] });
+    }
   }
 }
 

@@ -186,6 +186,18 @@ export const fetchAdminSellerDetail = async (
   return response.data.seller ?? null;
 };
 
+export const fetchAdminSellerOrders = async (sellerId: string): Promise<{
+  orders: SellerOrder[];
+  seller: any;
+  store: any;
+}> => {
+  const response = await axiosInstance.get(
+    `/order/api/admin-orders/${sellerId}`,
+    isProtected,
+  );
+  return response.data;
+};
+
 export const validateProductSlug = async (
   slug: string,
 ): Promise<SlugValidationResponse> => {
@@ -262,6 +274,13 @@ export const useAdminSellerDetail = (sellerId?: string) =>
       ? adminQueryKeys.sellerDetail(sellerId)
       : ["admin", "sellers", "unknown"],
     queryFn: () => fetchAdminSellerDetail(sellerId as string),
+    enabled: Boolean(sellerId),
+  });
+
+export const useAdminSellerOrders = (sellerId?: string) =>
+  useQuery({
+    queryKey: sellerId ? ["admin", "seller-orders", sellerId] : ["admin", "seller-orders"],
+    queryFn: () => fetchAdminSellerOrders(sellerId as string),
     enabled: Boolean(sellerId),
   });
 

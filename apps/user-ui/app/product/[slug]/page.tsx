@@ -18,10 +18,35 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await fetchStorefrontProductBySlug(decodeURIComponent(slug));
   if (!product) return { title: "Product Not Found" };
+
+  const title = `${product.name} | Fish Studio`;
+  const description = product.description.slice(0, 160); // Clean SEO description
+  const imageUrl = product.images?.[0] || product.image || "/og-image.png";
+
   return {
-    title: `${product.name} - Fish Studio`,
-    description: product.description,
-    openGraph: { images: product.images || [product.image] },
+    title,
+    description,
+    keywords: [product.category, product.subCategory, product.name, "online store"],
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `/product/${product.slug}`,
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: product.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
   };
 }
 

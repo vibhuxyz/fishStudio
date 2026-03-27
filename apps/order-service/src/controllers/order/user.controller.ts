@@ -19,7 +19,16 @@ async function validateAndApplyCoupon(
 ): Promise<{ couponId: string; discountAmount: number; freeDelivery: boolean }> {
   const now = new Date();
 
-  // Coupons are in Mongo
+  // MongoDB Prisma does not support nested relation filters (seller.store.id),
+  // so resolve the sellerId from storeId first, then filter by sellerId directly.
+  const store = await prismaMongo.stores.findUnique({
+    where: { id: storeId },
+    select: { sellerId: true },
+  });
+
+  // Build seller ID filter: only include seller-coupon condition if store was found
+  const sellerFilter = store?.sellerId ? [{ sellerId: store.sellerId }] : [];
+
   const coupon = await prismaMongo.discount_codes.findFirst({
     where: {
       discountCode: couponCode.toUpperCase(),
@@ -29,7 +38,7 @@ async function validateAndApplyCoupon(
         {
           OR: [
             { adminId: { not: null } },
-            { seller: { store: { id: storeId } } },
+            ...sellerFilter,
           ],
         },
       ],
@@ -37,7 +46,10 @@ async function validateAndApplyCoupon(
     include: { _count: { select: { usages: true } } },
   });
 
-  if (!coupon) throw new ValidationError("Coupon code is invalid or expired");
+  if (!coupon) {
+    console.error(`[coupon] ❌ Not found — code: ${couponCode.toUpperCase()}, storeId: ${storeId}, sellerId: ${store?.sellerId ?? "none"}`);
+    throw new ValidationError("Coupon code is invalid or expired");
+  }
 
   if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
     throw new ValidationError("This coupon has reached its usage limit");
@@ -184,16 +196,26 @@ export const createOrder = async (
       },
     });
 
-    /* ── 5. Decrement stock in Mongo ───────────────────────────────────────── */
+    /* ── 5. Decrement stock in Mongo & check for out-of-stock ─────────────────── */
     try {
       for (const item of items) {
-        await prismaMongo.products.update({
+        const updatedProduct = await prismaMongo.products.update({
           where: { id: item.productId },
           data: {
             stock: { decrement: item.quantity },
             totalSold: { increment: item.quantity },
           },
         });
+
+        // If stock hits 0, broadcast to all clients (Out of Stock)
+        if (updatedProduct.stock <= 0) {
+          await publishToQueue("ORDER_EVENTS", {
+            type: "STOCK_UPDATE",
+            productId: item.productId,
+            stock: 0,
+            message: `${updatedProduct.title} is now out of stock!`,
+          });
+        }
       }
     } catch (stockError) {
       console.error("Failed to update stock during order creation:", stockError);
@@ -244,16 +266,32 @@ export const createOrder = async (
         channels: ["IN_APP", "SMS"], 
       });
 
-      // Special real-time event for staff/seller
+      // Hydrate items with product details for real-time modals
+      const productIds = order.orderItems.map((oi) => oi.productId);
+      const products = await prismaMongo.products.findMany({
+        where: { id: { in: productIds } },
+        include: { images: true },
+      });
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
+      const hydratedItems = order.orderItems.map((oi) => ({
+        ...oi,
+        product: productMap.get(oi.productId),
+      }));
+
+      const orderPayload = {
+        ...order,
+        shortId,
+        userName: user?.name || "Customer",
+        items: hydratedItems,
+      };
+
+      // Special real-time event for staff/seller — now with full item details!
       await publishToQueue("ORDER_EVENTS", {
         type: "ORDER_PLACED",
         storeId,
         orderId: order.id,
-        order: {
-          ...order,
-          shortId,
-          userName: user?.name || "Customer",
-        }
+        order: orderPayload,
       });
 
       console.log(`[EVENT] Order #${shortId} notifications published`);
@@ -263,6 +301,18 @@ export const createOrder = async (
         where: { id: storeId },
         include: { seller: true }
       });
+
+      // Re-publish ORDER_EVENTS now that we have sellerId — worker needs it to
+      // broadcast to staff WebSocket clients connected with ?sellerId=
+      if (store?.sellerId) {
+        await publishToQueue("ORDER_EVENTS", {
+          type: "ORDER_PLACED",
+          storeId,
+          sellerId: store.sellerId,
+          orderId: order.id,
+          order: orderPayload,
+        });
+      }
 
       if (store?.seller) {
         const staffs = await prismaMongo.staffs.findMany({

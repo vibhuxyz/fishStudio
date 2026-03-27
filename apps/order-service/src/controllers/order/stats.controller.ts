@@ -181,3 +181,42 @@ export const getAdminStats = async (
     return next(error);
   }
 };
+
+export const getAdminSellerOrders = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { sellerId } = req.params;
+    if (!sellerId) return next(new ValidationError("sellerId is required"));
+
+    // Stores are in Mongo
+    const store = await prismaMongo.stores.findUnique({ 
+      where: { sellerId },
+      include: { seller: { select: { id: true, name: true, email: true } } }
+    });
+    if (!store) {
+      return res.status(200).json({ success: true, orders: [], seller: null });
+    }
+
+    const ordersRaw = await prismaPostgres.order.findMany({
+      where: { storeId: store.id },
+      include: {
+        orderItems: true
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const orders = await hydrateOrders(ordersRaw);
+
+    return res.status(200).json({
+      success: true,
+      orders,
+      seller: store.seller || null,
+      store
+    });
+  } catch (error) {
+    next(error);
+  }
+};

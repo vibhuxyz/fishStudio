@@ -69,4 +69,12 @@ router.get(
   getAdminStats,
 );
 
+router.get(
+  "/admin-orders/:sellerId",
+  isAuthenticated,
+  allowRoles("admin"),
+  // @ts-ignore
+  require("../controllers/order/stats.controller.js").getAdminSellerOrders
+);
+
 export default router;

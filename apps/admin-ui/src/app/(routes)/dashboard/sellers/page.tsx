@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Eye, Store, TicketPercent } from "lucide-react";
+import { Eye, Store, TicketPercent, IndianRupee } from "lucide-react";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { useAdminSellers, useSellerAccessCodes } from "@/hooks/useAdminQueries";
@@ -84,13 +84,22 @@ const SellersPage = () => {
                   </td>
                   <td className="p-3">
                     {seller.isApprovedByAdmin ? (
-                      <Link
-                        href={`/dashboard/sellers/${seller.id}`}
-                        className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-600"
-                      >
-                        <Eye size={16} />
-                        View
-                      </Link>
+                      <div className="flex flex-col gap-1">
+                        <Link
+                          href={`/dashboard/sellers/${seller.id}`}
+                          className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-1.5 text-xs text-white hover:bg-gray-600 transition"
+                        >
+                          <Eye size={14} />
+                          View Profile
+                        </Link>
+                        <Link
+                          href={`/dashboard/sellers/${seller.id}`}
+                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-1.5 text-xs text-blue-400 hover:bg-blue-600 hover:text-white transition"
+                        >
+                          <IndianRupee size={14} />
+                          Payments
+                        </Link>
+                      </div>
                     ) : (
                       <button
                         onClick={() => setSelectedSellerId(seller.id)}

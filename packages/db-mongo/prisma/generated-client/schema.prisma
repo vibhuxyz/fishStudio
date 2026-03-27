@@ -147,6 +147,8 @@ model sellers {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isApprovedByAdmin, createdAt]) // hourly cleanup query
 }
 
 //////////////////////////////////////////////////////
@@ -281,6 +283,9 @@ model products {
   @@index([catalogProductId])
   @@index([storeId])
   @@index([adminId])
+  @@index([storeId, status, isDeleted]) // most common storefront query
+  @@index([category, status]) // category browse
+  @@index([status, isDeleted]) // admin product listing
 }
 
 model banners {
@@ -292,6 +297,12 @@ model banners {
   status          String? @default("PENDING") // PENDING, APPROVED, REJECTED
   rejectionReason String?
 
+  // Announcement banner fields
+  bannerType String? @default("homepage") // "homepage" | "category" | "announcement"
+  title      String?
+  subtitle   String?
+  price      String? // Display price e.g. "169", "199+"
+
   // Link to Seller or Admin
   sellerId String?  @db.ObjectId
   seller   sellers? @relation(fields: [sellerId], references: [id])
@@ -301,6 +312,9 @@ model banners {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([sellerId])
+  @@index([bannerType, isActive, status])
+  @@index([category, isActive])
   @@map("banners")
 }
 

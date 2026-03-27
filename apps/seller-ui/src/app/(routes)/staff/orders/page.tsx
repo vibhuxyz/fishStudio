@@ -21,12 +21,16 @@ import {
   Store,
   Tag,
   Zap,
+  Bell,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import { MockOrder, OrderStatus, MOCK_ORDERS } from "@/shared/mocks/staffMockData";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { Loader2 } from "lucide-react";
+import { Loader2, Volume2, VolumeX } from "lucide-react";
+import { toast } from "sonner";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -742,12 +746,150 @@ function StatsBar({ orders }: { orders: MockOrder[] }) {
 
 const StaffOrdersPage = () => {
   const [mounted, setMounted] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const isMutedRef = React.useRef(true);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  // Sync isMuted with localStorage on mount only
+  React.useEffect(() => {
+    const saved = localStorage.getItem("staff-order-mute");
+    if (saved !== null) {
+      const muted = saved === "true";
+      setIsMuted(muted);
+      isMutedRef.current = muted;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // Initialize notification sound
+    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+    audio.preload = "auto";
+    audioRef.current = audio;
+  }, []);
+
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
   const { staff, isLoading: authLoading } = useRequireStaff();
   const queryClient = useQueryClient();
+
+  // ── Real-time WebSocket (worker-service port 6006) ──────────────────────────
+  // Staff connect with ?sellerId= so the worker can broadcast new orders to them.
+  // Sellers visiting this page also work because useSeller returns seller with sellerId.
+  React.useEffect(() => {
+    const sellerId = staff?.sellerId || (staff?.role === "seller" ? staff?.id : null);
+    if (!sellerId) return;
+
+    const wsBase = process.env.NEXT_PUBLIC_WORKER_WS_URL?.replace(/\?.*$/, "") || "ws://localhost:6006";
+    const wsUrl = `${wsBase}?sellerId=${sellerId}`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    const connect = () => {
+      if (destroyed) return;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("✅ Staff: connected to real-time order service");
+        setWsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "NEW_ORDER") {
+            const raw = data.payload?.order || data.payload;
+            if (!raw) return;
+
+            console.log("📦 Staff: new order received via WebSocket", raw);
+            queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+
+            // Map to MockOrder format for the modal
+            const newOrder: MockOrder = {
+              id: raw.id,
+              status: "New",
+              createdAt: raw.createdAt || new Date().toISOString(),
+              total: raw.totalAmount ?? 0,
+              user: {
+                id: raw.userId || "",
+                name: raw.userName || raw.deliveryName || "Customer",
+                phone: raw.deliveryPhone || "-",
+                email: "-",
+                avatar: null,
+              },
+              shippingAddress: {
+                name: raw.deliveryName || raw.userName || "Customer",
+                street: raw.deliveryAddress || "N/A",
+                city: raw.deliveryCity || "-",
+                state: "-",
+                zip: raw.deliveryPincode || "-",
+              },
+              items: (raw.items || []).map((item: any) => ({
+                productId: item.productId,
+                product: {
+                  id: item.product?.id || item.productId,
+                  title: item.product?.title || "Product",
+                  images: item.product?.images || [],
+                },
+                quantity: item.quantity,
+                price: item.price ?? item.priceAtOrder ?? 0,
+                unit: item.unit || item.product?.unit || "pc",
+                selectedOptions: item.selectedOptions || {},
+              })),
+              billDetails: raw.billDetails,
+              deliverySlot: raw.deliverySlot,
+              paymentMethod: raw.paymentMethod,
+              rejectionReason: null,
+              refundStatus: null,
+            };
+
+            // Play notification sound
+            if (!isMutedRef.current && audioRef.current) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(err => {
+                console.error("🔊 Sound playback failed:", err);
+              });
+            }
+
+            // setDetailTarget(newOrder); // Replacing the undefined setSelectedOrder with detailTarget to show the modal
+            setDetailTarget(newOrder); 
+
+            toast.info("New Order Received!", {
+              description: `Order #${(raw.id || "").slice(-6).toUpperCase()} is waiting for review.`,
+              icon: <Bell className="h-4 w-4 text-blue-500" />,
+              duration: 8000,
+            });
+          }
+        } catch (e) {
+          console.error("Staff WS parse error:", e);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("❌ Staff WS error:", err);
+      };
+
+      ws.onclose = () => {
+        setWsConnected(false);
+        if (!destroyed) {
+          console.log("🔌 Staff WS closed — reconnecting in 3s");
+          reconnectTimeout = setTimeout(connect, 3000);
+        }
+      };
+    };
+
+    connect();
+
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [staff?.sellerId, staff?.id, staff?.role, queryClient]);
 
   const isStaff = staff?.role === "staff";
   const sellerNotLinked = !authLoading && staff && isStaff && (!staff.isActive || !staff.sellerId);
@@ -757,7 +899,9 @@ const StaffOrdersPage = () => {
     queryKey: ["staff-orders"],
     queryFn: async () => {
       const res = await axiosInstance.get("/order/api/get-seller-orders");
-      return res.data.orders.map((o: any): MockOrder => ({
+      // Use res.data.orders directly if they are already mapped/hydrated by the API,
+      // or map over o.items if the API returns them that way.
+      return (res.data.orders || []).map((o: any): MockOrder => ({
         id: o.id,
         status: o.status === "ACCEPTED"  ? "Processing"
                : o.status === "REJECTED"  ? "Rejected"
@@ -783,15 +927,15 @@ const StaffOrdersPage = () => {
         deliverySlot: o.deliverySlot,
         paymentMethod: o.paymentMethod,
         billDetails: o.billDetails,
-        items: (o.orderItems || []).map((i: any) => ({
+        items: (o.items || o.orderItems || []).map((i: any) => ({
           productId: i.productId,
           product: { 
             title: i.product?.title || "Product",
             images: i.product?.images || []
           },
           quantity: i.quantity,
-          price: i.price,
-          unit: "pc",
+          price: i.price ?? i.priceAtOrder ?? 0,
+          unit: i.unit || i.product?.unit || "pc",
           selectedOptions: i.selectedOptions || {},
         })),
         rejectionReason: o.rejectionReason,
@@ -889,11 +1033,52 @@ const StaffOrdersPage = () => {
           </div>
           <p className="text-gray-500 text-sm">FishStudio — Staff Dashboard</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-400/10 border border-green-400/25 px-3 py-1.5 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            Live
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const nextMuted = !isMuted;
+              setIsMuted(nextMuted);
+              isMutedRef.current = nextMuted;
+              localStorage.setItem("staff-order-mute", String(nextMuted));
+              
+              // If enabling sound, "warm up" the audio object to satisfy browser interaction policies
+              if (!nextMuted && audioRef.current) {
+                const audio = audioRef.current;
+                const originalVolume = audio.volume;
+                audio.volume = 0;
+                audio.play()
+                  .then(() => {
+                    audio.pause();
+                    audio.volume = originalVolume;
+                    toast.success("Sound enabled", { duration: 1000 });
+                  })
+                  .catch(() => {
+                    console.warn("Audio warm-up failed");
+                  });
+              }
+            }}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition border ${
+              isMuted 
+                ? "bg-gray-800/50 text-gray-500 border-gray-700 hover:text-gray-400" 
+                : "bg-blue-500/10 text-blue-400 border-blue-500/25 hover:bg-blue-500/20"
+            }`}
+          >
+            {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            {isMuted ? "Sound Off" : "Sound On"}
+          </button>
+
+          {wsConnected ? (
+            <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-400/10 border border-green-400/25 px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Live
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 bg-rose-400/10 border border-rose-400/25 px-3 py-1.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+              Disconnected
+            </span>
+          )}
         </div>
       </div>
 

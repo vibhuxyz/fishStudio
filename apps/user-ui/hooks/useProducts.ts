@@ -8,13 +8,20 @@ import {
 import { useAddressStore } from "@/lib/address-store";
 
 export function useProducts() {
-  const { selectedLocation } = useAddressStore();
-  const storeId = selectedLocation?.storeId;
-  const pincode = selectedLocation?.pincode;
+  const selectedLocation = useAddressStore((s) => s.selectedLocation);
+  const selectedAddressId = useAddressStore((s) => s.selectedAddressId);
+  const selectedAddress = useAddressStore((s) =>
+    s.addresses.find((a) => a.id === s.selectedAddressId),
+  );
 
+  // Use selectedLocation first, fall back to selected address pincode
+  const storeId = selectedLocation?.storeId;
+  const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+  const city = selectedLocation?.city || selectedAddress?.city;
+ 
   const query = useQuery({
-    queryKey: storefrontKeys.products(storeId || pincode),
-    queryFn: () => fetchStorefrontProducts(storeId, pincode),
+    queryKey: storefrontKeys.products(storeId, pincode, city),
+    queryFn: () => fetchStorefrontProducts(storeId, pincode, city),
     staleTime: 1000 * 60 * 5,
   });
 

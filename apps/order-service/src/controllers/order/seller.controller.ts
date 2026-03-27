@@ -5,6 +5,7 @@ import { NextFunction, Response } from "express";
 import { invalidateSellerStatsCache } from "./utils.js";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs";
+import { ENV } from "@repo/env-config";
 
 export const getSellerOrders = async (
   req: any,
@@ -142,13 +143,20 @@ export const acceptOrRejectOrder = async (
       await publishToQueue("NOTIFICATION_QUEUE", {
         userId: existingOrder.userId,
         title: action === "accept" ? "Order Accepted" : "Order Rejected",
-        message: action === "accept" 
-          ? `Your order #${shortId} has been accepted by the store.` 
+        message: action === "accept"
+          ? `Your order #${shortId} has been accepted by the store.`
           : `Your order #${shortId} was rejected. Reason: ${rejectionReason || "Order rejected by seller"}`,
         type: action === "accept" ? "SUCCESS" : "ERROR",
         category: "ORDER",
         metadata: { orderId },
         channels: ["IN_APP", "SMS"],
+      });
+
+      await publishToQueue("ORDER_EVENTS", {
+        type: "ORDER_STATUS_UPDATE",
+        userId: existingOrder.userId,
+        orderId,
+        status: action === "accept" ? "ACCEPTED" : "REJECTED",
       });
     } catch (notifyErr) {
       console.error("Failed to notify user of order status change:", notifyErr);
@@ -197,14 +205,71 @@ export const updateOrderStatus = async (
         message = `Your order #${shortId} has been delivered. Enjoy!`;
       }
 
+      const channels: ("IN_APP" | "EMAIL" | "SMS")[] = ["IN_APP"];
+      let orderMetadata: any = { orderId };
+
+      if (status === "DELIVERED") {
+        const [user, orderWithItems] = await Promise.all([
+          prismaMongo.users.findUnique({
+            where: { id: existing.userId },
+            select: { email: true, phone_number: true }
+          }),
+          prismaPostgres.order.findUnique({
+            where: { id: orderId },
+            include: { orderItems: true }
+          })
+        ]);
+
+        if (orderWithItems) {
+          const productIds = orderWithItems.orderItems.map(oi => oi.productId);
+          const products = await prismaMongo.products.findMany({
+            where: { id: { in: productIds } },
+            select: { id: true, title: true }
+          });
+          const productMap = new Map(products.map(p => [p.id, p.title]));
+
+          orderMetadata = {
+            ...orderMetadata,
+            totalAmount: orderWithItems.totalAmount,
+            deliveryName: orderWithItems.deliveryName,
+            deliveryAddress: orderWithItems.deliveryAddress,
+            deliveryCity: orderWithItems.deliveryCity,
+            deliveryPincode: orderWithItems.deliveryPincode,
+            template: "order-delivery-template",
+            items: orderWithItems.orderItems.map(oi => ({
+              name: productMap.get(oi.productId) || "Product",
+              quantity: oi.quantity,
+              price: oi.price
+            }))
+          };
+        }
+
+        if (ENV.NODE_ENV !== "production") {
+          if (user?.email) channels.push("EMAIL");
+        } else {
+          if (user?.email) {
+            channels.push("EMAIL");
+          } else if (user?.phone_number) {
+            channels.push("SMS");
+          }
+        }
+      }
+
       await publishToQueue("NOTIFICATION_QUEUE", {
         userId: existing.userId,
         title,
         message,
         type: "INFO",
         category: "ORDER",
-        metadata: { orderId },
-        channels: ["IN_APP"],
+        metadata: orderMetadata,
+        channels,
+      });
+
+      await publishToQueue("ORDER_EVENTS", {
+        type: "ORDER_STATUS_UPDATE",
+        userId: existing.userId,
+        orderId,
+        status,
       });
     } catch (notifyErr) {
       console.error("Failed to notify user of order status update:", notifyErr);

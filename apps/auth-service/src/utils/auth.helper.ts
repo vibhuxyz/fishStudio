@@ -70,7 +70,7 @@ export const sendOtp = async (
   const identifier = data.email || data.phone_number;
 
   try {
-    await redis.set(`otp:${identifier}`, otp, "EX", 5 * 60);
+    await redis.set(`otp:${identifier}`, otp, "EX", 120);
     await redis.set(`otp_cooldown:${identifier}`, "true", "EX", 60);
 
     // Publish job to RabbitMQ (not sending OTP directly)
@@ -103,7 +103,7 @@ export const verifyOtp = async (
   const sellerOtp = await redis.get(`otp:${identifier}`);
 
   if (!sellerOtp) {
-    throw new ValidationError("Invailed or expired otp");
+    throw new ValidationError("Invalid or expired OTP");
   }
 
   const failedAttamtsKey = `otp_attempts:${identifier}`;
@@ -119,7 +119,7 @@ export const verifyOtp = async (
       );
     }
 
-    await redis.set(failedAttamtsKey, failedAttampts + 1, "EX", 300);
+    await redis.set(failedAttamtsKey, failedAttampts + 1, "EX", 120);
     throw new ValidationError(
       `Invalid OTP. ${2 - failedAttampts} attempts left.`,
     );

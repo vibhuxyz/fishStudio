@@ -13702,6 +13702,10 @@ export namespace Prisma {
     category: string | null
     status: string | null
     rejectionReason: string | null
+    bannerType: string | null
+    title: string | null
+    subtitle: string | null
+    price: string | null
     sellerId: string | null
     adminId: string | null
     createdAt: Date | null
@@ -13716,6 +13720,10 @@ export namespace Prisma {
     category: string | null
     status: string | null
     rejectionReason: string | null
+    bannerType: string | null
+    title: string | null
+    subtitle: string | null
+    price: string | null
     sellerId: string | null
     adminId: string | null
     createdAt: Date | null
@@ -13730,6 +13738,10 @@ export namespace Prisma {
     category: number
     status: number
     rejectionReason: number
+    bannerType: number
+    title: number
+    subtitle: number
+    price: number
     sellerId: number
     adminId: number
     createdAt: number
@@ -13746,6 +13758,10 @@ export namespace Prisma {
     category?: true
     status?: true
     rejectionReason?: true
+    bannerType?: true
+    title?: true
+    subtitle?: true
+    price?: true
     sellerId?: true
     adminId?: true
     createdAt?: true
@@ -13760,6 +13776,10 @@ export namespace Prisma {
     category?: true
     status?: true
     rejectionReason?: true
+    bannerType?: true
+    title?: true
+    subtitle?: true
+    price?: true
     sellerId?: true
     adminId?: true
     createdAt?: true
@@ -13774,6 +13794,10 @@ export namespace Prisma {
     category?: true
     status?: true
     rejectionReason?: true
+    bannerType?: true
+    title?: true
+    subtitle?: true
+    price?: true
     sellerId?: true
     adminId?: true
     createdAt?: true
@@ -13861,6 +13885,10 @@ export namespace Prisma {
     category: string | null
     status: string | null
     rejectionReason: string | null
+    bannerType: string | null
+    title: string | null
+    subtitle: string | null
+    price: string | null
     sellerId: string | null
     adminId: string | null
     createdAt: Date
@@ -13892,6 +13920,10 @@ export namespace Prisma {
     category?: boolean
     status?: boolean
     rejectionReason?: boolean
+    bannerType?: boolean
+    title?: boolean
+    subtitle?: boolean
+    price?: boolean
     sellerId?: boolean
     adminId?: boolean
     createdAt?: boolean
@@ -13909,6 +13941,10 @@ export namespace Prisma {
     category?: boolean
     status?: boolean
     rejectionReason?: boolean
+    bannerType?: boolean
+    title?: boolean
+    subtitle?: boolean
+    price?: boolean
     sellerId?: boolean
     adminId?: boolean
     createdAt?: boolean
@@ -13934,6 +13970,10 @@ export namespace Prisma {
       category: string | null
       status: string | null
       rejectionReason: string | null
+      bannerType: string | null
+      title: string | null
+      subtitle: string | null
+      price: string | null
       sellerId: string | null
       adminId: string | null
       createdAt: Date
@@ -14339,6 +14379,10 @@ export namespace Prisma {
     readonly category: FieldRef<"banners", 'String'>
     readonly status: FieldRef<"banners", 'String'>
     readonly rejectionReason: FieldRef<"banners", 'String'>
+    readonly bannerType: FieldRef<"banners", 'String'>
+    readonly title: FieldRef<"banners", 'String'>
+    readonly subtitle: FieldRef<"banners", 'String'>
+    readonly price: FieldRef<"banners", 'String'>
     readonly sellerId: FieldRef<"banners", 'String'>
     readonly adminId: FieldRef<"banners", 'String'>
     readonly createdAt: FieldRef<"banners", 'DateTime'>
@@ -16852,6 +16896,10 @@ export namespace Prisma {
     category: 'category',
     status: 'status',
     rejectionReason: 'rejectionReason',
+    bannerType: 'bannerType',
+    title: 'title',
+    subtitle: 'subtitle',
+    price: 'price',
     sellerId: 'sellerId',
     adminId: 'adminId',
     createdAt: 'createdAt',
@@ -18000,6 +18048,10 @@ export namespace Prisma {
     category?: StringNullableFilter<"banners"> | string | null
     status?: StringNullableFilter<"banners"> | string | null
     rejectionReason?: StringNullableFilter<"banners"> | string | null
+    bannerType?: StringNullableFilter<"banners"> | string | null
+    title?: StringNullableFilter<"banners"> | string | null
+    subtitle?: StringNullableFilter<"banners"> | string | null
+    price?: StringNullableFilter<"banners"> | string | null
     sellerId?: StringNullableFilter<"banners"> | string | null
     adminId?: StringNullableFilter<"banners"> | string | null
     createdAt?: DateTimeFilter<"banners"> | Date | string
@@ -18016,6 +18068,10 @@ export namespace Prisma {
     category?: SortOrder
     status?: SortOrder
     rejectionReason?: SortOrder
+    bannerType?: SortOrder
+    title?: SortOrder
+    subtitle?: SortOrder
+    price?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
     createdAt?: SortOrder
@@ -18035,6 +18091,10 @@ export namespace Prisma {
     category?: StringNullableFilter<"banners"> | string | null
     status?: StringNullableFilter<"banners"> | string | null
     rejectionReason?: StringNullableFilter<"banners"> | string | null
+    bannerType?: StringNullableFilter<"banners"> | string | null
+    title?: StringNullableFilter<"banners"> | string | null
+    subtitle?: StringNullableFilter<"banners"> | string | null
+    price?: StringNullableFilter<"banners"> | string | null
     sellerId?: StringNullableFilter<"banners"> | string | null
     adminId?: StringNullableFilter<"banners"> | string | null
     createdAt?: DateTimeFilter<"banners"> | Date | string
@@ -18051,6 +18111,10 @@ export namespace Prisma {
     category?: SortOrder
     status?: SortOrder
     rejectionReason?: SortOrder
+    bannerType?: SortOrder
+    title?: SortOrder
+    subtitle?: SortOrder
+    price?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
     createdAt?: SortOrder
@@ -18071,6 +18135,10 @@ export namespace Prisma {
     category?: StringNullableWithAggregatesFilter<"banners"> | string | null
     status?: StringNullableWithAggregatesFilter<"banners"> | string | null
     rejectionReason?: StringNullableWithAggregatesFilter<"banners"> | string | null
+    bannerType?: StringNullableWithAggregatesFilter<"banners"> | string | null
+    title?: StringNullableWithAggregatesFilter<"banners"> | string | null
+    subtitle?: StringNullableWithAggregatesFilter<"banners"> | string | null
+    price?: StringNullableWithAggregatesFilter<"banners"> | string | null
     sellerId?: StringNullableWithAggregatesFilter<"banners"> | string | null
     adminId?: StringNullableWithAggregatesFilter<"banners"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"banners"> | Date | string
@@ -19269,6 +19337,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     seller?: sellersCreateNestedOneWithoutBannersInput
@@ -19283,6 +19355,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     sellerId?: string | null
     adminId?: string | null
     createdAt?: Date | string
@@ -19296,6 +19372,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seller?: sellersUpdateOneWithoutBannersNestedInput
@@ -19309,6 +19389,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -19323,6 +19407,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     sellerId?: string | null
     adminId?: string | null
     createdAt?: Date | string
@@ -19336,6 +19424,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -19347,6 +19439,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -20452,6 +20548,10 @@ export namespace Prisma {
     category?: SortOrder
     status?: SortOrder
     rejectionReason?: SortOrder
+    bannerType?: SortOrder
+    title?: SortOrder
+    subtitle?: SortOrder
+    price?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
     createdAt?: SortOrder
@@ -20466,6 +20566,10 @@ export namespace Prisma {
     category?: SortOrder
     status?: SortOrder
     rejectionReason?: SortOrder
+    bannerType?: SortOrder
+    title?: SortOrder
+    subtitle?: SortOrder
+    price?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
     createdAt?: SortOrder
@@ -20480,6 +20584,10 @@ export namespace Prisma {
     category?: SortOrder
     status?: SortOrder
     rejectionReason?: SortOrder
+    bannerType?: SortOrder
+    title?: SortOrder
+    subtitle?: SortOrder
+    price?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
     createdAt?: SortOrder
@@ -22155,6 +22263,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     seller?: sellersCreateNestedOneWithoutBannersInput
@@ -22168,6 +22280,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     sellerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -22298,6 +22414,10 @@ export namespace Prisma {
     category?: StringNullableFilter<"banners"> | string | null
     status?: StringNullableFilter<"banners"> | string | null
     rejectionReason?: StringNullableFilter<"banners"> | string | null
+    bannerType?: StringNullableFilter<"banners"> | string | null
+    title?: StringNullableFilter<"banners"> | string | null
+    subtitle?: StringNullableFilter<"banners"> | string | null
+    price?: StringNullableFilter<"banners"> | string | null
     sellerId?: StringNullableFilter<"banners"> | string | null
     adminId?: StringNullableFilter<"banners"> | string | null
     createdAt?: DateTimeFilter<"banners"> | Date | string
@@ -22986,6 +23106,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     admin?: adminsCreateNestedOneWithoutBannersInput
@@ -22999,6 +23123,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     adminId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24583,6 +24711,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     sellerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24744,6 +24876,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seller?: sellersUpdateOneWithoutBannersNestedInput
@@ -24756,6 +24892,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -24768,6 +24908,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -24933,6 +25077,10 @@ export namespace Prisma {
     category?: string | null
     status?: string | null
     rejectionReason?: string | null
+    bannerType?: string | null
+    title?: string | null
+    subtitle?: string | null
+    price?: string | null
     adminId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -24987,6 +25135,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     admin?: adminsUpdateOneWithoutBannersNestedInput
@@ -24999,6 +25151,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -25011,6 +25167,10 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     status?: NullableStringFieldUpdateOperationsInput | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    bannerType?: NullableStringFieldUpdateOperationsInput | string | null
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    subtitle?: NullableStringFieldUpdateOperationsInput | string | null
+    price?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

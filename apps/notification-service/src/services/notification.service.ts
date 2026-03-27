@@ -6,6 +6,32 @@ import { ENV } from "@repo/env-config";
 
 const expo = new Expo();
 
+/** Resolve email + phone for any userId, checking users → sellers → admins */
+async function resolveUserContact(userId: string): Promise<{ name: string; email?: string | null; phone_number?: string | null } | null> {
+  // 1. Regular users
+  const user = await prismaMongo.users.findUnique({
+    where: { id: userId },
+    select: { email: true, phone_number: true, name: true },
+  });
+  if (user) return user;
+
+  // 2. Sellers
+  const seller = await prismaMongo.sellers.findUnique({
+    where: { id: userId },
+    select: { email: true, phone_number: true, name: true },
+  });
+  if (seller) return seller;
+
+  // 3. Admins
+  const admin = await prismaMongo.admins.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true },
+  });
+  if (admin) return { ...admin, phone_number: null };
+
+  return null;
+}
+
 export class NotificationService {
   /**
    * Send a notification to a user via multiple channels.
@@ -29,7 +55,7 @@ export class NotificationService {
   }) {
     const results: any = {};
 
-    // 1. In-App Notification (Always stored in Postgres if requested)
+    // 1. In-App Notification (stored in Postgres)
     if (channels.includes("IN_APP")) {
       results.inApp = await prismaPostgres.notification.create({
         data: {
@@ -43,76 +69,54 @@ export class NotificationService {
       });
     }
 
-    // Fetch user details from Mongo for other channels
-    const user = await prismaMongo.users.findUnique({
-      where: { id: userId },
-      select: { email: true, phone_number: true, name: true },
-    });
+    // Fetch contact details from the appropriate table
+    const contact = await resolveUserContact(userId);
 
-    if (!user) {
-      console.warn(`User ${userId} not found in Mongo for notification`);
+    if (!contact) {
+      console.warn(`[Notification] No user/seller/admin found with id ${userId} — skipping email/SMS`);
       return results;
     }
 
     // 2. Email
-    if (channels.includes("EMAIL") && user.email) {
+    if (channels.includes("EMAIL") && contact.email) {
       try {
-        await sendEmail(user.email, title, "notification-template", {
-          name: user.name,
+        const template = metadata?.template || "notification-template";
+        await sendEmail(contact.email, title, template, {
+          name: contact.name,
           title,
           message,
-          qty: 1, // Placeholder if needed
+          metadata: metadata || {}
         });
         results.email = "sent";
       } catch (error) {
-        console.error(`Failed to send email to ${user.email}:`, error);
+        console.error(`[Notification] Failed to send email to ${contact.email}:`, error);
         results.email = "failed";
       }
     }
 
     // 3. SMS
-    if (channels.includes("SMS") && user.phone_number) {
+    if (channels.includes("SMS") && contact.phone_number) {
       try {
-        console.log(`[SMS] Sending to ${user.phone_number}: ${message}`);
+        if (ENV.NODE_ENV === "production") {
+          await sendPhoneOtp(contact.name, contact.phone_number, message);
+        } else {
+          console.log(`[SMS][DEV] To ${contact.phone_number}: ${message}`);
+        }
         results.sms = "sent";
       } catch (error) {
-        console.error(`Failed to send SMS to ${user.phone_number}:`, error);
+        console.error(`[Notification] Failed to send SMS to ${contact.phone_number}:`, error);
         results.sms = "failed";
       }
     }
 
-    // 4. Push Notification (Mobile)
+    // 4. Push Notification
     if (channels.includes("PUSH")) {
       try {
-        const pushTokens = await prismaMongo.users.findUnique({
-          where: { id: userId },
-          select: { id: true }
-        }).then(async (u) => {
-          // Assuming push tokens are stored in a separate field or relation in Mongo
-          // For now, let's just log and simulate if we don't have a formal schema for tokens yet
-          return []; 
-        });
-
-        if (pushTokens && pushTokens.length > 0) {
-          const messages: ExpoPushMessage[] = pushTokens.map(token => ({
-            to: token,
-            sound: "default",
-            title,
-            body: message,
-            data: metadata || {},
-          }));
-
-          const chunks = expo.chunkPushNotifications(messages);
-          for (const chunk of chunks) {
-            await expo.sendPushNotificationsAsync(chunk);
-          }
-          results.push = "sent";
-        } else {
-          console.log(`[PUSH] No push tokens found for user ${userId}`);
-          results.push = "no_tokens";
-        }
+        // Push tokens not yet implemented — log and skip
+        console.log(`[PUSH] No push tokens found for user ${userId}`);
+        results.push = "no_tokens";
       } catch (error) {
-        console.error(`Failed to send push notification to user ${userId}:`, error);
+        console.error(`[Notification] Failed to send push to user ${userId}:`, error);
         results.push = "failed";
       }
     }
@@ -129,53 +133,57 @@ export class NotificationService {
   }
 
   static async markAsRead(notificationId: string, userId: string) {
-    return prismaPostgres.notification.updateMany({
+    return prismaPostgres.notification.deleteMany({
       where: { id: notificationId, userId },
-      data: { isRead: true },
     });
   }
 
   static async markAllAsRead(userId: string) {
-    return prismaPostgres.notification.updateMany({
-      where: { userId, isRead: false },
-      data: { isRead: true },
+    return prismaPostgres.notification.deleteMany({
+      where: { userId },
     });
   }
 
   /**
-   * Consolidate OTP logic from rabbitMQ-service
+   * Send OTP via email or SMS
    */
   static async sendOtp(data: any) {
     const { userType, name, email, phone_number, template, otp } = data;
     let sent = false;
 
-    // 1. Phone OTP
+    // 1. Phone OTP (users only)
     if (userType === "user" && phone_number) {
-        if (ENV.NODE_ENV === "production") {
-            await sendPhoneOtp(name, phone_number, otp);
-        } else {
-            console.log(`📱 [DEV] OTP for ${phone_number}: ${otp}`);
-        }
-        sent = true;
+      const result = await sendPhoneOtp(name, phone_number, otp);
+      sent = result.success;
+      if (!result.success) {
+        console.warn(`[OTP] Phone OTP failed for ${phone_number}: ${result.message}`);
+      }
     }
 
-    // 2. Email OTP
+    // 2. Email OTP (fallback if phone failed or email provided)
     if (email && template && !sent) {
-        await sendEmail(email, "Verify your Account", template, {
-            name,
-            otp,
-        });
+      try {
+        await sendEmail(email, "Verify your Account", template, { name, otp });
         sent = true;
+        console.log(`[OTP] Email OTP sent to ${email} for ${userType}`);
+      } catch (error: any) {
+        console.error(`[OTP] ❌ Email OTP failed for ${email}:`, error?.message ?? error);
+        console.error(`[OTP] Stack:`, error?.stack);
+      }
+    }
+
+    if (!sent) {
+      console.error(`[OTP] ❌ All channels failed for ${userType} — email: ${email}, phone: ${phone_number}`);
     }
 
     if (sent) {
-        try {
-            await redis.set(`otp_status:${userType}`, "sent", "EX", 300);
-        } catch (e) {
-            console.warn("⚠️ Redis not available for status tracking");
-        }
+      try {
+        await redis.set(`otp_status:${userType}:${phone_number || email}`, "sent", "EX", 120);
+      } catch (e) {
+        console.warn("⚠️ Redis not available for OTP status tracking");
+      }
     }
-    
+
     return sent;
   }
 }

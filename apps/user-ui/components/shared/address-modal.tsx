@@ -74,6 +74,37 @@ export function AddressModal({
   const [pincode, setPincode] = useState("");
   const [loading, setLoading] = useState(false);
   const [pincodeError, setPincodeError] = useState("");
+
+  /** Select a saved address and resolve its store for product/banner filtering */
+  const handleSelectSavedAddress = async (address: Address) => {
+    selectAddress(address.id);
+
+    // Clear stale location IMMEDIATELY so useProducts uses the new address's pincode
+    // while we resolve the correct store in the background.
+    setSelectedLocation(null);
+
+    onOpenChange(false);
+    toast.success(`Delivering to ${address.label}`);
+
+    // Resolve the store for this address's pincode in the background
+    try {
+      const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${address.pincode}`);
+      const data = res.data;
+      if (data.success && data.store) {
+        const city = address.city || data.store.availableCities?.[0] || "";
+        setSelectedLocation({
+          storeId: data.store.id,
+          storeName: data.store.name,
+          pincode: address.pincode,
+          city,
+          deliveryTimeMinutes: data.store.cityDeliveryTimes?.[city],
+        });
+      }
+      // If no matching store, selectedLocation stays null — products use address pincode
+    } catch {
+      // API failed — selectedLocation stays null, products will use address pincode
+    }
+  };
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
@@ -179,7 +210,7 @@ export function AddressModal({
     if (!storeInfo) return;
     const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
 
-    // Save the selected location immediately so products load
+    // Save the selected location immediately so products/banners load
     const location: SelectedLocation = {
       storeId: storeInfo.id,
       storeName: storeInfo.name,
@@ -189,19 +220,26 @@ export function AddressModal({
     };
     setSelectedLocation(location);
 
-    // Pre-fill address form
-    setPrefilledCity(city);
-    setPrefilledDeliveryMins(deliveryMins);
-    setForm((f) => ({
-      ...f,
-      city,
-      pincode,
-      state: storeInfo.state || "",
-    }));
-    setView("add");
+    // Close modal immediately — products & banners update based on pincode
+    onOpenChange(false);
+    toast.success(`Delivering to ${city}`, {
+      description: deliveryMins ? `Estimated delivery in ~${deliveryMins} min` : undefined,
+    });
   };
 
   const handleEnterManually = () => {
+    // Also set the location so products load while user fills the form
+    if (storeInfo) {
+      const city = storeInfo.availableCities?.[0] || storeInfo.city || "";
+      const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
+      setSelectedLocation({
+        storeId: storeInfo.id,
+        storeName: storeInfo.name,
+        pincode,
+        city,
+        deliveryTimeMinutes: deliveryMins,
+      });
+    }
     setForm((f) => ({
       ...f,
       pincode,
@@ -371,11 +409,7 @@ export function AddressModal({
                               key={address.id}
                               address={address}
                               isSelected={address.id === selectedAddressId}
-                              onSelect={() => {
-                                selectAddress(address.id);
-                                onOpenChange(false);
-                                toast.success(`Delivering to ${address.label}`);
-                              }}
+                              onSelect={() => handleSelectSavedAddress(address)}
                               onRemove={async () => {
                                 try {
                                   const { data } = await axiosInstance.delete(
@@ -508,11 +542,7 @@ export function AddressModal({
                               key={address.id}
                               address={address}
                               isSelected={address.id === selectedAddressId}
-                              onSelect={() => {
-                                selectAddress(address.id);
-                                onOpenChange(false);
-                                toast.success(`Delivering to ${address.label}`);
-                              }}
+                              onSelect={() => handleSelectSavedAddress(address)}
                               onRemove={async () => {
                                 try {
                                   const { data } = await axiosInstance.delete(

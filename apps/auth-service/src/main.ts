@@ -1,4 +1,6 @@
 import express from "express";
+import helmet from "helmet";
+import compression from "compression";
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.router.js";
@@ -30,8 +32,14 @@ const allowedOrigins = [
   ),
 ];
 
-app.use(express.json({ limit: "100mb" }));
-app.use(express.urlencoded({ limit: "100mb", extended: true }));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false, // handled by API gateway/Next.js
+}));
+app.use(compression() as any);
+// Auth service only handles text/JSON — no large file uploads
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ limit: "2mb", extended: true }));
 app.use(
   cors({
     origin: (origin, callback) => {

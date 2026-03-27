@@ -5,6 +5,8 @@ import { cloudinary } from "@repo/libs";
 import { ENV } from "@repo/env-config";
 import { AuthRequest, getRequiredParam, interleaveBanners } from "./utils.js";
 import { uploadBannerSchema, updateBannerSchema, reviewBannerSchema, validate } from "@repo/zod-schema";
+import { publishToQueue } from "@repo/libs";
+
 
 export const uploadBanner = async (
   req: AuthRequest,
@@ -12,7 +14,7 @@ export const uploadBanner = async (
   next: NextFunction,
 ) => {
   try {
-    const { fileName, images, category } = validate(uploadBannerSchema, req.body);
+    const { fileName, images, category, bannerType, title, subtitle, price } = validate(uploadBannerSchema, req.body);
     const sellerId = req.seller?.id;
     const adminId = req.admin?.id;
     const imageList = Array.isArray(images)
@@ -20,8 +22,15 @@ export const uploadBanner = async (
       : fileName
         ? [fileName]
         : [];
-    if (imageList.length === 0) {
+
+    // Announcement banners don't require an image
+    const effectiveBannerType = bannerType || (category ? "category" : "homepage");
+
+    if (effectiveBannerType !== "announcement" && imageList.length === 0) {
       return next(new ValidationError("Banner image data is required"));
+    }
+    if (effectiveBannerType === "announcement" && !title) {
+      return next(new ValidationError("Announcement banner requires a title"));
     }
     if (!sellerId && !adminId) {
       return next(
@@ -36,7 +45,7 @@ export const uploadBanner = async (
           status: { not: "REJECTED" },
         },
       });
-      if (existingBannerCount + imageList.length > 3) {
+      if (existingBannerCount + Math.max(imageList.length, 1) > 3) {
         return next(
           new ValidationError(
             `A seller can upload a maximum of 3 banners per category. You already have ${existingBannerCount} for ${category}.`,
@@ -44,37 +53,99 @@ export const uploadBanner = async (
         );
       }
     }
-    const createdBanners = [];
-    for (const img of imageList) {
-      const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
-      const cloudFolder = category 
-        ? `${baseFolder}/category/${category}/images` 
-        : `${baseFolder}/homepage`;
-      const response = await cloudinary.uploader.upload(img, {
-        folder: cloudFolder,
-        resource_type: "auto",
-        quality: "auto:good",
-        fetch_format: "auto",
-        transformation: [{ width: 1600, crop: "limit" }],
-      });
+
+    // For announcement banners with no image, create a single record
+    if (effectiveBannerType === "announcement" && imageList.length === 0) {
       const newBanner = await prisma.banners.create({
         data: {
-          imageUrl: response.secure_url,
-          fileId: response.public_id,
+          imageUrl: "",
+          fileId: "",
           category: category || null,
-          sellerId: sellerId || undefined,
-          adminId: adminId || undefined,
+          seller: sellerId ? { connect: { id: sellerId } } : undefined,
+          admin: adminId ? { connect: { id: adminId } } : undefined,
           status: adminId ? "APPROVED" : "PENDING",
           isActive: adminId ? true : false,
+          bannerType: "announcement",
+          title: title || null,
+          subtitle: subtitle || null,
+          price: price || null,
+        },
+      });
+      return res.status(201).json({ success: true, data: newBanner });
+    }
+
+    const createdBanners = [];
+    for (const img of imageList) {
+      let imageUrl = "";
+      let fileId = "";
+
+      if (typeof img === "object" && img !== null) {
+        imageUrl = (img as any).url || (img as any).file_url || "";
+        fileId = (img as any).file_id || (img as any).fileId || "";
+      }
+
+      if (!imageUrl || !fileId) {
+        // If it's a string or an object missing info, try uploading to Cloudinary
+        const uploadTarget = typeof img === "string" ? img : (imageUrl || "");
+        if (!uploadTarget) continue;
+
+        const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
+        const cloudFolder = effectiveBannerType === "announcement"
+          ? `${baseFolder}/announcement`
+          : category
+            ? `${baseFolder}/category/${category}/images`
+            : `${baseFolder}/homepage`;
+            
+        const response = await cloudinary.uploader.upload(uploadTarget as string, {
+          folder: cloudFolder,
+          resource_type: "auto",
+          quality: "auto:good",
+          fetch_format: "auto",
+          transformation: [{ width: 1600, crop: "limit" }],
+        });
+        imageUrl = response.secure_url;
+        fileId = response.public_id;
+      }
+
+      const newBanner = await prisma.banners.create({
+        data: {
+          imageUrl: imageUrl,
+          fileId: fileId,
+          category: category || null,
+          seller: sellerId ? { connect: { id: sellerId } } : undefined,
+          admin: adminId ? { connect: { id: adminId } } : undefined,
+          status: adminId ? "APPROVED" : "PENDING",
+          isActive: adminId ? true : false,
+          bannerType: effectiveBannerType,
+          title: title || null,
+          subtitle: subtitle || null,
+          price: price || null,
         },
       });
       createdBanners.push(newBanner);
     }
+    // Publish to ADMIN_EVENTS queue for real-time dashboard updates
+    try {
+      if (sellerId) {
+        await publishToQueue("ADMIN_EVENTS", {
+          type: "BANNER_SUBMITTED",
+          sellerId,
+          bannerCount: createdBanners.length,
+          timestamp: new Date().toISOString(),
+          message: `New banner(s) uploaded by seller ${req.seller?.store?.name || "Unknown"}`,
+        });
+      }
+    } catch (publishError) {
+      console.error("[uploadBanner] ❌ Failed to publish banner event:", publishError);
+    }
+
     res.status(201).json({
       success: true,
       data: createdBanners.length === 1 ? createdBanners[0] : createdBanners,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("[uploadBanner] ❌ Error:", error?.message ?? error);
+    console.error("[uploadBanner] Stack:", error?.stack);
     next(error);
   }
 };
@@ -115,7 +186,7 @@ export const updateBanner = async (
       return next(new ValidationError("Only seller or admin can update banners!"));
     }
     const bannerId = getRequiredParam(req.params.bannerId, "Banner id");
-    const { fileName, isActive } = validate(updateBannerSchema, req.body);
+    const { fileName, isActive, title, subtitle, price } = validate(updateBannerSchema, req.body);
     const existingBanner = await prisma.banners.findUnique({
       where: { id: bannerId },
       select: { id: true, sellerId: true, category: true },
@@ -132,10 +203,13 @@ export const updateBanner = async (
     if (typeof isActive === "boolean") {
       updateData.isActive = isActive;
     }
+    if (title !== undefined) updateData.title = title;
+    if (subtitle !== undefined) updateData.subtitle = subtitle;
+    if (price !== undefined) updateData.price = price;
     if (fileName) {
       const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
-      const cloudFolder = existingBanner.category 
-        ? `${baseFolder}/category/${existingBanner.category}/images` 
+      const cloudFolder = existingBanner.category
+        ? `${baseFolder}/category/${existingBanner.category}/images`
         : `${baseFolder}/homepage`;
       const response = await cloudinary.uploader.upload(fileName, {
         folder: cloudFolder,
@@ -238,7 +312,10 @@ export const getAllCategoryBanners = async (
     }
     const banners = await prisma.banners.findMany({
       where: {
-        category: { not: null },
+        OR: [
+          { category: { not: null } },
+          { bannerType: "announcement" }
+        ]
       },
       include: {
         seller: {
@@ -323,6 +400,21 @@ export const reviewBanner = async (
           isActive: true,
         },
       });
+
+      // Notify seller of approval
+      if (banner.sellerId) {
+        try {
+          await publishToQueue("ORDER_EVENTS", {
+            type: "BANNER_REVIEWED",
+            sellerId: banner.sellerId,
+            bannerId,
+            status: "APPROVED",
+          });
+        } catch (publishErr) {
+          console.error("Failed to publish BANNER_REVIEWED (APPROVED):", publishErr);
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: "Banner approved successfully",
@@ -338,6 +430,21 @@ export const reviewBanner = async (
       await prisma.banners.delete({
         where: { id: bannerId },
       });
+
+      // Notify seller of rejection
+      if (banner.sellerId) {
+        try {
+          await publishToQueue("ORDER_EVENTS", {
+            type: "BANNER_REVIEWED",
+            sellerId: banner.sellerId,
+            bannerId,
+            status: "REJECTED",
+          });
+        } catch (publishErr) {
+          console.error("Failed to publish BANNER_REVIEWED (REJECTED):", publishErr);
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: "Banner rejected and deleted successfully",
@@ -356,19 +463,129 @@ export const getActiveBanners = async (
   next: NextFunction,
 ) => {
   try {
-    const { category } = req.query;
-    const banners = await prisma.banners.findMany({
-      where: {
-        isActive: true,
-        status: "APPROVED",
-        category: category ? String(category) : null,
-      },
+    const { category, storeId, pincode } = req.query;
+    const queryCategory = category ? String(category) : null;
+
+    // Resolve which seller IDs match the user's location (for filtering seller banners)
+    let matchingSellerIds: string[] | null = null; // null = no location filter
+    if (storeId || pincode) {
+      const storeWhere: Record<string, any> = {};
+      if (storeId) storeWhere.id = String(storeId);
+      else if (pincode) {
+        storeWhere.OR = [
+          { pincode: String(pincode) },
+          { availableCities: { has: String(pincode) } },
+        ];
+      }
+      const stores = await prisma.stores.findMany({
+        where: storeWhere,
+        select: { sellerId: true },
+      });
+      matchingSellerIds = stores.map((s) => s.sellerId).filter(Boolean) as string[];
+    }
+
+    // Fetch all active banners first to avoid MongoDB query quirks with nulls/undefined
+    const allActiveBanners = await prisma.banners.findMany({
+      where: { isActive: true },
       orderBy: [{ sellerId: "asc" }, { createdAt: "asc" }],
     });
+
+    // Filter in JS for maximum reliability
+    const filteredBanners = allActiveBanners.filter((banner) => {
+      // 1. Exclude announcements from the main carousel
+      if (banner.bannerType === "announcement") return false;
+
+      // 2. Filter seller banners by location (admin banners always show)
+      if (banner.sellerId && matchingSellerIds !== null) {
+        if (!matchingSellerIds.includes(banner.sellerId)) return false;
+      }
+      // If no location set and banner is seller-specific, hide it
+      if (banner.sellerId && matchingSellerIds === null && !banner.adminId) return false;
+
+      // 3. If a specific category is requested, match it exactly
+      if (queryCategory) {
+        return banner.category === queryCategory;
+      }
+
+      // 4. If on homepage (no category requested):
+      // Only show if it has no category OR is explicitly typed as homepage
+      const isHomepageBanner =
+        !banner.category ||
+        banner.category === "" ||
+        banner.bannerType === "homepage" ||
+        !banner.bannerType;
+
+      return isHomepageBanner;
+    });
+
     res.status(200).json({
       success: true,
-      banners: interleaveBanners(banners),
+      banners: interleaveBanners(filteredBanners),
     });
+  } catch (error) {
+    console.error("[getActiveBanners] ❌ Error fetching banners:", error);
+    next(error);
+  }
+};
+
+export const getAnnouncementBanners = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { city, storeId, pincode } = req.query;
+
+    // Announcement banners are seller-specific — require a location to show
+    if (!city && !storeId && !pincode) {
+      return res.status(200).json({ success: true, banners: [] });
+    }
+
+    // Build where clause for announcement banners
+    const baseWhere: Record<string, any> = {
+      isActive: true,
+      status: "APPROVED",
+      bannerType: "announcement",
+    };
+
+    // Find sellers whose stores serve the user's location
+    const storeWhere: Record<string, any> = {};
+    if (storeId) storeWhere.id = String(storeId);
+    if (city) storeWhere.availableCities = { has: String(city) };
+    if (pincode && !storeId) {
+      storeWhere.OR = [
+        { pincode: String(pincode) },
+        { availableCities: { has: String(pincode) } },
+      ];
+    }
+
+    const stores = await (prisma as any).stores.findMany({
+      where: storeWhere,
+      select: { sellerId: true },
+    });
+
+    const sellerIds = stores.map((s: any) => s.sellerId).filter(Boolean);
+    if (sellerIds.length === 0) {
+      return res.status(200).json({ success: true, banners: [] });
+    }
+    baseWhere.sellerId = { in: sellerIds };
+
+    const banners = await prisma.banners.findMany({
+      where: baseWhere,
+      include: {
+        seller: {
+          select: {
+            id: true,
+            name: true,
+            store: { select: { id: true, name: true, availableCities: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+
+    res.status(200).json({ success: true, banners });
   } catch (error) {
     next(error);
   }

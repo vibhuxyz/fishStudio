@@ -1178,7 +1178,8 @@ Add a catalog product to the seller's store with custom pricing/stock.
 
 ---
 
-#### Cart
+#### 
+
 
 ##### `POST /validate-cart`
 

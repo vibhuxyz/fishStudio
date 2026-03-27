@@ -21,7 +21,7 @@ const Signup = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [canResend, setCanResend] = useState(true);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(120);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [adminData, setAdminData] = useState<SignupFormData | null>(null);
   const [accessCode, setAccessCode] = useState("");
@@ -76,7 +76,7 @@ const Signup = () => {
       setAdminData(formData);
       setShowOtp(true);
       setCanResend(false);
-      setTimer(60);
+      setTimer(120);
       startResendTimer();
     },
   });

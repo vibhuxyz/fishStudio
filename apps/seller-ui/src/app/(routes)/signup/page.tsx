@@ -17,7 +17,7 @@ const Signup = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [canResend, setCanResend] = useState(true);
-  const [timer, setTimer] = useState(60);
+  const [timer, setTimer] = useState(120);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [sellerData, setSellerData] = useState<any | null>(null);
   const [sellerId, setSellerId] = useState("");
@@ -51,7 +51,7 @@ const Signup = () => {
 
   const startResendTimer = () => {
     setCanResend(false);
-    setTimer(60);
+    setTimer(120);
     const interval = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -99,6 +99,7 @@ const Signup = () => {
       const response = await axios.post(
         `${frontendEnv.apiUrl}${verifyEndpoint}`,
         payload,
+        { withCredentials: true }
       );
       return response.data;
     },

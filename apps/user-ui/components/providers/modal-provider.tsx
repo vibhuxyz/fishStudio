@@ -14,6 +14,7 @@ import { CartSidebar } from "@/components/shared/cart-sidebar";
 import { Product } from "@repo/zod-schema";
 import { setRedirectHandler } from "@/utils/redirect";
 import { useUserSession } from "@/hooks/useUserSession";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface ModalContextType {
   openLogin: () => void;
@@ -37,7 +38,10 @@ export function useModals(): ModalContextType {
 }
 
 export function ModalProvider({ children }: { children: ReactNode }) {
-  useUserSession();
+  const { user } = useUserSession();
+  // Mount WebSocket for real-time stock updates (STOCK_UPDATE events)
+  useNotifications(user?.id);
+
   const [showLogin, setShowLogin] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showAddToCart, setShowAddToCart] = useState(false);

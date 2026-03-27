@@ -3,113 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eshop Activation Email</title>
-  <style type="text/css">
-    body {
-      margin: 0;
-      padding: 0;
-      min-width: 100%;
-      font-family: Arial, sans-serif;
-      font-size: 16px;
-      line-height: 1.5;
-      background-color: #fafafa;
-      color: #222222;
-    }
-    a {
-      color: #0070f3;
-      text-decoration: none;
-    }
-    h1 {
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 1.25;
-      margin: 20px 0;
-      text-align: center;
-      color: #0070f3;
-    }
-    p {
-      margin: 0 0 15px 0;
-    }
-
-    /* Layout */
-    .email-wrapper {
-      max-width: 600px;
-      margin: 20px auto;
-      background-color: #ffffff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .email-header {
-      background: #0070f3;
-      color: #ffffff;
-      padding: 20px;
-      text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .email-body {
-      padding: 24px;
-      background-color: #ffffff;
-    }
-
-    .email-footer {
-      padding: 20px;
-      background: #f6f6f6;
-      text-align: center;
-      font-size: 14px;
-      color: #555;
-    }
-
-    /* Buttons */
-    .button {
-      display: inline-block;
-      background-color: #0070f3;
-      color: #ffffff !important;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-weight: 700;
-      text-align: center;
-      font-size: 16px;
-      margin-top: 24px;
-      text-decoration: none;
-    }
-
-    /* Responsive */
-    @media only screen and (max-width: 600px) {
-      .email-wrapper {
-        width: 100%;
-        margin: 0;
-        border-radius: 0;
-      }
-    }
+  <title>Seller Account Activation - <%= ORG_NAME %></title>
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 0; background-color: #f8fafc; color: #1e293b; }
+    .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); }
+    .logo-container { padding: 32px 0 24px; text-align: center; }
+    .logo { font-size: 28px; font-weight: 800; color: #2563eb; letter-spacing: -1px; text-transform: uppercase; }
+    .banner { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 32px 24px; text-align: left; position: relative; }
+    .banner-content { color: #ffffff; }
+    .banner-title { font-size: 22px; font-weight: 700; margin: 0; }
+    .banner-icon { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); opacity: 0.2; }
+    .content { padding: 40px 32px; }
+    .greeting { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #0f172a; }
+    .description { font-size: 15px; color: #64748b; line-height: 1.6; margin-bottom: 32px; }
+    .otp-label { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+    .otp-container { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 32px; }
+    .otp-value { font-size: 42px; font-weight: 800; color: #1e40af; letter-spacing: 12px; font-family: 'Courier New', Courier, monospace; margin: 0; padding-left: 12px; }
+    .validity { font-size: 14px; color: #94a3b8; margin-top: 24px; }
+    .security-box { background-color: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #f1f5f9; margin-bottom: 32px; }
+    .security-title { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .security-text { font-size: 13px; color: #64748b; line-height: 1.5; margin: 0; }
+    .regards { font-size: 15px; color: #334155; margin-bottom: 40px; }
+    .regards span { display: block; font-weight: 700; color: #1e40af; margin-top: 4px; }
+    .footer { background-color: #fbfeff; padding: 40px 32px; text-align: center; border-top: 1px solid #f1f5f9; }
+    .app-buttons { margin-bottom: 32px; }
+    .app-btn { display: inline-block; margin: 0 6px; }
+    .footer-text { font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .footer-links { margin-bottom: 24px; }
+    .footer-link { font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600; margin: 0 12px; }
+    .social-icons { margin-top: 16px; }
+    .social-icon { display: inline-block; width: 32px; height: 32px; margin: 0 8px; opacity: 0.6; }
   </style>
 </head>
 <body>
-  <div class="email-wrapper">
-    <div class="email-header">
-     <h1>Welcome to Eshop</h1>
+  <div class="wrapper">
+    <div class="logo-container">
+      <div class="logo">🐟 <%= ORG_NAME %></div>
+    </div>
+    
+    <div class="banner">
+      <div class="banner-content">
+        <h2 class="banner-title"><%= ORG_NAME %> - Seller Account Activation</h2>
+      </div>
+      <div class="banner-icon">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+        </svg>
+      </div>
     </div>
 
-    <div class="email-body">
-      <p>Hello <%= name %>,</p>
-      <p>Thank you for registering with <strong>Eshop</strong>! To activate your Seller account, please use the following activation code:</p>
+    <div class="content">
+      <p class="greeting">Hello <%= name %>,</p>
+      <p class="description">Welcome to the <%= ORG_NAME %> seller family! We're excited to have you as a partner. To activate your seller account, please use the following verification code:</p>
+      
+      <div class="otp-container">
+        <p class="otp-label">Seller Verification Code</p>
+        <p class="otp-value"><%= otp %></p>
+      </div>
 
-      <h1><%= otp %></h1>
+      <p class="validity">This OTP is valid for <strong>2 minutes</strong>.</p>
+      
+      <div class="security-box">
+        <h4 class="security-title">🛡️ Security Tip:</h4>
+        <p class="security-text">
+          Always ensure you are logging into the official <%= ORG_NAME %> seller portal. Never share your account credentials with anyone.
+        </p>
+      </div>
 
-      <p>Please enter this code on the activation page within the next <strong>5 minutes</strong>.</p>
-      <p>If you did not register for an Eshop account, please ignore this email.</p>
-
-
+      <div class="regards">
+        Warm Regards,<br>
+        <span>Team <%= ORG_NAME %></span>
+      </div>
     </div>
 
-    <div class="email-footer">
-      <p>If you have any questions, please don’t hesitate to contact us at
-        <a href="mailto:support@eshop.com">support@eshop.com</a>
+    <div class="footer">
+      <div class="app-buttons">
+         <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" width="120" class="app-btn">
+         <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" width="135" class="app-btn">
+      </div>
+      
+      <p class="footer-text">
+        Disclaimer: <%= ORG_NAME %> will never ask for your private keys, passwords or OTPs outside its official admin dashboard. Stay vigilant and protect your business account.
       </p>
-      <p style="margin-top:10px;">Best regards,<br>The Eshop Team</p>
+
+      <div class="footer-links">
+        <a href="#" class="footer-link">Seller Support</a>
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
+      </div>
+
+      <div class="social-icons">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" alt="FB" width="24" class="social-icon">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg" alt="X" width="20" class="social-icon">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" alt="IN" width="24" class="social-icon">
+      </div>
+      
+      <p style="font-size: 11px; color: #94a3b8; margin-top: 32px;">
+        © 2026 <%= ORG_NAME %>. All rights reserved.
+      </p>
     </div>
   </div>
 </body>

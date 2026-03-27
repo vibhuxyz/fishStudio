@@ -7,6 +7,21 @@ export interface StorefrontBanner {
   fileId: string;
   isActive: boolean;
   sellerId: string;
+  bannerType?: string;
+  title?: string;
+  subtitle?: string;
+  price?: string;
+}
+
+export interface AnnouncementBanner extends StorefrontBanner {
+  title: string;
+  subtitle?: string;
+  price?: string;
+  seller?: {
+    id: string;
+    name: string;
+    store?: { id: string; name: string; availableCities: string[] } | null;
+  };
 }
 
 export interface StorefrontCategories {
@@ -16,7 +31,8 @@ export interface StorefrontCategories {
 }
 
 export const storefrontKeys = {
-  products: (storeId?: string) => ["storefront", "products", storeId].filter(Boolean) as string[],
+  products: (storeId?: string, pincode?: string, city?: string) =>
+    ["storefront", "products", storeId, pincode, city].filter(Boolean) as string[],
   product: (slug: string) => ["storefront", "product", slug] as const,
   categories: ["storefront", "categories"] as const,
   banners: ["storefront", "banners"] as const,
@@ -197,11 +213,13 @@ export const transformProduct = (bp: BackendProduct): Product => {
 export async function fetchStorefrontProducts(
   storeId?: string,
   pincode?: string,
+  city?: string,
   init?: RequestInit & { next?: { revalidate?: number } },
 ): Promise<Product[]> {
   const queryParams = new URLSearchParams();
   if (storeId) queryParams.append("storeId", storeId);
   if (pincode) queryParams.append("pincode", pincode);
+  if (city) queryParams.append("city", city);
 
   const queryString = queryParams.toString();
   const url = getStorefrontUrl(`/product/api/get-all-products${queryString ? `?${queryString}` : ""}`);
@@ -257,10 +275,13 @@ export async function fetchStorefrontBanners(): Promise<StorefrontBanner[]> {
 
 export async function fetchStorefrontCategoryBanners(
   category: string,
+  params?: { storeId?: string; pincode?: string },
 ): Promise<StorefrontBanner[]> {
-  const url = getStorefrontUrl(
-    `/product/api/get-banners?category=${encodeURIComponent(category)}`,
-  );
+  const query = new URLSearchParams();
+  query.set("category", category);
+  if (params?.storeId) query.set("storeId", params.storeId);
+  if (params?.pincode) query.set("pincode", params.pincode);
+  const url = getStorefrontUrl(`/product/api/get-banners?${query.toString()}`);
   const response = await fetch(url, {
     next: { revalidate: 300 },
   });
@@ -272,6 +293,19 @@ export async function fetchStorefrontCategoryBanners(
   return Array.isArray(data.banners)
     ? data.banners.filter((banner) => banner.isActive)
     : [];
+}
+
+export async function fetchAnnouncementBanners(
+  params?: { city?: string; storeId?: string },
+): Promise<AnnouncementBanner[]> {
+  const query = new URLSearchParams();
+  if (params?.city) query.set("city", params.city);
+  if (params?.storeId) query.set("storeId", params.storeId);
+  const qs = query.toString();
+  const url = getStorefrontUrl(`/product/api/get-announcement-banners${qs ? `?${qs}` : ""}`);
+  const response = await fetch(url, { next: { revalidate: 120 } });
+  const data = await parseJson<{ success: boolean; banners?: AnnouncementBanner[] }>(response);
+  return Array.isArray(data.banners) ? data.banners.filter((b) => b.isActive) : [];
 }
 
 export async function fetchStorefrontCategories(): Promise<StorefrontCategories> {

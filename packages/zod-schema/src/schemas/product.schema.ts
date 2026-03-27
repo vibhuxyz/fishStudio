@@ -1,9 +1,14 @@
 import { z } from "zod";
 
 export const productImageSchema = z.object({
-  file_id: z.string(),
-  url: z.string().url(),
-});
+  file_id: z.string().optional(),
+  fileId: z.string().optional(),
+  url: z.string().url().optional(),
+  file_url: z.string().url().optional(),
+}).transform((data) => ({
+  file_id: data.file_id || data.fileId || "",
+  url: data.url || data.file_url || "",
+}));
 
 export const productSizePricingSchema = z.object({
   size: z.string(),
@@ -24,29 +29,42 @@ export const productPieceSizePricingSchema = z.object({
   regularPrice: z.number(),
 });
 
+const wrapValue = <T extends z.ZodTypeAny>(schema: T) => z.preprocess((val) => {
+  if (typeof val === "object" && val !== null && "value" in val) return (val as any).value;
+  return val;
+}, schema);
+
+const wrapArray = <T extends z.ZodTypeAny>(schema: z.ZodArray<T>) => z.preprocess((val) => {
+  if (!Array.isArray(val)) return val;
+  return val.map((item) => (typeof item === "object" && item !== null && "value" in item ? (item as any).value : item));
+}, schema);
+
 export const productSchema = z.object({
   title: z.string().min(1, "Title is required"),
   slug: z.string().min(1, "Slug is required"),
-  category: z.string().min(1, "Category is required"),
-  subCategory: z.string().min(1, "SubCategory is required"),
+  category: wrapValue(z.string().min(1, "Category is required")),
+  subCategory: wrapValue(z.string().min(1, "SubCategory is required")),
   short_description: z.string().min(1, "Short description is required"),
   images: z.array(productImageSchema),
   tags: z.preprocess((val) => {
     if (typeof val === "string") return val.split(",").map((t) => t.trim());
+    if (Array.isArray(val)) {
+        return val.map((item) => (typeof item === "object" && item !== null && "value" in item ? String(item.value) : item));
+    }
     return val;
   }, z.array(z.string())).optional(),
-  sizes: z.array(z.string()).optional(),
+  sizes: wrapArray(z.array(z.string())).optional(),
   sizePricing: z.array(productSizePricingSchema).nullable().optional(),
   cuttingTypePricing: z.array(productCuttingTypePricingSchema).nullable().optional(),
   pieceSizePricing: z.array(productPieceSizePricingSchema).nullable().optional(),
-  cuttingTypes: z.array(z.string()).optional(),
-  pieceSizes: z.array(z.string()).optional(),
+  cuttingTypes: wrapArray(z.array(z.string())).optional(),
+  pieceSizes: wrapArray(z.array(z.string())).optional(),
   processingWeightLoss: z.string().nullable().optional(),
   stock: z.number().int().nonnegative(),
   sale_price: z.number().nonnegative(),
   regular_price: z.number().nonnegative(),
-  status: z.enum(["Active", "NonActive"]).optional(),
-  cash_on_delivery: z.enum(["yes", "no"]).optional().default("yes"),
+  status: wrapValue(z.enum(["Active", "NonActive"])).optional(),
+  cash_on_delivery: wrapValue(z.enum(["yes", "no"])).optional().default("yes"),
   discountCodes: z.array(z.string()).optional(),
 });
 
