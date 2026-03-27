@@ -9,24 +9,26 @@ FROM oven/bun:1.3.10 AS builder
 WORKDIR /app
 
 COPY --from=pruner /app/out/json/ .
-RUN --mount=type=cache,target=/root/.bun/install/cache \
+RUN --mount=type=cache,id=bun-worker-service,target=/root/.bun/install/cache,sharing=locked \
   HUSKY=0 bun install
 
 COPY --from=pruner /app/out/full/ .
 
-WORKDIR /app/packages/db-postgres
-RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_MsRnr7wHNp6d@ep-polished-truth-am0cmpdb-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env
-RUN bunx prisma generate
+RUN if [ -f /app/packages/db-postgres/prisma/schema.prisma ]; then \
+      cd /app/packages/db-postgres && \
+      echo 'POSTGRES_URL="postgresql://neondb_owner:npg_MsRnr7wHNp6d@ep-polished-truth-am0cmpdb-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env && \
+      bunx prisma generate --schema prisma/schema.prisma; \
+    fi
 
-# 2. GENERATE MONGO CLIENT
-WORKDIR /app/packages/db-mongo
-# Dummy env for Mongo validation
-RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
-RUN bunx prisma generate
+RUN if [ -f /app/packages/db-mongo/prisma/schema.prisma ]; then \
+      cd /app/packages/db-mongo && \
+      echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env && \
+      bunx prisma generate --schema prisma/schema.prisma; \
+    fi
 
 
 WORKDIR /app
-RUN --mount=type=cache,target=/root/.cache/turbo \
+RUN --mount=type=cache,id=turbo-worker-service,target=/root/.cache/turbo,sharing=locked \
   bunx turbo run build --filter=@repo/worker-service...
 
 FROM node:20-alpine AS runner
