@@ -65,8 +65,9 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
     () => resolveProductSizePricing(resolvedProduct, selectedSize),
     [resolvedProduct, selectedSize],
   );
+  const isWeightAdjustable = selected.weightGrams > 0;
   const [selectedWeightGrams, setSelectedWeightGrams] = useState(
-    selected.weightGrams || 50,
+    selected.weightGrams || 0,
   );
 
   // Create a gallery. If backend only sends one image, we use that.
@@ -124,7 +125,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
   }, [productImages.length]);
 
   useEffect(() => {
-    setSelectedWeightGrams(selected.weightGrams || 50);
+    setSelectedWeightGrams(selected.weightGrams || 0);
   }, [selected.size, selected.weightGrams]);
 
   useEffect(() => {
@@ -134,18 +135,27 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
   }, [resolvedProduct]);
 
   const computedSalePrice = useMemo(() => {
-    const baseWeight = selected.weightGrams || 1;
-    const pricePerGram = selected.salePrice / baseWeight;
+    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
+      return Number.parseFloat(selected.salePrice.toFixed(2));
+    }
+    const pricePerGram = selected.salePrice / selected.weightGrams;
     return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [selected.salePrice, selected.weightGrams, selectedWeightGrams]);
+  }, [isWeightAdjustable, selected.salePrice, selected.weightGrams, selectedWeightGrams]);
 
   const computedRegularPrice = useMemo(() => {
-    const baseWeight = selected.weightGrams || 1;
-    const pricePerGram = selected.regularPrice / baseWeight;
+    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
+      return Number.parseFloat(selected.regularPrice.toFixed(2));
+    }
+    const pricePerGram = selected.regularPrice / selected.weightGrams;
     return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
+  }, [isWeightAdjustable, selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
 
   const totalPayable = computedSalePrice;
+
+  const weightDisplay =
+    isWeightAdjustable && selectedWeightGrams >= 1000
+      ? `${Number.parseFloat((selectedWeightGrams / 1000).toFixed(2))} kg`
+      : `${selectedWeightGrams} gm`;
 
 
   const handleAddToCart = (shouldOpenCart = false) => {
@@ -157,7 +167,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
         computedRegularPrice > computedSalePrice
           ? computedRegularPrice
           : undefined,
-      weight: `${selectedWeightGrams} gm`,
+      weight: isWeightAdjustable ? weightDisplay : selected.size,
     };
 
     addToCart(
@@ -165,7 +175,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
       1,
       selectedCutting || "default",
       selectedPieceSize || "default",
-      `${selected.size} | ${selectedWeightGrams} gm`,
+      isWeightAdjustable ? `${selected.size} | ${weightDisplay}` : selected.size,
     );
     if (shouldOpenCart) {
       modals.openCart();
@@ -359,10 +369,10 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
                       Rs. {computedRegularPrice.toFixed(2)}
                     </span>
                   ) : null}
-                  {selectedWeightGrams ? (
+                  {isWeightAdjustable && selectedWeightGrams > 0 ? (
                     <span className="text-sm font-normal text-muted-foreground">
                       {" "}
-                      / {selectedWeightGrams} gm
+                      / {weightDisplay}
                     </span>
                   ) : (
                     ""
@@ -460,31 +470,39 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
                 {/* Weight & Cart Actions */}
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() =>
-                        setSelectedWeightGrams(
-                          Math.max(50, selectedWeightGrams - 50),
-                        )
-                      }
-                    >
-                      <Minus className="h-4 w-4" />
-                      <span className="sr-only">Decrease weight</span>
-                    </Button>
-                    <span className="min-w-[3rem] text-center text-lg font-bold text-foreground">
-                      {selectedWeightGrams}g
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-transparent"
-                      onClick={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span className="sr-only">Increase weight</span>
-                    </Button>
+                    {isWeightAdjustable ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 rounded-full bg-transparent"
+                          onClick={() =>
+                            setSelectedWeightGrams(
+                              Math.max(50, selectedWeightGrams - 50),
+                            )
+                          }
+                        >
+                          <Minus className="h-4 w-4" />
+                          <span className="sr-only">Decrease weight</span>
+                        </Button>
+                        <span className="min-w-[4.5rem] text-center text-lg font-bold text-foreground">
+                          {weightDisplay}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 rounded-full bg-transparent"
+                          onClick={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span className="sr-only">Increase weight</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-foreground">
+                        {selected.size}
+                      </span>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-muted-foreground">Total Payable</p>

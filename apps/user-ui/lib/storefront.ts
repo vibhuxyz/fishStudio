@@ -63,10 +63,35 @@ export const getCategoryConfigKey = (category: string) =>
     .join("");
 
 export const parseWeightToGrams = (value: string) => {
-  const match = value.toLowerCase().match(/(\d+(?:\.\d+)?)\s*(kg|g|gm)/);
-  if (!match) {
-    return 0;
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
+
+  const sameUnitRangeMatch = normalized.match(
+    /(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(kg|g|gm)/,
+  );
+  if (sameUnitRangeMatch) {
+    const min = Number(sameUnitRangeMatch[1]);
+    const max = Number(sameUnitRangeMatch[2]);
+    const unit = sameUnitRangeMatch[3];
+    const average = (min + max) / 2;
+    return unit === "kg" ? Math.round(average * 1000) : Math.round(average);
   }
+
+  const repeatedUnitRangeMatch = normalized.match(
+    /(\d+(?:\.\d+)?)\s*(kg|g|gm)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(kg|g|gm)/,
+  );
+  if (repeatedUnitRangeMatch) {
+    const min = Number(repeatedUnitRangeMatch[1]);
+    const minUnit = repeatedUnitRangeMatch[2];
+    const max = Number(repeatedUnitRangeMatch[3]);
+    const maxUnit = repeatedUnitRangeMatch[4];
+    if (minUnit === maxUnit) {
+      const average = (min + max) / 2;
+      return minUnit === "kg" ? Math.round(average * 1000) : Math.round(average);
+    }
+  }
+
+  const match = normalized.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm)/);
+  if (!match) return 0;
 
   const amount = Number(match[1]);
   return match[2] === "kg" ? Math.round(amount * 1000) : Math.round(amount);
