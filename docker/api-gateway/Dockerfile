@@ -3,7 +3,7 @@
 FROM oven/bun:1 AS pruner
 WORKDIR /app
 COPY . .
-RUN bunx turbo prune --docker --scope=@repo/auth-service
+RUN bunx turbo prune --docker --scope=@repo/api-gateway
 
 FROM oven/bun:1 AS builder
 WORKDIR /app
@@ -24,10 +24,9 @@ WORKDIR /app/packages/db-mongo
 RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
 RUN bunx prisma generate
 
-
 WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache/turbo \
-  bunx turbo run build --filter=@repo/auth-service...
+  bunx turbo run build --filter=@repo/api-gateway...
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -36,10 +35,10 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages ./packages
-COPY --from=builder /app/apps/auth-service ./apps/auth-service
+COPY --from=builder /app/apps/api-gateway ./apps/api-gateway
 
-WORKDIR /app/apps/auth-service
+WORKDIR /app/apps/api-gateway
 
-EXPOSE 6001
+EXPOSE 8080
 
 CMD ["node", "dist/main.js"]
