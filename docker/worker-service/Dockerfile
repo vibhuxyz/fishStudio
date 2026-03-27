@@ -10,7 +10,7 @@ WORKDIR /app
 
 COPY --from=pruner /app/out/json/ .
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-  bun install --frozen-lockfile
+  HUSKY=0 bun install
 
 COPY --from=pruner /app/out/full/ .
 
