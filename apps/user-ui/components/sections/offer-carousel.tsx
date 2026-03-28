@@ -90,6 +90,7 @@ export function OfferCarousel({
                 style={{
                   opacity: isVisible ? 1 : 0,
                   zIndex: isVisible ? 1 : 0,
+                  willChange: "opacity",
                 }}
               >
                 {/* 2. Image Skeleton (visible only for the current slide if not loaded) */}
@@ -104,6 +105,7 @@ export function OfferCarousel({
                   className={`object-cover transition-transform duration-700 ${
                     isImageLoaded ? "scale-100" : "scale-105"
                   }`}
+                  style={{ willChange: "transform" }}
                   priority={i === 0}
                   onLoad={() => handleImageLoad(banner.id)}
                   sizes="(max-width: 768px) 100vw, 1280px"

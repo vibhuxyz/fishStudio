@@ -302,8 +302,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { visible: announcementVisible } = useAnnouncement();
-  const topOffset = announcementVisible ? BAR_HEIGHT : 0;
   const isHomePage = pathname === "/";
+  // Announcement bar only renders on the home page, so only shift the header there
+  const topOffset = announcementVisible && isHomePage ? BAR_HEIGHT : 0;
   const isCheckoutPage = pathname === "/checkout";
   const shouldShowCategoryIcon = isScrolled || !isHomePage;
   const shouldHideCategoryBar = isScrolled || !isHomePage;

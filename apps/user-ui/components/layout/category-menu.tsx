@@ -13,6 +13,8 @@ import {
   Heart,
   Wheat,
   PawPrint,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -20,15 +22,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks/useCategories";
 import { getCategoryConfigKey } from "@/lib/storefront";
 
+// Per-category accent colours (bg gradient + icon colour)
+const categoryTheme: Record<string, { gradient: string; iconBg: string; badge: string }> = {
+  "Fresh Water":      { gradient: "from-sky-50 to-blue-50",    iconBg: "bg-sky-100",    badge: "bg-sky-100 text-sky-700" },
+  "Sea Fish":         { gradient: "from-teal-50 to-cyan-50",   iconBg: "bg-teal-100",   badge: "bg-teal-100 text-teal-700" },
+  "Premium Sea Food": { gradient: "from-violet-50 to-purple-50", iconBg: "bg-violet-100", badge: "bg-violet-100 text-violet-700" },
+  "Meat & Poultry":  { gradient: "from-orange-50 to-amber-50", iconBg: "bg-orange-100", badge: "bg-orange-100 text-orange-700" },
+  "Fry Ready":        { gradient: "from-red-50 to-rose-50",    iconBg: "bg-red-100",    badge: "bg-red-100 text-red-700" },
+  "Moms Magic":       { gradient: "from-pink-50 to-fuchsia-50",iconBg: "bg-pink-100",   badge: "bg-pink-100 text-pink-700" },
+  "Rice & Spice":     { gradient: "from-yellow-50 to-lime-50", iconBg: "bg-yellow-100", badge: "bg-yellow-100 text-yellow-700" },
+  "Pet Serve":        { gradient: "from-green-50 to-emerald-50",iconBg: "bg-green-100", badge: "bg-green-100 text-green-700" },
+};
+
+const fallbackTheme = { gradient: "from-gray-50 to-slate-50", iconBg: "bg-gray-100", badge: "bg-gray-100 text-gray-600" };
+
 const categoryIcons: Record<string, React.ReactNode> = {
-  "Fresh Water": <Fish className="h-5 w-5" />,
-  "Sea Fish": <Fish className="h-5 w-5" />,
+  "Fresh Water":      <Fish className="h-5 w-5" />,
+  "Sea Fish":         <Fish className="h-5 w-5" />,
   "Premium Sea Food": <Fish className="h-5 w-5" />,
-  "Meat & Poultry": <Drumstick className="h-5 w-5" />,
-  "Fry Ready": <Flame className="h-5 w-5" />,
-  "Moms Magic": <Heart className="h-5 w-5" />,
-  "Rice & Spice": <Wheat className="h-5 w-5" />,
-  "Pet Serve": <PawPrint className="h-5 w-5" />,
+  "Meat & Poultry":  <Drumstick className="h-5 w-5" />,
+  "Fry Ready":        <Flame className="h-5 w-5" />,
+  "Moms Magic":       <Heart className="h-5 w-5" />,
+  "Rice & Spice":     <Wheat className="h-5 w-5" />,
+  "Pet Serve":        <PawPrint className="h-5 w-5" />,
 };
 
 function getCategorySlug(cat: string) {
@@ -40,10 +56,7 @@ interface CategoryMenuProps {
   onClose?: () => void;
 }
 
-export function CategoryMenu({
-  variant = "horizontal",
-  onClose,
-}: CategoryMenuProps) {
+export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuProps) {
   const { data, isLoading } = useCategories();
 
   const categories: string[] = data?.categories ?? [];
@@ -65,6 +78,13 @@ export function CategoryMenu({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  // auto-select first category in mega/dropdown on mount
+  useEffect(() => {
+    if ((variant === "mega" || variant === "dropdown") && categories.length > 0) {
+      setActiveCategory(categories[0]);
+    }
+  }, [variant, categories]);
+
   const keepOpen = useCallback(() => {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -74,9 +94,7 @@ export function CategoryMenu({
 
   const startClose = useCallback(() => {
     keepOpen();
-    closeTimerRef.current = setTimeout(() => {
-      setActiveCategory(null);
-    }, 300);
+    closeTimerRef.current = setTimeout(() => setActiveCategory(null), 300);
   }, [keepOpen]);
 
   const openCategory = useCallback(
@@ -97,7 +115,6 @@ export function CategoryMenu({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    // Check on mount + resize
     checkScrollButtons();
     const obs = new ResizeObserver(() => checkScrollButtons());
     obs.observe(el);
@@ -108,38 +125,28 @@ export function CategoryMenu({
     };
   }, [checkScrollButtons]);
 
-  if (isLoading) {
-    return <CategoryMenuSkeleton />;
-  }
+  if (isLoading) return <CategoryMenuSkeleton />;
 
   const scroll = (direction: "left" | "right") => {
-    scrollRef.current?.scrollBy({
-      left: direction === "left" ? -200 : 200,
-      behavior: "smooth",
-    });
+    scrollRef.current?.scrollBy({ left: direction === "left" ? -200 : 200, behavior: "smooth" });
   };
 
-
-  /* Horizontal variant */
+  /* ─── Horizontal (header strip) ─────────────────────────────────────────── */
   if (variant === "horizontal") {
-    const subCats = activeCategory ? getSubCategories(activeCategory) : [];
-
     return (
       <div className="relative">
-        {/* Category nav row */}
         <div className="relative flex h-20 items-center border-t border-border bg-background">
           {canScrollLeft && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-0 z-10 h-full w-8 rounded-none bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-colors"
+              className="absolute left-0 z-10 h-full w-8 rounded-none bg-gradient-to-r from-background to-transparent text-muted-foreground"
               onClick={() => scroll("left")}
               aria-label="Scroll categories left"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-
           <nav
             ref={scrollRef}
             className="hide-scrollbar mx-auto flex h-full items-center justify-start gap-5 overflow-x-auto px-10"
@@ -151,15 +158,9 @@ export function CategoryMenu({
                 href={`/category/${getCategorySlug(cat)}`}
                 className="flex flex-col items-center gap-1 group transition-transform duration-200 hover:scale-105"
               >
-                <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border bg-muted/20 shadow-sm group-hover:shadow-md transition-all duration-200 group-hover:border-primary/20">
+                <div className="relative h-12 w-12 overflow-hidden rounded-full border border-border bg-muted/20 shadow-sm group-hover:shadow-md transition-all duration-200 group-hover:border-primary/30">
                   {categoryImages[cat] ? (
-                    <Image
-                      src={categoryImages[cat]}
-                      alt={cat}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
+                    <Image src={categoryImages[cat]} alt={cat} fill sizes="48px" className="object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gray-50">
                       <Fish className="h-5 w-5 text-gray-400" />
@@ -172,12 +173,11 @@ export function CategoryMenu({
               </Link>
             ))}
           </nav>
-
           {canScrollRight && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0 z-10 h-full w-8 rounded-none bg-muted/20 text-muted-foreground hover:bg-muted/40 transition-colors"
+              className="absolute right-0 z-10 h-full w-8 rounded-none bg-gradient-to-l from-background to-transparent text-muted-foreground"
               onClick={() => scroll("right")}
               aria-label="Scroll categories right"
             >
@@ -189,132 +189,231 @@ export function CategoryMenu({
     );
   }
 
-  /* Mega variant (Grid layout) */
+  /* ─── Mega (desktop dropdown from header icon) ───────────────────────────── */
   if (variant === "mega") {
-    return (
-      <div className="w-[850px] max-w-[95vw] p-6 bg-background rounded-xl overflow-hidden shadow-2xl border border-border">
-        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            Shop by Categories
-          </h2>
-          <p className="text-sm text-muted-foreground">Hover on a category to see more</p>
-        </div>
-        
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {categories.slice(0, 8).map((cat) => {
-            const subs = getSubCategories(cat);
-            return (
-              <div 
-                key={cat} 
-                className="group relative flex flex-col gap-3 rounded-xl p-3 transition-all duration-300 hover:bg-secondary/50"
-                onMouseEnter={() => openCategory(cat)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/5 shadow-sm group-hover:shadow-md">
-                    {categoryImages[cat] ? (
-                      <Image
-                        src={categoryImages[cat]}
-                        alt={cat}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                    ) : (
-                      <span className="text-primary transition-colors group-hover:text-primary-foreground">
-                        {categoryIcons[cat] || <Fish className="h-6 w-6" />}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <Link
-                      href={`/category/${getCategorySlug(cat)}`}
-                      className="text-sm font-bold tracking-tight text-foreground group-hover:text-primary transition-colors"
-                      onClick={onClose}
-                    >
-                      {cat}
-                    </Link>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {subs.length} items
-                    </div>
-                  </div>
-                </div>
+    const activeSubs = activeCategory ? getSubCategories(activeCategory) : [];
+    const theme = activeCategory ? (categoryTheme[activeCategory] ?? fallbackTheme) : fallbackTheme;
 
-                {/* Subcategories list that appears on hover */}
-                <div className="overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-40">
-                  <div className="flex flex-col gap-1 px-1 pt-2 border-t border-border/20">
-                    {subs.slice(0, 4).map((sub) => (
-                      <Link
-                        key={sub}
-                        href={`/category/${getCategorySlug(cat)}?sub=${encodeURIComponent(sub)}`}
-                        className="text-[11px] text-muted-foreground hover:text-primary transition-colors hover:translate-x-1 duration-200"
-                        onClick={onClose}
-                      >
-                        {sub}
-                      </Link>
-                    ))}
-                    {subs.length > 4 && (
-                      <Link
-                        href={`/category/${getCategorySlug(cat)}`}
-                        className="text-[10px] font-semibold text-primary/70 hover:text-primary mt-1"
-                        onClick={onClose}
-                      >
-                        + View {subs.length - 4} more
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="mt-8 pt-4 border-t border-border/50 flex items-center justify-center">
-          <Link 
-            href="/categories" 
-            className="text-sm font-semibold text-primary hover:underline flex items-center gap-1 group"
+    return (
+      <div className="w-[760px] max-w-[96vw] overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 to-background px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+              <LayoutGrid className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-base font-bold text-foreground">Shop by Categories</span>
+          </div>
+          <Link
+            href="/categories"
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
             onClick={onClose}
           >
-            Explore All Categories 
-            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            View all <ArrowRight className="h-3 w-3" />
           </Link>
+        </div>
+
+        <div className="flex">
+          {/* Left — category list */}
+          <div className="w-52 flex-shrink-0 overflow-y-auto border-r border-border bg-muted/20 py-2" style={{ maxHeight: 360 }}>
+            {categories.map((cat) => {
+              const t = categoryTheme[cat] ?? fallbackTheme;
+              const isActive = activeCategory === cat;
+              const subs = getSubCategories(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`group relative flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 ${
+                    isActive
+                      ? "bg-background shadow-sm"
+                      : "hover:bg-background/60"
+                  }`}
+                  onMouseEnter={() => openCategory(cat)}
+                  onClick={() => openCategory(cat)}
+                >
+                  {/* Active indicator */}
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                  )}
+
+                  {/* Image */}
+                  <div className={`relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ${t.iconBg} ring-1 ring-border`}>
+                    {categoryImages[cat] ? (
+                      <Image src={categoryImages[cat]} alt={cat} fill sizes="36px" className="object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        {categoryIcons[cat] || <Fish className="h-4 w-4" />}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-[13px] font-semibold leading-tight ${isActive ? "text-primary" : "text-foreground"}`}>
+                      {cat}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{subs.length} items</p>
+                  </div>
+
+                  <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-all duration-150 ${isActive ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"}`} />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right — subcategories */}
+          <div className={`flex-1 bg-gradient-to-br ${theme.gradient} p-5`} style={{ minHeight: 300 }}>
+            <AnimatePresence mode="wait">
+              {activeCategory ? (
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -6 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="h-full"
+                >
+                  {/* Category hero row */}
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className={`relative h-12 w-12 overflow-hidden rounded-xl ${theme.iconBg} ring-2 ring-white shadow-md`}>
+                      {categoryImages[activeCategory] ? (
+                        <Image src={categoryImages[activeCategory]} alt={activeCategory} fill sizes="48px" className="object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                          {categoryIcons[activeCategory] || <Fish className="h-5 w-5" />}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-foreground">{activeCategory}</h3>
+                      <p className="text-xs text-muted-foreground">{activeSubs.length} varieties available</p>
+                    </div>
+                    <Link
+                      href={`/category/${getCategorySlug(activeCategory)}`}
+                      className="ml-auto flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-primary shadow-sm hover:bg-white transition-colors"
+                      onClick={onClose}
+                    >
+                      Shop all <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+
+                  {/* Subcategory cards */}
+                  {activeSubs.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                      {activeSubs.map((sub) => (
+                        <Link
+                          key={sub}
+                          href={`/category/${getCategorySlug(activeCategory)}?sub=${encodeURIComponent(sub)}`}
+                          className="group flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-sm transition-all duration-150 hover:border-white hover:bg-white hover:shadow-md active:scale-95"
+                          onClick={onClose}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`flex h-2 w-2 flex-shrink-0 rounded-full ${theme.badge.split(" ")[0]}`} />
+                            <span className={`truncate text-sm font-semibold ${theme.badge.split(" ")[1]}`}>
+                              {sub}
+                            </span>
+                          </div>
+                          <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/40 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-primary" />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                      <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">All products in this category</p>
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex h-full flex-col items-center justify-center gap-2 py-16 text-center"
+                >
+                  <LayoutGrid className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">Hover a category to explore</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border bg-muted/30 px-5 py-3">
+          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+            {categories.slice(0, 6).map((cat) => {
+              const t = categoryTheme[cat] ?? fallbackTheme;
+              return (
+                <Link
+                  key={cat}
+                  href={`/category/${getCategorySlug(cat)}`}
+                  className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition-all hover:scale-105 ${t.badge} bg-white/60 hover:bg-white`}
+                  onClick={onClose}
+                >
+                  <span className="relative h-4 w-4 overflow-hidden rounded-full">
+                    {categoryImages[cat] ? (
+                      <Image src={categoryImages[cat]} alt={cat} fill sizes="16px" className="object-cover" />
+                    ) : (
+                      <Fish className="h-3 w-3" />
+                    )}
+                  </span>
+                  {cat}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
   }
 
-  /* Dropdown variant (header icon when scrolled) */
+  /* ─── Dropdown (two-column sidebar) ─────────────────────────────────────── */
   const subCats = activeCategory ? getSubCategories(activeCategory) : [];
+  const dropTheme = activeCategory ? (categoryTheme[activeCategory] ?? fallbackTheme) : fallbackTheme;
 
   return (
-    <div className="flex min-h-[350px] w-[520px]" onMouseLeave={startClose}>
-      {/* Left column - categories */}
-      <div className="w-56 border-r border-border bg-background py-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
-              activeCategory === cat
-                ? "bg-secondary font-semibold text-foreground"
-                : "text-muted-foreground hover:bg-secondary/50"
-            }`}
-            onMouseEnter={() => openCategory(cat)}
-          >
-            <span className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
-              {categoryImages[cat] ? (
-                <Image src={categoryImages[cat]} alt={cat} fill sizes="32px" className="object-cover" />
-              ) : (
-                categoryIcons[cat]
+    <div
+      className="flex overflow-hidden rounded-xl border border-border bg-background shadow-2xl"
+      style={{ minHeight: 340, width: 480 }}
+      onMouseLeave={startClose}
+    >
+      {/* Left — categories */}
+      <div className="w-48 flex-shrink-0 overflow-y-auto border-r border-border bg-muted/10 py-2">
+        {categories.map((cat) => {
+          const t = categoryTheme[cat] ?? fallbackTheme;
+          const isActive = activeCategory === cat;
+          return (
+            <button
+              key={cat}
+              type="button"
+              className={`group relative flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-all duration-150 ${
+                isActive ? "bg-background font-semibold" : "text-muted-foreground hover:bg-background/60"
+              }`}
+              onMouseEnter={() => openCategory(cat)}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
               )}
-            </span>
-            <span>{cat}</span>
-          </button>
-        ))}
+              <span className={`relative h-7 w-7 flex-shrink-0 overflow-hidden rounded-full ${t.iconBg}`}>
+                {categoryImages[cat] ? (
+                  <Image src={categoryImages[cat]} alt={cat} fill sizes="28px" className="object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-muted-foreground">
+                    {categoryIcons[cat] || <Fish className="h-3.5 w-3.5" />}
+                  </span>
+                )}
+              </span>
+              <span className={`truncate text-[13px] ${isActive ? "text-primary" : ""}`}>{cat}</span>
+              {isActive && <ChevronRight className="ml-auto h-3 w-3 flex-shrink-0 text-primary" />}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Right column - subcategories */}
+      {/* Right — subcategories */}
       <div
-        className="w-64 bg-secondary/30 p-4"
+        className={`flex-1 bg-gradient-to-br ${dropTheme.gradient} p-4`}
         onMouseEnter={keepOpen}
         onMouseLeave={startClose}
       >
@@ -325,28 +424,43 @@ export function CategoryMenu({
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.1 }}
+              transition={{ duration: 0.12 }}
             >
-              <h3 className="mb-3 text-sm font-semibold text-foreground">
-                {activeCategory}
-              </h3>
-              <div className="flex flex-col gap-1">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">{activeCategory}</h3>
+                <Link
+                  href={`/category/${getCategorySlug(activeCategory)}`}
+                  className="text-[11px] font-semibold text-primary hover:underline"
+                  onClick={onClose}
+                >
+                  View all
+                </Link>
+              </div>
+              <div className="flex flex-col gap-0.5">
                 {subCats.map((sub) => (
                   <Link
                     key={sub}
                     href={`/category/${getCategorySlug(activeCategory)}?sub=${encodeURIComponent(sub)}`}
-                    className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                    className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-white/70 hover:text-foreground"
                     onClick={onClose}
                   >
+                    <span className="h-1 w-1 flex-shrink-0 rounded-full bg-muted-foreground/40 transition-colors group-hover:bg-primary" />
                     {sub}
+                    <ArrowRight className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100 text-primary" />
                   </Link>
                 ))}
               </div>
             </motion.div>
           ) : (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Hover over a category to see items
-            </p>
+            <motion.p
+              key="hint"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center text-sm text-muted-foreground"
+            >
+              <LayoutGrid className="h-7 w-7 text-muted-foreground/30" />
+              Hover over a category
+            </motion.p>
           )}
         </AnimatePresence>
       </div>

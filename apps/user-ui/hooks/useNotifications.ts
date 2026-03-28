@@ -18,7 +18,7 @@ export interface Notification {
 export const useNotifications = (userId?: string) => {
   const queryClient = useQueryClient();
 
-  // WebSocket: instantly refresh bell on order status updates
+  // WebSocket: instantly refresh bell on order/stock updates
   useEffect(() => {
     const wsBase = (
       process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
@@ -28,30 +28,31 @@ export const useNotifications = (userId?: string) => {
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
     let destroyed = false;
+    let attempt = 0;
 
     const connect = () => {
       if (destroyed) return;
       ws = new WebSocket(wsUrl);
 
+      ws.onopen = () => {
+        attempt = 0; // reset backoff on successful connect
+      };
+
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+
           if (data.type === "ORDER_STATUS_UPDATE") {
-            queryClient.refetchQueries({
-              queryKey: ["notifications"],
-              type: "active",
-            });
+            // Single invalidate — no need for refetch + invalidate together
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
           }
-          if (data.type === "STOCK_UPDATE") {
-            // broadcastAll sends { type, payload } — unwrap payload
-            const { productId, catalogProductId, stock } = data.payload ?? data;
 
-            // Match by variant id OR catalog id
+          if (data.type === "STOCK_UPDATE") {
+            const { productId, catalogProductId, stock } = data.payload ?? data;
             const isMatch = (p: any) =>
               p.id === productId || p.id === catalogProductId;
 
-            // 1. Instantly update the products list cache
+            // Patch products list cache in place
             queryClient.setQueriesData<any>(
               { queryKey: ["storefront", "products"] },
               (oldData: any) => {
@@ -60,25 +61,27 @@ export const useNotifications = (userId?: string) => {
               },
             );
 
-            // 2. Instantly update the individual product detail cache
+            // Patch individual product detail cache in place
             queryClient.setQueriesData<any>(
               { queryKey: ["storefront", "product"] },
-              (oldData: any) => {
-                if (oldData && isMatch(oldData)) {
-                  return { ...oldData, stock };
-                }
-                return oldData;
-              },
+              (oldData: any) =>
+                oldData && isMatch(oldData) ? { ...oldData, stock } : oldData,
             );
 
-            // 3. Trigger a background refetch to ensure long-term consistency
-            queryClient.invalidateQueries({ queryKey: ["storefront"] });
+            // Only invalidate the product-listing cache, not all storefront data
+            queryClient.invalidateQueries({
+              queryKey: ["storefront", "product-listing"],
+            });
           }
         } catch {}
       };
 
       ws.onclose = () => {
-        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+        if (destroyed) return;
+        // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
+        const delay = Math.min(3000 * 2 ** attempt, 30000);
+        attempt += 1;
+        reconnectTimeout = setTimeout(connect, delay);
       };
     };
 
@@ -105,7 +108,7 @@ export const useNotifications = (userId?: string) => {
       const result = await response.json();
       return result.notifications as Notification[];
     },
-    refetchInterval: 60000,
+    refetchInterval: 300000, // 5 min — WebSocket handles real-time updates
   });
 
   const markAsReadMutation = useMutation({

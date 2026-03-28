@@ -299,9 +299,12 @@ model products {
   @@index([catalogProductId])
   @@index([storeId])
   @@index([adminId])
-  @@index([storeId, status, isDeleted]) // most common storefront query
+  @@index([storeId, status, isDeleted]) // storefront store-product queries
+  @@index([adminId, isDeleted, status]) // catalog root product queries
+  @@index([catalogProductId, status, isDeleted]) // variant lookup by catalog ID
   @@index([category, status]) // category browse
   @@index([status, isDeleted]) // admin product listing
+  @@index([totalSold]) // homepage bestseller sort
 }
 
 model banners {

@@ -823,21 +823,22 @@ export const getStoreProductBySlug = async (
       return res.status(200).json(cached);
     }
 
-    // Resolve store only on cache miss
-    const preferredStore = await resolvePreferredStore({
-      storeId: req.query.storeId ? String(req.query.storeId) : undefined,
-      pincode: req.query.pincode ? String(req.query.pincode) : undefined,
-      city: req.query.city ? String(req.query.city) : undefined,
-    });
-
-    const slugMatch = await prisma.products.findFirst({
-      where: { slug, isDeleted: false, status: "Active" },
-      include: {
-        images: true,
-        catalogProduct: { include: { images: true } },
-        store: { include: { seller: { include: { events: true } } } },
-      },
-    });
+    // Resolve store + slug lookup in parallel on cache miss
+    const [preferredStore, slugMatch] = await Promise.all([
+      resolvePreferredStore({
+        storeId: req.query.storeId ? String(req.query.storeId) : undefined,
+        pincode: req.query.pincode ? String(req.query.pincode) : undefined,
+        city: req.query.city ? String(req.query.city) : undefined,
+      }),
+      prisma.products.findFirst({
+        where: { slug, isDeleted: false, status: "Active" },
+        include: {
+          images: true,
+          catalogProduct: { include: { images: true } },
+          store: { include: { seller: { include: { events: true } } } },
+        },
+      }),
+    ]);
 
     if (!slugMatch) return next(new NotFoundError("Product not found!"));
 

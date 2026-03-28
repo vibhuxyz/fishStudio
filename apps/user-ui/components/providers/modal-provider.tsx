@@ -8,10 +8,21 @@ import {
   useEffect,
   type ReactNode,
 } from "react";
-import { AddToCartModal } from "@/components/shared/add-to-cart-modal";
-import { LoginModal } from "@/components/shared/login-modal";
-import { CartSidebar } from "@/components/shared/cart-sidebar";
+import dynamic from "next/dynamic";
 import { Product } from "@repo/zod-schema";
+
+const AddToCartModal = dynamic(
+  () => import("@/components/shared/add-to-cart-modal").then((m) => m.AddToCartModal),
+  { ssr: false },
+);
+const LoginModal = dynamic(
+  () => import("@/components/shared/login-modal").then((m) => m.LoginModal),
+  { ssr: false },
+);
+const CartSidebar = dynamic(
+  () => import("@/components/shared/cart-sidebar").then((m) => m.CartSidebar),
+  { ssr: false },
+);
 import { setRedirectHandler } from "@/utils/redirect";
 import { useUserSession } from "@/hooks/useUserSession";
 import { useNotifications } from "@/hooks/useNotifications";

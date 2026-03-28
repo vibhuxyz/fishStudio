@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   fetchStorefrontProductListing,
@@ -95,8 +95,10 @@ export function useProducts(options: UseProductsOptions = {}) {
     };
   }, [rawProducts]);
 
-  const getProductsByCategory = (category: string) =>
-    allProducts.filter((p) => p.category === category);
+  const getProductsByCategory = useCallback(
+    (category: string) => allProducts.filter((p) => p.category === category),
+    [allProducts],
+  );
 
   return {
     ...query,

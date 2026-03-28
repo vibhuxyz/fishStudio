@@ -23,7 +23,7 @@ export interface SearchResult {
 }
 
 const SEARCH_CACHE_MAX_SIZE = 100;
-const SEARCH_CACHE_TTL_MS = 60_000; // 1 minute
+const SEARCH_CACHE_TTL_MS = 180_000; // 3 minutes
 
 interface CachedEntry {
   result: SearchResult;

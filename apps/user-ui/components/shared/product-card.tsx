@@ -22,7 +22,7 @@ interface ProductCardProps {
   variant?: "compact" | "full";
 }
 
-export function ProductCard({
+function ProductCardComponent({
   product,
   onAddToCart,
   priority = false,
@@ -418,3 +418,5 @@ export function ProductCard({
     </div>
   );
 }
+
+export const ProductCard = React.memo(ProductCardComponent);

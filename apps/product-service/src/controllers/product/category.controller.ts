@@ -1,8 +1,30 @@
 import { Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
+import { redis } from "@repo/libs";
 import { AuthRequest, getCategoryConfigKey } from "./utils.js";
 import { categorySchema, subCategorySchema, validate } from "@repo/zod-schema";
+
+const SITE_CONFIG_CACHE_KEY = "site_config:v1";
+const SITE_CONFIG_TTL = 600; // 10 minutes
+
+const getSiteConfigCached = async () => {
+  try {
+    const cached = await redis.get(SITE_CONFIG_CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch {}
+  return null;
+};
+
+const setSiteConfigCache = (data: unknown) => {
+  redis
+    .setex(SITE_CONFIG_CACHE_KEY, SITE_CONFIG_TTL, JSON.stringify(data))
+    .catch(() => {});
+};
+
+const invalidateSiteConfigCache = () => {
+  redis.del(SITE_CONFIG_CACHE_KEY).catch(() => {});
+};
 
 export const getCategories = async (
   _req: any,
@@ -10,6 +32,12 @@ export const getCategories = async (
   next: NextFunction,
 ) => {
   try {
+    // Serve from Redis cache when available (10 min TTL)
+    const cached = await getSiteConfigCached();
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const config = await prisma.site_config.findFirst();
     if (!config) {
       return res.status(200).json({
@@ -34,12 +62,14 @@ export const getCategories = async (
         transformedSubCategories[key] = subCategories[cat] || [];
       });
     }
-    return res.status(200).json({
+    const payload = {
       success: true,
       categories: config.categories,
       subCategories: transformedSubCategories,
       categoryImages,
-    });
+    };
+    setSiteConfigCache(payload);
+    return res.status(200).json(payload);
   } catch (error) {
     return next(error);
   }
@@ -94,6 +124,7 @@ export const createCategory = async (
         categoryImages,
       },
     });
+    invalidateSiteConfigCache();
     return res.status(201).json({
       success: true,
       message: "Category created successfully",
@@ -147,6 +178,7 @@ export const createSubCategory = async (
         subCategories,
       },
     });
+    invalidateSiteConfigCache();
     return res.status(201).json({
       success: true,
       message: "Subcategory created successfully",

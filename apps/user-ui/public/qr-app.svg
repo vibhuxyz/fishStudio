@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" shape-rendering="crispEdges">
+  <rect width="200" height="200" fill="white" rx="12"/>
+
+  <!-- Top-left finder pattern -->
+  <rect x="10" y="10" width="49" height="49" fill="#111" rx="4"/>
+  <rect x="17" y="17" width="35" height="35" fill="white" rx="2"/>
+  <rect x="24" y="24" width="21" height="21" fill="#111" rx="2"/>
+
+  <!-- Top-right finder pattern -->
+  <rect x="141" y="10" width="49" height="49" fill="#111" rx="4"/>
+  <rect x="148" y="17" width="35" height="35" fill="white" rx="2"/>
+  <rect x="155" y="24" width="21" height="21" fill="#111" rx="2"/>
+
+  <!-- Bottom-left finder pattern -->
+  <rect x="10" y="141" width="49" height="49" fill="#111" rx="4"/>
+  <rect x="17" y="148" width="35" height="35" fill="white" rx="2"/>
+  <rect x="24" y="155" width="21" height="21" fill="#111" rx="2"/>
+
+  <!-- Timing pattern H -->
+  <rect x="66" y="66" width="7" height="7" fill="#111"/>
+  <rect x="80" y="66" width="7" height="7" fill="#111"/>
+  <rect x="94" y="66" width="7" height="7" fill="#111"/>
+  <rect x="108" y="66" width="7" height="7" fill="#111"/>
+  <rect x="122" y="66" width="7" height="7" fill="#111"/>
+
+  <!-- Timing pattern V -->
+  <rect x="66" y="80" width="7" height="7" fill="#111"/>
+  <rect x="66" y="94" width="7" height="7" fill="#111"/>
+  <rect x="66" y="108" width="7" height="7" fill="#111"/>
+  <rect x="66" y="122" width="7" height="7" fill="#111"/>
+
+  <!-- Data modules — row 1 -->
+  <rect x="80" y="80" width="7" height="7" fill="#111"/>
+  <rect x="94" y="80" width="7" height="7" fill="#111"/>
+  <rect x="122" y="80" width="7" height="7" fill="#111"/>
+  <rect x="136" y="80" width="7" height="7" fill="#111"/>
+
+  <!-- Data modules — row 2 -->
+  <rect x="80" y="94" width="7" height="7" fill="#111"/>
+  <rect x="108" y="94" width="7" height="7" fill="#111"/>
+  <rect x="136" y="94" width="7" height="7" fill="#111"/>
+
+  <!-- Data modules — row 3 -->
+  <rect x="94" y="108" width="7" height="7" fill="#111"/>
+  <rect x="108" y="108" width="7" height="7" fill="#111"/>
+  <rect x="122" y="108" width="7" height="7" fill="#111"/>
+
+  <!-- Data modules — row 4 -->
+  <rect x="80" y="122" width="7" height="7" fill="#111"/>
+  <rect x="94" y="122" width="7" height="7" fill="#111"/>
+  <rect x="122" y="122" width="7" height="7" fill="#111"/>
+  <rect x="136" y="122" width="7" height="7" fill="#111"/>
+
+  <!-- Right-side data modules -->
+  <rect x="141" y="66" width="7" height="7" fill="#111"/>
+  <rect x="155" y="66" width="7" height="7" fill="#111"/>
+  <rect x="169" y="66" width="7" height="7" fill="#111"/>
+  <rect x="183" y="66" width="7" height="7" fill="#111"/>
+  <rect x="141" y="80" width="7" height="7" fill="#111"/>
+  <rect x="169" y="80" width="7" height="7" fill="#111"/>
+  <rect x="155" y="94" width="7" height="7" fill="#111"/>
+  <rect x="183" y="94" width="7" height="7" fill="#111"/>
+  <rect x="141" y="108" width="7" height="7" fill="#111"/>
+  <rect x="155" y="108" width="7" height="7" fill="#111"/>
+  <rect x="169" y="108" width="7" height="7" fill="#111"/>
+  <rect x="155" y="122" width="7" height="7" fill="#111"/>
+  <rect x="183" y="122" width="7" height="7" fill="#111"/>
+  <rect x="141" y="136" width="7" height="7" fill="#111"/>
+  <rect x="169" y="136" width="7" height="7" fill="#111"/>
+  <rect x="183" y="136" width="7" height="7" fill="#111"/>
+
+  <!-- Bottom data modules -->
+  <rect x="66" y="136" width="7" height="7" fill="#111"/>
+  <rect x="80" y="136" width="7" height="7" fill="#111"/>
+  <rect x="108" y="136" width="7" height="7" fill="#111"/>
+  <rect x="122" y="136" width="7" height="7" fill="#111"/>
+  <rect x="66" y="150" width="7" height="7" fill="#111"/>
+  <rect x="94" y="150" width="7" height="7" fill="#111"/>
+  <rect x="122" y="150" width="7" height="7" fill="#111"/>
+  <rect x="136" y="150" width="7" height="7" fill="#111"/>
+  <rect x="80" y="164" width="7" height="7" fill="#111"/>
+  <rect x="94" y="164" width="7" height="7" fill="#111"/>
+  <rect x="108" y="164" width="7" height="7" fill="#111"/>
+  <rect x="66" y="164" width="7" height="7" fill="#111"/>
+  <rect x="136" y="164" width="7" height="7" fill="#111"/>
+  <rect x="66" y="178" width="7" height="7" fill="#111"/>
+  <rect x="80" y="178" width="7" height="7" fill="#111"/>
+  <rect x="108" y="178" width="7" height="7" fill="#111"/>
+  <rect x="136" y="178" width="7" height="7" fill="#111"/>
+
+  <!-- Right-bottom data modules -->
+  <rect x="141" y="150" width="7" height="7" fill="#111"/>
+  <rect x="169" y="150" width="7" height="7" fill="#111"/>
+  <rect x="183" y="150" width="7" height="7" fill="#111"/>
+  <rect x="155" y="164" width="7" height="7" fill="#111"/>
+  <rect x="183" y="164" width="7" height="7" fill="#111"/>
+  <rect x="141" y="178" width="7" height="7" fill="#111"/>
+  <rect x="155" y="178" width="7" height="7" fill="#111"/>
+  <rect x="169" y="178" width="7" height="7" fill="#111"/>
+
+  <!-- Center logo background -->
+  <rect x="82" y="82" width="36" height="36" fill="white" rx="4"/>
+
+  <!-- Center fish icon (simplified) -->
+  <text x="100" y="106" font-size="22" text-anchor="middle" font-family="serif">🐟</text>
+</svg>

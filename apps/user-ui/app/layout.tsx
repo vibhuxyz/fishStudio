@@ -1,6 +1,6 @@
 import React from "react";
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ModalProvider } from "@/components/providers/modal-provider";
 import "./globals.css";
@@ -11,16 +11,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { AnnouncementProvider } from "@/components/providers/announcement-provider";
 import { AnnouncementTopBar } from "@/components/layout/announcement-top-bar";
 
-const playfair = Playfair_Display({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -79,7 +73,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${playfair.variable} ${inter.variable}`}
+      className={`${poppins.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased">

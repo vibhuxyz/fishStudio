@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X, ArrowRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { useAddressStore } from "@/lib/address-store";
 import { useAnnouncement } from "@/components/providers/announcement-provider";
 import type { AnnouncementBanner } from "@/lib/storefront";
@@ -27,6 +28,8 @@ async function loadAnnouncementBanners(city?: string, storeId?: string): Promise
 
 export function AnnouncementTopBar() {
   const { visible, dismiss, setHasContent } = useAnnouncement();
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
@@ -70,7 +73,7 @@ export function AnnouncementTopBar() {
     return () => clearInterval(id);
   }, [banners.length]);
 
-  if (!visible || !hydrated || banners.length === 0) return null;
+  if (!visible || !hydrated || banners.length === 0 || !isHomePage) return null;
 
   const banner = banners[currentIndex];
 

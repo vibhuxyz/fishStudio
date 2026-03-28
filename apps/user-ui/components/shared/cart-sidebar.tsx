@@ -26,6 +26,7 @@ import { useAddressStore } from "@/lib/address-store";
 import { axiosInstance, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AddressModal } from "@/components/shared/address-modal";
+import { useAnnouncement } from "@/components/providers/announcement-provider";
 
 interface CartSidebarProps {
   open: boolean;
@@ -37,6 +38,17 @@ const TIP_OPTIONS = [20, 30, 50];
 
 export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarProps) {
   const router = useRouter();
+  const { suppress, unsuppress } = useAnnouncement();
+
+  // Hide announcement bar while cart is open, restore on close
+  useEffect(() => {
+    if (open) {
+      suppress();
+    } else {
+      unsuppress();
+    }
+    return () => unsuppress();
+  }, [open, suppress, unsuppress]);
   const { isLoggedIn, user } = useAuth();
   const { items, syncItems, cartStoreId, removeItem, updateQuantity, deliveryMetadata } = useCartStore();
   const [isSyncing, setIsSyncing] = useState(false);

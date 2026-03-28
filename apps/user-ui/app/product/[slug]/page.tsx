@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -9,6 +9,11 @@ import {
   fetchStorefrontProducts,
 } from "@/lib/storefront";
 
+// Deduplicate: generateMetadata + ProductContent share one fetch per request
+const getProductBySlug = cache((slug: string) =>
+  fetchStorefrontProductBySlug(slug),
+);
+
 // 1. Metadata Generation
 export async function generateMetadata({
   params,
@@ -16,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { product } = await fetchStorefrontProductBySlug(decodeURIComponent(slug));
+  const { product } = await getProductBySlug(decodeURIComponent(slug));
   if (!product) return { title: "Product Not Found" };
 
   const title = `${product.name} | Fish Studio`;
@@ -50,10 +55,10 @@ export async function generateMetadata({
   };
 }
 
-// 2. Inner Component (Fetches Data)
+// 2. Inner Component (Fetches Data) — reuses the cached fetch from generateMetadata
 async function ProductContent({ slug }: { slug: string }) {
   const decodedSlug = decodeURIComponent(slug);
-  const { product, relatedProducts, coupon } = await fetchStorefrontProductBySlug(decodedSlug);
+  const { product, relatedProducts, coupon } = await getProductBySlug(decodedSlug);
 
   if (!product) notFound();
 

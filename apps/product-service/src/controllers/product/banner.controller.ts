@@ -1,11 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { cloudinary } from "@repo/libs";
+import { cloudinary, redis } from "@repo/libs";
 import { ENV } from "@repo/env-config";
 import { AuthRequest, getRequiredParam, interleaveBanners } from "./utils.js";
 import { uploadBannerSchema, updateBannerSchema, reviewBannerSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs";
+
+const ANNOUNCEMENT_CACHE_TTL = 120; // 2 minutes
+const announcementCacheKey = (storeId?: string, city?: string, pincode?: string) =>
+  `announcement_banners:${storeId || ""}:${city || ""}:${pincode || ""}`;
 
 
 export const uploadBanner = async (
@@ -484,38 +488,33 @@ export const getActiveBanners = async (
       matchingSellerIds = stores.map((s) => s.sellerId).filter(Boolean) as string[];
     }
 
-    // Fetch all active banners first to avoid MongoDB query quirks with nulls/undefined
-    const allActiveBanners = await prisma.banners.findMany({
-      where: { isActive: true },
+    // Build the full WHERE clause in DB — no JS filtering needed
+    const sellerCondition =
+      matchingSellerIds !== null
+        ? // Location provided: admin banners always show + matched seller banners
+          { OR: [{ adminId: { not: null } }, { sellerId: { in: matchingSellerIds } }] }
+        : // No location: only admin banners (seller banners need a location)
+          { adminId: { not: null } };
+
+    const categoryCondition = queryCategory
+      ? { category: queryCategory }
+      : {
+          OR: [
+            { category: null },
+            { category: "" },
+            { bannerType: "homepage" },
+            { bannerType: null },
+          ],
+        };
+
+    const filteredBanners = await prisma.banners.findMany({
+      where: {
+        isActive: true,
+        bannerType: { not: "announcement" },
+        ...sellerCondition,
+        ...categoryCondition,
+      },
       orderBy: [{ sellerId: "asc" }, { createdAt: "asc" }],
-    });
-
-    // Filter in JS for maximum reliability
-    const filteredBanners = allActiveBanners.filter((banner) => {
-      // 1. Exclude announcements from the main carousel
-      if (banner.bannerType === "announcement") return false;
-
-      // 2. Filter seller banners by location (admin banners always show)
-      if (banner.sellerId && matchingSellerIds !== null) {
-        if (!matchingSellerIds.includes(banner.sellerId)) return false;
-      }
-      // If no location set and banner is seller-specific, hide it
-      if (banner.sellerId && matchingSellerIds === null && !banner.adminId) return false;
-
-      // 3. If a specific category is requested, match it exactly
-      if (queryCategory) {
-        return banner.category === queryCategory;
-      }
-
-      // 4. If on homepage (no category requested):
-      // Only show if it has no category OR is explicitly typed as homepage
-      const isHomepageBanner =
-        !banner.category ||
-        banner.category === "" ||
-        banner.bannerType === "homepage" ||
-        !banner.bannerType;
-
-      return isHomepageBanner;
     });
 
     res.status(200).json({
@@ -540,6 +539,17 @@ export const getAnnouncementBanners = async (
     if (!city && !storeId && !pincode) {
       return res.status(200).json({ success: true, banners: [] });
     }
+
+    // Serve from cache when available (2 min TTL)
+    const cacheKey = announcementCacheKey(
+      storeId ? String(storeId) : undefined,
+      city ? String(city) : undefined,
+      pincode ? String(pincode) : undefined,
+    );
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) return res.status(200).json(JSON.parse(cached));
+    } catch {}
 
     // Build where clause for announcement banners
     const baseWhere: Record<string, any> = {
@@ -585,7 +595,9 @@ export const getAnnouncementBanners = async (
       take: 5,
     });
 
-    res.status(200).json({ success: true, banners });
+    const payload = { success: true, banners };
+    redis.setex(cacheKey, ANNOUNCEMENT_CACHE_TTL, JSON.stringify(payload)).catch(() => {});
+    res.status(200).json(payload);
   } catch (error) {
     next(error);
   }
