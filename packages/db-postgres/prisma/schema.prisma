@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "./generated-client"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-arm64-openssl-1.1.x", "linux-musl-arm64-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -26,14 +26,14 @@ enum PaymentStatus {
 }
 
 model Order {
-  id     String @id @default(cuid())
-  userId String // Reference to Mongo User ID
+  id      String @id @default(cuid())
+  userId  String // Reference to Mongo User ID
   storeId String // Reference to Mongo Store ID
 
   totalAmount    Float
-  discountAmount Float @default(0)
+  discountAmount Float   @default(0)
   couponCode     String?
-  deliverySlot    String?   // "instant" | "morning" | "evening"
+  deliverySlot   String? // "instant" | "morning" | "evening"
 
   // Delivery details
   deliveryName    String?
@@ -42,7 +42,7 @@ model Order {
   deliveryCity    String?
   deliveryPincode String?
   deliveryCharge  Float   @default(0)
-  billDetails     Json?   // Snapshot of { itemTotal, deliveryCharge, discount, totalAmount }
+  billDetails     Json? // Snapshot of { itemTotal, deliveryCharge, discount, totalAmount }
 
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
@@ -64,12 +64,12 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String   // Reference to Mongo Product ID
-  quantity  Int
-  price     Float
+  id              String @id @default(cuid())
+  orderId         String
+  order           Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       String // Reference to Mongo Product ID
+  quantity        Int
+  price           Float
   selectedOptions Json?
 
   @@index([orderId])
@@ -82,7 +82,7 @@ model Payment {
   order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Float
   status        PaymentStatus @default(PENDING)
-  method        String        // "COD", "RAZORPAY", etc.
+  method        String // "COD", "RAZORPAY", etc.
   transactionId String?       @unique
   metadata      Json?
 
@@ -95,8 +95,8 @@ model Payment {
 
 model CouponUsage {
   id        String   @id @default(cuid())
-  couponId  String   // Reference to Mongo Coupon ID
-  userId    String   // Reference to Mongo User ID
+  couponId  String // Reference to Mongo Coupon ID
+  userId    String // Reference to Mongo User ID
   orderId   String
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -107,13 +107,13 @@ model CouponUsage {
 
 model Notification {
   id        String   @id @default(cuid())
-  userId    String   // Reference to Mongo User ID
+  userId    String // Reference to Mongo User ID
   title     String
   message   String
   type      String   @default("INFO") // "INFO", "SUCCESS", "WARNING", "ERROR"
-  category  String?  // "ORDER", "SYSTEM", "PROMO", etc.
+  category  String? // "ORDER", "SYSTEM", "PROMO", etc.
   isRead    Boolean  @default(false)
-  metadata  Json?    // For deep linking, e.g., { orderId: "..." }
+  metadata  Json? // For deep linking, e.g., { orderId: "..." }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -33,11 +33,13 @@ RUN bunx turbo run build --filter=@repo/notification-service...
 # ==========================================
 # 2. Runtime Stage (Uses Node)
 # ==========================================
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
+
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # --- CRITICAL STEP: RECREATE THE EXACT FILESYSTEM STRUCTURE ---
 
@@ -47,7 +49,10 @@ COPY --from=builder /app/node_modules ./node_modules
 # 2. Copy Shared Packages (Crucial! Workspace symlinks point here)
 COPY --from=builder /app/packages ./packages
 
-# 3. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
+# 3. Copy shared email templates expected by @repo/libs/sendMail
+COPY --from=builder /app/apps/auth-service/src/utils/email-templates ./apps/auth-service/src/utils/email-templates
+
+# 4. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
 COPY --from=builder /app/apps/notification-service ./apps/notification-service
 
 # --- RUN FROM THE APP DIRECTORY ---

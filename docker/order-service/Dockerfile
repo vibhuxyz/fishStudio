@@ -33,11 +33,13 @@ RUN bunx turbo run build --filter=@repo/order-service...
 # ==========================================
 # 2. Runtime Stage (Uses Node)
 # ==========================================
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
+
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # --- CRITICAL STEP: RECREATE THE EXACT FILESYSTEM STRUCTURE ---
 
