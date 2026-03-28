@@ -72,15 +72,6 @@ export function QueryProvider({ children }: { children: ReactNode }) {
 
             // 3. Background refetch so data stays consistent after patch
             queryClient.invalidateQueries({ queryKey: ["storefront"] });
-
-            if (message) {
-              import("sonner").then(({ toast }) => {
-                toast.warning("Stock Update", {
-                  description: message,
-                  duration: 5000,
-                });
-              });
-            }
           }
         } catch (e) {
           console.error("User WS parse error:", e);

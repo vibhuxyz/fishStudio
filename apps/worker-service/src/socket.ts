@@ -5,6 +5,7 @@ import { ENV } from "@repo/env-config";
 interface SocketClient extends WebSocket {
   storeId?: string;   // seller connects with ?storeId=xxx
   sellerId?: string;  // staff connects with ?sellerId=xxx
+  staffId?: string;   // staff connects with ?staffId=xxx (access-granted events)
   userId?: string;    // user connects with ?userId=xxx (order status updates)
   adminId?: string;   // admin connects with ?adminId=xxx (admin alerts)
   isAlive: boolean;
@@ -37,6 +38,7 @@ export class SocketManager {
       const url = new URL(req.url || "", `http://${req.headers.host}`);
       const storeId = url.searchParams.get("storeId");
       const sellerId = url.searchParams.get("sellerId");
+      const staffId = url.searchParams.get("staffId");
       const userId = url.searchParams.get("userId");
       const adminId = url.searchParams.get("adminId");
 
@@ -47,6 +49,10 @@ export class SocketManager {
       if (sellerId) {
         ws.sellerId = sellerId;
         console.log(`👤 Staff client joined seller room: ${sellerId}`);
+      }
+      if (staffId) {
+        ws.staffId = staffId;
+        console.log(`🪪 Staff client joined staff room: ${staffId}`);
       }
       if (userId) {
         ws.userId = userId;
@@ -84,6 +90,10 @@ export class SocketManager {
           if (message.type === "JOIN_SELLER") {
             ws.sellerId = message.sellerId;
             console.log(`👤 Client re-joined seller room: ${ws.sellerId}`);
+          }
+          if (message.type === "JOIN_STAFF") {
+            ws.staffId = message.staffId;
+            console.log(`🪪 Client re-joined staff room: ${ws.staffId}`);
           }
           if (message.type === "JOIN_USER") {
             ws.userId = message.userId;
@@ -126,6 +136,19 @@ export class SocketManager {
     });
 
     console.log(`📢 Broadcasted ${type} to ${count} clients in store ${storeId}`);
+  }
+
+  /** Broadcast to staff clients connected with their own ?staffId=xxx */
+  public broadcastToStaff(staffId: string, type: string, payload: any) {
+    const message = JSON.stringify({ type, payload });
+    let count = 0;
+    this.clients.forEach((client) => {
+      if (client.staffId === staffId && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+        count++;
+      }
+    });
+    console.log(`📢 Broadcasted ${type} to ${count} clients in staff room ${staffId}`);
   }
 
   /** Broadcast to staff clients connected with ?sellerId=xxx */

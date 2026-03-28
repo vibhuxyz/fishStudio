@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, LogOut } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import useSeller from "@/hooks/useSeller";
 import { useAuthStore } from "@/store/authStore";
 import axiosInstance from "@/utils/axiosInstance";
+import { frontendEnv } from "@/config/env";
 
 export default function PendingApprovalPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { seller, isLoading } = useSeller();
   const { setLoggedIn, setRole } = useAuthStore();
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     // If they get approved while on this page, push them back to dashboard
@@ -18,6 +22,38 @@ export default function PendingApprovalPage() {
       router.replace("/dashboard");
     }
   }, [seller, isLoading, router]);
+
+  // Real-time: listen for SELLER_APPROVED via WebSocket
+  useEffect(() => {
+    const storeId = seller?.store?.id;
+    if (!storeId) return;
+
+    const wsUrl = frontendEnv.chatWebsocketUrl.replace(/^http/, "ws");
+    const ws = new WebSocket(`${wsUrl}?storeId=${storeId}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "SELLER_APPROVED") {
+          // Invalidate the seller query so useSeller re-fetches fresh data
+          queryClient.invalidateQueries({ queryKey: ["seller"] });
+          router.replace("/dashboard");
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("PendingApproval WebSocket error:", err);
+    };
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [seller?.store?.id, queryClient, router]);
 
   const handleLogout = async () => {
     try {

@@ -753,6 +753,7 @@ export const getOwnedProducts = async (
         include: {
           images: true,
           store: { select: { id: true, name: true, sellerId: true } },
+          catalogProduct: { include: { images: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -786,12 +787,17 @@ export const getOwnedProducts = async (
       eventsBySellerId.set(event.sellerId, list);
     }
 
-    const productsWithEvents = products.map((p) => ({
-      ...p,
-      activeEvents: p.store?.sellerId
-        ? (eventsBySellerId.get(p.store.sellerId) ?? [])
-        : [],
-    }));
+    const productsWithEvents = products.map((p) => {
+      const { catalogProduct, ...rest } = p as any;
+      return {
+        ...rest,
+        // Fall back to catalog product images when the store product has none
+        images: rest.images.length > 0 ? rest.images : (catalogProduct?.images ?? []),
+        activeEvents: p.store?.sellerId
+          ? (eventsBySellerId.get(p.store.sellerId) ?? [])
+          : [],
+      };
+    });
 
     return res.status(200).json({
       success: true,
@@ -839,9 +845,16 @@ export const getOwnedProductById = async (
           },
         })
       : [];
+
+    // Fall back to catalog product images when the store product has none
+    const images =
+      product.images.length > 0
+        ? product.images
+        : ((product as any).catalogProduct?.images ?? []);
+
     return res
       .status(200)
-      .json({ success: true, product: { ...product, activeEvents } });
+      .json({ success: true, product: { ...product, images, activeEvents } });
   } catch (error) {
     return next(error);
   }

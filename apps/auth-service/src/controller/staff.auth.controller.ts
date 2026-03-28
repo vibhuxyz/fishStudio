@@ -11,7 +11,7 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
-import { redis } from "@repo/libs";
+import { redis, publishToQueue } from "@repo/libs";
 import {
   validate,
   registerStaffSchema,
@@ -182,6 +182,21 @@ export const updateStaffAccess = async (
         sellerId: isActive ? sellerId : null,
       },
     });
+
+    /* ── Real-time WebSocket event when access is granted ── */
+    if (isActive) {
+      try {
+        // Bust the Redis auth cache so the staff member's next fetch returns fresh data
+        await redis.set(`cache:bypass:staff:${staffId}`, "1", "EX", 60);
+
+        await publishToQueue("ADMIN_EVENTS", {
+          type: "STAFF_ACCESS_GRANTED",
+          staffId,
+        });
+      } catch (wsErr) {
+        console.error("Failed to publish STAFF_ACCESS_GRANTED event:", wsErr);
+      }
+    }
 
     res.status(200).json({
       success: true,

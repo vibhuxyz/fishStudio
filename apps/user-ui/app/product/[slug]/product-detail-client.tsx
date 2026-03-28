@@ -85,6 +85,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
 
   useEffect(() => {
     if (!selectedLocation?.storeId && !selectedLocation?.pincode && !selectedLocation?.city) {
+      setResolvedCoupon(null);
       return;
     }
 

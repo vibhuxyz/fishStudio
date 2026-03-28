@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   useReactTable,
@@ -98,6 +98,11 @@ export default function DashboardClient() {
   const { data: sellers = [] } = useAdminSellers();
   const { data: products = [] } = useAdminProducts();
 
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+  useEffect(() => {
+    setLastUpdated(new Date().toLocaleTimeString());
+  }, []);
+
   const stats = statsData?.stats;
 
   const deviceData = [
@@ -116,7 +121,7 @@ export default function DashboardClient() {
         </div>
         <div className="flex items-center gap-2 bg-gray-900 border border-gray-800 px-4 py-2 rounded-xl text-sm text-gray-300">
           <Clock size={16} className="text-gray-500" />
-          Last updated: {new Date().toLocaleTimeString()}
+          Last updated: {lastUpdated}
         </div>
       </header>
 

@@ -25,7 +25,10 @@ function createRedis(): Redis {
     const url = new URL(cleanUrl);
 
     const redisInstance = new Redis(cleanUrl, {
-      maxRetriesPerRequest: null,
+      // Fail individual commands after 3 retries so rate-limiters/OTP helpers
+      // don't queue indefinitely when Redis is cycling (idle-timeout reconnect).
+      // null = unlimited retries, which causes requests to hang forever.
+      maxRetriesPerRequest: 3,
       // 4. Force TLS/SSL for 'rediss://' (Required for Upstash)
       tls: isCloud ? { rejectUnauthorized: false } : undefined,
       // 5. Explicitly pass password to fix NOAUTH errors

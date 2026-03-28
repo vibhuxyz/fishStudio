@@ -41,12 +41,23 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       const cached = await redis.get(cacheKey);
       if (cached) {
         const data = JSON.parse(cached);
-        req.role = data.role;
-        if (data.seller) req.seller = data.seller;
-        if (data.staff) req.staff = data.staff;
-        if (data.admin) req.admin = data.admin;
-        if (data.user) req.user = data.user;
-        return next();
+
+        // Check for a force-bypass flag — set when seller is approved or staff gets access
+        let bypassCache = false;
+        if (data.role === "seller" && data.seller?.id) {
+          bypassCache = (await redis.exists(`cache:bypass:seller:${data.seller.id}`)) > 0;
+        } else if (data.role === "staff" && data.staff?.id) {
+          bypassCache = (await redis.exists(`cache:bypass:staff:${data.staff.id}`)) > 0;
+        }
+
+        if (!bypassCache) {
+          req.role = data.role;
+          if (data.seller) req.seller = data.seller;
+          if (data.staff) req.staff = data.staff;
+          if (data.admin) req.admin = data.admin;
+          if (data.user) req.user = data.user;
+          return next();
+        }
       }
     } catch {
       // Redis unavailable — fall through to DB
@@ -114,6 +125,13 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         user: req.user ?? null,
       };
       await redis.set(cacheKey, JSON.stringify(cacheData), "EX", AUTH_CACHE_TTL);
+
+      // Clear bypass flag now that we've cached fresh DB data
+      if (decode.role === "seller" && req.seller?.id) {
+        await redis.del(`cache:bypass:seller:${req.seller.id}`);
+      } else if (decode.role === "staff" && req.staff?.id) {
+        await redis.del(`cache:bypass:staff:${req.staff.id}`);
+      }
     } catch {
       // Non-fatal: cache write failure doesn't block the request
     }

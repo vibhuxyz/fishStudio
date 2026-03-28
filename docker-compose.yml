@@ -91,7 +91,7 @@ services:
           - notification-service
 
   rabbitmq-service:
-    container_name: rabbitmq-service
+    container_name: rabbitmq-service_prod
     image: rabbitmq:3-management-alpine
     restart: always
     environment:
@@ -107,7 +107,7 @@ services:
           - rabbitmq-service
 
   meilisearch:
-    container_name: meilisearch
+    container_name: meilisearch_prod
     image: getmeili/meilisearch:latest
     restart: always
     environment:

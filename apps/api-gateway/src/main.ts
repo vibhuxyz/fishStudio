@@ -1,3 +1,10 @@
+process.on("uncaughtException", (err) => {
+  console.error("❌ [Gateway] Uncaught Exception:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ [Gateway] Unhandled Rejection:", reason);
+});
+
 import express from "express";
 import proxy from "express-http-proxy";
 import morgan from "morgan";
@@ -108,6 +115,12 @@ const proxyOptions = {
       userRes.setHeader("set-cookie", proxyRes.headers["set-cookie"]);
     }
     return headers;
+  },
+  // Handle upstream connection errors gracefully instead of crashing the gateway
+  proxyErrorHandler: (err: any, res: any, next: any) => {
+    console.error("[Gateway] Upstream proxy error:", err?.message || err);
+    if (res.headersSent) return;
+    res.status(502).json({ success: false, message: "Service temporarily unavailable. Please try again." });
   },
 };
 

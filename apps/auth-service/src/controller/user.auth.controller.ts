@@ -38,8 +38,8 @@ export const sendOtpToUser = async (
 
     // Check if user exists
     const existingUser = isEmail
-      ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
-      : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
+      ? await prisma.users.findFirst({ where: { email: identifier.trim() } })
+      : await prisma.users.findFirst({ where: { phone_number: identifier.trim() } });
 
     const isNewUser = !existingUser;
 
@@ -89,8 +89,8 @@ export const verifyOtpAndLogin = async (
 
     // Find or create user
     let user = isEmail
-      ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
-      : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
+      ? await prisma.users.findFirst({ where: { email: identifier.trim() } })
+      : await prisma.users.findFirst({ where: { phone_number: identifier.trim() } });
 
     if (!user) {
       const defaultName = isEmail ? identifier.split("@")[0] : `User ${identifier.slice(-4)}`;
@@ -110,8 +110,8 @@ export const verifyOtpAndLogin = async (
         // Handle potential race condition or duplicate null clash
         if (createError.code === "P2002") {
           user = isEmail
-            ? await prisma.users.findUnique({ where: { email: identifier.trim() } })
-            : await prisma.users.findUnique({ where: { phone_number: identifier.trim() } });
+            ? await prisma.users.findFirst({ where: { email: identifier.trim() } })
+            : await prisma.users.findFirst({ where: { phone_number: identifier.trim() } });
           
           if (!user) throw createError; // Still not found? Throw original error
         } else {

@@ -62,6 +62,12 @@ export async function logoutUser() {
     useCartStore.getState().clearCart();
     useCouponStore.getState().clearAllCoupons();
     useAddressStore.getState().clearAddresses();
+    // Fully remove persisted localStorage entries so no user data lingers
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("fish-studio-cart");
+      localStorage.removeItem("fish-studio-addresses");
+      localStorage.removeItem("fish-studio-coupons");
+    }
     // Invalidate all cached data so stale products/banners are cleared immediately
     if (_queryClient) {
       _queryClient.invalidateQueries({ queryKey: ["storefront"] });

@@ -245,7 +245,19 @@ export const useCartStore = create<CartState>()(
     return get().items.reduce((sum, item) => sum + item.totalPayable, 0);
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () =>
+    set({
+      items: [],
+      cartStoreId: null,
+      deliveryMetadata: {
+        cartDeliveryTime: null,
+        isStoreOpen: true,
+        storeName: null,
+        isServiceable: true,
+        nearbyHint: null,
+        openingHours: null,
+      },
+    }),
 
   syncItems: async () => {
     const { items } = get();

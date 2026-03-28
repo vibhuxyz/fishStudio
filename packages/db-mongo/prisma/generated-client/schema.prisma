@@ -71,8 +71,8 @@ model images {
 
 model users {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  phone_number String?  @unique
-  email        String?  @unique
+  phone_number String?
+  email        String?
   name         String
   following    String[]
   addresses    Json[] // Array of { id, name, phone, street, city, state, pincode, isDefault }
@@ -84,6 +84,12 @@ model users {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Uniqueness for non-null values is enforced via sparse indexes created directly
+  // in MongoDB: db.users.createIndex({email:1},{unique:true,sparse:true})
+  //             db.users.createIndex({phone_number:1},{unique:true,sparse:true})
+  @@index([email])
+  @@index([phone_number])
 }
 
 model discount_codes {

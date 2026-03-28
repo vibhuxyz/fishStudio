@@ -1,3 +1,11 @@
+// Prevent silent crashes — log the error and keep the process alive
+process.on("uncaughtException", (err) => {
+  console.error("❌ [Auth Service] Uncaught Exception:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("❌ [Auth Service] Unhandled Rejection:", reason);
+});
+
 import express from "express";
 import helmet from "helmet";
 import compression from "compression";

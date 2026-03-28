@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useBanners } from "@/hooks/useBanners";
-import { useAddressStore } from "@/lib/address-store";
 
 const BLUR_DATA =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCw4QDAsNEQ4SEBQSEBESFBcWFxcYGBsbGBshICD/2wBDAQMEBAUEBQkFBQkhEAsQISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISH/wAARCAAIAAgDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EAB8QAAICAgIDAQAAAAAAAAAAAAECAwQFEQASITFBcf/EABUBAQEAAAAAAAAAAAAAAAAAAAUG/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxExQf/aAAwDAQACEQMRAD8Al4/LZCnlKtaOysVeSRUVmQEqCdAnf0eXqd4bVTk7mO3LWIZB3i+y9c=";
@@ -12,12 +11,6 @@ const BLUR_DATA =
 export function OfferCarousel() {
   const { banners, isLoading: isApiLoading, isError } = useBanners();
   const [current, setCurrent] = useState(0);
-
-  // Re-fetch selectedLocation context to decide if we even show banners
-  const pincode = useAddressStore((s: any) => s.selectedLocation?.pincode || s.addresses.find((a: any) => a.id === s.selectedAddressId)?.pincode);
-
-  if (!pincode) return null;
-
   // Track loading state for each image file
   const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>(
     {},

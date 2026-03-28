@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 import { updateSellerApprovalSchema, validate } from "@repo/zod-schema";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue, redis } from "@repo/libs";
 
 export const getAllSellersForAdmin = async (
   req: Request,
@@ -154,6 +154,25 @@ export const updateSellerApproval = async (
       }
     } catch (notifyErr) {
       console.error("Failed to notify seller of approval/permission update:", notifyErr);
+    }
+
+    /* ── Real-time WebSocket event for seller approval ── */
+    if (isApprovedByAdmin === true && seller.isApprovedByAdmin !== true) {
+      try {
+        // Bust the Redis auth cache so the seller's next fetch returns fresh data
+        await redis.set(`cache:bypass:seller:${sellerId}`, "1", "EX", 60);
+
+        const store = await prisma.stores.findFirst({ where: { sellerId } });
+        if (store) {
+          await publishToQueue("ADMIN_EVENTS", {
+            type: "SELLER_APPROVED",
+            storeId: store.id,
+            sellerId,
+          });
+        }
+      } catch (wsErr) {
+        console.error("Failed to publish SELLER_APPROVED event:", wsErr);
+      }
     }
 
     return res.status(200).json({

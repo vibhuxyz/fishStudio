@@ -1,10 +1,46 @@
 "use client";
 import StaffSidebar from "@/shared/components/staff-sidebar/staff-sidebar";
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import useRequireStaff from "@/hooks/useRequireStaff";
+import { frontendEnv } from "@/config/env";
 
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = useQueryClient();
   const { staff, isLoading } = useRequireStaff();
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Real-time: listen for STAFF_ACCESS_GRANTED via WebSocket
+  useEffect(() => {
+    // Only connect when staff is inactive – once they're active we don't need this
+    const staffId = staff?.id;
+    if (!staffId || staff?.isActive !== false) return;
+
+    const wsUrl = frontendEnv.chatWebsocketUrl.replace(/^http/, "ws");
+    const ws = new WebSocket(`${wsUrl}?staffId=${staffId}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "STAFF_ACCESS_GRANTED") {
+          // Refetch the seller/staff query so isActive becomes true
+          queryClient.invalidateQueries({ queryKey: ["seller"] });
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("StaffLayout WebSocket error:", err);
+    };
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [staff?.id, staff?.isActive, queryClient]);
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#080b12] flex items-center justify-center text-white">Loading...</div>;

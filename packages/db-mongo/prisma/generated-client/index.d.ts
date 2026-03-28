@@ -17355,11 +17355,11 @@ export namespace Prisma {
 
   export type usersWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    phone_number?: string
-    email?: string
     AND?: usersWhereInput | usersWhereInput[]
     OR?: usersWhereInput[]
     NOT?: usersWhereInput | usersWhereInput[]
+    phone_number?: StringNullableFilter<"users"> | string | null
+    email?: StringNullableFilter<"users"> | string | null
     name?: StringFilter<"users"> | string
     following?: StringNullableListFilter<"users">
     addresses?: JsonNullableListFilter<"users">
@@ -17368,7 +17368,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"users"> | Date | string
     avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
     favorites?: FavoritesListRelationFilter
-  }, "id" | "phone_number" | "email">
+  }, "id">
 
   export type usersOrderByWithAggregationInput = {
     id?: SortOrder

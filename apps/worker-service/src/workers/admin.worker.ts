@@ -28,6 +28,26 @@ export const adminWorker = async () => {
                 bannerCount: content.bannerCount,
               });
             }
+
+            if (content.type === "SELLER_APPROVED") {
+              // Broadcast to the seller's store room so the pending-approval page
+              // can redirect them to the dashboard in real time.
+              if (content.storeId) {
+                socketManager.broadcastToStore(content.storeId, "SELLER_APPROVED", {
+                  sellerId: content.sellerId,
+                });
+              }
+            }
+
+            if (content.type === "STAFF_ACCESS_GRANTED") {
+              // Broadcast to the specific staff member's room so the staff layout
+              // can lift the "Access Denied" block in real time.
+              if (content.staffId) {
+                socketManager.broadcastToStaff(content.staffId, "STAFF_ACCESS_GRANTED", {
+                  staffId: content.staffId,
+                });
+              }
+            }
           }
 
           channel.ack(msg);
