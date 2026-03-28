@@ -1,9 +1,7 @@
 "use client";
 
-// import useSeller from "apps/seller-ui/src/hooks/useSeller";
-
 import { redirect, usePathname } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Box from "../box";
 import { Sidebar } from "./sidebar.styles";
 import Link from "next/link";
@@ -43,12 +41,16 @@ import Home from "@/assets/icons/home";
 import Payment from "@/assets/icons/payment";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 import NotificationBell from "../notifications/NotificationBell";
+import { useQueryClient } from "@tanstack/react-query";
+import { frontendEnv } from "@/config/env";
 
 const SidebarBarWrapper = () => {
   const { activeSidebar, setActiveSidebar, isCollapsed, setIsCollapsed } =
     useSidebar();
   const pathName = usePathname();
   const { seller } = useRequireAuth();
+  const queryClient = useQueryClient();
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     setActiveSidebar(pathName);
@@ -56,6 +58,32 @@ const SidebarBarWrapper = () => {
       setIsCollapsed(true);
     }
   }, [pathName, setActiveSidebar, setIsCollapsed]);
+
+  // Real-time: refresh permissions when admin updates them
+  useEffect(() => {
+    const storeId = seller?.store?.id;
+    if (!storeId) return;
+
+    const wsUrl = frontendEnv.chatWebsocketUrl.replace(/^http/, "ws");
+    const ws = new WebSocket(`${wsUrl}?storeId=${storeId}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "SELLER_PERMISSIONS_UPDATED") {
+          queryClient.invalidateQueries({ queryKey: ["seller"] });
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [seller?.store?.id, queryClient]);
 
   const getIconColor = (route: string) =>
     activeSidebar === route ? "#0085ff" : "#969696";

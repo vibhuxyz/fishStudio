@@ -23,11 +23,17 @@ const fetchOrders = async () => {
 const SellerPayments = () => {
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: rawOrders = [], isLoading } = useQuery({
     queryKey: ["seller-orders"],
     queryFn: fetchOrders,
     staleTime: 1000 * 60 * 5,
   });
+
+  // COD orders only appear here once delivered (money collected on arrival).
+  // Online/prepaid orders always appear.
+  const orders = rawOrders.filter((o: any) =>
+    o.paymentMethod === "COD" ? o.status === "DELIVERED" : true,
+  );
 
   const columns = useMemo(
     () => [
@@ -63,7 +69,7 @@ const SellerPayments = () => {
                 {method === "COD" ? "Cash on Delivery" : method || "Online"}
               </span>
               {method === "COD" ? (
-                <span className="text-lime-500/80 text-[9px] font-bold">COLLECT ON ARRIVAL</span>
+                <span className="text-emerald-400/90 text-[9px] font-bold">CASH COLLECTED</span>
               ) : (
                 ref ? (
                   <span className="text-sky-400/80 text-[9px] font-mono font-bold tracking-tight">#{ref}</span>
@@ -91,11 +97,15 @@ const SellerPayments = () => {
         cell: ({ row }: any) => {
           const pStatus = row.original.paymentStatus;
           const oStatus = row.original.status;
-          
+          const isCOD = row.original.paymentMethod === "COD";
+
           let color = "bg-gray-800 text-gray-400";
           let label = pStatus || "PENDING";
 
-          if (pStatus === "COMPLETED") {
+          if (isCOD && oStatus === "DELIVERED") {
+            color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30";
+            label = "COLLECTED";
+          } else if (pStatus === "COMPLETED") {
             color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30";
             label = "SUCCESSFUL";
           } else if (pStatus === "REFUNDED") {

@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
 import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
+import { useAuth } from "@/lib/auth-store";
 import { axiosInstance, cn } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
 import { toast } from "sonner";
@@ -50,6 +51,7 @@ export function CartPageClient() {
     availableCoupons,
     fetchAvailableCoupons,
   } = useCouponStore();
+  const { user } = useAuth();
   const { getSelectedAddress, selectedLocation, setSelectedLocation } = useAddressStore();
   const selectedAddress = getSelectedAddress();
 
@@ -92,9 +94,9 @@ export function CartPageClient() {
   // Fetch real coupons when storeId available
   useEffect(() => {
     if (selectedLocation?.storeId) {
-      fetchAvailableCoupons(selectedLocation.storeId);
+      fetchAvailableCoupons(selectedLocation.storeId, user?.id);
     }
-  }, [selectedLocation?.storeId]);
+  }, [selectedLocation?.storeId, user?.id]);
 
   // Sync cart items on mount
   useEffect(() => {

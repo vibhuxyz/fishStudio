@@ -17,7 +17,7 @@ import { useCouponStore } from "@/lib/coupon-store";
 export function CheckoutClient() {
   const router = useRouter();
   const { items, totalPrice } = useCart();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const modals = useModals();
   const clearCart = useCartStore((s) => s.clearCart);
 
@@ -30,15 +30,9 @@ export function CheckoutClient() {
     appliedCoupons,
     clearAllCoupons,
     fetchAvailableCoupons,
-    availableCoupons,
-    autoApplied,
-    applyCoupon,
-    setAutoApplied,
-    isCouponApplied,
   } = useCouponStore();
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
   const [deliveryMetadata, setDeliveryMetadata] = useState<{
     availableSlots: string[];
     instantFee: number;
@@ -78,17 +72,6 @@ export function CheckoutClient() {
     }
   }, [items.length]);
 
-  // Check if user is new
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    axiosInstance.get("/order/api/user-orders")
-      .then(({ data }) => {
-        if (data.success && data.orders.length === 0) {
-          setIsNewUser(true);
-        }
-      })
-      .catch(() => {});
-  }, [isLoggedIn]);
 
   // Auto-resolve storeId from address pincode if selectedLocation is missing
   useEffect(() => {
@@ -110,42 +93,14 @@ export function CheckoutClient() {
       .catch(() => {});
   }, [selectedLocation?.storeId]);
 
-  // Fetch available coupons when storeId is available
+  // Fetch available coupons when storeId is available — pass userId so the
+  // backend filters out coupons this user has already exhausted.
   useEffect(() => {
     if (selectedLocation?.storeId) {
-      fetchAvailableCoupons(selectedLocation.storeId);
+      fetchAvailableCoupons(selectedLocation.storeId, user?.id);
     }
-  }, [selectedLocation?.storeId]);
+  }, [selectedLocation?.storeId, user?.id]);
 
-  // Auto-apply eligible coupon (including FirstOrder)
-  useEffect(() => {
-    if (appliedCoupons.length > 0 || autoApplied || totalPrice === 0 || availableCoupons.length === 0) return;
-
-    // 1. Check for FIRSTORDER if user is new
-    if (isNewUser) {
-      const firstOrderCoupon = availableCoupons.find(
-        (c) => c.code.toUpperCase() === "FIRSTORDER" && totalPrice >= c.minOrderValue
-      );
-      if (firstOrderCoupon) {
-        clearAllCoupons(); // Enforce one coupon
-        applyCoupon(firstOrderCoupon);
-        setAutoApplied(true);
-        toast.success("🎉 Welcome! FIRSTORDER coupon auto-applied!");
-        return;
-      }
-    }
-
-    // 2. Otherwise apply other auto-apply coupons
-    const autoCoupon = availableCoupons.find(
-      (c) => c.autoApply && totalPrice >= c.minOrderValue && !isCouponApplied(c.code)
-    );
-    if (autoCoupon) {
-      clearAllCoupons(); // Enforce one coupon
-      applyCoupon(autoCoupon);
-      setAutoApplied(true);
-      toast.success(`🎉 Coupon ${autoCoupon.code} auto-applied!`);
-    }
-  }, [totalPrice, availableCoupons, isNewUser, autoApplied]);
 
   if (!isLoggedIn) {
     return (

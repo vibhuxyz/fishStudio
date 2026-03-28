@@ -16,6 +16,7 @@ import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmat
 type BannerTab = "category" | "announcement";
 
 const BannersPage = () => {
+  useRequireAuth("product");
   const { seller } = useSeller();
   const queryClient = useQueryClient();
 

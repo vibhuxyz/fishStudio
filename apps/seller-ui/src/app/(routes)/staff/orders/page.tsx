@@ -31,6 +31,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { Loader2, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
+import { frontendEnv } from "@/config/env";
+import { isProtected } from "@/utils/protected";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -94,10 +96,12 @@ function AcceptModal({
   order,
   onConfirm,
   onCancel,
+  isSubmitting,
 }: {
   order: MockOrder;
   onConfirm: () => void;
   onCancel: () => void;
+  isSubmitting: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
@@ -108,7 +112,12 @@ function AcceptModal({
             <AlertTriangle size={18} className="text-amber-400" />
             <h3 className="text-white font-semibold text-base">Confirm Stock &amp; Accept Order</h3>
           </div>
-          <button type="button" onClick={onCancel} className="text-gray-500 hover:text-white transition">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="text-gray-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
             <X size={18} />
           </button>
         </div>
@@ -175,17 +184,19 @@ function AcceptModal({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition font-medium text-sm"
+            disabled={isSubmitting}
+            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
           >
-            <CheckCircle size={16} />
-            Yes, Accept Order
+            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+            {isSubmitting ? "Accepting Order..." : "Yes, Accept Order"}
           </button>
         </div>
       </div>
@@ -199,10 +210,12 @@ function RejectModal({
   order,
   onConfirm,
   onCancel,
+  isSubmitting,
 }: {
   order: MockOrder;
   onConfirm: (reason: string) => void;
   onCancel: () => void;
+  isSubmitting: boolean;
 }) {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
@@ -223,7 +236,12 @@ function RejectModal({
             <XCircle size={18} className="text-red-400" />
             <h3 className="text-white font-semibold text-base">Reject Order #{order.id.slice(-6).toUpperCase()}</h3>
           </div>
-          <button type="button" onClick={onCancel} className="text-gray-500 hover:text-white transition">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="text-gray-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
             <X size={18} />
           </button>
         </div>
@@ -239,8 +257,9 @@ function RejectModal({
             rows={3}
             value={reason}
             onChange={(e) => { setReason(e.target.value); setError(""); }}
+            disabled={isSubmitting}
             placeholder="e.g. Surmai is out of stock today. We cannot fulfil this order..."
-            className="w-full bg-[#1a1f2e] border border-gray-700 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-red-500/60 transition placeholder-gray-600"
+            className="w-full bg-[#1a1f2e] border border-gray-700 text-white text-sm rounded-xl p-3 resize-none outline-none focus:border-red-500/60 disabled:opacity-60 transition placeholder-gray-600"
           />
           {error && <p className="text-red-400 text-xs">{error}</p>}
         </div>
@@ -248,17 +267,19 @@ function RejectModal({
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 transition font-medium text-sm"
+            disabled={isSubmitting}
+            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
           >
-            <XCircle size={16} />
-            Reject &amp; Refund
+            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
+            {isSubmitting ? "Rejecting & Refunding..." : "Reject & Refund"}
           </button>
         </div>
       </div>
@@ -500,6 +521,7 @@ export function OrderCard({
   onMarkReady,
   onMarkCompleted,
   onViewDetails,
+  pendingAction,
 }: {
   order: MockOrder;
   onAccept: (o: MockOrder) => void;
@@ -507,12 +529,14 @@ export function OrderCard({
   onMarkReady: (id: string) => void;
   onMarkCompleted: (id: string) => void;
   onViewDetails: (o: MockOrder) => void;
+  pendingAction?: string | null;
 }) {
   const [mounted, setMounted] = useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
   const cfg = STATUS_CONFIG[order.status];
+  const isBusy = Boolean(pendingAction);
 
   return (
     <div className="bg-[#0f1117] border border-gray-800/60 rounded-2xl p-4 hover:border-gray-700 transition group">
@@ -588,7 +612,8 @@ export function OrderCard({
       <button
         type="button"
         onClick={() => onViewDetails(order)}
-        className="w-full flex items-center justify-center gap-1.5 py-2 mb-2 bg-[#1a1f2e] hover:bg-[#1e2540] border border-gray-700/50 hover:border-gray-600 text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition"
+        disabled={isBusy}
+        className="w-full flex items-center justify-center gap-1.5 py-2 mb-2 bg-[#1a1f2e] hover:bg-[#1e2540] border border-gray-700/50 hover:border-gray-600 disabled:opacity-70 disabled:cursor-not-allowed text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition"
       >
         <Eye size={13} />
         View Full Details
@@ -600,18 +625,20 @@ export function OrderCard({
           <button
             type="button"
             onClick={() => onAccept(order)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-semibold transition"
+            disabled={isBusy}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition"
           >
-            <CheckCircle size={14} />
-            Accept
+            {pendingAction === "accepting" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+            {pendingAction === "accepting" ? "Accepting..." : "Accept"}
           </button>
           <button
             type="button"
             onClick={() => onReject(order)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 hover:bg-red-600 border border-red-600/40 hover:border-red-500 text-red-400 hover:text-white rounded-xl text-xs font-semibold transition"
+            disabled={isBusy}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 hover:bg-red-600 border border-red-600/40 hover:border-red-500 disabled:opacity-70 disabled:cursor-not-allowed text-red-400 hover:text-white rounded-xl text-xs font-semibold transition"
           >
-            <XCircle size={14} />
-            Reject
+            {pendingAction === "rejecting" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+            {pendingAction === "rejecting" ? "Rejecting..." : "Reject"}
           </button>
         </div>
       )}
@@ -620,10 +647,11 @@ export function OrderCard({
         <button
           type="button"
           onClick={() => onMarkReady(order.id)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 bg-teal-600/20 hover:bg-teal-600 border border-teal-600/40 hover:border-teal-500 text-teal-400 hover:text-white rounded-xl text-xs font-semibold transition"
+          disabled={isBusy}
+          className="w-full flex items-center justify-center gap-1.5 py-2 bg-teal-600/20 hover:bg-teal-600 border border-teal-600/40 hover:border-teal-500 disabled:opacity-70 disabled:cursor-not-allowed text-teal-400 hover:text-white rounded-xl text-xs font-semibold transition"
         >
-          <Package size={14} />
-          Mark as Ready to Pickup
+          {pendingAction === "marking-ready" ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
+          {pendingAction === "marking-ready" ? "Updating..." : "Mark as Ready to Pickup"}
         </button>
       )}
 
@@ -631,10 +659,11 @@ export function OrderCard({
         <button
           type="button"
           onClick={() => onMarkCompleted(order.id)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 bg-green-600/20 hover:bg-green-600 border border-green-600/40 hover:border-green-500 text-green-400 hover:text-white rounded-xl text-xs font-semibold transition"
+          disabled={isBusy}
+          className="w-full flex items-center justify-center gap-1.5 py-2 bg-green-600/20 hover:bg-green-600 border border-green-600/40 hover:border-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-green-400 hover:text-white rounded-xl text-xs font-semibold transition"
         >
-          <CheckCircle size={14} />
-          Mark as Completed
+          {pendingAction === "marking-completed" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+          {pendingAction === "marking-completed" ? "Updating..." : "Mark as Completed"}
         </button>
       )}
 
@@ -658,6 +687,7 @@ function StatusColumn({
   onMarkReady,
   onMarkCompleted,
   onViewDetails,
+  pendingActions,
 }: {
   status: OrderStatus;
   orders: MockOrder[];
@@ -666,6 +696,7 @@ function StatusColumn({
   onMarkReady: (id: string) => void;
   onMarkCompleted: (id: string) => void;
   onViewDetails: (o: MockOrder) => void;
+  pendingActions: Record<string, string | null>;
 }) {
   const cfg = STATUS_CONFIG[status];
   const COLUMN_ICONS: Record<OrderStatus, React.ReactNode> = {
@@ -704,6 +735,7 @@ function StatusColumn({
               onMarkReady={onMarkReady}
               onMarkCompleted={onMarkCompleted}
               onViewDetails={onViewDetails}
+              pendingAction={pendingActions[o.id] ?? null}
             />
           ))
         )}
@@ -774,16 +806,23 @@ const StaffOrdersPage = () => {
 
   const { staff, isLoading: authLoading } = useRequireStaff();
   const queryClient = useQueryClient();
+  const linkedSellerId = staff?.role === "staff" ? staff?.sellerId : staff?.id;
+  const linkedStoreId =
+    staff?.role === "staff" ? staff?.seller?.store?.id : staff?.store?.id;
+  const orderRequestConfig = {
+    ...isProtected,
+    headers: {
+      "x-auth-role": staff?.role === "staff" ? "staff" : "seller",
+    },
+  } as any;
 
   // ── Real-time WebSocket (worker-service port 6006) ──────────────────────────
   // Staff connect with ?sellerId= so the worker can broadcast new orders to them.
   // Sellers visiting this page also work because useSeller returns seller with sellerId.
   React.useEffect(() => {
-    const sellerId = staff?.sellerId || (staff?.role === "seller" ? staff?.id : null);
-    if (!sellerId) return;
+    if (!linkedSellerId) return;
 
-    const wsBase = process.env.NEXT_PUBLIC_WORKER_WS_URL?.replace(/\?.*$/, "") || "ws://localhost:6006";
-    const wsUrl = `${wsBase}?sellerId=${sellerId}`;
+    const wsUrl = `${frontendEnv.workerWebsocketUrl.replace(/^http/, "ws")}?sellerId=${linkedSellerId}`;
 
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
@@ -804,6 +843,7 @@ const StaffOrdersPage = () => {
           if (data.type === "NEW_ORDER") {
             const raw = data.payload?.order || data.payload;
             if (!raw) return;
+            if (linkedStoreId && raw.storeId && raw.storeId !== linkedStoreId) return;
 
             console.log("📦 Staff: new order received via WebSocket", raw);
             queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
@@ -862,6 +902,7 @@ const StaffOrdersPage = () => {
               description: `Order #${(raw.id || "").slice(-6).toUpperCase()} is waiting for review.`,
               icon: <Bell className="h-4 w-4 text-blue-500" />,
               duration: 8000,
+              position: "top-center",
             });
           }
         } catch (e) {
@@ -889,19 +930,21 @@ const StaffOrdersPage = () => {
       clearTimeout(reconnectTimeout);
       ws?.close();
     };
-  }, [staff?.sellerId, staff?.id, staff?.role, queryClient]);
+  }, [linkedSellerId, linkedStoreId, queryClient]);
 
   const isStaff = staff?.role === "staff";
   const sellerNotLinked = !authLoading && staff && isStaff && (!staff.isActive || !staff.sellerId);
   const canFetch = !!staff && (staff.role === "seller" || staff.isActive);
 
   const { data: realOrders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ["staff-orders"],
+    queryKey: ["staff-orders", linkedStoreId, staff?.role],
     queryFn: async () => {
-      const res = await axiosInstance.get("/order/api/get-seller-orders");
+      const res = await axiosInstance.get("/order/api/get-seller-orders", orderRequestConfig);
       // Use res.data.orders directly if they are already mapped/hydrated by the API,
       // or map over o.items if the API returns them that way.
-      return (res.data.orders || []).map((o: any): MockOrder => ({
+      return (res.data.orders || [])
+        .filter((o: any) => !linkedStoreId || !o.storeId || o.storeId === linkedStoreId)
+        .map((o: any): MockOrder => ({
         id: o.id,
         status: o.status === "ACCEPTED"  ? "Processing"
                : o.status === "REJECTED"  ? "Rejected"
@@ -942,56 +985,151 @@ const StaffOrdersPage = () => {
         refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null,
       }));
     },
-    enabled: canFetch,
+    enabled: canFetch && !!linkedStoreId,
   });
 
-  const orders = realOrders; // Use real populated orders
   const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);
   const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
   const [detailTarget, setDetailTarget] = useState<MockOrder | null>(null);
   const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
+  const [optimisticOrders, setOptimisticOrders] = useState<Record<string, Partial<MockOrder>>>({});
+  const [pendingActions, setPendingActions] = useState<Record<string, string | null>>({});
+
+  const orders = realOrders.map((order: MockOrder) => ({
+    ...order,
+    ...(optimisticOrders[order.id] || {}),
+  }));
+
+  const setPendingAction = (orderId: string, action: string | null) => {
+    setPendingActions((prev) => {
+      if (!action) {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      }
+      return { ...prev, [orderId]: action };
+    });
+  };
+
+  const applyOptimisticOrder = (orderId: string, patch: Partial<MockOrder>) => {
+    setOptimisticOrders((prev) => ({
+      ...prev,
+      [orderId]: { ...(prev[orderId] || {}), ...patch },
+    }));
+  };
+
+  const clearOrderUiState = (orderId: string) => {
+    setPendingAction(orderId, null);
+    setOptimisticOrders((prev) => {
+      const next = { ...prev };
+      delete next[orderId];
+      return next;
+    });
+  };
+
+  const syncOrderInCache = (orderId: string, patch: Partial<MockOrder>) => {
+    queryClient.setQueriesData(
+      { queryKey: ["staff-orders"] },
+      (existing: MockOrder[] | undefined) =>
+        Array.isArray(existing)
+          ? existing.map((order) =>
+              order.id === orderId ? { ...order, ...patch } : order,
+            )
+          : existing,
+    );
+  };
 
   const acceptMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      return axiosInstance.put(`/order/api/accept-reject/${orderId}`, { action: "accept" });
+      return axiosInstance.put(
+        `/order/api/accept-reject/${orderId}`,
+        { action: "accept" },
+        orderRequestConfig,
+      );
     },
-    onSuccess: () => {
+    onSuccess: (_, orderId) => {
+      syncOrderInCache(orderId, {
+        status: "Processing",
+        rejectionReason: null,
+        refundStatus: null,
+      });
+      clearOrderUiState(orderId);
       queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
       setAcceptTarget(null);
+    },
+    onError: (_error, orderId) => {
+      clearOrderUiState(orderId);
+      toast.error("Failed to accept order");
     }
   });
 
   const rejectMutation = useMutation({
     mutationFn: async ({ orderId, reason }: { orderId: string, reason: string }) => {
-      return axiosInstance.put(`/order/api/accept-reject/${orderId}`, { action: "reject", rejectionReason: reason });
+      return axiosInstance.put(
+        `/order/api/accept-reject/${orderId}`,
+        { action: "reject", rejectionReason: reason },
+        orderRequestConfig,
+      );
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      syncOrderInCache(variables.orderId, {
+        status: "Rejected",
+        rejectionReason: variables.reason,
+        refundStatus: "Refunded",
+      });
+      clearOrderUiState(variables.orderId);
       queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
       setRejectTarget(null);
+    },
+    onError: (_error, variables) => {
+      clearOrderUiState(variables.orderId);
+      toast.error("Failed to reject order");
     }
   });
 
   const handleAcceptConfirm = () => {
     if (!acceptTarget) return;
-    acceptMutation.mutate(acceptTarget.id);
+    const orderId = acceptTarget.id;
+    setPendingAction(orderId, "accepting");
+    applyOptimisticOrder(orderId, { status: "Processing", rejectionReason: null, refundStatus: null });
+    setAcceptTarget(null);
+    acceptMutation.mutate(orderId);
   };
 
   const handleRejectConfirm = (reason: string) => {
     if (!rejectTarget) return;
-    rejectMutation.mutate({ orderId: rejectTarget.id, reason });
+    const orderId = rejectTarget.id;
+    setPendingAction(orderId, "rejecting");
+    applyOptimisticOrder(orderId, { status: "Rejected", rejectionReason: reason, refundStatus: "Refunded" });
+    setRejectTarget(null);
+    rejectMutation.mutate({ orderId, reason });
   };
 
   const statusMutation = useMutation({
     mutationFn: async ({ orderId, status }: { orderId: string; status: string }) =>
-      axiosInstance.put(`/order/api/update-status/${orderId}`, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff-orders"] }),
+      axiosInstance.put(`/order/api/update-status/${orderId}`, { status }, orderRequestConfig),
+    onSuccess: (_, variables) => {
+      syncOrderInCache(variables.orderId, {
+        status: variables.status === "SHIPPED" ? "Ready" : "Completed",
+      });
+      clearOrderUiState(variables.orderId);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+    },
+    onError: (_error, variables) => {
+      clearOrderUiState(variables.orderId);
+      toast.error("Failed to update order status");
+    },
   });
 
   const handleMarkReady = (id: string) => {
+    setPendingAction(id, "marking-ready");
+    applyOptimisticOrder(id, { status: "Ready" });
     statusMutation.mutate({ orderId: id, status: "SHIPPED" });
   };
 
   const handleMarkCompleted = (id: string) => {
+    setPendingAction(id, "marking-completed");
+    applyOptimisticOrder(id, { status: "Completed" });
     statusMutation.mutate({ orderId: id, status: "DELIVERED" });
   };
 
@@ -1031,7 +1169,9 @@ const StaffOrdersPage = () => {
             <Fish size={22} className="text-teal-400" />
             <h1 className="text-xl font-bold text-white">Order Board</h1>
           </div>
-          <p className="text-gray-500 text-sm">FishStudio — Staff Dashboard</p>
+          <p className="text-gray-500 text-sm">
+            {staff?.seller?.store?.name || staff?.store?.name || "Staff Dashboard"}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -1133,6 +1273,7 @@ const StaffOrdersPage = () => {
               onMarkReady={handleMarkReady}
               onMarkCompleted={handleMarkCompleted}
               onViewDetails={setDetailTarget}
+              pendingActions={pendingActions}
             />
           ))}
         </div>
@@ -1153,6 +1294,7 @@ const StaffOrdersPage = () => {
                 onMarkReady={handleMarkReady}
                 onMarkCompleted={handleMarkCompleted}
                 onViewDetails={setDetailTarget}
+                pendingAction={pendingActions[o.id] ?? null}
               />
             ))
           )}
@@ -1165,6 +1307,7 @@ const StaffOrdersPage = () => {
           order={acceptTarget}
           onConfirm={handleAcceptConfirm}
           onCancel={() => setAcceptTarget(null)}
+          isSubmitting={acceptMutation.isPending}
         />
       )}
       {rejectTarget && (
@@ -1172,6 +1315,7 @@ const StaffOrdersPage = () => {
           order={rejectTarget}
           onConfirm={handleRejectConfirm}
           onCancel={() => setRejectTarget(null)}
+          isSubmitting={rejectMutation.isPending}
         />
       )}
       {detailTarget && (

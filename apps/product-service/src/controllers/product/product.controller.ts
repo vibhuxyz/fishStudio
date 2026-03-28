@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
+import { prismaPostgres } from "@repo/db-postgres";
 import { publishToQueue, redis } from "@repo/libs";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import {
@@ -709,17 +710,44 @@ export const getStoreProductBySlug = async (
 
     const discountIds = (product as any).discount_codes || [];
     const nowLocal = new Date();
-    const coupon =
-      discountIds.length > 0
-        ? await prisma.discount_codes.findFirst({
-            where: {
-              id: { in: discountIds },
-              isActive: true,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: nowLocal } }],
-            },
-            orderBy: { createdAt: "desc" },
-          })
-        : null;
+    const userId = req.query.userId as string | undefined;
+
+    let coupon: any = null;
+    if (discountIds.length > 0) {
+      const candidates = await prisma.discount_codes.findMany({
+        where: {
+          id: { in: discountIds },
+          isActive: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: nowLocal } }],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Filter out globally exhausted coupons
+      let eligible = candidates.filter(
+        (c) => c.maxUses === null || c.usedCount < c.maxUses,
+      );
+
+      // Filter out coupons this specific user has already fully used
+      if (userId && eligible.length > 0) {
+        try {
+          const usages = await prismaPostgres.couponUsage.groupBy({
+            by: ["couponId"],
+            where: { userId, couponId: { in: eligible.map((c) => c.id) } },
+            _count: { couponId: true },
+          });
+          const usageMap = new Map(usages.map((u) => [u.couponId, u._count.couponId]));
+          eligible = eligible.filter((c) => {
+            const used = usageMap.get(c.id) ?? 0;
+            return used < (c.maxUsesPerUser ?? 1);
+          });
+        } catch {
+          // Non-fatal
+        }
+      }
+
+      coupon = eligible[0] ?? null;
+    }
 
     return res.status(200).json({
       success: true,
@@ -1196,6 +1224,8 @@ export const getStorePublicOffers = async (
     if (!store)
       return res.status(200).json({ success: true, coupons: [], events: [] });
     const now = new Date();
+    const userId = req.query.userId as string | undefined;
+
     const [discountCodes, activeEvents] = await Promise.all([
       prisma.discount_codes.findMany({
         where: { sellerId: store.sellerId },
@@ -1211,7 +1241,38 @@ export const getStorePublicOffers = async (
         orderBy: { startTime: "desc" },
       }),
     ]);
-    return res.status(200).json({ success: true, discountCodes, activeEvents });
+
+    // Filter: inactive, expired, or globally exhausted coupons are never shown
+    let validCodes = discountCodes.filter((dc) => {
+      if (!dc.isActive) return false;
+      if (dc.expiresAt && new Date(dc.expiresAt) <= now) return false;
+      if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) return false;
+      return true;
+    });
+
+    // If the caller is a logged-in user, additionally filter out coupons this
+    // specific user has already used up to their per-user limit.
+    if (userId && validCodes.length > 0) {
+      try {
+        const usages = await prismaPostgres.couponUsage.groupBy({
+          by: ["couponId"],
+          where: {
+            userId,
+            couponId: { in: validCodes.map((c) => c.id) },
+          },
+          _count: { couponId: true },
+        });
+        const usageMap = new Map(usages.map((u) => [u.couponId, u._count.couponId]));
+        validCodes = validCodes.filter((dc) => {
+          const used = usageMap.get(dc.id) ?? 0;
+          return used < (dc.maxUsesPerUser ?? 1);
+        });
+      } catch {
+        // Non-fatal: if Postgres is unavailable, fall back to showing all valid codes
+      }
+    }
+
+    return res.status(200).json({ success: true, discountCodes: validCodes, activeEvents });
   } catch (error) {
     return next(error);
   }

@@ -39,6 +39,16 @@ export const adminWorker = async () => {
               }
             }
 
+            if (content.type === "SELLER_PERMISSIONS_UPDATED") {
+              // Broadcast to the seller's store room so the sidebar refreshes
+              // permissions in real time without a manual page reload.
+              if (content.storeId) {
+                socketManager.broadcastToStore(content.storeId, "SELLER_PERMISSIONS_UPDATED", {
+                  sellerId: content.sellerId,
+                });
+              }
+            }
+
             if (content.type === "STAFF_ACCESS_GRANTED") {
               // Broadcast to the specific staff member's room so the staff layout
               // can lift the "Access Denied" block in real time.

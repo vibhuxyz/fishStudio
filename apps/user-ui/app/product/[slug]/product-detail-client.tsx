@@ -30,6 +30,7 @@ import {
   resolveProductSizePricing,
 } from "@/lib/storefront";
 import { useAddressStore } from "@/lib/address-store";
+import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 const BLUR_DATA =
@@ -44,6 +45,7 @@ interface Props {
 export function ProductDetailClient({ product, relatedProducts, coupon }: Props) {
   const modals = useModals();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
+  const { user } = useAuth();
   const [resolvedProduct, setResolvedProduct] = useState(product);
   const [resolvedRelatedProducts, setResolvedRelatedProducts] = useState(relatedProducts);
   const [resolvedCoupon, setResolvedCoupon] = useState(coupon);
@@ -95,6 +97,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
       storeId: selectedLocation?.storeId,
       pincode: selectedLocation?.pincode,
       city: selectedLocation?.city,
+      userId: user?.id,
     })
       .then((data) => {
         if (cancelled || !data.product) return;

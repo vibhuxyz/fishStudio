@@ -37,7 +37,7 @@ const TIP_OPTIONS = [20, 30, 50];
 
 export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarProps) {
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
   const { items, syncItems, cartStoreId, removeItem, updateQuantity, deliveryMetadata } = useCartStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -124,7 +124,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
         .finally(() => setIsSyncing(false));
       
       if (selectedLocation?.storeId) {
-        fetchAvailableCoupons(selectedLocation.storeId);
+        fetchAvailableCoupons(selectedLocation.storeId, user?.id);
       }
     }
   }, [open, locationVersion, selectedLocation?.storeId]);

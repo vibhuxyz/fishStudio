@@ -16,7 +16,7 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
     const staffId = staff?.id;
     if (!staffId || staff?.isActive !== false) return;
 
-    const wsUrl = frontendEnv.chatWebsocketUrl.replace(/^http/, "ws");
+    const wsUrl = frontendEnv.workerWebsocketUrl.replace(/^http/, "ws");
     const ws = new WebSocket(`${wsUrl}?staffId=${staffId}`);
     wsRef.current = ws;
 

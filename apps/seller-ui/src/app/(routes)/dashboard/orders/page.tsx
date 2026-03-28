@@ -113,7 +113,7 @@ const OrdersTable = () => {
       {
         accessorKey: "total",
         header: "Total",
-        cell: ({ row }: { row: { original: SellerOrder } }) => <span>${row.original.total}</span>,
+        cell: ({ row }: { row: { original: SellerOrder } }) => <span>₹{row.original.total}</span>,
       },
       {
         accessorKey: "status",

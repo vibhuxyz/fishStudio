@@ -263,7 +263,7 @@ export async function fetchStorefrontProducts(
 
 export async function fetchStorefrontProductBySlug(
   slug: string,
-  params?: { storeId?: string; pincode?: string; city?: string },
+  params?: { storeId?: string; pincode?: string; city?: string; userId?: string },
   init?: RequestInit & { next?: { revalidate?: number } },
 ): Promise<{ product: Product | null; relatedProducts: Product[]; coupon?: any }> {
   const encodedSlug = encodeURIComponent(slug);
@@ -271,6 +271,7 @@ export async function fetchStorefrontProductBySlug(
   if (params?.storeId) query.set("storeId", params.storeId);
   if (params?.pincode) query.set("pincode", params.pincode);
   if (params?.city) query.set("city", params.city);
+  if (params?.userId) query.set("userId", params.userId);
   const qs = query.toString();
   const response = await fetch(
     getStorefrontUrl(`/product/api/get-product/${encodedSlug}${qs ? `?${qs}` : ""}`),

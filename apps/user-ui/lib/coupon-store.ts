@@ -29,7 +29,7 @@ interface CouponState {
   isCouponApplied: (code: string) => boolean;
   getTotalDiscount: (subtotal: number) => number;
   getDiscountForCoupon: (coupon: Coupon, subtotal: number) => number;
-  fetchAvailableCoupons: (storeId: string) => Promise<void>;
+  fetchAvailableCoupons: (storeId: string, userId?: string) => Promise<void>;
   /** Validates a code against the backend before applying it manually */
   validateCouponCode: (
     code: string,
@@ -47,23 +47,25 @@ export const useCouponStore = create<CouponState>()(
       isLoadingCoupons: false,
 
       /* ── Fetch available coupons for a store ──────────────────────────── */
-      fetchAvailableCoupons: async (storeId: string) => {
+      fetchAvailableCoupons: async (storeId: string, userId?: string) => {
         if (!storeId) return;
         set({ isLoadingCoupons: true });
         try {
-          const res = await fetch(
-            `${frontendEnv.apiUrl}/product/api/public/store-offers/${storeId}`,
-            { credentials: "include" },
-          );
+          const url = new URL(`${frontendEnv.apiUrl}/product/api/public/store-offers/${storeId}`);
+          if (userId) url.searchParams.set("userId", userId);
+          const res = await fetch(url.toString(), { credentials: "include" });
           const data = await res.json();
           if (!data.success) return;
 
+          const now = new Date();
           const coupons: Coupon[] = [];
 
           if (Array.isArray(data.discountCodes)) {
             for (const dc of data.discountCodes) {
               if (!dc.isActive) continue;
-              if (dc.expiresAt && new Date(dc.expiresAt) <= new Date()) continue;
+              if (dc.expiresAt && new Date(dc.expiresAt) <= now) continue;
+              // Don't show globally exhausted coupons
+              if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) continue;
 
               const dtype =
                 dc.discountType === "percentage"

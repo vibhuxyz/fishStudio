@@ -95,12 +95,16 @@ export const acceptOrRejectOrder = async (
   try {
     const { orderId } = req.params;
     const { action, rejectionReason } = validate(acceptOrRejectOrderSchema, req.body);
+    const storeId = req.seller?.store?.id;
 
     const existingOrder = await prismaPostgres.order.findUnique({ 
       where: { id: orderId },
       include: { orderItems: true }
     });
     if (!existingOrder) return next(new NotFoundError("Order not found"));
+    if (!storeId || existingOrder.storeId !== storeId) {
+      return next(new ValidationError("You can only manage orders for your own store"));
+    }
 
     let updatedOrder;
     if (action === "accept") {
@@ -180,9 +184,13 @@ export const updateOrderStatus = async (
   try {
     const { orderId } = req.params;
     const { status } = validate(updateOrderStatusSchema, req.body);
+    const storeId = req.seller?.store?.id;
 
     const existing = await prismaPostgres.order.findUnique({ where: { id: orderId } });
     if (!existing) return next(new NotFoundError("Order not found"));
+    if (!storeId || existing.storeId !== storeId) {
+      return next(new ValidationError("You can only manage orders for your own store"));
+    }
 
     const updated = await prismaPostgres.order.update({
       where: { id: orderId },

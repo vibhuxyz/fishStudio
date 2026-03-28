@@ -156,13 +156,18 @@ export const updateSellerApproval = async (
       console.error("Failed to notify seller of approval/permission update:", notifyErr);
     }
 
-    /* ── Real-time WebSocket event for seller approval ── */
-    if (isApprovedByAdmin === true && seller.isApprovedByAdmin !== true) {
-      try {
-        // Bust the Redis auth cache so the seller's next fetch returns fresh data
+    /* ── Real-time WebSocket events ── */
+    try {
+      // Always bust the Redis auth cache when anything changes so the seller's
+      // next API fetch bypasses the 5-minute cache and gets fresh data.
+      if (isApprovedByAdmin !== undefined || permissions !== undefined) {
         await redis.set(`cache:bypass:seller:${sellerId}`, "1", "EX", 60);
+      }
 
-        const store = await prisma.stores.findFirst({ where: { sellerId } });
+      const store = await prisma.stores.findFirst({ where: { sellerId } });
+
+      if (isApprovedByAdmin === true && seller.isApprovedByAdmin !== true) {
+        // First-time approval → redirect seller from pending-approval to dashboard
         if (store) {
           await publishToQueue("ADMIN_EVENTS", {
             type: "SELLER_APPROVED",
@@ -170,9 +175,18 @@ export const updateSellerApproval = async (
             sellerId,
           });
         }
-      } catch (wsErr) {
-        console.error("Failed to publish SELLER_APPROVED event:", wsErr);
+      } else if (permissions !== undefined) {
+        // Permissions changed for an already-approved seller → refresh sidebar
+        if (store) {
+          await publishToQueue("ADMIN_EVENTS", {
+            type: "SELLER_PERMISSIONS_UPDATED",
+            storeId: store.id,
+            sellerId,
+          });
+        }
       }
+    } catch (wsErr) {
+      console.error("Failed to publish seller event:", wsErr);
     }
 
     return res.status(200).json({
