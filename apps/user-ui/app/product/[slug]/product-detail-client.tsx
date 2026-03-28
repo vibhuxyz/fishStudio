@@ -193,42 +193,47 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
       <main className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-8">
           {/* Breadcrumb */}
-          <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Link href="/" className="transition-colors hover:text-foreground">
+          <nav className="mb-6 flex flex-wrap items-center gap-y-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+            <Link
+              href="/"
+              className="transition-colors hover:text-primary"
+            >
               Home
             </Link>
-            <span>/</span>
+            <ChevronRight className="mx-1 h-3 w-3 flex-shrink-0" />
             <Link
               href={`/category/${encodeURIComponent(
                 resolvedProduct.category.toLowerCase().replace(/[\s&]+/g, "-"),
               )}`}
-              className="transition-colors hover:text-foreground"
+              className="transition-colors hover:text-primary"
             >
               {resolvedProduct.category}
             </Link>
-            <span>/</span>
+            <ChevronRight className="mx-1 h-3 w-3 flex-shrink-0" />
             <Link
               href={`/category/${encodeURIComponent(
                 resolvedProduct.category.toLowerCase().replace(/[\s&]+/g, "-"),
               )}?sub=${encodeURIComponent(resolvedProduct.subCategory)}`}
-              className="transition-colors hover:text-foreground"
+              className="transition-colors hover:text-primary"
             >
               {resolvedProduct.subCategory}
             </Link>
-            <span>/</span>
-            <span className="font-medium text-foreground">{resolvedProduct.name}</span>
+            <ChevronRight className="mx-1 h-3 w-3 flex-shrink-0" />
+            <span className="truncate font-bold text-primary/80">
+              {resolvedProduct.name}
+            </span>
           </nav>
 
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-10">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 md:p-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
               {/* Left - Images */}
-              <div className="flex-shrink-0">
-                <div className="relative h-72 w-full overflow-hidden rounded-xl md:h-80 md:w-96">
+              <div className="flex-shrink-0 lg:w-96">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl sm:h-80 sm:w-96">
                   <Image
                     src={productImages[currentImageIndex]}
                     alt={resolvedProduct.name}
                     fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 384px, 400px"
                     className="object-cover"
                     priority
                     loading="eager"
@@ -300,7 +305,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {resolvedProduct.subCategory}
                 </p>
-                <h1 className="mt-1 font-serif text-2xl font-bold text-primary md:text-3xl">
+                <h1 className="mt-1 font-serif text-xl font-bold text-primary sm:text-2xl md:text-3xl">
                   {resolvedProduct.name}
                 </h1>
                 <div className="mt-2 text-sm text-muted-foreground md:text-base">
@@ -360,7 +365,7 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
                         </p>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 rounded-full bg-[#1B5E20] px-4 py-2 text-sm font-bold text-white shadow-md md:px-6 md:py-2.5 md:text-base">
+                    <div className="flex-shrink-0 rounded-full bg-[#1B5E20] px-3 py-1.5 text-xs font-bold text-white shadow-md sm:px-6 sm:py-2.5 sm:text-base">
                       Code : {resolvedCoupon.discountCode}
                     </div>
                   </div>

@@ -149,7 +149,7 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
           )}
           <nav
             ref={scrollRef}
-            className="hide-scrollbar mx-auto flex h-full items-center justify-start gap-5 overflow-x-auto px-10"
+            className="hide-scrollbar mx-auto flex h-full items-center justify-start gap-3 overflow-x-auto px-4 sm:gap-5 sm:px-10"
             aria-label="Product categories"
           >
             {categories.map((cat) => (
@@ -195,14 +195,14 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
     const theme = activeCategory ? (categoryTheme[activeCategory] ?? fallbackTheme) : fallbackTheme;
 
     return (
-      <div className="w-[760px] max-w-[96vw] overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
+      <div className="w-full overflow-hidden rounded-2xl border border-border bg-background shadow-2xl sm:w-[760px] sm:max-w-[96vw]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 to-background px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/5 to-background px-4 py-3 sm:px-5 sm:py-3.5">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
               <LayoutGrid className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-base font-bold text-foreground">Shop by Categories</span>
+            <span className="text-sm font-bold text-foreground sm:text-base">Shop by Categories</span>
           </div>
           <Link
             href="/categories"
@@ -213,9 +213,10 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
           </Link>
         </div>
 
-        <div className="flex">
-          {/* Left — category list */}
-          <div className="w-52 flex-shrink-0 overflow-y-auto border-r border-border bg-muted/20 py-2" style={{ maxHeight: 360 }}>
+        {/* Body — stacks on mobile, side-by-side on sm+ */}
+        <div className="flex flex-col sm:flex-row">
+          {/* Category list — horizontal scroll on mobile, vertical sidebar on desktop */}
+          <div className="no-scrollbar flex flex-row gap-1.5 overflow-x-auto border-b border-border bg-muted/20 p-2 sm:max-h-[360px] sm:w-52 sm:flex-shrink-0 sm:flex-col sm:gap-0 sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r sm:p-0 sm:py-2">
             {categories.map((cat) => {
               const t = categoryTheme[cat] ?? fallbackTheme;
               const isActive = activeCategory === cat;
@@ -224,21 +225,21 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
                 <button
                   key={cat}
                   type="button"
-                  className={`group relative flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150 ${
+                  className={`group relative flex flex-shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150 sm:w-full sm:flex-row sm:gap-3 sm:rounded-none sm:px-3 sm:py-2.5 ${
                     isActive
-                      ? "bg-background shadow-sm"
+                      ? "bg-primary/10 sm:bg-background sm:shadow-sm"
                       : "hover:bg-background/60"
                   }`}
                   onMouseEnter={() => openCategory(cat)}
                   onClick={() => openCategory(cat)}
                 >
-                  {/* Active indicator */}
+                  {/* Active indicator — desktop only */}
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                    <span className="absolute left-0 top-1/2 hidden h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary sm:block" />
                   )}
 
                   {/* Image */}
-                  <div className={`relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full ${t.iconBg} ring-1 ring-border`}>
+                  <div className={`relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full ${t.iconBg} ring-1 ring-border sm:h-9 sm:w-9`}>
                     {categoryImages[cat] ? (
                       <Image src={categoryImages[cat]} alt={cat} fill sizes="36px" className="object-cover" />
                     ) : (
@@ -248,21 +249,21 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate text-[13px] font-semibold leading-tight ${isActive ? "text-primary" : "text-foreground"}`}>
+                  <div className="min-w-0 sm:flex-1">
+                    <p className={`max-w-[64px] truncate text-[10px] font-semibold leading-tight sm:max-w-none sm:text-[13px] ${isActive ? "text-primary" : "text-foreground"}`}>
                       {cat}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">{subs.length} items</p>
+                    <p className="hidden text-[10px] text-muted-foreground sm:block">{subs.length} items</p>
                   </div>
 
-                  <ChevronRight className={`h-3.5 w-3.5 flex-shrink-0 transition-all duration-150 ${isActive ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"}`} />
+                  <ChevronRight className={`hidden h-3.5 w-3.5 flex-shrink-0 transition-all duration-150 sm:block ${isActive ? "text-primary" : "text-muted-foreground/40 group-hover:text-muted-foreground"}`} />
                 </button>
               );
             })}
           </div>
 
           {/* Right — subcategories */}
-          <div className={`flex-1 bg-gradient-to-br ${theme.gradient} p-5`} style={{ minHeight: 300 }}>
+          <div className={`flex-1 bg-gradient-to-br ${theme.gradient} p-4 sm:p-5`} style={{ minHeight: 220 }}>
             <AnimatePresence mode="wait">
               {activeCategory ? (
                 <motion.div
@@ -274,8 +275,8 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
                   className="h-full"
                 >
                   {/* Category hero row */}
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className={`relative h-12 w-12 overflow-hidden rounded-xl ${theme.iconBg} ring-2 ring-white shadow-md`}>
+                  <div className="mb-3 flex items-center gap-2.5 sm:mb-4 sm:gap-3">
+                    <div className={`relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl ${theme.iconBg} ring-2 ring-white shadow-md sm:h-12 sm:w-12`}>
                       {categoryImages[activeCategory] ? (
                         <Image src={categoryImages[activeCategory]} alt={activeCategory} fill sizes="48px" className="object-cover" />
                       ) : (
@@ -284,13 +285,13 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
                         </div>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-base font-bold text-foreground">{activeCategory}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-bold text-foreground sm:text-base">{activeCategory}</h3>
                       <p className="text-xs text-muted-foreground">{activeSubs.length} varieties available</p>
                     </div>
                     <Link
                       href={`/category/${getCategorySlug(activeCategory)}`}
-                      className="ml-auto flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-primary shadow-sm hover:bg-white transition-colors"
+                      className="flex flex-shrink-0 items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-white sm:px-3"
                       onClick={onClose}
                     >
                       Shop all <ArrowRight className="h-3 w-3" />
@@ -299,21 +300,21 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
 
                   {/* Subcategory cards */}
                   {activeSubs.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                       {activeSubs.map((sub) => (
                         <Link
                           key={sub}
                           href={`/category/${getCategorySlug(activeCategory)}?sub=${encodeURIComponent(sub)}`}
-                          className="group flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/75 px-4 py-3 shadow-sm backdrop-blur-sm transition-all duration-150 hover:border-white hover:bg-white hover:shadow-md active:scale-95"
+                          className="group flex items-center justify-between gap-2 rounded-xl border border-white/60 bg-white/75 px-3 py-2.5 shadow-sm backdrop-blur-sm transition-all duration-150 hover:border-white hover:bg-white hover:shadow-md active:scale-95 sm:px-4 sm:py-3"
                           onClick={onClose}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
                             <span className={`flex h-2 w-2 flex-shrink-0 rounded-full ${theme.badge.split(" ")[0]}`} />
-                            <span className={`truncate text-sm font-semibold ${theme.badge.split(" ")[1]}`}>
+                            <span className={`truncate text-xs font-semibold sm:text-sm ${theme.badge.split(" ")[1]}`}>
                               {sub}
                             </span>
                           </div>
-                          <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/40 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-primary" />
+                          <ArrowRight className="h-3 w-3 flex-shrink-0 text-muted-foreground/40 transition-all duration-150 group-hover:translate-x-0.5 group-hover:text-primary sm:h-3.5 sm:w-3.5" />
                         </Link>
                       ))}
                     </div>
@@ -329,19 +330,19 @@ export function CategoryMenu({ variant = "horizontal", onClose }: CategoryMenuPr
                   key="empty"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex h-full flex-col items-center justify-center gap-2 py-16 text-center"
+                  className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center"
                 >
                   <LayoutGrid className="h-8 w-8 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground">Hover a category to explore</p>
+                  <p className="text-sm text-muted-foreground">Tap a category to explore</p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-border bg-muted/30 px-5 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+        {/* Footer — desktop only */}
+        <div className="hidden border-t border-border bg-muted/30 px-5 py-3 sm:block">
+          <div className="hide-scrollbar flex items-center gap-2 overflow-x-auto">
             {categories.slice(0, 6).map((cat) => {
               const t = categoryTheme[cat] ?? fallbackTheme;
               return (

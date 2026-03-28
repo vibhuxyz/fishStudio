@@ -142,7 +142,7 @@ export function CategoryClient({
               </aside>
               <div className="flex-1">
                 <Skeleton className="mb-4 h-4 w-32" />
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <ProductCardSkeleton key={i} />
                   ))}
@@ -184,7 +184,7 @@ export function CategoryClient({
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <div className="border-b border-border bg-secondary/30">
-          <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="mx-auto max-w-7xl px-4 py-1 md:py-16">
             <Link
               href="/"
               className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -286,7 +286,7 @@ export function CategoryClient({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
+                        className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4"
                       >
                         {displayedProducts.map((product, index) => (
                           <ProductCard
@@ -307,9 +307,9 @@ export function CategoryClient({
                           );
                           if (subProducts.length === 0) return null;
                           return (
-                            <section key={sub}>
-                              <div className="mb-4 flex items-center justify-between">
-                                <h2 className="font-serif text-xl font-bold text-foreground">
+                            <section key={sub} className="scroll-mt-32">
+                              <div className="mb-6 flex items-center justify-between">
+                                <h2 className="font-serif text-2xl font-bold !text-primary">
                                   {sub}
                                 </h2>
                                 <button
@@ -320,21 +320,22 @@ export function CategoryClient({
                                   View all ({subProducts.length})
                                 </button>
                               </div>
-                              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                              <div className="flex overflow-x-auto gap-4 pb-6 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                                 {subProducts.map((product, index) => (
-                                  <ProductCard
-                                    key={product.id}
-                                    product={product}
-                                    priority={index < 4}
-                                    variant="compact"
-                                  />
+                                  <div key={product.id} className="flex-shrink-0 w-[240px] sm:w-auto">
+                                    <ProductCard
+                                      product={product}
+                                      priority={index < 4}
+                                      variant="compact"
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             </section>
                           );
                         })
                       ) : (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
                           {categoryProducts.map((product, index) => (
                             <ProductCard
                               key={product.id}

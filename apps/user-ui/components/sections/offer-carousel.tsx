@@ -51,7 +51,7 @@ export function OfferCarousel({
   // 1. API Loading Skeleton
   if (isApiLoading) {
     return (
-      <section className="w-full px-4 py-4 md:px-6">
+      <section className="w-full px-2 py-2 sm:px-4 sm:py-4 md:px-6">
         <div
           className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl bg-muted animate-pulse"
           style={{ paddingBottom: "40.33%" }}
@@ -62,7 +62,7 @@ export function OfferCarousel({
 
   if (isError || banners.length === 0) {
     return (
-      <section className="w-full px-4 py-4 md:px-6">
+      <section className="w-full px-2 py-2 sm:px-4 sm:py-4 md:px-6">
         <div
           className="relative mx-auto flex max-w-7xl items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-primary/15 to-accent/20"
           style={{ paddingBottom: "33.33%" }}
@@ -76,7 +76,7 @@ export function OfferCarousel({
   }
 
   return (
-    <section className="w-full px-4 py-4 md:px-6">
+    <section className="w-full px-2 py-2 sm:px-4 sm:py-4 md:px-6">
       <div className="relative mx-auto max-w-7xl overflow-hidden rounded-2xl bg-muted">
         <div className="relative w-full" style={{ paddingBottom: "33.33%" }}>
           {banners.map((banner, i) => {

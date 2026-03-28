@@ -29,16 +29,16 @@ export function ProductCarouselSection({
   if (!isLoading && products.length === 0) return null;
 
   return (
-    <section className="px-4 py-10">
+    <section className="px-3 py-6 sm:px-4 sm:py-8 md:py-10">
       <div className="mx-auto max-w-7xl">
         {/* Server-rendered heading -- fully crawlable by search engines */}
         <div className="mb-6 text-center">
           {subtitle && (
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary sm:text-xs">
               {subtitle}
             </p>
           )}
-          <h2 className="mt-1 font-serif text-2xl font-bold text-foreground md:text-3xl">
+          <h2 className="mt-1 font-serif text-xl font-bold text-foreground sm:text-2xl md:text-3xl">
             {title}
           </h2>
         </div>

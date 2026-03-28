@@ -49,7 +49,7 @@ function BrandPanel() {
     <div className="hidden md:flex md:w-[50%] flex-shrink-0 flex-col items-center justify-between bg-gradient-to-b from-primary to-primary/85 p-8 text-primary-foreground">
       {/* Logo */}
       <div className="flex w-full items-center gap-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
           <Fish className="h-5 w-5 text-white" />
         </div>
         <div>
@@ -236,7 +236,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[680px] [&>button]:hidden">
+      <DialogContent className="rounded-2xl sm:rounded-3xl gap-0 overflow-hidden p-0 sm:max-w-[680px] [&>button]:hidden">
         <div className="flex min-h-[480px]">
           <BrandPanel />
 
@@ -264,7 +264,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   transition={{ duration: 0.2, ease: "easeOut" }}
                   className="flex flex-1 flex-col justify-center px-7 py-10"
                 >
-                  <h2 className="text-xl font-bold text-foreground">
+                  <h2 className="text-xl font-bold !text-foreground">
                     Login or sign up
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -456,7 +456,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   </p>
 
                   <div className="mt-7 space-y-4">
-                    <div className="flex overflow-hidden rounded-xl border border-border bg-background focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <div className="flex overflow-hidden rounded-full border border-border bg-background focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                       <div className="flex items-center border-r border-border bg-muted px-3 text-muted-foreground">
                         <User className="h-4 w-4" />
                       </div>

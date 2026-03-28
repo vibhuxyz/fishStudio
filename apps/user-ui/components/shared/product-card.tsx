@@ -144,7 +144,7 @@ function ProductCardComponent({
 
   if (variant === "compact") {
     return (
-      <div className={`group flex w-[240px] h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
+      <div className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
         <div className="relative h-[200px] w-full bg-muted">
           {isOutOfStock || isComingSoon ? (
             <Image
@@ -152,7 +152,7 @@ function ProductCardComponent({
               alt={product.name}
               fill
               className={`object-cover ${isOutOfStock ? "grayscale" : ""}`}
-              sizes="240px"
+              sizes="(max-width: 640px) 50vw, 240px"
               placeholder="blur"
               blurDataURL={BLUR_DATA}
               priority={priority}
@@ -165,7 +165,7 @@ function ProductCardComponent({
                   src={images[currentImageIndex]}
                   alt={product.name}
                   fill
-                  sizes="240px"
+                  sizes="(max-width: 640px) 50vw, 240px"
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
                   placeholder="blur"
                   blurDataURL={BLUR_DATA}
@@ -274,7 +274,7 @@ function ProductCardComponent({
 
   /* Full variant (used for featured/special lists) */
   return (
-    <div className={`group flex w-[240px] h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
+    <div className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
       <div className="relative h-[200px] w-full bg-muted">
         {isOutOfStock || isComingSoon ? (
           <Image

@@ -289,6 +289,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const desktopInputRef = useRef<HTMLInputElement>(null);
@@ -317,6 +318,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   /* ── Effects ── */
   useEffect(() => {
     setHydrated(true);
+    setIsMobile(window.innerWidth < 640);
   }, []);
 
   useEffect(() => {
@@ -499,8 +501,11 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     return hasAddresses ? "Select saved address" : "Enter your address";
   })();
 
-  const addressShort =
-    addressLine.length > 32 ? addressLine.slice(0, 32) + "…" : addressLine;
+  const addressShort = hydrated
+    ? addressLine.length > 20
+      ? addressLine.slice(0, 20) + "…" 
+      : addressLine
+    : "Select location";
 
   const addressTypeLabel = selectedAddress?.label || null;
   const addressTypeIcon =
@@ -532,17 +537,17 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         className="fixed left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300"
         style={{ top: topOffset }}
       >
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
+        <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-2 py-2 sm:gap-3 sm:px-4 sm:py-3">
           {/* Logo */}
           <Link
             href="/"
-            className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2"
+            className="flex flex-shrink-0 items-center gap-1 sm:gap-2"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
-              <Fish className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
+              <Fish className="h-4 w-4 text-primary-foreground sm:h-6 sm:w-6" />
             </div>
             {!isCheckoutPage && (
-              <div className="hidden flex-col lg:flex">
+              <div className="hidden flex-col sm:flex lg:flex">
                 <span className="font-serif text-base font-bold leading-tight text-foreground">
                   Fish Studio
                 </span>
@@ -564,7 +569,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
               {/* Delivery address */}
               <button
                 type="button"
-                className="flex min-w-0 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:px-3"
+                className="flex min-w-0 flex-1 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:flex-initial sm:px-3"
                 onClick={() => setShowAddressModal(true)}
               >
                 <div className="flex items-center gap-1.5">
@@ -578,7 +583,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
                 </div>
                 {deliveryLabel.secondary ? (
-                  <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-muted-foreground sm:text-[11px]">
+                  <span className="mt-0.5 hidden items-center gap-1 text-[10px] font-medium text-muted-foreground xs:flex sm:text-[11px]">
                     <Clock3 className="h-3 w-3 flex-shrink-0" />
                     {deliveryLabel.secondary}
                   </span>
@@ -594,11 +599,11 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                       {addressTypeLabel}
                     </span>
                   ) : null}
-                  <span className="max-w-[80px] truncate font-medium text-foreground xs:max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
+                  <span className="max-w-[60px] truncate font-medium text-foreground xs:max-w-[100px] sm:max-w-[150px] md:max-w-[200px]">
                     {hydrated ? addressShort : "Select location"}
                   </span>
                 </span>
-                <span className="flex items-center gap-1 text-[9px] text-muted-foreground/90">
+                <span className="hidden items-center gap-1 text-[9px] text-muted-foreground/90 sm:flex">
                   <MapPin className="h-2.5 w-2.5 flex-shrink-0" />
                   <span className="max-w-[150px] truncate">
                     {serviceableAreaLabel}
@@ -660,11 +665,16 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className={`h-9 w-9 sm:h-10 sm:w-10 ${
+                        className={`h-8 w-8 sm:h-10 sm:w-10 ${
                           showCategoryDropdown
                             ? "bg-primary/10 text-primary"
                             : "text-muted-foreground hover:text-primary hover:bg-primary/5"
                         }`}
+                        onClick={() => {
+                          if (window.innerWidth < 1024) {
+                            setShowCategoryDropdown(!showCategoryDropdown);
+                          }
+                        }}
                       >
                         <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
@@ -675,11 +685,26 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 <AnimatePresence>
                   {showCategoryDropdown && shouldShowCategoryIcon && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10, x: 20 }}
+                      initial={{ opacity: 0, y: isMobile ? 6 : 10, x: isMobile ? 0 : 20 }}
                       animate={{ opacity: 1, y: 0, x: 0 }}
-                      exit={{ opacity: 0, y: 10, x: 20 }}
+                      exit={{ opacity: 0, y: isMobile ? 6 : 10, x: isMobile ? 0 : 20 }}
                       transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="absolute right-0 top-full z-50 mt-2"
+                      className="z-50"
+                      style={
+                        isMobile
+                          ? {
+                              position: "fixed",
+                              top: (shouldHideCategoryBar ? 130 : 210) + topOffset,
+                              left: 4,
+                              right: 4,
+                            }
+                          : {
+                              position: "absolute",
+                              right: 0,
+                              top: "100%",
+                              marginTop: 8,
+                            }
+                      }
                       onMouseEnter={() => {
                         if (hoverTimeoutRef.current)
                           clearTimeout(hoverTimeoutRef.current);
@@ -703,7 +728,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
           )}
 
           {/* Account + Cart */}
-          <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
             {/* <NotificationBell /> */}
             <UserProfileDropdown
               onAddressClick={() => setShowAddressModal(true)}
@@ -712,7 +737,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
               <button
                 type="button"
                 onClick={handleCartClick}
-                className={`relative flex h-9 items-center gap-1.5 rounded-lg px-2 sm:h-10 sm:px-3 ${
+                className={`relative flex h-8 items-center gap-1 rounded-lg px-2 sm:h-10 sm:gap-1.5 sm:px-3 ${
                   hydrated && totalItems > 0
                     ? "bg-offer-green text-white hover:bg-offer-green/90 border border-offer-green"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
@@ -721,15 +746,15 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                 {hydrated && totalItems > 0 ? (
                   <span className="flex flex-col items-start text-left">
-                    <span className="text-[9px] font-semibold leading-none sm:text-[10px]">
+                    <span className="text-[8px] font-semibold leading-none sm:text-[10px]">
                       {totalItems} {totalItems > 1 ? "items" : "item"}
                     </span>
-                    <span className="text-[10px] font-bold leading-none sm:text-xs">
+                    <span className="text-[9px] font-bold leading-none sm:text-xs">
                       ₹{(totalPrice ?? 0).toFixed(0)}
                     </span>
                   </span>
                 ) : (
-                  <span className="hidden text-xs font-medium sm:inline">
+                  <span className="hidden text-[11px] font-medium sm:inline">
                     Cart
                   </span>
                 )}
@@ -792,7 +817,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         }}
       />
       <div
-        style={{ height: (shouldHideCategoryBar ? 60 : 140) + topOffset }}
+        style={{ height: (shouldHideCategoryBar ? 130 : 210) + topOffset }}
         className="md:hidden"
       />
       <div
