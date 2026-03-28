@@ -140,10 +140,12 @@ const SellerEventForm = () => {
     const payload: any = { ...eventData };
 
     if (attachFirstOrderCoupon && !eventId) {
+      // When the event is FREE_DELIVERY, the coupon inherits that type automatically
+      const isFreeDeliveryEvent = values.type === "FREE_DELIVERY";
       payload.firstOrderCoupon = {
         public_name: firstOrderCoupon.public_name,
-        discountType: firstOrderCoupon.discountType,
-        discountValue: Number(firstOrderCoupon.discountValue),
+        discountType: isFreeDeliveryEvent ? "free_delivery" : firstOrderCoupon.discountType,
+        discountValue: isFreeDeliveryEvent ? 0 : Number(firstOrderCoupon.discountValue),
         discountCode: firstOrderCoupon.discountCode.toUpperCase(),
         minOrderValue: firstOrderCoupon.minOrderValue
           ? Number(firstOrderCoupon.minOrderValue)
@@ -279,6 +281,17 @@ const SellerEventForm = () => {
 
             {attachCoupon && (
               <div className="grid gap-4 md:grid-cols-2 mt-2">
+                {/* When the event is FREE_DELIVERY, show an info banner instead of discount fields */}
+                {selectedType === "FREE_DELIVERY" && (
+                  <div className="md:col-span-2 flex items-start gap-2 bg-teal-500/10 border border-teal-500/30 rounded-lg px-3 py-2">
+                    <span className="text-teal-300 text-xs mt-0.5">✓</span>
+                    <p className="text-teal-300 text-xs">
+                      The coupon will automatically grant <strong>free delivery</strong> — matching
+                      this event. No separate discount type needed.
+                    </p>
+                  </div>
+                )}
+
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm text-slate-300">
                     Coupon Title <span className="text-slate-500">(shown to customers)</span>
@@ -288,36 +301,45 @@ const SellerEventForm = () => {
                       required: attachCoupon ? "Coupon title required" : false,
                     })}
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                    placeholder="e.g. Welcome — 20% off your first order!"
+                    placeholder={
+                      selectedType === "FREE_DELIVERY"
+                        ? "e.g. Free delivery on your first order!"
+                        : "e.g. Welcome — 20% off your first order!"
+                    }
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-sm text-slate-300">Discount Type</label>
-                  <select
-                    {...register("firstOrderCoupon.discountType")}
-                    className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none"
-                  >
-                    <option value="percentage" className="bg-slate-950">Percentage (%) off</option>
-                    <option value="fixed" className="bg-slate-950">Flat Amount (₹) off</option>
-                  </select>
-                </div>
+                {/* Discount Type + Value — hidden for FREE_DELIVERY events (auto-inherited) */}
+                {selectedType !== "FREE_DELIVERY" && (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-sm text-slate-300">Discount Type</label>
+                      <select
+                        {...register("firstOrderCoupon.discountType")}
+                        className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-white outline-none"
+                      >
+                        <option value="percentage" className="bg-slate-950">Percentage (%) off</option>
+                        <option value="fixed" className="bg-slate-950">Flat Amount (₹) off</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="mb-1 block text-sm text-slate-300">
-                    {couponDiscountType === "percentage" ? "Discount %" : "Discount Amount (₹)"}
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    {...register("firstOrderCoupon.discountValue", {
-                      required: attachCoupon ? "Value required" : false,
-                      valueAsNumber: true,
-                    })}
-                    className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                    placeholder={couponDiscountType === "percentage" ? "20" : "100"}
-                  />
-                </div>
+                    <div>
+                      <label className="mb-1 block text-sm text-slate-300">
+                        {couponDiscountType === "percentage" ? "Discount %" : "Discount Amount (₹)"}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        {...register("firstOrderCoupon.discountValue", {
+                          required: attachCoupon && selectedType !== "FREE_DELIVERY" ? "Value required" : false,
+                          valueAsNumber: true,
+                        })}
+                        className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                        placeholder={couponDiscountType === "percentage" ? "20" : "100"}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="mb-1 block text-sm text-slate-300">Coupon Code</label>

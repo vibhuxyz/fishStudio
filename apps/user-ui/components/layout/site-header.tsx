@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, forwardRef } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -25,14 +26,23 @@ import { CategoryMenu } from "./category-menu";
 import { useCart, useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
-import { AddressModal } from "@/components/shared/address-modal";
-import { SearchModal } from "@/components/shared/search-modal";
 // import NotificationBell from "./NotificationBell"; // Removed as per request
 import { useAddressStore } from "@/lib/address-store";
 import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
-import { useAnnouncement, } from "@/components/providers/announcement-provider";
+import { useAnnouncement } from "@/components/providers/announcement-provider";
 import { BAR_HEIGHT } from "@/utils/constants";
+
+const AddressModal = dynamic(
+  () =>
+    import("@/components/shared/address-modal").then((mod) => mod.AddressModal),
+  { ssr: false },
+);
+const SearchModal = dynamic(
+  () =>
+    import("@/components/shared/search-modal").then((mod) => mod.SearchModal),
+  { ssr: false },
+);
 
 interface SiteHeaderProps {
   onLoginClick?: () => void;
@@ -53,7 +63,10 @@ interface SearchInputProps {
 }
 
 const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  ({ value, loading, mobile = false, onChange, onClear, onKeyDown, onFocus }, ref) => (
+  (
+    { value, loading, mobile = false, onChange, onClear, onKeyDown, onFocus },
+    ref,
+  ) => (
     <div className="relative flex w-full items-center">
       <div className="pointer-events-none absolute left-3 flex items-center">
         {loading && value.length >= 1 ? (
@@ -89,6 +102,21 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 );
 SearchInput.displayName = "SearchInput";
 
+/* ─── Highlight helper (stable — defined once outside render) ─────────────── */
+function highlight(text: string, q: string) {
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <span>{text}</span>;
+  return (
+    <span>
+      {text.slice(0, idx)}
+      <strong className="font-bold text-foreground">
+        {text.slice(idx, idx + q.length)}
+      </strong>
+      {text.slice(idx + q.length)}
+    </span>
+  );
+}
+
 /* ─── Search panel ─────────────────────────────────────────────────────────── */
 function SearchPanel({
   query,
@@ -114,19 +142,6 @@ function SearchPanel({
 
   if (!loading && !hasMatches && !showNoResults) return null;
 
-  function highlight(text: string, q: string) {
-    const idx = text.toLowerCase().indexOf(q.toLowerCase());
-    if (idx === -1) return <span>{text}</span>;
-    return (
-      <span>
-        {text.slice(0, idx)}
-        <strong className="font-bold text-foreground">
-          {text.slice(idx, idx + q.length)}</strong>
-        {text.slice(idx + q.length)}
-      </span>
-    );
-  }
-
   return (
     <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[80vh] overflow-y-auto rounded-2xl border border-border bg-background shadow-2xl">
       {loading && !hasMatches ? (
@@ -137,7 +152,9 @@ function SearchPanel({
       ) : showNoResults ? (
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <Fish className="mb-3 h-10 w-10 text-muted-foreground/20" />
-          <p className="text-sm font-medium text-foreground">No products found</p>
+          <p className="text-sm font-medium text-foreground">
+            No products found
+          </p>
           <p className="text-xs text-muted-foreground mt-1 px-4">
             Try searching for "Rohu", "Pomfret", or "Hilsa"
           </p>
@@ -156,7 +173,13 @@ function SearchPanel({
                   >
                     <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                       {s.imageUrl ? (
-                        <Image src={s.imageUrl} alt={s.title} fill sizes="36px" className="object-cover" />
+                        <Image
+                          src={s.imageUrl}
+                          alt={s.title}
+                          fill
+                          sizes="36px"
+                          className="object-cover"
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Fish className="h-4 w-4 text-muted-foreground/50" />
@@ -196,7 +219,9 @@ function SearchPanel({
                   const disc =
                     hit.regular_price > 0 && hit.regular_price > hit.sale_price
                       ? Math.round(
-                          ((hit.regular_price - hit.sale_price) / hit.regular_price) * 100,
+                          ((hit.regular_price - hit.sale_price) /
+                            hit.regular_price) *
+                            100,
                         )
                       : 0;
                   return (
@@ -289,7 +314,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     useInstantSearch(searchQuery);
 
   /* ── Effects ── */
-  useEffect(() => { setHydrated(true); }, []);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     const fn = () => setIsScrolled(window.scrollY > 80);
@@ -313,7 +340,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      )
         setShowCategoryDropdown(false);
     }
     document.addEventListener("mousedown", onClickOutside);
@@ -321,7 +351,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.length >= 1 && (loading || results.length > 0 || suggestions.length > 0)) {
+    if (
+      searchQuery.length >= 1 &&
+      (loading || results.length > 0 || suggestions.length > 0)
+    ) {
       setPanelOpen(true);
     } else if (searchQuery.length < 1) {
       setPanelOpen(false);
@@ -343,7 +376,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") openSearchModal(searchQuery);
-    if (e.key === "Escape") { setPanelOpen(false); clear(); }
+    if (e.key === "Escape") {
+      setPanelOpen(false);
+      clear();
+    }
   };
 
   const handleSuggestionClick = (slug: string) => {
@@ -385,12 +421,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     syncItems();
   }, [locationVersion]);
 
-  const deliveryLabel = (() => {
-    if (!hydrated) return "...";
-    
+  const deliveryLabel: { primary: string; secondary: string | null } = (() => {
+    if (!hydrated) return { primary: "...", secondary: null };
+
     // Priority 1: Serviceability from backend
     if (deliveryMetadata.isServiceable === false) {
-      return "Not serviceable";
+      return { primary: "Not serviceable", secondary: null };
     }
 
     // Priority 2: Backend status from CartStore if cart validation has run
@@ -438,7 +474,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     // selectedLocation (set when user picks pincode/city) takes priority
     if (selectedLocation) {
       // If there's a saved address matching this location, show the full address
-      if (selectedAddress && selectedAddress.pincode === selectedLocation.pincode) {
+      if (
+        selectedAddress &&
+        selectedAddress.pincode === selectedLocation.pincode
+      ) {
         const parts = [
           selectedAddress.street,
           selectedAddress.area,
@@ -463,11 +502,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     addressLine.length > 32 ? addressLine.slice(0, 32) + "…" : addressLine;
 
   const addressTypeLabel = selectedAddress?.label || null;
-  const addressTypeIcon = selectedAddress?.label === "Home"
-    ? Home
-    : selectedAddress?.label === "Work"
-      ? Briefcase
-      : MoreHorizontal;
+  const addressTypeIcon =
+    selectedAddress?.label === "Home"
+      ? Home
+      : selectedAddress?.label === "Work"
+        ? Briefcase
+        : MoreHorizontal;
   const AddressTypeIcon = addressTypeIcon;
 
   const serviceableAreaLabel = selectedLocation
@@ -492,9 +532,11 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         style={{ top: topOffset }}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
-
           {/* Logo */}
-          <Link href="/" className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
+          <Link
+            href="/"
+            className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2"
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary sm:h-10 sm:w-10">
               <Fish className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" />
             </div>
@@ -503,7 +545,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 <span className="font-serif text-base font-bold leading-tight text-foreground">
                   Fish Studio
                 </span>
-                <span className="text-[9px] text-muted-foreground">Fresh Fish & Meat</span>
+                <span className="text-[9px] text-muted-foreground">
+                  Fresh Fish & Meat
+                </span>
               </div>
             )}
           </Link>
@@ -601,7 +645,8 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                       onMouseEnter={() => {
-                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        if (hoverTimeoutRef.current)
+                          clearTimeout(hoverTimeoutRef.current);
                         setShowCategoryDropdown(true);
                       }}
                       onMouseLeave={() => {
@@ -635,7 +680,8 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                       transition={{ duration: 0.2, ease: "easeOut" }}
                       className="absolute right-0 top-full z-50 mt-2"
                       onMouseEnter={() => {
-                        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+                        if (hoverTimeoutRef.current)
+                          clearTimeout(hoverTimeoutRef.current);
                       }}
                       onMouseLeave={() => {
                         hoverTimeoutRef.current = setTimeout(
@@ -657,8 +703,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
           {/* Account + Cart */}
           <div className="flex flex-shrink-0 items-center gap-1 sm:gap-2">
-            {/* <NotificationBell /> */} 
-            <UserProfileDropdown onAddressClick={() => setShowAddressModal(true)} />
+            {/* <NotificationBell /> */}
+            <UserProfileDropdown
+              onAddressClick={() => setShowAddressModal(true)}
+            />
             {!isCheckoutPage && (
               <button
                 type="button"
@@ -680,7 +728,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                     </span>
                   </span>
                 ) : (
-                  <span className="hidden text-xs font-medium sm:inline">Cart</span>
+                  <span className="hidden text-xs font-medium sm:inline">
+                    Cart
+                  </span>
                 )}
               </button>
             )}
@@ -727,7 +777,10 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
         )}
       </header>
 
-      <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
+      <AddressModal
+        open={showAddressModal}
+        onOpenChange={setShowAddressModal}
+      />
       <SearchModal
         open={searchModalOpen}
         initialQuery={searchQuery}

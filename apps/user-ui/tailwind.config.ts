@@ -13,7 +13,6 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
         serif: ["var(--font-serif)", "serif"],
-        poppins: ["var(--font-poppins)", "sans-serif"], // Add this
       },
       colors: {
         background: "hsl(var(--background))",

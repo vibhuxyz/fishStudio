@@ -20,7 +20,9 @@ export const useNotifications = (userId?: string) => {
 
   // WebSocket: instantly refresh bell on order status updates
   useEffect(() => {
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const wsBase = (
+      process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
+    ).replace(/\?.*$/, "");
     const wsUrl = userId ? `${wsBase}?userId=${userId}` : wsBase;
 
     let ws: WebSocket;
@@ -35,7 +37,10 @@ export const useNotifications = (userId?: string) => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "ORDER_STATUS_UPDATE") {
-            queryClient.refetchQueries({ queryKey: ["notifications"], type: "active" });
+            queryClient.refetchQueries({
+              queryKey: ["notifications"],
+              type: "active",
+            });
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
           }
           if (data.type === "STOCK_UPDATE") {
@@ -49,21 +54,21 @@ export const useNotifications = (userId?: string) => {
             // 1. Instantly update the products list cache
             queryClient.setQueriesData<any>(
               { queryKey: ["storefront", "products"] },
-              (oldData) => {
+              (oldData: any) => {
                 if (!Array.isArray(oldData)) return oldData;
                 return oldData.map((p) => (isMatch(p) ? { ...p, stock } : p));
-              }
+              },
             );
 
             // 2. Instantly update the individual product detail cache
             queryClient.setQueriesData<any>(
               { queryKey: ["storefront", "product"] },
-              (oldData) => {
+              (oldData: any) => {
                 if (oldData && isMatch(oldData)) {
                   return { ...oldData, stock };
                 }
                 return oldData;
-              }
+              },
             );
 
             // 3. Trigger a background refetch to ensure long-term consistency
@@ -88,24 +93,30 @@ export const useNotifications = (userId?: string) => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const response = await fetch(`${frontendEnv.apiUrl}/notification/api/notifications`, {
-        headers: {
+      const response = await fetch(
+        `${frontendEnv.apiUrl}/notification/api/notifications`,
+        {
+          headers: {
             "x-auth-role": "user",
+          },
         },
-      });
+      );
       if (!response.ok) throw new Error("Failed to fetch notifications");
       const result = await response.json();
       return result.notifications as Notification[];
     },
-    refetchInterval: 60000, 
+    refetchInterval: 60000,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`${frontendEnv.apiUrl}/notification/api/notifications/${id}/read`, {
-        method: "PATCH",
-        headers: { "x-auth-role": "user" },
-      });
+      await fetch(
+        `${frontendEnv.apiUrl}/notification/api/notifications/${id}/read`,
+        {
+          method: "PATCH",
+          headers: { "x-auth-role": "user" },
+        },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -114,10 +125,13 @@ export const useNotifications = (userId?: string) => {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      await fetch(`${frontendEnv.apiUrl}/notification/api/notifications/read-all`, {
-        method: "PATCH",
-        headers: { "x-auth-role": "user" },
-      });
+      await fetch(
+        `${frontendEnv.apiUrl}/notification/api/notifications/read-all`,
+        {
+          method: "PATCH",
+          headers: { "x-auth-role": "user" },
+        },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });

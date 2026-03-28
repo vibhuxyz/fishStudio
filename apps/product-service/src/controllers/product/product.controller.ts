@@ -77,9 +77,112 @@ async function invalidateSearchCache() {
     suggestStream.on("data", (keys: string[]) => {
       if (keys.length) redis.del(...keys);
     });
+
+    const storefrontStream = (redis as any).scanStream({
+      match: "storefront:*",
+    });
+    storefrontStream.on("data", (keys: string[]) => {
+      if (keys.length) redis.del(...keys);
+    });
   } catch (error) {
     console.error("[Cache Invalidation Error]", error);
   }
+}
+
+const STOREFRONT_CACHE_TTL = 300;
+const MAX_STOREFRONT_LIMIT = 48;
+
+const storefrontCatalogInclude = {
+  images: true,
+  favorites: {
+    take: 1,
+    select: { id: true },
+  },
+} as const;
+
+const storefrontVariantInclude = {
+  images: true,
+  store: {
+    select: {
+      id: true,
+      name: true,
+      pincode: true,
+      city: true,
+      seller: { include: { events: true } },
+    },
+  },
+} as const;
+
+const parseStorefrontLimit = (value: unknown, fallback: number) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.min(Math.floor(numeric), MAX_STOREFRONT_LIMIT);
+};
+
+const parseStorefrontPage = (value: unknown, fallback = 1) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.floor(numeric);
+};
+
+const getStorefrontSort = (scope?: string) => {
+  if (scope === "homepage") {
+    return [{ totalSold: "desc" as const }, { createdAt: "desc" as const }];
+  }
+
+  return [{ createdAt: "desc" as const }];
+};
+
+const buildStorefrontCacheKey = (
+  key: string,
+  payload: Record<string, unknown>,
+) => {
+  const serialized = Object.entries(payload)
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    )
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, value]) => `${name}=${String(value)}`)
+    .join("&");
+
+  return `storefront:${key}:${serialized || "default"}`;
+};
+
+const getCachedPayload = async <T>(key: string): Promise<T | null> => {
+  try {
+    const cached = await redis.get(key);
+    return cached ? (JSON.parse(cached) as T) : null;
+  } catch (error) {
+    console.error("[Storefront Cache Read Error]", error);
+    return null;
+  }
+};
+
+const setCachedPayload = (key: string, payload: unknown) => {
+  redis
+    .setex(key, STOREFRONT_CACHE_TTL, JSON.stringify(payload))
+    .catch((error) => console.error("[Storefront Cache Write Error]", error));
+};
+
+interface StorefrontListingPayload {
+  success: true;
+  products: Record<string, unknown>[];
+  store: Record<string, unknown> | null;
+  isServiceable: boolean;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+interface StorefrontProductPayload {
+  success: true;
+  product: Record<string, unknown>;
+  relatedProducts: Record<string, unknown>[];
+  coupon: unknown;
+  store: Record<string, unknown> | null;
 }
 
 type StoreLocationInput = {
@@ -527,8 +630,40 @@ export const getStoreProducts = async (
   next: NextFunction,
 ) => {
   try {
-    const { storeId, pincode, city } = req.query;
+    const { storeId, pincode, city, category, subCategory, scope } = req.query;
+    const page = parseStorefrontPage(req.query.page, 1);
+    const limit = parseStorefrontLimit(
+      req.query.limit,
+      scope === "homepage" ? 24 : 20,
+    );
+    const skip = (page - 1) * limit;
     const isLocalRequest = Boolean(storeId || pincode || city);
+
+    const normalizedCategory =
+      typeof category === "string" && category.trim()
+        ? category.trim()
+        : undefined;
+    const normalizedSubCategory =
+      typeof subCategory === "string" && subCategory.trim()
+        ? subCategory.trim()
+        : undefined;
+
+    const cacheKey = buildStorefrontCacheKey("products", {
+      storeId,
+      pincode,
+      city,
+      category: normalizedCategory,
+      subCategory: normalizedSubCategory,
+      scope,
+      page,
+      limit,
+    });
+    const cached = await getCachedPayload<StorefrontListingPayload>(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
+    // Resolve preferred store only on cache miss
     const preferredStore = isLocalRequest
       ? await resolvePreferredStore({
           storeId: storeId ? String(storeId) : undefined,
@@ -537,44 +672,80 @@ export const getStoreProducts = async (
         })
       : null;
 
+    const categoryFilter = normalizedCategory
+      ? { category: normalizedCategory }
+      : {};
+    const subCategoryFilter = normalizedSubCategory
+      ? { subCategory: normalizedSubCategory }
+      : {};
+
+    // ── Step 1: Fetch all catalog root products ───────────────────────────────
+    // Catalog root products are the master templates created by the admin.
+    // Every catalog product is always shown — in-stock if a seller has a
+    // variant for it, OOS otherwise.
     const adminProducts = await prisma.products.findMany({
-      where: { adminId: { not: null }, isDeleted: false },
+      where: {
+        adminId: { not: null },
+        isDeleted: false,
+        ...categoryFilter,
+        ...subCategoryFilter,
+      },
       include: { images: true },
       orderBy: { createdAt: "desc" },
     });
     const catalogProducts = adminProducts.filter(isCatalogRootProduct);
+    const catalogIds = catalogProducts.map((p) => p.id);
 
-    const variants = await prisma.products.findMany({
-      where: {
-        catalogProductId: { not: null },
-        status: "Active",
-        isDeleted: false,
-        ...(preferredStore ? { storeId: preferredStore.id } : {}),
-      },
-      include: {
-        images: true,
-        store: {
-          select: {
-            id: true,
-            name: true,
-            pincode: true,
-            city: true,
-            seller: { include: { events: true } },
+    // ── Step 2: Fetch best variant per catalog product ────────────────────────
+    // No address  → look across ALL stores; in-stock = any store has stock > 0
+    // With address → scope to preferred store only; in-stock = that store has stock > 0
+    const variants = catalogIds.length
+      ? await prisma.products.findMany({
+          where: {
+            catalogProductId: { in: catalogIds },
+            status: "Active",
+            isDeleted: false,
+            ...(preferredStore ? { storeId: preferredStore.id } : {}),
           },
-        },
-      },
-    });
+          include: {
+            images: true,
+            store: {
+              select: {
+                id: true,
+                name: true,
+                pincode: true,
+                city: true,
+                seller: { include: { events: true } },
+              },
+            },
+            favorites: { take: 1, select: { id: true } },
+          },
+        })
+      : [];
 
-    const bestVariantMap = new Map<string, any>();
-    variants.forEach((v) => {
-      const catalogId = v.catalogProductId!;
-      const existing = bestVariantMap.get(catalogId);
-      if (!existing || (v.sale_price ?? 0) < (existing.sale_price ?? 0)) {
-        bestVariantMap.set(catalogId, v);
+    // Pick the best variant per catalog product:
+    // prefer in-stock (stock > 0) first, then cheapest sale_price
+    const bestVariantMap = new Map<string, (typeof variants)[number]>();
+    for (const v of variants) {
+      const cid = v.catalogProductId!;
+      const existing = bestVariantMap.get(cid);
+      if (!existing) {
+        bestVariantMap.set(cid, v);
+      } else {
+        const vInStock = (v.stock ?? 0) > 0;
+        const exInStock = (existing.stock ?? 0) > 0;
+        if (
+          (vInStock && !exInStock) ||
+          (vInStock === exInStock &&
+            (v.sale_price ?? 0) < (existing.sale_price ?? 0))
+        ) {
+          bestVariantMap.set(cid, v);
+        }
       }
-    });
+    }
 
-    const mergedProducts = catalogProducts.map((catalog) =>
+    // ── Step 3: Merge catalog + best variant ──────────────────────────────────
+    const allMerged = catalogProducts.map((catalog) =>
       mergeCatalogWithVariant(
         catalog,
         bestVariantMap.get(catalog.id),
@@ -582,12 +753,50 @@ export const getStoreProducts = async (
       ),
     );
 
-    return res.status(200).json({
-      success: true,
-      products: mergedProducts,
-      store: preferredStore,
-      isServiceable: isLocalRequest ? Boolean(preferredStore) : true,
+    // ── Step 4: Sort in-stock first, then paginate ────────────────────────────
+    const isHomepage = typeof scope === "string" && scope === "homepage";
+    allMerged.sort((a: any, b: any) => {
+      const aIn = Boolean(a.inStock);
+      const bIn = Boolean(b.inStock);
+      if (aIn !== bIn) return aIn ? -1 : 1;
+      if (isHomepage) return (b.totalSold ?? 0) - (a.totalSold ?? 0);
+      return (
+        new Date(b.createdAt ?? 0).getTime() -
+        new Date(a.createdAt ?? 0).getTime()
+      );
     });
+
+    const total = allMerged.length;
+    const products = allMerged.slice(skip, skip + limit);
+
+    // Ensure stock is 0 for OOS entries so the frontend renders them correctly
+    for (const p of products as any[]) {
+      if (!p.inStock) p.stock = 0;
+    }
+
+    const payload: StorefrontListingPayload = {
+      success: true,
+      products: products as Record<string, unknown>[],
+      store: preferredStore
+        ? {
+            id: preferredStore.id,
+            name: preferredStore.name,
+            pincode: preferredStore.pincode,
+            city: preferredStore.city,
+          }
+        : null,
+      isServiceable: isLocalRequest ? Boolean(preferredStore) : true,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + products.length < total,
+      },
+    };
+
+    setCachedPayload(cacheKey, payload);
+
+    return res.status(200).json(payload);
   } catch (error) {
     return next(error);
   }
@@ -600,6 +809,21 @@ export const getStoreProductBySlug = async (
 ) => {
   try {
     const slug = getRequiredParam(req.params.slug, "Product slug");
+
+    // Build cache key from input params only — no DB query needed
+    const cacheKey = buildStorefrontCacheKey("product", {
+      slug,
+      storeId: req.query.storeId,
+      pincode: req.query.pincode,
+      city: req.query.city,
+    });
+    const cached = await getCachedPayload<StorefrontProductPayload>(cacheKey);
+
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
+    // Resolve store only on cache miss
     const preferredStore = await resolvePreferredStore({
       storeId: req.query.storeId ? String(req.query.storeId) : undefined,
       pincode: req.query.pincode ? String(req.query.pincode) : undefined,
@@ -736,7 +960,9 @@ export const getStoreProductBySlug = async (
             where: { userId, couponId: { in: eligible.map((c) => c.id) } },
             _count: { couponId: true },
           });
-          const usageMap = new Map(usages.map((u) => [u.couponId, u._count.couponId]));
+          const usageMap = new Map(
+            usages.map((u) => [u.couponId, u._count.couponId]),
+          );
           eligible = eligible.filter((c) => {
             const used = usageMap.get(c.id) ?? 0;
             return used < (c.maxUsesPerUser ?? 1);
@@ -749,13 +975,17 @@ export const getStoreProductBySlug = async (
       coupon = eligible[0] ?? null;
     }
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       product,
       relatedProducts,
       coupon,
       store: preferredStore,
-    });
+    };
+
+    setCachedPayload(cacheKey, payload);
+
+    return res.status(200).json(payload);
   } catch (error) {
     return next(error);
   }
@@ -820,7 +1050,8 @@ export const getOwnedProducts = async (
       return {
         ...rest,
         // Fall back to catalog product images when the store product has none
-        images: rest.images.length > 0 ? rest.images : (catalogProduct?.images ?? []),
+        images:
+          rest.images.length > 0 ? rest.images : (catalogProduct?.images ?? []),
         activeEvents: p.store?.sellerId
           ? (eventsBySellerId.get(p.store.sellerId) ?? [])
           : [],
@@ -1262,7 +1493,9 @@ export const getStorePublicOffers = async (
           },
           _count: { couponId: true },
         });
-        const usageMap = new Map(usages.map((u) => [u.couponId, u._count.couponId]));
+        const usageMap = new Map(
+          usages.map((u) => [u.couponId, u._count.couponId]),
+        );
         validCodes = validCodes.filter((dc) => {
           const used = usageMap.get(dc.id) ?? 0;
           return used < (dc.maxUsesPerUser ?? 1);
@@ -1272,7 +1505,9 @@ export const getStorePublicOffers = async (
       }
     }
 
-    return res.status(200).json({ success: true, discountCodes: validCodes, activeEvents });
+    return res
+      .status(200)
+      .json({ success: true, discountCodes: validCodes, activeEvents });
   } catch (error) {
     return next(error);
   }

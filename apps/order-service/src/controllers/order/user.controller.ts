@@ -11,62 +11,59 @@ import { publishToQueue } from "@repo/libs";
  * Re-validates coupon server-side. Returns discount amount and freeDelivery flag.
  * Throws ValidationError if coupon is invalid so the order is rejected cleanly.
  */
-async function validateAndApplyCoupon(
-  couponCode: string,
-  userId: string,
-  storeId: string,
-  itemTotal: number,
-): Promise<{ couponId: string; discountAmount: number; freeDelivery: boolean }> {
-  const now = new Date();
-
-  // MongoDB Prisma does not support nested relation filters (seller.store.id),
-  // so resolve the sellerId from storeId first, then filter by sellerId directly.
-  const store = await prismaMongo.stores.findUnique({
-    where: { id: storeId },
-    select: { sellerId: true },
-  });
-
-  // Build seller ID filter: only include seller-coupon condition if store was found
-  const sellerFilter = store?.sellerId ? [{ sellerId: store.sellerId }] : [];
-
-  const coupon = await prismaMongo.discount_codes.findFirst({
+// Lightweight coupon pre-fetch — runs in parallel with products+store.
+// Returns the raw coupon document (or null) so the caller can validate
+// synchronously after itemTotal is known.
+async function prefetchCoupon(couponCode: string) {
+  return prismaMongo.discount_codes.findFirst({
     where: {
       discountCode: couponCode.toUpperCase(),
       isActive: true,
-      AND: [
-        { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
-        {
-          OR: [
-            { adminId: { not: null } },
-            ...sellerFilter,
-          ],
-        },
-      ],
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
     },
-    include: { _count: { select: { usages: true } } },
+    select: {
+      id: true,
+      discountType: true,
+      discountValue: true,
+      maxUses: true,
+      maxUsesPerUser: true,
+      minOrderValue: true,
+      adminId: true,
+      sellerId: true,
+      _count: { select: { usages: true } },
+    },
   });
+}
 
-  if (!coupon) {
-    console.error(`[coupon] ❌ Not found — code: ${couponCode.toUpperCase()}, storeId: ${storeId}, sellerId: ${store?.sellerId ?? "none"}`);
+// Validates the pre-fetched coupon. Only does ONE async call (Postgres usage count).
+async function applyCoupon(
+  coupon: NonNullable<Awaited<ReturnType<typeof prefetchCoupon>>>,
+  userId: string,
+  sellerId: string | null,
+  itemTotal: number,
+  couponCode: string,
+): Promise<{ couponId: string; discountAmount: number; freeDelivery: boolean }> {
+  // Seller scope check (sync — no DB needed)
+  const isAdminCoupon = coupon.adminId !== null;
+  const isSellerCoupon = coupon.sellerId !== null && coupon.sellerId === sellerId;
+  if (!isAdminCoupon && !isSellerCoupon) {
     throw new ValidationError("Coupon code is invalid or expired");
   }
-
   if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
     throw new ValidationError("This coupon has reached its usage limit");
   }
+  if (itemTotal < coupon.minOrderValue) {
+    throw new ValidationError(
+      `Minimum order of ₹${coupon.minOrderValue} required for coupon ${couponCode}`,
+    );
+  }
 
-  // Coupon usages are in Postgres (Order-related)
+  // Single async call: per-user usage count for this specific coupon
   const userCount = await prismaPostgres.couponUsage.count({
     where: { couponId: coupon.id, userId },
   });
   if (userCount >= coupon.maxUsesPerUser) {
     throw new ValidationError("You have already used this coupon");
-  }
-
-  if (itemTotal < coupon.minOrderValue) {
-    throw new ValidationError(
-      `Minimum order of ₹${coupon.minOrderValue} required for coupon ${couponCode}`,
-    );
   }
 
   let discountAmount = 0;
@@ -95,100 +92,93 @@ export const createOrder = async (
       storeId,
       items,
       deliveryDetails,
-      billDetails,
       paymentMethod,
-      discountAmount: clientDiscount,
       couponCode,
       deliverySlot,
     } = validate(createOrderSchema, req.body);
 
-    /* ── 1. Re-fetch product prices from DB (never trust frontend prices) ── */
+    /* ── 1. Fetch products + store + coupon in parallel ────────────────── */
     const productIds = items.map((i: any) => i.productId);
-    // Products are in Mongo
-    const dbProducts = await prismaMongo.products.findMany({
-      where: { id: { in: productIds }, isDeleted: false, status: "Active" },
-      select: { id: true, sale_price: true, stock: true },
-    });
+    const [dbProducts, store, couponRaw] = await Promise.all([
+      prismaMongo.products.findMany({
+        where: { id: { in: productIds }, isDeleted: false, status: "Active" },
+        select: { id: true, sale_price: true, stock: true, title: true },
+      }),
+      prismaMongo.stores.findUnique({
+        where: { id: storeId },
+        select: {
+          sellerId: true,
+          name: true,
+          instant_delivery_fee: true,
+          opening_hours: true,
+          closing_hours: true,
+          is_instant_delivery_enabled: true,
+          instant_delivery_window_start: true,
+          instant_delivery_window_end: true,
+          seller: { select: { name: true } },
+        },
+      }),
+      couponCode ? prefetchCoupon(couponCode) : Promise.resolve(null),
+    ]);
 
+    if (!store) return next(new ValidationError("Store not found"));
+
+    /* ── 2. Validate products + compute itemTotal ───────────────────────── */
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
     let itemTotal = 0;
 
     for (const item of items) {
       const dbProduct = productMap.get(item.productId);
-      if (!dbProduct) {
+      if (!dbProduct)
         return next(new ValidationError(`Product ${item.productId} is no longer available`));
-      }
-      if (dbProduct.stock < item.quantity) {
-        return next(
-          new ValidationError(`Insufficient stock for one or more items`),
-        );
-      }
+      if (dbProduct.stock < item.quantity)
+        return next(new ValidationError(`Insufficient stock for one or more items`));
       itemTotal += dbProduct.sale_price * item.quantity;
     }
 
-    /* ── 2. Fetch Store for Delivery Details ──────────────────────────── */
-    const store = await prismaMongo.stores.findUnique({
-      where: { id: storeId },
-      select: { 
-        instant_delivery_fee: true, 
-        opening_hours: true, 
-        closing_hours: true,
-        is_instant_delivery_enabled: true,
-        instant_delivery_window_start: true,
-        instant_delivery_window_end: true
-      }
-    });
-
-    if (!store) {
-      return next(new ValidationError("Store not found"));
-    }
-
-    // Server-side slot validation
+    /* ── 3. Instant delivery slot validation ────────────────────────────── */
     if (deliverySlot === "instant") {
       const now = new Date();
       const nowTotal = now.getHours() * 60 + now.getMinutes();
-      const toMins = (timeStr: string) => {
-        const [h, m] = timeStr.split(":").map(Number);
+      const toMins = (t: string) => {
+        const [h, m] = t.split(":").map(Number);
         return (h || 0) * 60 + (m || 0);
       };
-
-      const openTotal = toMins(store.opening_hours || "09:00");
-      const closeTotal = toMins(store.closing_hours || "23:00");
-      const isStoreOpen = nowTotal >= openTotal && nowTotal <= closeTotal;
-
-      const instantStart = toMins(store.instant_delivery_window_start || "11:00");
-      const instantEnd = toMins(store.instant_delivery_window_end || "19:00");
-      const isInstantAvailable = isStoreOpen && store.is_instant_delivery_enabled && nowTotal >= instantStart && nowTotal <= instantEnd;
-
-      if (!isInstantAvailable) {
+      const isStoreOpen =
+        nowTotal >= toMins(store.opening_hours || "09:00") &&
+        nowTotal <= toMins(store.closing_hours || "23:00");
+      const isInstantAvailable =
+        isStoreOpen &&
+        store.is_instant_delivery_enabled &&
+        nowTotal >= toMins(store.instant_delivery_window_start || "11:00") &&
+        nowTotal <= toMins(store.instant_delivery_window_end || "19:00");
+      if (!isInstantAvailable)
         return next(new ValidationError("Instant delivery is not available currently. Please select a scheduled slot."));
-      }
     }
 
     const slotExtraCharge = deliverySlot === "instant" ? (store.instant_delivery_fee || 20) : 0;
     let baseDeliveryCharge = itemTotal >= 500 ? 0 : 49;
 
-    /* ── 3. Validate coupon server-side ──────────────────────────────────── */
+    /* ── 4. Validate coupon (coupon already fetched in step 1) ─────────── */
     let couponId: string | null = null;
     let couponDiscount = 0;
 
     if (couponCode) {
-      const result = await validateAndApplyCoupon(
-        couponCode,
-        userId,
-        storeId,
-        itemTotal,
-      );
+      if (!couponRaw) throw new ValidationError("Coupon code is invalid or expired");
+      // applyCoupon does only 1 async call (Postgres usage count)
+      const result = await applyCoupon(couponRaw, userId, store.sellerId, itemTotal, couponCode);
       couponId = result.couponId;
       couponDiscount = result.discountAmount;
       if (result.freeDelivery) baseDeliveryCharge = 0;
     }
 
     const totalDelivery = baseDeliveryCharge + slotExtraCharge;
-    const totalDiscount = Math.min(couponDiscount, itemTotal); // cap at item total
+    const totalDiscount = Math.min(couponDiscount, itemTotal);
     const totalAmount = Math.max(0, itemTotal + totalDelivery - totalDiscount);
 
-    /* ── 4. Create order in Postgres ───────────────────── */
+    /* ── 5. Create order in Postgres ────────────────────────────────────── */
+    // Payments are created in the background (step 7) to keep this lean.
+    // select: { id } avoids Prisma re-fetching the full row after INSERT.
     const order = await prismaPostgres.order.create({
       data: {
         userId,
@@ -202,13 +192,7 @@ export const createOrder = async (
         deliveryCity: deliveryDetails.city,
         deliveryPincode: deliveryDetails.pincode,
         deliveryCharge: totalDelivery,
-        billDetails: {
-          itemTotal,
-          deliveryCharge: baseDeliveryCharge,
-          slotExtraCharge,
-          discount: totalDiscount,
-          totalAmount,
-        },
+        billDetails: { itemTotal, deliveryCharge: baseDeliveryCharge, slotExtraCharge, discount: totalDiscount, totalAmount },
         deliverySlot: deliverySlot ?? "evening",
         paymentMethod: paymentMethod ?? "COD",
         paymentStatus: paymentMethod === "COD" ? "PENDING" : "COMPLETED",
@@ -216,169 +200,145 @@ export const createOrder = async (
           create: items.map((item: any) => ({
             productId: item.productId,
             quantity: item.quantity,
-            price: productMap.get(item.productId)!.sale_price, // DB price
+            price: productMap.get(item.productId)!.sale_price,
             selectedOptions: item.selectedOptions ?? {},
           })),
         },
-        payments: {
-          create: {
-            amount: totalAmount,
-            method: paymentMethod ?? "COD",
-            status: paymentMethod === "COD" ? "PENDING" : "COMPLETED",
-          }
-        }
       },
-      include: {
-        orderItems: true,
-        payments: true,
-      },
+      select: { id: true, deliverySlot: true, paymentMethod: true, totalAmount: true },
     });
 
-    /* ── 5. Decrement stock in Mongo & check for out-of-stock ─────────────────── */
-    try {
-      for (const item of items) {
-        const updatedProduct = await prismaMongo.products.update({
-          where: { id: item.productId },
-          data: {
-            stock: { decrement: item.quantity },
-            totalSold: { increment: item.quantity },
-          },
-        });
+    /* ── 6. Respond immediately ─────────────────────────────────────────── */
+    res.status(201).json({ success: true, orderId: order.id, order });
 
-        // If stock hits 0, broadcast to all clients (Out of Stock)
-        if (updatedProduct.stock <= 0) {
-          await publishToQueue("ORDER_EVENTS", {
-            type: "STOCK_UPDATE",
-            productId: item.productId,
-            stock: 0,
-            message: `${updatedProduct.title} is now out of stock!`,
-          });
-        }
-      }
-    } catch (stockError) {
-      console.error("Failed to update stock during order creation:", stockError);
-    }
+    /* ── 7. Background: stock + coupon + notifications (fire-and-forget) ── */
+    const user = req.user as { id: string; name?: string } | undefined;
+    const shortId = order.id.slice(-6).toUpperCase();
 
-    /* ── 6. Record coupon usage (Postgres) & increment usedCount (Mongo) ─────── */
-    if (couponId) {
-      try {
-        await Promise.all([
-          prismaPostgres.couponUsage.create({
-            data: { couponId, userId, orderId: order.id },
-          }),
-          prismaMongo.discount_codes.update({
-            where: { id: couponId },
-            data: { usedCount: { increment: 1 } },
-          }),
-        ]);
-      } catch (couponErr) {
-        console.error("Failed to record coupon usage:", couponErr);
-      }
-    }
-
-    /* ── 7. Send notification via RabbitMQ ─────────────────────────────── */
-    try {
-      const user = req.user as { id: string; phone_number?: string; name?: string } | undefined;
-      const shortId = order.id.slice(-6).toUpperCase();
-      const slotLabel =
-        order.deliverySlot === "instant"
-          ? "Instant (30-45 min)"
-          : order.deliverySlot === "morning"
-            ? "Morning (6AM-10AM)"
-            : "Evening (5PM-9PM)";
-
-      const message =
-        `Hi ${user?.name || "there"}! Your FishStudio order #${shortId} has been placed. ` +
-        `Total: ₹${order.totalAmount}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
-        `Slot: ${slotLabel} | Payment: ${order.paymentMethod}. ` +
-        `We'll notify you once it's accepted.`;
-
-      // Main notification for user
-      await publishToQueue("NOTIFICATION_QUEUE", {
-        userId: user?.id,
-        title: "Order Placed Successfully",
-        message,
-        type: "SUCCESS",
-        category: "ORDER",
-        metadata: { orderId: order.id },
-        channels: ["IN_APP", "SMS"], 
-      });
-
-      // Hydrate items with product details for real-time modals
-      const productIds = order.orderItems.map((oi) => oi.productId);
-      const products = await prismaMongo.products.findMany({
-        where: { id: { in: productIds } },
-        include: { images: true },
-      });
-      const productMap = new Map(products.map((p) => [p.id, p]));
-
-      const hydratedItems = order.orderItems.map((oi) => ({
-        ...oi,
-        product: productMap.get(oi.productId),
-      }));
-
-      const orderPayload = {
-        ...order,
-        shortId,
-        userName: user?.name || "Customer",
-        items: hydratedItems,
-      };
-
-      // Special real-time event for staff/seller — now with full item details!
-      await publishToQueue("ORDER_EVENTS", {
-        type: "ORDER_PLACED",
-        storeId,
-        orderId: order.id,
-        order: orderPayload,
-      });
-
-      console.log(`[EVENT] Order #${shortId} notifications published`);
-
-      /* ── 8. Notify Seller & Staff (Lookups in Mongo) ───────────────────────── */
-      const store = await prismaMongo.stores.findUnique({
-        where: { id: storeId },
-        include: { seller: true }
-      });
-
-      // Re-publish ORDER_EVENTS now that we have sellerId — worker needs it to
-      // broadcast to staff WebSocket clients connected with ?sellerId=
-      if (store?.sellerId) {
-        await publishToQueue("ORDER_EVENTS", {
-          type: "ORDER_PLACED",
-          storeId,
-          sellerId: store.sellerId,
+    // Payment record + stock decrements + coupon recording all in parallel
+    Promise.all([
+      // Payment record (moved out of main transaction)
+      prismaPostgres.payments.create({
+        data: {
           orderId: order.id,
-          order: orderPayload,
-        });
-      }
+          amount: totalAmount,
+          method: paymentMethod ?? "COD",
+          status: paymentMethod === "COD" ? "PENDING" : "COMPLETED",
+        },
+      }),
+      ...items.map((item: any) =>
+        prismaMongo.products
+          .update({
+            where: { id: item.productId },
+            data: {
+              stock: { decrement: item.quantity },
+              totalSold: { increment: item.quantity },
+            },
+            select: { stock: true, title: true },
+          })
+          .then((updated) => {
+            if (updated.stock <= 0) {
+              return publishToQueue("ORDER_EVENTS", {
+                type: "STOCK_UPDATE",
+                productId: item.productId,
+                stock: 0,
+                message: `${updated.title} is now out of stock!`,
+              });
+            }
+          }),
+      ),
+      ...(couponId
+        ? [
+            prismaPostgres.couponUsage.create({
+              data: { couponId, userId, orderId: order.id },
+            }),
+            prismaMongo.discount_codes.update({
+              where: { id: couponId },
+              data: { usedCount: { increment: 1 } },
+            }),
+          ]
+        : []),
+    ]).catch((err) => console.error("[createOrder] Background tasks error:", err));
 
-      if (store?.seller) {
-        const staffs = await prismaMongo.staffs.findMany({
-          where: { sellerId: store.sellerId, isActive: true }
-        });
+    // Notifications — runs after response, uses already-fetched data
+    setImmediate(async () => {
+      try {
+        const slotLabel =
+          deliverySlot === "instant"
+            ? "Instant (30-45 min)"
+            : deliverySlot === "morning"
+              ? "Morning (6AM-10AM)"
+              : "Evening (5PM-9PM)";
+
+        // Hydrate using request items + already-fetched dbProducts (no extra DB call)
+        const hydratedItems = items.map((item: any) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: productMap.get(item.productId)?.sale_price ?? 0,
+          product: dbProducts.find((p) => p.id === item.productId),
+        }));
+        const orderPayload = {
+          ...order,
+          shortId,
+          storeName: store.name,
+          userName: user?.name || "Customer",
+          items: hydratedItems,
+        };
+
+        // Fetch staff list (only extra DB call needed for notifications)
+        const staffs = store.sellerId
+          ? await prismaMongo.staffs.findMany({
+              where: { sellerId: store.sellerId, isActive: true },
+              select: { id: true, name: true },
+            })
+          : [];
 
         const notifyTargets = [
-          { id: store.sellerId, name: store.seller.name, role: "Seller" },
-          ...staffs.map(s => ({ id: s.id, name: s.name, role: "Staff" }))
+          ...(store.sellerId ? [{ id: store.sellerId, name: store.seller?.name || "Seller" }] : []),
+          ...staffs,
         ];
 
-        for (const target of notifyTargets) {
-          await publishToQueue("NOTIFICATION_QUEUE", {
-            userId: target.id,
-            title: "New Order Received",
-            message: `New order #${shortId} received for ${store.name}. Total: ₹${order.totalAmount}`,
-            type: "INFO",
+        await Promise.all([
+          // User confirmation
+          publishToQueue("NOTIFICATION_QUEUE", {
+            userId: user?.id,
+            title: "Order Placed Successfully",
+            message:
+              `Hi ${user?.name || "there"}! Your FishStudio order #${shortId} has been placed. ` +
+              `Total: ₹${order.totalAmount}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
+              `Slot: ${slotLabel} | Payment: ${order.paymentMethod}.`,
+            type: "SUCCESS",
             category: "ORDER",
             metadata: { orderId: order.id },
-            channels: ["IN_APP"], 
-          });
-        }
-      }
-    } catch (notificationErr) {
-      console.error("[EVENT] Failed to publish notifications:", notificationErr);
-    }
+            channels: ["IN_APP", "SMS"],
+          }),
+          // Real-time event for seller dashboard
+          publishToQueue("ORDER_EVENTS", {
+            type: "ORDER_PLACED",
+            storeId,
+            sellerId: store.sellerId,
+            orderId: order.id,
+            order: orderPayload,
+          }),
+          // Seller + staff in-app notifications in parallel
+          ...notifyTargets.map((target) =>
+            publishToQueue("NOTIFICATION_QUEUE", {
+              userId: target.id,
+              title: "New Order Received",
+              message: `New order #${shortId} received for ${store.name}. Total: ₹${order.totalAmount}`,
+              type: "INFO",
+              category: "ORDER",
+              metadata: { orderId: order.id },
+              channels: ["IN_APP"],
+            }),
+          ),
+        ]);
 
-    res.status(201).json({ success: true, orderId: order.id, order });
+        console.log(`[ORDER] #${shortId} notifications published`);
+      } catch (err) {
+        console.error("[createOrder] Notification error:", err);
+      }
+    });
   } catch (error) {
     next(error);
   }

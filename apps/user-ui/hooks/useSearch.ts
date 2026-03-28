@@ -22,6 +22,35 @@ export interface SearchResult {
   estimatedTotalHits: number;
 }
 
+const SEARCH_CACHE_MAX_SIZE = 100;
+const SEARCH_CACHE_TTL_MS = 60_000; // 1 minute
+
+interface CachedEntry {
+  result: SearchResult;
+  timestamp: number;
+}
+
+const searchCache = new Map<string, CachedEntry>();
+
+function getSearchCached(key: string): SearchResult | undefined {
+  const entry = searchCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() - entry.timestamp > SEARCH_CACHE_TTL_MS) {
+    searchCache.delete(key);
+    return undefined;
+  }
+  return entry.result;
+}
+
+function setSearchCached(key: string, result: SearchResult) {
+  // Evict oldest entries when at capacity
+  if (searchCache.size >= SEARCH_CACHE_MAX_SIZE) {
+    const firstKey = searchCache.keys().next().value;
+    if (firstKey) searchCache.delete(firstKey);
+  }
+  searchCache.set(key, { result, timestamp: Date.now() });
+}
+
 export async function fetchSearch(
   q: string,
   opts?: { storeId?: string; category?: string; sort?: string; limit?: number },
@@ -32,16 +61,21 @@ export async function fetchSearch(
   if (opts?.sort) params.set("sort", opts.sort);
   if (opts?.storeId) params.set("storeId", opts.storeId);
   params.set("limit", String(opts?.limit ?? 10));
+  const cacheKey = params.toString();
+  const cached = getSearchCached(cacheKey);
+  if (cached) return cached;
 
   const url = `${frontendEnv.apiUrl}/product/api/search?${params}`;
   const res = await fetch(url, { credentials: "include", signal });
   if (!res.ok) return { hits: [], query: q, estimatedTotalHits: 0 };
   const data = await res.json();
-  return {
+  const payload = {
     hits: Array.isArray(data.hits) ? data.hits : [],
     query: data.query ?? q,
     estimatedTotalHits: data.estimatedTotalHits ?? 0,
   };
+  setSearchCached(cacheKey, payload);
+  return payload;
 }
 
 /**
@@ -62,7 +96,7 @@ export function useInstantSearch(query: string, debounceMs = 220) {
     if (timerRef.current) clearTimeout(timerRef.current);
 
     const q = query.trim();
-    if (!q) {
+    if (!q || q.length < 2) {
       setSuggestions([]);
       setResults([]);
       setTotalHits(0);
@@ -108,6 +142,7 @@ export function useInstantSearch(query: string, debounceMs = 220) {
     setSuggestions([]);
     setResults([]);
     setTotalHits(0);
+    searchCache.clear();
   }, []);
 
   return { suggestions, results, totalHits, loading, clear };
@@ -117,10 +152,13 @@ export function useInstantSearch(query: string, debounceMs = 220) {
 export function usePageSearch(
   query: string,
   opts: { category: string; sort: string },
+  initialData?: SearchResult,
   debounceMs = 250,
 ) {
-  const [hits, setHits] = useState<SearchHit[]>([]);
-  const [totalHits, setTotalHits] = useState(0);
+  const [hits, setHits] = useState<SearchHit[]>(initialData?.hits ?? []);
+  const [totalHits, setTotalHits] = useState(
+    initialData?.estimatedTotalHits ?? 0,
+  );
   const [loading, setLoading] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

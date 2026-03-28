@@ -1,4 +1,8 @@
-import type { BackendProduct, Product, ProductSizePricing } from "@repo/zod-schema";
+import type {
+  BackendProduct,
+  Product,
+  ProductSizePricing,
+} from "@repo/zod-schema";
 import { frontendEnv } from "@/lib/env";
 
 export interface StorefrontBanner {
@@ -30,9 +34,54 @@ export interface StorefrontCategories {
   categoryImages: Record<string, string>;
 }
 
+export interface StorefrontPagination {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface StorefrontProductListingParams {
+  storeId?: string;
+  pincode?: string;
+  city?: string;
+  category?: string;
+  subCategory?: string;
+  page?: number;
+  limit?: number;
+  scope?: "homepage" | "listing" | "category";
+}
+
+export interface StorefrontProductListingResponse {
+  products: Product[];
+  store?: {
+    id: string;
+    name: string;
+    pincode: string;
+    city: string;
+  } | null;
+  isServiceable: boolean;
+  pagination: StorefrontPagination;
+}
+
 export const storefrontKeys = {
   products: (storeId?: string, pincode?: string, city?: string) =>
-    ["storefront", "products", storeId, pincode, city].filter(Boolean) as string[],
+    ["storefront", "products", storeId, pincode, city].filter(
+      Boolean,
+    ) as string[],
+  productListing: (params: StorefrontProductListingParams) =>
+    [
+      "storefront",
+      "product-listing",
+      params.scope || "listing",
+      params.category || "",
+      params.subCategory || "",
+      params.storeId || "",
+      params.pincode || "",
+      params.city || "",
+      params.page || 1,
+      params.limit || "",
+    ] as const,
   product: (slug: string) => ["storefront", "product", slug] as const,
   categories: ["storefront", "categories"] as const,
   banners: ["storefront", "banners"] as const,
@@ -86,7 +135,9 @@ export const parseWeightToGrams = (value: string) => {
     const maxUnit = repeatedUnitRangeMatch[4];
     if (minUnit === maxUnit) {
       const average = (min + max) / 2;
-      return minUnit === "kg" ? Math.round(average * 1000) : Math.round(average);
+      return minUnit === "kg"
+        ? Math.round(average * 1000)
+        : Math.round(average);
     }
   }
 
@@ -135,9 +186,11 @@ export const resolveProductSizePricing = (
     product.price,
     product.originalPrice ?? product.price,
   );
-  const targetSize = size || normalizedPricing[0]?.size || product.sizes[0] || "";
-  const selected =
-    normalizedPricing.find((entry) => entry.size === targetSize) ||
+  const targetSize =
+    size || normalizedPricing[0]?.size || product.sizes[0] || "";
+  const selected = normalizedPricing.find(
+    (entry) => entry.size === targetSize,
+  ) ||
     normalizedPricing[0] || {
       size: targetSize,
       weightGrams: parseWeightToGrams(targetSize),
@@ -165,12 +218,17 @@ export const resolvePrice = (
     unit: selectedSize || "unit",
   };
 
-  if (selectedSize && Array.isArray(product.sizePricing) && product.sizePricing.length > 0) {
+  if (
+    selectedSize &&
+    Array.isArray(product.sizePricing) &&
+    product.sizePricing.length > 0
+  ) {
     const entry = product.sizePricing.find((e) => e.size === selectedSize);
     if (entry && entry.salePrice > 0) {
       return {
         salePrice: entry.salePrice,
-        regularPrice: entry.regularPrice > 0 ? entry.regularPrice : entry.salePrice,
+        regularPrice:
+          entry.regularPrice > 0 ? entry.regularPrice : entry.salePrice,
         unit: entry.size,
       };
     }
@@ -189,11 +247,15 @@ export const resolveDefaultPrice = (
 };
 
 export const transformProduct = (bp: BackendProduct): Product => {
+  // Catalog-only products (not yet added to any store) may have null prices
+  const salePrice = bp.sale_price ?? 0;
+  const regularPrice = bp.regular_price ?? 0;
+
   const normalizedSizePricingData = normalizeSizePricing(
     bp.sizePricing,
     bp.sizes || [],
-    bp.sale_price,
-    bp.regular_price,
+    salePrice,
+    regularPrice,
   );
 
   const defaultSize = normalizedSizePricingData[0]?.size || bp.sizes?.[0] || "";
@@ -201,8 +263,8 @@ export const transformProduct = (bp: BackendProduct): Product => {
   const partial = {
     sizes: bp.sizes || [],
     sizePricing: normalizedSizePricingData,
-    price: bp.sale_price,
-    originalPrice: bp.regular_price > bp.sale_price ? bp.regular_price : undefined,
+    price: salePrice,
+    originalPrice: regularPrice > salePrice ? regularPrice : undefined,
   };
 
   const defaultResolved = resolvePrice(partial, defaultSize);
@@ -215,12 +277,19 @@ export const transformProduct = (bp: BackendProduct): Product => {
     image: bp.images?.[0]?.url || "/placeholder.svg",
     images: bp.images?.map((img) => img.url) || [],
     price: defaultResolved.salePrice,
-    originalPrice: defaultResolved.regularPrice > defaultResolved.salePrice ? defaultResolved.regularPrice : undefined,
+    originalPrice:
+      defaultResolved.regularPrice > defaultResolved.salePrice
+        ? defaultResolved.regularPrice
+        : undefined,
     weight: defaultSize || defaultResolved.unit,
     sizes: bp.sizes || [],
     sizePricing: normalizedSizePricingData,
-    cuttingTypePricing: Array.isArray(bp.cuttingTypePricing) ? bp.cuttingTypePricing : [],
-    pieceSizePricing: Array.isArray(bp.pieceSizePricing) ? bp.pieceSizePricing : [],
+    cuttingTypePricing: Array.isArray(bp.cuttingTypePricing)
+      ? bp.cuttingTypePricing
+      : [],
+    pieceSizePricing: Array.isArray(bp.pieceSizePricing)
+      ? bp.pieceSizePricing
+      : [],
     rating: bp.ratings || 0,
     totalSold: bp.totalSold || 0,
     subCategory: bp.subCategory,
@@ -236,36 +305,87 @@ export const transformProduct = (bp: BackendProduct): Product => {
   };
 };
 
+export async function fetchStorefrontProductListing(
+  params: StorefrontProductListingParams = {},
+  init?: RequestInit & { next?: { revalidate?: number } },
+): Promise<StorefrontProductListingResponse> {
+  const queryParams = new URLSearchParams();
+  if (params.storeId) queryParams.append("storeId", params.storeId);
+  if (params.pincode) queryParams.append("pincode", params.pincode);
+  if (params.city) queryParams.append("city", params.city);
+  if (params.category) queryParams.append("category", params.category);
+  if (params.subCategory) queryParams.append("subCategory", params.subCategory);
+  // Clamp pagination values to safe bounds
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const limit = Math.min(48, Math.max(1, Math.floor(params.limit ?? 20)));
+  if (params.page) queryParams.append("page", String(page));
+  if (params.limit) queryParams.append("limit", String(limit));
+  if (params.scope) queryParams.append("scope", params.scope);
+
+  const queryString = queryParams.toString();
+  const url = getStorefrontUrl(
+    `/product/api/get-all-products${queryString ? `?${queryString}` : ""}`,
+  );
+
+  const response = await fetch(url, {
+    ...init,
+    next: init?.next ?? { revalidate: 300 },
+  });
+  const data = await parseJson<{
+    success: boolean;
+    products?: BackendProduct[];
+    store?: StorefrontProductListingResponse["store"];
+    isServiceable?: boolean;
+    pagination?: Partial<StorefrontPagination>;
+  }>(response);
+
+  return {
+    products: Array.isArray(data.products)
+      ? data.products.map(transformProduct)
+      : [],
+    store: data.store ?? null,
+    isServiceable: data.isServiceable ?? true,
+    pagination: {
+      page: data.pagination?.page ?? params.page ?? 1,
+      limit: data.pagination?.limit ?? params.limit ?? 20,
+      total: data.pagination?.total ?? 0,
+      hasMore: data.pagination?.hasMore ?? false,
+    },
+  };
+}
+
 export async function fetchStorefrontProducts(
   storeId?: string,
   pincode?: string,
   city?: string,
   init?: RequestInit & { next?: { revalidate?: number } },
 ): Promise<Product[]> {
-  const queryParams = new URLSearchParams();
-  if (storeId) queryParams.append("storeId", storeId);
-  if (pincode) queryParams.append("pincode", pincode);
-  if (city) queryParams.append("city", city);
-
-  const queryString = queryParams.toString();
-  const url = getStorefrontUrl(`/product/api/get-all-products${queryString ? `?${queryString}` : ""}`);
-
-  const response = await fetch(url, {
-    ...init,
-    next: init?.next ?? { revalidate: 300 },
-  });
-  const data = await parseJson<{ success: boolean; products?: BackendProduct[] }>(
-    response,
+  const data = await fetchStorefrontProductListing(
+    {
+      storeId,
+      pincode,
+      city,
+    },
+    init,
   );
 
-  return Array.isArray(data.products) ? data.products.map(transformProduct) : [];
+  return data.products;
 }
 
 export async function fetchStorefrontProductBySlug(
   slug: string,
-  params?: { storeId?: string; pincode?: string; city?: string; userId?: string },
+  params?: {
+    storeId?: string;
+    pincode?: string;
+    city?: string;
+    userId?: string;
+  },
   init?: RequestInit & { next?: { revalidate?: number } },
-): Promise<{ product: Product | null; relatedProducts: Product[]; coupon?: any }> {
+): Promise<{
+  product: Product | null;
+  relatedProducts: Product[];
+  coupon?: any;
+}> {
   const encodedSlug = encodeURIComponent(slug);
   const query = new URLSearchParams();
   if (params?.storeId) query.set("storeId", params.storeId);
@@ -274,7 +394,9 @@ export async function fetchStorefrontProductBySlug(
   if (params?.userId) query.set("userId", params.userId);
   const qs = query.toString();
   const response = await fetch(
-    getStorefrontUrl(`/product/api/get-product/${encodedSlug}${qs ? `?${qs}` : ""}`),
+    getStorefrontUrl(
+      `/product/api/get-product/${encodedSlug}${qs ? `?${qs}` : ""}`,
+    ),
     {
       ...init,
       next: init?.next ?? { revalidate: 300 },
@@ -301,10 +423,21 @@ export async function fetchStorefrontProductBySlug(
   };
 }
 
-export async function fetchStorefrontBanners(): Promise<StorefrontBanner[]> {
-  const response = await fetch(getStorefrontUrl("/product/api/get-banners"), {
-    next: { revalidate: 600 },
-  });
+export async function fetchStorefrontBanners(params?: {
+  storeId?: string;
+  pincode?: string;
+}): Promise<StorefrontBanner[]> {
+  const query = new URLSearchParams();
+  if (params?.storeId) query.set("storeId", params.storeId);
+  if (params?.pincode) query.set("pincode", params.pincode);
+  const response = await fetch(
+    getStorefrontUrl(
+      `/product/api/get-banners${query.toString() ? `?${query.toString()}` : ""}`,
+    ),
+    {
+      next: { revalidate: 600 },
+    },
+  );
   const data = await parseJson<{
     success: boolean;
     banners?: StorefrontBanner[];
@@ -337,23 +470,34 @@ export async function fetchStorefrontCategoryBanners(
     : [];
 }
 
-export async function fetchAnnouncementBanners(
-  params?: { city?: string; storeId?: string },
-): Promise<AnnouncementBanner[]> {
+export async function fetchAnnouncementBanners(params?: {
+  city?: string;
+  storeId?: string;
+}): Promise<AnnouncementBanner[]> {
   const query = new URLSearchParams();
   if (params?.city) query.set("city", params.city);
   if (params?.storeId) query.set("storeId", params.storeId);
   const qs = query.toString();
-  const url = getStorefrontUrl(`/product/api/get-announcement-banners${qs ? `?${qs}` : ""}`);
+  const url = getStorefrontUrl(
+    `/product/api/get-announcement-banners${qs ? `?${qs}` : ""}`,
+  );
   const response = await fetch(url, { next: { revalidate: 120 } });
-  const data = await parseJson<{ success: boolean; banners?: AnnouncementBanner[] }>(response);
-  return Array.isArray(data.banners) ? data.banners.filter((b) => b.isActive) : [];
+  const data = await parseJson<{
+    success: boolean;
+    banners?: AnnouncementBanner[];
+  }>(response);
+  return Array.isArray(data.banners)
+    ? data.banners.filter((b) => b.isActive)
+    : [];
 }
 
 export async function fetchStorefrontCategories(): Promise<StorefrontCategories> {
-  const response = await fetch(getStorefrontUrl("/product/api/get-categories"), {
-    next: { revalidate: 600 },
-  });
+  const response = await fetch(
+    getStorefrontUrl("/product/api/get-categories"),
+    {
+      next: { revalidate: 600 },
+    },
+  );
   const data = await parseJson<{
     success?: boolean;
     categories?: string[];

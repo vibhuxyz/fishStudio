@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { CategoryClient } from "./category-client";
+import {
+  fetchStorefrontCategories,
+  fetchStorefrontProductListing,
+} from "@/lib/storefront";
+import { normalizeSlug } from "@/lib/normalize-slug";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -45,9 +50,50 @@ export async function generateMetadata({
   };
 }
 
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+export const dynamic = "force-dynamic";
+
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
   const { sub } = await searchParams;
 
-  return <CategoryClient slug={slug} initialSub={sub} />;
+  let categories: Awaited<ReturnType<typeof fetchStorefrontCategories>> = {
+    categories: [],
+    subCategories: {},
+    categoryImages: {},
+  };
+  let resolvedCategory: string | null = null;
+  let initialProductListing:
+    | Awaited<ReturnType<typeof fetchStorefrontProductListing>>
+    | undefined;
+
+  try {
+    categories = await fetchStorefrontCategories();
+    const normalizedSlugValue = decodeURIComponent(slug);
+    resolvedCategory =
+      categories.categories.find(
+        (cat) => normalizeSlug(cat) === normalizeSlug(normalizedSlugValue),
+      ) ?? null;
+    if (resolvedCategory) {
+      initialProductListing = await fetchStorefrontProductListing({
+        scope: "category",
+        category: resolvedCategory,
+        limit: 24,
+      });
+    }
+  } catch {
+    // API unavailable — client will hydrate and fetch
+  }
+
+  return (
+    <CategoryClient
+      slug={slug}
+      initialSub={sub}
+      initialCategories={categories}
+      initialProductListing={initialProductListing}
+      resolvedCategory={resolvedCategory}
+    />
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { setQueryClientRef } from "@/lib/auth-store";
 
 export function QueryProvider({ children }: { children: ReactNode }) {
@@ -17,19 +17,20 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             refetchOnReconnect: false,
           },
         },
-      })
+      }),
   );
 
-  // Register queryClient so auth-store can invalidate on logout
-  useState(() => { setQueryClientRef(queryClient); });
+  useEffect(() => {
+    setQueryClientRef(queryClient);
+  }, [queryClient]);
 
   // Global WebSocket for system-wide updates (e.g., Stock)
-  useState(() => {
-    if (typeof window === "undefined") return;
-
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+  useEffect(() => {
+    const wsBase = (
+      process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
+    ).replace(/\?.*$/, "");
     let ws: WebSocket;
-    let reconnectTimeout: any;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
 
     const connect = () => {
       ws = new WebSocket(`${wsBase}`); // Generic connection
@@ -39,7 +40,8 @@ export function QueryProvider({ children }: { children: ReactNode }) {
           const data = JSON.parse(event.data);
           if (data.type === "STOCK_UPDATE") {
             // Payload is nested under data.payload (broadcastAll wraps as { type, payload })
-            const { productId, catalogProductId, stock, message } = data.payload ?? {};
+            const { productId, catalogProductId, stock, message } =
+              data.payload ?? {};
 
             if (productId !== undefined && stock !== undefined) {
               // Match by variant id OR catalog id (products may appear with either id
@@ -51,10 +53,36 @@ export function QueryProvider({ children }: { children: ReactNode }) {
               queryClient.setQueriesData<any>(
                 { queryKey: ["storefront", "products"] },
                 (oldData: any) => {
-                  if (!Array.isArray(oldData)) return oldData;
-                  return oldData.map((p: any) =>
-                    isMatch(p) ? { ...p, stock } : p,
-                  );
+                  if (Array.isArray(oldData)) {
+                    return oldData.map((p: any) =>
+                      isMatch(p) ? { ...p, stock } : p,
+                    );
+                  }
+
+                  if (oldData && Array.isArray(oldData.products)) {
+                    return {
+                      ...oldData,
+                      products: oldData.products.map((p: any) =>
+                        isMatch(p) ? { ...p, stock } : p,
+                      ),
+                    };
+                  }
+
+                  return oldData;
+                },
+              );
+
+              queryClient.setQueriesData<any>(
+                { queryKey: ["storefront", "product-listing"] },
+                (oldData: any) => {
+                  if (!oldData || !Array.isArray(oldData.products))
+                    return oldData;
+                  return {
+                    ...oldData,
+                    products: oldData.products.map((p: any) =>
+                      isMatch(p) ? { ...p, stock } : p,
+                    ),
+                  };
                 },
               );
 
@@ -69,9 +97,6 @@ export function QueryProvider({ children }: { children: ReactNode }) {
                 },
               );
             }
-
-            // 3. Background refetch so data stays consistent after patch
-            queryClient.invalidateQueries({ queryKey: ["storefront"] });
           }
         } catch (e) {
           console.error("User WS parse error:", e);
@@ -88,10 +113,9 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       clearTimeout(reconnectTimeout);
       ws?.close();
     };
-  });
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 }
-

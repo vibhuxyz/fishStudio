@@ -12,11 +12,15 @@ import ViewCodeModal from "./ViewCodeModal";
 
 const SellersPage = () => {
   const { data: sellers = [], isLoading } = useAdminSellers();
-  const { data: sellerCodes = [], isLoading: isLoadingCodes } = useSellerAccessCodes();
-  const [selectedSellerId, setSelectedSellerId] = React.useState<string | null>(null);
+  const { data: sellerCodes = [], isLoading: isLoadingCodes } =
+    useSellerAccessCodes();
+  const [selectedSellerId, setSelectedSellerId] = React.useState<string | null>(
+    null,
+  );
   const [viewingCode, setViewingCode] = React.useState<string | null>(null);
 
-  const [isGiveSignupAccessOpen, setIsGiveSignupAccessOpen] = React.useState(false);
+  const [isGiveSignupAccessOpen, setIsGiveSignupAccessOpen] =
+    React.useState(false);
 
   return (
     <DashboardPageShell
@@ -56,7 +60,9 @@ const SellersPage = () => {
                   <td className="p-3">
                     <div className="flex flex-col">
                       <span>{seller.name}</span>
-                      <span className="text-xs text-gray-400">{seller.email}</span>
+                      <span className="text-xs text-gray-400">
+                        {seller.email}
+                      </span>
                     </div>
                   </td>
                   <td className="p-3">
@@ -87,17 +93,10 @@ const SellersPage = () => {
                       <div className="flex flex-col gap-1">
                         <Link
                           href={`/dashboard/sellers/${seller.id}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-gray-700 px-3 py-1.5 text-xs text-white hover:bg-gray-600 transition"
+                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-1.5 text-xs text-blue-400 hover:bg-blue-600 hover:text-white transition"
                         >
                           <Eye size={14} />
                           View Profile
-                        </Link>
-                        <Link
-                          href={`/dashboard/sellers/${seller.id}`}
-                          className="inline-flex items-center gap-2 rounded-lg bg-blue-600/10 border border-blue-600/20 px-3 py-1.5 text-xs text-blue-400 hover:bg-blue-600 hover:text-white transition"
-                        >
-                          <IndianRupee size={14} />
-                          Payments
                         </Link>
                       </div>
                     ) : (
@@ -123,7 +122,9 @@ const SellersPage = () => {
       <div className="mt-8 rounded-xl bg-gray-900 p-5">
         <h3 className="mb-4 text-lg font-bold text-white flex items-center gap-2">
           <span>Pending Invitations</span>
-          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-500">{sellerCodes.length}</span>
+          <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-500">
+            {sellerCodes.length}
+          </span>
         </h3>
         {isLoadingCodes ? (
           <p className="text-gray-400">Loading invitations...</p>
@@ -145,11 +146,15 @@ const SellersPage = () => {
                   <td className="p-3">
                     <div className="flex flex-col">
                       <span>{invite.email}</span>
-                      <span className="text-xs text-amber-500">Pending Signup</span>
+                      <span className="text-xs text-amber-500">
+                        Pending Signup
+                      </span>
                     </div>
                   </td>
                   <td className="p-3">
-                    {invite.expiresAt ? new Date(invite.expiresAt).toLocaleString() : "-"}
+                    {invite.expiresAt
+                      ? new Date(invite.expiresAt).toLocaleString()
+                      : "-"}
                   </td>
                   <td className="p-3">
                     <button
@@ -167,7 +172,9 @@ const SellersPage = () => {
         )}
 
         {!isLoadingCodes && sellerCodes.length === 0 && (
-          <p className="pt-4 text-center text-gray-400">No pending invitations found.</p>
+          <p className="pt-4 text-center text-gray-400">
+            No pending invitations found.
+          </p>
         )}
       </div>
 

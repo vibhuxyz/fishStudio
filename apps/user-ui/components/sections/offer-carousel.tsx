@@ -4,12 +4,21 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useBanners } from "@/hooks/useBanners";
+import type { StorefrontBanner } from "@/lib/storefront";
 
 const BLUR_DATA =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMCwsKCwsNCw4QDAsNEQ4SEBQSEBESFBcWFxcYGBsbGBshICD/2wBDAQMEBAUEBQkFBQkhEAsQISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISEhISH/wAARCAAIAAgDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAABv/EAB8QAAICAgIDAQAAAAAAAAAAAAECAwQFEQASITFBcf/EABUBAQEAAAAAAAAAAAAAAAAAAAUG/8QAGhEAAgMBAQAAAAAAAAAAAAAAAAECAxExQf/aAAwDAQACEQMRAD8Al4/LZCnlKtaOysVeSRUVmQEqCdAnf0eXqd4bVTk7mO3LWIZB3i+y9c=";
 
-export function OfferCarousel() {
-  const { banners, isLoading: isApiLoading, isError } = useBanners();
+export function OfferCarousel({
+  initialBanners,
+}: {
+  initialBanners?: StorefrontBanner[];
+}) {
+  const {
+    banners,
+    isLoading: isApiLoading,
+    isError,
+  } = useBanners(initialBanners);
   const [current, setCurrent] = useState(0);
   // Track loading state for each image file
   const [loadedImages, setLoadedImages] = useState<{ [key: string]: boolean }>(

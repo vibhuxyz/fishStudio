@@ -88,8 +88,15 @@ export const useCouponStore = create<CouponState>()(
           }
 
           if (Array.isArray(data.activeEvents)) {
+            // Check if a free_delivery discount code is already in the list
+            const hasFreeDeliveryCode = coupons.some(
+              (c) => c.discountType === "free_delivery",
+            );
+
             for (const ev of data.activeEvents) {
               if (ev.type === "FREE_DELIVERY") {
+                // Skip event-based free delivery if a discount code already covers it
+                if (hasFreeDeliveryCode) continue;
                 coupons.push({
                   code: ev.title.toUpperCase().replace(/\s+/g, ""),
                   description: `Free delivery — ${ev.title}`,

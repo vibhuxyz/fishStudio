@@ -1,10 +1,12 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { useAddressStore } from "@/lib/address-store";
-import { frontendEnv } from "@/lib/env";
-import type { StorefrontBanner } from "@/lib/storefront";
+import {
+  fetchStorefrontBanners,
+  type StorefrontBanner,
+} from "@/lib/storefront";
 
-export function useBanners() {
+export function useBanners(initialData?: StorefrontBanner[]) {
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const selectedAddress = useAddressStore((s) =>
     s.addresses.find((a) => a.id === s.selectedAddressId),
@@ -15,20 +17,9 @@ export function useBanners() {
 
   const query = useQuery({
     queryKey: ["storefront", "banners", storeId, pincode],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (storeId) params.set("storeId", storeId);
-      if (pincode) params.set("pincode", pincode);
-      const qs = params.toString();
-      const url = `${frontendEnv.apiUrl}/product/api/get-banners${qs ? `?${qs}` : ""}`;
-      const res = await fetch(url, { next: { revalidate: 600 } } as RequestInit);
-      if (!res.ok) throw new Error("Failed to fetch banners");
-      const data = await res.json();
-      return Array.isArray(data.banners)
-        ? data.banners.filter((b: StorefrontBanner) => b.isActive)
-        : [];
-    },
+    queryFn: () => fetchStorefrontBanners({ storeId, pincode }),
     staleTime: 1000 * 60 * 10,
+    initialData: !storeId && !pincode ? initialData : undefined,
   });
 
   return {

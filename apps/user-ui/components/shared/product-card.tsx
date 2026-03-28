@@ -173,7 +173,7 @@ export function ProductCard({
                   loading={priority ? "eager" : "lazy"}
                 />
               </Link>
-              
+
               {/* Carousel Dots */}
               {images.length > 1 && (
                 <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 z-10">
@@ -258,7 +258,7 @@ export function ProductCard({
                 <>
                   <div className="flex items-center gap-1.5">
                     <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 p-1">
-                       <svg viewBox="0 0 24 24" className="h-3 w-3 fill-orange-500 text-orange-500" xmlns="http://www.w3.org/2000/svg"><path d="M13 3l-10 12l8 0l-2 9l10 -12l-8 0l2 -9z"/></svg>
+                      <svg viewBox="0 0 24 24" className="h-3 w-3 fill-orange-500 text-orange-500" xmlns="http://www.w3.org/2000/svg"><path d="M13 3l-10 12l8 0l-2 9l10 -12l-8 0l2 -9z"/></svg>
                     </div>
                     <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{displayDeliveryTime}</span>
                   </div>
@@ -303,7 +303,7 @@ export function ProductCard({
                 loading={priority ? "eager" : "lazy"}
               />
             </Link>
-            
+
             <button
               type="button"
               className="absolute right-2 top-2 z-20 text-pink-400 transition-transform hover:scale-110"
@@ -357,8 +357,8 @@ export function ProductCard({
       <div className="flex flex-1 flex-col justify-between px-3 pb-3 pt-2.5">
         <div className="space-y-1">
           <div className="flex items-center gap-1">
-             <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-             <span className="text-[10px] font-medium text-muted-foreground">{product.rating}</span>
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            <span className="text-[10px] font-medium text-muted-foreground">{product.rating}</span>
           </div>
           <h3 className="truncate text-sm font-bold text-card-foreground">
             {isOutOfStock || isComingSoon ? product.name : (
@@ -405,7 +405,7 @@ export function ProductCard({
               <>
                 <div className="flex items-center gap-1.5">
                   <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-100 p-1">
-                     <svg viewBox="0 0 24 24" className="h-3 w-3 fill-orange-500 text-orange-500" xmlns="http://www.w3.org/2000/svg"><path d="M13 3l-10 12l8 0l-2 9l10 -12l-8 0l2 -9z"/></svg>
+                    <svg viewBox="0 0 24 24" className="h-3 w-3 fill-orange-500 text-orange-500" xmlns="http://www.w3.org/2000/svg"><path d="M13 3l-10 12l8 0l-2 9l10 -12l-8 0l2 -9z"/></svg>
                   </div>
                   <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{displayDeliveryTime}</span>
                 </div>

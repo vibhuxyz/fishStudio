@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const orderItemSchema = z.object({
   productId: z.string().min(1, "Product ID is required"),
-  quantity: z.number().int().positive("Quantity must be at least 1"),
+  quantity: z.number().positive("Quantity must be greater than 0"),
   price: z.number().nonnegative(),
   selectedOptions: z.record(z.any()).optional(),
 });
