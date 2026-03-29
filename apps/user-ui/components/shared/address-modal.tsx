@@ -122,6 +122,7 @@ export function AddressModal({
   };
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
+  const [serviceablePincodes, setServiceablePincodes] = useState<string[]>([]);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
 
   // Pre-fill for add form when coming from city selection
@@ -162,6 +163,7 @@ export function AddressModal({
       setLoading(false);
       setStoreInfo(null);
       setServiceableCities([]);
+      setServiceablePincodes([]);
       setLocationSearchQuery("");
       setPrefilledCity("");
       setPrefilledDeliveryMins(undefined);
@@ -185,6 +187,7 @@ export function AddressModal({
     setPincodeError("");
     setStoreInfo(null);
     setServiceableCities([]);
+    setServiceablePincodes([]);
     setLocationSearchQuery("");
   };
 
@@ -197,6 +200,7 @@ export function AddressModal({
     setPincodeError("");
     setStoreInfo(null);
     setServiceableCities([]);
+    setServiceablePincodes([]);
 
     try {
       const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${pincode}`);
@@ -210,6 +214,7 @@ export function AddressModal({
           const areasRes = await axiosInstance.get("/auth/api/serviceable-areas");
           if (areasRes.data.success) {
             setServiceableCities(areasRes.data.cities || []);
+            setServiceablePincodes(areasRes.data.pincodes || []);
           }
         } catch (_) {}
         setPincodeError("coming-soon");
@@ -462,17 +467,17 @@ export function AddressModal({
                             </p>
                           </div>
                         </div>
-                        {serviceableCities.length > 0 && (
+                        {serviceablePincodes.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-amber-800 mb-2">We currently serve:</p>
+                            <p className="text-xs font-semibold text-amber-800 mb-2">We currently serve (Pincodes):</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {serviceableCities.slice(0, 14).map((city) => (
-                                <span key={city} className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                                  {city}
+                              {serviceablePincodes.slice(0, 14).map((pin) => (
+                                <span key={pin} className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                  {pin}
                                 </span>
                               ))}
-                              {serviceableCities.length > 14 && (
-                                <span className="text-xs text-amber-600 self-center">+{serviceableCities.length - 14} more</span>
+                              {serviceablePincodes.length > 14 && (
+                                <span className="text-xs text-amber-600 self-center">+{serviceablePincodes.length - 14} more</span>
                               )}
                             </div>
                           </div>
