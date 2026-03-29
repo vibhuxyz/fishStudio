@@ -1,5 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
+import { Button } from "@repo/ui";
 
 export default function ViewCodeModal({
   code,
@@ -27,12 +28,14 @@ export default function ViewCodeModal({
           {code}
         </div>
 
-        <button
+        <Button
           onClick={onClose}
-          className="w-full rounded-lg bg-gray-700 px-4 py-2 font-medium text-white hover:bg-gray-600 transition"
+          variant="indigo"
+          glow={false}
+          className="w-full !rounded-lg !py-2 !font-medium !bg-gray-700 hover:!bg-gray-600 transition"
         >
           Done
-        </button>
+        </Button>
       </div>
     </div>
   );

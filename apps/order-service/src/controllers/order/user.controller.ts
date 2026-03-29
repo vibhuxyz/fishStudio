@@ -216,9 +216,11 @@ export const createOrder = async (
     const shortId = order.id.slice(-6).toUpperCase();
 
     // Payment record + stock decrements + coupon recording all in parallel
-    Promise.all([
-      // Payment record (moved out of main transaction)
-      prismaPostgres.payments.create({
+    // Wrapped in Promise.resolve().then() to prevent any synchronous throws from
+    // blocking the setImmediate registration below (which publishes the real-time event).
+    Promise.resolve().then(() => Promise.all([
+      // Payment record
+      prismaPostgres.payment.create({
         data: {
           orderId: order.id,
           amount: totalAmount,
@@ -258,7 +260,7 @@ export const createOrder = async (
             }),
           ]
         : []),
-    ]).catch((err) => console.error("[createOrder] Background tasks error:", err));
+    ])).catch((err) => console.error("[createOrder] Background tasks error:", err));
 
     // Notifications — runs after response, uses already-fetched data
     setImmediate(async () => {

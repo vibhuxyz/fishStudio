@@ -9,6 +9,7 @@ import ImagePlaceHolder from "@/shared/components/image-placeholder";
 import { useAdminBanners, adminQueryKeys } from "@/hooks/useAdminQueries";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import { Button } from "@repo/ui";
 
 const BannersPage = () => {
   const queryClient = useQueryClient();
@@ -108,17 +109,16 @@ const BannersPage = () => {
             })}
           </div>
 
-          <button
+          <Button
             onClick={handleUpload}
             disabled={isUploading || !newBannerImages.some(img => img !== null)}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2"
+            isLoading={isUploading}
+            loaderLabel="Uploading..."
+            variant="blue"
+            className="w-full !rounded-lg !py-3"
           >
-            {isUploading ? (
-              <Loader2 className="animate-spin" size={20} />
-            ) : (
-              "Upload Banners"
-            )}
-          </button>
+            Upload Banners
+          </Button>
         </div>
 
         {/* List Section */}

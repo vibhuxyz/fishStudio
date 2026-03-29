@@ -9,25 +9,30 @@ import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../../store/authStore";
 import Link from "next/link";
 import { frontendEnv } from "@/config/env";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@repo/ui";
 
 type FormData = {
   email: string;
   password: string;
 };
 
+import AuthLayout from "@/shared/components/layout/AuthLayout";
+
 const Login = () => {
   const { setLoggedIn, setRole } = useAuthStore();
   const queryClient = useQueryClient();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<FormData>();
+    formState: { errors, isValid },
+  } = useForm<FormData>({
+    mode: "onChange",
+  });
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -45,7 +50,6 @@ const Login = () => {
       setRole(role);
       queryClient.invalidateQueries({ queryKey: ["seller"] });
 
-      // Redirect based on role
       if (role === "staff") {
         router.push("/staff/orders");
       } else {
@@ -66,38 +70,30 @@ const Login = () => {
   };
 
   return (
-    <div className="w-full py-10 min-h-screen bg-[#f1f1f1]">
-      <h1 className="text-4xl font-Poppins font-semibold text-black text-center">
-        Login
-      </h1>
-      <p className="text-center text-lg font-medium py-3 text-[#00000099]">
-        Home . Login
-      </p>
+    <AuthLayout 
+      title="Merchant Hub" 
+      subtitle="Securely access your shop & order workstation"
+      accentColor="emerald"
+    >
+      <div className="mb-10">
+        <h3 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">
+          Welcome Back
+        </h3>
+        <p className="text-slate-500 text-sm font-medium italic">
+          Enter your merchant credentials to proceed
+        </p>
+      </div>
 
-      <div className="w-full flex justify-center">
-        <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-          <h3 className="text-3xl font-semibold text-center mb-2">
-            Login to Eshop
-          </h3>
-          <p className="text-center text-gray-500 mb-4">
-            {"Don't have an account? "}
-            <Link href="/signup" className="text-blue-500">
-              Sign up
-            </Link>
-          </p>
-
-          <div className="flex items-center my-5 text-gray-400 text-sm">
-            <div className="flex-1 border-t border-gray-300" />
-            <span className="px-3">Sign in with Email</span>
-            <div className="flex-1 border-t border-gray-300" />
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <label className="block text-gray-700 mb-1">Email</label>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-2">
+          <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">
+            Work Email
+          </label>
+          <div className="relative">
             <input
               type="email"
-              placeholder="you@example.com"
-              className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
+              placeholder="merchant@fishstudio.com"
+              className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium"
               {...register("email", {
                 required: "Email is required",
                 pattern: {
@@ -107,69 +103,93 @@ const Login = () => {
               })}
             />
             {errors.email && (
-              <p className="text-red-500 text-sm">
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">
                 {String(errors.email.message)}
               </p>
             )}
+          </div>
+        </div>
 
-            <label className="block text-gray-700 mb-1 mt-2">Password</label>
-            <div className="relative">
-              <input
-                type={passwordVisible ? "text" : "password"}
-                placeholder="Min. 6 characters"
-                className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-              />
-              <button
-                type="button"
-                onClick={() => setPasswordVisible(!passwordVisible)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-400"
-              >
-                {passwordVisible ? <Eye /> : <EyeOff />}
-              </button>
-            </div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-center px-1">
+            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+              Security Password
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-400 transition-colors underline underline-offset-4 decoration-emerald-500/30"
+            >
+              Recover
+            </Link>
+          </div>
+          <div className="relative group">
+            <input
+              type={passwordVisible ? "text" : "password"}
+              placeholder="••••••••"
+              className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium"
+              {...register("password", {
+                required: "Password is required",
+                minLength: {
+                  value: 6,
+                  message: "Password must be at least 6 characters",
+                },
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => setPasswordVisible(!passwordVisible)}
+              className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors"
+            >
+              {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
             {errors.password && (
-              <p className="text-red-500 text-sm">
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">
                 {String(errors.password.message)}
               </p>
             )}
-
-            <div className="flex justify-between items-center my-4">
-              <label className="flex items-center text-gray-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mr-2"
-                  checked={rememberMe}
-                  onChange={() => setRememberMe(!rememberMe)}
-                />
-                Remember me
-              </label>
-              <Link href="/forgot-password" className="text-blue-500 text-sm">
-                Forgot Password?
-              </Link>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loginMutation.isPending}
-              className="w-full text-lg cursor-pointer bg-black text-white py-2 rounded-lg"
-            >
-              {loginMutation.isPending ? "Logging in..." : "Login"}
-            </button>
-
-            {serverError && (
-              <p className="text-red-500 text-sm mt-2">{serverError}</p>
-            )}
-          </form>
+          </div>
         </div>
+
+        <AnimatePresence>
+          {serverError && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl"
+            >
+              <p className="text-rose-500 text-xs font-bold text-center italic uppercase tracking-wider">
+                {serverError}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="pt-4">
+                  <Button
+                    type="submit"
+                    disabled={!isValid || loginMutation.isPending}
+                    isLoading={loginMutation.isPending}
+                    loaderLabel="Establishing Session..."
+                    variant="emerald"
+                  >
+                    Establish Session
+                  </Button>
+        </div>
+      </form>
+
+      <div className="mt-10 pt-8 border-t border-white/5 text-center">
+        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+          New to the network?{" "}
+          <Link
+            href="/signup"
+            className="text-emerald-500 hover:text-emerald-400 transition-colors ml-1"
+          >
+            Join Marketplace
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

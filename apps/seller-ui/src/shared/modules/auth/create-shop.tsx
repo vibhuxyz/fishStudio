@@ -3,8 +3,10 @@ import axios, { AxiosError } from "axios";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { frontendEnv } from "@/config/env";
-import { Plus, X, Clock } from "lucide-react";
+import { Plus, X, Clock, Store, MapPin, Globe, Briefcase, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@repo/ui";
 
 type CityDelivery = { city: string; minutes: number };
 
@@ -23,10 +25,10 @@ const CreateShop = ({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid },
     watch,
   } = useForm({
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues: {
       name: "",
       bio: "",
@@ -74,7 +76,6 @@ const CreateShop = ({
 
   const shopCreateMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Build cityDeliveryTimes map: { "Bathnaha": 20, "motipur": 10 }
       const cityDeliveryTimesMap: Record<string, number> = {};
       cityDeliveries.forEach(({ city, minutes }) => {
         cityDeliveryTimesMap[city] = minutes;
@@ -112,7 +113,6 @@ const CreateShop = ({
       } else {
         setSubmitError("An unexpected error occurred. Please check the console.");
       }
-      console.error("Create shop error:", error);
     },
   });
 
@@ -125,224 +125,260 @@ const CreateShop = ({
     shopCreateMutation.mutate(data);
   };
 
+  const inputStyles = "w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium text-sm";
+  const labelStyles = "block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 mb-2";
+
   return (
-    <div className="max-h-[80vh] overflow-y-auto px-1 py-2">
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <h3 className="text-2xl font-semibold text-center mb-4 text-gray-900 font-inter">
-          Setup new shop
-        </h3>
-
-        {/* Shop Name */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name *</label>
-          <input
-            type="text"
-            placeholder="e.g. Fresh Meat Co."
-            className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm transition-all focus:border-blue-500 font-inter"
-            {...register("name", {
-              required: "Shop name is required",
-              minLength: { value: 2, message: "Shop name must be at least 2 characters" },
-            })}
-          />
-          {errors.name && (
-            <p className="text-red-500 text-xs mt-1">{String(errors.name.message)}</p>
-          )}
-        </div>
-
-        {/* Shop Bio */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Bio (Max 100 words) *{" "}
-            {wordCount > 0 && (
-              <span className="text-gray-400 font-normal">({wordCount}/100)</span>
-            )}
-          </label>
-          <textarea
-            placeholder="Tell customers about your shop..."
-            className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm resize-none focus:border-blue-500 font-inter"
-            rows={3}
-            {...register("bio", {
-              required: "Shop bio is required",
-              validate: (value) => countWords(value) <= 100 || "Bio cannot exceed 100 words",
-            })}
-          />
-          {errors.bio && (
-            <p className="text-red-500 text-xs mt-1">{String(errors.bio.message)}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* City */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-            <input
-              type="text"
-              placeholder="e.g. Muzaffarpur"
-              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-              {...register("city", { required: "City is required" })}
-            />
-            {errors.city && (
-              <p className="text-red-500 text-xs mt-1">{String(errors.city.message)}</p>
-            )}
+    <div className="max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-4">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+            <Store size={32} />
           </div>
+          <h3 className="text-3xl font-black text-white uppercase italic tracking-tighter">
+            Store Config
+          </h3>
+          <p className="text-slate-500 text-sm font-medium italic">
+            Defining your commercial operational matrix
+          </p>
+        </div>
 
-          {/* Pincode */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pin Code *</label>
+        {/* Core Information Section */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 px-1">
+             <Briefcase size={12} className="text-emerald-500" />
+             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Core Identity</h4>
+          </div>
+          
+          <div className="space-y-2">
+            <label className={labelStyles}>Shop Name *</label>
             <input
               type="text"
-              inputMode="numeric"
-              placeholder="842001"
-              maxLength={6}
-              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-              {...register("pincode", {
-                required: "Pincode is required",
-                pattern: { value: /^[1-9][0-9]{5}$/, message: "Invalid Pincode" },
+              placeholder="e.g. Fresh Meat Co."
+              className={inputStyles}
+              {...register("name", {
+                required: "Shop name is required",
+                minLength: { value: 2, message: "Shop name must be at least 2 characters" },
               })}
             />
-            {errors.pincode && (
-              <p className="text-red-500 text-xs mt-1">{String(errors.pincode.message)}</p>
+            {errors.name && (
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">{String(errors.name.message)}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className={labelStyles}>
+              Professional Bio *{" "}
+              {wordCount > 0 && (
+                <span className="text-emerald-500/50">({wordCount}/100)</span>
+              )}
+            </label>
+            <textarea
+              placeholder="Tell customers about your shop's heritage and mission..."
+              className={`${inputStyles} resize-none h-32`}
+              {...register("bio", {
+                required: "Shop bio is required",
+                validate: (value) => countWords(value) <= 100 || "Bio cannot exceed 100 words",
+              })}
+            />
+            {errors.bio && (
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">{String(errors.bio.message)}</p>
             )}
           </div>
         </div>
 
-        {/* State */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
-          <input
-            type="text"
-            placeholder="e.g. Bihar"
-            className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-            {...register("state", { required: "State is required" })}
-          />
-          {errors.state && (
-            <p className="text-red-500 text-xs mt-1">{String(errors.state.message)}</p>
-          )}
-        </div>
+        {/* Geospatial Matrix Section */}
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center gap-2 px-1">
+             <MapPin size={12} className="text-emerald-500" />
+             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Geospatial Matrix</h4>
+          </div>
 
-        {/* Serviceable Cities with Delivery Time */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Serviceable Areas & Delivery Times *
-          </label>
-          <p className="text-xs text-gray-400 mb-2">Add each area/locality your shop delivers to, with average delivery time</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className={labelStyles}>Base City *</label>
+              <input
+                type="text"
+                placeholder="Muzaffarpur"
+                className={inputStyles}
+                {...register("city", { required: "City is required" })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className={labelStyles}>Pincode *</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="842001"
+                maxLength={6}
+                className={inputStyles}
+                {...register("pincode", {
+                  required: "Pincode is required",
+                  pattern: { value: /^[1-9][0-9]{5}$/, message: "Invalid Pincode" },
+                })}
+              />
+            </div>
+          </div>
 
-          <div className="flex gap-2 mb-2">
+          <div className="space-y-2">
+            <label className={labelStyles}>State / Region *</label>
             <input
               type="text"
-              placeholder="Area name (e.g. Bathnaha)"
-              className="flex-1 p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-              value={cityInput}
-              onChange={(e) => setCityInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCity())}
+              placeholder="Bihar"
+              className={inputStyles}
+              {...register("state", { required: "State is required" })}
             />
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="Min"
-              min={1}
-              max={300}
-              className="w-20 p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-              value={minutesInput}
-              onChange={(e) => setMinutesInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCity())}
-            />
-            <button
-              type="button"
-              onClick={addCity}
-              className="p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-            </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 pt-1">
-            {cityDeliveries.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">No service cities added yet</p>
-            ) : (
-              cityDeliveries.map((c, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-xs font-medium border border-blue-200"
+          <div className="space-y-2">
+            <label className={labelStyles}>Operational Headquarters *</label>
+            <input
+              type="text"
+              placeholder="Street name, landmark..."
+              className={inputStyles}
+              {...register("address", { required: "Address is required" })}
+            />
+            {errors.address && (
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">{String(errors.address.message)}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Logistics Stream Section */}
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center gap-2 px-1">
+             <Globe size={12} className="text-emerald-500" />
+             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Logistics Stream</h4>
+          </div>
+
+          <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem] space-y-6">
+            <div className="space-y-2">
+              <label className={labelStyles}>Service Nodes & Latency</label>
+              <p className="text-[10px] text-slate-500 mb-4 italic font-medium">Add locations and average delivery latency (minutes)</p>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Area Name"
+                  className="flex-1 px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium text-sm"
+                  value={cityInput}
+                  onChange={(e) => setCityInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCity())}
+                />
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Mins"
+                  className="w-24 px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium text-sm"
+                  value={minutesInput}
+                  onChange={(e) => setMinutesInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCity())}
+                />
+                <button
+                  type="button"
+                  onClick={addCity}
+                  className="w-14 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-2xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"
                 >
-                  {c.city}
-                  <span className="flex items-center gap-0.5 text-blue-500">
-                    <Clock size={10} />
-                    {c.minutes}m
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCity(i)}
-                    className="text-blue-400 hover:text-red-500 transition-colors ml-0.5"
+                  <Plus size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 min-h-12 items-center">
+              <AnimatePresence>
+                {cityDeliveries.length === 0 ? (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-[10px] text-slate-600 italic font-medium ml-2"
                   >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))
-            )}
+                    No active service nodes defined...
+                  </motion.p>
+                ) : (
+                  cityDeliveries.map((c, i) => (
+                    <motion.div
+                      key={c.city}
+                      initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, x: 10 }}
+                      className="flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 backdrop-blur-md group"
+                    >
+                      <span>{c.city}</span>
+                      <div className="w-1 h-3 bg-emerald-500/20 mx-1" />
+                      <Clock size={10} className="text-emerald-500/50" />
+                      <span>{c.minutes}M</span>
+                      <button
+                        type="button"
+                        onClick={() => removeCity(i)}
+                        className="ml-2 text-rose-500 opacity-0 group-hover:opacity-100 transition-all hover:scale-125"
+                      >
+                        <X size={14} />
+                      </button>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 
-        {/* Address */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Store Address *</label>
-          <input
-            type="text"
-            placeholder="Street name, landmark..."
-            className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm focus:border-blue-500 font-inter"
-            {...register("address", { required: "Address is required" })}
-          />
-          {errors.address && (
-            <p className="text-red-500 text-xs mt-1">{String(errors.address.message)}</p>
-          )}
-        </div>
-
-        {/* Opening & Closing Hours */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Clock size={14} className="text-gray-400" />
-              Opening Time *
-            </label>
-            <input
-              type="time"
-              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm transition-all focus:border-blue-500 font-inter cursor-pointer"
-              {...register("opening_hours", { required: "Opening time required" })}
-            />
-            {errors.opening_hours && (
-              <p className="text-red-500 text-xs mt-1">{String(errors.opening_hours.message)}</p>
-            )}
+        {/* Operational Timeline Section */}
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center gap-2 px-1">
+             <Clock size={12} className="text-emerald-500" />
+             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Operational Timeline</h4>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-              <Clock size={14} className="text-gray-400" />
-              Closing Time *
-            </label>
-            <input
-              type="time"
-              className="w-full p-2.5 border border-gray-300 outline-0 rounded-lg text-sm transition-all focus:border-blue-500 font-inter cursor-pointer"
-              {...register("closing_hours", { required: "Closing time required" })}
-            />
-            {errors.closing_hours && (
-              <p className="text-red-500 text-xs mt-1">{String(errors.closing_hours.message)}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className={labelStyles}>Opening Hours *</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  className={`${inputStyles} cursor-pointer appearance-none`}
+                  {...register("opening_hours", { required: "Opening time required" })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className={labelStyles}>Closing Hours *</label>
+              <div className="relative">
+                <input
+                  type="time"
+                  className={`${inputStyles} cursor-pointer appearance-none`}
+                  {...register("closing_hours", { required: "Closing time required" })}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {submitError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-            <p className="text-red-600 text-xs text-center font-medium">{submitError}</p>
-          </div>
-        )}
+        <div className="pt-8">
+          <AnimatePresence>
+            {submitError && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-6"
+              >
+                <p className="text-rose-500 text-[10px] font-black text-center uppercase tracking-widest italic">{submitError}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <button
-          type="submit"
-          disabled={isSubmitting || shopCreateMutation.isPending}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg text-base font-semibold transition-all hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md font-inter"
-        >
-          {shopCreateMutation.isPending ? "Creating Store..." : "Create Store"}
-        </button>
+          <Button
+            type="submit"
+            disabled={!isValid || isSubmitting || shopCreateMutation.isPending || cityDeliveries.length === 0}
+            isLoading={shopCreateMutation.isPending}
+            loaderLabel="Encrypting Matrix..."
+            variant="emerald"
+          >
+            Initialize System 
+            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform ml-2" />
+          </Button>
+        </div>
       </form>
     </div>
   );

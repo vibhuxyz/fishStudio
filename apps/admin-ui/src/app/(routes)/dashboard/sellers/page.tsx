@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Eye, Store, TicketPercent, IndianRupee } from "lucide-react";
+import { Button } from "@repo/ui";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { useAdminSellers, useSellerAccessCodes } from "@/hooks/useAdminQueries";
@@ -29,12 +30,14 @@ const SellersPage = () => {
       description="Review sellers, their stores, and how much catalog inventory they currently carry."
     >
       <div className="mb-4 flex justify-end">
-        <button
+        <Button
           onClick={() => setIsGiveSignupAccessOpen(true)}
-          className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+          variant="emerald"
+          fullWidth={false}
+          className="!py-2 !px-4 !rounded-lg !text-sm"
         >
           Generate Signup Access Code
-        </button>
+        </Button>
       </div>
       <div className="rounded-xl bg-gray-900 p-5">
         {isLoading ? (
@@ -100,12 +103,13 @@ const SellersPage = () => {
                         </Link>
                       </div>
                     ) : (
-                      <button
+                      <Button
                         onClick={() => setSelectedSellerId(seller.id)}
-                        className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-3 py-2 text-sm text-white hover:bg-amber-700"
+                        variant="amber"
+                        className="!py-2 !px-3 !rounded-lg !text-sm !inline-flex !w-auto"
                       >
                         Give Access
-                      </button>
+                      </Button>
                     )}
                   </td>
                 </tr>
@@ -157,13 +161,15 @@ const SellersPage = () => {
                       : "-"}
                   </td>
                   <td className="p-3">
-                    <button
+                    <Button
                       onClick={() => setViewingCode(invite.code)}
-                      className="inline-flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-600/20 px-3 py-2 text-sm text-green-400 transition hover:bg-green-600/30"
+                      variant="emerald"
+                      glow={false}
+                      className="!py-2 !px-3 !rounded-lg !text-sm !inline-flex !w-auto !bg-emerald-600/20 !text-emerald-400 border !border-emerald-600/30 hover:!bg-emerald-600/30"
                     >
-                      <Eye size={16} />
+                      <Eye size={16} className="mr-2" />
                       View Code
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}

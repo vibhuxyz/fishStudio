@@ -1,3 +1,4 @@
+export { Button } from "./button";
 export { default as Input } from "./components/input";
 
 export { default as CustomSizes } from "./components/custom-sizes";

@@ -1,13 +1,17 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Eye, EyeOff, ShoppingBag, UserCog } from "lucide-react";
+import { Eye, EyeOff, ShoppingBag, UserCog, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { frontendEnv } from "@/config/env";
 import CreateShop from "../../../shared/modules/auth/create-shop";
+import { motion, AnimatePresence } from "framer-motion";
+import AuthLayout from "@/shared/components/layout/AuthLayout";
+import StepIndicator from "@/shared/components/ui/StepIndicator";
+import { Button } from "@repo/ui";
 
 type AccountRole = "seller" | "staff" | null;
 
@@ -23,10 +27,20 @@ const Signup = () => {
   const [sellerId, setSellerId] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-// --- Start Seller Signup Additions ---
+  // --- Seller Verification ---
   const [accessCode, setAccessCode] = useState("");
   const [codeVerifiedEmail, setCodeVerifiedEmail] = useState(""); 
   const [codeVerified, setCodeVerified] = useState(false);
+
+  // wizard steps calculation
+  const isSeller = selectedRole === "seller";
+  const steps = isSeller 
+    ? ["Role", "Identity", "OTP", "Shop"] 
+    : ["Role", "Identity", "OTP", "Done"];
+  
+  const currentStep = !selectedRole ? 1 
+    : (activeStep === 2 ? 4 
+    : (showOtp ? 3 : 2));
 
   const verifyCodeMutation = useMutation({
     mutationFn: async (data: { email: string; code: string }) => {
@@ -41,13 +55,14 @@ const Signup = () => {
       setCodeVerifiedEmail(variables.email);
     },
   });
-  // --- End Seller Signup Additions ---
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm();
+    formState: { errors, isValid },
+  } = useForm({
+    mode: "onChange",
+  });
 
   const startResendTimer = () => {
     setCanResend(false);
@@ -76,7 +91,6 @@ const Signup = () => {
 
   const signupMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Pass code if seller
       const payload = selectedRole === "seller" ? { ...data, code: accessCode } : data;
       const response = await axios.post(
         `${frontendEnv.apiUrl}${registrationEndpoint}`,
@@ -94,7 +108,6 @@ const Signup = () => {
   const verifyOtpMutation = useMutation({
     mutationFn: async () => {
       if (!sellerData) return;
-      // Pass code if seller
       const payload = selectedRole === "seller" ? { ...sellerData, otp: otp.join(""), code: accessCode } : { ...sellerData, otp: otp.join("") };
       const response = await axios.post(
         `${frontendEnv.apiUrl}${verifyEndpoint}`,
@@ -105,7 +118,6 @@ const Signup = () => {
     },
     onSuccess: (data) => {
       if (selectedRole === "staff") {
-        // Staff signup complete — redirect to login
         window.location.href = "/login";
       } else {
         setSellerId(data?.seller?.id);
@@ -115,7 +127,6 @@ const Signup = () => {
   });
 
   const onSubmit = (data: any) => {
-    // If seller and code verified, override email to ensure it matches verified email
     if (selectedRole === "seller" && codeVerified) {
       data.email = codeVerifiedEmail;
     }
@@ -147,361 +158,334 @@ const Signup = () => {
     }
   };
 
-  // ── Step 0: Role selection ──────────────────────────────────────────────────
+  const accentColor = selectedRole === "staff" ? "blue" : "emerald";
+  const isStaffFlow = selectedRole === "staff";
+
   if (!selectedRole) {
     return (
-      <div className="w-full bg-[#f1f1f1] flex flex-col items-center pt-16 min-h-screen">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-2 text-center">
-          Create an Account
-        </h1>
-        <p className="text-gray-500 mb-10 text-center">
-          Choose your account type to get started
-        </p>
-        <div className="flex flex-col sm:flex-row gap-6">
-          {/* Seller card */}
-          <button
-            type="button"
-            onClick={() => setSelectedRole("seller")}
-            className="group w-72 bg-white rounded-2xl shadow-md p-8 flex flex-col items-center gap-4 border-2 border-transparent hover:border-blue-600 transition-all"
-          >
-            <div className="w-16 h-16 bg-blue-50 group-hover:bg-blue-100 rounded-full flex items-center justify-center transition-colors">
-              <ShoppingBag className="text-blue-600" size={32} />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">Seller</h2>
-            <p className="text-sm text-gray-500 text-center">
-              I own a shop and want to manage orders, products, and staff.
-            </p>
-          </button>
+      <div className="w-full min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden font-inter">
+        {/* Dynamic Background Orbs */}
+        <motion.div 
+          animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, -30, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px]" 
+        />
+        <motion.div 
+          animate={{ scale: [1.2, 1, 1.2], x: [0, -40, 0], y: [0, 60, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[-15%] right-[-10%] w-[45%] h-[45%] bg-blue-600/10 rounded-full blur-[100px]" 
+        />
 
-          {/* Staff card */}
-          <button
-            type="button"
-            onClick={() => setSelectedRole("staff")}
-            className="group w-72 bg-white rounded-2xl shadow-md p-8 flex flex-col items-center gap-4 border-2 border-transparent hover:border-green-600 transition-all"
+        <div className="w-full max-w-[800px] z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
           >
-            <div className="w-16 h-16 bg-green-50 group-hover:bg-green-100 rounded-full flex items-center justify-center transition-colors">
-              <UserCog className="text-green-600" size={32} />
+            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-white/5 bg-white/5 backdrop-blur-md">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
+                Network Enrollment
+              </span>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Staff</h2>
-            <p className="text-sm text-gray-500 text-center">
-              I work for a seller and need to manage and process shop orders.
+            <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">
+              Join the ecosystem
+            </h1>
+            <p className="text-slate-500 mt-4 font-medium italic text-lg opacity-80">
+              Select your operational bridge to begin
             </p>
-          </button>
+          </motion.div>
+
+          <StepIndicator currentStep={1} steps={["Role", "Identity", "OTP", "Shop"]} />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 shadow-2xl shadow-black/50 overflow-visible p-4">
+            <motion.button
+              whileHover={{ y: -10, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedRole("seller")}
+              className="group bg-white/5 border border-white/10 p-10 rounded-[3rem] backdrop-blur-2xl text-center flex flex-col items-center gap-8 hover:bg-emerald-500/10 hover:border-emerald-500/20 transition-all duration-500 relative overflow-hidden"
+            >
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-600/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500 rotate-3 group-hover:rotate-0 shadow-2xl">
+                <ShoppingBag size={48} />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Merchant</h2>
+                <p className="text-slate-500 text-sm font-medium italic leading-relaxed">
+                  Establish your shop, scale your inventory, and lead business operations.
+                </p>
+              </div>
+              <div className="mt-4 py-3 px-8 rounded-2xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0">
+                Initiate Merchant Flow
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ y: -10, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedRole("staff")}
+              className="group bg-white/5 border border-white/10 p-10 rounded-[3rem] backdrop-blur-2xl text-center flex flex-col items-center gap-8 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all duration-500 relative overflow-hidden"
+            >
+              <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-600/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              
+              <div className="w-24 h-24 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all duration-500 -rotate-3 group-hover:rotate-0 shadow-2xl">
+                <UserCog size={48} />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">Associate</h2>
+                <p className="text-slate-500 text-sm font-medium italic leading-relaxed">
+                  Connect to an existing shop and manage order fulfillment streams.
+                </p>
+              </div>
+              <div className="mt-4 py-3 px-8 rounded-2xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0">
+                Initiate Associate Flow
+              </div>
+            </motion.button>
+          </div>
+
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-16 text-center"
+          >
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] italic">
+              Legacy operative?{" "}
+              <Link href="/login" className="text-emerald-500 hover:text-emerald-400 transition-colors ml-1 underline underline-offset-4 decoration-emerald-500/20">
+                Resurrect Session
+              </Link>
+            </p>
+          </motion.div>
         </div>
-        <p className="mt-8 text-gray-500">
-          Already have an account?{" "}
-          <Link href="/login" className="text-blue-600 font-medium">
-            Login
-          </Link>
-        </p>
       </div>
     );
   }
 
-  const isStaffFlow = selectedRole === "staff";
-
   return (
-    <div className="w-full bg-[#f1f1f1] flex flex-col items-center pt-10 min-h-screen">
-      {/* Role badge */}
-      <div className="mb-4 flex items-center gap-2">
-        <span
-          className={`px-3 py-1 rounded-full text-sm font-medium ${
-            isStaffFlow
-              ? "bg-green-100 text-green-700"
-              : "bg-blue-100 text-blue-700"
-          }`}
-        >
-          {isStaffFlow ? "Staff Account" : "Seller Account"}
-        </span>
-        <button
-          type="button"
-          onClick={() => setSelectedRole(null)}
-          className="text-sm text-gray-400 underline hover:text-gray-600"
-        >
-          Change
-        </button>
-      </div>
+    <AuthLayout 
+      title={isSeller ? "Merchant Link" : "Associate Link"}
+      subtitle={isSeller ? "Establishing your commercial matrix" : "Connecting to shop operational stream"}
+      accentColor={accentColor}
+      topContent={
+        <StepIndicator currentStep={currentStep} steps={steps} accentColor={accentColor} />
+      }
+    >
+       <div className="pt-2">
+          <button
+            onClick={() => {
+              if (activeStep === 1) setSelectedRole(null);
+              else setActiveStep(1);
+            }}
+            className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-black text-[10px] uppercase tracking-widest mb-8 group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            Previous State
+          </button>
 
-      {/* Stepper — only for seller */}
-      {!isStaffFlow && (
-        <div className="relative flex items-center justify-between md:w-[50%] mb-8">
-          <div className="absolute top-[25%] left-0 w-[80%] md:w-[90%] h-1 bg-gray-300 z-10" />
-          {[1, 2].map((step) => (
-            <div key={step}>
-              <div
-                className={`w-10 h-10 relative z-20 flex items-center justify-center rounded-full text-white font-bold ${
-                  step <= activeStep ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              >
-                {step}
-              </div>
-              <span className="ml-[-15px]">
-                {step === 1 ? "Create Account" : "Setup Shop"}
-              </span>
+          {!isStaffFlow && activeStep === 2 ? (
+            <div className="animate-in fade-in zoom-in duration-700">
+               <CreateShop sellerId={sellerId} setActiveStep={setActiveStep} />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Form card */}
-      <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-        {selectedRole === "seller" && activeStep === 1 && !codeVerified ? (
-          <div>
-            <h3 className="text-2xl font-semibold text-center mb-4">
-              Seller Access Verification
-            </h3>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              Please enter your email and the 6-digit access code provided by the administrator.
-            </p>
-            <label className="block text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              placeholder="Enter Email"
-              className="w-full p-2 border border-gray-300 outline-0 rounded mb-4"
-              value={codeVerifiedEmail}
-              onChange={(e) => setCodeVerifiedEmail(e.target.value)}
-            />
-            <label className="block text-gray-700 mb-1">Access Code</label>
-            <input
-              type="text"
-              placeholder="Enere 6-digit Code"
-              className="w-full p-2 border border-gray-300 outline-0 rounded mb-4"
-              value={accessCode}
-              onChange={(e) => setAccessCode(e.target.value)}
-            />
-            <button
-              onClick={() => verifyCodeMutation.mutate({ email: codeVerifiedEmail, code: accessCode })}
-              disabled={!accessCode || !codeVerifiedEmail || verifyCodeMutation.isPending}
-              className="w-full text-lg cursor-pointer bg-blue-600 text-white py-2 rounded-lg disabled:opacity-50"
-            >
-              {verifyCodeMutation.isPending ? "Verifying..." : "Verify Code"}
-            </button>
-            {verifyCodeMutation.isError && verifyCodeMutation.error instanceof AxiosError && (
-              <p className="text-red-500 text-sm mt-2 text-center">
-                {verifyCodeMutation.error.response?.data?.message || verifyCodeMutation.error.message}
-              </p>
-            )}
-            <p className="pt-6 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-600">
-                Login
-              </Link>
-            </p>
-          </div>
-        ) : (activeStep === 1 || isStaffFlow) && (
-          <>
-            {!showOtp ? (
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <h3 className="text-2xl font-semibold text-center mb-4">
-                  {isStaffFlow ? "Create Staff Account" : "Create Account"}
-                </h3>
-
-                <label className="block text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  placeholder="Your full name"
-                  className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                  {...register("name", { required: "Name is required" })}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm">
-                    {String(errors.name.message)}
-                  </p>
-                )}
-
-                {(!codeVerified || isStaffFlow) && (
-                  <>
-                    <label className="block text-gray-700 mb-1 mt-2">Email</label>
-                    <input
-                      type="email"
-                      placeholder="you@example.com"
-                      className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                      {...register("email", {
-                        required: "Email is required",
-                        pattern: {
-                          value:
-                            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                          message: "Invalid email address",
-                        },
-                      })}
-                      disabled={selectedRole === "seller" && codeVerified}
-                      defaultValue={selectedRole === "seller" ? codeVerifiedEmail : ""}
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-sm">
-                        {String(errors.email.message)}
-                      </p>
-                    )}
-                  </>
-                )}
-                {/* if it's a seller, we'll just show the disabled email without the react-hook-form register to avoid issues, or we pre-fill it and pass it to onSubmit */}
-                {selectedRole === "seller" && codeVerified && (
-                    <>
-                      <label className="block text-gray-700 mb-1 mt-2">Email</label>
+          ) : (
+            <AnimatePresence mode="wait">
+              {selectedRole === "seller" && activeStep === 1 && !codeVerified ? (
+                <motion.div 
+                  key="verify"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-2 uppercase italic tracking-tight">Authorization</h3>
+                    <p className="text-slate-500 text-sm font-medium italic">Enter master code to unlock merchant node.</p>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                       <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Work Email</label>
+                        <input
+                          type="email"
+                          placeholder="merchant@fishstudio.com"
+                          className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-medium"
+                          value={codeVerifiedEmail}
+                          onChange={(e) => setCodeVerifiedEmail(e.target.value)}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Access Key</label>
                       <input
-                        type="email"
-                        className="w-full p-2 border border-gray-300 bg-gray-100 text-gray-500 outline-0 rounded mb-1"
-                        value={codeVerifiedEmail}
-                        disabled
+                        type="text"
+                        placeholder="000-000"
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-mono uppercase tracking-[0.3em] font-black"
+                        value={accessCode}
+                        onChange={(e) => setAccessCode(e.target.value)}
                       />
-                    </>
-                )}
-
-                {/* Phone number only for seller */}
-                {!isStaffFlow && (
-                  <>
-                    <label className="block text-gray-700 mb-1 mt-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="98765 43210"
-                      className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                      maxLength={10}
-                      {...register("phone_number", {
-                        required: "Phone Number is required",
-                        pattern: {
-                          value: /^[6-9]\d{9}$/,
-                          message: "Enter valid 10-digit mobile number",
-                        },
-                      })}
-                    />
-                    {errors.phone_number && (
-                      <p className="text-red-500 text-sm">
-                        {String(errors.phone_number.message)}
+                    </div>
+                    
+                    <Button
+                      onClick={() => verifyCodeMutation.mutate({ email: codeVerifiedEmail, code: accessCode })}
+                      disabled={!accessCode || !codeVerifiedEmail || verifyCodeMutation.isPending}
+                      isLoading={verifyCodeMutation.isPending}
+                      loaderLabel="Validating Protocol..."
+                      variant="emerald"
+                    >
+                      Connect Node
+                    </Button>
+                    
+                    {verifyCodeMutation.isError && (
+                      <p className="text-rose-500 text-[10px] font-black text-center italic uppercase leading-tight">
+                        { (verifyCodeMutation.error as any)?.response?.data?.message || "Protocol Error: Invalid Access Key" }
                       </p>
                     )}
-                  </>
-                )}
-
-                <label className="block text-gray-700 mb-1 mt-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={passwordVisible ? "text" : "password"}
-                    placeholder="Min. 6 characters"
-                    className="w-full p-2 border border-gray-300 outline-0 rounded mb-1"
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: {
-                        value: 6,
-                        message: "Password must be at least 6 characters",
-                      },
-                    })}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPasswordVisible(!passwordVisible)}
-                    className="absolute inset-y-0 right-3 flex items-center text-gray-400"
-                  >
-                    {passwordVisible ? <Eye /> : <EyeOff />}
-                  </button>
-                </div>
-                {errors.password && (
-                  <p className="text-red-500 text-sm">
-                    {String(errors.password.message)}
-                  </p>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={signupMutation.isPending}
-                  className="w-full text-lg cursor-pointer mt-4 bg-black text-white py-2 rounded-lg"
+                  </div>
+                </motion.div>
+              ) : !showOtp ? (
+                <motion.form 
+                  key="identity"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  onSubmit={handleSubmit(onSubmit)} 
+                  className="space-y-8"
                 >
-                  {signupMutation.isPending ? "Sending OTP..." : "Continue"}
-                </button>
+                  <div>
+                    <h3 className="text-2xl font-black text-white mb-2 uppercase italic tracking-tight">Identity Matrix</h3>
+                    <p className="text-slate-500 text-sm font-medium italic">Defining your professional operative profile.</p>
+                  </div>
 
-                {signupMutation.isError &&
-                  signupMutation.error instanceof AxiosError && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {signupMutation.error.response?.data?.message ||
-                        signupMutation.error.message}
-                    </p>
-                  )}
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Operative Name"
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-medium"
+                        {...register("name", { required: "Name is required" })}
+                      />
+                    </div>
 
-                <p className="pt-3 text-center">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-blue-600">
-                    Login
-                  </Link>
-                </p>
-              </form>
-            ) : (
-              <div>
-                <h3 className="text-xl font-semibold text-center mb-2">
-                  Enter OTP
-                </h3>
-                <p className="text-center text-sm text-gray-500 mb-4">
-                  We sent a code to{" "}
-                  <span className="font-medium">{sellerData?.email}</span>
-                </p>
-                <div className="flex justify-center gap-6">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      type="text"
-                      ref={(el) => {
-                        if (el) inputRefs.current[index] = el;
-                      }}
-                      maxLength={1}
-                      className="w-12 h-12 text-center border border-gray-300 outline-none rounded"
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    />
-                  ))}
-                </div>
-                <button
-                  className="w-full mt-4 text-lg cursor-pointer bg-blue-600 text-white py-2 rounded-lg"
-                  disabled={verifyOtpMutation.isPending}
-                  onClick={() => verifyOtpMutation.mutate()}
-                >
-                  {verifyOtpMutation.isPending ? "Verifying..." : "Verify OTP"}
-                </button>
+                    {(!codeVerified || isStaffFlow) && (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Work Email</label>
+                        <input
+                          type="email"
+                          placeholder="you@fishstudio.com"
+                          className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-medium"
+                          {...register("email", { required: "Email is required" })}
+                        />
+                      </div>
+                    )}
 
-                {isStaffFlow && (
-                  <p className="text-xs text-gray-400 mt-3 text-center">
-                    After signing up, you will need a seller to grant you access
-                    before you can log in.
-                  </p>
-                )}
+                    {selectedRole === "seller" && codeVerified && (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Verified Link</label>
+                        <div className="w-full px-6 py-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 font-bold flex items-center justify-between backdrop-blur-md">
+                          <span className="text-sm italic">{codeVerifiedEmail}</span>
+                          <CheckCircle2 size={18} className="animate-pulse" />
+                        </div>
+                      </div>
+                    )}
 
-                <p className="text-center text-sm mt-4">
-                  {canResend ? (
-                    <button
-                      onClick={resendOtp}
-                      className="text-blue-500 cursor-pointer"
+                    {!isStaffFlow && (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Comms Number</label>
+                        <input
+                          type="tel"
+                          placeholder="+91 00000 00000"
+                          className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-medium"
+                          maxLength={10}
+                          {...register("phone_number", { required: "Required" })}
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Access Password</label>
+                      <div className="relative group">
+                        <input
+                          type={passwordVisible ? "text" : "password"}
+                          placeholder="••••••••"
+                          className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-white font-medium"
+                          {...register("password", { required: "Required", minLength: 6 })}
+                        />
+                        <button type="button" onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors">
+                          {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={!isValid || signupMutation.isPending}
+                      isLoading={signupMutation.isPending}
+                      loaderLabel="Starting Uplink..."
+                      variant={accentColor as any}
                     >
-                      Resend OTP
-                    </button>
-                  ) : (
-                    `Resend OTP in ${timer}s`
-                  )}
-                </p>
-                {verifyOtpMutation?.isError &&
-                  verifyOtpMutation.error instanceof AxiosError && (
-                    <p className="text-red-500 text-sm mt-2">
-                      {verifyOtpMutation.error.response?.data?.message ||
-                        verifyOtpMutation.error.message}
-                    </p>
-                  )}
-                {signupMutation.isError &&
-                  signupMutation.error instanceof AxiosError && (
-                    <p className="text-red-500 text-sm mt-2 text-center">
-                      {signupMutation.error.response?.data?.message ||
-                        signupMutation.error.message}
-                    </p>
-                  )}
-              </div>
-            )}
-          </>
-        )}
-        {!isStaffFlow && activeStep === 2 && (
-          <CreateShop sellerId={sellerId} setActiveStep={setActiveStep} />
-        )}
-      </div>
-    </div>
+                      Initialize Profile
+                    </Button>
+                    
+                    {signupMutation.isError && (
+                      <p className="text-rose-500 text-[10px] font-black text-center italic uppercase leading-tight">
+                        { (signupMutation.error as any)?.response?.data?.message || "Transmission Failure" }
+                      </p>
+                    )}
+                  </div>
+                </motion.form>
+              ) : (
+                <motion.div 
+                  key="otp"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-10"
+                >
+                  <div className="text-center">
+                    <h3 className="text-2xl font-black text-white mb-2 uppercase italic tracking-tight">OTP Verification</h3>
+                    <p className="text-slate-500 text-sm font-medium italic">Security code sent to <span className="text-white font-bold">{sellerData?.email}</span></p>
+                  </div>
+
+                  <div className="flex justify-center gap-4 py-2">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        type="text"
+                        ref={(el) => { if (el) inputRefs.current[index] = el; }}
+                        maxLength={1}
+                        className={`w-16 h-20 text-center text-3xl font-black bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-4 ${accentColor === "emerald" ? "focus:ring-emerald-500/20 focus:border-emerald-500" : "focus:ring-blue-500/20 focus:border-blue-500"} transition-all text-white backdrop-blur-xl`}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="space-y-6">
+                    <Button
+                      disabled={otp.some(d => !d) || verifyOtpMutation.isPending}
+                      isLoading={verifyOtpMutation.isPending}
+                      loaderLabel="Validating System..."
+                      onClick={() => verifyOtpMutation.mutate()}
+                      variant={accentColor as any}
+                    >
+                      Synchronize System
+                    </Button>
+
+                    <div className="text-center">
+                      {canResend ? (
+                        <button onClick={resendOtp} className={`text-[10px] font-black uppercase tracking-widest ${accentColor === "emerald" ? "text-emerald-500" : "text-blue-500"} hover:underline underline-offset-4 decoration-current transition-all`}>Request New Transmission</button>
+                      ) : (
+                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest italic font-medium">Re-transmission available in <span className="text-white font-bold">{timer}s</span></p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
+       </div>
+    </AuthLayout>
   );
 };
 

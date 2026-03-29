@@ -8,6 +8,7 @@ import useSeller from "@/hooks/useSeller";
 import { useAuthStore } from "@/store/authStore";
 import axiosInstance from "@/utils/axiosInstance";
 import { frontendEnv } from "@/config/env";
+import { Button } from "@repo/ui";
 
 export default function PendingApprovalPage() {
   const router = useRouter();
@@ -84,13 +85,15 @@ export default function PendingApprovalPage() {
           </p>
         </div>
 
-        <button
+        <Button
           onClick={handleLogout}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-slate-700"
+          variant="rose"
+          glow={false}
+          className="mt-6 !bg-slate-800 hover:!bg-slate-700 !py-3 !text-sm !font-medium"
         >
-          <LogOut size={18} />
+          <LogOut size={18} className="mr-2" />
           Sign out
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   AdminSellerSummary,
 } from "@/hooks/useAdminQueries";
 import { useRouter } from "next/navigation";
+import { Button } from "@repo/ui";
 
 const PERMISSION_OPTIONS = [
   { id: "product", label: "Manage Products" },
@@ -203,19 +204,26 @@ export default function GiveAccessModal({
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
-                <button
+                <Button
                   onClick={onClose}
-                  className="rounded-lg bg-gray-700 px-4 py-2 text-white hover:bg-gray-600"
+                  variant="indigo"
+                  glow={false}
+                  fullWidth={false}
+                  className="!bg-gray-700 hover:!bg-gray-600 !py-2 !px-4 !rounded-lg !w-auto"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSaveMain}
                   disabled={updateMutation.isPending}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                  isLoading={updateMutation.isPending}
+                  loaderLabel="Saving..."
+                  variant="blue"
+                  fullWidth={false}
+                  className="!py-2 !px-4 !rounded-lg !w-auto"
                 >
-                  {updateMutation.isPending ? "Saving..." : "Save Changes"}
-                </button>
+                  Save Changes
+                </Button>
               </div>
             </div>
           )}
@@ -264,19 +272,26 @@ export default function GiveAccessModal({
             </div>
 
             <div className="mt-8 flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => setShowPermissionsModal(false)}
-                className="rounded-lg bg-gray-800 px-4 py-2 text-white hover:bg-gray-700"
+                variant="indigo"
+                glow={false}
+                fullWidth={false}
+                className="!bg-gray-800 hover:!bg-gray-700 !py-2 !px-4 !rounded-lg !w-auto"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleSavePermissions}
                 disabled={updateMutation.isPending}
-                className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                isLoading={updateMutation.isPending}
+                loaderLabel="Saving..."
+                variant="blue"
+                fullWidth={false}
+                className="!py-2 !px-4 !rounded-lg !w-auto"
               >
-                {updateMutation.isPending ? "Saving..." : "Save & Grant Access"}
-              </button>
+                Save & Grant Access
+              </Button>
             </div>
           </div>
         </div>
@@ -297,18 +312,23 @@ export default function GiveAccessModal({
               will be able to manage all restricted features unconditionally.
             </p>
             <div className="flex justify-center gap-3">
-              <button
+              <Button
                 onClick={() => setShowConfirmFullAccess(false)}
-                className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                variant="indigo"
+                glow={false}
+                fullWidth={false}
+                className="!bg-gray-800 hover:!bg-gray-700 !py-2 !px-4 !rounded-lg !w-auto !text-sm"
               >
                 No, Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleConfirmFullAccess}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                variant="rose"
+                fullWidth={false}
+                className="!py-2 !px-4 !rounded-lg !w-auto !text-sm"
               >
                 Yes, Grant Access
-              </button>
+              </Button>
             </div>
           </div>
         </div>

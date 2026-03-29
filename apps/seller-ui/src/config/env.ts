@@ -9,10 +9,11 @@ export const frontendEnv = {
     "http://localhost:3002",
   servicePort: process.env.NEXT_PUBLIC_SERVICE_PORT || "3002",
   userUiUrl: process.env.NEXT_PUBLIC_USER_UI_LINK || "http://localhost:3000",
-  workerWebsocketUrl:
+  workerWebsocketUrl: (
     process.env.NEXT_PUBLIC_WORKER_WS_URL ||
     process.env.NEXT_PUBLIC_CHATTING_WEBSOCKET_URI ||
-    "ws://localhost:8080",
+    "ws://localhost:8080"
+  ).replace(/^http/, "ws").replace(/\/$/, ""),
   chatWebsocketUrl:
     process.env.NEXT_PUBLIC_CHATTING_WEBSOCKET_URI || "ws://localhost:8080",
 } as const;

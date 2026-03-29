@@ -28,6 +28,7 @@
   "scripts": {
     "build": "dotenv -e .env -- turbo run build  --concurrency=20",
     "dev": "dotenv -e .env -- turbo run dev  --concurrency=20",
+    "dev:ui": "dotenv -e .env -- turbo run dev --filter=seller-ui --filter=user-ui --filter=admin-ui --concurrency=4",
     "start": "turbo run start  --concurrency=20",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{js,ts,jsx,tsx,md,json}\"",

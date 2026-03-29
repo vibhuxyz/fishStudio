@@ -33,6 +33,7 @@ import { Loader2, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { frontendEnv } from "@/config/env";
 import { isProtected } from "@/utils/protected";
+import { Button } from "@repo/ui";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -181,23 +182,27 @@ function AcceptModal({
 
         {/* Actions */}
         <div className="px-5 pb-5 flex gap-3">
-          <button
-            type="button"
+          <Button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm"
+            variant="blue"
+            glow={false}
+            fullWidth={false}
+            className="flex-1 !bg-transparent !border-gray-700 !text-gray-300 hover:!bg-gray-800"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+            isLoading={isSubmitting}
+            loaderLabel="Accepting Order..."
+            variant="emerald"
+            className="flex-1"
           >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
-            {isSubmitting ? "Accepting Order..." : "Yes, Accept Order"}
-          </button>
+            <CheckCircle size={16} className="mr-2" />
+            Yes, Accept Order
+          </Button>
         </div>
       </div>
     </div>
@@ -264,23 +269,27 @@ function RejectModal({
           {error && <p className="text-red-400 text-xs">{error}</p>}
         </div>
         <div className="px-5 pb-5 flex gap-3">
-          <button
-            type="button"
+          <Button
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 py-2.5 border border-gray-700 text-gray-300 rounded-xl hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm"
+            variant="blue"
+            glow={false}
+            fullWidth={false}
+            className="flex-1 !bg-transparent !border-gray-700 !text-gray-300 hover:!bg-gray-800"
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
             onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition flex items-center justify-center gap-2"
+            disabled={isSubmitting || !reason.trim()}
+            isLoading={isSubmitting}
+            loaderLabel="Rejecting & Refunding..."
+            variant="rose"
+            className="flex-1"
           >
-            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
-            {isSubmitting ? "Rejecting & Refunding..." : "Reject & Refund"}
-          </button>
+            <XCircle size={16} className="mr-2" />
+            Reject & Refund
+          </Button>
         </div>
       </div>
     </div>
@@ -539,140 +548,148 @@ export function OrderCard({
   const isBusy = Boolean(pendingAction);
 
   return (
-    <div className="bg-[#0f1117] border border-gray-800/60 rounded-2xl p-4 hover:border-gray-700 transition group">
+    <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[1.5rem] p-5 hover:bg-white/[0.05] hover:border-white/20 hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all duration-300 group relative overflow-hidden">
+      {/* Subtle top glow */}
+      <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-${cfg.color.split("-")[1]}-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+      
       {/* Top row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color} border ${cfg.border}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} animate-pulse`} />
-            {cfg.label}
-          </span>
+      <div className="flex items-center justify-between mb-4">
+        <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color} border ${cfg.border}`}>
+          <span className={`w-1 h-1 rounded-full ${cfg.dot} animate-pulse`} />
+          {cfg.label}
+        </span>
+        <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{mounted ? timeAgo(order.createdAt) : "Recently"}</span>
+      </div>
+
+      {/* Order ID + Main Price */}
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest mb-0.5">Order Token</p>
+          <p className="text-white font-mono text-sm font-bold tracking-tight">#{order.id.slice(-6).toUpperCase()}</p>
         </div>
-        <span className="text-gray-600 text-xs">{mounted ? timeAgo(order.createdAt) : "Recently"}</span>
+        <div className="text-right">
+          <p className="text-white font-black text-xl italic tracking-tighter">{formatINR(order.total)}</p>
+        </div>
       </div>
 
-      {/* Order ID + total */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-gray-400 text-xs font-mono">#{order.id.slice(-6).toUpperCase()}</p>
-        <p className="text-white font-bold text-base">{formatINR(order.total)}</p>
-      </div>
-
-      {/* Customer */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="w-7 h-7 rounded-full bg-[#1e2433] flex items-center justify-center">
-          <User size={13} className="text-gray-400" />
+      {/* Customer / Location Info */}
+      <div className="flex items-start gap-3 mb-5 p-3 rounded-2xl bg-white/[0.03] border border-white/5">
+        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+          <User size={18} className="text-slate-400" />
         </div>
         <div className="min-w-0">
-          <p className="text-white text-sm font-medium truncate">{order.user.name}</p>
-          <p className="text-gray-500 text-xs flex items-center gap-1">
-            <MapPin size={10} />
-            {order.shippingAddress.city}, {order.shippingAddress.state}
+          <p className="text-white text-sm font-black tracking-tight leading-tight mb-0.5">{order.user.name}</p>
+          <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+            <MapPin size={10} className="shrink-0" />
+            {order.shippingAddress.city}
           </p>
         </div>
+        <button 
+          onClick={() => onViewDetails(order)}
+          className="ml-auto w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-all active:scale-90"
+          title="Details"
+        >
+          <Eye size={14} />
+        </button>
       </div>
 
-      {/* Items preview */}
-      <div className="space-y-1.5 mb-4">
+      {/* Items Preview */}
+      <div className="space-y-2 mb-6">
+        <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] ml-1 mb-2">Inventory Stream</p>
         {order.items.slice(0, 2).map((item, idx) => (
-          <div key={`${item.productId}-${idx}`} className="bg-[#1a1f2e] rounded-lg px-3 py-2">
-            <div className="flex items-center gap-2">
-              <Fish size={14} className="text-teal-500 shrink-0" />
-              <span className="text-gray-200 text-xs truncate flex-1">{item.product.title}</span>
-              <span className="text-gray-400 text-xs shrink-0">{item.quantity} {item.unit}</span>
+          <div key={`${item.productId}-${idx}`} className="flex items-center gap-3 group/item">
+            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center shrink-0 group-hover/item:border-teal-500/30 transition-colors">
+              <Fish size={14} className="text-teal-500/70" />
             </div>
-            {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {Object.entries(item.selectedOptions).map(([key, value]) => (
-                  value && (
-                    <span key={key} className="text-[9px] text-teal-500/70 font-medium">
-                      {key[0].toUpperCase()}: {String(value)}
-                    </span>
-                  )
-                ))}
-              </div>
-            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-slate-200 text-xs font-bold truncate leading-none mb-1">{item.product.title}</p>
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-wider">{item.quantity} {item.unit}</p>
+            </div>
           </div>
         ))}
         {order.items.length > 2 && (
-          <p className="text-gray-600 text-xs text-center">+{order.items.length - 2} more items</p>
+          <p className="text-slate-600 text-[10px] font-bold uppercase tracking-widest text-center pt-1 italic">
+            + {order.items.length - 2} Additional Signal{order.items.length - 2 > 1 ? "s" : ""}
+          </p>
         )}
       </div>
 
-      {/* Rejection info */}
+      {/* Rejection Log */}
       {order.status === "Rejected" && order.rejectionReason && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
-          <p className="text-red-400 text-xs leading-relaxed">{order.rejectionReason}</p>
+        <div className="bg-rose-500/5 border border-rose-500/10 rounded-xl px-3 py-2.5 mb-5 italic">
+          <p className="text-rose-400/80 text-[10px] leading-relaxed font-medium">"{order.rejectionReason}"</p>
           {order.refundStatus && (
-            <p className="text-green-400 text-xs mt-1 font-medium">Refund: {order.refundStatus}</p>
+            <p className="text-emerald-500 text-[9px] mt-1 font-black uppercase tracking-widest">System Refund: {order.refundStatus}</p>
           )}
         </div>
       )}
 
-      {/* View Details */}
-      <button
-        type="button"
-        onClick={() => onViewDetails(order)}
-        disabled={isBusy}
-        className="w-full flex items-center justify-center gap-1.5 py-2 mb-2 bg-[#1a1f2e] hover:bg-[#1e2540] border border-gray-700/50 hover:border-gray-600 disabled:opacity-70 disabled:cursor-not-allowed text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition"
-      >
-        <Eye size={13} />
-        View Full Details
-      </button>
+      {/* Action Area */}
+      <div className="space-y-2.5">
+        {order.status === "New" && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onAccept(order)}
+              disabled={isBusy}
+              isLoading={pendingAction === "accepting"}
+              loaderLabel="Auth..."
+              variant="emerald"
+              className="flex-1 !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
+            >
+              <CheckCircle size={14} className="mr-1.5" />
+              Accept
+            </Button>
+            <Button
+              onClick={() => onReject(order)}
+              disabled={isBusy}
+              isLoading={pendingAction === "rejecting"}
+              loaderLabel="Drop..."
+              variant="rose"
+              className="flex-1 !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
+            >
+              <XCircle size={14} className="mr-1.5" />
+              Reject
+            </Button>
+          </div>
+        )}
 
-      {/* Action buttons */}
-      {order.status === "New" && (
-        <div className="flex gap-2 mt-1">
-          <button
-            type="button"
-            onClick={() => onAccept(order)}
+        {order.status === "Processing" && (
+          <Button
+            onClick={() => onMarkReady(order.id)}
             disabled={isBusy}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition"
+            isLoading={pendingAction === "marking-ready"}
+            loaderLabel="Updating Signal..."
+            variant="amber"
+            className="w-full !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
           >
-            {pendingAction === "accepting" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-            {pendingAction === "accepting" ? "Accepting..." : "Accept"}
-          </button>
-          <button
-            type="button"
-            onClick={() => onReject(order)}
+            <Package size={14} className="mr-1.5" />
+            Initialize Pickup
+          </Button>
+        )}
+
+        {order.status === "Ready" && (
+          <Button
+            onClick={() => onMarkCompleted(order.id)}
             disabled={isBusy}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-red-600/20 hover:bg-red-600 border border-red-600/40 hover:border-red-500 disabled:opacity-70 disabled:cursor-not-allowed text-red-400 hover:text-white rounded-xl text-xs font-semibold transition"
+            isLoading={pendingAction === "marking-completed"}
+            loaderLabel="Terminating Session..."
+            variant="emerald"
+            className="w-full !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
           >
-            {pendingAction === "rejecting" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
-            {pendingAction === "rejecting" ? "Rejecting..." : "Reject"}
-          </button>
-        </div>
-      )}
+            <CheckCircle size={14} className="mr-1.5" />
+            Complete Cycle
+          </Button>
+        )}
 
-      {order.status === "Processing" && (
-        <button
-          type="button"
-          onClick={() => onMarkReady(order.id)}
-          disabled={isBusy}
-          className="w-full flex items-center justify-center gap-1.5 py-2 bg-teal-600/20 hover:bg-teal-600 border border-teal-600/40 hover:border-teal-500 disabled:opacity-70 disabled:cursor-not-allowed text-teal-400 hover:text-white rounded-xl text-xs font-semibold transition"
-        >
-          {pendingAction === "marking-ready" ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
-          {pendingAction === "marking-ready" ? "Updating..." : "Mark as Ready to Pickup"}
-        </button>
-      )}
-
-      {order.status === "Ready" && (
-        <button
-          type="button"
-          onClick={() => onMarkCompleted(order.id)}
-          disabled={isBusy}
-          className="w-full flex items-center justify-center gap-1.5 py-2 bg-green-600/20 hover:bg-green-600 border border-green-600/40 hover:border-green-500 disabled:opacity-70 disabled:cursor-not-allowed text-green-400 hover:text-white rounded-xl text-xs font-semibold transition"
-        >
-          {pendingAction === "marking-completed" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
-          {pendingAction === "marking-completed" ? "Updating..." : "Mark as Completed"}
-        </button>
-      )}
-
-      {order.status === "Processing" && (
-        <p className="text-center text-gray-600 text-xs mt-2 flex items-center justify-center gap-1">
-          <Clock size={11} />
-          Cannot cancel — order is being processed
-        </p>
-      )}
+        {order.status === "Processing" && (
+          <div className="pt-2">
+            <p className="text-center text-slate-600 text-[8px] font-black uppercase tracking-[0.2em] italic flex items-center justify-center gap-1.5 opacity-50">
+              <Clock size={10} />
+              Session Locked — Un-cancelable state
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -822,7 +839,7 @@ const StaffOrdersPage = () => {
   React.useEffect(() => {
     if (!linkedSellerId) return;
 
-    const wsUrl = `${frontendEnv.workerWebsocketUrl.replace(/^http/, "ws")}?sellerId=${linkedSellerId}`;
+    const wsUrl = `${frontendEnv.workerWebsocketUrl}?sellerId=${linkedSellerId}`;
 
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
@@ -910,8 +927,8 @@ const StaffOrdersPage = () => {
         }
       };
 
-      ws.onerror = (err) => {
-        console.error("❌ Staff WS error:", err);
+      ws.onerror = () => {
+        console.warn(`⚠️ Staff WS: could not connect to ${wsUrl} (worker-service may not be running)`);
       };
 
       ws.onclose = () => {
@@ -1087,6 +1104,44 @@ const StaffOrdersPage = () => {
     }
   });
 
+  const markReadyMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return axiosInstance.put(
+        `/order/api/update-status/${orderId}`,
+        { status: "SHIPPED" },
+        orderRequestConfig,
+      );
+    },
+    onSuccess: (_, orderId) => {
+      syncOrderInCache(orderId, { status: "Ready" });
+      clearOrderUiState(orderId);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+    },
+    onError: (_error, orderId) => {
+      clearOrderUiState(orderId);
+      toast.error("Failed to mark order as ready");
+    }
+  });
+
+  const markCompletedMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return axiosInstance.put(
+        `/order/api/update-status/${orderId}`,
+        { status: "DELIVERED" },
+        orderRequestConfig,
+      );
+    },
+    onSuccess: (_, orderId) => {
+      syncOrderInCache(orderId, { status: "Completed" });
+      clearOrderUiState(orderId);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+    },
+    onError: (_error, orderId) => {
+      clearOrderUiState(orderId);
+      toast.error("Failed to mark order as completed");
+    }
+  });
+
   const handleAcceptConfirm = () => {
     if (!acceptTarget) return;
     const orderId = acceptTarget.id;
@@ -1105,32 +1160,16 @@ const StaffOrdersPage = () => {
     rejectMutation.mutate({ orderId, reason });
   };
 
-  const statusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: string }) =>
-      axiosInstance.put(`/order/api/update-status/${orderId}`, { status }, orderRequestConfig),
-    onSuccess: (_, variables) => {
-      syncOrderInCache(variables.orderId, {
-        status: variables.status === "SHIPPED" ? "Ready" : "Completed",
-      });
-      clearOrderUiState(variables.orderId);
-      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
-    },
-    onError: (_error, variables) => {
-      clearOrderUiState(variables.orderId);
-      toast.error("Failed to update order status");
-    },
-  });
-
-  const handleMarkReady = (id: string) => {
-    setPendingAction(id, "marking-ready");
-    applyOptimisticOrder(id, { status: "Ready" });
-    statusMutation.mutate({ orderId: id, status: "SHIPPED" });
+  const handleMarkReady = (orderId: string) => {
+    setPendingAction(orderId, "marking-ready");
+    applyOptimisticOrder(orderId, { status: "Ready" });
+    markReadyMutation.mutate(orderId);
   };
 
-  const handleMarkCompleted = (id: string) => {
-    setPendingAction(id, "marking-completed");
-    applyOptimisticOrder(id, { status: "Completed" });
-    statusMutation.mutate({ orderId: id, status: "DELIVERED" });
+  const handleMarkCompleted = (orderId: string) => {
+    setPendingAction(orderId, "marking-completed");
+    applyOptimisticOrder(orderId, { status: "Completed" });
+    markCompletedMutation.mutate(orderId);
   };
 
   const filteredOrders =
@@ -1147,92 +1186,114 @@ const StaffOrdersPage = () => {
 
   if (sellerNotLinked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center bg-[#080b12]">
+        <div className="w-16 h-16 rounded-full bg-yellow-400/10 flex items-center justify-center mb-4 border border-yellow-400/20">
           <ShieldAlert size={32} className="text-yellow-400" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Access Not Granted</h2>
-        <p className="text-gray-400 max-w-sm text-sm leading-relaxed">
-          Your staff account has not been activated by the seller yet. Please ask your seller to
-          grant you access from their Staff Management dashboard.
+        <h2 className="text-xl font-black text-white uppercase italic tracking-tight mb-2">Access Not Granted</h2>
+        <p className="text-slate-500 max-w-sm text-sm font-medium italic leading-relaxed">
+          Your staff account hasn't been activated by the merchant. Synchronization with the fulfillment stream requires merchant approval.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#080b12] p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Fish size={22} className="text-teal-400" />
-            <h1 className="text-xl font-bold text-white">Order Board</h1>
+    <div className="w-full min-h-screen bg-[#080b12] p-8">
+      {/* Premium Header section with role identification */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-10 mb-10 overflow-hidden relative">
+        {/* Decorative Background Glow */}
+        <div className="absolute -top-20 -left-20 w-64 h-64 bg-blue-500/5 blur-[100px] pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="bg-blue-600/10 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1.5 rounded-xl border border-blue-500/20 backdrop-blur-md">
+              Operations Staff
+            </span>
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+            <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] italic">
+              {staff?.seller?.store?.name || staff?.store?.name || "Global Network Node"}
+            </span>
           </div>
-          <p className="text-gray-500 text-sm">
-            {staff?.seller?.store?.name || staff?.store?.name || "Staff Dashboard"}
+          <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-[0.85] mb-2">
+            Order <span className="text-blue-500/80">Workstation</span>
+          </h1>
+          <p className="text-slate-500 font-medium italic text-base opacity-70">
+            Fulfillment stream orchestration & real-time logistics
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              const nextMuted = !isMuted;
-              setIsMuted(nextMuted);
-              isMutedRef.current = nextMuted;
-              localStorage.setItem("staff-order-mute", String(nextMuted));
-              
-              // If enabling sound, "warm up" the audio object to satisfy browser interaction policies
-              if (!nextMuted && audioRef.current) {
-                const audio = audioRef.current;
-                const originalVolume = audio.volume;
-                audio.volume = 0;
-                audio.play()
-                  .then(() => {
-                    audio.pause();
-                    audio.volume = originalVolume;
-                    toast.success("Sound enabled", { duration: 1000 });
-                  })
-                  .catch(() => {
-                    console.warn("Audio warm-up failed");
-                  });
-              }
-            }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition border ${
-              isMuted 
-                ? "bg-gray-800/50 text-gray-500 border-gray-700 hover:text-gray-400" 
-                : "bg-blue-500/10 text-blue-400 border-blue-500/25 hover:bg-blue-500/20"
+
+        <div className="flex flex-wrap items-center gap-4 relative z-10">
+          {/* Connection Status */}
+          <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-6 py-4 rounded-[2rem] text-[10px] text-slate-400 backdrop-blur-2xl shadow-2xl">
+            <div className={`w-2.5 h-2.5 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" : "bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.5)]"}`} />
+            <span className="font-black uppercase tracking-[0.25em] leading-none text-white/80">
+              {wsConnected ? "System Live" : "Offline Node"}
+            </span>
+          </div>
+
+          {/* Audio Control */}
+          <div 
+            className={`flex items-center gap-3 px-6 py-4 rounded-[2rem] text-sm transition-all duration-700 backdrop-blur-3xl border shadow-2xl ${
+              !isMuted 
+                ? "bg-emerald-500/20 border-emerald-500/50 shadow-[0_8px_32px_rgba(16,185,129,0.2)] text-white" 
+                : "bg-white/5 border-white/10 text-slate-500 grayscale opacity-60"
             }`}
           >
-            {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            {isMuted ? "Sound Off" : "Sound On"}
-          </button>
+            <button
+              onClick={() => {
+                const nextMuted = !isMuted;
+                setIsMuted(nextMuted);
+                isMutedRef.current = nextMuted;
+                localStorage.setItem("staff-order-mute", String(nextMuted));
+                
+                if (!nextMuted && audioRef.current) {
+                  const audio = audioRef.current;
+                  const originalVolume = audio.volume;
+                  audio.volume = 0;
+                  audio.play()
+                    .then(() => {
+                      audio.pause();
+                      audio.volume = originalVolume;
+                      toast.success("SYSTEM ALERT CHANNELS SYNCED", {
+                        style: { background: '#064e3b', color: '#10b981', border: '1px solid #065f46', fontSize: '10px', fontWeight: '900', letterSpacing: '0.1em' }
+                      });
+                    })
+                    .catch(() => {
+                      console.warn("Audio warm-up failed");
+                    });
+                }
+              }}
+              className="group flex items-center gap-2 transition-all active:scale-90"
+            >
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} className="animate-bounce-subtle" />}
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] leading-none">
+                {isMuted ? "Audio Muted" : "Audio Active"}
+              </span>
+            </button>
+          </div>
 
-          {wsConnected ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-400/10 border border-green-400/25 px-3 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              Live
+          <div className="flex items-center gap-4 bg-white/5 border border-white/10 px-6 py-4 rounded-[2rem] text-sm text-slate-400 backdrop-blur-2xl shadow-2xl">
+            <Clock size={16} className="text-slate-600" />
+            <span className="font-black text-white tracking-widest font-mono text-base italic">
+              {mounted ? new Date().toLocaleTimeString('en-US', { hour12: false }) : "00:00:00"}
             </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-xs text-rose-400 bg-rose-400/10 border border-rose-400/25 px-3 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-              Disconnected
-            </span>
-          )}
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Stats */}
       <StatsBar orders={orders} />
 
       {/* Filter tabs */}
       {ordersLoading && (
-        <div className="flex items-center gap-2 mb-4 text-gray-500">
-          <Loader2 className="animate-spin" size={16} /> <span className="text-sm">Fetching live orders...</span>
+        <div className="flex items-center gap-2 mb-4 text-emerald-500/50">
+          <Loader2 className="animate-spin" size={16} /> 
+          <span className="text-[10px] font-black uppercase tracking-widest italic">Syncing with live data stream...</span>
         </div>
       )}
 
-      <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-1 scrollbar-hide">
         {(["All", ...COLUMN_ORDER] as const).map((s) => {
           const isActive = activeFilter === s;
           const cfg = s === "All" ? null : STATUS_CONFIG[s as OrderStatus];
@@ -1241,17 +1302,17 @@ const StaffOrdersPage = () => {
               key={s}
               type="button"
               onClick={() => setActiveFilter(s as OrderStatus | "All")}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition border ${
+              className={`shrink-0 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${
                 isActive
                   ? cfg
-                    ? `${cfg.bg} ${cfg.color} ${cfg.border}`
+                    ? `${cfg.bg} ${cfg.color} ${cfg.border} shadow-[0_0_15px_rgba(0,0,0,0.5)]`
                     : "bg-white/10 text-white border-white/20"
-                  : "bg-transparent text-gray-500 border-gray-800 hover:border-gray-600 hover:text-gray-300"
+                  : "bg-transparent text-slate-600 border-white/5 hover:border-white/10 hover:text-slate-400"
               }`}
             >
-              {s === "All" ? "All Orders" : STATUS_CONFIG[s as OrderStatus].label}
+              {s === "All" ? "All Streams" : STATUS_CONFIG[s as OrderStatus].label}
               {s !== "All" && (
-                <span className="ml-1.5 opacity-70">
+                <span className="ml-2 px-1.5 opacity-50 font-bold border-l border-current">
                   {orders.filter((o: MockOrder) => o.status === s).length}
                 </span>
               )}
@@ -1262,7 +1323,7 @@ const StaffOrdersPage = () => {
 
       {/* Board */}
       {activeFilter === "All" ? (
-        <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: "calc(100vh - 280px)" }}>
+        <div className="flex gap-6 overflow-x-auto pb-10 scrollbar-hide" style={{ minHeight: "calc(100vh - 350px)" }}>
           {COLUMN_ORDER.map((status) => (
             <StatusColumn
               key={status}
@@ -1278,11 +1339,11 @@ const StaffOrdersPage = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
           {filteredOrders.length === 0 ? (
-            <div className="col-span-3 flex flex-col items-center py-20 text-gray-700">
-              <Fish size={36} className="mb-3 opacity-30" />
-              <p className="text-sm">No orders in this status</p>
+            <div className="col-span-full flex flex-col items-center py-32 text-slate-800 border-2 border-dashed border-white/5 rounded-[3rem]">
+              <Fish size={48} className="mb-4 opacity-20" />
+              <p className="text-xs font-black uppercase tracking-[0.3em] font-mono">Stream Empty</p>
             </div>
           ) : (
             filteredOrders.map((o: MockOrder) => (

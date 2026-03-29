@@ -15,6 +15,7 @@ import {
     Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@repo/ui";
 
 const formatDistanceToNow = (date: Date) => {
     const now = new Date();
@@ -65,37 +66,47 @@ const NotificationPage = () => {
     };
 
     return (
-        <Box css={{ padding: "32px", minHeight: "100vh", backgroundColor: "#020617" }}>
-            <div className="max-w-5xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <Box css={{ padding: "32px", minHeight: "100vh", backgroundColor: "#020617" }} className="relative overflow-hidden">
+            {/* Background Accent Orbs */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/5 blur-[120px] pointer-events-none rounded-full" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] pointer-events-none rounded-full" />
+
+            <div className="max-w-5xl mx-auto relative z-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 border-b border-white/5 pb-12">
                     <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <Bell className="text-blue-400" size={24} />
-                            </div>
-                            <h1 className="text-4xl font-extrabold text-white tracking-tight">Notifications</h1>
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="bg-emerald-600/10 text-emerald-500 text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1.5 rounded-xl border border-emerald-500/20 backdrop-blur-md">
+                                Merchant Feed
+                            </span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+                            <span className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] italic">
+                                Real-time Stream
+                            </span>
                         </div>
-                        <p className="text-slate-400 text-lg">Manage your store alerts and activity stream.</p>
+                        <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.85] mb-4">
+                            Merchant <span className="text-emerald-500/80">Alerts</span>
+                        </h1>
+                        <p className="text-slate-500 font-medium italic text-lg opacity-70">
+                            Orchestrating shop activity & operational updates
+                        </p>
                     </motion.div>
                     
                     <AnimatePresence>
                         {notifications.length > 0 && (
-                            <motion.button 
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
+                            <Button 
                                 onClick={() => markAllAsRead()}
-                                className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-700/50 text-slate-200 border border-slate-700/50 px-6 py-3 rounded-2xl text-sm font-semibold transition-all backdrop-blur-xl group"
+                                variant="emerald"
+                                fullWidth={false}
+                                className="!rounded-[2rem] !px-8 !py-4 backdrop-blur-2xl !bg-white/5 hover:!bg-white/10 !border-white/10 shadow-2xl group overflow-hidden relative"
                             >
-                                <CheckSquare className="group-hover:text-blue-400 transition-colors" size={18} />
-                                Dismiss All
-                            </motion.button>
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CheckSquare className="group-hover:text-emerald-400 transition-colors relative z-10" size={18} />
+                                <span className="relative z-10">Clear Active Feed</span>
+                            </Button>
                         )}
                     </AnimatePresence>
                 </div>
@@ -164,15 +175,16 @@ const NotificationPage = () => {
                                             </p>
                                             
                                             <div className="flex items-center gap-4">
-                                                <motion.button 
-                                                    whileHover={{ x: 2 }}
-                                                    whileTap={{ scale: 0.98 }}
+                                                <Button 
                                                     onClick={() => markAsRead(notification.id)}
-                                                    className="flex items-center gap-2 text-sm font-bold text-slate-200 hover:text-blue-400 transition-colors"
+                                                    variant="rose"
+                                                    glow={false}
+                                                    fullWidth={false}
+                                                    className="!bg-transparent !border-none !p-0 !h-auto !text-sm !font-bold !text-slate-200 hover:!text-rose-400 transition-colors"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={16} className="mr-2" />
                                                     Dismiss
-                                                </motion.button>
+                                                </Button>
                                             </div>
                                         </div>
                                         

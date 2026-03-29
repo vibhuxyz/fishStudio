@@ -99,8 +99,7 @@ services:
       - RABBITMQ_DEFAULT_PASS=mysecretpassword
     ports:
       - "15672:15672"
-    expose:
-      - "5672"
+      - "5672:5672"
     networks:
       fish-studio-net:
         aliases:

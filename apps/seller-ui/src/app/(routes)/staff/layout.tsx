@@ -16,8 +16,7 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
     const staffId = staff?.id;
     if (!staffId || staff?.isActive !== false) return;
 
-    const wsUrl = frontendEnv.workerWebsocketUrl.replace(/^http/, "ws");
-    const ws = new WebSocket(`${wsUrl}?staffId=${staffId}`);
+    const ws = new WebSocket(`${frontendEnv.workerWebsocketUrl}?staffId=${staffId}`);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {

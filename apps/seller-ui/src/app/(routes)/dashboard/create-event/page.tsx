@@ -10,6 +10,7 @@ import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
+import { Button } from "@repo/ui";
 
 type FirstOrderCouponValues = {
   public_name: string;
@@ -56,7 +57,8 @@ const SellerEventForm = () => {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const eventId = searchParams.get("eventId") || "";
-  const { register, handleSubmit, watch, reset, setValue } = useForm<SellerEventFormValues>({
+  const { register, handleSubmit, watch, reset, setValue, formState } = useForm<SellerEventFormValues>({
+    mode: "onChange",
     defaultValues: {
       title: "",
       description: "",
@@ -76,6 +78,8 @@ const SellerEventForm = () => {
       },
     },
   });
+
+  const { isValid } = formState;
 
   const { data: editingEvent } = useQuery({
     queryKey: ["seller", "events", eventId],
@@ -394,23 +398,28 @@ const SellerEventForm = () => {
           </div>
         )}
 
-        <div className="flex justify-end gap-3">
-          <button
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+          <Button
             type="button"
             onClick={() => router.push("/dashboard/all-events")}
-            className="rounded-md bg-slate-700 px-4 py-2 text-white hover:bg-slate-600"
+            variant="indigo"
+            glow={false}
+            fullWidth={false}
+            className="!bg-slate-700 hover:!bg-slate-600 !py-2 !px-4 !rounded-lg !w-auto"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            disabled={createMutation.isPending || updateMutation.isPending}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+            disabled={createMutation.isPending || updateMutation.isPending || (attachCoupon && !isValid)}
+            isLoading={createMutation.isPending || updateMutation.isPending}
+            loaderLabel={eventId ? "Saving..." : "Creating..."}
+            variant="blue"
+            fullWidth={false}
+            className="!py-2 !px-4 !rounded-lg !w-auto"
           >
-            {createMutation.isPending || updateMutation.isPending
-              ? eventId ? "Saving..." : "Creating..."
-              : eventId ? "Save Event" : "Create Event"}
-          </button>
+            {eventId ? "Save Event" : "Create Event"}
+          </Button>
         </div>
       </form>
     </div>

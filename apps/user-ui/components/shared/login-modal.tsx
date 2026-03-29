@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -237,6 +237,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-2xl sm:rounded-3xl gap-0 overflow-hidden p-0 sm:max-w-[680px] [&>button]:hidden">
+        <DialogTitle className="sr-only">Sign in to your account</DialogTitle>
         <div className="flex min-h-[480px]">
           <BrandPanel />
 

@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 import { AxiosError } from "axios";
 import { BadgeCheck, BadgeX, Plus, ToggleLeft, ToggleRight, Trash, X } from "lucide-react";
-import { Input } from "@repo/ui";
+import { Input, Button } from "@repo/ui";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -40,8 +40,9 @@ const Page = () => {
     control,
     reset,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm({
+    mode: "onChange",
     defaultValues: {
       public_name: "",
       discountType: "percentage",
@@ -118,12 +119,14 @@ const Page = () => {
     <div className="w-full min-h-screen p-8">
       <div className="flex justify-between items-center mb-1">
         <h2 className="text-2xl text-white font-semibold">Discount Codes</h2>
-        <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+        <Button
+          className="!w-auto !py-2 !px-4 !rounded-lg !text-sm"
+          variant="blue"
           onClick={() => setShowModal(true)}
         >
-          <Plus size={18} /> Create Discount
-        </button>
+          <Plus size={18} className="mr-2" />
+          Create Discount
+        </Button>
       </div>
 
       <BreadCrumbs title="Discount Codes" />
@@ -440,14 +443,16 @@ const Page = () => {
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={createMutation.isPending}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2"
+                disabled={createMutation.isPending || !isValid}
+                isLoading={createMutation.isPending}
+                loaderLabel="Creating..."
+                variant="blue"
+                className="w-full !rounded-lg !py-2.5 !font-semibold"
               >
-                <Plus size={18} />
-                {createMutation.isPending ? "Creating…" : "Create Discount Code"}
-              </button>
+                Create Discount Code
+              </Button>
             </form>
           </div>
         </div>

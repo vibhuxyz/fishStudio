@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { Plus, UploadCloud, X, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Image from "next/image";
-import { Input } from "@repo/ui";
+import { Input, Button } from "@repo/ui";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import {
@@ -228,14 +228,16 @@ const CategoriesPage = () => {
                 </div>
               )}
 
-              <button
+              <Button
                 type="submit"
-                disabled={createCategoryMutation.isPending || uploading}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+                disabled={createCategoryMutation.isPending || uploading || !previewName}
+                isLoading={createCategoryMutation.isPending}
+                loaderLabel="Creating..."
+                variant="blue"
               >
-                <Plus size={18} />
-                {createCategoryMutation.isPending ? "Creating..." : "Create Category"}
-              </button>
+                <Plus size={18} className="mr-2" />
+                Create Category
+              </Button>
             </form>
           </div>
 
@@ -269,14 +271,16 @@ const CategoriesPage = () => {
                 placeholder="e.g. Boneless & Mince"
                 {...registerSubCategory("name", { required: true })}
               />
-              <button
+              <Button
                 type="submit"
                 disabled={createSubCategoryMutation.isPending}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+                isLoading={createSubCategoryMutation.isPending}
+                loaderLabel="Creating..."
+                variant="blue"
               >
-                <Plus size={18} />
-                {createSubCategoryMutation.isPending ? "Creating..." : "Create Subcategory"}
-              </button>
+                <Plus size={18} className="mr-2" />
+                Create Subcategory
+              </Button>
             </form>
           </div>
         </div>

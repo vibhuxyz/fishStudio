@@ -4,7 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller, FieldValues } from "react-hook-form";
 import { Save, Trash, ArrowLeft, Loader } from "lucide-react";
-import { Input } from "@repo/ui";
+import { Input, Button } from "@repo/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -49,8 +49,9 @@ const EditProfile: React.FC = () => {
     control,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<SellerProfileForm>({
+    mode: "onChange",
     defaultValues: {
       name: seller?.shop?.name || "",
       bio: seller?.shop?.bio || "",
@@ -231,28 +232,29 @@ const EditProfile: React.FC = () => {
             ))}
 
             {/* Add Social Link Button */}
-            <button
-              type="button"
+            <Button
               onClick={addSocialLink}
-              className="mt-3 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              variant="indigo"
+              glow={false}
+              fullWidth={false}
+              className="mt-3 !py-2 !px-4 !rounded-md"
             >
               + Add Social Link
-            </button>
+            </Button>
           </div>
 
           {/* Save Button with Loader */}
-          <button
+          <Button
             type="submit"
-            disabled={isPending}
-            className="w-full py-3 mt-6 rounded-md font-semibold flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!isValid || isPending}
+            isLoading={isPending}
+            loaderLabel="Saving Changes..."
+            variant="blue"
+            className="mt-6 !rounded-md"
           >
-            {isPending ? (
-              <Loader size={18} className="animate-spin" />
-            ) : (
-              <Save size={18} />
-            )}
-            {isPending ? "Saving..." : "Save Changes"}
-          </button>
+            <Save size={18} className="mr-2" />
+            Save Changes
+          </Button>
         </form>
       </div>
     </div>

@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import { Button } from "@repo/ui";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 
 type CatalogProduct = {
@@ -124,8 +125,9 @@ const Page = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { register, handleSubmit, reset, watch, setValue } =
+  const { register, handleSubmit, reset, watch, setValue, formState } =
     useForm<SellerCatalogFormValues>({
+      mode: "onChange",
       defaultValues: {
         stock: 100,
         cash_on_delivery: "yes",
@@ -138,6 +140,8 @@ const Page = () => {
         sale_price: 0,
       },
     });
+
+  const { isValid } = formState;
 
   const selectedDiscountCodes = watch("discountCodes") || [];
   const selectedSizePricing = watch("sizePricing") || [];
@@ -295,14 +299,15 @@ const Page = () => {
                     </Link>
                   </div>
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => openConfigureModal(product)}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+                    variant="blue"
+                    className="!py-2 !px-4 !rounded-lg !text-sm"
                   >
-                    <Plus size={16} />
+                    <Plus size={16} className="mr-2" />
                     Configure And Add
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -551,20 +556,27 @@ const Page = () => {
               </div>
 
               <div className="md:col-span-2 flex justify-end gap-3 pt-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => setSelectedProduct(null)}
-                  className="rounded-md bg-slate-700 px-4 py-2 text-white hover:bg-slate-600"
+                  variant="indigo"
+                  glow={false}
+                  fullWidth={false}
+                  className="!bg-gray-700 hover:!bg-gray-600 !py-2 !px-4 !rounded-lg !w-auto"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
                   disabled={addMutation.isPending}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-60"
+                  isLoading={addMutation.isPending}
+                  loaderLabel="Adding..."
+                  variant="blue"
+                  fullWidth={false}
+                  className="!py-2 !px-4 !rounded-lg !w-auto"
                 >
-                  {addMutation.isPending ? "Adding..." : "Add To Shop"}
-                </button>
+                  Add To Shop
+                </Button>
               </div>
             </form>
           </div>

@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import axiosInstance from "@/utils/axiosInstance";
+import { Button } from "@repo/ui";
 
 export default function GiveSignupAccessModal({
   onClose,
@@ -65,20 +66,27 @@ export default function GiveSignupAccessModal({
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="rounded-lg bg-gray-700 px-4 py-2 text-white hover:bg-gray-600"
+              variant="indigo"
+              glow={false}
+              fullWidth={false}
+              className="!bg-gray-700 hover:!bg-gray-600 !py-2 !px-4 !rounded-lg !w-auto"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={generateMutation.isPending || !email}
-              className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:opacity-50"
+              isLoading={generateMutation.isPending}
+              loaderLabel="Generating..."
+              variant="emerald"
+              fullWidth={false}
+              className="!py-2 !px-4 !rounded-lg !w-auto"
             >
-              {generateMutation.isPending ? "Generating..." : "Generate Code"}
-            </button>
+              Generate Code
+            </Button>
           </div>
         </form>
       </div>
