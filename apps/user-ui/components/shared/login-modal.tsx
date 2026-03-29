@@ -292,7 +292,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                         )}
                       </AnimatePresence>
                       <input
-                        type={isEmail ? "email" : "tel"}
+                        type="text"
                         placeholder="Phone number or email"
                         className="h-12 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground"
                         value={identifier}
