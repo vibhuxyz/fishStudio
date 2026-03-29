@@ -15,6 +15,9 @@ import { Button } from "@repo/ui";
 import useSeller from "@/hooks/useSeller";
 import { toast } from "sonner";
 import { useEffect } from "react";
+import { TestAccounts } from "@/shared/components/login/TestAccounts";
+import { testAccounts } from "@/shared/components/login/data";
+
 
 type FormData = {
   email: string;
@@ -32,10 +35,17 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isValid },
   } = useForm<FormData>({
     mode: "onChange"
   });
+
+  const handleTestAccountSelect = (account: any) => {
+    setValue("email", account.email, { shouldValidate: true });
+    setValue("password", account.password, { shouldValidate: true });
+  };
+
 
   useEffect(() => {
     if (!isProfileLoading && seller) {
@@ -129,6 +139,8 @@ const Login = () => {
               </p>
             </div>
 
+            <TestAccounts accounts={testAccounts} onSelect={handleTestAccountSelect} />
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">
@@ -214,6 +226,7 @@ const Login = () => {
                 </Button>
               </div>
             </form>
+
 
             <div className="mt-10 pt-8 border-t border-white/5 text-center">
               <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">

@@ -32,6 +32,7 @@ interface ModalContextType {
   openCart: () => void;
   openAddToCart: (product: Product) => void;
   openAddress: () => void;
+  isCartOpen: boolean;
 }
 
 // Default no-op context so useModals never crashes even outside the provider
@@ -40,6 +41,7 @@ const defaultCtx: ModalContextType = {
   openCart: () => {},
   openAddToCart: () => {},
   openAddress: () => {},
+  isCartOpen: false,
 };
 
 const ModalContext = createContext<ModalContextType>(defaultCtx);
@@ -72,7 +74,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   }, [openLogin]);
 
   return (
-    <ModalContext value={{ openLogin, openCart, openAddToCart, openAddress }}>
+    <ModalContext value={{ openLogin, openCart, openAddToCart, openAddress, isCartOpen: showCart }}>
       {children}
 
       <AddToCartModal

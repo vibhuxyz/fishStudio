@@ -1,0 +1,98 @@
+services:
+  api-gateway:
+    container_name: api-gateway
+    image: 10xdevian134/api-gateway:prod
+    restart: always
+    ports:
+      # Bound to 127.0.0.1 so ONLY Nginx can talk to it from the outside
+      - "127.0.0.1:8080:8080"
+    env_file: .env.prod
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+      - notification-service
+    networks:
+      - fish-studio-net
+
+  auth-service:
+    container_name: auth-service
+    image: 10xdevian134/auth-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+  product-service:
+    container_name: product-service
+    image: 10xdevian134/product-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - meilisearch
+    networks:
+      - fish-studio-net
+
+  order-service:
+    container_name: order-service
+    image: 10xdevian134/order-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+  notification-service:
+    container_name: notification-service
+    image: 10xdevian134/notification-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+  worker-service:
+    container_name: worker-service
+    image: 10xdevian134/worker-service:prod
+    restart: always
+    env_file: .env.prod
+    depends_on:
+      - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+  rabbitmq-service:
+    container_name: rabbitmq-service_prod
+    image: rabbitmq:3-management-alpine
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mysecretpassword
+    ports:
+      # Bound to localhost for security!
+      - "127.0.0.1:15672:15672"
+      - "127.0.0.1:5672:5672"
+    networks:
+      - fish-studio-net
+
+  meilisearch:
+    container_name: meilisearch_prod
+    image: getmeili/meilisearch:latest
+    restart: always
+    environment:
+      - MEILI_MASTER_KEY=masterKey123
+    ports:
+      # Bound to localhost for security!
+      - "127.0.0.1:7700:7700"
+    volumes:
+      - ./meili_data:/meili_data
+    networks:
+      - fish-studio-net
+
+networks:
+  fish-studio-net:
+    driver: bridge

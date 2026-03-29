@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useAddressStore } from "@/lib/address-store";
 import { useAnnouncement } from "@/components/providers/announcement-provider";
+import { useModals } from "@/components/providers/modal-provider";
 import type { AnnouncementBanner } from "@/lib/storefront";
 import { frontendEnv } from "@/lib/env";
 import { BAR_HEIGHT } from "@/utils/constants";
@@ -73,7 +74,8 @@ export function AnnouncementTopBar() {
     return () => clearInterval(id);
   }, [banners.length]);
 
-  if (!visible || !hydrated || banners.length === 0 || !isHomePage) return null;
+  const { isCartOpen } = useModals();
+  if (!visible || !hydrated || banners.length === 0 || !isHomePage || isCartOpen) return null;
 
   const banner = banners[currentIndex];
 

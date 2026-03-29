@@ -18,6 +18,9 @@ type FormData = {
 };
 
 import AuthLayout from "@/shared/components/layout/AuthLayout";
+import { TestAccounts } from "@/shared/components/login/TestAccounts";
+import { testAccounts } from "@/shared/components/login/data";
+
 
 const Login = () => {
   const { setLoggedIn, setRole } = useAuthStore();
@@ -29,10 +32,17 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isValid },
   } = useForm<FormData>({
     mode: "onChange",
   });
+
+  const handleTestAccountSelect = (account: any) => {
+    setValue("email", account.email, { shouldValidate: true });
+    setValue("password", account.password, { shouldValidate: true });
+  };
+
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -83,6 +93,8 @@ const Login = () => {
           Enter your merchant credentials to proceed
         </p>
       </div>
+
+      <TestAccounts accounts={testAccounts} onSelect={handleTestAccountSelect} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-2">
@@ -177,6 +189,7 @@ const Login = () => {
                   </Button>
         </div>
       </form>
+
 
       <div className="mt-10 pt-8 border-t border-white/5 text-center">
         <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">

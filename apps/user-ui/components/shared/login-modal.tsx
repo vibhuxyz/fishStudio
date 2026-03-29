@@ -139,6 +139,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       return data;
     },
     onSuccess: async (data) => {
+      // If it's a new user and they just finished OTP step, move to name step
+      if (data.isNewUser && step === "otp") {
+        setIsNewUser(true);
+        setStep("name");
+        return;
+      }
+
       setAuthenticatedUser({
         id: data.user.id,
         name: data.user.name,
@@ -213,12 +220,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   };
 
   const onOtpComplete = (code: string) => {
-    if (isNewUser) {
-      // Go to name step; OTP verified together with name
-      setStep("name");
-    } else {
-      verifyOtpMutation.mutate(undefined);
-    }
+    verifyOtpMutation.mutate(undefined);
   };
 
   const handleResendOtp = () => {
@@ -295,7 +297,18 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                         className="h-12 flex-1 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground"
                         value={identifier}
                         onChange={(e) => setIdentifier(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter" && isValid) sendOtpMutation.mutate(); }}
+                        onKeyDown={(e) => { 
+                          if (e.key === "Enter" && isValid) {
+                            if (isPhone) {
+                              toast.info("Phone verification coming soon.", {
+                                description: "Login with email",
+                                duration: 5000,
+                              });
+                              return;
+                            }
+                            sendOtpMutation.mutate(); 
+                          } 
+                        }}
                         autoFocus
                       />
                     </div>
@@ -311,7 +324,16 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     <button
                       type="button"
                       disabled={!isValid || isLoading}
-                      onClick={() => sendOtpMutation.mutate()}
+                      onClick={() => {
+                        if (isPhone) {
+                          toast.info("Phone verification coming soon.", {
+                            description: "Login with email",
+                            duration: 5000,
+                          });
+                          return;
+                        }
+                        sendOtpMutation.mutate();
+                      }}
                       className="relative w-full overflow-hidden rounded-xl py-3 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                       style={{
                         background: isValid
@@ -367,7 +389,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     <span className="text-primary">{maskedIdentifier}</span>
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    We've sent a 4-digit code. It expires in 10 minutes.
+                    We've sent a 4-digit code. It expires in 2 minutes.
                   </p>
 
                   {/* 4 OTP boxes */}
