@@ -310,15 +310,18 @@ export const deleteUserAddress = async (
   }
 };
 
+import { clearCookie } from "../utils/cookies/clearCookie.js";
+
 export const logOutUser = async (req: any, res: Response) => {
   const token = req.cookies["access_token"];
   if (token) {
     try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
   }
-  res.clearCookie("access_token");
-  res.clearCookie("refresh_token");
+  
+  clearCookie(res, "access_token");
+  clearCookie(res, "refresh_token");
 
-  res.status(201).json({
+  res.status(200).json({
     success: true,
   });
 };

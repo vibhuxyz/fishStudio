@@ -183,15 +183,18 @@ export const getAdmin = async (req: any, res: Response, next: NextFunction) => {
   }
 };
 
+import { clearCookie } from "../utils/cookies/clearCookie.js";
+
 export const logOutAdmin = async (req: any, res: Response) => {
   const token = req.cookies["admin_access_token"];
   if (token) {
     try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
   }
-  res.clearCookie("admin_access_token");
-  res.clearCookie("admin_refresh_token");
+  
+  clearCookie(res, "admin_access_token");
+  clearCookie(res, "admin_refresh_token");
 
-  res.status(201).json({
+  res.status(200).json({
     success: true,
   });
 };

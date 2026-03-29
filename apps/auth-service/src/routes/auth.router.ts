@@ -4,6 +4,7 @@ import {
   isAdmin,
   isAuthenticated,
   isSeller,
+  isSellerOrStaff,
   isStaff,
   isUser,
 } from "@repo/middlewares";
@@ -120,7 +121,7 @@ router.post("/login-seller", authRateLimiter, loginSeller);
 router.post("/create-store", createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);
-router.post("/logout-seller", isAuthenticated, isSeller, logOutSeller);
+router.post("/logout-seller", isAuthenticated, isSellerOrStaff, logOutSeller);
 
 // staff routes (anyone can register, seller must approve later)
 router.post("/staff-registration", registerStaff);

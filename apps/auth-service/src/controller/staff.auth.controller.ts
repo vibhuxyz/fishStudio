@@ -103,13 +103,17 @@ export const getStaff = async (
 };
 
 // ─── Logout staff ─────────────────────────────────────────────────────────────
+import { clearCookie } from "../utils/cookies/clearCookie.js";
+
 export const logOutStaff = async (req: any, res: Response) => {
   const token = req.cookies["staff_access_token"];
   if (token) {
     try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
   }
-  res.clearCookie("staff_access_token");
-  res.clearCookie("staff_refresh_token");
+  
+  clearCookie(res, "staff_access_token");
+  clearCookie(res, "staff_refresh_token");
+
   res.status(200).json({ success: true });
 };
 

@@ -20,15 +20,25 @@ import {
   validate,
 } from "@repo/zod-schema";
 
-export const logOutSeller = async (req: any, res: Response) => {
-  const token = req.cookies["seller_access_token"] || req.cookies["staff_access_token"];
-  if (token) {
-    try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
-  }
-  res.clearCookie("seller_access_token");
-  res.clearCookie("seller_refresh_token");
+import { clearCookie } from "../../utils/cookies/clearCookie.js";
 
-  res.status(201).json({
+export const logOutSeller = async (req: any, res: Response) => {
+  const sellerToken = req.cookies["seller_access_token"];
+  const staffToken = req.cookies["staff_access_token"];
+
+  if (sellerToken) {
+    try { await redis.del(`auth:${sellerToken}`); } catch { /* non-fatal */ }
+  }
+  if (staffToken) {
+    try { await redis.del(`auth:${staffToken}`); } catch { /* non-fatal */ }
+  }
+
+  clearCookie(res, "seller_access_token");
+  clearCookie(res, "seller_refresh_token");
+  clearCookie(res, "staff_access_token");
+  clearCookie(res, "staff_refresh_token");
+
+  res.status(200).json({
     success: true,
   });
 };
@@ -189,6 +199,7 @@ export const verifySeller = async (
             bio,
             address,
             opening_hours,
+            closing_hours: incomingStore.closing_hours || "21:00", // Default if missing
             city,
             pincode,
             availableCities,
