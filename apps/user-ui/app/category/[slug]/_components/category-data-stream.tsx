@@ -10,19 +10,17 @@ interface CategoryDataStreamProps {
 export async function CategoryDataStream({ slug, initialSub }: CategoryDataStreamProps) {
   const decodedSlug = decodeURIComponent(slug);
   
-  // 1. Initial parallel fetch for SEO data + Categories
-  const [categoriesData, primaryListing] = await Promise.all([
-    fetchStorefrontCategories(),
-    fetchStorefrontProductListing({
-      scope: "category",
-      category: decodedSlug,
-      limit: 12,
-    }).catch(() => undefined),
-  ]);
-
+  const categoriesData = await fetchStorefrontCategories();
   const resolvedCategory = categoriesData.categories.find(
     (cat) => normalizeSlug(cat) === normalizeSlug(decodedSlug)
   ) ?? null;
+
+  // 2. Fetch products using the resolved (Official) name
+  const primaryListing = await fetchStorefrontProductListing({
+    scope: "category",
+    category: resolvedCategory || decodedSlug,
+    limit: 12,
+  }).catch(() => undefined);
 
   const displayName = resolvedCategory ?? decodedSlug
     .split("-")

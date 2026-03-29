@@ -5,6 +5,7 @@ import { CategoryHeader } from "./category-header";
 import { CategorySidebar } from "./category-sidebar";
 import { CategoryProductGrid } from "./category-product-grid";
 import { CategoryBanner } from "@/components/sections/category-banner";
+import { useProducts } from "@/hooks/useProducts";
 import type { StorefrontCategories, StorefrontProductListingResponse } from "@/lib/storefront";
 
 interface CategoryShellProps {
@@ -28,8 +29,8 @@ export function CategoryShell({
 }: CategoryShellProps) {
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(initialSub || null);
 
-  // Combine listings if both are present
-  const combinedListing = useMemo(() => {
+  // Combine initial listings if both are present
+  const combinedInitialData = useMemo(() => {
     if (!secondaryListing) return primaryListing;
     if (!primaryListing) return secondaryListing;
     
@@ -39,24 +40,31 @@ export function CategoryShell({
     };
   }, [primaryListing, secondaryListing]);
 
-  // Compute counts for sidebar
+  // Sync with client-side data (handles location changes, pagination, etc.)
+  const { allProducts, isLoading, pagination } = useProducts({
+    initialData: combinedInitialData,
+    scope: "category",
+    category: matchedCategory ?? undefined,
+    limit: 32,
+  });
+
+  // Compute counts for sidebar — now stays in sync with client-side data
   const productCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    const products = combinedListing?.products || [];
-    for (const p of products) {
+    for (const p of allProducts) {
       if (p.subCategory) {
         counts.set(p.subCategory, (counts.get(p.subCategory) || 0) + 1);
       }
     }
     return counts;
-  }, [combinedListing]);
+  }, [allProducts]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         <CategoryHeader 
           displayName={displayName} 
-          productCount={combinedListing?.pagination.total} 
+          productCount={pagination?.total ?? allProducts.length} 
         />
 
         <div className="mx-auto max-w-7xl px-4 py-8">
@@ -69,14 +77,13 @@ export function CategoryShell({
               onSubCategoryChange={setActiveSubCategory}
               initialCategories={initialCategories}
               productCounts={productCounts}
-              totalCount={combinedListing?.products.length || 0}
+              totalCount={allProducts.length}
             />
 
             <CategoryProductGrid 
-              matchedCategory={matchedCategory}
               activeSubCategory={activeSubCategory}
-              initialProductListing={combinedListing}
-              limit={32}
+              products={allProducts}
+              isLoading={isLoading}
             />
           </div>
         </div>

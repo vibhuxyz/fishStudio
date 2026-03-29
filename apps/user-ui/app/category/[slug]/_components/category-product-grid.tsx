@@ -3,35 +3,25 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shared/product-card";
-import { useProducts } from "@/hooks/useProducts";
-import type { StorefrontProductListingResponse } from "@/lib/storefront";
+import type { Product } from "@repo/zod-schema";
 
 interface CategoryProductGridProps {
-  matchedCategory: string | null;
   activeSubCategory: string | null;
-  initialProductListing?: StorefrontProductListingResponse;
-  limit?: number;
+  products: Product[];
+  isLoading: boolean;
 }
 
 export function CategoryProductGrid({
-  matchedCategory,
   activeSubCategory,
-  initialProductListing,
-  limit = 24,
+  products,
+  isLoading,
 }: CategoryProductGridProps) {
-  const { allProducts, isLoading } = useProducts({
-    initialData: initialProductListing,
-    scope: "category",
-    category: matchedCategory ?? undefined,
-    limit,
-  });
-
   const displayedProducts = useMemo(() => {
-    if (!activeSubCategory) return allProducts;
-    return allProducts.filter((p) => p.subCategory === activeSubCategory);
-  }, [allProducts, activeSubCategory]);
+    if (!activeSubCategory) return products;
+    return products.filter((p) => p.subCategory === activeSubCategory);
+  }, [products, activeSubCategory]);
 
-  if (allProducts.length === 0 && !isLoading) {
+  if (products.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <p className="text-lg font-semibold text-foreground">No products available yet</p>
