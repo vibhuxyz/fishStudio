@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CategoryHeader } from "./category-header";
 import { CategorySidebar } from "./category-sidebar";
 import { CategoryProductGrid } from "./category-product-grid";
@@ -28,6 +28,11 @@ export function CategoryShell({
   secondaryListing,
 }: CategoryShellProps) {
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(initialSub || null);
+  
+  // Sync state with URL changes (e.g. from Header menu)
+  useEffect(() => {
+    setActiveSubCategory(initialSub || null);
+  }, [initialSub]);
 
   // Combine initial listings if both are present
   const combinedInitialData = useMemo(() => {
