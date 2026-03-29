@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Star, Heart, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
@@ -32,6 +33,7 @@ function ProductCardComponent({
   const [hydrated, setHydrated] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const router = useRouter();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const deliveryTimeMinutes = selectedLocation?.deliveryTimeMinutes;
   const displayDeliveryTime = deliveryTimeMinutes ? `${deliveryTimeMinutes} mins` : "30 mins";
@@ -103,6 +105,11 @@ function ProductCardComponent({
     quickRemove(product.id);
   };
 
+  const handlePrefetch = () => {
+    if (!product.slug) return;
+    router.prefetch(`/product/${product.slug}`);
+  };
+
   function renderCartButton() {
     if (cartQty > 0) {
       return (
@@ -144,7 +151,11 @@ function ProductCardComponent({
 
   if (variant === "compact") {
     return (
-      <div className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
+      <div 
+        onMouseEnter={handlePrefetch}
+        onTouchStart={handlePrefetch}
+        className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}
+      >
         <div className="relative h-[200px] w-full bg-muted">
           {isOutOfStock || isComingSoon ? (
             <Image
@@ -274,7 +285,11 @@ function ProductCardComponent({
 
   /* Full variant (used for featured/special lists) */
   return (
-    <div className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}>
+    <div 
+      onMouseEnter={handlePrefetch}
+      onTouchStart={handlePrefetch}
+      className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}
+    >
       <div className="relative h-[200px] w-full bg-muted">
         {isOutOfStock || isComingSoon ? (
           <Image

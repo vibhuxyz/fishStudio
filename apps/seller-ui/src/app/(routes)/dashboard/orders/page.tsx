@@ -16,6 +16,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { SellerOrder } from "@repo/zod-schema";
 import useSeller from "@/hooks/useSeller";
+import { useWorkerWS } from "@/context/worker-ws-context";
 
 const fetchOrders = async (page: number) => {
   const res = await axiosInstance.get(`/order/api/get-seller-orders?page=${page}&limit=20`);
@@ -27,6 +28,8 @@ const OrdersTable = () => {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const { seller } = useSeller();
+  // Shared persistent WS connection — no new socket created per page.
+  const { subscribe } = useWorkerWS();
 
   const { data, isLoading } = useQuery({
     queryKey: ["seller-orders", page],
@@ -34,58 +37,15 @@ const OrdersTable = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  // WebSocket for Real-time Orders — with auto-reconnect
+  // Subscribe to NEW_ORDER events via the shared connection.
+  // This runs once on mount and cleans up on unmount — no connect/disconnect.
   useEffect(() => {
-    const storeId = seller?.store?.id;
-    if (!storeId) return;
-
-    const wsBase = process.env.NEXT_PUBLIC_WORKER_WS_URL?.replace(/\?.*$/, "") || "ws://localhost:6006";
-    const wsUrl = `${wsBase}?storeId=${storeId}`;
-
-    let ws: WebSocket;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let destroyed = false;
-
-    const connect = () => {
-      if (destroyed) return;
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log("✅ Seller: connected to real-time order service");
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "NEW_ORDER") {
-            console.log("📦 New order received via WebSocket:", data.payload);
-            queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
-          }
-        } catch (err) {
-          console.error("Error processing WS message:", err);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("❌ Seller WS error:", error);
-      };
-
-      ws.onclose = () => {
-        if (!destroyed) {
-          console.log("🔌 Seller WS closed — reconnecting in 3s");
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
-      };
-    };
-
-    connect();
-
-    return () => {
-      destroyed = true;
-      clearTimeout(reconnectTimeout);
-      ws?.close();
-    };
-  }, [seller?.store?.id, queryClient]);
+    if (!seller?.store?.id) return;
+    return subscribe("NEW_ORDER", (payload) => {
+      console.log("📦 New order received via WebSocket:", payload);
+      queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
+    });
+  }, [seller?.store?.id, subscribe, queryClient]);
 
   const orders = data?.orders ?? [];
   const pagination = data?.pagination;

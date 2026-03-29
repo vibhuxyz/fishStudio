@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import axiosInstance from "../utils/axiosInstance";
+import { useWorkerWS } from "../context/worker-ws-context";
 
 export interface Notification {
   id: string;
@@ -17,43 +18,16 @@ export interface Notification {
 
 export const useNotifications = (adminId?: string) => {
   const queryClient = useQueryClient();
+  // Shared persistent WS connection — no new socket created here.
+  const { subscribe } = useWorkerWS();
 
-  // WebSocket: instantly refresh admin bell on relevant events
+  // Subscribe to NEW_NOTIFICATION events to refresh the bell instantly.
   useEffect(() => {
     if (!adminId) return;
-
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
-    const wsUrl = `${wsBase}?adminId=${adminId}`;
-
-    let ws: WebSocket;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let destroyed = false;
-
-    const connect = () => {
-      if (destroyed) return;
-      ws = new WebSocket(wsUrl);
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "NEW_NOTIFICATION") {
-            queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          }
-        } catch {}
-      };
-
-      ws.onclose = () => {
-        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-    return () => {
-      destroyed = true;
-      clearTimeout(reconnectTimeout);
-      ws?.close();
-    };
-  }, [adminId, queryClient]);
+    return subscribe("NEW_NOTIFICATION", () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    });
+  }, [adminId, subscribe, queryClient]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["notifications"],
@@ -61,7 +35,7 @@ export const useNotifications = (adminId?: string) => {
       const response = await axiosInstance.get("/notification/api/notifications");
       return response.data.notifications as Notification[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 300_000, // 5 min — WebSocket handles real-time updates
   });
 
   const markAsReadMutation = useMutation({

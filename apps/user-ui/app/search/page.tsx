@@ -1,10 +1,7 @@
-import { frontendEnv } from "@/lib/env";
-import {
-  fetchStorefrontCategories,
-  type StorefrontCategories,
-} from "@/lib/storefront";
-import { SearchPageClient } from "./search-page-client";
-import type { SearchResult } from "@/hooks/useSearch";
+import { Suspense } from "react";
+import { SearchDataStream } from "./_components/search-data-stream";
+import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
 
@@ -12,53 +9,39 @@ interface SearchPageProps {
   searchParams: Promise<{ q?: string }>;
 }
 
-async function fetchInitialSearch(q: string): Promise<SearchResult> {
-  if (!q || q.trim().length < 2) {
-    return { hits: [], query: q, estimatedTotalHits: 0 };
-  }
-
-  const params = new URLSearchParams({ q, limit: "20" });
-  const response = await fetch(
-    `${frontendEnv.apiUrl}/product/api/search?${params.toString()}`,
-    { next: { revalidate: 120 } },
+function SearchSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="flex gap-6">
+        <aside className="hidden flex-shrink-0 md:block md:w-52">
+          <div className="rounded-xl border border-border bg-card p-4">
+            <Skeleton className="mb-3 h-4 w-32" />
+            <div className="flex flex-col gap-1.5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-9 w-full rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </aside>
+        <div className="flex-1">
+          <Skeleton className="mb-4 h-4 w-48" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
-
-  if (!response.ok) {
-    return { hits: [], query: q, estimatedTotalHits: 0 };
-  }
-
-  const data = await response.json();
-  return {
-    hits: Array.isArray(data.hits) ? data.hits : [],
-    query: data.query ?? q,
-    estimatedTotalHits: data.estimatedTotalHits ?? 0,
-  };
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const { q = "" } = await searchParams;
 
-  let initialCategories: StorefrontCategories = {
-    categories: [],
-    subCategories: {},
-    categoryImages: {},
-  };
-  let initialSearchResult: SearchResult | undefined;
-
-  try {
-    [initialCategories, initialSearchResult] = await Promise.all([
-      fetchStorefrontCategories(),
-      fetchInitialSearch(q),
-    ]);
-  } catch {
-    // API unavailable — client will hydrate and fetch
-  }
-
   return (
-    <SearchPageClient
-      initialQuery={q}
-      initialCategories={initialCategories}
-      initialSearchResult={initialSearchResult}
-    />
+    <Suspense fallback={<SearchSkeleton />}>
+      <SearchDataStream query={q} />
+    </Suspense>
   );
 }

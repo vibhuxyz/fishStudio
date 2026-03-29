@@ -1,45 +1,26 @@
 "use client";
 import StaffSidebar from "@/shared/components/staff-sidebar/staff-sidebar";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import useRequireStaff from "@/hooks/useRequireStaff";
-import { frontendEnv } from "@/config/env";
+import { useWorkerWS } from "@/context/worker-ws-context";
 
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
   const { staff, isLoading } = useRequireStaff();
-  const wsRef = useRef<WebSocket | null>(null);
+  // Shared persistent WS connection established at app root — no new socket here.
+  const { subscribe } = useWorkerWS();
 
-  // Real-time: listen for STAFF_ACCESS_GRANTED via WebSocket
+  // Subscribe to STAFF_ACCESS_GRANTED only while the staff member is inactive.
+  // When the seller grants access, invalidate the seller query so isActive becomes true.
   useEffect(() => {
-    // Only connect when staff is inactive – once they're active we don't need this
     const staffId = staff?.id;
     if (!staffId || staff?.isActive !== false) return;
 
-    const ws = new WebSocket(`${frontendEnv.workerWebsocketUrl}?staffId=${staffId}`);
-    wsRef.current = ws;
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "STAFF_ACCESS_GRANTED") {
-          // Refetch the seller/staff query so isActive becomes true
-          queryClient.invalidateQueries({ queryKey: ["seller"] });
-        }
-      } catch {
-        // ignore malformed messages
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("StaffLayout WebSocket error:", err);
-    };
-
-    return () => {
-      ws.close();
-      wsRef.current = null;
-    };
-  }, [staff?.id, staff?.isActive, queryClient]);
+    return subscribe("STAFF_ACCESS_GRANTED", () => {
+      queryClient.invalidateQueries({ queryKey: ["seller"] });
+    });
+  }, [staff?.id, staff?.isActive, subscribe, queryClient]);
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#080b12] flex items-center justify-center text-white">Loading...</div>;

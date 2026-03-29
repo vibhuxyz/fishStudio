@@ -9,12 +9,15 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 import { useAdminAccount } from "@/hooks/useAdminQueries";
+import { useWorkerWS } from "@/context/worker-ws-context";
 
 
 const CategoryBannerReviewPage = () => {
   useRequireAuth();
   const { data: admin } = useAdminAccount();
   const queryClient = useQueryClient();
+  // Shared persistent WS connection — no new socket created per page.
+  const { subscribe } = useWorkerWS();
 
   const [selectedBanner, setSelectedBanner] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
@@ -28,43 +31,14 @@ const CategoryBannerReviewPage = () => {
     },
   });
 
-  // WebSocket: refresh banner list when a seller uploads
+  // Subscribe to BANNER_SUBMITTED events via the shared connection.
   React.useEffect(() => {
     if (!admin?.id) return;
-
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
-    const wsUrl = `${wsBase}?adminId=${admin.id}`;
-
-    let ws: WebSocket;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let destroyed = false;
-
-    const connect = () => {
-      if (destroyed) return;
-      ws = new WebSocket(wsUrl);
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "BANNER_SUBMITTED") {
-            queryClient.invalidateQueries({ queryKey: ["admin", "all-category-banners"] });
-            toast.info(data.payload?.message || "New banner submitted for review!");
-          }
-        } catch {}
-      };
-
-      ws.onclose = () => {
-        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-    return () => {
-      destroyed = true;
-      clearTimeout(reconnectTimeout);
-      ws?.close();
-    };
-  }, [admin?.id, queryClient]);
+    return subscribe("BANNER_SUBMITTED", (payload) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "all-category-banners"] });
+      toast.info(payload?.message || "New banner submitted for review!");
+    });
+  }, [admin?.id, subscribe, queryClient]);
 
 
   const reviewMutation = useMutation({

@@ -38,16 +38,14 @@ const BLUR_DATA =
 
 interface Props {
   product: Product;
-  relatedProducts: Product[];
   coupon?: any;
 }
 
-export function ProductDetailClient({ product, relatedProducts, coupon }: Props) {
+export function ProductDetailClient({ product, coupon }: Props) {
   const modals = useModals();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const { user } = useAuth();
   const [resolvedProduct, setResolvedProduct] = useState(product);
-  const [resolvedRelatedProducts, setResolvedRelatedProducts] = useState(relatedProducts);
   const [resolvedCoupon, setResolvedCoupon] = useState(coupon);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -81,9 +79,8 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
 
   useEffect(() => {
     setResolvedProduct(product);
-    setResolvedRelatedProducts(relatedProducts);
     setResolvedCoupon(coupon);
-  }, [product, relatedProducts, coupon]);
+  }, [product, coupon]);
 
   useEffect(() => {
     if (!selectedLocation?.storeId && !selectedLocation?.pincode && !selectedLocation?.city) {
@@ -102,7 +99,6 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
       .then((data) => {
         if (cancelled || !data.product) return;
         setResolvedProduct(data.product);
-        setResolvedRelatedProducts(data.relatedProducts);
         setResolvedCoupon(data.coupon || null);
       })
       .catch(() => {});
@@ -540,21 +536,6 @@ export function ProductDetailClient({ product, relatedProducts, coupon }: Props)
               </div>
             </div>
           </div>
-
-          {/* Related products */}
-          {resolvedRelatedProducts.length > 0 && (
-            <section className="mt-10 px-0 py-10">
-              <div className="mb-6 text-center">
-                <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                  More from {resolvedProduct.subCategory} & {resolvedProduct.category}
-                </p>
-                <h2 className="mt-1 font-serif text-2xl font-bold text-foreground md:text-3xl">
-                  You May Also Like
-                </h2>
-              </div>
-              <ProductCarousel products={resolvedRelatedProducts} variant="compact" />
-            </section>
-          )}
         </div>
       </main>
     </div>
