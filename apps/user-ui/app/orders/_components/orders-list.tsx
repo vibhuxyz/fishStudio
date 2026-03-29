@@ -31,7 +31,8 @@ export function OrdersList({ orders, isLoading }: { orders: any[]; isLoading?: b
   return (
     <div className="space-y-3">
       {orders.map((order: any) => {
-        const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
+        const orderStatus = (order.status || "PENDING").toUpperCase();
+        const statusCfg = STATUS_CONFIG[orderStatus] ?? STATUS_CONFIG.PENDING;
         const primaryItem = order.items?.[0];
         const itemCount = order.items?.length ?? 0;
 

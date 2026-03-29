@@ -117,7 +117,36 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
     }
   };
 
-  if (!order) return null;
+  if (!order) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
+          <Package className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">Order Not Found</h2>
+        <p className="mt-2 text-muted-foreground">
+          We couldn't find the order details for #{orderId.slice(-6).toUpperCase()}. 
+          It might still be processing or the ID is incorrect.
+        </p>
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <Button 
+            variant="default" 
+            className="h-12 px-8 rounded-full font-bold"
+            onClick={() => router.push("/orders")}
+          >
+            View My Orders
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-12 px-8 rounded-full font-bold"
+            onClick={() => router.push("/")}
+          >
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const slotLabel =
     order.deliverySlot === "instant"

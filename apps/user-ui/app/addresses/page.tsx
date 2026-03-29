@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { axiosInstance } from "@/lib/utils";
 import { useModals } from "@/components/providers/modal-provider";
+import { useUserSession } from "@/hooks/useUserSession";
+import { Loader2 } from "lucide-react";
 
 const ADDRESS_TYPE_ICONS: Record<AddressType, React.ReactNode> = {
   Home: <Home className="h-5 w-5" />,
@@ -30,8 +32,17 @@ const ADDRESS_TYPE_ICONS: Record<AddressType, React.ReactNode> = {
 export default function AddressesPage() {
   const { addresses, selectedAddressId, selectAddress, setAddresses } = useAddressStore();
   const { isLoggedIn } = useAuth();
+  const { isLoading: isSessionLoading } = useUserSession();
   const modals = useModals();
   const [showModal, setShowModal] = useState(false);
+
+  if (isSessionLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (

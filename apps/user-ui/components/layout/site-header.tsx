@@ -651,11 +651,13 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                       exit={{ opacity: 0, scale: 0.8 }}
                       transition={{ duration: 0.2 }}
                       onMouseEnter={() => {
+                        if (window.innerWidth < 1024) return;
                         if (hoverTimeoutRef.current)
                           clearTimeout(hoverTimeoutRef.current);
                         setShowCategoryDropdown(true);
                       }}
                       onMouseLeave={() => {
+                        if (window.innerWidth < 1024) return;
                         hoverTimeoutRef.current = setTimeout(
                           () => setShowCategoryDropdown(false),
                           250,
@@ -706,10 +708,12 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                             }
                       }
                       onMouseEnter={() => {
+                        if (window.innerWidth < 1024) return;
                         if (hoverTimeoutRef.current)
                           clearTimeout(hoverTimeoutRef.current);
                       }}
                       onMouseLeave={() => {
+                        if (window.innerWidth < 1024) return;
                         hoverTimeoutRef.current = setTimeout(
                           () => setShowCategoryDropdown(false),
                           250,

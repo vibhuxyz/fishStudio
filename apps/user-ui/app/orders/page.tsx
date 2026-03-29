@@ -28,7 +28,9 @@ export default async function OrdersPage() {
         <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
         <h2 className="text-2xl font-bold text-foreground">Sign in to view your orders</h2>
         <p className="mt-2 text-muted-foreground">Track and manage all your Fish Studio orders.</p>
-        <LoginButton />
+        <div className="mt-6 flex justify-center">
+          <OrderLoginAction />
+        </div>
       </div>
     );
   }
@@ -55,17 +57,5 @@ export default async function OrdersPage() {
   );
 }
 
-// Small client component for the login button to bridge server/client
-function LoginButton() {
-  return (
-    <div className="mt-6 flex justify-center">
-      <Button 
-        className="bg-offer-green text-white hover:bg-offer-green/90"
-        // This will be handled by the client side auth listener / modal
-        // But for now, just a button that will trigger hydration
-      >
-        <Link href="/">Return Home to Sign In</Link>
-      </Button>
-    </div>
-  );
-}
+// Client component to handle login trigger
+import { OrderLoginAction } from "./_components/order-login-action";
