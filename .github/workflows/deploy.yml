@@ -1,34 +1,137 @@
-name: Deploy FishStudio to Production
+name: Smart Build and Deploy FishStudio
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  build-and-push:
+  # ==========================================
+  # 1. API GATEWAY
+  # ==========================================
+  api-gateway:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[api-gateway]')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and Push Microservices
-        run: |
+      - run: |
           docker build -f docker/api-gateway/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod .
-          docker build -f docker/auth-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/auth-service:prod .
-          docker build -f docker/product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service:prod .
-          docker build -f docker/order-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/order-service:prod .
-          docker build -f docker/notification-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notification-service:prod .
-          docker build -f docker/worker-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/worker-service:prod .
-
           docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
+
+  # ==========================================
+  # 2. AUTH SERVICE
+  # ==========================================
+  auth-service:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[auth-service]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - run: |
+          docker build -f docker/auth-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/auth-service:prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:prod
+
+  # ==========================================
+  # 3. PRODUCT SERVICE
+  # ==========================================
+  product-service:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[product-service]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - run: |
+          docker build -f docker/product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service:prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/product-service:prod
+
+  # ==========================================
+  # 4. ORDER SERVICE
+  # ==========================================
+  order-service:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[order-service]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - run: |
+          docker build -f docker/order-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/order-service:prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/order-service:prod
+
+  # ==========================================
+  # 5. NOTIFICATION SERVICE
+  # ==========================================
+  notification-service:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[notification-service]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - run: |
+          docker build -f docker/notification-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notification-service:prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/notification-service:prod
+
+  # ==========================================
+  # 6. WORKER SERVICE
+  # ==========================================
+  worker-service:
+    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[worker-service]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - run: |
+          docker build -f docker/worker-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/worker-service:prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/worker-service:prod
+
+  # ==========================================
+  # 7. DEPLOY TO DIGITALOCEAN
+  # ==========================================
+  deploy-to-droplet:
+    name: Deploy to DigitalOcean
+    needs:
+      [
+        api-gateway,
+        auth-service,
+        product-service,
+        order-service,
+        notification-service,
+        worker-service,
+      ]
+    # This logic ensures deployment ONLY runs if at least one build ran and succeeded.
+    if: |
+      always() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      contains(needs.*.result, 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: root
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd fish-studio
+            sudo docker compose pull
+            sudo docker compose up -d
+            sudo docker image prune -f
