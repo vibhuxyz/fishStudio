@@ -22,7 +22,15 @@ const nextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  transpilePackages: [
+    "@repo/ui",
+    "@repo/zod-schema",
+    "@repo/libs",
+    "@repo/env-config",
+    "@repo/error-handlers",
+  ],
   experimental: {
+    externalDir: true,
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",

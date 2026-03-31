@@ -10,7 +10,8 @@
     }
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsup",
+    "dev": "tsup --config tsup.config.dev.ts --watch"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -18,7 +19,8 @@
     "@repo/env-config": "workspace:*",
     "@repo/db-mongo": "workspace:*",
     "@repo/libs": "workspace:*",
-    "@repo/error-handlers": "workspace:*"
+    "@repo/error-handlers": "workspace:*",
+    "tsup": "^8.5.0"
   },
   "peerDependencies": {
     "typescript": "^5"

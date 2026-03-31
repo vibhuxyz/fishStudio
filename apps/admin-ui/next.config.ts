@@ -22,7 +22,15 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  transpilePackages: [
+    "@repo/ui",
+    "@repo/zod-schema",
+    "@repo/env-config",
+    "@repo/libs",
+    "@repo/error-handlers",
+  ],
   experimental: {
+    externalDir: true,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dialog",

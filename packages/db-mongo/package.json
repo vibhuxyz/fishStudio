@@ -1,6 +1,7 @@
 {
   "name": "@repo/db-mongo",
   "version": "1.0.0",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,7 +11,8 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup && tsc --emitDeclarationOnly --declaration --declarationMap false --outDir dist --project tsconfig.json",
+    "dev": "tsup --watch",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed"
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "prisma": "^5.14.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.4.5"
   },
   "prisma": {

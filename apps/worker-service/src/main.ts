@@ -7,6 +7,8 @@ import { SocketManager } from "./socket.js";
 import { ENV } from "@repo/env-config";
 import { CronManager } from "@repo/jobs";
 
+console.log("Hello Workers")
+
 async function mainWorkerService() {
   try {
     console.log("🚀 Starting FishStudio Worker Service...");

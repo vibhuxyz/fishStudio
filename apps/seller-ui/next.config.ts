@@ -23,6 +23,7 @@ const nextConfig = {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
   experimental: {
+    externalDir: true,
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-dialog",
@@ -31,6 +32,12 @@ const nextConfig = {
       "@radix-ui/react-tabs",
     ],
   },
+  transpilePackages: [
+    "@repo/ui",
+    "@repo/zod-schema",
+    "@repo/libs",
+    "@repo/env-config",
+  ],
   images: {
     remotePatterns: [
       {

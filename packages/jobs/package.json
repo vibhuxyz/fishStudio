@@ -6,8 +6,8 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
+    "build": "tsup",
+    "dev": "tsup --config tsup.config.dev.ts --watch"
   },
   "dependencies": {
     "node-cron": "^4.2.1",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "tsup": "^8.5.0",
     "typescript": "^5"
   }
 }

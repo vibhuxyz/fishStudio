@@ -9,6 +9,7 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
     "turbo": "^2.7.2",
+    "concurrently": "^9.1.0",
     "typescript": "5.9.2"
   },
   "engines": {
@@ -27,7 +28,9 @@
   "private": true,
   "scripts": {
     "build": "dotenv -e .env -- turbo run build  --concurrency=20",
-    "dev": "dotenv -e .env -- turbo run dev  --concurrency=20",
+    "dev": "dotenv -e .env -- turbo run build --filter=./packages/* && dotenv -e .env -- turbo run dev --filter=./packages/* --filter=./apps/* --concurrency=20",
+    "dev:packages": "dotenv -e .env -- turbo run dev --filter=./packages/*",
+    "dev:apps": "dotenv -e .env -- turbo run dev --filter=./apps/* --concurrency=20",
     "dev:ui": "dotenv -e .env -- turbo run dev --filter=seller-ui --filter=user-ui --filter=admin-ui --concurrency=4",
     "start": "turbo run start  --concurrency=20",
     "lint": "turbo run lint",

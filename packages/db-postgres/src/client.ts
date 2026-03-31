@@ -1,4 +1,4 @@
-import { PrismaClient } from "../prisma/generated-client";
+import { PrismaClient } from "../prisma/generated-client/index.js";
 // import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -52,8 +52,9 @@ prismaPostgres
   .then(() => {
     console.log("PostgreSQL is connected successfully!");
   })
-  .catch((error) => {
-    console.error("PostgreSQL connection error: ", error.message);
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("PostgreSQL connection error: ", message);
   });
 
-export * from "../prisma/generated-client";
+export * from "../prisma/generated-client/index.js";

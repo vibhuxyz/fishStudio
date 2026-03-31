@@ -1,22 +1,26 @@
-import { PrismaClient } from '../prisma/generated-client';
+import { PrismaClient } from "../prisma/generated-client/index.js";
 
 const globalForMongo = globalThis as unknown as {
   mongo: PrismaClient | undefined;
 };
 
-export const prismaMongo = globalForMongo.mongo ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-});
+export const prismaMongo =
+  globalForMongo.mongo ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
 
-if (process.env.NODE_ENV !== 'production') {
+if (process.env.NODE_ENV !== "production") {
   globalForMongo.mongo = prismaMongo;
 }
 
 // Check database connection
-prismaMongo.$connect()
+prismaMongo
+  .$connect()
   .then(() => {
     console.log("MongoDB is connected successfully!");
   })
-  .catch((error) => {
-    console.error("MongoDB connection error: ", error.message);
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("MongoDB connection error: ", message);
   });
