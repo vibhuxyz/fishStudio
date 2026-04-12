@@ -1,0 +1,555 @@
+import useUser from "@/hooks/useUser";
+import { useStore } from "@/store";
+import axiosInstance from "@/utils/axiosInstance";
+import { toast } from "@/utils/toast";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+const DELIVERY_CHARGE = 40;
+const HANDLING_CHARGE = 8;
+const TIP_OPTIONS = [20, 30, 50];
+
+export default function CartScreen() {
+  const { cart, removeFromCart, addToCart, clearCart } = useStore();
+  const { user } = useUser();
+
+  const [couponCode, setCouponCode] = useState("");
+  const [storedCouponCode, setStoredCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [donation, setDonation] = useState(false);
+  const [tip, setTip] = useState<number | null>(null);
+  const [customTip, setCustomTip] = useState("");
+  const [showCustomTip, setShowCustomTip] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<any>(null);
+  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState("");
+
+  // ── Fetch fresh user data (for addresses) ────────────────────────────────
+  const { data: freshUser } = useQuery({
+    queryKey: ["logged-in-user"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/auth/api/logged-in-user");
+      return res.data.user;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+    onSuccess: (data: any) => {
+      // Auto-select default address
+      if (!selectedAddress && data?.addresses?.length > 0) {
+        const def = data.addresses.find((a: any) => a.isDefault) || data.addresses[0];
+        setSelectedAddress(def);
+      }
+    },
+  });
+
+  const addresses: any[] = freshUser?.addresses || [];
+
+  const tipAmount = showCustomTip ? Number(customTip) || 0 : tip ?? 0;
+
+  const itemsTotal = cart.reduce(
+    (sum, item) => sum + item.price * (item.quantity || 1),
+    0
+  );
+  const grandTotal =
+    itemsTotal +
+    DELIVERY_CHARGE +
+    HANDLING_CHARGE +
+    (donation ? 1 : 0) +
+    tipAmount -
+    discountAmount;
+
+  // ── Qty update ────────────────────────────────────────────────────────────
+  const handleUpdateQty = (product: any, delta: number) => {
+    const newQty = (product.quantity || 1) + delta;
+    removeFromCart(product.id, null, null, "Mobile App");
+    if (newQty > 0) {
+      addToCart(
+        { id: product.id, slug: product.slug, title: product.title, price: product.price, image: product.image, shopId: product.shopId, quantity: newQty },
+        null, null, "Mobile App"
+      );
+    }
+  };
+
+  // ── Apply coupon ──────────────────────────────────────────────────────────
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    try {
+      const res = await axiosInstance.post("/order/api/verify-coupon", {
+        couponCode: couponCode.trim(),
+        cart: cart.map((item) => ({ id: item.id, quantity: item.quantity || 1, sale_price: item.price, shopId: item.shopId })),
+      });
+      setDiscountAmount(res.data.discountAmount);
+      setStoredCouponCode(res.data.couponCode);
+      toast.success(`Coupon applied! Saving ₹${res.data.discountAmount}`);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || "Invalid coupon code");
+    }
+  };
+
+  // ── Place order ───────────────────────────────────────────────────────────
+  const handleCheckout = async () => {
+    if (!user) {
+      router.push("/(routes)/login");
+      return;
+    }
+    if (!selectedAddress) {
+      toast.error("Please add a delivery address first");
+      router.push("/(routes)/shipping");
+      return;
+    }
+    if (cart.length === 0) return;
+
+    setIsPlacingOrder(true);
+    try {
+      // Group by shopId — use first shop's items (fish apps are typically single-shop)
+      const storeId = cart[0].shopId;
+      if (!storeId) {
+        toast.error("Unable to determine store. Please try again.");
+        return;
+      }
+
+      const payload = {
+        storeId,
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity || 1,
+          price: item.price,
+        })),
+        deliveryDetails: {
+          name: selectedAddress.name || user.name || "Customer",
+          phone: selectedAddress.phone || user.phone || "0000000000",
+          address: selectedAddress.street || selectedAddress.address || "",
+          city: selectedAddress.city || "",
+          pincode: selectedAddress.pincode || selectedAddress.zip || "000000",
+        },
+        billDetails: {
+          itemTotal: itemsTotal,
+          deliveryCharge: DELIVERY_CHARGE,
+          discount: discountAmount,
+          totalAmount: grandTotal,
+        },
+        paymentMethod: "COD" as const,
+        totalAmount: grandTotal,
+        discountAmount,
+        couponCode: storedCouponCode || undefined,
+        deliverySlot: "instant" as const,
+      };
+
+      const res = await axiosInstance.post("/order/api/create", payload);
+      setPlacedOrderId(res.data.orderId || "");
+      clearCart();
+      setShowSuccess(true);
+    } catch (e: any) {
+      console.error("Order error:", e.response?.data || e.message);
+      const msg = e.response?.data?.message || "Failed to place order. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (cart.length === 0 && !showSuccess) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View className="bg-white px-4 py-4 flex-row items-center justify-between border-b border-gray-100">
+          <Text style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }} className="text-2xl text-gray-900">My Cart</Text>
+          <TouchableOpacity className="w-9 h-9 bg-gray-100 rounded-full items-center justify-center" onPress={() => router.back()}>
+            <Ionicons name="close" size={18} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-24 h-24 bg-gray-100 rounded-full items-center justify-center mb-6">
+            <Ionicons name="bag-handle-outline" size={44} color="#9CA3AF" />
+          </View>
+          <Text className="text-xl font-poppins-bold text-gray-900 mb-2">Your cart is empty</Text>
+          <Text className="text-gray-500 font-poppins-medium text-center mb-8">Add items to get started</Text>
+          <TouchableOpacity className="bg-primary px-10 py-3.5 rounded-2xl" onPress={() => router.push("/(tabs)")}>
+            <Text className="text-white font-poppins-semibold text-base">Browse Products</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50">
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      {/* Header */}
+      <View className="bg-white px-4 py-4 flex-row items-center justify-between border-b border-gray-100">
+        <Text style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }} className="text-2xl text-gray-900">My Cart</Text>
+        <TouchableOpacity className="w-9 h-9 bg-gray-100 rounded-full items-center justify-center" onPress={() => router.back()}>
+          <Ionicons name="close" size={18} color="#6B7280" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
+
+        {/* ── Delivery + items card ─────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 overflow-hidden">
+          <View className="flex-row items-center px-4 py-3 border-b border-gray-100">
+            <View className="w-10 h-10 rounded-full bg-green-50 items-center justify-center mr-3">
+              <Ionicons name="time-outline" size={22} color="#22c55e" />
+            </View>
+            <View>
+              <Text className="text-sm font-poppins-semibold text-gray-900">Delivery in 30 minutes</Text>
+              <Text className="text-xs text-gray-400 font-poppins-medium">
+                Shipment of {cart.length} item{cart.length !== 1 ? "s" : ""}
+              </Text>
+            </View>
+          </View>
+
+          {cart.map((product, idx) => (
+            <View key={product.id} className={`flex-row items-center px-4 py-4 ${idx < cart.length - 1 ? "border-b border-gray-100" : ""}`}>
+              <Image
+                source={{ uri: product.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120" }}
+                className="w-14 h-14 rounded-xl bg-gray-100 mr-3"
+                resizeMode="cover"
+              />
+              <View className="flex-1">
+                <Text className="text-sm font-poppins-semibold text-gray-900 leading-5" numberOfLines={1}>{product.title}</Text>
+                <Text className="text-sm font-poppins-bold text-gray-900 mt-1">₹{product.price}</Text>
+              </View>
+              <View className="flex-row items-center bg-green-500 rounded-xl overflow-hidden">
+                <TouchableOpacity className="w-8 h-9 items-center justify-center" onPress={() => handleUpdateQty(product, -1)}>
+                  <Text className="text-white text-lg font-bold leading-none">−</Text>
+                </TouchableOpacity>
+                <Text className="text-white text-sm font-poppins-bold min-w-[20px] text-center">{product.quantity || 1}</Text>
+                <TouchableOpacity className="w-8 h-9 items-center justify-center" onPress={() => handleUpdateQty(product, 1)}>
+                  <Text className="text-white text-lg font-bold leading-none">+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ── No address warning ────────────────────────────────────── */}
+        {user && addresses.length === 0 && (
+          <TouchableOpacity
+            className="bg-orange-50 border border-orange-200 mx-3 mt-3 rounded-2xl px-4 py-4 flex-row items-center"
+            onPress={() => router.push("/(routes)/shipping")}
+          >
+            <View className="w-10 h-10 bg-orange-100 rounded-full items-center justify-center mr-3">
+              <Ionicons name="location-outline" size={20} color="#F97316" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-sm font-poppins-semibold text-orange-700">No delivery address added</Text>
+              <Text className="text-xs text-orange-500 font-poppins-medium mt-0.5">Tap to add your delivery address</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#F97316" />
+          </TouchableOpacity>
+        )}
+
+        {/* ── Address selector ──────────────────────────────────────── */}
+        {user && addresses.length > 0 && (
+          <TouchableOpacity
+            className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-3.5 flex-row items-center"
+            onPress={() => setShowAddressPicker(true)}
+          >
+            <View className="w-8 h-8 bg-green-50 rounded-full items-center justify-center mr-3">
+              <Ionicons name="location-outline" size={16} color="#22c55e" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xs text-gray-400 font-poppins-medium">Delivering to</Text>
+              {selectedAddress ? (
+                <Text className="text-sm font-poppins-semibold text-gray-900" numberOfLines={1}>
+                  {selectedAddress.name} — {selectedAddress.street}, {selectedAddress.city}
+                </Text>
+              ) : (
+                <Text className="text-sm text-gray-500 font-poppins-medium">Select address</Text>
+              )}
+            </View>
+            <Ionicons name="chevron-down" size={18} color="#9CA3AF" />
+          </TouchableOpacity>
+        )}
+
+        {/* ── Coupon card ───────────────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100">
+          <View className="flex-row items-center px-4 py-3.5">
+            <MaterialCommunityIcons name="tag-outline" size={20} color="#6C3CE1" />
+            <TextInput
+              className="flex-1 ml-3 text-sm font-poppins-medium text-gray-700"
+              placeholder="Enter coupon code"
+              placeholderTextColor="#9CA3AF"
+              value={couponCode}
+              onChangeText={setCouponCode}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity onPress={applyCoupon}>
+              <Text className="text-primary text-sm font-poppins-semibold">Apply</Text>
+            </TouchableOpacity>
+          </View>
+          {storedCouponCode ? (
+            <View className="px-4 pb-3">
+              <Text className="text-green-600 text-xs font-poppins-medium">"{storedCouponCode}" applied — saving ₹{discountAmount}</Text>
+            </View>
+          ) : null}
+          <View className="border-t border-gray-100 flex-row items-center justify-between px-4 py-3.5">
+            <Text className="text-sm text-gray-700 font-poppins-medium">View all offers</Text>
+            <Ionicons name="chevron-forward" size={18} color="#6B7280" />
+          </View>
+        </View>
+
+        {/* ── Bill details ──────────────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-4">
+          <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-base text-gray-900 mb-3">Bill details</Text>
+
+          <BillRow label="Items total" value={`₹${itemsTotal.toFixed(0)}`} />
+          <BillRow label="Delivery charge" value={`₹${DELIVERY_CHARGE}`} info />
+          <BillRow label="Handling charge" value={`₹${HANDLING_CHARGE}`} info />
+          {tipAmount > 0 && <BillRow label="Tip" value={`₹${tipAmount}`} />}
+          {donation && <BillRow label="Donation" value="₹1" />}
+          {discountAmount > 0 && <BillRow label="Coupon discount" value={`−₹${discountAmount}`} green />}
+
+          <View className="border-t border-gray-100 mt-2 pt-3 flex-row justify-between">
+            <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-base text-gray-900">Grand total</Text>
+            <Text style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }} className="text-base text-gray-900">₹{grandTotal.toFixed(0)}</Text>
+          </View>
+        </View>
+
+        {/* ── Donation ──────────────────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-4">
+          <View className="flex-row items-center">
+            <View className="w-10 h-10 rounded-xl bg-orange-50 items-center justify-center mr-3">
+              <Text style={{ fontSize: 20 }}>📚</Text>
+            </View>
+            <View className="flex-1 mr-3">
+              <Text className="text-sm font-poppins-semibold text-gray-900">Feeding India donation</Text>
+              <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">Working towards a malnutrition free India.</Text>
+            </View>
+            <Text className="text-sm text-gray-700 font-poppins-medium mr-2">₹1</Text>
+            <TouchableOpacity
+              onPress={() => setDonation(!donation)}
+              className={`w-5 h-5 rounded border-2 items-center justify-center ${donation ? "bg-primary border-primary" : "bg-white border-gray-300"}`}
+            >
+              {donation && <Ionicons name="checkmark" size={12} color="#fff" />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Tip ──────────────────────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-4">
+          <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-base text-gray-900 mb-1">Tip your delivery partner</Text>
+          <Text className="text-xs text-gray-400 font-poppins-medium mb-4">100% of your tip goes directly to your delivery partner.</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {TIP_OPTIONS.map((t) => (
+              <TouchableOpacity
+                key={t}
+                onPress={() => { setTip(tip === t ? null : t); setShowCustomTip(false); setCustomTip(""); }}
+                className={`flex-row items-center px-4 py-2 rounded-full border ${tip === t ? "bg-primary border-primary" : "bg-white border-gray-200"}`}
+              >
+                <Text style={{ fontSize: 14 }}>{t === 20 ? "😊" : t === 30 ? "😍" : "🤩"}</Text>
+                <Text className={`text-sm ml-1.5 font-poppins-medium ${tip === t ? "text-white" : "text-gray-700"}`}>₹{t}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              onPress={() => { setShowCustomTip(!showCustomTip); setTip(null); }}
+              className={`flex-row items-center px-4 py-2 rounded-full border ${showCustomTip ? "bg-primary border-primary" : "bg-white border-gray-200"}`}
+            >
+              <Text style={{ fontSize: 14 }}>👏</Text>
+              <Text className={`text-sm ml-1.5 font-poppins-medium ${showCustomTip ? "text-white" : "text-gray-700"}`}>Custom</Text>
+            </TouchableOpacity>
+          </View>
+          {showCustomTip && (
+            <View className="mt-3 flex-row items-center border border-gray-200 rounded-xl px-4 py-2.5">
+              <Text className="text-gray-500 mr-2">₹</Text>
+              <TextInput className="flex-1 text-sm font-poppins-medium text-gray-900" placeholder="Enter tip amount" placeholderTextColor="#9CA3AF" keyboardType="numeric" value={customTip} onChangeText={setCustomTip} />
+            </View>
+          )}
+        </View>
+
+        {/* ── Cancellation policy ───────────────────────────────────── */}
+        <View className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-4">
+          <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-base text-gray-900 mb-1.5">Cancellation Policy</Text>
+          <Text className="text-xs text-gray-500 font-poppins-medium leading-5">
+            Orders cannot be cancelled once packed for delivery. In case of unexpected delays, a refund will be provided, if applicable.
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* ── Sticky bottom bar ─────────────────────────────────────────────── */}
+      <View className="bg-white border-t border-gray-100">
+        {/* Address row */}
+        <TouchableOpacity
+          className="flex-row items-center justify-between px-4 py-2.5 border-b border-gray-100"
+          onPress={() => {
+            if (addresses.length === 0) {
+              router.push("/(routes)/shipping");
+            } else {
+              setShowAddressPicker(true);
+            }
+          }}
+        >
+          <View className="flex-row items-center gap-1.5">
+            <Ionicons name="location-outline" size={16} color="#22c55e" />
+            {selectedAddress ? (
+              <Text className="text-xs text-gray-500 font-poppins-medium">
+                Delivering to{" "}
+                <Text className="text-green-600 font-poppins-semibold">
+                  {selectedAddress.label || "Home"}
+                </Text>
+              </Text>
+            ) : (
+              <Text className="text-xs text-orange-500 font-poppins-semibold">
+                {addresses.length === 0 ? "Add delivery address" : "Select delivery address"}
+              </Text>
+            )}
+          </View>
+          <Text className="text-xs text-green-600 font-poppins-semibold">Change</Text>
+        </TouchableOpacity>
+
+        {/* CTA */}
+        <View className="px-4 py-3">
+          <TouchableOpacity
+            onPress={handleCheckout}
+            activeOpacity={0.9}
+            disabled={isPlacingOrder}
+            className={`rounded-2xl flex-row items-center justify-between px-5 py-3.5 ${
+              (!user || addresses.length === 0) ? "bg-gray-700" : "bg-green-500"
+            }`}
+          >
+            <View>
+              <Text className="text-white text-lg font-poppins-bold leading-tight">₹{grandTotal.toFixed(0)}</Text>
+              <Text className="text-green-100 text-[10px] font-poppins-medium uppercase tracking-wider">TOTAL</Text>
+            </View>
+            {isPlacingOrder ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-white text-base">
+                {!user
+                  ? "Login to Checkout"
+                  : addresses.length === 0
+                  ? "Add Address First"
+                  : !selectedAddress
+                  ? "Select Address"
+                  : "Place Order (COD)"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Address picker modal ──────────────────────────────────────────── */}
+      <Modal visible={showAddressPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddressPicker(false)}>
+        <SafeAreaView className="flex-1 bg-white">
+          <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-100">
+            <Text className="text-lg font-poppins-bold text-gray-900">Select Address</Text>
+            <TouchableOpacity onPress={() => setShowAddressPicker(false)}>
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView className="flex-1 p-4">
+            {addresses.map((addr: any) => (
+              <TouchableOpacity
+                key={addr.id}
+                onPress={() => { setSelectedAddress(addr); setShowAddressPicker(false); }}
+                className={`flex-row items-start p-4 rounded-2xl border mb-3 ${selectedAddress?.id === addr.id ? "border-primary bg-primary/5" : "border-gray-200 bg-white"}`}
+              >
+                <View className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3 mt-0.5">
+                  <Ionicons
+                    name={addr.label === "Home" ? "home-outline" : addr.label === "Work" ? "business-outline" : "location-outline"}
+                    size={18}
+                    color={selectedAddress?.id === addr.id ? "#6C3CE1" : "#6B7280"}
+                  />
+                </View>
+                <View className="flex-1">
+                  <View className="flex-row items-center gap-2 mb-0.5">
+                    <Text className="text-sm font-poppins-bold text-gray-900">{addr.name}</Text>
+                    <View className={`px-2 py-0.5 rounded-full ${addr.label === "Home" ? "bg-blue-100" : addr.label === "Work" ? "bg-green-100" : "bg-gray-100"}`}>
+                      <Text className={`text-[10px] font-poppins-semibold ${addr.label === "Home" ? "text-blue-700" : addr.label === "Work" ? "text-green-700" : "text-gray-600"}`}>{addr.label}</Text>
+                    </View>
+                    {addr.isDefault && (
+                      <View className="px-2 py-0.5 rounded-full bg-primary/10">
+                        <Text className="text-[10px] font-poppins-semibold text-primary">Default</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text className="text-sm text-gray-600 font-poppins-medium">{addr.street}, {addr.city}</Text>
+                  {addr.pincode && <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">{addr.pincode}</Text>}
+                </View>
+                {selectedAddress?.id === addr.id && (
+                  <Ionicons name="checkmark-circle" size={20} color="#6C3CE1" />
+                )}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              className="flex-row items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl py-4 mt-1"
+              onPress={() => { setShowAddressPicker(false); router.push("/(routes)/shipping"); }}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#6C3CE1" />
+              <Text className="ml-2 text-sm font-poppins-semibold text-primary">Add New Address</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* ── Order success modal ───────────────────────────────────────────── */}
+      <Modal visible={showSuccess} animationType="fade" transparent>
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <View className="bg-white rounded-3xl p-8 w-full items-center">
+            <View className="w-20 h-20 bg-green-100 rounded-full items-center justify-center mb-5">
+              <Ionicons name="checkmark" size={40} color="#22c55e" />
+            </View>
+            <Text style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }} className="text-2xl text-gray-900 mb-2 text-center">
+              Order Placed!
+            </Text>
+            <Text className="text-gray-500 font-poppins-medium text-center mb-1">
+              Your order has been placed successfully.
+            </Text>
+            {placedOrderId ? (
+              <Text className="text-xs text-gray-400 font-poppins-medium text-center mb-6">
+                Order ID: #{placedOrderId.slice(-6).toUpperCase()}
+              </Text>
+            ) : <View className="mb-6" />}
+            <Text className="text-sm text-green-600 font-poppins-semibold text-center mb-6">
+              💰 Payment: Cash on Delivery
+            </Text>
+            <TouchableOpacity
+              className="bg-primary w-full py-3.5 rounded-2xl items-center mb-3"
+              onPress={() => { setShowSuccess(false); router.push("/(routes)/my-orders"); }}
+            >
+              <Text className="text-white font-poppins-semibold">Track My Order</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { setShowSuccess(false); router.push("/(tabs)"); }}
+            >
+              <Text className="text-gray-500 font-poppins-medium text-sm">Continue Shopping</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+// ── Helper components ──────────────────────────────────────────────────────
+function BillRow({ label, value, info = false, green = false }: { label: string; value: string; info?: boolean; green?: boolean }) {
+  return (
+    <View className="flex-row justify-between mb-2.5">
+      <View className="flex-row items-center gap-1">
+        <Text className="text-sm text-gray-600 font-poppins-medium">{label}</Text>
+        {info && <Ionicons name="information-circle-outline" size={13} color="#9CA3AF" />}
+      </View>
+      <Text className={`text-sm font-poppins-medium ${green ? "text-green-600" : "text-gray-900"}`}>{value}</Text>
+    </View>
+  );
+}

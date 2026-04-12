@@ -3,14 +3,17 @@
   "compilerOptions": {
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-
     "rootDir": "src",
     "outDir": "dist",
-
     "declaration": true,
     "baseUrl": ".",
-    "noEmit": false,
+    "noEmit": false
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
