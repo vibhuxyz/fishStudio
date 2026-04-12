@@ -9,7 +9,9 @@ dist
 # code coverage
 coverage
 *.lcov
-
+.claude
+.husky/_
+.qwen
 # logs
 logs
 _.log
