@@ -1,15 +1,18 @@
 import ShopCard from "@/components/cards/shop.card";
+import AnnouncementBanner from "@/components/home/announcement-banner";
 import BannerCarousel from "@/components/home/banner-carousel";
 import Header from "@/components/home/header";
 import ProductSection from "@/components/home/products";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import ShopSkeleton from "@/components/skelton/shop.skelton";
 import useUser from "@/hooks/useUser";
+import { useAddressStore } from "@/lib/address-store";
+import { useUIStore } from "@/store/ui-store";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React from "react";
+import React, { useRef } from "react";
 import {
   Image,
   Platform,
@@ -24,6 +27,27 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   const { user } = useUser();
+  const { selectedLocation, locationVersion } = useAddressStore();
+  const { setTabBarHidden } = useUIStore();
+  const lastScrollY = useRef(0);
+
+  const handleScroll = (e: any) => {
+    const currentY = e.nativeEvent.contentOffset.y;
+    const diff = currentY - lastScrollY.current;
+    if (diff > 8 && currentY > 60) {
+      setTabBarHidden(true);
+    } else if (diff < -8) {
+      setTabBarHidden(false);
+    }
+    lastScrollY.current = currentY;
+  };
+
+  // Build location params for API calls (matching user-ui pattern)
+  const locationParams = selectedLocation?.storeId
+    ? { storeId: selectedLocation.storeId, pincode: selectedLocation.pincode, city: selectedLocation.city }
+    : selectedLocation?.pincode
+    ? { pincode: selectedLocation.pincode, city: selectedLocation.city }
+    : {};
 
   const { data: categoriesData } = useQuery({
     queryKey: ["storefront-categories"],
@@ -43,40 +67,50 @@ export default function Index() {
       params: {
         page: 1,
         limit: 10,
+        ...locationParams,
       },
     });
     return response.data.products;
   };
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", locationParams.storeId, locationParams.pincode, locationVersion],
     queryFn: fetchProducts,
   });
 
-  // Fetch recommended products for the user
-  const { data: recommendedProducts, isLoading: recommendedLoading } = useQuery(
-    {
-      queryKey: ["recommended-products", user?.id],
-      queryFn: async () => {
-        if (!user) return [];
+  // Recommended products — gracefully disabled if service not available
+  const { data: recommendedProducts, isLoading: recommendedLoading } = useQuery({
+    queryKey: ["recommended-products", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      try {
         const response = await axiosInstance.get(
           "/recommendation/api/get-recommendation-products"
         );
         return response.data.recommendations || [];
-      },
-      enabled: !!user, // Only fetch if user is logged in
-      staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-    }
-  );
-
-  const { data: shops, isLoading: shopLoading } = useQuery({
-    queryKey: ["shops"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/top-shops");
-      return res.data.shops;
+      } catch {
+        // Recommendation service not available — silently return empty
+        return [];
+      }
     },
-    staleTime: 1000 * 60 * 2,
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+    retry: false,
   });
+
+  // Derive unique shops from the products list (no separate API needed)
+  const shops = React.useMemo(() => {
+    if (!products) return [];
+    const seen = new Set<string>();
+    const result: any[] = [];
+    for (const p of products) {
+      if (p.Shop?.id && !seen.has(p.Shop.id)) {
+        seen.add(p.Shop.id);
+        result.push(p.Shop);
+      }
+    }
+    return result;
+  }, [products]);
 
   const onShopPress = (shop: any) => {
     router.push({
@@ -91,15 +125,24 @@ export default function Index() {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle={"dark-content"} backgroundColor={"#fff"} />
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Categories Section */}
+      <AnnouncementBanner />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {/* Categories Section - Centered */}
         {categoriesData?.categories && categoriesData.categories.length > 0 && (
           <View className="py-4 border-b border-border">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4">
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}
+            >
               {categoriesData.categories.map((name) => (
                 <TouchableOpacity
                   key={name}
-                  className="items-center mr-6"
+                  className="items-center mx-3"
                   activeOpacity={0.7}
                   onPress={() =>
                     router.push({
@@ -232,7 +275,7 @@ export default function Index() {
             </TouchableOpacity>
           </View>
 
-          {shopLoading ? (
+          {isLoading ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <ShopSkeleton />
               <ShopSkeleton />

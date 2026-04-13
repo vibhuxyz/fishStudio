@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { router } from "expo-router";
 import { CustomAxiosRequestConfig } from "./axiosInstance.types";
 
 // Environment variable with fallback chain (similar to user-ui)
@@ -25,8 +26,7 @@ let refreshSubscribers: (() => void)[] = [];
 const getAccessToken = async (): Promise<string | null> => {
   try {
     return await SecureStore.getItemAsync("access_token");
-  } catch (error) {
-    console.error("Error getting access token:", error);
+  } catch {
     return null;
   }
 };
@@ -49,7 +49,14 @@ export const removeAccessToken = async (): Promise<void> => {
   }
 };
 
-const handleLogout = () => {};
+const handleLogout = () => {
+  // Clear all auth data
+  SecureStore.deleteItemAsync("access_token").catch(() => {});
+  SecureStore.deleteItemAsync("refresh_token").catch(() => {});
+  SecureStore.deleteItemAsync("user").catch(() => {});
+  // Redirect to login
+  router.replace("/(routes)/login");
+};
 
 // Queue failed requests while refreshing
 const subscribeTokenRefresh = (callback: () => void) => {
@@ -132,9 +139,14 @@ axiosInstance.interceptors.response.use(
         await SecureStore.deleteItemAsync("refresh_token");
         await SecureStore.deleteItemAsync("user");
 
-        handleLogout(); // only for protected requests
+        handleLogout();
         return Promise.reject(refreshError);
       }
+    }
+
+    // If 401 but no auth header (token never existed), redirect to login
+    if (is401 && !hasAuthHeader) {
+      handleLogout();
     }
 
     return Promise.reject(error);

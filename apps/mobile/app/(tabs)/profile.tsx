@@ -158,7 +158,12 @@ export default function Profile() {
   };
 
   const logOutHandler = async () => {
-    try { await axiosInstance.post("/auth/api/logout-user"); } catch {}
+    try { 
+      await axiosInstance.post("/auth/api/logout-user"); 
+    } catch (err) {
+      console.log("Backend logout failed (non-critical):", err);
+    }
+    // Clear all auth data and redirect
     await SecureStore.deleteItemAsync("user");
     await SecureStore.deleteItemAsync("access_token");
     await SecureStore.deleteItemAsync("refresh_token");

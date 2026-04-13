@@ -1,726 +1,219 @@
-import axiosInstance from "@/utils/axiosInstance";
-import { countries } from "@/utils/countries";
+import AddressModal from "@/components/shared/address-modal";
+import { useAddress } from "@/hooks/useAddress";
+import { useAddressStore } from "@/lib/address-store";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Modal,
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "@/utils/toast";
-
-interface Address {
-  id: string;
-  name: string;
-  label: "Home" | "Work" | "Other";
-  street: string;
-  city: string;
-  zip: string;
-  country: string;
-  isDefault: boolean;
-  userId: string;
-  createdAt: string;
-}
-
-type ModalType = "add" | "edit" | "delete" | null;
+import axiosInstance from "@/utils/axiosInstance";
 
 export default function ShippingAddressScreen() {
-  const queryClient = useQueryClient();
-  const [showModal, setShowModal] = useState<ModalType>(null);
-  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    label: "Home" as "Home" | "Work" | "Other",
-    street: "",
-    city: "",
-    zip: "",
-    country: "",
-    isDefault: false,
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [countrySearch, setCountrySearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Filter countries based on search
-  const filteredCountries = countries.filter((country) =>
-    country.toLowerCase().includes(countrySearch.toLowerCase())
-  );
+  const { addresses, fetchAddresses, selectAddress, setAddresses } = useAddress();
+  const { selectedAddressId } = useAddressStore();
 
-  const { data: addressesData, isLoading } = useQuery({
-    queryKey: ["shipping-addresses"],
-    queryFn: async () => {
-      const response = await axiosInstance.get("/auth/api/shipping-addresses");
-      return response.data.addresses;
-    },
-  });
-
-  const addresses: Address[] = addressesData || [];
-
-  const getAddressIcon = (label: "Home" | "Work" | "Other") => {
-    switch (label.toLowerCase()) {
-      case "home":
-        return { name: "home-outline", color: "#2563EB" };
-      case "work":
-        return { name: "business-outline", color: "#059669" };
-      case "other":
-        return { name: "location-outline", color: "#6B7280" };
-      default:
-        return { name: "location-outline", color: "#6B7280" };
-    }
-  };
-
-  const getAddressTypeColor = (label: "Home" | "Work" | "Other") => {
-    switch (label.toLowerCase()) {
-      case "home":
-        return { bg: "#DBEAFE", text: "#2563EB" };
-      case "work":
-        return { bg: "#D1FAE5", text: "#059669" };
-      case "other":
-        return { bg: "#F3F4F6", text: "#6B7280" };
-      default:
-        return { bg: "#F3F4F6", text: "#6B7280" };
-    }
-  };
-
-  const handleSetDefault = async (id: string) => {
+  const loadAddresses = async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    else setIsLoading(true);
     try {
-      await axiosInstance.put(`/auth/api/set-default-address/${id}`);
-      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
-      toast.success("Default address updated successfully!");
-    } catch (error) {
-      console.error("Error setting default address:", error);
-      toast.error("Failed to update default address");
-    }
-  };
-
-  const handleDeleteAddress = async (id: string) => {
-    try {
-      await axiosInstance.delete(`/auth/api/delete-address/${id}`);
-      // Refetch addresses after successful deletion
-      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
-      toast.success("Address deleted successfully!");
-      setShowModal(null);
-      setSelectedAddress(null);
-    } catch (error) {
-      console.error("Error deleting address:", error);
-      toast.error("Failed to delete address");
-    }
-  };
-
-  const openAddModal = () => {
-    setFormData({
-      name: "",
-      label: "Home",
-      street: "",
-      city: "",
-      zip: "",
-      country: "",
-      isDefault: false,
-    });
-    setShowModal("add");
-  };
-
-  const openEditModal = (address: Address) => {
-    setSelectedAddress(address);
-    setFormData({
-      name: address.name,
-      label: address.label,
-      street: address.street,
-      city: address.city,
-      zip: address.zip,
-      country: address.country,
-      isDefault: address.isDefault,
-    });
-    setShowModal("edit");
-  };
-
-  const openDeleteModal = (address: Address) => {
-    // Prevent deleting the last address
-    if (addresses.length === 1) {
-      toast.error(
-        "Cannot delete the last address. Please add another address first."
-      );
-      return;
-    }
-    setSelectedAddress(address);
-    setShowModal("delete");
-  };
-
-  const closeModal = () => {
-    setShowModal(null);
-    setSelectedAddress(null);
-    setFormData({
-      name: "",
-      label: "Home",
-      street: "",
-      city: "",
-      zip: "",
-      country: "",
-      isDefault: false,
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (
-      !formData.name ||
-      !formData.street ||
-      !formData.city ||
-      !formData.zip ||
-      !formData.country
-    ) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      if (showModal === "add") {
-        await axiosInstance.post("/auth/api/add-address", formData);
-        toast.success("Address added successfully!");
-      } else if (showModal === "edit" && selectedAddress) {
-        await axiosInstance.put(
-          `/auth/api/update-address/${selectedAddress.id}`,
-          formData
-        );
-        toast.success("Address updated successfully!");
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
-      closeModal();
-    } catch (error) {
-      console.error("Error saving address:", error);
-      toast.error("Failed to save address");
+      await fetchAddresses();
+    } catch {
+      // fetchAddresses handles errors internally
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const renderAddressCard = (address: Address) => {
-    const iconConfig = getAddressIcon(address.label);
-    const typeColor = getAddressTypeColor(address.label);
+  useEffect(() => {
+    loadAddresses();
+  }, []);
 
-    return (
-      <View
-        key={address.id}
-        className="bg-white rounded-2xl shadow-[0_0_1px_rgba(0,0,0,0.1)] border border-gray-100 mb-4 overflow-hidden"
-      >
-        {/* Address Header */}
-        <View className="p-4 border-b border-gray-100">
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center">
-              <Ionicons
-                name={iconConfig.name as any}
-                size={20}
-                color={iconConfig.color}
-              />
-              <Text className="text-lg font-poppins-semibold text-gray-900 ml-2">
-                {address.name}
-              </Text>
-            </View>
-
-            <View className="flex-row items-center">
-              {address.isDefault && (
-                <View className="bg-blue-100 px-3 py-1 rounded-full mr-2">
-                  <Text className="text-blue-700 font-poppins-medium text-sm">
-                    Default
-                  </Text>
-                </View>
-              )}
-              <View
-                className="px-3 py-1 rounded-full"
-                style={{ backgroundColor: typeColor.bg }}
-              >
-                <Text
-                  className="font-poppins-medium text-sm capitalize"
-                  style={{ color: typeColor.text }}
-                >
-                  {address.label}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Address Details */}
-        <View className="p-4">
-          <Text className="text-gray-700 font-poppins-medium mb-2">
-            {address.street}
-          </Text>
-          <Text className="text-gray-700 font-poppins-medium mb-2">
-            {address.city}, {address.zip}
-          </Text>
-          <Text className="text-gray-700 font-poppins-medium mb-3">
-            {address.country}
-          </Text>
-
-          {/* Action Buttons */}
-          <View className="flex-row gap-3">
-            {!address.isDefault && (
-              <TouchableOpacity
-                className="flex-1 bg-blue-600 py-3 rounded-xl"
-                onPress={() => handleSetDefault(address.id)}
-              >
-                <View className="flex-row items-center justify-center">
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={16}
-                    color="white"
-                  />
-                  <Text className="text-white font-poppins-semibold ml-2">
-                    Set as Default
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              className="flex-1 bg-gray-100 py-3 rounded-xl"
-              onPress={() => openEditModal(address)}
-            >
-              <View className="flex-row items-center justify-center">
-                <Ionicons name="create-outline" size={16} color="#6B7280" />
-                <Text className="text-gray-700 font-poppins-semibold ml-2">
-                  Edit
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-red-50 px-4 py-3 rounded-xl"
-              onPress={() => openDeleteModal(address)}
-            >
-              <View className="flex-row items-center">
-                <Ionicons name="trash-outline" size={16} color="#EF4444" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
+  const handleDelete = async (id: string) => {
+    try {
+      const { data } = await axiosInstance.delete(`/auth/api/delete-address/${id}`);
+      if (data.success) {
+        setAddresses(data.addresses);
+        toast.success("Address removed");
+      }
+    } catch {
+      toast.error("Failed to remove address");
+    }
   };
 
-  const renderModal = () => {
-    if (!showModal) return null;
+  const getIcon = (label: string) =>
+    label === "Home" ? "home-outline" : label === "Work" ? "briefcase-outline" : "location-outline";
 
-    return (
-      <Modal
-        visible={true}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeModal}
-      >
-        <SafeAreaView className="flex-1 bg-white">
-          {/* Modal Header */}
-          <View className="flex-row items-center justify-between p-4 border-b border-gray-100">
-            <Text className="text-xl font-poppins-bold text-gray-900">
-              {showModal === "add" && "Add New Address"}
-              {showModal === "edit" && "Edit Address"}
-              {showModal === "delete" && "Delete Address"}
-            </Text>
-            <TouchableOpacity onPress={closeModal}>
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
+  const getIconBg = (label: string, selected: boolean) =>
+    selected ? "#DCFCE7" : label === "Home" ? "#DBEAFE" : label === "Work" ? "#D1FAE5" : "#F3F4F6";
 
-          <ScrollView
-            className="flex-1 p-4"
-            showsVerticalScrollIndicator={false}
-          >
-            {showModal === "delete" ? (
-              // Delete Confirmation
-              <View className="flex-1 justify-center items-center py-20">
-                <View className="w-20 h-20 bg-red-100 rounded-full items-center justify-center mb-6">
-                  <Ionicons name="trash-outline" size={32} color="#EF4444" />
-                </View>
-                <Text className="text-xl font-poppins-bold text-gray-900 text-center mb-2">
-                  Delete Address
-                </Text>
-                <Text className="text-gray-600 font-poppins-medium text-center mb-6">
-                  Are you sure you want to delete this address? This action
-                  cannot be undone.
-                </Text>
-
-                <View className="w-full gap-3">
-                  <TouchableOpacity
-                    className="bg-red-600 py-4 rounded-xl"
-                    onPress={() =>
-                      selectedAddress && handleDeleteAddress(selectedAddress.id)
-                    }
-                  >
-                    <Text className="text-white font-poppins-semibold text-center">
-                      Delete Address
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="bg-gray-100 py-4 rounded-xl"
-                    onPress={closeModal}
-                  >
-                    <Text className="text-gray-700 font-poppins-semibold text-center">
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              // Add/Edit Form
-              <View className="gap-4">
-                {/* Address Label */}
-                <View>
-                  <Text className="text-gray-700 font-poppins-medium mb-2">
-                    Address Label
-                  </Text>
-                  <View className="flex-row gap-2">
-                    {(["Home", "Work", "Other"] as const).map((label) => (
-                      <TouchableOpacity
-                        key={label}
-                        className={`flex-1 py-3 px-4 rounded-xl border ${
-                          formData.label === label
-                            ? "border-blue-600 bg-blue-50"
-                            : "border-gray-200 bg-white"
-                        }`}
-                        onPress={() =>
-                          setFormData((prev) => ({ ...prev, label }))
-                        }
-                      >
-                        <Text
-                          className={`font-poppins-medium text-center ${
-                            formData.label === label
-                              ? "text-blue-600"
-                              : "text-gray-700"
-                          }`}
-                        >
-                          {label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Address Name */}
-                <View>
-                  <Text className="text-gray-700 font-poppins-medium mb-2">
-                    Address Name *
-                  </Text>
-                  <TextInput
-                    className="border border-gray-200 rounded-xl px-4 py-3 font-poppins-medium"
-                    placeholder="e.g., Home, Office, Vacation House"
-                    value={formData.name}
-                    onChangeText={(text) =>
-                      setFormData((prev) => ({ ...prev, name: text }))
-                    }
-                  />
-                </View>
-
-                {/* Street Address */}
-                <View>
-                  <Text className="text-gray-700 font-poppins-medium mb-2">
-                    Street Address *
-                  </Text>
-                  <TextInput
-                    className="border border-gray-200 rounded-xl px-4 py-3 font-poppins-medium"
-                    placeholder="Enter your street address"
-                    value={formData.street}
-                    onChangeText={(text) =>
-                      setFormData((prev) => ({ ...prev, street: text }))
-                    }
-                  />
-                </View>
-
-                {/* City and ZIP */}
-                <View className="flex-row gap-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-poppins-medium mb-2">
-                      City *
-                    </Text>
-                    <TextInput
-                      className="border border-gray-200 rounded-xl px-4 py-3 font-poppins-medium"
-                      placeholder="Enter city"
-                      value={formData.city}
-                      onChangeText={(text) =>
-                        setFormData((prev) => ({ ...prev, city: text }))
-                      }
-                    />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-700 font-poppins-medium mb-2">
-                      ZIP Code *
-                    </Text>
-                    <TextInput
-                      className="border border-gray-200 rounded-xl px-4 py-3 font-poppins-medium"
-                      placeholder="Enter ZIP code"
-                      value={formData.zip}
-                      onChangeText={(text) =>
-                        setFormData((prev) => ({ ...prev, zip: text }))
-                      }
-                    />
-                  </View>
-                </View>
-
-                {/* Country */}
-                <View>
-                  <Text className="text-gray-700 font-poppins-medium mb-2">
-                    Country *
-                  </Text>
-                  <TouchableOpacity
-                    className="border border-gray-200 rounded-xl px-4 py-3 flex-row items-center justify-between"
-                    onPress={() => setShowCountryPicker(true)}
-                  >
-                    <Text
-                      className={`font-poppins-medium ${
-                        formData.country ? "text-gray-900" : "text-gray-400"
-                      }`}
-                    >
-                      {formData.country || "Select country"}
-                    </Text>
-                    <Ionicons name="chevron-down" size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Country Picker Modal */}
-                <Modal
-                  visible={showCountryPicker}
-                  animationType="slide"
-                  presentationStyle="pageSheet"
-                  onRequestClose={() => setShowCountryPicker(false)}
-                >
-                  <SafeAreaView className="flex-1 bg-white">
-                    {/* Country Picker Header */}
-                    <View className="flex-row items-center justify-between p-4 border-b border-gray-100">
-                      <Text className="text-xl font-poppins-bold text-gray-900">
-                        Select Country
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setShowCountryPicker(false)}
-                      >
-                        <Ionicons name="close" size={24} color="#6B7280" />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Search Input */}
-                    <View className="p-4 border-b border-gray-100">
-                      <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
-                        <Ionicons name="search" size={20} color="#6B7280" />
-                        <TextInput
-                          className="flex-1 ml-3 font-poppins-medium"
-                          placeholder="Search countries..."
-                          value={countrySearch}
-                          onChangeText={setCountrySearch}
-                        />
-                      </View>
-                    </View>
-
-                    {/* Countries List */}
-                    <ScrollView
-                      className="flex-1 pb-12"
-                      showsVerticalScrollIndicator={false}
-                    >
-                      {filteredCountries.map((country) => (
-                        <TouchableOpacity
-                          key={country}
-                          className={`p-4 border-b border-gray-100 ${
-                            formData.country === country
-                              ? "bg-blue-50"
-                              : "bg-white"
-                          }`}
-                          onPress={() => {
-                            setFormData((prev) => ({ ...prev, country }));
-                            setShowCountryPicker(false);
-                            setCountrySearch("");
-                          }}
-                        >
-                          <View className="flex-row items-center justify-between">
-                            <Text
-                              className={`font-poppins-medium ${
-                                formData.country === country
-                                  ? "text-blue-600"
-                                  : "text-gray-900"
-                              }`}
-                            >
-                              {country}
-                            </Text>
-                            {formData.country === country && (
-                              <Ionicons
-                                name="checkmark"
-                                size={20}
-                                color="#2563EB"
-                              />
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </SafeAreaView>
-                </Modal>
-
-                {/* Set as Default */}
-                <View className="flex-row items-center justify-between py-3">
-                  <View>
-                    <Text className="text-gray-700 font-poppins-medium">
-                      Set as Default Address
-                    </Text>
-                    <Text className="text-gray-500 font-poppins-medium text-sm">
-                      Use this address for future orders
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    className={`w-12 h-6 rounded-full ${
-                      formData.isDefault ? "bg-blue-600" : "bg-gray-200"
-                    }`}
-                    onPress={() => {
-                      // If trying to uncheck default and this is the only default address, show error
-                      if (
-                        formData.isDefault &&
-                        showModal === "edit" &&
-                        selectedAddress
-                      ) {
-                        const defaultAddresses = addresses.filter(
-                          (addr) => addr.isDefault
-                        );
-                        if (
-                          defaultAddresses.length === 1 &&
-                          defaultAddresses[0].id === selectedAddress.id
-                        ) {
-                          toast.error(
-                            "Cannot remove default status from the only default address. Please set another address as default first."
-                          );
-                          return;
-                        }
-                      }
-                      setFormData((prev) => ({
-                        ...prev,
-                        isDefault: !prev.isDefault,
-                      }));
-                    }}
-                  >
-                    <View
-                      className={`w-[22px] h-[22px] bg-white rounded-full shadow-sm transform transition-transform ${
-                        formData.isDefault ? "translate-x-6" : "translate-x-0.5"
-                      }`}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Submit Button */}
-                <TouchableOpacity
-                  className={`py-4 rounded-xl ${
-                    isSubmitting ? "bg-gray-400" : "bg-blue-600"
-                  }`}
-                  onPress={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  <Text className="text-white font-poppins-semibold text-center">
-                    {isSubmitting
-                      ? "Saving..."
-                      : showModal === "add"
-                      ? "Add Address"
-                      : "Update Address"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-    );
-  };
+  const getIconColor = (label: string, selected: boolean) =>
+    selected ? "#22C55E" : label === "Home" ? "#2563EB" : label === "Work" ? "#059669" : "#6B7280";
 
   return (
-    <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       {/* Header */}
-      <View className="bg-white px-4 py-4 border-b border-gray-100">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="mr-4">
-              <Ionicons name="arrow-back" size={24} color="#374151" />
-            </TouchableOpacity>
-            <Text className="text-xl font-poppins-bold text-gray-900">
-              Shipping Address
+      <View style={{ backgroundColor: "#fff", paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center" }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#374151" />
+          </TouchableOpacity>
+          <View>
+            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
+            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+              {addresses.length} address{addresses.length !== 1 ? "es" : ""} saved
             </Text>
           </View>
-
-          <TouchableOpacity
-            className="bg-blue-600 px-4 py-2 rounded-lg"
-            onPress={openAddModal}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="add" size={20} color="white" />
-              <Text className="text-white font-poppins-semibold ml-1">
-                Add New
-              </Text>
-            </View>
-          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          onPress={() => setShowModal(true)}
+          style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#22C55E", paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12 }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={18} color="#fff" />
+          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#fff" }}>Add New</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <View className="animate-spin">
-              <Ionicons name="refresh" size={48} color="#6B7280" />
+      {isLoading && addresses.length === 0 ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color="#6C3CE1" />
+          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", marginTop: 12 }}>
+            Loading addresses...
+          </Text>
+        </View>
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => loadAddresses(true)}
+              colors={["#6C3CE1"]}
+              tintColor="#6C3CE1"
+            />
+          }
+        >
+          {addresses.length === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: 80 }}>
+              <Ionicons name="location-outline" size={72} color="#CBD5E1" />
+              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 6 }}>
+                No saved addresses
+              </Text>
+              <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
+                Add your home or work address for faster checkout.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowModal(true)}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#22C55E", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 15, color: "#fff" }}>Add Address</Text>
+              </TouchableOpacity>
             </View>
-            <Text className="text-gray-500 font-poppins-medium mt-4 text-center text-lg">
-              Loading addresses...
-            </Text>
-          </View>
-        ) : addresses.length === 0 ? (
-          <View className="flex-1 justify-center items-center py-20">
-            <Ionicons name="location-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 font-poppins-medium mt-4 text-center text-lg">
-              No addresses found
-            </Text>
-            <Text className="text-gray-400 font-poppins-medium text-center mt-2">
-              Add your first shipping address to get started
-            </Text>
-            <TouchableOpacity
-              className="bg-blue-600 px-6 py-3 rounded-xl mt-6"
-              onPress={openAddModal}
-            >
-              <Text className="text-white font-poppins-semibold">
-                Add Address
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            {/* Address Cards */}
-            {addresses.map(renderAddressCard)}
+          ) : (
+            <View style={{ gap: 12 }}>
+              {addresses.map((address) => {
+                const isSelected = address.id === selectedAddressId;
+                return (
+                  <TouchableOpacity
+                    key={address.id}
+                    onPress={() => {
+                      selectAddress(address.id);
+                      toast.success(`${address.label} set as primary address`);
+                    }}
+                    activeOpacity={0.75}
+                    style={{
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      borderColor: isSelected ? "#22C55E" : "#E5E7EB",
+                      backgroundColor: isSelected ? "#F0FDF4" : "#fff",
+                    }}
+                  >
+                    {/* Card body */}
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14, padding: 16 }}>
+                      <View style={{ width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: getIconBg(address.label, isSelected) }}>
+                        <Ionicons name={getIcon(address.label) as any} size={22} color={getIconColor(address.label, isSelected)} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 15, color: "#111827" }}>{address.label}</Text>
+                          {isSelected && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#DCFCE7", borderWidth: 1, borderColor: "#BBF7D0", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
+                              <Ionicons name="checkmark-circle" size={11} color="#22C55E" />
+                              <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 10, color: "#22C55E" }}>Default</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280", lineHeight: 20 }}>
+                          {address.name}{(address as any).phone ? ` · ${(address as any).phone}` : ""}
+                        </Text>
+                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+                          {address.street}
+                          {(address as any).landmark ? `, ${(address as any).landmark}` : ""}
+                          {address.area ? `, ${address.area}` : ""}
+                        </Text>
+                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+                          {address.city}{address.state ? `, ${address.state}` : ""} - {address.pincode}
+                        </Text>
+                      </View>
+                    </View>
 
-            {/* Add New Address Card */}
-            <TouchableOpacity
-              className="bg-white rounded-2xl shadow-[0_0_1px_rgba(0,0,0,0.1)] border-2 border-dashed border-gray-300 p-6 items-center"
-              onPress={openAddModal}
-              activeOpacity={0.7}
-            >
-              <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mb-3">
-                <Ionicons name="add" size={24} color="#2563EB" />
-              </View>
-              <Text className="text-gray-900 font-poppins-semibold text-lg">
-                Add New Address
-              </Text>
-              <Text className="text-gray-500 font-poppins-medium text-center mt-1">
-                Add a new shipping address for faster checkout
-              </Text>
-            </TouchableOpacity>
-          </>
-        )}
+                    {/* Action row */}
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingHorizontal: 16, paddingVertical: 10 }}>
+                      {!isSelected ? (
+                        <TouchableOpacity onPress={() => { selectAddress(address.id); toast.success(`${address.label} set as primary address`); }}>
+                          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#6C3CE1" }}>Set as Default</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
+                          Primary delivery address
+                        </Text>
+                      )}
+                      {!isSelected && (
+                        <TouchableOpacity
+                          onPress={() => handleDelete(address.id)}
+                          style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" }}
+                        >
+                          <Ionicons name="trash-outline" size={17} color="#EF4444" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      )}
 
-        {/* Bottom Spacing */}
-        <View className="h-20" />
-      </ScrollView>
-
-      {/* Modal */}
-      {renderModal()}
+      {/* AddressModal — handles all add/pincode flow */}
+      <AddressModal
+        visible={showModal}
+        onClose={() => { setShowModal(false); loadAddresses(); }}
+      />
     </SafeAreaView>
   );
 }

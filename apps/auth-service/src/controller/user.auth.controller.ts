@@ -136,9 +136,14 @@ export const verifyOtpAndLogin = async (
     setCookie(res, "access_token", accessToken);
     setCookie(res, "refresh_token", refreshToken);
 
+    // Include tokens in response body for mobile clients (Bearer token auth).
+    // Web clients use the httpOnly cookies above; mobile stores these in
+    // hardware-backed SecureStore (iOS Keychain / Android Keystore).
     return res.status(200).json({
       success: true,
       message: "Logged in successfully!",
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -214,8 +219,10 @@ export const refreshToken = async (
       setCookie(res, "staff_access_token", newAccessToken);
     }
 
+    // Return new access token in body for mobile clients.
     return res.status(200).json({
-      sucess: true,
+      success: true,
+      accessToken: newAccessToken,
     });
   } catch (error) {
     return next(error);

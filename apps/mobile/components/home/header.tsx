@@ -1,96 +1,162 @@
-import LocationModal from "@/components/shared/location-modal";
+import AddressModal from "@/components/shared/address-modal";
+import { useAddressStore } from "@/lib/address-store";
+import { useStore } from "@/store";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Header() {
-  const [location, setLocation] = useState({ name: "Motipur", deliveryTime: "~58 min delivery" });
-  const [showLocationModal, setShowLocationModal] = useState(false);
+  const { selectedLocation, getSelectedAddress } = useAddressStore();
+  const { cart } = useStore();
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
+  const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
+
+  const selectedAddress = getSelectedAddress();
+
+  const locationLine =
+    selectedLocation?.city && selectedLocation?.pincode
+      ? `${selectedLocation.city} · ${selectedLocation.pincode}`
+      : selectedAddress
+      ? `${selectedAddress.city} · ${selectedAddress.pincode}`
+      : null;
+
+  const openingHours = selectedLocation?.openingHours;
 
   return (
     <View className="bg-white">
-      {/* Top Header Row */}
-      <View
-        className="flex-row items-center justify-between px-4 pt-2 pb-3"
-        style={{
-          paddingTop: 10,
-        }}
-      >
-        {/* Logo */}
-        <View className="flex-row items-center">
-          <View className="w-10 h-10 bg-primary rounded-xl items-center justify-center">
-            <MaterialCommunityIcons name="fish" size={24} color="white" />
-          </View>
-          <View className="ml-3">
-            <Text className="text-sm font-poppins-semibold text-foreground">
-              Fish Studio
-            </Text>
-            <Text className="text-xs text-muted-foreground font-poppins">
-              Fresh Fish & Meat
-            </Text>
-          </View>
-        </View>
-
-        {/* Right Icons */}
-        <View className="flex-row items-center space-x-3">
-          <TouchableOpacity className="p-2">
-            <Ionicons name="grid-outline" size={24} color="#64748B" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="p-2"
-            onPress={() => router.push("/(tabs)/profile")}
-          >
-            <Ionicons name="person-outline" size={24} color="#64748B" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="p-2 bg-muted rounded-xl"
-            onPress={() => router.push("/(tabs)/cart")}
-          >
-            <Ionicons name="cart-outline" size={24} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Location & Status Bar */}
-      <View className="px-4 pb-3">
+      {/* ── Main row: icon | delivery info | cart ── */}
+      <View className="flex-row items-center px-4 pt-3 pb-2">
+        {/* iOS-style squircle icon — no text */}
         <TouchableOpacity
-          className="flex-row items-center"
-          onPress={() => setShowLocationModal(true)}
+          onPress={() => setShowAddressModal(true)}
+          activeOpacity={0.85}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              backgroundColor: "#6C3CE1",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#6C3CE1",
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+            }}
+          >
+            <MaterialCommunityIcons name="fish" size={26} color="white" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Delivery details — tappable to open modal */}
+        <TouchableOpacity
+          className="flex-1 mx-3"
+          onPress={() => setShowAddressModal(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="location" size={16} color="#22C55E" />
-          <Text className="text-sm font-poppins-semibold text-offer-green ml-1">
-            {location.name ? `📍 ${location.name} • ${location.deliveryTime}` : "Set Location"}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={16}
-            color="#22C55E"
-            className="ml-1"
-          />
+          {/* "Delivery Scheduled order available ↓" */}
+          <View className="flex-row items-center mb-0.5">
+            <Text
+              className="text-sm font-poppins-semibold text-offer-green"
+              numberOfLines={1}
+            >
+              Delivery Scheduled order available
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color="#22C55E"
+              style={{ marginLeft: 2 }}
+            />
+          </View>
+
+          {/* Opens at */}
+          {openingHours ? (
+            <View className="flex-row items-center mb-0.5">
+              <Ionicons name="time-outline" size={12} color="#64748B" />
+              <Text className="text-xs text-muted-foreground font-poppins ml-1">
+                Opens at {openingHours}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Location bold */}
+          {locationLine ? (
+            <View className="flex-row items-center mb-0.5">
+              <Ionicons name="location-outline" size={12} color="#64748B" />
+              <Text
+                className="text-xs font-poppins-semibold text-foreground ml-1"
+                numberOfLines={1}
+              >
+                {locationLine}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Fallback if no location set */}
+          {!locationLine && (
+            <View className="flex-row items-center">
+              <Ionicons name="location-outline" size={12} color="#94A3B8" />
+              <Text className="text-xs text-muted-foreground font-poppins ml-1">
+                Tap to set delivery location
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Profile icon */}
+        <TouchableOpacity
+          className="w-9 h-9 bg-muted rounded-xl items-center justify-center mr-2"
+          onPress={() => router.push("/(tabs)/profile")}
+        >
+          <Ionicons name="person-outline" size={20} color="#64748B" />
+        </TouchableOpacity>
+
+        {/* Cart pill */}
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/cart")}
+          activeOpacity={0.85}
+        >
+          {cartCount > 0 ? (
+            <View
+              style={{ backgroundColor: "#22C55E", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", alignItems: "center" }}
+            >
+              <Ionicons name="cart-outline" size={16} color="white" />
+              <Text style={{ color: "white", fontSize: 11, fontFamily: "Poppins-SemiBold", marginLeft: 4 }}>
+                {cartCount} item{cartCount !== 1 ? "s" : ""}{"\n"}
+                <Text style={{ fontFamily: "Poppins-Bold", fontSize: 12 }}>₹{cartTotal}</Text>
+              </Text>
+            </View>
+          ) : (
+            <View className="w-9 h-9 bg-muted rounded-xl items-center justify-center">
+              <Ionicons name="cart-outline" size={20} color="#64748B" />
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar */}
+      {/* ── Search bar ── */}
       <View className="px-4 pb-4">
         <TouchableOpacity
           className="flex-row items-center bg-muted rounded-xl px-4 py-3"
           onPress={() => router.push("/(routes)/products")}
           activeOpacity={0.7}
         >
-          <Ionicons name="search" size={20} color="#94A3B8" />
-          <Text className="flex-1 ml-3 text-muted-foreground font-poppins">
+          <Ionicons name="search" size={18} color="#94A3B8" />
+          <Text className="flex-1 ml-3 text-muted-foreground font-poppins text-sm">
             Search for fish, meat, cuts...
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Location Modal */}
-      <LocationModal
-        visible={showLocationModal}
-        onClose={() => setShowLocationModal(false)}
-        onSelectLocation={(loc) => setLocation(loc)}
+      <AddressModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
       />
     </View>
   );

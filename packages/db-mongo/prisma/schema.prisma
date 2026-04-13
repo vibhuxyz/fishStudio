@@ -270,6 +270,11 @@ model products {
   cuttingTypes       String[]
   pieceSizes         String[]
 
+  // Weight-based pricing configuration
+  basePricePerKg   Float?
+  basePricePerUnit Float?
+  pricingMethod    String?  // "per_kg", "per_piece", "fixed"
+
   processingWeightLoss String?
   stock                Int
   sale_price           Float

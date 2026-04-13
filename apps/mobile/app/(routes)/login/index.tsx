@@ -90,13 +90,16 @@ export default function LoginScreen() {
         return;
       }
 
-      // Store tokens and user
-      if (data.accessToken) {
-        await storeAccessToken(data.accessToken);
+      // Store tokens in hardware-backed SecureStore (iOS Keychain / Android Keystore)
+      const accessTokenToStore = data.accessToken || data.token;
+      if (accessTokenToStore) {
+        await storeAccessToken(accessTokenToStore);
       }
+
       if (data.refreshToken) {
         await SecureStore.setItemAsync("refresh_token", data.refreshToken);
       }
+
       if (data.user) {
         await SecureStore.setItemAsync("user", JSON.stringify({
           id: data.user.id,

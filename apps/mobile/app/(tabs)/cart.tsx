@@ -1,17 +1,18 @@
 import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
+import { useAddressStore } from "@/lib/address-store";
+import AddressModal from "@/components/shared/address-modal";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
@@ -19,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const DELIVERY_CHARGE = 40;
 const HANDLING_CHARGE = 8;
@@ -27,6 +29,7 @@ const TIP_OPTIONS = [20, 30, 50];
 export default function CartScreen() {
   const { cart, removeFromCart, addToCart, clearCart } = useStore();
   const { user } = useUser();
+  const { selectedLocation, selectedAddressId, getSelectedAddress, addresses } = useAddressStore();
 
   const [couponCode, setCouponCode] = useState("");
   const [storedCouponCode, setStoredCouponCode] = useState("");
@@ -35,31 +38,77 @@ export default function CartScreen() {
   const [tip, setTip] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
   const [showCustomTip, setShowCustomTip] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
-  const [showAddressPicker, setShowAddressPicker] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState("");
+  const [cartValidated, setCartValidated] = useState(false);
+  const [deliveryInfo, setDeliveryInfo] = useState<{
+    isStoreOpen: boolean;
+    cartDeliveryTime: number | null;
+    storeName: string | null;
+    openingHours: string | null;
+  }>({ isStoreOpen: true, cartDeliveryTime: null, storeName: null, openingHours: null });
 
-  // ── Fetch fresh user data (for addresses) ────────────────────────────────
-  const { data: freshUser } = useQuery({
-    queryKey: ["logged-in-user"],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/auth/api/logged-in-user");
-      return res.data.user;
-    },
-    enabled: !!user,
-    staleTime: 1000 * 60 * 5,
-    onSuccess: (data: any) => {
-      // Auto-select default address
-      if (!selectedAddress && data?.addresses?.length > 0) {
-        const def = data.addresses.find((a: any) => a.isDefault) || data.addresses[0];
-        setSelectedAddress(def);
-      }
-    },
-  });
+  // Get selected address from store
+  const selectedAddress = getSelectedAddress();
 
-  const addresses: any[] = freshUser?.addresses || [];
+  // Auto-resolve storeId from selected address pincode (matching user-ui pattern)
+  useEffect(() => {
+    if (selectedLocation?.storeId) return; // Already resolved
+    if (!selectedAddress?.pincode) return;
+
+    axiosInstance
+      .get(`/auth/api/check-pincode?pincode=${selectedAddress.pincode}`)
+      .then(({ data }) => {
+        if (data.success && data.store?.id) {
+          const { setSelectedLocation: updateLocation } = useAddressStore.getState();
+          updateLocation({
+            storeId: data.store.id,
+            storeName: data.store.name,
+            pincode: selectedAddress.pincode,
+            city: selectedAddress.city || data.store.city || "",
+            deliveryTimeMinutes: data.store.cityDeliveryTimes?.[selectedAddress.city],
+            isOpen: data.store.isOpen,
+            openingHours: data.store.openingHours,
+          });
+        }
+      })
+      .catch(() => {}); // Silent fail
+  }, [selectedLocation?.storeId, selectedAddress?.pincode]);
+
+  // Validate cart with server (matching user-ui syncItems pattern)
+  useEffect(() => {
+    if (cart.length === 0) return;
+    const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+    const city = selectedLocation?.city || selectedAddress?.city;
+    if (!pincode) return;
+
+    const cartItems = cart.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity || 1,
+    }));
+
+    axiosInstance
+      .post("/product/api/validate-cart", {
+        cartItems,
+        pincode,
+        city,
+        storeId: selectedLocation?.storeId || undefined,
+      })
+      .then(({ data }) => {
+        if (data.success) {
+          setDeliveryInfo({
+            isStoreOpen: data.isStoreOpen !== false,
+            cartDeliveryTime: data.cartDeliveryTime || null,
+            storeName: data.storeName || data.store?.name || null,
+            openingHours: data.openingHours || data.store?.opening_hours || null,
+          });
+          setCartValidated(true);
+        }
+      })
+      .catch(() => {}); // Silent — show stale cart data if validation fails
+  }, [cart.length, selectedLocation?.storeId, selectedLocation?.pincode]);
 
   const tipAmount = showCustomTip ? Number(customTip) || 0 : tip ?? 0;
 
@@ -210,12 +259,24 @@ export default function CartScreen() {
             <View className="w-10 h-10 rounded-full bg-green-50 items-center justify-center mr-3">
               <Ionicons name="time-outline" size={22} color="#22c55e" />
             </View>
-            <View>
-              <Text className="text-sm font-poppins-semibold text-gray-900">Delivery in 30 minutes</Text>
+            <View className="flex-1">
+              <Text className="text-sm font-poppins-semibold text-gray-900">
+                {deliveryInfo.isStoreOpen
+                  ? `Delivery in ${deliveryInfo.cartDeliveryTime ?? 30} minutes`
+                  : deliveryInfo.openingHours
+                  ? `Store opens at ${deliveryInfo.openingHours}`
+                  : "Store currently closed"}
+              </Text>
               <Text className="text-xs text-gray-400 font-poppins-medium">
                 Shipment of {cart.length} item{cart.length !== 1 ? "s" : ""}
+                {deliveryInfo.storeName ? ` · ${deliveryInfo.storeName}` : ""}
               </Text>
             </View>
+            {!deliveryInfo.isStoreOpen && (
+              <View className="bg-orange-100 px-2 py-1 rounded-lg">
+                <Text className="text-orange-600 font-poppins-semibold text-xs">Closed</Text>
+              </View>
+            )}
           </View>
 
           {cart.map((product, idx) => (
@@ -263,7 +324,7 @@ export default function CartScreen() {
         {user && addresses.length > 0 && (
           <TouchableOpacity
             className="bg-white mx-3 mt-3 rounded-2xl border border-gray-100 px-4 py-3.5 flex-row items-center"
-            onPress={() => setShowAddressPicker(true)}
+            onPress={() => setShowAddressModal(true)}
           >
             <View className="w-8 h-8 bg-green-50 rounded-full items-center justify-center mr-3">
               <Ionicons name="location-outline" size={16} color="#22c55e" />
@@ -395,7 +456,7 @@ export default function CartScreen() {
             if (addresses.length === 0) {
               router.push("/(routes)/shipping");
             } else {
-              setShowAddressPicker(true);
+              setShowAddressModal(true);
             }
           }}
         >
@@ -448,59 +509,12 @@ export default function CartScreen() {
         </View>
       </View>
 
-      {/* ── Address picker modal ──────────────────────────────────────────── */}
-      <Modal visible={showAddressPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddressPicker(false)}>
-        <SafeAreaView className="flex-1 bg-white">
-          <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-100">
-            <Text className="text-lg font-poppins-bold text-gray-900">Select Address</Text>
-            <TouchableOpacity onPress={() => setShowAddressPicker(false)}>
-              <Ionicons name="close" size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView className="flex-1 p-4">
-            {addresses.map((addr: any) => (
-              <TouchableOpacity
-                key={addr.id}
-                onPress={() => { setSelectedAddress(addr); setShowAddressPicker(false); }}
-                className={`flex-row items-start p-4 rounded-2xl border mb-3 ${selectedAddress?.id === addr.id ? "border-primary bg-primary/5" : "border-gray-200 bg-white"}`}
-              >
-                <View className="w-9 h-9 rounded-full bg-gray-100 items-center justify-center mr-3 mt-0.5">
-                  <Ionicons
-                    name={addr.label === "Home" ? "home-outline" : addr.label === "Work" ? "business-outline" : "location-outline"}
-                    size={18}
-                    color={selectedAddress?.id === addr.id ? "#6C3CE1" : "#6B7280"}
-                  />
-                </View>
-                <View className="flex-1">
-                  <View className="flex-row items-center gap-2 mb-0.5">
-                    <Text className="text-sm font-poppins-bold text-gray-900">{addr.name}</Text>
-                    <View className={`px-2 py-0.5 rounded-full ${addr.label === "Home" ? "bg-blue-100" : addr.label === "Work" ? "bg-green-100" : "bg-gray-100"}`}>
-                      <Text className={`text-[10px] font-poppins-semibold ${addr.label === "Home" ? "text-blue-700" : addr.label === "Work" ? "text-green-700" : "text-gray-600"}`}>{addr.label}</Text>
-                    </View>
-                    {addr.isDefault && (
-                      <View className="px-2 py-0.5 rounded-full bg-primary/10">
-                        <Text className="text-[10px] font-poppins-semibold text-primary">Default</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text className="text-sm text-gray-600 font-poppins-medium">{addr.street}, {addr.city}</Text>
-                  {addr.pincode && <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">{addr.pincode}</Text>}
-                </View>
-                {selectedAddress?.id === addr.id && (
-                  <Ionicons name="checkmark-circle" size={20} color="#6C3CE1" />
-                )}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              className="flex-row items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl py-4 mt-1"
-              onPress={() => { setShowAddressPicker(false); router.push("/(routes)/shipping"); }}
-            >
-              <Ionicons name="add-circle-outline" size={20} color="#6C3CE1" />
-              <Text className="ml-2 text-sm font-poppins-semibold text-primary">Add New Address</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      {/* ── Address Modal (matching user-ui) ──────────────────────────────── */}
+      <AddressModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        savedAddressesOnly
+      />
 
       {/* ── Order success modal ───────────────────────────────────────────── */}
       <Modal visible={showSuccess} animationType="fade" transparent>
