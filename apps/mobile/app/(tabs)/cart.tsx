@@ -27,7 +27,7 @@ const HANDLING_CHARGE = 8;
 const TIP_OPTIONS = [20, 30, 50];
 
 export default function CartScreen() {
-  const { cart, removeFromCart, addToCart, clearCart } = useStore();
+  const { cart, removeFromCart, updateQuantity, checkAndIncrement, clearCart } = useStore();
   const { user } = useUser();
   const { selectedLocation, selectedAddressId, getSelectedAddress, addresses } = useAddressStore();
 
@@ -41,6 +41,8 @@ export default function CartScreen() {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Track which product id has a pending + tap (shows spinner on that button only)
+  const [incrementingId, setIncrementingId] = useState<string | null>(null);
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [cartValidated, setCartValidated] = useState(false);
   const [deliveryInfo, setDeliveryInfo] = useState<{
@@ -125,14 +127,17 @@ export default function CartScreen() {
     discountAmount;
 
   // ── Qty update ────────────────────────────────────────────────────────────
-  const handleUpdateQty = (product: any, delta: number) => {
-    const newQty = (product.quantity || 1) + delta;
-    removeFromCart(product.id, null, null, "Mobile App");
-    if (newQty > 0) {
-      addToCart(
-        { id: product.id, slug: product.slug, title: product.title, price: product.price, image: product.image, shopId: product.shopId, quantity: newQty },
-        null, null, "Mobile App"
-      );
+  const handleDecrement = (product: any) => {
+    const newQty = (product.quantity || 1) - 1;
+    updateQuantity(product.id, newQty); // removes item if newQty <= 0
+  };
+
+  const handleIncrement = async (product: any) => {
+    setIncrementingId(product.id);
+    const result = await checkAndIncrement(product.id, 1);
+    setIncrementingId(null);
+    if (!result.ok && result.message) {
+      toast.error(result.message);
     }
   };
 
@@ -184,9 +189,9 @@ export default function CartScreen() {
         deliveryDetails: {
           name: selectedAddress.name || user.name || "Customer",
           phone: selectedAddress.phone || user.phone || "0000000000",
-          address: selectedAddress.street || selectedAddress.address || "",
+          address: selectedAddress.street || (selectedAddress as any).address || "",
           city: selectedAddress.city || "",
-          pincode: selectedAddress.pincode || selectedAddress.zip || "000000",
+          pincode: selectedAddress.pincode || (selectedAddress as any).zip || "000000",
         },
         billDetails: {
           itemTotal: itemsTotal,
@@ -279,28 +284,61 @@ export default function CartScreen() {
             )}
           </View>
 
-          {cart.map((product, idx) => (
-            <View key={product.id} className={`flex-row items-center px-4 py-4 ${idx < cart.length - 1 ? "border-b border-gray-100" : ""}`}>
-              <Image
-                source={{ uri: product.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120" }}
-                className="w-14 h-14 rounded-xl bg-gray-100 mr-3"
-                resizeMode="cover"
-              />
-              <View className="flex-1">
-                <Text className="text-sm font-poppins-semibold text-gray-900 leading-5" numberOfLines={1}>{product.title}</Text>
-                <Text className="text-sm font-poppins-bold text-gray-900 mt-1">₹{product.price}</Text>
+          {cart.map((product, idx) => {
+            const atStockLimit = product.stock !== undefined && (product.quantity ?? 1) >= product.stock;
+            const isIncrementing = incrementingId === product.id;
+            return (
+              <View key={product.id} className={`px-4 py-4 ${idx < cart.length - 1 ? "border-b border-gray-100" : ""}`}>
+                <View className="flex-row items-center">
+                  <Image
+                    source={{ uri: product.image || "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120" }}
+                    className="w-14 h-14 rounded-xl bg-gray-100 mr-3"
+                    resizeMode="cover"
+                  />
+                  <View className="flex-1">
+                    <Text className="text-sm font-poppins-semibold text-gray-900 leading-5" numberOfLines={1}>{product.title}</Text>
+                    <Text className="text-sm font-poppins-bold text-gray-900 mt-1">₹{product.price}</Text>
+                  </View>
+                  <View className="flex-row items-center bg-green-500 rounded-xl overflow-hidden">
+                    <TouchableOpacity
+                      className="w-8 h-9 items-center justify-center"
+                      disabled={isIncrementing}
+                      onPress={() => handleDecrement(product)}
+                    >
+                      <Text className="text-white text-lg font-bold leading-none">−</Text>
+                    </TouchableOpacity>
+                    <Text className="text-white text-sm font-poppins-bold min-w-[20px] text-center">
+                      {product.quantity || 1}
+                    </Text>
+                    <TouchableOpacity
+                      className={`w-8 h-9 items-center justify-center ${(atStockLimit || isIncrementing) ? "opacity-40" : ""}`}
+                      disabled={atStockLimit || isIncrementing}
+                      onPress={() => handleIncrement(product)}
+                    >
+                      {isIncrementing ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text className="text-white text-lg font-bold leading-none">+</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {/* Stock warning badge */}
+                {product.stock !== undefined && product.stock > 0 && product.stock <= 10 && (
+                  <View className="mt-1.5 self-end bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                    <Text className="text-amber-600 text-[10px] font-poppins-semibold">
+                      Only {product.stock} left
+                    </Text>
+                  </View>
+                )}
+                {product.stock === 0 && (
+                  <View className="mt-1.5 self-end bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                    <Text className="text-red-500 text-[10px] font-poppins-semibold">Out of stock</Text>
+                  </View>
+                )}
               </View>
-              <View className="flex-row items-center bg-green-500 rounded-xl overflow-hidden">
-                <TouchableOpacity className="w-8 h-9 items-center justify-center" onPress={() => handleUpdateQty(product, -1)}>
-                  <Text className="text-white text-lg font-bold leading-none">−</Text>
-                </TouchableOpacity>
-                <Text className="text-white text-sm font-poppins-bold min-w-[20px] text-center">{product.quantity || 1}</Text>
-                <TouchableOpacity className="w-8 h-9 items-center justify-center" onPress={() => handleUpdateQty(product, 1)}>
-                  <Text className="text-white text-lg font-bold leading-none">+</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* ── No address warning ────────────────────────────────────── */}

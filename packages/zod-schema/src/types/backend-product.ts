@@ -45,6 +45,7 @@ export interface BackendProduct {
   processingWeightLoss: string | null;
   favorites: any[];
   status: "Active" | "NonActive";
+  basePricePerKg?: number | null;
 }
 
 // 2. The transformed shape your Frontend Components use
@@ -78,6 +79,7 @@ export interface Product {
   processingWeightLoss: string | null;
 
   status: "Active" | "NonActive";
+  basePricePerKg?: number | null;
 
   // Derived logic
   isBestseller: boolean;

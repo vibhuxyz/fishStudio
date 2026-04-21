@@ -55,6 +55,7 @@ type SellerCatalogFormValues = {
   status: "Active" | "NonActive";
   discountCodes: string[];
   sizePricing: SizePricingRow[];
+  basePricePerKg: number | undefined;
   regular_price: number;
   sale_price: number;
 };
@@ -129,13 +130,14 @@ const Page = () => {
     useForm<SellerCatalogFormValues>({
       mode: "onChange",
       defaultValues: {
-        stock: 100,
+        stock: 20,
         cash_on_delivery: "yes",
         short_description: "",
         tags: "",
         status: "Active",
         discountCodes: [],
         sizePricing: [],
+        basePricePerKg: undefined,
         regular_price: 0,
         sale_price: 0,
       },
@@ -174,13 +176,14 @@ const Page = () => {
   const openConfigureModal = (product: CatalogProduct) => {
     setSelectedProduct(product);
     reset({
-      stock: 100,
+      stock: 20,
       cash_on_delivery: "yes",
       short_description: product.short_description || "",
       tags: Array.isArray(product.tags) ? product.tags.join(", ") : "",
       status: "Active",
       discountCodes: [],
       sizePricing: buildSizePricingRows(product.sizes || []),
+      basePricePerKg: undefined,
       regular_price: 0,
       sale_price: 0,
     });
@@ -200,8 +203,10 @@ const Page = () => {
         return;
       }
     } else {
-      if (!values.sale_price || values.sale_price <= 0) {
-        toast.error("Add a valid sale price.");
+      const hasPerKg = values.basePricePerKg && values.basePricePerKg > 0;
+      const hasFlat = values.sale_price && values.sale_price > 0;
+      if (!hasPerKg && !hasFlat) {
+        toast.error("Set either a Price Per Kg or a Sale Price.");
         return;
       }
     }
@@ -354,10 +359,15 @@ const Page = () => {
               onSubmit={handleSubmit(onSubmit)}
             >
               <div>
-                <label className="mb-1 block text-sm text-slate-300">Stock (min 1)</label>
+                <label className="mb-1 block text-sm text-slate-300">
+                  Stock (kg)
+                  <span className="ml-2 text-xs text-slate-500">— how many kg you have available</span>
+                </label>
                 <input
                   type="number"
-                  {...register("stock", { valueAsNumber: true, min: { value: 1, message: "Stock must be at least 1" } })}
+                  step="0.5"
+                  min="0.5"
+                  {...register("stock", { valueAsNumber: true, min: { value: 0.5, message: "Stock must be at least 0.5 kg" } })}
                   className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                 />
               </div>
@@ -471,19 +481,43 @@ const Page = () => {
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className="mb-1 block text-sm text-slate-300">Regular Price</label>
+                  <div className="md:col-span-2">
+                    <label className="mb-1 block text-sm text-slate-300">
+                      Base Price Per Kg (₹/kg)
+                      <span className="ml-2 text-xs text-slate-500">— shoppers choose their weight in 250 gm steps</span>
+                    </label>
                     <input
                       type="number"
-                      {...register("regular_price", { valueAsNumber: true })}
+                      step="0.01"
+                      min="0"
+                      {...register("basePricePerKg", { valueAsNumber: true })}
+                      placeholder="e.g. 380 — leave blank to use flat price below"
                       className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm text-slate-300">Sale Price</label>
+                    <label className="mb-1 block text-sm text-slate-300">
+                      Regular Price (₹/kg)
+                      <span className="ml-2 text-xs text-slate-500">— MRP / market rate, shown struck-through</span>
+                    </label>
                     <input
                       type="number"
+                      step="0.01"
+                      {...register("regular_price", { valueAsNumber: true })}
+                      placeholder="e.g. 420"
+                      className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">
+                      Sale Price (₹/kg)
+                      <span className="ml-2 text-xs text-slate-500">— your actual selling price</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
                       {...register("sale_price", { valueAsNumber: true })}
+                      placeholder="e.g. 350"
                       className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                     />
                   </div>

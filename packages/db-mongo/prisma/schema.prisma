@@ -376,3 +376,26 @@ model SignupAccessCode {
   @@unique([email, role])
   @@map("signup_access_codes")
 }
+
+
+//////////////////////////////////////////////////////
+// ABANDONED CART
+//////////////////////////////////////////////////////
+
+model abandoned_carts {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  items       Json[]
+  storeId     String?  @db.ObjectId
+  storeName   String?
+  totalAmount Float    @default(0)
+  notifiedAt  DateTime?
+  isConverted Boolean  @default(false)
+
+  lastUpdatedAt DateTime @default(now()) @updatedAt
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([isConverted, notifiedAt, lastUpdatedAt])
+  @@map("abandoned_carts")
+}

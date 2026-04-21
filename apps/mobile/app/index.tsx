@@ -3,13 +3,13 @@ import OnboardingScreen from "@/screens/onboarding/onboarding.screen";
 import { isAuthenticated } from "@/utils/auth";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
   const { user } = useUser();
   const [authChecked, setAuthChecked] = useState(false);
   const [hasValidAuth, setHasValidAuth] = useState(false);
 
-  // Check if user has valid authentication
   useEffect(() => {
     const checkAuth = async () => {
       const auth = await isAuthenticated();
@@ -19,9 +19,12 @@ export default function Index() {
     checkAuth();
   }, []);
 
-  // Show nothing while checking
   if (!authChecked) {
-    return null;
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
   }
 
   // User exists but no valid auth - clear data and redirect to login

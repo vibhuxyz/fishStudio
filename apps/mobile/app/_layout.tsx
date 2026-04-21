@@ -16,7 +16,7 @@ import Providers from "@/config/providers";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
-  LogBox.ignoreAllLogs();
+  // LogBox.ignoreAllLogs(); // uncomment in production only
   
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({

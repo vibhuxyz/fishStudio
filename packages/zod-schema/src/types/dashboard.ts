@@ -240,8 +240,13 @@ export type SellerOwnedProduct = {
   stock: number;
   sizes: string[];
   sizePricing?: SizePricingRow[] | null;
+  cuttingTypes?: string[] | null;
+  pieceSizes?: string[] | null;
+  cuttingTypePricing?: Array<{ cuttingType: string; salePrice: number; regularPrice: number }> | null;
+  pieceSizePricing?: Array<{ pieceSize: string; salePrice: number; regularPrice: number }> | null;
   cashOnDelivery?: string | null;
   status: "Active" | "NonActive";
+  basePricePerKg?: number | null;
   discount_codes: string[];
   images: Array<{ id: string; url: string }>;
   catalogProduct?: {
@@ -262,8 +267,11 @@ export type SellerProductFormValues = {
   status: "Active" | "NonActive";
   discountCodes: string[];
   sizePricing: SizePricingRow[];
+  cuttingTypePricing: Array<{ cuttingType: string; salePrice: number; regularPrice: number }>;
+  pieceSizePricing: Array<{ pieceSize: string; salePrice: number; regularPrice: number }>;
   regular_price: number;
   sale_price: number;
+  basePricePerKg?: number;
 };
 
 export type AdminSellerAccessCode = {

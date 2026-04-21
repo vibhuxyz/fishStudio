@@ -9,7 +9,7 @@ import {
 } from "../../utils/auth.helper.js";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
-import { setCookie } from "../../utils/cookies/setCookie.js";
+import { setCookie, DAY_MS } from "../../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 import { redis, publishToQueue } from "@repo/libs";
 import {
@@ -213,16 +213,16 @@ export const verifySeller = async (
     const accessToken = jwt.sign(
       { id: seller.id, role: "seller" },
       ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "7d" },
+      { expiresIn: "24h" },
     );
     const refreshToken = jwt.sign(
       { id: seller.id, role: "seller" },
       ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "7d" },
+      { expiresIn: "24h" },
     );
 
-    setCookie(res, "seller_refresh_token", refreshToken);
-    setCookie(res, "seller_access_token", accessToken);
+    setCookie(res, "seller_refresh_token", refreshToken, DAY_MS);
+    setCookie(res, "seller_access_token", accessToken, DAY_MS);
 
     /* ── Notify Admins for Approval ── */
     try {
@@ -275,16 +275,16 @@ export const loginSeller = async (
       const accessToken = jwt.sign(
         { id: seller.id, role: "seller" },
         ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-        { expiresIn: "7d" },
+        { expiresIn: "24h" },
       );
       const refreshToken = jwt.sign(
         { id: seller.id, role: "seller" },
         ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-        { expiresIn: "7d" },
+        { expiresIn: "24h" },
       );
 
-      setCookie(res, "seller_refresh_token", refreshToken);
-      setCookie(res, "seller_access_token", accessToken);
+      setCookie(res, "seller_refresh_token", refreshToken, DAY_MS);
+      setCookie(res, "seller_access_token", accessToken, DAY_MS);
 
       return res.status(200).json({
         success: true,

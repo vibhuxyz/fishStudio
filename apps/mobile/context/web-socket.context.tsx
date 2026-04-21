@@ -1,4 +1,3 @@
-"use client";
 import React, {
     createContext,
     useContext,
@@ -6,6 +5,7 @@ import React, {
     useRef,
     useState,
 } from "react";
+import Constants from "expo-constants";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -23,9 +23,13 @@ export const WebSocketProvider = ({
   useEffect(() => {
     if (!user?.id) return;
 
-    const ws = new WebSocket(
-      process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI! || "ws://localhost:6006"
-    );
+    const expoHost = (Constants.expoConfig?.hostUri ?? "").split(":")[0];
+    const wsBase = process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI ||
+      (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
+        ? `ws://${expoHost}:6006`
+        : "ws://localhost:6006");
+
+    const ws = new WebSocket(wsBase);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -47,10 +51,8 @@ export const WebSocketProvider = ({
     };
   }, [user?.id]);
 
-  if (!wsReady) return null;
-
   return (
-    <WebSocketContext.Provider value={{ ws: wsRef.current, unreadCounts }}>
+    <WebSocketContext.Provider value={{ ws: wsReady ? wsRef.current : null, unreadCounts }}>
       {children}
     </WebSocketContext.Provider>
   );

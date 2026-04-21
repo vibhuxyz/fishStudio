@@ -1,13 +1,28 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
+import Constants from "expo-constants";
 import { CustomAxiosRequestConfig } from "./axiosInstance.types";
 
-// Environment variable with fallback chain (similar to user-ui)
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  process.env.EXPO_PUBLIC_SERVER_URI ||
-  "http://localhost:8080";
+// Resolve the API base URL:
+// 1. Explicit env var (production / staging override)
+// 2. Auto-detect from Expo dev-server host (same machine → same LAN IP, works on
+//    physical devices + Android emulator without any manual IP config)
+// 3. Fall back to localhost (iOS simulator)
+const getApiBaseUrl = (): string => {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  if (process.env.EXPO_PUBLIC_SERVER_URI) return process.env.EXPO_PUBLIC_SERVER_URI;
+
+  // Constants.expoConfig?.hostUri looks like "192.168.1.5:8081"
+  const expoHost = (Constants.expoConfig?.hostUri ?? "").split(":")[0];
+  if (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1") {
+    return `http://${expoHost}:8080`;
+  }
+
+  return "http://localhost:8080";
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

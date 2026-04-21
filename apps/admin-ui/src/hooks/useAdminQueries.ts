@@ -56,6 +56,9 @@ export const adminQueryKeys = {
   sellers: ["admin", "sellers"] as const,
   sellerDetail: (sellerId: string) => ["admin", "sellers", sellerId] as const,
   order: (orderId: string) => ["admin", "orders", orderId] as const,
+  adminOrder: (orderId: string) => ["admin", "admin-orders", orderId] as const,
+  adminOrderList: (params: Record<string, string>) => ["admin", "admin-orders", params] as const,
+  sellerInventory: (params: Record<string, string>) => ["admin", "seller-inventory", params] as const,
   seller: ["admin", "account"] as const,
   sellerCodes: ["admin", "sellerCodes"] as const,
   banners: ["admin", "banners"] as const,
@@ -315,6 +318,206 @@ export const useAdminStats = (period: StatsPeriod, sellerId?: string) =>
   useQuery({
     queryKey: ["admin", "stats", period, sellerId ?? "all"],
     queryFn: () => fetchAdminStats(period, sellerId),
+  });
+
+// ── Admin Order List (new rich endpoint) ──────────────────────────────────
+
+export interface AdminOrderListParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  sellerId?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  pincode?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  sortBy?: "createdAt" | "totalAmount";
+  sortDir?: "asc" | "desc";
+}
+
+export interface AdminOrderCustomer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  addresses?: any[];
+  memberSince?: string;
+}
+
+export interface AdminOrderSeller {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  isApproved?: boolean;
+  memberSince?: string;
+}
+
+export interface AdminOrderStore {
+  id: string;
+  name: string;
+  city?: string;
+  pincode?: string;
+}
+
+export interface AdminOrderItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  selectedOptions?: any;
+  product: {
+    id: string;
+    title: string;
+    category?: string;
+    salePrice?: number;
+    image?: string;
+  };
+}
+
+export interface AdminOrder {
+  id: string;
+  status: string;
+  paymentStatus: string;
+  paymentMethod?: string;
+  paymentRef?: string;
+  totalAmount: number;
+  discountAmount: number;
+  couponCode?: string;
+  deliverySlot?: string;
+  deliveryCharge: number;
+  billDetails?: any;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  delivery: { name?: string; phone?: string; address?: string; city?: string; pincode?: string };
+  customer: AdminOrderCustomer;
+  store: AdminOrderStore;
+  seller: AdminOrderSeller;
+  items: AdminOrderItem[];
+  payments?: any[];
+  auditTrail?: any[];
+}
+
+export interface AdminOrderListResponse {
+  success: boolean;
+  orders: AdminOrder[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const fetchAdminOrderList = async (
+  params: AdminOrderListParams = {},
+): Promise<AdminOrderListResponse> => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== "") query.set(k, String(v));
+  });
+  const res = await axiosInstance.get(`/order/api/admin/orders?${query.toString()}`, isProtected);
+  return res.data;
+};
+
+export const fetchAdminOrderDetail = async (orderId: string): Promise<AdminOrder | null> => {
+  const res = await axiosInstance.get(`/order/api/admin/orders/${orderId}`, isProtected);
+  return res.data.order ?? null;
+};
+
+export const adminUpdateOrderStatus = async (orderId: string, status: string): Promise<void> => {
+  await axiosInstance.put(`/order/api/admin/orders/${orderId}/status`, { status }, isProtected);
+};
+
+export const useAdminOrderList = (params: AdminOrderListParams = {}) =>
+  useQuery({
+    queryKey: adminQueryKeys.adminOrderList(params as any),
+    queryFn: () => fetchAdminOrderList(params),
+  });
+
+export const fetchAdminOrderPincodes = async (): Promise<string[]> => {
+  const res = await axiosInstance.get("/order/api/admin/orders/pincodes", isProtected);
+  return Array.isArray(res.data.pincodes) ? res.data.pincodes : [];
+};
+
+export const useAdminOrderPincodes = () =>
+  useQuery({
+    queryKey: ["admin", "order-pincodes"],
+    queryFn: fetchAdminOrderPincodes,
+  });
+
+export const useAdminOrderDetail = (orderId?: string) =>
+  useQuery({
+    queryKey: orderId ? adminQueryKeys.adminOrder(orderId) : ["admin", "admin-orders", "none"],
+    queryFn: () => fetchAdminOrderDetail(orderId as string),
+    enabled: Boolean(orderId),
+  });
+
+// ── Seller Inventory ──────────────────────────────────────────────────────
+
+export interface InventoryProduct {
+  id: string;
+  title: string;
+  slug: string;
+  category?: string;
+  salePrice: number;
+  regularPrice?: number;
+  stock: number;
+  totalSold: number;
+  status: string;
+  image?: string;
+  isOutOfStock: boolean;
+  isLowStock: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerInventoryEntry {
+  seller: AdminOrderSeller | null;
+  store: AdminOrderStore & { openingHours?: string; closingHours?: string; instantDeliveryEnabled?: boolean };
+  summary: {
+    totalProducts: number;
+    activeProducts: number;
+    totalStock: number;
+    totalSold: number;
+    outOfStock: number;
+    lowStockCount: number;
+  };
+  products: InventoryProduct[];
+}
+
+export interface SellerInventoryParams {
+  search?: string;
+  sellerId?: string;
+  category?: string;
+  lowStock?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export const fetchSellerInventory = async (
+  params: SellerInventoryParams = {},
+): Promise<{ sellers: SellerInventoryEntry[]; pagination: any }> => {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== "") query.set(k, String(v));
+  });
+  const res = await axiosInstance.get(`/product/api/admin/seller-inventory?${query.toString()}`, isProtected);
+  return { sellers: res.data.sellers ?? [], pagination: res.data.pagination };
+};
+
+export const useSellerInventory = (params: SellerInventoryParams = {}) =>
+  useQuery({
+    queryKey: adminQueryKeys.sellerInventory(params as any),
+    queryFn: () => fetchSellerInventory(params),
   });
 
 // ── Banners ──────────────────────────────────────────────────────────────

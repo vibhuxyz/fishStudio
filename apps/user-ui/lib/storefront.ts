@@ -300,6 +300,7 @@ export const transformProduct = (bp: BackendProduct): Product => {
     pieceSizes: bp.pieceSizes || [],
     processingWeightLoss: bp.processingWeightLoss,
     status: bp.status === "NonActive" ? "NonActive" : "Active",
+    basePricePerKg: bp.basePricePerKg ?? null,
     isBestseller: (bp.totalSold || 0) > 50,
     isFavorite: Array.isArray(bp.favorites) && bp.favorites.length > 0,
   };

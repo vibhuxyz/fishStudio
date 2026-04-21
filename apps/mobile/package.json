@@ -3,8 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
-    "dev": "expo start",
+    "start": "lsof -ti:8083 | xargs kill -9 2>/dev/null; expo start -p 8083",
+    "dev": "lsof -ti:8083 | xargs kill -9 2>/dev/null; expo start -p 8083",
     "build": "expo export",
     "check-types": "tsc --noEmit",
     "reset-project": "node ./scripts/reset-project.js",

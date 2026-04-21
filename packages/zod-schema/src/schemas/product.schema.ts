@@ -60,6 +60,7 @@ export const productSchema = z.object({
   cuttingTypes: wrapArray(z.array(z.string())).optional(),
   pieceSizes: wrapArray(z.array(z.string())).optional(),
   processingWeightLoss: z.string().nullable().optional(),
+  basePricePerKg: z.preprocess((val) => (val === "" || val === null || val === undefined ? null : Number(val)), z.number().nonnegative().nullable().optional()),
   stock: z.number().int().nonnegative(),
   sale_price: z.number().nonnegative(),
   regular_price: z.number().nonnegative(),
@@ -83,6 +84,7 @@ export const addCatalogProductToStoreSchema = z.object({
   tags: z.union([z.string(), z.array(z.string())]).optional(),
   status: z.enum(["Active", "NonActive"]).optional(),
   processingWeightLoss: z.string().optional(),
+  basePricePerKg: z.preprocess((val) => (val === "" || val === null || val === undefined ? null : Number(val)), z.number().nonnegative().nullable().optional()),
 });
 
 export const updateProductStockSchema = z.object({

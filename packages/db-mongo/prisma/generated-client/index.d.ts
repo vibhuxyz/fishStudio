@@ -83,6 +83,11 @@ export type seller_events = $Result.DefaultSelection<Prisma.$seller_eventsPayloa
  * 
  */
 export type SignupAccessCode = $Result.DefaultSelection<Prisma.$SignupAccessCodePayload>
+/**
+ * Model abandoned_carts
+ * 
+ */
+export type abandoned_carts = $Result.DefaultSelection<Prisma.$abandoned_cartsPayload>
 
 /**
  * Enums
@@ -356,6 +361,16 @@ export class PrismaClient<
     * ```
     */
   get signupAccessCode(): Prisma.SignupAccessCodeDelegate<ExtArgs>;
+
+  /**
+   * `prisma.abandoned_carts`: Exposes CRUD operations for the **abandoned_carts** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Abandoned_carts
+    * const abandoned_carts = await prisma.abandoned_carts.findMany()
+    * ```
+    */
+  get abandoned_carts(): Prisma.abandoned_cartsDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -810,7 +825,8 @@ export namespace Prisma {
     products: 'products',
     banners: 'banners',
     seller_events: 'seller_events',
-    SignupAccessCode: 'SignupAccessCode'
+    SignupAccessCode: 'SignupAccessCode',
+    abandoned_carts: 'abandoned_carts'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -826,7 +842,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "favorites" | "site_config" | "products" | "banners" | "seller_events" | "signupAccessCode"
+      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "favorites" | "site_config" | "products" | "banners" | "seller_events" | "signupAccessCode" | "abandoned_carts"
       txIsolationLevel: never
     }
     model: {
@@ -1863,6 +1879,80 @@ export namespace Prisma {
           count: {
             args: Prisma.SignupAccessCodeCountArgs<ExtArgs>
             result: $Utils.Optional<SignupAccessCodeCountAggregateOutputType> | number
+          }
+        }
+      }
+      abandoned_carts: {
+        payload: Prisma.$abandoned_cartsPayload<ExtArgs>
+        fields: Prisma.abandoned_cartsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.abandoned_cartsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.abandoned_cartsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          findFirst: {
+            args: Prisma.abandoned_cartsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.abandoned_cartsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          findMany: {
+            args: Prisma.abandoned_cartsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>[]
+          }
+          create: {
+            args: Prisma.abandoned_cartsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          createMany: {
+            args: Prisma.abandoned_cartsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.abandoned_cartsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          update: {
+            args: Prisma.abandoned_cartsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          deleteMany: {
+            args: Prisma.abandoned_cartsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.abandoned_cartsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.abandoned_cartsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+          }
+          aggregate: {
+            args: Prisma.Abandoned_cartsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAbandoned_carts>
+          }
+          groupBy: {
+            args: Prisma.abandoned_cartsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Abandoned_cartsGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.abandoned_cartsFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.abandoned_cartsAggregateRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          count: {
+            args: Prisma.abandoned_cartsCountArgs<ExtArgs>
+            result: $Utils.Optional<Abandoned_cartsCountAggregateOutputType> | number
           }
         }
       }
@@ -12448,6 +12538,8 @@ export namespace Prisma {
   }
 
   export type ProductsAvgAggregateOutputType = {
+    basePricePerKg: number | null
+    basePricePerUnit: number | null
     stock: number | null
     sale_price: number | null
     regular_price: number | null
@@ -12456,6 +12548,8 @@ export namespace Prisma {
   }
 
   export type ProductsSumAggregateOutputType = {
+    basePricePerKg: number | null
+    basePricePerUnit: number | null
     stock: number | null
     sale_price: number | null
     regular_price: number | null
@@ -12471,6 +12565,9 @@ export namespace Prisma {
     category: string | null
     subCategory: string | null
     short_description: string | null
+    basePricePerKg: number | null
+    basePricePerUnit: number | null
+    pricingMethod: string | null
     processingWeightLoss: string | null
     stock: number | null
     sale_price: number | null
@@ -12496,6 +12593,9 @@ export namespace Prisma {
     category: string | null
     subCategory: string | null
     short_description: string | null
+    basePricePerKg: number | null
+    basePricePerUnit: number | null
+    pricingMethod: string | null
     processingWeightLoss: string | null
     stock: number | null
     sale_price: number | null
@@ -12528,6 +12628,9 @@ export namespace Prisma {
     pieceSizePricing: number
     cuttingTypes: number
     pieceSizes: number
+    basePricePerKg: number
+    basePricePerUnit: number
+    pricingMethod: number
     processingWeightLoss: number
     stock: number
     sale_price: number
@@ -12549,6 +12652,8 @@ export namespace Prisma {
 
 
   export type ProductsAvgAggregateInputType = {
+    basePricePerKg?: true
+    basePricePerUnit?: true
     stock?: true
     sale_price?: true
     regular_price?: true
@@ -12557,6 +12662,8 @@ export namespace Prisma {
   }
 
   export type ProductsSumAggregateInputType = {
+    basePricePerKg?: true
+    basePricePerUnit?: true
     stock?: true
     sale_price?: true
     regular_price?: true
@@ -12572,6 +12679,9 @@ export namespace Prisma {
     category?: true
     subCategory?: true
     short_description?: true
+    basePricePerKg?: true
+    basePricePerUnit?: true
+    pricingMethod?: true
     processingWeightLoss?: true
     stock?: true
     sale_price?: true
@@ -12597,6 +12707,9 @@ export namespace Prisma {
     category?: true
     subCategory?: true
     short_description?: true
+    basePricePerKg?: true
+    basePricePerUnit?: true
+    pricingMethod?: true
     processingWeightLoss?: true
     stock?: true
     sale_price?: true
@@ -12629,6 +12742,9 @@ export namespace Prisma {
     pieceSizePricing?: true
     cuttingTypes?: true
     pieceSizes?: true
+    basePricePerKg?: true
+    basePricePerUnit?: true
+    pricingMethod?: true
     processingWeightLoss?: true
     stock?: true
     sale_price?: true
@@ -12749,6 +12865,9 @@ export namespace Prisma {
     pieceSizePricing: JsonValue | null
     cuttingTypes: string[]
     pieceSizes: string[]
+    basePricePerKg: number | null
+    basePricePerUnit: number | null
+    pricingMethod: string | null
     processingWeightLoss: string | null
     stock: number
     sale_price: number
@@ -12801,6 +12920,9 @@ export namespace Prisma {
     pieceSizePricing?: boolean
     cuttingTypes?: boolean
     pieceSizes?: boolean
+    basePricePerKg?: boolean
+    basePricePerUnit?: boolean
+    pricingMethod?: boolean
     processingWeightLoss?: boolean
     stock?: boolean
     sale_price?: boolean
@@ -12842,6 +12964,9 @@ export namespace Prisma {
     pieceSizePricing?: boolean
     cuttingTypes?: boolean
     pieceSizes?: boolean
+    basePricePerKg?: boolean
+    basePricePerUnit?: boolean
+    pricingMethod?: boolean
     processingWeightLoss?: boolean
     stock?: boolean
     sale_price?: boolean
@@ -12895,6 +13020,9 @@ export namespace Prisma {
       pieceSizePricing: Prisma.JsonValue | null
       cuttingTypes: string[]
       pieceSizes: string[]
+      basePricePerKg: number | null
+      basePricePerUnit: number | null
+      pricingMethod: string | null
       processingWeightLoss: string | null
       stock: number
       sale_price: number
@@ -13323,6 +13451,9 @@ export namespace Prisma {
     readonly pieceSizePricing: FieldRef<"products", 'Json'>
     readonly cuttingTypes: FieldRef<"products", 'String[]'>
     readonly pieceSizes: FieldRef<"products", 'String[]'>
+    readonly basePricePerKg: FieldRef<"products", 'Float'>
+    readonly basePricePerUnit: FieldRef<"products", 'Float'>
+    readonly pricingMethod: FieldRef<"products", 'String'>
     readonly processingWeightLoss: FieldRef<"products", 'String'>
     readonly stock: FieldRef<"products", 'Int'>
     readonly sale_price: FieldRef<"products", 'Float'>
@@ -16806,6 +16937,973 @@ export namespace Prisma {
 
 
   /**
+   * Model abandoned_carts
+   */
+
+  export type AggregateAbandoned_carts = {
+    _count: Abandoned_cartsCountAggregateOutputType | null
+    _avg: Abandoned_cartsAvgAggregateOutputType | null
+    _sum: Abandoned_cartsSumAggregateOutputType | null
+    _min: Abandoned_cartsMinAggregateOutputType | null
+    _max: Abandoned_cartsMaxAggregateOutputType | null
+  }
+
+  export type Abandoned_cartsAvgAggregateOutputType = {
+    totalAmount: number | null
+  }
+
+  export type Abandoned_cartsSumAggregateOutputType = {
+    totalAmount: number | null
+  }
+
+  export type Abandoned_cartsMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    storeId: string | null
+    storeName: string | null
+    totalAmount: number | null
+    notifiedAt: Date | null
+    isConverted: boolean | null
+    lastUpdatedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type Abandoned_cartsMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    storeId: string | null
+    storeName: string | null
+    totalAmount: number | null
+    notifiedAt: Date | null
+    isConverted: boolean | null
+    lastUpdatedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type Abandoned_cartsCountAggregateOutputType = {
+    id: number
+    userId: number
+    items: number
+    storeId: number
+    storeName: number
+    totalAmount: number
+    notifiedAt: number
+    isConverted: number
+    lastUpdatedAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type Abandoned_cartsAvgAggregateInputType = {
+    totalAmount?: true
+  }
+
+  export type Abandoned_cartsSumAggregateInputType = {
+    totalAmount?: true
+  }
+
+  export type Abandoned_cartsMinAggregateInputType = {
+    id?: true
+    userId?: true
+    storeId?: true
+    storeName?: true
+    totalAmount?: true
+    notifiedAt?: true
+    isConverted?: true
+    lastUpdatedAt?: true
+    createdAt?: true
+  }
+
+  export type Abandoned_cartsMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    storeId?: true
+    storeName?: true
+    totalAmount?: true
+    notifiedAt?: true
+    isConverted?: true
+    lastUpdatedAt?: true
+    createdAt?: true
+  }
+
+  export type Abandoned_cartsCountAggregateInputType = {
+    id?: true
+    userId?: true
+    items?: true
+    storeId?: true
+    storeName?: true
+    totalAmount?: true
+    notifiedAt?: true
+    isConverted?: true
+    lastUpdatedAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type Abandoned_cartsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which abandoned_carts to aggregate.
+     */
+    where?: abandoned_cartsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of abandoned_carts to fetch.
+     */
+    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: abandoned_cartsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` abandoned_carts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` abandoned_carts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned abandoned_carts
+    **/
+    _count?: true | Abandoned_cartsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Abandoned_cartsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Abandoned_cartsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Abandoned_cartsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Abandoned_cartsMaxAggregateInputType
+  }
+
+  export type GetAbandoned_cartsAggregateType<T extends Abandoned_cartsAggregateArgs> = {
+        [P in keyof T & keyof AggregateAbandoned_carts]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAbandoned_carts[P]>
+      : GetScalarType<T[P], AggregateAbandoned_carts[P]>
+  }
+
+
+
+
+  export type abandoned_cartsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: abandoned_cartsWhereInput
+    orderBy?: abandoned_cartsOrderByWithAggregationInput | abandoned_cartsOrderByWithAggregationInput[]
+    by: Abandoned_cartsScalarFieldEnum[] | Abandoned_cartsScalarFieldEnum
+    having?: abandoned_cartsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Abandoned_cartsCountAggregateInputType | true
+    _avg?: Abandoned_cartsAvgAggregateInputType
+    _sum?: Abandoned_cartsSumAggregateInputType
+    _min?: Abandoned_cartsMinAggregateInputType
+    _max?: Abandoned_cartsMaxAggregateInputType
+  }
+
+  export type Abandoned_cartsGroupByOutputType = {
+    id: string
+    userId: string
+    items: JsonValue[]
+    storeId: string | null
+    storeName: string | null
+    totalAmount: number
+    notifiedAt: Date | null
+    isConverted: boolean
+    lastUpdatedAt: Date
+    createdAt: Date
+    _count: Abandoned_cartsCountAggregateOutputType | null
+    _avg: Abandoned_cartsAvgAggregateOutputType | null
+    _sum: Abandoned_cartsSumAggregateOutputType | null
+    _min: Abandoned_cartsMinAggregateOutputType | null
+    _max: Abandoned_cartsMaxAggregateOutputType | null
+  }
+
+  type GetAbandoned_cartsGroupByPayload<T extends abandoned_cartsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Abandoned_cartsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Abandoned_cartsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Abandoned_cartsGroupByOutputType[P]>
+            : GetScalarType<T[P], Abandoned_cartsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type abandoned_cartsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    items?: boolean
+    storeId?: boolean
+    storeName?: boolean
+    totalAmount?: boolean
+    notifiedAt?: boolean
+    isConverted?: boolean
+    lastUpdatedAt?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["abandoned_carts"]>
+
+
+  export type abandoned_cartsSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    items?: boolean
+    storeId?: boolean
+    storeName?: boolean
+    totalAmount?: boolean
+    notifiedAt?: boolean
+    isConverted?: boolean
+    lastUpdatedAt?: boolean
+    createdAt?: boolean
+  }
+
+
+  export type $abandoned_cartsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "abandoned_carts"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      items: Prisma.JsonValue[]
+      storeId: string | null
+      storeName: string | null
+      totalAmount: number
+      notifiedAt: Date | null
+      isConverted: boolean
+      lastUpdatedAt: Date
+      createdAt: Date
+    }, ExtArgs["result"]["abandoned_carts"]>
+    composites: {}
+  }
+
+  type abandoned_cartsGetPayload<S extends boolean | null | undefined | abandoned_cartsDefaultArgs> = $Result.GetResult<Prisma.$abandoned_cartsPayload, S>
+
+  type abandoned_cartsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<abandoned_cartsFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: Abandoned_cartsCountAggregateInputType | true
+    }
+
+  export interface abandoned_cartsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['abandoned_carts'], meta: { name: 'abandoned_carts' } }
+    /**
+     * Find zero or one Abandoned_carts that matches the filter.
+     * @param {abandoned_cartsFindUniqueArgs} args - Arguments to find a Abandoned_carts
+     * @example
+     * // Get one Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends abandoned_cartsFindUniqueArgs>(args: SelectSubset<T, abandoned_cartsFindUniqueArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Abandoned_carts that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {abandoned_cartsFindUniqueOrThrowArgs} args - Arguments to find a Abandoned_carts
+     * @example
+     * // Get one Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends abandoned_cartsFindUniqueOrThrowArgs>(args: SelectSubset<T, abandoned_cartsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Abandoned_carts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsFindFirstArgs} args - Arguments to find a Abandoned_carts
+     * @example
+     * // Get one Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends abandoned_cartsFindFirstArgs>(args?: SelectSubset<T, abandoned_cartsFindFirstArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Abandoned_carts that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsFindFirstOrThrowArgs} args - Arguments to find a Abandoned_carts
+     * @example
+     * // Get one Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends abandoned_cartsFindFirstOrThrowArgs>(args?: SelectSubset<T, abandoned_cartsFindFirstOrThrowArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Abandoned_carts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findMany()
+     * 
+     * // Get first 10 Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const abandoned_cartsWithIdOnly = await prisma.abandoned_carts.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends abandoned_cartsFindManyArgs>(args?: SelectSubset<T, abandoned_cartsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Abandoned_carts.
+     * @param {abandoned_cartsCreateArgs} args - Arguments to create a Abandoned_carts.
+     * @example
+     * // Create one Abandoned_carts
+     * const Abandoned_carts = await prisma.abandoned_carts.create({
+     *   data: {
+     *     // ... data to create a Abandoned_carts
+     *   }
+     * })
+     * 
+     */
+    create<T extends abandoned_cartsCreateArgs>(args: SelectSubset<T, abandoned_cartsCreateArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Abandoned_carts.
+     * @param {abandoned_cartsCreateManyArgs} args - Arguments to create many Abandoned_carts.
+     * @example
+     * // Create many Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends abandoned_cartsCreateManyArgs>(args?: SelectSubset<T, abandoned_cartsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Abandoned_carts.
+     * @param {abandoned_cartsDeleteArgs} args - Arguments to delete one Abandoned_carts.
+     * @example
+     * // Delete one Abandoned_carts
+     * const Abandoned_carts = await prisma.abandoned_carts.delete({
+     *   where: {
+     *     // ... filter to delete one Abandoned_carts
+     *   }
+     * })
+     * 
+     */
+    delete<T extends abandoned_cartsDeleteArgs>(args: SelectSubset<T, abandoned_cartsDeleteArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Abandoned_carts.
+     * @param {abandoned_cartsUpdateArgs} args - Arguments to update one Abandoned_carts.
+     * @example
+     * // Update one Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends abandoned_cartsUpdateArgs>(args: SelectSubset<T, abandoned_cartsUpdateArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Abandoned_carts.
+     * @param {abandoned_cartsDeleteManyArgs} args - Arguments to filter Abandoned_carts to delete.
+     * @example
+     * // Delete a few Abandoned_carts
+     * const { count } = await prisma.abandoned_carts.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends abandoned_cartsDeleteManyArgs>(args?: SelectSubset<T, abandoned_cartsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Abandoned_carts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends abandoned_cartsUpdateManyArgs>(args: SelectSubset<T, abandoned_cartsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Abandoned_carts.
+     * @param {abandoned_cartsUpsertArgs} args - Arguments to update or create a Abandoned_carts.
+     * @example
+     * // Update or create a Abandoned_carts
+     * const abandoned_carts = await prisma.abandoned_carts.upsert({
+     *   create: {
+     *     // ... data to create a Abandoned_carts
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Abandoned_carts we want to update
+     *   }
+     * })
+     */
+    upsert<T extends abandoned_cartsUpsertArgs>(args: SelectSubset<T, abandoned_cartsUpsertArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+    /**
+     * Find zero or more Abandoned_carts that matches the filter.
+     * @param {abandoned_cartsFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const abandoned_carts = await prisma.abandoned_carts.findRaw({
+     *   filter: { age: { $gt: 25 } } 
+     * })
+     */
+    findRaw(args?: abandoned_cartsFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Abandoned_carts.
+     * @param {abandoned_cartsAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const abandoned_carts = await prisma.abandoned_carts.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: abandoned_cartsAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
+
+
+    /**
+     * Count the number of Abandoned_carts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsCountArgs} args - Arguments to filter Abandoned_carts to count.
+     * @example
+     * // Count the number of Abandoned_carts
+     * const count = await prisma.abandoned_carts.count({
+     *   where: {
+     *     // ... the filter for the Abandoned_carts we want to count
+     *   }
+     * })
+    **/
+    count<T extends abandoned_cartsCountArgs>(
+      args?: Subset<T, abandoned_cartsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Abandoned_cartsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Abandoned_carts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Abandoned_cartsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Abandoned_cartsAggregateArgs>(args: Subset<T, Abandoned_cartsAggregateArgs>): Prisma.PrismaPromise<GetAbandoned_cartsAggregateType<T>>
+
+    /**
+     * Group by Abandoned_carts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {abandoned_cartsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends abandoned_cartsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: abandoned_cartsGroupByArgs['orderBy'] }
+        : { orderBy?: abandoned_cartsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, abandoned_cartsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAbandoned_cartsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the abandoned_carts model
+   */
+  readonly fields: abandoned_cartsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for abandoned_carts.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__abandoned_cartsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the abandoned_carts model
+   */ 
+  interface abandoned_cartsFieldRefs {
+    readonly id: FieldRef<"abandoned_carts", 'String'>
+    readonly userId: FieldRef<"abandoned_carts", 'String'>
+    readonly items: FieldRef<"abandoned_carts", 'Json[]'>
+    readonly storeId: FieldRef<"abandoned_carts", 'String'>
+    readonly storeName: FieldRef<"abandoned_carts", 'String'>
+    readonly totalAmount: FieldRef<"abandoned_carts", 'Float'>
+    readonly notifiedAt: FieldRef<"abandoned_carts", 'DateTime'>
+    readonly isConverted: FieldRef<"abandoned_carts", 'Boolean'>
+    readonly lastUpdatedAt: FieldRef<"abandoned_carts", 'DateTime'>
+    readonly createdAt: FieldRef<"abandoned_carts", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * abandoned_carts findUnique
+   */
+  export type abandoned_cartsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter, which abandoned_carts to fetch.
+     */
+    where: abandoned_cartsWhereUniqueInput
+  }
+
+  /**
+   * abandoned_carts findUniqueOrThrow
+   */
+  export type abandoned_cartsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter, which abandoned_carts to fetch.
+     */
+    where: abandoned_cartsWhereUniqueInput
+  }
+
+  /**
+   * abandoned_carts findFirst
+   */
+  export type abandoned_cartsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter, which abandoned_carts to fetch.
+     */
+    where?: abandoned_cartsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of abandoned_carts to fetch.
+     */
+    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for abandoned_carts.
+     */
+    cursor?: abandoned_cartsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` abandoned_carts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` abandoned_carts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of abandoned_carts.
+     */
+    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+  }
+
+  /**
+   * abandoned_carts findFirstOrThrow
+   */
+  export type abandoned_cartsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter, which abandoned_carts to fetch.
+     */
+    where?: abandoned_cartsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of abandoned_carts to fetch.
+     */
+    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for abandoned_carts.
+     */
+    cursor?: abandoned_cartsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` abandoned_carts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` abandoned_carts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of abandoned_carts.
+     */
+    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+  }
+
+  /**
+   * abandoned_carts findMany
+   */
+  export type abandoned_cartsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter, which abandoned_carts to fetch.
+     */
+    where?: abandoned_cartsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of abandoned_carts to fetch.
+     */
+    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing abandoned_carts.
+     */
+    cursor?: abandoned_cartsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` abandoned_carts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` abandoned_carts.
+     */
+    skip?: number
+    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+  }
+
+  /**
+   * abandoned_carts create
+   */
+  export type abandoned_cartsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * The data needed to create a abandoned_carts.
+     */
+    data: XOR<abandoned_cartsCreateInput, abandoned_cartsUncheckedCreateInput>
+  }
+
+  /**
+   * abandoned_carts createMany
+   */
+  export type abandoned_cartsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many abandoned_carts.
+     */
+    data: abandoned_cartsCreateManyInput | abandoned_cartsCreateManyInput[]
+  }
+
+  /**
+   * abandoned_carts update
+   */
+  export type abandoned_cartsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * The data needed to update a abandoned_carts.
+     */
+    data: XOR<abandoned_cartsUpdateInput, abandoned_cartsUncheckedUpdateInput>
+    /**
+     * Choose, which abandoned_carts to update.
+     */
+    where: abandoned_cartsWhereUniqueInput
+  }
+
+  /**
+   * abandoned_carts updateMany
+   */
+  export type abandoned_cartsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update abandoned_carts.
+     */
+    data: XOR<abandoned_cartsUpdateManyMutationInput, abandoned_cartsUncheckedUpdateManyInput>
+    /**
+     * Filter which abandoned_carts to update
+     */
+    where?: abandoned_cartsWhereInput
+  }
+
+  /**
+   * abandoned_carts upsert
+   */
+  export type abandoned_cartsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * The filter to search for the abandoned_carts to update in case it exists.
+     */
+    where: abandoned_cartsWhereUniqueInput
+    /**
+     * In case the abandoned_carts found by the `where` argument doesn't exist, create a new abandoned_carts with this data.
+     */
+    create: XOR<abandoned_cartsCreateInput, abandoned_cartsUncheckedCreateInput>
+    /**
+     * In case the abandoned_carts was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<abandoned_cartsUpdateInput, abandoned_cartsUncheckedUpdateInput>
+  }
+
+  /**
+   * abandoned_carts delete
+   */
+  export type abandoned_cartsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+    /**
+     * Filter which abandoned_carts to delete.
+     */
+    where: abandoned_cartsWhereUniqueInput
+  }
+
+  /**
+   * abandoned_carts deleteMany
+   */
+  export type abandoned_cartsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which abandoned_carts to delete
+     */
+    where?: abandoned_cartsWhereInput
+  }
+
+  /**
+   * abandoned_carts findRaw
+   */
+  export type abandoned_cartsFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * abandoned_carts aggregateRaw
+   */
+  export type abandoned_cartsAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * abandoned_carts without action
+   */
+  export type abandoned_cartsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the abandoned_carts
+     */
+    select?: abandoned_cartsSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -16973,6 +18071,9 @@ export namespace Prisma {
     pieceSizePricing: 'pieceSizePricing',
     cuttingTypes: 'cuttingTypes',
     pieceSizes: 'pieceSizes',
+    basePricePerKg: 'basePricePerKg',
+    basePricePerUnit: 'basePricePerUnit',
+    pricingMethod: 'pricingMethod',
     processingWeightLoss: 'processingWeightLoss',
     stock: 'stock',
     sale_price: 'sale_price',
@@ -17044,6 +18145,22 @@ export namespace Prisma {
   };
 
   export type SignupAccessCodeScalarFieldEnum = (typeof SignupAccessCodeScalarFieldEnum)[keyof typeof SignupAccessCodeScalarFieldEnum]
+
+
+  export const Abandoned_cartsScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    items: 'items',
+    storeId: 'storeId',
+    storeName: 'storeName',
+    totalAmount: 'totalAmount',
+    notifiedAt: 'notifiedAt',
+    isConverted: 'isConverted',
+    lastUpdatedAt: 'lastUpdatedAt',
+    createdAt: 'createdAt'
+  };
+
+  export type Abandoned_cartsScalarFieldEnum = (typeof Abandoned_cartsScalarFieldEnum)[keyof typeof Abandoned_cartsScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -17997,6 +19114,9 @@ export namespace Prisma {
     pieceSizePricing?: JsonNullableFilter<"products">
     cuttingTypes?: StringNullableListFilter<"products">
     pieceSizes?: StringNullableListFilter<"products">
+    basePricePerKg?: FloatNullableFilter<"products"> | number | null
+    basePricePerUnit?: FloatNullableFilter<"products"> | number | null
+    pricingMethod?: StringNullableFilter<"products"> | string | null
     processingWeightLoss?: StringNullableFilter<"products"> | string | null
     stock?: IntFilter<"products"> | number
     sale_price?: FloatFilter<"products"> | number
@@ -18036,6 +19156,9 @@ export namespace Prisma {
     pieceSizePricing?: SortOrder
     cuttingTypes?: SortOrder
     pieceSizes?: SortOrder
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
+    pricingMethod?: SortOrder
     processingWeightLoss?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
@@ -18078,6 +19201,9 @@ export namespace Prisma {
     pieceSizePricing?: JsonNullableFilter<"products">
     cuttingTypes?: StringNullableListFilter<"products">
     pieceSizes?: StringNullableListFilter<"products">
+    basePricePerKg?: FloatNullableFilter<"products"> | number | null
+    basePricePerUnit?: FloatNullableFilter<"products"> | number | null
+    pricingMethod?: StringNullableFilter<"products"> | string | null
     processingWeightLoss?: StringNullableFilter<"products"> | string | null
     stock?: IntFilter<"products"> | number
     sale_price?: FloatFilter<"products"> | number
@@ -18117,6 +19243,9 @@ export namespace Prisma {
     pieceSizePricing?: SortOrder
     cuttingTypes?: SortOrder
     pieceSizes?: SortOrder
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
+    pricingMethod?: SortOrder
     processingWeightLoss?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
@@ -18158,6 +19287,9 @@ export namespace Prisma {
     pieceSizePricing?: JsonNullableWithAggregatesFilter<"products">
     cuttingTypes?: StringNullableListFilter<"products">
     pieceSizes?: StringNullableListFilter<"products">
+    basePricePerKg?: FloatNullableWithAggregatesFilter<"products"> | number | null
+    basePricePerUnit?: FloatNullableWithAggregatesFilter<"products"> | number | null
+    pricingMethod?: StringNullableWithAggregatesFilter<"products"> | string | null
     processingWeightLoss?: StringNullableWithAggregatesFilter<"products"> | string | null
     stock?: IntWithAggregatesFilter<"products"> | number
     sale_price?: FloatWithAggregatesFilter<"products"> | number
@@ -18437,6 +19569,85 @@ export namespace Prisma {
     expiresAt?: DateTimeNullableWithAggregatesFilter<"SignupAccessCode"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"SignupAccessCode"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"SignupAccessCode"> | Date | string
+  }
+
+  export type abandoned_cartsWhereInput = {
+    AND?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
+    OR?: abandoned_cartsWhereInput[]
+    NOT?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
+    id?: StringFilter<"abandoned_carts"> | string
+    userId?: StringFilter<"abandoned_carts"> | string
+    items?: JsonNullableListFilter<"abandoned_carts">
+    storeId?: StringNullableFilter<"abandoned_carts"> | string | null
+    storeName?: StringNullableFilter<"abandoned_carts"> | string | null
+    totalAmount?: FloatFilter<"abandoned_carts"> | number
+    notifiedAt?: DateTimeNullableFilter<"abandoned_carts"> | Date | string | null
+    isConverted?: BoolFilter<"abandoned_carts"> | boolean
+    lastUpdatedAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+    createdAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+  }
+
+  export type abandoned_cartsOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    items?: SortOrder
+    storeId?: SortOrder
+    storeName?: SortOrder
+    totalAmount?: SortOrder
+    notifiedAt?: SortOrder
+    isConverted?: SortOrder
+    lastUpdatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type abandoned_cartsWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
+    OR?: abandoned_cartsWhereInput[]
+    NOT?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
+    userId?: StringFilter<"abandoned_carts"> | string
+    items?: JsonNullableListFilter<"abandoned_carts">
+    storeId?: StringNullableFilter<"abandoned_carts"> | string | null
+    storeName?: StringNullableFilter<"abandoned_carts"> | string | null
+    totalAmount?: FloatFilter<"abandoned_carts"> | number
+    notifiedAt?: DateTimeNullableFilter<"abandoned_carts"> | Date | string | null
+    isConverted?: BoolFilter<"abandoned_carts"> | boolean
+    lastUpdatedAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+    createdAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+  }, "id">
+
+  export type abandoned_cartsOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    items?: SortOrder
+    storeId?: SortOrder
+    storeName?: SortOrder
+    totalAmount?: SortOrder
+    notifiedAt?: SortOrder
+    isConverted?: SortOrder
+    lastUpdatedAt?: SortOrder
+    createdAt?: SortOrder
+    _count?: abandoned_cartsCountOrderByAggregateInput
+    _avg?: abandoned_cartsAvgOrderByAggregateInput
+    _max?: abandoned_cartsMaxOrderByAggregateInput
+    _min?: abandoned_cartsMinOrderByAggregateInput
+    _sum?: abandoned_cartsSumOrderByAggregateInput
+  }
+
+  export type abandoned_cartsScalarWhereWithAggregatesInput = {
+    AND?: abandoned_cartsScalarWhereWithAggregatesInput | abandoned_cartsScalarWhereWithAggregatesInput[]
+    OR?: abandoned_cartsScalarWhereWithAggregatesInput[]
+    NOT?: abandoned_cartsScalarWhereWithAggregatesInput | abandoned_cartsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"abandoned_carts"> | string
+    userId?: StringWithAggregatesFilter<"abandoned_carts"> | string
+    items?: JsonNullableListFilter<"abandoned_carts">
+    storeId?: StringNullableWithAggregatesFilter<"abandoned_carts"> | string | null
+    storeName?: StringNullableWithAggregatesFilter<"abandoned_carts"> | string | null
+    totalAmount?: FloatWithAggregatesFilter<"abandoned_carts"> | number
+    notifiedAt?: DateTimeNullableWithAggregatesFilter<"abandoned_carts"> | Date | string | null
+    isConverted?: BoolWithAggregatesFilter<"abandoned_carts"> | boolean
+    lastUpdatedAt?: DateTimeWithAggregatesFilter<"abandoned_carts"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"abandoned_carts"> | Date | string
   }
 
   export type adminsCreateInput = {
@@ -19289,6 +20500,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -19325,6 +20539,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -19360,6 +20577,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -19395,6 +20615,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -19431,6 +20654,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -19463,6 +20689,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -19492,6 +20721,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -19794,6 +21026,93 @@ export namespace Prisma {
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type abandoned_cartsCreateInput = {
+    id?: string
+    userId: string
+    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    storeId?: string | null
+    storeName?: string | null
+    totalAmount?: number
+    notifiedAt?: Date | string | null
+    isConverted?: boolean
+    lastUpdatedAt?: Date | string
+    createdAt?: Date | string
+  }
+
+  export type abandoned_cartsUncheckedCreateInput = {
+    id?: string
+    userId: string
+    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    storeId?: string | null
+    storeName?: string | null
+    totalAmount?: number
+    notifiedAt?: Date | string | null
+    isConverted?: boolean
+    lastUpdatedAt?: Date | string
+    createdAt?: Date | string
+  }
+
+  export type abandoned_cartsUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isConverted?: BoolFieldUpdateOperationsInput | boolean
+    lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type abandoned_cartsUncheckedUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isConverted?: BoolFieldUpdateOperationsInput | boolean
+    lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type abandoned_cartsCreateManyInput = {
+    id?: string
+    userId: string
+    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    storeId?: string | null
+    storeName?: string | null
+    totalAmount?: number
+    notifiedAt?: Date | string | null
+    isConverted?: boolean
+    lastUpdatedAt?: Date | string
+    createdAt?: Date | string
+  }
+
+  export type abandoned_cartsUpdateManyMutationInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isConverted?: BoolFieldUpdateOperationsInput | boolean
+    lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type abandoned_cartsUncheckedUpdateManyInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeName?: NullableStringFieldUpdateOperationsInput | string | null
+    totalAmount?: FloatFieldUpdateOperationsInput | number
+    notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isConverted?: BoolFieldUpdateOperationsInput | boolean
+    lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -20611,6 +21930,18 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
   export type EnumproductStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.productStatus | EnumproductStatusFieldRefInput<$PrismaModel>
     in?: $Enums.productStatus[] | ListEnumproductStatusFieldRefInput<$PrismaModel>
@@ -20649,6 +21980,9 @@ export namespace Prisma {
     pieceSizePricing?: SortOrder
     cuttingTypes?: SortOrder
     pieceSizes?: SortOrder
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
+    pricingMethod?: SortOrder
     processingWeightLoss?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
@@ -20668,6 +22002,8 @@ export namespace Prisma {
   }
 
   export type productsAvgOrderByAggregateInput = {
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
     regular_price?: SortOrder
@@ -20683,6 +22019,9 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
+    pricingMethod?: SortOrder
     processingWeightLoss?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
@@ -20708,6 +22047,9 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
+    pricingMethod?: SortOrder
     processingWeightLoss?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
@@ -20726,11 +22068,30 @@ export namespace Prisma {
   }
 
   export type productsSumOrderByAggregateInput = {
+    basePricePerKg?: SortOrder
+    basePricePerUnit?: SortOrder
     stock?: SortOrder
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
     ratings?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type EnumproductStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -20813,18 +22174,6 @@ export namespace Prisma {
     not?: NestedEnumsellerEventTypeFilter<$PrismaModel> | $Enums.sellerEventType
   }
 
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-    isSet?: boolean
-  }
-
   export type seller_eventsCountOrderByAggregateInput = {
     id?: SortOrder
     sellerId?: SortOrder
@@ -20890,23 +22239,6 @@ export namespace Prisma {
     _max?: NestedEnumsellerEventTypeFilter<$PrismaModel>
   }
 
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-    isSet?: boolean
-  }
-
   export type SignupAccessCodeEmailRoleCompoundUniqueInput = {
     email: string
     role: string
@@ -20940,6 +22272,51 @@ export namespace Prisma {
     expiresAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type abandoned_cartsCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    items?: SortOrder
+    storeId?: SortOrder
+    storeName?: SortOrder
+    totalAmount?: SortOrder
+    notifiedAt?: SortOrder
+    isConverted?: SortOrder
+    lastUpdatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type abandoned_cartsAvgOrderByAggregateInput = {
+    totalAmount?: SortOrder
+  }
+
+  export type abandoned_cartsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storeId?: SortOrder
+    storeName?: SortOrder
+    totalAmount?: SortOrder
+    notifiedAt?: SortOrder
+    isConverted?: SortOrder
+    lastUpdatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type abandoned_cartsMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    storeId?: SortOrder
+    storeName?: SortOrder
+    totalAmount?: SortOrder
+    notifiedAt?: SortOrder
+    isConverted?: SortOrder
+    lastUpdatedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type abandoned_cartsSumOrderByAggregateInput = {
+    totalAmount?: SortOrder
   }
 
   export type productsCreateNestedManyWithoutAdminInput = {
@@ -21826,6 +23203,15 @@ export namespace Prisma {
     push?: string | string[]
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+    unset?: boolean
+  }
+
   export type productsUpdatediscount_codesInput = {
     set?: string[]
     push?: string | string[]
@@ -21996,21 +23382,21 @@ export namespace Prisma {
     set?: $Enums.sellerEventType
   }
 
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-    unset?: boolean
-  }
-
   export type sellersUpdateOneRequiredWithoutEventsNestedInput = {
     create?: XOR<sellersCreateWithoutEventsInput, sellersUncheckedCreateWithoutEventsInput>
     connectOrCreate?: sellersCreateOrConnectWithoutEventsInput
     upsert?: sellersUpsertWithoutEventsInput
     connect?: sellersWhereUniqueInput
     update?: XOR<XOR<sellersUpdateToOneWithWhereWithoutEventsInput, sellersUpdateWithoutEventsInput>, sellersUncheckedUpdateWithoutEventsInput>
+  }
+
+  export type abandoned_cartsCreateitemsInput = {
+    set: InputJsonValue[]
+  }
+
+  export type abandoned_cartsUpdateitemsInput = {
+    set?: InputJsonValue[]
+    push?: InputJsonValue | InputJsonValue[]
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -22290,6 +23676,23 @@ export namespace Prisma {
     isSet?: boolean
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
   export type NestedEnumproductStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.productStatus | EnumproductStatusFieldRefInput<$PrismaModel>
     in?: $Enums.productStatus[] | ListEnumproductStatusFieldRefInput<$PrismaModel>
@@ -22326,23 +23729,6 @@ export namespace Prisma {
     _max?: NestedEnumsellerEventTypeFilter<$PrismaModel>
   }
 
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-    isSet?: boolean
-  }
-
   export type productsCreateWithoutAdminInput = {
     id?: string
     title: string
@@ -22358,6 +23744,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -22393,6 +23782,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -22546,6 +23938,9 @@ export namespace Prisma {
     pieceSizePricing?: JsonNullableFilter<"products">
     cuttingTypes?: StringNullableListFilter<"products">
     pieceSizes?: StringNullableListFilter<"products">
+    basePricePerKg?: FloatNullableFilter<"products"> | number | null
+    basePricePerUnit?: FloatNullableFilter<"products"> | number | null
+    pricingMethod?: StringNullableFilter<"products"> | string | null
     processingWeightLoss?: StringNullableFilter<"products"> | string | null
     stock?: IntFilter<"products"> | number
     sale_price?: FloatFilter<"products"> | number
@@ -22654,6 +24049,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -22689,6 +24087,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -22825,6 +24226,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -22859,6 +24263,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -23847,6 +25254,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -23882,6 +25292,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24043,6 +25456,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24078,6 +25494,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24161,6 +25580,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -24195,6 +25617,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -24356,6 +25781,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24391,6 +25819,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24431,6 +25862,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24466,6 +25900,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -24648,6 +26085,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -24682,6 +26122,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -24955,6 +26398,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -25021,6 +26467,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25055,6 +26504,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25089,6 +26541,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25620,6 +27075,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -25651,6 +27109,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25685,6 +27146,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25719,6 +27183,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25765,6 +27232,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | null
     cuttingTypes?: productsCreatecuttingTypesInput | string[]
     pieceSizes?: productsCreatepieceSizesInput | string[]
+    basePricePerKg?: number | null
+    basePricePerUnit?: number | null
+    pricingMethod?: string | null
     processingWeightLoss?: string | null
     stock: number
     sale_price: number
@@ -25836,6 +27306,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25870,6 +27343,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -25904,6 +27380,9 @@ export namespace Prisma {
     pieceSizePricing?: InputJsonValue | InputJsonValue | null
     cuttingTypes?: productsUpdatecuttingTypesInput | string[]
     pieceSizes?: productsUpdatepieceSizesInput | string[]
+    basePricePerKg?: NullableFloatFieldUpdateOperationsInput | number | null
+    basePricePerUnit?: NullableFloatFieldUpdateOperationsInput | number | null
+    pricingMethod?: NullableStringFieldUpdateOperationsInput | string | null
     processingWeightLoss?: NullableStringFieldUpdateOperationsInput | string | null
     stock?: IntFieldUpdateOperationsInput | number
     sale_price?: FloatFieldUpdateOperationsInput | number
@@ -26010,6 +27489,10 @@ export namespace Prisma {
      * @deprecated Use SignupAccessCodeDefaultArgs instead
      */
     export type SignupAccessCodeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SignupAccessCodeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use abandoned_cartsDefaultArgs instead
+     */
+    export type abandoned_cartsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = abandoned_cartsDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

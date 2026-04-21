@@ -119,3 +119,20 @@ model Notification {
 
   @@index([userId, createdAt])
 }
+
+// Immutable financial audit trail — never delete rows from this table
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String // "ORDER" | "PAYMENT" | "COUPON" | "STOCK" | "REFUND"
+  entityId   String // orderId, paymentId, etc.
+  action     String // "ORDER_CREATED" | "PAYMENT_INITIATED" | "PAYMENT_VERIFIED" | "PAYMENT_FAILED" | "ORDER_STATUS_CHANGED" | "STOCK_RESERVED" | "COUPON_APPLIED" | "REFUND_INITIATED"
+  actorId    String? // userId, sellerId, adminId — null means system
+  actorType  String? // "USER" | "SELLER" | "ADMIN" | "SYSTEM"
+  metadata   Json? // snapshot of relevant data at the time of the event
+  createdAt  DateTime @default(now())
+
+  @@index([entityId])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+}

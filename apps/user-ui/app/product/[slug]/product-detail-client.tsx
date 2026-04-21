@@ -70,6 +70,13 @@ export function ProductDetailClient({ product, coupon }: Props) {
     selected.weightGrams || 0,
   );
 
+  // Per-KG pricing mode: product has a price-per-kg set (no explicit size tiers)
+  const basePricePerKg = (resolvedProduct as any).basePricePerKg as number | null | undefined;
+  const isPerKgMode = typeof basePricePerKg === "number" && basePricePerKg > 0 && resolvedProduct.sizes.length === 0;
+  const [perKgWeightGrams, setPerKgWeightGrams] = useState(500);
+  const PER_KG_STEP = 250;
+  const PER_KG_MIN = 250;
+
   // Create a gallery. If backend only sends one image, we use that.
   // Duplicating it just to keep the carousel UI functional if it expects >1.
   const productImages =
@@ -134,28 +141,52 @@ export function ProductDetailClient({ product, coupon }: Props) {
     setSelectedSize(resolvedProduct.weight || resolvedProduct.sizes?.[0] || "");
   }, [resolvedProduct]);
 
+  // Derived per-kg pricing factors — rate display is weight-independent, only total changes
+  const perKgPricing = useMemo(() => {
+    if (!isPerKgMode || !basePricePerKg) return null;
+    const cuttingPricing = (resolvedProduct as any).cuttingTypePricing as Array<{ cuttingType: string; salePrice: number }> | null | undefined;
+    const piecePricing   = (resolvedProduct as any).pieceSizePricing   as Array<{ pieceSize:    string; salePrice: number }> | null | undefined;
+
+    const cuttingCharge = cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
+    const rawMultiplier = piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
+    // Clamp: a multiplier outside 0.5–3.0 is stale/corrupted data — treat as 1.0
+    const sizeMultiplier = rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
+
+    // ratePerKg = base + cutting surcharge (shown in header, NEVER changes with weight)
+    const ratePerKg = basePricePerKg + cuttingCharge;
+
+    return { cuttingCharge, sizeMultiplier, ratePerKg };
+  }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, resolvedProduct]);
+
   const computedSalePrice = useMemo(() => {
+    if (isPerKgMode && basePricePerKg && perKgPricing) {
+      // Total = ratePerKg × weight × sizeMultiplier (only this changes when weight/size changes)
+      return Number.parseFloat(((perKgPricing.ratePerKg / 1000) * perKgWeightGrams * perKgPricing.sizeMultiplier).toFixed(2));
+    }
     if (!isWeightAdjustable || selectedWeightGrams <= 0) {
       return Number.parseFloat(selected.salePrice.toFixed(2));
     }
     const pricePerGram = selected.salePrice / selected.weightGrams;
     return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [isWeightAdjustable, selected.salePrice, selected.weightGrams, selectedWeightGrams]);
+  }, [isPerKgMode, basePricePerKg, perKgPricing, perKgWeightGrams, isWeightAdjustable, selected.salePrice, selected.weightGrams, selectedWeightGrams]);
 
   const computedRegularPrice = useMemo(() => {
+    if (isPerKgMode) return computedSalePrice;
     if (!isWeightAdjustable || selectedWeightGrams <= 0) {
       return Number.parseFloat(selected.regularPrice.toFixed(2));
     }
     const pricePerGram = selected.regularPrice / selected.weightGrams;
     return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [isWeightAdjustable, selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
+  }, [isPerKgMode, computedSalePrice, isWeightAdjustable, selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
 
   const totalPayable = computedSalePrice;
 
-  const weightDisplay =
-    isWeightAdjustable && selectedWeightGrams >= 1000
-      ? `${Number.parseFloat((selectedWeightGrams / 1000).toFixed(2))} kg`
-      : `${selectedWeightGrams} gm`;
+  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : selectedWeightGrams;
+  const weightDisplay = isPerKgMode || (isWeightAdjustable && selectedWeightGrams > 0)
+    ? activeWeightGrams >= 1000
+      ? `${Number.parseFloat((activeWeightGrams / 1000).toFixed(2))} kg`
+      : `${activeWeightGrams} gm`
+    : selected.size;
 
 
   const handleAddToCart = (shouldOpenCart = false) => {
@@ -167,7 +198,7 @@ export function ProductDetailClient({ product, coupon }: Props) {
         computedRegularPrice > computedSalePrice
           ? computedRegularPrice
           : undefined,
-      weight: isWeightAdjustable ? weightDisplay : selected.size,
+      weight: (isPerKgMode || isWeightAdjustable) ? weightDisplay : selected.size,
     };
 
     addToCart(
@@ -175,7 +206,11 @@ export function ProductDetailClient({ product, coupon }: Props) {
       1,
       selectedCutting || "default",
       selectedPieceSize || "default",
-      isWeightAdjustable ? `${selected.size} | ${weightDisplay}` : selected.size,
+      isPerKgMode
+        ? weightDisplay
+        : isWeightAdjustable
+          ? `${selected.size} | ${weightDisplay}`
+          : selected.size,
     );
     if (shouldOpenCart) {
       modals.openCart();
@@ -368,19 +403,31 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 )}
 
                 <p className="mt-4 text-xl font-bold text-primary">
-                  Price: Rs. {computedSalePrice.toFixed(2)}
-                  {computedRegularPrice > computedSalePrice ? (
-                    <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                      Rs. {computedRegularPrice.toFixed(2)}
-                    </span>
-                  ) : null}
-                  {isWeightAdjustable && selectedWeightGrams > 0 ? (
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {" "}
-                      / {weightDisplay}
-                    </span>
+                  {isPerKgMode ? (
+                    <>
+                      ₹{perKgPricing?.ratePerKg?.toFixed(0) ?? basePricePerKg}
+                      <span className="ml-1 text-sm font-normal text-muted-foreground">/kg</span>
+                      {basePricePerKg && perKgPricing && perKgPricing.ratePerKg !== basePricePerKg && (
+                        <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
+                          ₹{basePricePerKg}/kg
+                        </span>
+                      )}
+                    </>
                   ) : (
-                    ""
+                    <>
+                      Price: Rs. {computedSalePrice.toFixed(2)}
+                      {computedRegularPrice > computedSalePrice ? (
+                        <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
+                          Rs. {computedRegularPrice.toFixed(2)}
+                        </span>
+                      ) : null}
+                      {isWeightAdjustable && selectedWeightGrams > 0 ? (
+                        <span className="text-sm font-normal text-muted-foreground">
+                          {" "}
+                          / {weightDisplay}
+                        </span>
+                      ) : null}
+                    </>
                   )}
                 </p>
 
@@ -475,7 +522,48 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 {/* Weight & Cart Actions */}
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {isWeightAdjustable ? (
+                    {isPerKgMode ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 rounded-full bg-transparent"
+                          onClick={() =>
+                            setPerKgWeightGrams(
+                              Math.max(PER_KG_MIN, perKgWeightGrams - PER_KG_STEP),
+                            )
+                          }
+                          disabled={perKgWeightGrams <= PER_KG_MIN}
+                        >
+                          <Minus className="h-4 w-4" />
+                          <span className="sr-only">Decrease weight</span>
+                        </Button>
+                        <span className="min-w-[4.5rem] text-center text-lg font-bold text-foreground">
+                          {weightDisplay}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9 rounded-full bg-transparent"
+                          onClick={() =>
+                            setPerKgWeightGrams(perKgWeightGrams + PER_KG_STEP)
+                          }
+                        >
+                          <Plus className="h-4 w-4" />
+                          <span className="sr-only">Increase weight</span>
+                        </Button>
+                        {perKgPricing && (
+                          <span className="text-xs text-muted-foreground">
+                            ₹{perKgPricing.ratePerKg.toFixed(0)}/kg
+                            {perKgPricing.cuttingCharge > 0 && (
+                              <span className="ml-1 text-amber-600">
+                                (incl. +₹{perKgPricing.cuttingCharge} cut)
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </>
+                    ) : isWeightAdjustable ? (
                       <>
                         <Button
                           variant="outline"

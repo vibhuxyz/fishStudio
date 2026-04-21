@@ -11,19 +11,19 @@ import {
   validateRegistrationData,
   verifyOtp,
 } from "../utils/auth.helper.js";
-import { setCookie } from "../utils/cookies/setCookie.js";
+import { setCookie, DAY_MS } from "../utils/cookies/setCookie.js";
 import { redis } from "@repo/libs";
 
 const signAdminTokens = (adminId: string) => {
   const accessToken = jwt.sign(
     { id: adminId, role: "admin" },
     ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-    { expiresIn: "7d" },
+    { expiresIn: "24h" },
   );
   const refreshToken = jwt.sign(
     { id: adminId, role: "admin" },
     ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-    { expiresIn: "7d" },
+    { expiresIn: "24h" },
   );
 
   return { accessToken, refreshToken };
@@ -115,8 +115,8 @@ export const verifyAdmin = async (
     });
 
     const { accessToken, refreshToken } = signAdminTokens(admin.id);
-    setCookie(res, "admin_access_token", accessToken);
-    setCookie(res, "admin_refresh_token", refreshToken);
+    setCookie(res, "admin_access_token", accessToken, DAY_MS);
+    setCookie(res, "admin_refresh_token", refreshToken, DAY_MS);
 
     res.status(201).json({
       success: true,
@@ -155,8 +155,8 @@ export const loginAdmin = async (
     }
 
     const { accessToken, refreshToken } = signAdminTokens(admin.id);
-    setCookie(res, "admin_access_token", accessToken);
-    setCookie(res, "admin_refresh_token", refreshToken);
+    setCookie(res, "admin_access_token", accessToken, DAY_MS);
+    setCookie(res, "admin_refresh_token", refreshToken, DAY_MS);
 
     res.status(200).json({
       success: true,

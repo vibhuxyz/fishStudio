@@ -98,8 +98,11 @@ const SellerProductDetailsPage = () => {
         status: "Active",
         discountCodes: [],
         sizePricing: [],
+        cuttingTypePricing: [],
+        pieceSizePricing: [],
         regular_price: 0,
         sale_price: 0,
+        basePricePerKg: undefined,
       },
     });
 
@@ -119,13 +122,27 @@ const SellerProductDetailsPage = () => {
         ? product.discount_codes
         : [],
       sizePricing: buildSizePricingRows(product.sizes || [], product.sizePricing),
+      cuttingTypePricing: (product.cuttingTypes || []).map((ct) => {
+        const existing = product.cuttingTypePricing?.find((c) => c.cuttingType === ct);
+        return { cuttingType: ct, salePrice: existing?.salePrice ?? 0, regularPrice: 0 };
+      }),
+      pieceSizePricing: (product.pieceSizes || []).map((ps) => {
+        const existing = product.pieceSizePricing?.find((p) => p.pieceSize === ps);
+        // Clamp: values outside 0.5–3.0 are stale absolute-price data, not valid multipliers
+        const raw = existing?.salePrice ?? 1.0;
+        const multiplier = raw > 0 && raw <= 3 ? raw : 1.0;
+        return { pieceSize: ps, salePrice: multiplier, regularPrice: 0 };
+      }),
       regular_price: Number(product.regular_price ?? 0),
       sale_price: Number(product.sale_price ?? 0),
+      basePricePerKg: product.basePricePerKg ? Number(product.basePricePerKg) : undefined,
     });
   }, [product, reset]);
 
   const selectedDiscountCodes = watch("discountCodes") ?? [];
   const selectedSizePricing = watch("sizePricing") ?? [];
+  const selectedCuttingTypePricing = watch("cuttingTypePricing") ?? [];
+  const selectedPieceSizePricing = watch("pieceSizePricing") ?? [];
 
   const updateMutation = useMutation({
     mutationFn: updateProduct,
@@ -148,8 +165,10 @@ const SellerProductDetailsPage = () => {
         toast.error("Add a valid weight and sale price for each size.");
         return;
       }
+    } else if (values.basePricePerKg && values.basePricePerKg > 0) {
+      // per-kg mode — basePricePerKg is the price
     } else if (!values.sale_price || values.sale_price <= 0) {
-      toast.error("Add a valid sale price.");
+      toast.error("Add a valid sale price or per-kg price.");
       return;
     }
 
@@ -306,9 +325,13 @@ const SellerProductDetailsPage = () => {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm text-slate-300">Stock</label>
+              <label className="mb-1 block text-sm text-slate-300">
+                Stock (kg)
+              </label>
               <input
                 type="number"
+                step="0.5"
+                min="0"
                 {...register("stock", { valueAsNumber: true })}
                 className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
               />
@@ -406,23 +429,113 @@ const SellerProductDetailsPage = () => {
               </div>
             ) : (
               <>
-                <div>
-                  <label className="mb-1 block text-sm text-slate-300">Regular Price</label>
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm text-slate-300">
+                    Base Price Per Kg (₹/kg)
+                    <span className="ml-2 text-xs text-slate-500">— shoppers choose weight in 250 gm steps</span>
+                  </label>
                   <input
                     type="number"
-                    {...register("regular_price", { valueAsNumber: true })}
+                    step="0.01"
+                    {...register("basePricePerKg", { valueAsNumber: true })}
+                    placeholder="e.g. 380 — leave blank to use flat price below"
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-slate-300">Sale Price</label>
+                  <label className="mb-1 block text-sm text-slate-300">
+                    Regular Price (₹/kg)
+                    <span className="ml-2 text-xs text-slate-500">— MRP, shown struck-through</span>
+                  </label>
                   <input
                     type="number"
+                    step="0.01"
+                    {...register("regular_price", { valueAsNumber: true })}
+                    placeholder="e.g. 420"
+                    className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-slate-300">
+                    Sale Price (₹/kg)
+                    <span className="ml-2 text-xs text-slate-500">— your actual selling price</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
                     {...register("sale_price", { valueAsNumber: true })}
+                    placeholder="e.g. 350"
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                   />
                 </div>
               </>
+            )}
+
+            {/* Cutting Type Pricing */}
+            {selectedCuttingTypePricing.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Cutting Type Surcharge{" "}
+                  <span className="text-xs text-slate-500">(extra ₹/kg added to base price per kg)</span>
+                </label>
+                <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                  {selectedCuttingTypePricing.map((entry, index) => (
+                    <div key={entry.cuttingType} className="flex items-center gap-4">
+                      <span className="w-40 truncate text-sm font-medium text-white">{entry.cuttingType}</span>
+                      <div className="flex flex-1 items-center gap-2">
+                        <span className="text-xs text-slate-400">+₹</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={entry.salePrice}
+                          onChange={(e) => {
+                            const next = [...selectedCuttingTypePricing];
+                            next[index] = { ...entry, salePrice: Number(e.target.value || 0) };
+                            setValue("cuttingTypePricing", next, { shouldDirty: true });
+                          }}
+                          className="w-28 rounded-md border border-slate-700 bg-transparent px-3 py-1.5 text-white outline-none"
+                        />
+                        <span className="text-xs text-slate-500">/kg surcharge</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Piece Size Multiplier */}
+            {selectedPieceSizePricing.length > 0 && (
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-sm text-slate-300">
+                  Piece Size Multiplier{" "}
+                  <span className="text-xs text-slate-500">(1.0 = no change · 1.08 = +8% · 1.15 = +15%)</span>
+                </label>
+                <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                  {selectedPieceSizePricing.map((entry, index) => (
+                    <div key={entry.pieceSize} className="flex items-center gap-4">
+                      <span className="w-40 truncate text-sm font-medium text-white">{entry.pieceSize}</span>
+                      <div className="flex flex-1 items-center gap-2">
+                        <span className="text-xs text-slate-400">×</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.5"
+                          max="3"
+                          value={entry.salePrice}
+                          onChange={(e) => {
+                            const next = [...selectedPieceSizePricing];
+                            next[index] = { ...entry, salePrice: Number(e.target.value || 1) };
+                            setValue("pieceSizePricing", next, { shouldDirty: true });
+                          }}
+                          className="w-28 rounded-md border border-slate-700 bg-transparent px-3 py-1.5 text-white outline-none"
+                        />
+                        <span className="text-xs text-slate-500">multiplier</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             <div className="md:col-span-2">
@@ -508,6 +621,54 @@ const SellerProductDetailsPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Live Price Preview */}
+          {watch("basePricePerKg") && (watch("basePricePerKg") ?? 0) > 0 && (
+            <div className="mt-5 rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
+              <p className="mb-3 text-xs font-bold uppercase tracking-widest text-blue-400">Live Price Preview (500 gm)</p>
+              <div className="space-y-1.5">
+                {(() => {
+                  const base = watch("basePricePerKg") ?? 0;
+                  const cuts = watch("cuttingTypePricing") ?? [];
+                  const sizes = watch("pieceSizePricing") ?? [];
+                  const weightKg = 0.5;
+                  return cuts.length > 0 ? cuts.map((cut) => {
+                    const surcharge = cut.salePrice ?? 0;
+                    const rateAfterCut = base + surcharge;
+                    if (sizes.length > 0) {
+                      return sizes.map((sz) => {
+                        const mult = sz.salePrice > 0 && sz.salePrice <= 3 ? sz.salePrice : 1.0;
+                        const price = (rateAfterCut * mult * weightKg).toFixed(0);
+                        return (
+                          <div key={`${cut.cuttingType}-${sz.pieceSize}`} className="flex justify-between text-xs">
+                            <span className="text-slate-400">
+                              {cut.cuttingType} · {sz.pieceSize}
+                              {surcharge > 0 && <span className="ml-1 text-amber-400">+₹{surcharge}/kg</span>}
+                              {mult !== 1 && <span className="ml-1 text-blue-400">×{mult}</span>}
+                            </span>
+                            <span className="font-semibold text-white">₹{price}</span>
+                          </div>
+                        );
+                      });
+                    }
+                    const price = (rateAfterCut * weightKg).toFixed(0);
+                    return (
+                      <div key={cut.cuttingType} className="flex justify-between text-xs">
+                        <span className="text-slate-400">{cut.cuttingType}{surcharge > 0 && <span className="ml-1 text-amber-400">+₹{surcharge}/kg</span>}</span>
+                        <span className="font-semibold text-white">₹{price}</span>
+                      </div>
+                    );
+                  }) : (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-400">Base (no cut selected)</span>
+                      <span className="font-semibold text-white">₹{(base * weightKg).toFixed(0)}</span>
+                    </div>
+                  );
+                })()}
+              </div>
+              <p className="mt-2 text-[10px] text-slate-500">Formula: (Base/kg + Cut surcharge) × Size multiplier × Weight</p>
+            </div>
+          )}
 
           <div className="mt-6 flex justify-end gap-3">
             <button

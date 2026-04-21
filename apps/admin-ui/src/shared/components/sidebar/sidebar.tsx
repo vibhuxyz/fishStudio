@@ -24,6 +24,8 @@ import {
   PanelLeftOpen,
   Image as ImageIcon,
   ClipboardCheck,
+  ShoppingBag,
+  Warehouse,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
@@ -114,7 +116,32 @@ const SidebarBarWrapper = () => {
             }
           />
           <div className="mt-6 block">
+            <SidebarMenu title="Orders">
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/order-tracking"}
+                title="Order Tracking"
+                href="/dashboard/order-tracking"
+                icon={
+                  <ShoppingBag
+                    size={22}
+                    color={getIconColor("/dashboard/order-tracking")}
+                  />
+                }
+              />
+            </SidebarMenu>
+
             <SidebarMenu title="Inventory">
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/seller-inventory"}
+                title="Seller Inventory"
+                href="/dashboard/seller-inventory"
+                icon={
+                  <Warehouse
+                    size={22}
+                    color={getIconColor("/dashboard/seller-inventory")}
+                  />
+                }
+              />
               <SidebarItem
                 isActive={activeSidebar === "/dashboard/create-product"}
                 title="Create Product"

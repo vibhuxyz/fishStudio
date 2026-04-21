@@ -117,6 +117,19 @@ export const ENV = {
   STRIPE_SECRET_KEY: logEnv("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY),
   FAST2SMS_API_KEY: logEnv("FAST2SMS_API_KEY", process.env.FAST2SMS_API_KEY),
 
+  // Razorpay
+  RAZORPAY_KEY_ID: logEnv("RAZORPAY_KEY_ID", process.env.RAZORPAY_KEY_ID),
+  RAZORPAY_KEY_SECRET: logEnv("RAZORPAY_KEY_SECRET", process.env.RAZORPAY_KEY_SECRET),
+  RAZORPAY_WEBHOOK_SECRET: logEnv("RAZORPAY_WEBHOOK_SECRET", process.env.RAZORPAY_WEBHOOK_SECRET),
+
+  // Payment Service
+  PAYMENT_SERVICE_PORT: process.env.PAYMENT_SERVICE_PORT || "6007",
+  PAYMENT_SERVICE_URL: logEnv(
+    "PAYMENT_SERVICE_URL",
+    process.env.PAYMENT_SERVICE_URL ||
+      `http://localhost:${process.env.PAYMENT_SERVICE_PORT || "6007"}`,
+  ),
+
   // Cloudinary
   CLOUDINARY_CLOUD_NAME: logEnv(
     "CLOUDINARY_CLOUD_NAME",

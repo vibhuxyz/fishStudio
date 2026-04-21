@@ -1,0 +1,44 @@
+{
+  "name": "@repo/payment-service",
+  "type": "module",
+  "private": true,
+  "main": "./dist/main.js",
+  "exports": {
+    ".": {
+      "default": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "build": "tsup",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "@repo/db-postgres": "workspace:*",
+    "@repo/db-mongo": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/bun": "latest",
+    "tsup": "^8.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "compression": "^1.8.1",
+    "@types/compression": "^1.8.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "razorpay": "^2.9.6"
+  }
+}

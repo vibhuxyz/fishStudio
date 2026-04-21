@@ -338,6 +338,7 @@ const mergeCatalogWithVariant = (
     cuttingTypePricing:
       variant.cuttingTypePricing ?? catalog.cuttingTypePricing,
     pieceSizePricing: variant.pieceSizePricing ?? catalog.pieceSizePricing,
+    basePricePerKg: variant.basePricePerKg ?? catalog.basePricePerKg ?? null,
     storeId: variant.storeId,
     inStock: (variant.stock ?? 0) > 0,
     discount_codes: variant.discount_codes ?? [],
@@ -1172,6 +1173,7 @@ export const updateProduct = async (
       processingWeightLoss,
       status,
       images,
+      basePricePerKg: basePricePerKgRaw,
     } = validated;
 
     let resolvedSlug: string | null = null;
@@ -1257,6 +1259,19 @@ export const updateProduct = async (
           updateData.sale_price = Number(sale_price);
         if (typeof regular_price !== "undefined")
           updateData.regular_price = Number(regular_price);
+      }
+
+      // basePricePerKg — per-KG pricing mode (used when no sizes are configured)
+      if (typeof basePricePerKgRaw === "number" && basePricePerKgRaw > 0) {
+        updateData.basePricePerKg = basePricePerKgRaw;
+        updateData.pricingMethod = "per_kg";
+        // Use basePricePerKg as the display sale_price if no other price is set
+        if (!updateData.sale_price) {
+          updateData.sale_price = basePricePerKgRaw;
+        }
+      } else if (basePricePerKgRaw === null || basePricePerKgRaw === 0) {
+        updateData.basePricePerKg = null;
+        updateData.pricingMethod = null;
       }
 
       if (Array.isArray(cuttingTypePricing)) {

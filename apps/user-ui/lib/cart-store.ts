@@ -4,6 +4,48 @@ import type { Product } from "@repo/zod-schema";
 import { axiosInstance } from "./utils";
 import { toast } from "sonner";
 
+/* ── Server-side cart persistence (abandoned cart detection) ──────────────
+   Debounced: fires 5 seconds after the last cart mutation.
+   Only runs when a user is logged in (the endpoint requires auth).
+   Silently ignores errors — this is non-critical.
+─────────────────────────────────────────────────────────────────────────── */
+let _saveCartTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleSaveCart(
+  items: CartItem[],
+  storeId?: string | null,
+  storeName?: string | null,
+  totalAmount?: number,
+) {
+  if (_saveCartTimer) clearTimeout(_saveCartTimer);
+  _saveCartTimer = setTimeout(async () => {
+    try {
+      await axiosInstance.post("/auth/api/save-cart", {
+        items: items.map((i) => ({
+          productId: i.product.id,
+          title:     i.product.name ?? (i.product as any).title,
+          image:     i.product.image ?? (i.product.images as any)?.[0]?.url,
+          quantity:  i.quantity,
+          price:     i.product.price ?? (i.product as any).sale_price,
+        })),
+        storeId,
+        storeName,
+        totalAmount,
+      });
+    } catch {
+      // Silently ignore — this is background persistence only
+    }
+  }, 5_000); // 5-second debounce
+}
+
+async function clearServerCart() {
+  try {
+    await axiosInstance.post("/auth/api/clear-cart", {});
+  } catch {
+    // Non-critical
+  }
+}
+
 type CuttingType = {
   id: string;
   name: string;
@@ -40,6 +82,8 @@ interface CartState {
   ) => void;
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
+  /** Async + click: fetches live stock, updates the item's stock, then increments if still available. */
+  checkAndIncrement: (index: number, step?: number) => Promise<{ ok: boolean; message?: string }>;
   quickAdd: (product: Product) => void;
   quickRemove: (productId: string) => void;
   getProductQty: (productId: string) => number;
@@ -120,8 +164,7 @@ export const useCartStore = create<CartState>()(
       if (existingIndex >= 0) {
         const updated = [...state.items];
         const existing = updated[existingIndex];
-        
-        // Stock check for total quantity of this product in cart
+
         const currentTotalQty = get().getProductQty(product.id);
         if (product.stock !== undefined && currentTotalQty + quantity > product.stock) {
           toast.error(`Cannot add more than ${product.stock} available units`);
@@ -134,35 +177,41 @@ export const useCartStore = create<CartState>()(
           quantity: newQty,
           totalPayable: newQty * product.price,
         };
+        const nextItems = updated;
+        const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+        scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
         return { items: updated };
       }
 
-      // Stock check for new item
       if (product.stock !== undefined && quantity > product.stock) {
         toast.error(`Only ${product.stock} units available in stock`);
         return {};
       }
 
-      return {
-        items: [
-          ...state.items,
-          {
-            product,
-            quantity,
-            cuttingType: normalizedCuttingType,
-            pieceSize: normalizedPieceSize,
-            size,
-            totalPayable: quantity * product.price,
-          },
-        ],
-      };
+      const nextItems = [
+        ...state.items,
+        {
+          product,
+          quantity,
+          cuttingType: normalizedCuttingType,
+          pieceSize: normalizedPieceSize,
+          size,
+          totalPayable: quantity * product.price,
+        },
+      ];
+      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      return { items: nextItems };
     });
   },
 
   removeItem: (index) => {
-    set((state) => ({
-      items: state.items.filter((_, i) => i !== index),
-    }));
+    set((state) => {
+      const nextItems = state.items.filter((_, i) => i !== index);
+      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      return { items: nextItems };
+    });
   },
 
   updateQuantity: (index, quantity) => {
@@ -174,7 +223,6 @@ export const useCartStore = create<CartState>()(
     const item = get().items[index];
     if (!item) return;
 
-    // Calculate total quantity of this product in cart excluding the current item's old quantity
     const otherItemsQty = get().items
       .filter((it, i) => it.product.id === item.product.id && i !== index)
       .reduce((sum, it) => sum + it.quantity, 0);
@@ -184,19 +232,83 @@ export const useCartStore = create<CartState>()(
       return;
     }
 
-    set((state) => ({
-      items: state.items.map((item, i) =>
+    set((state) => {
+      const nextItems = state.items.map((it, i) =>
         i === index
-          ? { ...item, quantity, totalPayable: quantity * item.product.price }
-          : item
-      ),
-    }));
+          ? { ...it, quantity, totalPayable: quantity * it.product.price }
+          : it
+      );
+      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      return { items: nextItems };
+    });
+  },
+
+  checkAndIncrement: async (index, step = 0.5) => {
+    const item = get().items[index];
+    if (!item) return { ok: false, message: "Item not found" };
+
+    try {
+      const { data } = await axiosInstance.get(
+        `/product/api/stock/${item.product.id}`,
+      );
+
+      const freshStock: number = data.stock ?? 0;
+      const freshStatus: string = data.status ?? "Active";
+
+      // Update the stock value stored in the cart item so the UI reflects it
+      set((state) => ({
+        items: state.items.map((it, i) =>
+          i === index
+            ? { ...it, product: { ...it.product, stock: freshStock, status: freshStatus as "Active" | "NonActive" } }
+            : it,
+        ),
+      }));
+
+      if (freshStatus !== "Active" || freshStock === 0) {
+        const msg = freshStock === 0 ? "This product is out of stock" : "This product is no longer available";
+        toast.error(msg);
+        return { ok: false, message: msg };
+      }
+
+      // Total qty across all cart lines for this product after the increment
+      const otherQty = get().items
+        .filter((it, i) => it.product.id === item.product.id && i !== index)
+        .reduce((s, it) => s + it.quantity, 0);
+      const newQty = item.quantity + step;
+
+      if (otherQty + newQty > freshStock) {
+        const available = Math.max(0, freshStock - otherQty);
+        const msg = available <= 0
+          ? "No more stock available"
+          : `Only ${available} kg available`;
+        toast.error(msg);
+        return { ok: false, message: msg };
+      }
+
+      get().updateQuantity(index, newQty);
+      return { ok: true };
+    } catch {
+      // Network error — fall back to local check so UX doesn't break
+      const item = get().items[index];
+      if (!item) return { ok: false, message: "Item not found" };
+      const otherQty = get().items
+        .filter((it, i) => it.product.id === item.product.id && i !== index)
+        .reduce((s, it) => s + it.quantity, 0);
+      const newQty = item.quantity + step;
+      if (item.product.stock !== undefined && otherQty + newQty > item.product.stock) {
+        toast.error(`Only ${item.product.stock} units available`);
+        return { ok: false, message: "Stock limit reached" };
+      }
+      get().updateQuantity(index, newQty);
+      return { ok: true };
+    }
   },
 
   quickAdd: (product) => {
     const state = get();
     const currentQty = state.getProductQty(product.id);
-    
+
     if (product.stock !== undefined && currentQty + 0.5 > product.stock) {
       toast.error(`Limit reached: ${product.stock} units available`);
       return;
@@ -207,7 +319,8 @@ export const useCartStore = create<CartState>()(
     );
 
     if (existingIndex >= 0) {
-      state.updateQuantity(existingIndex, state.items[existingIndex].quantity + 0.5);
+      // Use live stock check for existing items
+      state.checkAndIncrement(existingIndex, 0.5);
     } else {
       const firstSize = product.sizes?.[0] || product.weight || "unit";
       const firstCutting = product.cuttingTypes?.[0] || "default";
@@ -245,7 +358,11 @@ export const useCartStore = create<CartState>()(
     return get().items.reduce((sum, item) => sum + item.totalPayable, 0);
   },
 
-  clearCart: () =>
+  clearCart: () => {
+    // Cancel any pending save-cart debounce
+    if (_saveCartTimer) { clearTimeout(_saveCartTimer); _saveCartTimer = null; }
+    // Mark the server-side cart as converted (order placed)
+    clearServerCart();
     set({
       items: [],
       cartStoreId: null,
@@ -257,7 +374,8 @@ export const useCartStore = create<CartState>()(
         nearbyHint: null,
         openingHours: null,
       },
-    }),
+    });
+  },
 
   syncItems: async () => {
     const { items } = get();

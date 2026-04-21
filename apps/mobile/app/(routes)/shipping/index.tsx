@@ -22,8 +22,8 @@ export default function ShippingAddressScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { addresses, fetchAddresses, selectAddress, setAddresses } = useAddress();
-  const { selectedAddressId } = useAddressStore();
+  const { addresses, fetchAddresses, selectAddress } = useAddress();
+  const { selectedAddressId, setAddresses } = useAddressStore();
 
   const loadAddresses = async (refresh = false) => {
     if (refresh) setIsRefreshing(true);

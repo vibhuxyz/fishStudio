@@ -56,6 +56,8 @@ import {
   uploadProductImage,
 } from "../controllers/product/image.controller.js";
 
+import { getAdminSellerInventory } from "../controllers/product/admin.inventory.controller.js";
+import { getProductStock } from "../controllers/product/stock.controller.js";
 import { allowRoles, isAuthenticated, isSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
@@ -219,6 +221,17 @@ router.post(
   allowRoles("admin"),
   reindexProducts,
 );
+
+// Admin: all sellers' inventory grouped by seller → store → products
+router.get(
+  "/admin/seller-inventory",
+  isAuthenticated,
+  allowRoles("admin"),
+  getAdminSellerInventory,
+);
+
+// Lightweight live stock check — called by cart on every + click
+router.get("/stock/:productId", getProductStock);
 
 router.get("/get-all-products", getStoreProducts);
 router.post("/validate-cart", validateCart);

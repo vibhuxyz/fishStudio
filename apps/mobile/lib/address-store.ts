@@ -9,6 +9,7 @@ export interface Address {
   label: "Home" | "Work" | "Other";
   street: string;
   area?: string;
+  landmark?: string;
   city: string;
   state?: string;
   pincode: string;

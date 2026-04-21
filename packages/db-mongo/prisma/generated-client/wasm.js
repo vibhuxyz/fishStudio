@@ -249,6 +249,9 @@ exports.Prisma.ProductsScalarFieldEnum = {
   pieceSizePricing: 'pieceSizePricing',
   cuttingTypes: 'cuttingTypes',
   pieceSizes: 'pieceSizes',
+  basePricePerKg: 'basePricePerKg',
+  basePricePerUnit: 'basePricePerUnit',
+  pricingMethod: 'pricingMethod',
   processingWeightLoss: 'processingWeightLoss',
   stock: 'stock',
   sale_price: 'sale_price',
@@ -310,6 +313,19 @@ exports.Prisma.SignupAccessCodeScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.Abandoned_cartsScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  items: 'items',
+  storeId: 'storeId',
+  storeName: 'storeName',
+  totalAmount: 'totalAmount',
+  notifiedAt: 'notifiedAt',
+  isConverted: 'isConverted',
+  lastUpdatedAt: 'lastUpdatedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -350,7 +366,8 @@ exports.Prisma.ModelName = {
   products: 'products',
   banners: 'banners',
   seller_events: 'seller_events',
-  SignupAccessCode: 'SignupAccessCode'
+  SignupAccessCode: 'SignupAccessCode',
+  abandoned_carts: 'abandoned_carts'
 };
 
 /**

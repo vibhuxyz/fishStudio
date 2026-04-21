@@ -59,6 +59,8 @@ import {
   verifyStaff,
 } from "../controller/staff.auth.controller.js";
 
+import { saveCart, clearCart } from "../controller/cart.controller.js";
+
 const router: Router = express.Router();
 
 router.get("/home", (req, res) => res.send("Hello World"));
@@ -143,5 +145,9 @@ router.put(
   isSeller,
   updateStaffAccess,
 );
+
+// ── Cart (server-side persistence for abandoned cart detection) ───────────
+router.post("/save-cart",  isAuthenticated, isUser, saveCart);
+router.post("/clear-cart", isAuthenticated, isUser, clearCart);
 
 export default router;

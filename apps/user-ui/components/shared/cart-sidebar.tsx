@@ -50,8 +50,10 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
     return () => unsuppress();
   }, [open, suppress, unsuppress]);
   const { isLoggedIn, user } = useAuth();
-  const { items, syncItems, cartStoreId, removeItem, updateQuantity, deliveryMetadata } = useCartStore();
+  const { items, syncItems, cartStoreId, removeItem, updateQuantity, checkAndIncrement, deliveryMetadata } = useCartStore();
   const [isSyncing, setIsSyncing] = useState(false);
+  // Track which cart index has a pending + click so the button shows a spinner
+  const [incrementingIndex, setIncrementingIndex] = useState<number | null>(null);
 
   const {
     appliedCoupons,
@@ -359,7 +361,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   <button
                                     type="button"
                                     onClick={() => updateQuantity(index, item.quantity - 0.5)}
-                                    className="flex h-7 w-7 items-center justify-center text-white"
+                                    disabled={incrementingIndex === index}
+                                    className="flex h-7 w-7 items-center justify-center text-white disabled:opacity-40"
                                   >
                                     <Minus className="h-3 w-3" />
                                   </button>
@@ -368,11 +371,26 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   </span>
                                   <button
                                     type="button"
-                                    onClick={() => updateQuantity(index, item.quantity + 0.5)}
-                                    disabled={item.product.stock !== undefined && (useCartStore.getState().getProductQty(item.product.id) + 0.5) > item.product.stock}
+                                    disabled={
+                                      incrementingIndex === index ||
+                                      (item.product.stock !== undefined &&
+                                        useCartStore.getState().getProductQty(item.product.id) >= item.product.stock)
+                                    }
+                                    onClick={async () => {
+                                      setIncrementingIndex(index);
+                                      await checkAndIncrement(index, 0.5);
+                                      setIncrementingIndex(null);
+                                    }}
                                     className="flex h-7 w-7 items-center justify-center text-white disabled:opacity-40 disabled:cursor-not-allowed"
                                   >
-                                    <Plus className="h-3 w-3" />
+                                    {incrementingIndex === index ? (
+                                      <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                      </svg>
+                                    ) : (
+                                      <Plus className="h-3 w-3" />
+                                    )}
                                   </button>
                                 </div>
                               )}

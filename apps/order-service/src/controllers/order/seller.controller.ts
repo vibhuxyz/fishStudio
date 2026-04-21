@@ -186,7 +186,10 @@ export const updateOrderStatus = async (
     const { status } = validate(updateOrderStatusSchema, req.body);
     const storeId = req.seller?.store?.id;
 
-    const existing = await prismaPostgres.order.findUnique({ where: { id: orderId } });
+    const existing = await prismaPostgres.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true },
+    });
     if (!existing) return next(new NotFoundError("Order not found"));
     if (!storeId || existing.storeId !== storeId) {
       return next(new ValidationError("You can only manage orders for your own store"));
@@ -194,8 +197,27 @@ export const updateOrderStatus = async (
 
     const updated = await prismaPostgres.order.update({
       where: { id: orderId },
-      data: { status, updatedAt: new Date() },
+      data: {
+        status,
+        updatedAt: new Date(),
+        ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" } : {}),
+      },
     });
+
+    // Restore stock when seller manually cancels an order
+    if (status === "CANCELLED") {
+      Promise.all(
+        existing.orderItems.map((item) =>
+          prismaMongo.products.update({
+            where: { id: item.productId },
+            data: {
+              stock:     { increment: item.quantity },
+              totalSold: { decrement: item.quantity },
+            },
+          }),
+        ),
+      ).catch((err) => console.error("[updateOrderStatus] stock restore failed:", err));
+    }
 
     await invalidateSellerStatsCache(req.seller?.id);
 
