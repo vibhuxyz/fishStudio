@@ -7,7 +7,7 @@ process.on("unhandledRejection", (reason) => {
 
 import express from "express";
 import proxy from "express-http-proxy";
-import morgan from "morgan";
+import morgan from "morgan"; 
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import cors from "cors";
