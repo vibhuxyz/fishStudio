@@ -67,15 +67,15 @@ const getEtherealTransporter = async (): Promise<nodemailer.Transporter> => {
   return etherealTransporter;
 };
 
+const TEMPLATES_DIR =
+  process.env.EMAIL_TEMPLATES_DIR ||
+  path.resolve(__dirname, "../../../apps/auth-service/src/utils/email-templates");
+
 const renderEmailTemplate = async (
   templateName: string,
   data: Record<string, any>,
 ): Promise<string> => {
-  const templatePath = path.resolve(
-    __dirname,
-    "../../../../apps/auth-service/src/utils/email-templates",
-    `${templateName}.ejs`,
-  );
+  const templatePath = path.resolve(TEMPLATES_DIR, `${templateName}.ejs`);
 
   if (!fs.existsSync(templatePath)) {
     console.error(`[sendEmail] ❌ Template not found: ${templatePath}`);

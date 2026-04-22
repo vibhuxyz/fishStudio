@@ -287,9 +287,32 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
                     <p className="text-sm font-semibold truncate">
                       {item.product?.title || "Product"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Qty: {item.quantity} 
-                    </p>
+                    {item.selectedOptions?.cuttingType && item.selectedOptions.cuttingType !== "default" && (
+                      <p className="text-xs text-muted-foreground">
+                        {item.selectedOptions.cuttingType}
+                        {item.selectedOptions.pieceSize && item.selectedOptions.pieceSize !== "default"
+                          ? ` · ${item.selectedOptions.pieceSize}`
+                          : ""}
+                      </p>
+                    )}
+                    {item.selectedOptions?.weightGrams ? (
+                      <p className="text-xs text-muted-foreground">
+                        {item.selectedOptions.weightGrams >= 1000
+                          ? `${(item.selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                          : `${item.selectedOptions.weightGrams} gm`}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    )}
+                    {item.selectedOptions?.cuttingCharge != null && item.selectedOptions.cuttingCharge > 0 && (
+                      <p className="text-[11px] text-amber-600">
+                        ₹{item.selectedOptions.baseRatePerKg}/kg + ₹{item.selectedOptions.cuttingCharge} cut
+                        {item.selectedOptions.sizeMultiplier && item.selectedOptions.sizeMultiplier !== 1
+                          ? ` ×${item.selectedOptions.sizeMultiplier}`
+                          : ""}
+                        {" = "}₹{item.selectedOptions.effectiveRatePerKg}/kg
+                      </p>
+                    )}
                   </div>
                   <span className="text-sm font-bold">
                     ₹{(item.price * item.quantity).toFixed(0)}

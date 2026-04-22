@@ -41,9 +41,13 @@ export function AddToCartModal({
   const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  const [perKgWeightGrams, setPerKgWeightGrams] = useState(250);
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showFullDesc, setShowFullDesc] = useState(false);
+
+  const PER_KG_STEP = 50;
+  const PER_KG_MIN = 50;
 
   useEffect(() => {
     if (open && product) {
@@ -51,6 +55,7 @@ export function AddToCartModal({
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
       setQuantity(1);
+      setPerKgWeightGrams(500);
       setIsImageLoading(true);
       setSelectedImageIndex(0);
       setShowFullDesc(false);
@@ -72,27 +77,59 @@ export function AddToCartModal({
     return resolvePrice(product, selectedSize);
   }, [product, selectedSize]);
 
+  // Per-kg mode: product has cutting/piece-size attributes but no size tiers
+  const isPerKgMode = !!product &&
+    (!product.sizes || product.sizes.length === 0) &&
+    (((product as any).cuttingTypes?.length ?? 0) > 0 || ((product as any).pieceSizes?.length ?? 0) > 0);
+  // salePrice drives the formula (regular_price is the MRP shown struck-through)
+  const basePricePerKg = isPerKgMode ? (product?.price ?? 0) : null;
+
+  const perKgPricing = useMemo(() => {
+    if (!isPerKgMode || !basePricePerKg || !product) return null;
+    const cuttingPricing = (product as any).cuttingTypePricing as Array<{ cuttingType: string; salePrice: number }> | undefined;
+    const piecePricing   = (product as any).pieceSizePricing   as Array<{ pieceSize:    string; salePrice: number }> | undefined;
+    const cuttingCharge  = cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
+    const rawMultiplier  = piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
+    const sizeMultiplier = rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
+    const ratePerKg = basePricePerKg + cuttingCharge;
+    return { cuttingCharge, sizeMultiplier, ratePerKg };
+  }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, product]);
+
+  const weightDisplay = isPerKgMode
+    ? perKgWeightGrams >= 1000
+      ? `${Number.parseFloat((perKgWeightGrams / 1000).toFixed(2))} kg`
+      : `${perKgWeightGrams} gm`
+    : "";
+
   const totalPayable = useMemo(() => {
+    if (isPerKgMode && perKgPricing) {
+      return Number.parseFloat(((perKgPricing.ratePerKg / 1000) * perKgWeightGrams * perKgPricing.sizeMultiplier).toFixed(2));
+    }
     return Number.parseFloat((resolved.salePrice * quantity).toFixed(2));
-  }, [resolved.salePrice, quantity]);
+  }, [isPerKgMode, perKgPricing, perKgWeightGrams, resolved.salePrice, quantity]);
 
   const handleAddToCart = (shouldOpenCart = false) => {
     if (!product) return;
     const customizedProduct = {
       ...product,
-      price: resolved.salePrice,
-      originalPrice:
-        resolved.regularPrice > resolved.salePrice
-          ? resolved.regularPrice
-          : undefined,
-      weight: selectedSize || resolved.unit || product.weight,
+      price: totalPayable,
+      originalPrice: undefined,
+      weight: isPerKgMode ? weightDisplay : (selectedSize || resolved.unit || product.weight),
     };
+    const breakdown = isPerKgMode && perKgPricing ? {
+      baseRatePerKg: basePricePerKg ?? product.price,
+      cuttingCharge: perKgPricing.cuttingCharge,
+      sizeMultiplier: perKgPricing.sizeMultiplier,
+      weightGrams: perKgWeightGrams,
+      effectiveRatePerKg: perKgPricing.ratePerKg,
+    } : undefined;
     addToCart(
       customizedProduct,
-      quantity,
+      1,
       selectedCutting || "default",
       selectedPieceSize || "default",
-      selectedSize || resolved.unit || product.weight || "unit",
+      isPerKgMode ? weightDisplay : (selectedSize || resolved.unit || product.weight || "unit"),
+      breakdown,
     );
     onOpenChange(false);
     if (shouldOpenCart) {
@@ -130,12 +167,10 @@ export function AddToCartModal({
   const fullStars = Math.floor(product.rating || 0);
   const hasHalfStar = (product.rating || 0) % 1 >= 0.5;
 
-  // For the stepper label: show the selected size unit or the pack weight
   const stepperLabel = selectedSize || product.weight || "";
 
   const cartQty = useCartStore.getState().getProductQty(product.id);
-  const atStockLimit =
-    product.stock !== undefined && cartQty + quantity >= product.stock;
+  const atStockLimit = product.stock !== undefined && cartQty + quantity >= product.stock;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -308,21 +343,38 @@ export function AddToCartModal({
 
             {/* Price */}
             <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
-                Price:
-              </span>
-              <span className="text-2xl font-bold text-primary">
-                Rs. {resolved.salePrice || product.price}
-              </span>
-              {hasDiscount && (
-                <span className="text-sm text-muted-foreground line-through">
-                  Rs. {resolved.regularPrice}
-                </span>
-              )}
-              {selectedSize && (
-                <span className="text-sm text-muted-foreground">
-                  / {selectedSize}
-                </span>
+              {isPerKgMode ? (
+                <>
+                  <span className="text-2xl font-bold text-primary">
+                    ₹{product?.price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">/kg</span>
+                  {product?.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-sm text-muted-foreground line-through">
+                      ₹{product.originalPrice}/kg
+                    </span>
+                  )}
+                  {perKgPricing && perKgPricing.cuttingCharge > 0 && (
+                    <span className="text-xs text-amber-600">
+                      +₹{perKgPricing.cuttingCharge}/kg cutting
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-medium text-muted-foreground">Price:</span>
+                  <span className="text-2xl font-bold text-primary">
+                    Rs. {resolved.salePrice || product.price}
+                  </span>
+                  {hasDiscount && (
+                    <span className="text-sm text-muted-foreground line-through">
+                      Rs. {resolved.regularPrice}
+                    </span>
+                  )}
+                  {selectedSize && (
+                    <span className="text-sm text-muted-foreground">/ {selectedSize}</span>
+                  )}
+                </>
               )}
             </div>
 
@@ -433,19 +485,25 @@ export function AddToCartModal({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={() => {
+                    if (isPerKgMode) setPerKgWeightGrams((w) => Math.max(PER_KG_MIN, w - PER_KG_STEP));
+                    else setQuantity(Math.max(1, quantity - 1));
+                  }}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
                 <span className="min-w-[4.5rem] px-1 text-center text-sm font-bold text-foreground">
-                  {stepperLabel || quantity}
+                  {isPerKgMode ? weightDisplay : (stepperLabel || quantity)}
                 </span>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 rounded-full"
-                  onClick={() => setQuantity(quantity + 1)}
-                  disabled={atStockLimit}
+                  onClick={() => {
+                    if (isPerKgMode) setPerKgWeightGrams((w) => w + PER_KG_STEP);
+                    else setQuantity(quantity + 1);
+                  }}
+                  disabled={!isPerKgMode && atStockLimit}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>

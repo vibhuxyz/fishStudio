@@ -231,28 +231,40 @@ const Page = () => {
                 <p className="font-medium text-gray-200">
                   {item.product?.title || "Unnamed Product"}
                 </p>
-                <p className="text-sm text-gray-300">
-                  Quantity: {item.quantity}
-                </p>
-                {item.selectedOptions &&
-                  Object.keys(item.selectedOptions).length > 0 && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {Object.entries(item.selectedOptions).map(
-                        ([key, value]: [string, any]) =>
-                          value && (
-                            <span key={key} className="mr-3">
-                              <span className="font-medium capitalize">
-                                {key}:
-                              </span>{" "}
-                              {value}
-                            </span>
-                          ),
-                      )}
-                    </div>
-                  )}
+                {item.selectedOptions?.cuttingType || item.selectedOptions?.weightGrams ? (
+                  <div className="text-xs text-gray-400 mt-0.5 space-y-0.5">
+                    {(item.selectedOptions?.cuttingType || item.selectedOptions?.pieceSize) && (
+                      <p>
+                        {item.selectedOptions.cuttingType}
+                        {item.selectedOptions.pieceSize ? ` · ${item.selectedOptions.pieceSize}` : ""}
+                      </p>
+                    )}
+                    {item.selectedOptions?.weightGrams ? (
+                      <p>
+                        Weight:{" "}
+                        {item.selectedOptions.weightGrams >= 1000
+                          ? `${(item.selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                          : `${item.selectedOptions.weightGrams} gm`}
+                      </p>
+                    ) : (
+                      <p>Qty: {item.quantity}</p>
+                    )}
+                    {item.selectedOptions?.cuttingCharge != null && item.selectedOptions.cuttingCharge > 0 && (
+                      <p className="text-amber-400">
+                        ₹{item.selectedOptions.baseRatePerKg}/kg + ₹{item.selectedOptions.cuttingCharge} cut
+                        {item.selectedOptions.sizeMultiplier && item.selectedOptions.sizeMultiplier !== 1
+                          ? ` ×${item.selectedOptions.sizeMultiplier}`
+                          : ""}
+                        {" = "}₹{item.selectedOptions.effectiveRatePerKg}/kg
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-300">Qty: {item.quantity}</p>
+                )}
               </div>
               <p className="text-sm font-semibold text-gray-200">
-                ${item.price.toFixed(2)}
+                ₹{item.price.toFixed(0)}
               </p>
             </div>
           ))}

@@ -10,7 +10,7 @@ import {
 } from "./useAdminQueries";
 
 const useSeller = () => {
-  const { setLoggedIn, isLoggedIn } = useAuthStore();
+  const { setLoggedIn } = useAuthStore();
 
   const {
     data: seller,
@@ -21,7 +21,6 @@ const useSeller = () => {
     queryFn: fetchAdminProfile,
     staleTime: 1000 * 60 * 5,
     retry: false,
-    enabled: isLoggedIn,
   });
 
   React.useEffect(() => {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
 import useSidebar from "@/hooks/useSidebar";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   title: string;
@@ -18,14 +19,17 @@ const SidebarItem = ({ icon, title, isActive, href }: Props) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isCollapsed } = useSidebar();
+  const { setLoggedIn } = useAuthStore();
 
   const logoutHandler = async () => {
     try {
       await axiosInstance.post("/auth/api/logout-admin", {}, isProtected);
-      queryClient.invalidateQueries({ queryKey: adminQueryKeys.account });
-      router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
+      queryClient.removeQueries({ queryKey: adminQueryKeys.account });
+      setLoggedIn(false);
+      router.push("/login");
     }
   };
 

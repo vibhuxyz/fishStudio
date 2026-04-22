@@ -102,7 +102,6 @@ const SellerProductDetailsPage = () => {
         pieceSizePricing: [],
         regular_price: 0,
         sale_price: 0,
-        basePricePerKg: undefined,
       },
     });
 
@@ -135,7 +134,6 @@ const SellerProductDetailsPage = () => {
       }),
       regular_price: Number(product.regular_price ?? 0),
       sale_price: Number(product.sale_price ?? 0),
-      basePricePerKg: product.basePricePerKg ? Number(product.basePricePerKg) : undefined,
     });
   }, [product, reset]);
 
@@ -165,14 +163,18 @@ const SellerProductDetailsPage = () => {
         toast.error("Add a valid weight and sale price for each size.");
         return;
       }
-    } else if (values.basePricePerKg && values.basePricePerKg > 0) {
-      // per-kg mode — basePricePerKg is the price
     } else if (!values.sale_price || values.sale_price <= 0) {
-      toast.error("Add a valid sale price or per-kg price.");
+      toast.error("Add a valid sale price.");
       return;
     }
 
-    updateMutation.mutate(values);
+    // Per-kg mode: derive basePricePerKg from sale_price so the formula engine keeps working
+    const payload = {
+      ...values,
+      basePricePerKg: values.sizePricing.length === 0 ? values.sale_price : undefined,
+    };
+
+    updateMutation.mutate(payload);
   };
 
   if (isLoading) {
@@ -429,42 +431,29 @@ const SellerProductDetailsPage = () => {
               </div>
             ) : (
               <>
-                <div className="md:col-span-2">
-                  <label className="mb-1 block text-sm text-slate-300">
-                    Base Price Per Kg (₹/kg)
-                    <span className="ml-2 text-xs text-slate-500">— shoppers choose weight in 250 gm steps</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    {...register("basePricePerKg", { valueAsNumber: true })}
-                    placeholder="e.g. 380 — leave blank to use flat price below"
-                    className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                  />
-                </div>
                 <div>
                   <label className="mb-1 block text-sm text-slate-300">
-                    Regular Price (₹/kg)
-                    <span className="ml-2 text-xs text-slate-500">— MRP, shown struck-through</span>
+                    Market Price / MRP (₹/kg)
+                    <span className="ml-2 text-xs text-slate-500">— shown struck-through to show discount</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     {...register("regular_price", { valueAsNumber: true })}
-                    placeholder="e.g. 420"
+                    placeholder="e.g. 350"
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm text-slate-300">
-                    Sale Price (₹/kg)
-                    <span className="ml-2 text-xs text-slate-500">— your actual selling price</span>
+                    Your Selling Price (₹/kg)
+                    <span className="ml-2 text-xs text-slate-500">— shoppers choose weight in 250 gm steps</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     {...register("sale_price", { valueAsNumber: true })}
-                    placeholder="e.g. 350"
+                    placeholder="e.g. 280"
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                   />
                 </div>
@@ -623,12 +612,12 @@ const SellerProductDetailsPage = () => {
           </div>
 
           {/* Live Price Preview */}
-          {watch("basePricePerKg") && (watch("basePricePerKg") ?? 0) > 0 && (
+          {!watch("sizePricing")?.length && (watch("sale_price") ?? 0) > 0 && (
             <div className="mt-5 rounded-xl border border-blue-900/50 bg-blue-950/30 p-4">
               <p className="mb-3 text-xs font-bold uppercase tracking-widest text-blue-400">Live Price Preview (500 gm)</p>
               <div className="space-y-1.5">
                 {(() => {
-                  const base = watch("basePricePerKg") ?? 0;
+                  const base = watch("sale_price") ?? 0;
                   const cuts = watch("cuttingTypePricing") ?? [];
                   const sizes = watch("pieceSizePricing") ?? [];
                   const weightKg = 0.5;

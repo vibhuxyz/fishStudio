@@ -70,12 +70,14 @@ export function ProductDetailClient({ product, coupon }: Props) {
     selected.weightGrams || 0,
   );
 
-  // Per-KG pricing mode: product has a price-per-kg set (no explicit size tiers)
-  const basePricePerKg = (resolvedProduct as any).basePricePerKg as number | null | undefined;
-  const isPerKgMode = typeof basePricePerKg === "number" && basePricePerKg > 0 && resolvedProduct.sizes.length === 0;
-  const [perKgWeightGrams, setPerKgWeightGrams] = useState(500);
-  const PER_KG_STEP = 250;
-  const PER_KG_MIN = 250;
+  // Per-KG pricing mode: product has cutting types or piece sizes but no size tiers
+  const isPerKgMode = resolvedProduct.sizes.length === 0 &&
+    ((resolvedProduct.cuttingTypes?.length ?? 0) > 0 || (resolvedProduct.pieceSizes?.length ?? 0) > 0);
+  // Keep basePricePerKg as alias for selected.salePrice so formula works with both old and new DB data
+  const basePricePerKg = isPerKgMode ? selected.salePrice : null;
+  const [perKgWeightGrams, setPerKgWeightGrams] = useState(250);
+  const PER_KG_STEP = 50;
+  const PER_KG_MIN = 50;
 
   // Create a gallery. If backend only sends one image, we use that.
   // Duplicating it just to keep the carousel UI functional if it expects >1.
@@ -201,6 +203,14 @@ export function ProductDetailClient({ product, coupon }: Props) {
       weight: (isPerKgMode || isWeightAdjustable) ? weightDisplay : selected.size,
     };
 
+    const breakdown = isPerKgMode && perKgPricing ? {
+      baseRatePerKg: selected.salePrice,
+      cuttingCharge: perKgPricing.cuttingCharge,
+      sizeMultiplier: perKgPricing.sizeMultiplier,
+      weightGrams: perKgWeightGrams,
+      effectiveRatePerKg: perKgPricing.ratePerKg,
+    } : undefined;
+
     addToCart(
       customizedProduct,
       1,
@@ -211,6 +221,7 @@ export function ProductDetailClient({ product, coupon }: Props) {
         : isWeightAdjustable
           ? `${selected.size} | ${weightDisplay}`
           : selected.size,
+      breakdown,
     );
     if (shouldOpenCart) {
       modals.openCart();
@@ -405,11 +416,16 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 <p className="mt-4 text-xl font-bold text-primary">
                   {isPerKgMode ? (
                     <>
-                      ₹{perKgPricing?.ratePerKg?.toFixed(0) ?? basePricePerKg}
+                      ₹{selected.salePrice}
                       <span className="ml-1 text-sm font-normal text-muted-foreground">/kg</span>
-                      {basePricePerKg && perKgPricing && perKgPricing.ratePerKg !== basePricePerKg && (
+                      {selected.regularPrice > selected.salePrice && (
                         <span className="ml-2 text-sm font-normal text-muted-foreground line-through">
-                          ₹{basePricePerKg}/kg
+                          ₹{selected.regularPrice}/kg
+                        </span>
+                      )}
+                      {perKgPricing && perKgPricing.cuttingCharge > 0 && (
+                        <span className="ml-2 text-xs font-normal text-amber-600">
+                          +₹{perKgPricing.cuttingCharge}/kg cutting
                         </span>
                       )}
                     </>
@@ -554,11 +570,14 @@ export function ProductDetailClient({ product, coupon }: Props) {
                         </Button>
                         {perKgPricing && (
                           <span className="text-xs text-muted-foreground">
-                            ₹{perKgPricing.ratePerKg.toFixed(0)}/kg
-                            {perKgPricing.cuttingCharge > 0 && (
-                              <span className="ml-1 text-amber-600">
-                                (incl. +₹{perKgPricing.cuttingCharge} cut)
-                              </span>
+                            {perKgPricing.cuttingCharge > 0 ? (
+                              <>
+                                ₹{selected.salePrice}/kg
+                                <span className="ml-1 text-amber-600">+₹{perKgPricing.cuttingCharge} cut</span>
+                                <span className="ml-1 font-medium text-foreground">= ₹{perKgPricing.ratePerKg.toFixed(0)}/kg</span>
+                              </>
+                            ) : (
+                              <span className="font-medium text-foreground">₹{perKgPricing.ratePerKg.toFixed(0)}/kg</span>
                             )}
                           </span>
                         )}

@@ -342,6 +342,15 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                 <p className="truncate text-xs text-muted-foreground">
                                   {item.cuttingType.name} | {item.pieceSize.name} | {item.size}
                                 </p>
+                                {item.priceBreakdown?.cuttingCharge != null && item.priceBreakdown.cuttingCharge > 0 && (
+                                  <p className="text-[11px] text-amber-600">
+                                    ₹{item.priceBreakdown.baseRatePerKg}/kg + ₹{item.priceBreakdown.cuttingCharge} cut
+                                    {item.priceBreakdown.sizeMultiplier && item.priceBreakdown.sizeMultiplier !== 1
+                                      ? ` ×${item.priceBreakdown.sizeMultiplier}`
+                                      : ""}
+                                    {" = "}₹{item.priceBreakdown.effectiveRatePerKg}/kg
+                                  </p>
+                                )}
 
                                 <p className="text-sm font-bold text-foreground">
                                   ₹{item.totalPayable.toFixed(0)}

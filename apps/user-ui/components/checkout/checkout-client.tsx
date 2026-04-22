@@ -163,6 +163,13 @@ export function CheckoutClient() {
             cuttingType: item.cuttingType.name,
             pieceSize: item.pieceSize.name,
             size: item.size,
+            ...(item.priceBreakdown ? {
+              baseRatePerKg: item.priceBreakdown.baseRatePerKg,
+              cuttingCharge: item.priceBreakdown.cuttingCharge,
+              sizeMultiplier: item.priceBreakdown.sizeMultiplier,
+              weightGrams: item.priceBreakdown.weightGrams,
+              effectiveRatePerKg: item.priceBreakdown.effectiveRatePerKg,
+            } : {}),
           },
         })),
 
@@ -228,9 +235,20 @@ export function CheckoutClient() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-bold truncate">{item.product?.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {item.cuttingType.name} | {item.pieceSize.name} | {item.size}
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.size}
+                        {item.cuttingType.name !== "default" && ` · ${item.cuttingType.name}`}
+                        {item.pieceSize.name !== "default" && ` · ${item.pieceSize.name}`}
                       </p>
+                      {item.priceBreakdown?.cuttingCharge != null && item.priceBreakdown.cuttingCharge > 0 && (
+                        <p className="text-[11px] text-amber-600 mt-0.5">
+                          ₹{item.priceBreakdown.baseRatePerKg}/kg + ₹{item.priceBreakdown.cuttingCharge} cut
+                          {item.priceBreakdown.sizeMultiplier && item.priceBreakdown.sizeMultiplier !== 1
+                            ? ` ×${item.priceBreakdown.sizeMultiplier}`
+                            : ""
+                          } = ₹{item.priceBreakdown.effectiveRatePerKg}/kg
+                        </p>
+                      )}
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-xs font-semibold">Qty: {item.quantity}</span>
                         <span className="text-sm font-bold">₹{item.totalPayable.toFixed(0)}</span>

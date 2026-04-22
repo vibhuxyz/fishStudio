@@ -83,37 +83,43 @@ export const verifyOtpAndLogin = async (
     }
 
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim());
+    const key = identifier.trim();
 
-    // Validate OTP
-    await verifyOtp(identifier.trim(), otp, next);
+    // Check if OTP was already verified in a previous step (new-user name collection flow)
+    const alreadyVerified = await redis.get(`otp_verified:${key}`);
 
-    // Find or create user
+    if (!alreadyVerified) {
+      // First call — validate the OTP (this deletes it on success)
+      await verifyOtp(key, otp, next);
+    }
+
+    // Find existing user
     let user = isEmail
-      ? await prisma.users.findFirst({ where: { email: identifier.trim() } })
-      : await prisma.users.findFirst({ where: { phone_number: identifier.trim() } });
+      ? await prisma.users.findFirst({ where: { email: key } })
+      : await prisma.users.findFirst({ where: { phone_number: key } });
 
-    if (!user) {
-      const defaultName = isEmail ? identifier.split("@")[0] : `User ${identifier.slice(-4)}`;
+    // New user — name not yet collected: pause and ask for it
+    if (!user && !name) {
+      // Store a short-lived verified flag so the second call (with name) skips OTP re-check
+      await redis.set(`otp_verified:${key}`, "1", "EX", 5 * 60); // 5 min
+      return res.status(200).json({ success: true, isNewUser: true });
+    }
+
+    // New user — name provided: create the account now
+    if (!user && name) {
+      await redis.del(`otp_verified:${key}`);
       try {
         user = await prisma.users.create({
           data: isEmail
-            ? {
-                email: identifier.trim(),
-                name: name || defaultName,
-              }
-            : {
-                phone_number: identifier.trim(),
-                name: name || defaultName,
-              },
+            ? { email: key, name: name.trim() }
+            : { phone_number: key, name: name.trim() },
         });
       } catch (createError: any) {
-        // Handle potential race condition or duplicate null clash
         if (createError.code === "P2002") {
           user = isEmail
-            ? await prisma.users.findFirst({ where: { email: identifier.trim() } })
-            : await prisma.users.findFirst({ where: { phone_number: identifier.trim() } });
-          
-          if (!user) throw createError; // Still not found? Throw original error
+            ? await prisma.users.findFirst({ where: { email: key } })
+            : await prisma.users.findFirst({ where: { phone_number: key } });
+          if (!user) throw createError;
         } else {
           throw createError;
         }

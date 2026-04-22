@@ -4,6 +4,14 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { sendKafkaEvent } from "../actions/track-user";
 import axiosInstance from "../utils/axiosInstance";
 
+export type PriceBreakdown = {
+  baseRatePerKg?: number;
+  cuttingCharge?: number;
+  sizeMultiplier?: number;
+  weightGrams?: number;
+  effectiveRatePerKg?: number;
+};
+
 type Product = {
   id: string;
   slug: string;
@@ -14,6 +22,9 @@ type Product = {
   shopId: string;
   stock?: number;   // live stock — updated by checkAndIncrement
   status?: string;  // "Active" | "NonActive"
+  cuttingType?: string;
+  pieceSize?: string;
+  priceBreakdown?: PriceBreakdown;
 };
 
 type Store = {
@@ -44,16 +55,20 @@ export const useStore = create<Store>()(
       // ── Add to cart ──────────────────────────────────────────────────────
       addToCart: (product, user, location, deviceInfo) => {
         set((state) => {
-          const existing = state.cart.find((item) => item.id === product.id);
+          const existing = state.cart.find(
+            (item) => item.id === product.id && item.cuttingType === product.cuttingType
+          );
           if (existing) {
             // Check local stock before incrementing
-            const newQty = (existing.quantity ?? 1) + 1;
+            const newQty = (existing.quantity ?? 1) + (product.quantity ?? 1);
             if (existing.stock !== undefined && newQty > existing.stock) {
               return state; // silently cap — caller should use checkAndIncrement
             }
             return {
               cart: state.cart.map((item) =>
-                item.id === product.id ? { ...item, quantity: newQty } : item
+                item.id === product.id && item.cuttingType === product.cuttingType
+                  ? { ...item, quantity: newQty }
+                  : item
               ),
             };
           }
@@ -78,7 +93,12 @@ export const useStore = create<Store>()(
       // ── Remove from cart ─────────────────────────────────────────────────
       removeFromCart: (id, user, location, deviceInfo) => {
         const removeProduct = get().cart.find((item) => item.id === id);
-        set((state) => ({ cart: state.cart.filter((item) => item.id !== id) }));
+        // Remove only the first matching entry (by id)
+        let removed = false;
+        set((state) => ({ cart: state.cart.filter((item) => {
+          if (!removed && item.id === id) { removed = true; return false; }
+          return true;
+        }) }));
 
         if (user?.id && location && deviceInfo && removeProduct) {
           sendKafkaEvent({

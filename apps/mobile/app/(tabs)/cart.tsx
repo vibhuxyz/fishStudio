@@ -297,6 +297,16 @@ export default function CartScreen() {
                   />
                   <View className="flex-1">
                     <Text className="text-sm font-poppins-semibold text-gray-900 leading-5" numberOfLines={1}>{product.title}</Text>
+                    {(product.cuttingType || product.pieceSize) && (
+                      <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5" numberOfLines={1}>
+                        {[product.cuttingType, product.pieceSize].filter(Boolean).join(" · ")}
+                      </Text>
+                    )}
+                    {product.priceBreakdown?.cuttingCharge != null && product.priceBreakdown.cuttingCharge > 0 && (
+                      <Text className="text-[11px] text-amber-500 font-poppins-medium mt-0.5">
+                        ₹{product.priceBreakdown.baseRatePerKg}/kg + ₹{product.priceBreakdown.cuttingCharge} cut{product.priceBreakdown.sizeMultiplier && product.priceBreakdown.sizeMultiplier !== 1 ? ` ×${product.priceBreakdown.sizeMultiplier}` : ""} = ₹{product.priceBreakdown.effectiveRatePerKg}/kg
+                      </Text>
+                    )}
                     <Text className="text-sm font-poppins-bold text-gray-900 mt-1">₹{product.price}</Text>
                   </View>
                   <View className="flex-row items-center bg-green-500 rounded-xl overflow-hidden">

@@ -122,8 +122,7 @@ const OrdersTable = () => {
         placeholder: "Search orders...",
       }}
     >
-      {pincodes.length > 0 && (
-        <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-3">
           <label className="text-sm text-gray-400 whitespace-nowrap">Filter by Pincode:</label>
           <select
             value={selectedPincode}
@@ -144,7 +143,6 @@ const OrdersTable = () => {
             </button>
           )}
         </div>
-      )}
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
         {isLoading ? (
           <p className="text-center text-white">Loading orders...</p>

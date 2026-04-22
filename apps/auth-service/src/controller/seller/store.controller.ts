@@ -87,7 +87,7 @@ export const updateStore = async (
   next: NextFunction,
 ) => {
   try {
-    const sellerId = req.user?.id;
+    const sellerId = req.seller?.id;
     const validatedData = validate(updateStoreSchema, req.body);
 
     const store = await prisma.stores.findUnique({ where: { sellerId } });

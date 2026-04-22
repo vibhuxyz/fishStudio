@@ -61,6 +61,14 @@ type PieceSize = {
   useCase?: string;
 };
 
+export type PriceBreakdown = {
+  baseRatePerKg?: number;
+  cuttingCharge?: number;
+  sizeMultiplier?: number;
+  weightGrams?: number;
+  effectiveRatePerKg?: number;
+};
+
 type CartItem = {
   product: Product;
   quantity: number;
@@ -68,6 +76,7 @@ type CartItem = {
   pieceSize: PieceSize;
   size: string;
   totalPayable: number;
+  priceBreakdown?: PriceBreakdown;
 };
 
 interface CartState {
@@ -78,7 +87,8 @@ interface CartState {
     quantity: number,
     cuttingType: CuttingType | string,
     pieceSize: PieceSize | string,
-    size: string
+    size: string,
+    priceBreakdown?: PriceBreakdown,
   ) => void;
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
@@ -149,7 +159,7 @@ export const useCartStore = create<CartState>()(
         openingHours: null,
       },
 
-      addItem: (product, quantity, cuttingType, pieceSize, size) => {
+      addItem: (product, quantity, cuttingType, pieceSize, size, priceBreakdown) => {
     const normalizedCuttingType = normalizeOption(cuttingType, "cutting-type");
     const normalizedPieceSize = normalizeOption(pieceSize, "piece-size");
     set((state) => {
@@ -197,6 +207,7 @@ export const useCartStore = create<CartState>()(
           pieceSize: normalizedPieceSize,
           size,
           totalPayable: quantity * product.price,
+          priceBreakdown,
         },
       ];
       const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
@@ -471,9 +482,10 @@ export function addToCart(
   quantity: number,
   cuttingType: CuttingType | string,
   pieceSize: PieceSize | string,
-  size: string
+  size: string,
+  priceBreakdown?: PriceBreakdown,
 ) {
-  useCartStore.getState().addItem(product, quantity, cuttingType, pieceSize, size);
+  useCartStore.getState().addItem(product, quantity, cuttingType, pieceSize, size, priceBreakdown);
 }
 
 export function removeFromCart(index: number) {

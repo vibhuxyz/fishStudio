@@ -216,7 +216,13 @@ export default function ProductDetailScreen() {
     if (!user) { toast.error("Please login to add items to cart"); return; }
     if (!product) return;
     addToCart(
-      { id: product.id, slug: product.slug, title: product.title, price: product.sale_price || product.regular_price, image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "", quantity },
+      {
+        id: product.id, slug: product.slug, title: product.title,
+        price: product.sale_price || product.regular_price,
+        image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "",
+        quantity, cuttingType: selectedCuttingType || undefined,
+        pieceSize: selectedPieceSize || undefined,
+      },
       user, null, "Mobile App"
     );
     toast.success("Added to cart!");
@@ -226,7 +232,13 @@ export default function ProductDetailScreen() {
     if (!user) { toast.error("Please login to purchase"); return; }
     if (!product) return;
     addToCart(
-      { id: product.id, slug: product.slug, title: product.title, price: product.sale_price || product.regular_price, image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "", quantity },
+      {
+        id: product.id, slug: product.slug, title: product.title,
+        price: product.sale_price || product.regular_price,
+        image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "",
+        quantity, cuttingType: selectedCuttingType || undefined,
+        pieceSize: selectedPieceSize || undefined,
+      },
       user, null, "Mobile App"
     );
     router.push("/(tabs)/cart");

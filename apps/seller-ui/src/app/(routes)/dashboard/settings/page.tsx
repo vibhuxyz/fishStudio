@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Store, MapPin, Save, Loader2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import useSeller from "@/hooks/useSeller";
 import { isProtected } from "@/utils/protected";
@@ -12,6 +13,7 @@ type CityDelivery = { city: string; minutes: number };
 
 export default function SettingsPage() {
   const { seller, isLoading } = useSeller();
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -35,6 +37,11 @@ export default function SettingsPage() {
   useEffect(() => {
     if (seller?.store) {
       setFormData({
+        name: seller.store.name || "",
+        bio: seller.store.bio || "",
+        address: seller.store.address || "",
+        city: seller.store.city || "",
+        pincode: seller.store.pincode || "",
         opening_hours: seller.store.opening_hours || "09:00",
         closing_hours: seller.store.closing_hours || "21:00",
         is_instant_delivery_enabled: seller.store.is_instant_delivery_enabled ?? true,
@@ -112,6 +119,7 @@ export default function SettingsPage() {
         isProtected
       );
       if (data.success) {
+        await queryClient.invalidateQueries({ queryKey: ["seller"] });
         toast.success("Settings updated successfully!");
       }
     } catch (error: any) {

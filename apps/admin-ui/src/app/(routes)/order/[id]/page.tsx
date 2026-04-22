@@ -229,6 +229,26 @@ const Page = () => {
                   {item.product?.title ?? item.productId}
                 </p>
                 <p className="text-xs text-gray-400">{item.product?.category}</p>
+                {((item as any).selectedOptions?.cuttingType || (item as any).selectedOptions?.pieceSize) && (
+                  <p className="text-xs text-gray-400">
+                    {(item as any).selectedOptions?.cuttingType}
+                    {(item as any).selectedOptions?.pieceSize ? ` · ${(item as any).selectedOptions.pieceSize}` : ""}
+                    {(item as any).selectedOptions?.weightGrams
+                      ? ` · ${(item as any).selectedOptions.weightGrams >= 1000
+                          ? `${((item as any).selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                          : `${(item as any).selectedOptions.weightGrams} gm`}`
+                      : ""}
+                  </p>
+                )}
+                {(item as any).selectedOptions?.cuttingCharge != null && (item as any).selectedOptions?.cuttingCharge > 0 && (
+                  <p className="text-[11px] text-amber-400">
+                    ₹{(item as any).selectedOptions.baseRatePerKg}/kg + ₹{(item as any).selectedOptions.cuttingCharge} cut
+                    {(item as any).selectedOptions.sizeMultiplier && (item as any).selectedOptions.sizeMultiplier !== 1
+                      ? ` ×${(item as any).selectedOptions.sizeMultiplier}`
+                      : ""}
+                    {" = "}₹{(item as any).selectedOptions.effectiveRatePerKg}/kg
+                  </p>
+                )}
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="text-xs text-gray-400">Qty: {item.quantity} · ₹{item.unitPrice?.toFixed(0)}/ea</span>
                   <span className="text-sm font-bold text-white">₹{item.lineTotal?.toFixed(0)}</span>

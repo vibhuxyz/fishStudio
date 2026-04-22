@@ -473,7 +473,8 @@ export const getAdminOrderDetail = async (
 
 /* ─────────────────────────────────────────────────────────────────────────
    GET /api/admin/orders/pincodes
-   Returns distinct delivery pincodes from all orders (for filter dropdown).
+   Returns all pincodes from seller stores + distinct delivery pincodes from
+   existing orders (merged, sorted, de-duped) for the filter dropdown.
 ───────────────────────────────────────────────────────────────────────── */
 export const getAdminOrderPincodes = async (
   _req: any,
@@ -481,15 +482,26 @@ export const getAdminOrderPincodes = async (
   next: NextFunction,
 ) => {
   try {
-    const rows = await prismaPostgres.order.findMany({
-      where: { deliveryPincode: { not: null } },
-      select: { deliveryPincode: true },
-      distinct: ["deliveryPincode"],
-      orderBy: { deliveryPincode: "asc" },
-    });
-    const pincodes = rows
-      .map((r) => r.deliveryPincode)
-      .filter(Boolean) as string[];
+    const [orderRows, stores] = await Promise.all([
+      prismaPostgres.order.findMany({
+        where: { deliveryPincode: { not: null } },
+        select: { deliveryPincode: true },
+        distinct: ["deliveryPincode"],
+      }),
+      prismaMongo.stores.findMany({
+        select: { pincode: true },
+      }),
+    ]);
+
+    const pincodeSet = new Set<string>();
+    for (const r of orderRows) {
+      if (r.deliveryPincode) pincodeSet.add(r.deliveryPincode);
+    }
+    for (const s of stores) {
+      if (s.pincode) pincodeSet.add(s.pincode);
+    }
+
+    const pincodes = Array.from(pincodeSet).sort();
     return res.status(200).json({ success: true, pincodes });
   } catch (error) {
     return next(error);
