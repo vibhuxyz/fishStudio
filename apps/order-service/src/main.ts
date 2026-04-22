@@ -10,6 +10,8 @@ import { ENV } from "@repo/env-config";
 import router from "./routes/order.route.js";
 
 const app = express();
+// Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
+app.set("trust proxy", 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false,

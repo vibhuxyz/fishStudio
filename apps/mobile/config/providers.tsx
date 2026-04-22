@@ -4,7 +4,18 @@ import useUser from "@/hooks/useUser";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 15,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+    },
+  },
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (

@@ -18,6 +18,26 @@ export const isSeller = (req: any, res: Response, next: NextFunction) => {
   return next();
 };
 
+/**
+ * Fix #5: approved-seller-only guard. Use on routes that must not be reachable
+ * until an admin has approved the seller. `isSeller` alone is not enough.
+ *
+ * `updateStore` is intentionally exempt so that a newly-registered seller can
+ * still finish setting up their shop — every other seller API should layer
+ * this on top of `isSeller`.
+ */
+export const isApprovedSeller = (req: any, res: Response, next: NextFunction) => {
+  if (req.role !== "seller" && req.role !== "staff") {
+    return next(new AuthError("Access denied: Seller only"));
+  }
+  const seller = req.seller;
+  if (!seller) return next(new AuthError("Access denied: Seller context missing"));
+  if (seller.isApprovedByAdmin !== true) {
+    return next(new AuthError("Your seller account is pending admin approval."));
+  }
+  return next();
+};
+
 export const isAdmin = (req: any, res: Response, next: NextFunction) => {
   if (req.role !== "admin") {
     return next(new AuthError("Access denied: Admin only"));

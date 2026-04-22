@@ -19,6 +19,11 @@ import { ENV } from "@repo/env-config";
 const port = Number(ENV.AUTH_SERVICE_PORT) || 6001;
 const app = express();
 
+// Fix #21: honor the gateway's X-Forwarded-* headers so req.ip reflects the
+// real client IP for rate-limiting and audit logs. Without this every request
+// appears to come from the gateway's IP.
+app.set("trust proxy", 1);
+
 const defaultLocalOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",

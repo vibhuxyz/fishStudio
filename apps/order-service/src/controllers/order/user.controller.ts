@@ -52,18 +52,20 @@ function computeCouponDiscount(
   itemTotal: number,
   couponCode: string,
 ): { discountAmount: number; freeDelivery: boolean } {
-  // Scope check (sync)
+  // Fix #22: don't distinguish "wrong scope" / "maxed out" / "expired" —
+  // each distinct error leaks info about a valid code. The minOrderValue
+  // message stays because the user needs to know why checkout refused it.
   const isAdminCoupon = coupon.adminId !== null;
   const isSellerCoupon = coupon.sellerId !== null && coupon.sellerId === sellerId;
   if (!isAdminCoupon && !isSellerCoupon) {
-    throw new ValidationError("Coupon code is invalid or expired");
+    throw new ValidationError("Coupon is not valid for this order");
   }
   if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
-    throw new ValidationError("This coupon has reached its usage limit");
+    throw new ValidationError("Coupon is not valid for this order");
   }
   if (itemTotal < coupon.minOrderValue) {
     throw new ValidationError(
-      `Minimum order of ₹${coupon.minOrderValue} required for coupon ${couponCode}`,
+      `Minimum order of ₹${coupon.minOrderValue} required for this coupon`,
     );
   }
 
@@ -181,7 +183,7 @@ export const createOrder = async (
     let couponDiscountResult: { discountAmount: number; freeDelivery: boolean } | null = null;
 
     if (couponCode) {
-      if (!couponRaw) throw new ValidationError("Coupon code is invalid or expired");
+      if (!couponRaw) throw new ValidationError("Coupon is not valid for this order");
       couponDiscountResult = computeCouponDiscount(couponRaw, store.sellerId, itemTotal, couponCode);
       couponId = couponRaw.id;
       couponDiscount = couponDiscountResult.discountAmount;
@@ -205,7 +207,7 @@ export const createOrder = async (
             where: { couponId: couponRaw.id, userId },
           });
           if (usageCount >= couponRaw.maxUsesPerUser) {
-            throw new ValidationError("You have already used this coupon");
+            throw new ValidationError("Coupon is not valid for this order");
           }
         }
 
@@ -519,7 +521,7 @@ export const getUserOrders = async (
 
 /* ─── Get single order ────────────────────────────────────────────────── */
 export const getOrderById = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
@@ -531,6 +533,21 @@ export const getOrderById = async (
     });
 
     if (!order) return next(new NotFoundError("Order not found"));
+
+    // Role-based ownership check — prevents IDOR across different roles
+    const role = req.role as "user" | "seller" | "staff" | "admin" | undefined;
+    if (role === "user") {
+      if (order.userId !== req.user?.id) {
+        return next(new NotFoundError("Order not found"));
+      }
+    } else if (role === "seller" || role === "staff") {
+      const storeId = req.seller?.store?.id;
+      if (!storeId || order.storeId !== storeId) {
+        return next(new NotFoundError("Order not found"));
+      }
+    } else if (role !== "admin") {
+      return next(new NotFoundError("Order not found"));
+    }
 
     const [store, products] = await Promise.all([
       prismaMongo.stores.findUnique({ where: { id: order.storeId } }),

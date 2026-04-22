@@ -5,11 +5,16 @@ import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs";
 
 export const createStore = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    const sellerId = req.seller?.id;
+    if (!sellerId) {
+      return next(new ValidationError("Only authenticated sellers can create a store"));
+    }
+
     const {
       name,
       bio,
@@ -20,13 +25,17 @@ export const createStore = async (
       instant_delivery_fee,
       instant_delivery_window_start,
       instant_delivery_window_end,
-      sellerId,
       city,
       pincode,
       state,
       availableCities,
       cityDeliveryTimes,
     } = validate(storeSchema, req.body);
+
+    const existing = await prisma.stores.findFirst({ where: { sellerId } });
+    if (existing) {
+      return next(new ValidationError("A store already exists for this seller"));
+    }
 
     const storeData: any = {
       name,

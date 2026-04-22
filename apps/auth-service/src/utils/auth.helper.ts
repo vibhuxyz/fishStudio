@@ -3,6 +3,17 @@ import { ValidationError, RateLimitError } from "@repo/error-handlers";
 import { redis, publishToQueue } from "@repo/libs";
 import { NextFunction, Request, Response } from "express";
 
+// Fix #9: timing-safe compare for OTP / code strings.
+export const timingSafeStringEqual = (a: string, b: string): boolean => {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
+  } catch {
+    return false;
+  }
+};
+
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const validateRegistrationData = (data: any, role: string) => {
@@ -64,7 +75,8 @@ export const sendOtp = async (
     template?: string;
   },
   ) => {
-  const otp = crypto.randomInt(1000, 9999).toString();
+  // Fix #9: 6-digit OTP (100000–999999) — ~111× larger keyspace than 4-digit.
+  const otp = crypto.randomInt(100000, 1000000).toString();
   //send otp email logic here
 
   const identifier = data.email || data.phone_number;
@@ -110,7 +122,7 @@ export const verifyOtp = async (
 
   const failedAttampts = parseInt((await redis.get(failedAttamtsKey)) || "0");
 
-  if (sellerOtp !== otp) {
+  if (!timingSafeStringEqual(sellerOtp, String(otp ?? ""))) {
     if (failedAttampts >= 2) {
       await redis.set(`otp_lock:${identifier}`, "locked", "EX", 1800);
       await redis.del(`otp:${identifier}`, failedAttamtsKey);

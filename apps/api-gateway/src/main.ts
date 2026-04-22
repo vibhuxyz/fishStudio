@@ -33,6 +33,14 @@ const defaultLocalOrigins = [
   "http://127.0.0.1:3003",
 ];
 
+// Fix #20: In production CORS_ORIGINS must be explicit. Refuse to start if
+// it's missing — silently falling back to localhost origins in prod is worse
+// than a hard failure because it hides misconfiguration.
+if (isProduction && (!ENV.CORS_ORIGINS || ENV.CORS_ORIGINS.trim().length === 0)) {
+  console.error("❌ [Gateway] CORS_ORIGINS is required in production.");
+  process.exit(1);
+}
+
 const allowedOrigins = [
   ...new Set(
     [

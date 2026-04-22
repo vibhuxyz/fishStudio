@@ -16,6 +16,8 @@ import { ENV } from "@repo/env-config";
 import paymentRouter from "./routes/payment.routes.js";
 
 const app = express();
+// Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
+app.set("trust proxy", 1);
 
 const allowedOrigins = ENV.CORS_ORIGINS
   ? ENV.CORS_ORIGINS.split(",").map((o: string) => o.trim())

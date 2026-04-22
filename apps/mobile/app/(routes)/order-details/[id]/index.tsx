@@ -14,13 +14,25 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface SelectedOptions {
+  cuttingType?: string;
+  pieceSize?: string;
+  size?: string;
+  weightGrams?: number;
+  baseRatePerKg?: number;
+  cuttingCharge?: number;
+  sizeMultiplier?: number;
+  effectiveRatePerKg?: number;
+  [key: string]: any;
+}
+
 interface OrderItem {
   id: string;
   orderId: string;
   productId: string;
   quantity: number;
   price: number;
-  selectedOptions?: Record<string, string>;
+  selectedOptions?: SelectedOptions;
   product?: {
     id: string;
     title: string;
@@ -219,15 +231,31 @@ export default function OrderDetailsScreen() {
                     <Text className="text-sm font-poppins-semibold text-gray-900" numberOfLines={2}>
                       {item.product?.title || `Product …${item.productId.slice(-6)}`}
                     </Text>
-                    <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                      Qty: {item.quantity} · ₹{item.price.toFixed(0)} each
-                    </Text>
-                    {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
+                    {item.selectedOptions?.weightGrams ? (
+                      <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
+                        {item.selectedOptions.weightGrams >= 1000
+                          ? `${(item.selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                          : `${item.selectedOptions.weightGrams} gm`}
+                        {" · "}₹{item.price.toFixed(0)} total
+                      </Text>
+                    ) : (
+                      <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
+                        Qty: {item.quantity} · ₹{item.price.toFixed(0)} each
+                      </Text>
+                    )}
+                    {(item.selectedOptions?.cuttingType || item.selectedOptions?.pieceSize) && (
                       <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">
-                        {Object.entries(item.selectedOptions)
-                          .filter(([, v]) => v)
-                          .map(([k, v]) => `${k}: ${v}`)
-                          .join(" · ")}
+                        {[item.selectedOptions.cuttingType, item.selectedOptions.pieceSize]
+                          .filter(Boolean).join(" · ")}
+                      </Text>
+                    )}
+                    {item.selectedOptions?.cuttingCharge != null &&
+                      item.selectedOptions.cuttingCharge > 0 && (
+                      <Text className="text-[11px] text-amber-500 font-poppins-medium mt-0.5">
+                        ₹{item.selectedOptions.baseRatePerKg}/kg + ₹{item.selectedOptions.cuttingCharge} cut
+                        {item.selectedOptions.sizeMultiplier && item.selectedOptions.sizeMultiplier !== 1
+                          ? ` ×${item.selectedOptions.sizeMultiplier}` : ""}
+                        {" = "}₹{item.selectedOptions.effectiveRatePerKg}/kg
                       </Text>
                     )}
                   </View>

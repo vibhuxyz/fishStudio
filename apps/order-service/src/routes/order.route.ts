@@ -12,7 +12,7 @@ import {
 } from "../controllers/order/user.controller.js";
 import { getSellerStats, getAdminStats } from "../controllers/order/stats.controller.js";
 import { getAdminOrderList, getAdminOrderDetail, updateAdminOrderStatus, getAdminOrderPincodes } from "../controllers/order/admin.controller.js";
-import { allowRoles, isAuthenticated, isSellerOrStaff } from "@repo/middlewares";
+import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff } from "@repo/middlewares";
 import { perUserRateLimit } from "../middlewares/perUserRateLimit.js";
 
 const router: Router = express.Router();
@@ -27,17 +27,18 @@ const orderCreationLimit = perUserRateLimit({
 });
 
 // ── User Orders ─────────────────────────────────────────────────────────────
-router.post("/create", isAuthenticated, orderCreationLimit, createOrder);
-router.get("/user-orders", isAuthenticated, getUserOrders);
-router.get("/get-order/:orderId", isAuthenticated, getOrderById);
+router.post("/create", isAuthenticated, allowRoles("user"), orderCreationLimit, createOrder);
+router.get("/user-orders", isAuthenticated, allowRoles("user"), getUserOrders);
+// getOrderById enforces role-based ownership inside the controller.
+router.get("/get-order/:orderId", isAuthenticated, allowRoles("user", "seller", "staff", "admin"), getOrderById);
 // User can cancel their own order only while it's still PENDING
-router.put("/cancel/:orderId", isAuthenticated, cancelOrder);
+router.put("/cancel/:orderId", isAuthenticated, allowRoles("user"), cancelOrder);
 
 // ── Seller Orders ──────────────────────────────────────────────────────────
-router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, getSellerOrders);
-router.get("/get-order-details/:orderId", isAuthenticated, isSellerOrStaff, getOrderById);
-router.put("/accept-reject/:orderId", isAuthenticated, isSellerOrStaff, acceptOrRejectOrder);
-router.put("/update-status/:orderId", isAuthenticated, isSellerOrStaff, updateOrderStatus);
+router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, isApprovedSeller, getSellerOrders);
+router.get("/get-order-details/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, getOrderById);
+router.put("/accept-reject/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, acceptOrRejectOrder);
+router.put("/update-status/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, updateOrderStatus);
 
 // ── Analytics Routes ──────────────────────────────────────────────────────────
 router.get("/seller-stats", isAuthenticated, allowRoles("seller", "staff"), getSellerStats);

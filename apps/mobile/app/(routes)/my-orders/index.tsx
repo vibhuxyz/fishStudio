@@ -222,8 +222,19 @@ export default function MyOrders() {
                   {item.product?.title || `Product …${item.productId.slice(-6)}`}
                 </Text>
                 <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                  Qty: {item.quantity} · ₹{item.price.toFixed(0)}
+                  {(item as any).selectedOptions?.weightGrams
+                    ? `${(item as any).selectedOptions.weightGrams >= 1000
+                        ? `${((item as any).selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                        : `${(item as any).selectedOptions.weightGrams} gm`} · ₹${item.price.toFixed(0)}`
+                    : `Qty: ${item.quantity} · ₹${item.price.toFixed(0)}`}
                 </Text>
+                {((item as any).selectedOptions?.cuttingType) && (
+                  <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5" numberOfLines={1}>
+                    {(item as any).selectedOptions.cuttingType}
+                    {(item as any).selectedOptions.pieceSize
+                      ? ` · ${(item as any).selectedOptions.pieceSize}` : ""}
+                  </Text>
+                )}
               </View>
             </View>
           ))}

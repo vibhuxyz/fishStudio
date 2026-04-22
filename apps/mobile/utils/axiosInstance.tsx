@@ -61,6 +61,14 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Fix #23: refuse to run in production if the resolved API URL is not HTTPS.
+// Bearer tokens sent over plain HTTP are trivially sniffable on public Wi-Fi.
+if (!__DEV__ && !/^https:\/\//i.test(API_BASE_URL)) {
+  throw new Error(
+    `Refusing to start: API base URL must use HTTPS in production (got: ${API_BASE_URL})`,
+  );
+}
+
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: false, // Disable cookies for React Native (using Bearer tokens)

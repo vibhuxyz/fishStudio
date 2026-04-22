@@ -1,6 +1,11 @@
+import crypto from "node:crypto";
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { AuthError, ValidationError } from "@repo/error-handlers";
+
+// Signup codes are stored as SHA-256 hashes (see admin.auth.controller.ts).
+const hashSignupCode = (code: string) =>
+  crypto.createHash("sha256").update(String(code).trim()).digest("hex");
 import {
   checkOtpRestrictions,
   sendOtp,
@@ -13,6 +18,12 @@ import { setCookie, DAY_MS } from "../../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 import { redis, publishToQueue } from "@repo/libs";
 import {
+  signAccessToken,
+  signRefreshToken,
+  revokeToken,
+  bumpRefreshFamily,
+} from "../../utils/tokenRevocation.js";
+import {
   sellerSignupCodeSchema,
   registerSellerSchema,
   verifySellerSchema,
@@ -23,24 +34,26 @@ import {
 import { clearCookie } from "../../utils/cookies/clearCookie.js";
 
 export const logOutSeller = async (req: any, res: Response) => {
-  const sellerToken = req.cookies["seller_access_token"];
-  const staffToken = req.cookies["staff_access_token"];
+  const sellerAccess = req.cookies["seller_access_token"];
+  const sellerRefresh = req.cookies["seller_refresh_token"];
+  const staffAccess = req.cookies["staff_access_token"];
+  const staffRefresh = req.cookies["staff_refresh_token"];
+  const bearer = req.headers.authorization?.split(" ")[1];
 
-  if (sellerToken) {
-    try { await redis.del(`auth:${sellerToken}`); } catch { /* non-fatal */ }
+  // Revoke every token present so stolen copies can't be replayed.
+  for (const t of [sellerAccess, sellerRefresh, staffAccess, staffRefresh, bearer]) {
+    if (t) await revokeToken(t).catch(() => {});
   }
-  if (staffToken) {
-    try { await redis.del(`auth:${staffToken}`); } catch { /* non-fatal */ }
-  }
+
+  if (req.seller?.id) await bumpRefreshFamily("seller", req.seller.id).catch(() => {});
+  if (req.staff?.id) await bumpRefreshFamily("staff", req.staff.id).catch(() => {});
 
   clearCookie(res, "seller_access_token");
   clearCookie(res, "seller_refresh_token");
   clearCookie(res, "staff_access_token");
   clearCookie(res, "staff_refresh_token");
 
-  res.status(200).json({
-    success: true,
-  });
+  res.status(200).json({ success: true });
 };
 
 export const verifySellerSignupCode = async (
@@ -52,7 +65,7 @@ export const verifySellerSignupCode = async (
     const { email, code } = validate(sellerSignupCodeSchema, req.body);
 
     const accessCode = await prisma.signupAccessCode.findFirst({
-      where: { role: "SELLER", email, code },
+      where: { role: "SELLER", email, code: hashSignupCode(code) },
     });
 
     if (!accessCode) {
@@ -81,7 +94,7 @@ export const registerSeller = async (
     const { name, email, code } = validate(registerSellerSchema, req.body);
 
     const accessCode = await prisma.signupAccessCode.findFirst({
-      where: { role: "SELLER", email, code },
+      where: { role: "SELLER", email, code: hashSignupCode(code) },
     });
 
     if (!accessCode || (accessCode.expiresAt && accessCode.expiresAt < new Date())) {
@@ -144,7 +157,7 @@ export const verifySeller = async (
     }
     
     const accessCode = await prisma.signupAccessCode.findFirst({
-      where: { role: "SELLER", email, code },
+      where: { role: "SELLER", email, code: hashSignupCode(code) },
     });
 
     if (!accessCode || (accessCode.expiresAt && accessCode.expiresAt < new Date())) {
@@ -210,16 +223,8 @@ export const verifySeller = async (
       }
     }
 
-    const accessToken = jwt.sign(
-      { id: seller.id, role: "seller" },
-      ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "24h" },
-    );
-    const refreshToken = jwt.sign(
-      { id: seller.id, role: "seller" },
-      ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "24h" },
-    );
+    const accessToken = signAccessToken({ id: seller.id, role: "seller" }, "24h");
+    const refreshToken = await signRefreshToken({ id: seller.id, role: "seller" }, "24h");
 
     setCookie(res, "seller_refresh_token", refreshToken, DAY_MS);
     setCookie(res, "seller_access_token", accessToken, DAY_MS);
@@ -269,19 +274,11 @@ export const loginSeller = async (
     if (seller) {
       const isPasswordMatch = await argon2.verify(seller.password!, password);
       if (!isPasswordMatch) {
-        throw new AuthError("Invalid credentials — password incorrect");
+        throw new AuthError("Invalid email or password");
       }
 
-      const accessToken = jwt.sign(
-        { id: seller.id, role: "seller" },
-        ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-        { expiresIn: "24h" },
-      );
-      const refreshToken = jwt.sign(
-        { id: seller.id, role: "seller" },
-        ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-        { expiresIn: "24h" },
-      );
+      const accessToken = signAccessToken({ id: seller.id, role: "seller" }, "24h");
+      const refreshToken = await signRefreshToken({ id: seller.id, role: "seller" }, "24h");
 
       setCookie(res, "seller_refresh_token", refreshToken, DAY_MS);
       setCookie(res, "seller_access_token", accessToken, DAY_MS);
@@ -303,24 +300,21 @@ export const loginSeller = async (
     const staff = await prisma.staffs.findUnique({ where: { email } });
 
     if (!staff) {
-      throw new AuthError("No account found with this email");
+      throw new AuthError("Invalid email or password");
     }
 
     const isPasswordMatch = await argon2.verify(staff.password!, password);
     if (!isPasswordMatch) {
-      throw new AuthError("Invalid credentials — password incorrect");
+      throw new AuthError("Invalid email or password");
     }
 
-    const accessToken = jwt.sign(
-      { id: staff.id, role: "staff" },
-      ENV.ACCESS_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "7d" },
-    );
-    const refreshToken = jwt.sign(
-      { id: staff.id, role: "staff" },
-      ENV.REFRESH_TOKEN_JWT_SECRET_KEY!,
-      { expiresIn: "7d" },
-    );
+    // Fix #24: staff must be activated by a seller before they can log in.
+    if (!staff.isActive) {
+      throw new AuthError("Your account is pending activation by a seller.");
+    }
+
+    const accessToken = signAccessToken({ id: staff.id, role: "staff" }, "7d");
+    const refreshToken = await signRefreshToken({ id: staff.id, role: "staff" }, "7d");
 
     setCookie(res, "staff_refresh_token", refreshToken);
     setCookie(res, "staff_access_token", accessToken);

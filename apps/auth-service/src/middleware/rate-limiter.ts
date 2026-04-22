@@ -1,25 +1,47 @@
 import { Request, Response, NextFunction } from "express";
 import { redis } from "@repo/libs";
-import { ValidationError } from "@repo/error-handlers";
 
 interface RateLimitOptions {
   windowMs: number;
   max: number;
   message?: string;
   keyPrefix?: string;
+  /**
+   * If true, block the request when Redis is unreachable. Use this for
+   * auth-critical routes (login, OTP, refresh) where bypassing rate limits
+   * is more dangerous than temporarily returning 503.
+   */
+  failClosed?: boolean;
+  /**
+   * Supply an extra key component beyond IP (e.g., email / phone). Reduces
+   * the impact of IP spoofing on per-identifier brute force.
+   */
+  keyExtractor?: (req: Request) => string | null;
 }
 
 /**
- * A simple Redis-based rate limiter middleware.
+ * Redis-based rate limiter.
+ *
+ * IP is read ONLY from `req.ip` (honors Express `trust proxy`). We deliberately
+ * do NOT fall through to `x-forwarded-for` — that header is client-supplied and
+ * was previously spoofable.
  */
 export const createRateLimiter = (options: RateLimitOptions) => {
-  const { windowMs, max, message, keyPrefix = "rl" } = options;
+  const {
+    windowMs,
+    max,
+    message,
+    keyPrefix = "rl",
+    failClosed = false,
+    keyExtractor,
+  } = options;
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const ip = req.ip || req.headers["x-forwarded-for"] || "unknown";
-      const key = `${keyPrefix}:${ip}`;
+    const ip = req.ip || "unknown";
+    const extra = keyExtractor?.(req) || null;
+    const key = extra ? `${keyPrefix}:${ip}:${extra}` : `${keyPrefix}:${ip}`;
 
+    try {
       const current = await redis.get(key);
       const count = current ? parseInt(current) : 0;
 
@@ -37,21 +59,34 @@ export const createRateLimiter = (options: RateLimitOptions) => {
       }
       await multi.exec();
 
-      next();
+      return next();
     } catch (error) {
-      // If redis fails, we don't want to block the user
       console.error("[Rate Limiter Error]", error);
-      next();
+      if (failClosed) {
+        return res.status(503).json({
+          success: false,
+          message: "Service temporarily unavailable. Please try again shortly.",
+        });
+      }
+      return next();
     }
   };
 };
 
 // Pre-defined limiters
+// Auth-critical: fail closed if Redis is down so attackers can't brute-force
+// login/OTP by DoSing Redis.
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   message: "Too many login/OTP attempts from this IP, please try again after 15 minutes.",
   keyPrefix: "rl:auth",
+  failClosed: true,
+  keyExtractor: (req) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const ident = (body.identifier ?? body.email ?? body.phone_number ?? "") as string;
+    return typeof ident === "string" && ident.length > 0 ? ident.trim().toLowerCase() : null;
+  },
 });
 
 export const otpRateLimiter = createRateLimiter({
@@ -59,4 +94,28 @@ export const otpRateLimiter = createRateLimiter({
   max: 5,
   message: "Too many OTP requests, please try again after 10 minutes.",
   keyPrefix: "rl:otp",
+  failClosed: true,
+  keyExtractor: (req) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const ident = (body.identifier ?? body.email ?? body.phone_number ?? "") as string;
+    return typeof ident === "string" && ident.length > 0 ? ident.trim().toLowerCase() : null;
+  },
+});
+
+// General-purpose limiter for registration endpoints (less strict, non-critical)
+export const registrationRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  message: "Too many registration attempts from this IP. Please try again later.",
+  keyPrefix: "rl:register",
+  failClosed: false,
+});
+
+// Refresh-token rate limiter: prevent abuse of the refresh endpoint.
+export const refreshRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: "Too many token refresh attempts. Please sign in again.",
+  keyPrefix: "rl:refresh",
+  failClosed: true,
 });

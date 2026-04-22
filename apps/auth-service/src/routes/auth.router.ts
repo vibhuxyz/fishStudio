@@ -8,7 +8,12 @@ import {
   isStaff,
   isUser,
 } from "@repo/middlewares";
-import { authRateLimiter, otpRateLimiter } from "../middleware/rate-limiter.js";
+import {
+  authRateLimiter,
+  otpRateLimiter,
+  registrationRateLimiter,
+  refreshRateLimiter,
+} from "../middleware/rate-limiter.js";
 import {
   getAdmin,
   loginAdmin,
@@ -78,7 +83,7 @@ router.delete(
   deleteUserAddress,
 );
 
-router.post("/refresh-token", refreshToken);
+router.post("/refresh-token", refreshRateLimiter, refreshToken);
 router.get("/check-pincode", checkPincode);
 router.get("/serviceable-areas", getServiceableAreas);
 
@@ -96,7 +101,7 @@ router.get(
   isAdmin,
   getSellerSignupCodes,
 );
-router.post("/admin-registration", registerAdmin);
+router.post("/admin-registration", registrationRateLimiter, registerAdmin);
 router.post("/verify-admin", authRateLimiter, verifyAdmin);
 router.post("/login-admin", authRateLimiter, loginAdmin);
 router.get("/logged-in-admin", isAuthenticated, isAdmin, getAdmin);
@@ -117,16 +122,16 @@ router.put(
 
 // seller/store Routes
 router.post("/verify-seller-code", authRateLimiter, verifySellerSignupCode);
-router.post("/seller-registration", registerSeller);
+router.post("/seller-registration", registrationRateLimiter, registerSeller);
 router.post("/verify-seller", authRateLimiter, verifySeller);
 router.post("/login-seller", authRateLimiter, loginSeller);
-router.post("/create-store", createStore);
+router.post("/create-store", isAuthenticated, isSeller, createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);
 router.post("/logout-seller", isAuthenticated, isSellerOrStaff, logOutSeller);
 
 // staff routes (anyone can register, seller must approve later)
-router.post("/staff-registration", registerStaff);
+router.post("/staff-registration", registrationRateLimiter, registerStaff);
 router.post("/verify-staff", authRateLimiter, verifyStaff);
 router.get("/logged-in-staff", isAuthenticated, isStaff, getStaff);
 router.post("/logout-staff", isAuthenticated, isStaff, logOutStaff);

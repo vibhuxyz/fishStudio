@@ -12,6 +12,7 @@ import jwt from "jsonwebtoken";
 import { setCookie } from "../utils/cookies/setCookie.js";
 import { ENV } from "@repo/env-config";
 import { redis, publishToQueue } from "@repo/libs";
+import { revokeToken, bumpRefreshFamily } from "../utils/tokenRevocation.js";
 import {
   validate,
   registerStaffSchema,
@@ -106,11 +107,13 @@ export const getStaff = async (
 import { clearCookie } from "../utils/cookies/clearCookie.js";
 
 export const logOutStaff = async (req: any, res: Response) => {
-  const token = req.cookies["staff_access_token"];
-  if (token) {
-    try { await redis.del(`auth:${token}`); } catch { /* non-fatal */ }
-  }
-  
+  const accessToken = req.cookies["staff_access_token"] || req.headers.authorization?.split(" ")[1];
+  const refreshTok = req.cookies["staff_refresh_token"];
+
+  await revokeToken(accessToken).catch(() => {});
+  await revokeToken(refreshTok).catch(() => {});
+  if (req.staff?.id) await bumpRefreshFamily("staff", req.staff.id).catch(() => {});
+
   clearCookie(res, "staff_access_token");
   clearCookie(res, "staff_refresh_token");
 
@@ -199,6 +202,15 @@ export const updateStaffAccess = async (
         });
       } catch (wsErr) {
         console.error("Failed to publish STAFF_ACCESS_GRANTED event:", wsErr);
+      }
+    } else {
+      // Fix #24 follow-through: when access is revoked, kill all outstanding
+      // sessions so the staff member cannot keep using their current JWT.
+      try {
+        await bumpRefreshFamily("staff", staffId);
+        await redis.set(`cache:bypass:staff:${staffId}`, "1", "EX", 60);
+      } catch (err) {
+        console.error("Failed to revoke staff sessions on access change:", err);
       }
     }
 

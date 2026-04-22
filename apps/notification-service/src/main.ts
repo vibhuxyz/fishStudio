@@ -12,6 +12,8 @@ import notificationRouter from "./routes/notification.router.js";
 import { startNotificationConsumer } from "./consumers/notification.consumer.js";
 
 const app = express();
+// Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
+app.set("trust proxy", 1);
 const port = Number(ENV.NOTIFICATION_SERVICE_PORT) || 6005;
 
 const defaultLocalOrigins = [

@@ -17,7 +17,7 @@ import {
 import Image from "next/image";
 import { axiosInstance } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/lib/auth-store";
+import { useUserSession } from "@/hooks/useUserSession";
 
 interface OrderConfirmationDetailProps {
   initialOrder: any;
@@ -27,21 +27,23 @@ interface OrderConfirmationDetailProps {
 export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirmationDetailProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, isLoggedIn } = useAuth();
+  // useUserSession reads from TanStack Query cache — available synchronously on
+  // first render (no effect/store hop), so enabled is correct immediately.
+  const { user, isLoading: isSessionLoading } = useUserSession();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const { data: order } = useQuery({
+  const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
     queryFn: async () => {
       const { data } = await axiosInstance.get(`/order/api/get-order/${orderId}`);
       return data.order;
     },
-    initialData: initialOrder,
-    enabled: !!orderId && isLoggedIn,
+    initialData: initialOrder ?? undefined,
+    enabled: !!orderId && !!user,
   });
 
   // WebSocket: refresh order when status changes
@@ -117,50 +119,11 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
     }
   };
 
-  if (!order) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
-          <Package className="h-10 w-10" />
-        </div>
-        <h2 className="text-2xl font-bold text-foreground">Order Not Found</h2>
-        <p className="mt-2 text-muted-foreground">
-          We couldn't find the order details for #{orderId.slice(-6).toUpperCase()}. 
-          It might still be processing or the ID is incorrect.
-        </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-          <Button 
-            variant="default" 
-            className="h-12 px-8 rounded-full font-bold"
-            onClick={() => router.push("/orders")}
-          >
-            View My Orders
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-12 px-8 rounded-full font-bold"
-            onClick={() => router.push("/")}
-          >
-            Return Home
-          </Button>
-        </div>
-      </div>
-    );
+  if (isSessionLoading) {
+    return null; // parent already shows skeleton while session loads
   }
 
-  const slotLabel =
-    order.deliverySlot === "instant"
-      ? "⚡ Instant (30–45 mins)"
-      : order.deliverySlot === "morning"
-        ? "🌅 Morning (6 AM – 10 AM)"
-        : order.deliverySlot === "evening"
-          ? "🌆 Evening (5 PM – 9 PM)"
-          : "Standard Delivery";
-
-  const billDetails = order.billDetails as Record<string, number> | null;
-  const statusCfg = getStatusConfig(order.status);
-
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-32 text-center">
         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
@@ -182,6 +145,66 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
       </div>
     );
   }
+
+  if (isLoading && !order) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-8 md:py-14">
+        <div className="animate-pulse space-y-6">
+          <div className="mx-auto h-20 w-20 rounded-full bg-muted" />
+          <div className="mx-auto h-10 w-72 rounded bg-muted" />
+          <div className="mx-auto h-5 w-96 rounded bg-muted" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="h-64 rounded-2xl bg-muted" />
+            <div className="h-64 rounded-2xl bg-muted" />
+          </div>
+          <div className="h-80 rounded-2xl bg-muted" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
+          <Package className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">Order Not Found</h2>
+        <p className="mt-2 text-muted-foreground">
+          We couldn't find the order details for #{orderId.slice(-6).toUpperCase()}.
+          It might still be processing or the ID is incorrect.
+        </p>
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <Button
+            variant="default"
+            className="h-12 px-8 rounded-full font-bold"
+            onClick={() => router.push("/orders")}
+          >
+            View My Orders
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 px-8 rounded-full font-bold"
+            onClick={() => router.push("/")}
+          >
+            Return Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const slotLabel =
+    order.deliverySlot === "instant"
+      ? "⚡ Instant (30–45 mins)"
+      : order.deliverySlot === "morning"
+        ? "🌅 Morning (6 AM – 10 AM)"
+        : order.deliverySlot === "evening"
+          ? "🌆 Evening (5 PM – 9 PM)"
+          : "Standard Delivery";
+
+  const billDetails = order.billDetails as Record<string, number> | null;
+  const statusCfg = getStatusConfig(order.status);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:py-14">

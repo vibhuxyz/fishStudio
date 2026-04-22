@@ -5,7 +5,7 @@ import {
   handleWebhook,
   initiateRefund,
 } from "../controllers/razorpay.controller.js";
-import { isAuthenticated, allowRoles } from "@repo/middlewares";
+import { isAuthenticated, allowRoles, isApprovedSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
 
@@ -21,6 +21,13 @@ router.post("/verify", isAuthenticated, allowRoles("user"), verifyPayment);
 router.post("/webhook", handleWebhook);
 
 // ── Admin/Seller: trigger refund ──────────────────────────────────────────
-router.post("/refund", isAuthenticated, allowRoles("admin", "seller"), initiateRefund);
+router.post(
+  "/refund",
+  isAuthenticated,
+  allowRoles("admin", "seller"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  initiateRefund,
+);
 
 export default router;

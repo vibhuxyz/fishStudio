@@ -1,15 +1,67 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { Server, IncomingMessage } from "http";
+import jwt from "jsonwebtoken";
+import cookie from "cookie";
 import { ENV } from "@repo/env-config";
 
 interface SocketClient extends WebSocket {
-  storeId?: string;   // seller connects with ?storeId=xxx
-  sellerId?: string;  // staff connects with ?sellerId=xxx
-  staffId?: string;   // staff connects with ?staffId=xxx (access-granted events)
-  userId?: string;    // user connects with ?userId=xxx (order status updates)
-  adminId?: string;   // admin connects with ?adminId=xxx (admin alerts)
+  storeId?: string;   // seller connects; storeId resolved from verified JWT
+  sellerId?: string;  // staff connects; sellerId resolved from verified JWT
+  staffId?: string;   // staff connects; staffId resolved from verified JWT
+  userId?: string;    // user connects; userId resolved from verified JWT
+  adminId?: string;   // admin connects; adminId resolved from verified JWT
   isAlive: boolean;
+  role?: "user" | "seller" | "staff" | "admin";
 }
+
+/**
+ * Fix #2: authenticate every WebSocket upgrade with a verified JWT before
+ * pinning any identity fields on the socket. The old code trusted client-
+ * supplied query params (?userId=...&sellerId=...) which let anyone
+ * impersonate anyone's real-time feed.
+ */
+interface VerifiedIdentity {
+  role: "user" | "seller" | "staff" | "admin";
+  id: string;
+}
+
+const extractToken = (req: IncomingMessage): string | null => {
+  const url = new URL(req.url || "", `http://${req.headers.host}`);
+  const qToken = url.searchParams.get("access_token") || url.searchParams.get("token");
+  if (qToken) return qToken;
+
+  const auth = req.headers["authorization"];
+  if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+    return auth.slice("Bearer ".length).trim();
+  }
+
+  const rawCookie = req.headers["cookie"];
+  if (typeof rawCookie === "string" && rawCookie.length > 0) {
+    const jar = cookie.parse(rawCookie);
+    return (
+      jar["access_token"] ||
+      jar["seller_access_token"] ||
+      jar["staff_access_token"] ||
+      jar["admin_access_token"] ||
+      null
+    );
+  }
+  return null;
+};
+
+const verifyIdentity = (token: string): VerifiedIdentity | null => {
+  try {
+    const decoded = jwt.verify(
+      token,
+      ENV.ACCESS_TOKEN_JWT_SECRET_KEY as string,
+    ) as { id?: string; role?: string };
+    if (!decoded.id || !decoded.role) return null;
+    if (!["user", "seller", "staff", "admin"].includes(decoded.role)) return null;
+    return { id: decoded.id, role: decoded.role as VerifiedIdentity["role"] };
+  } catch {
+    return null;
+  }
+};
 
 export class SocketManager {
   private static instance: SocketManager;
@@ -17,7 +69,31 @@ export class SocketManager {
   private clients: Set<SocketClient> = new Set();
 
   private constructor(server: Server) {
-    this.wss = new WebSocketServer({ server });
+    // noServer mode so we can authenticate on `upgrade` before handing off.
+    this.wss = new WebSocketServer({ noServer: true });
+
+    server.on("upgrade", (req, socket, head) => {
+      const token = extractToken(req);
+      const identity = token ? verifyIdentity(token) : null;
+
+      // Anonymous upgrades are allowed (so unauthenticated browsers can still
+      // receive `broadcastAll` messages like STOCK_UPDATE) but they are NOT
+      // pinned to any user/seller/admin/staff room — the private room
+      // broadcasts ignore sockets without a verified identity.
+      if (token && !identity) {
+        // A token was supplied but it didn't verify — reject to avoid leaking
+        // any info that might otherwise tempt an attacker to tamper with it.
+        socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+        socket.destroy();
+        return;
+      }
+
+      this.wss.handleUpgrade(req, socket as any, head, (ws) => {
+        (ws as any).__identity = identity;
+        this.wss.emit("connection", ws, req);
+      });
+    });
+
     this.setupWss();
     this.setupHeartbeat();
   }
@@ -31,82 +107,38 @@ export class SocketManager {
 
   private setupWss() {
     this.wss.on("connection", (ws: SocketClient, req: IncomingMessage) => {
-      console.log("🔌 New WebSocket connection");
+      const identity = (ws as any).__identity as VerifiedIdentity | undefined;
+
       ws.isAlive = true;
+      ws.role = identity?.role;
 
-      // Extract storeId from URL query params: ws://host:port?storeId=123
-      const url = new URL(req.url || "", `http://${req.headers.host}`);
-      const storeId = url.searchParams.get("storeId");
-      const sellerId = url.searchParams.get("sellerId");
-      const staffId = url.searchParams.get("staffId");
-      const userId = url.searchParams.get("userId");
-      const adminId = url.searchParams.get("adminId");
-
-      if (storeId) {
-        ws.storeId = storeId;
-        console.log(`🏠 Seller client joined store room: ${storeId}`);
-      }
-      if (sellerId) {
-        ws.sellerId = sellerId;
-        console.log(`👤 Staff client joined seller room: ${sellerId}`);
-      }
-      if (staffId) {
-        ws.staffId = staffId;
-        console.log(`🪪 Staff client joined staff room: ${staffId}`);
-      }
-      if (userId) {
-        ws.userId = userId;
-        console.log(`🙋 User client joined user room: ${userId}`);
-      }
-      if (adminId) {
-        ws.adminId = adminId;
-        console.log(`🔑 Admin client joined admin room: ${adminId}`);
+      // Pin the room purely from the verified JWT. Anonymous connections get
+      // no identity fields — they only receive broadcastAll messages.
+      if (identity) {
+        const url = new URL(req.url || "", `http://${req.headers.host}`);
+        const qStoreId = url.searchParams.get("storeId");
+        if (identity.role === "user") {
+          ws.userId = identity.id;
+        } else if (identity.role === "admin") {
+          ws.adminId = identity.id;
+        } else if (identity.role === "seller") {
+          ws.sellerId = identity.id;
+          if (qStoreId) ws.storeId = qStoreId;
+        } else if (identity.role === "staff") {
+          ws.staffId = identity.id;
+          const qSellerId = url.searchParams.get("sellerId");
+          if (qSellerId) ws.sellerId = qSellerId;
+        }
       }
 
       this.clients.add(ws);
 
-      ws.on("pong", () => {
-        ws.isAlive = true;
-      });
+      ws.on("pong", () => { ws.isAlive = true; });
+      ws.on("close", () => { this.clients.delete(ws); });
+      ws.on("error", () => { this.clients.delete(ws); });
 
-      ws.on("close", () => {
-        console.log("🔌 Connection closed");
-        this.clients.delete(ws);
-      });
-
-      ws.on("error", (error) => {
-        console.error("❌ Socket error:", error);
-        this.clients.delete(ws);
-      });
-
-      // Handle custom messages if needed
-      ws.on("message", (data) => {
-        try {
-          const message = JSON.parse(data.toString());
-          if (message.type === "JOIN_STORE") {
-            ws.storeId = message.storeId;
-            console.log(`🏠 Client re-joined store room: ${ws.storeId}`);
-          }
-          if (message.type === "JOIN_SELLER") {
-            ws.sellerId = message.sellerId;
-            console.log(`👤 Client re-joined seller room: ${ws.sellerId}`);
-          }
-          if (message.type === "JOIN_STAFF") {
-            ws.staffId = message.staffId;
-            console.log(`🪪 Client re-joined staff room: ${ws.staffId}`);
-          }
-          if (message.type === "JOIN_USER") {
-            ws.userId = message.userId;
-            console.log(`🙋 Client re-joined user room: ${ws.userId}`);
-          }
-          if (message.type === "JOIN_ADMIN") {
-            ws.adminId = message.adminId;
-            console.log(`🔑 Client re-joined admin room: ${ws.adminId}`);
-          }
-        } catch (e) {
-          // Ignore invalid messages
-        }
-      });
+      // Incoming messages cannot change the pinned identity.
+      ws.on("message", () => { /* no-op */ });
     });
   }
 

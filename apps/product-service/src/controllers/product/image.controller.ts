@@ -9,6 +9,25 @@ import {
   validate,
 } from "@repo/zod-schema";
 
+// Hard limit on base64 upload size (~10 MB of image data -> ~13.3 MB base64).
+const MAX_BASE64_LENGTH = 15 * 1024 * 1024;
+
+// Only allow `data:image/<type>;base64,...` URIs to prevent Cloudinary from
+// fetching arbitrary URLs (SSRF / metadata-service exfiltration / cost abuse).
+const assertSafeImageSource = (value: unknown): string => {
+  if (typeof value !== "string" || value.length === 0) {
+    throw new ValidationError("Invalid image payload");
+  }
+  if (value.length > MAX_BASE64_LENGTH) {
+    throw new ValidationError("Image is too large (max ~10 MB)");
+  }
+  const match = value.match(/^data:image\/(png|jpe?g|webp|gif|avif|heic|heif);base64,/i);
+  if (!match) {
+    throw new ValidationError("Only base64-encoded image data URIs are accepted");
+  }
+  return value;
+};
+
 export const uploadProductImage = async (
   req: Request,
   res: Response,
@@ -16,7 +35,8 @@ export const uploadProductImage = async (
 ) => {
   try {
     const { fileName } = validate(uploadProductImageSchema, req.body);
-    const response = await cloudinary.uploader.upload(fileName, {
+    const safeSource = assertSafeImageSource(fileName);
+    const response = await cloudinary.uploader.upload(safeSource, {
       folder: "products",
       quality: "auto:good",
       fetch_format: "auto",
@@ -71,9 +91,10 @@ export const uploadCloudinaryImage = async (
       }
     }
     const uploadPromises = imageList.map(async (base64) => {
-      const response = await cloudinary.uploader.upload(base64, {
+      const safeSource = assertSafeImageSource(base64);
+      const response = await cloudinary.uploader.upload(safeSource, {
         folder: cloudFolder,
-        resource_type: "auto",
+        resource_type: "image",
         overwrite: true,
         quality: "auto:good",
         fetch_format: "auto",

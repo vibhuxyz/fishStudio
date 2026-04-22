@@ -11,6 +11,17 @@ const razorpay = new Razorpay({
   key_secret: ENV.RAZORPAY_KEY_SECRET as string,
 });
 
+/* ── Timing-safe hex-string compare ─────────────────────────────────────── */
+function safeHexEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
+  } catch {
+    return false;
+  }
+}
+
 /* ── Audit log helper (fire-and-forget) ─────────────────────────────────── */
 function writeAuditLog(
   entityType: string,
@@ -131,7 +142,7 @@ export const verifyPayment = async (
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
       .digest("hex");
 
-    if (expectedSignature !== razorpaySignature) {
+    if (!safeHexEqual(expectedSignature, razorpaySignature)) {
       writeAuditLog("PAYMENT", orderId, "PAYMENT_SIGNATURE_MISMATCH", userId, "USER", {
         razorpayOrderId,
         razorpayPaymentId,
@@ -200,7 +211,7 @@ export const handleWebhook = async (req: Request, res: Response, next: NextFunct
       .update(rawBody)
       .digest("hex");
 
-    if (expectedSig !== signature) {
+    if (!safeHexEqual(expectedSig, signature)) {
       console.warn("[Webhook] Signature mismatch — potential spoofed request");
       return res.status(400).json({ error: "Invalid webhook signature" });
     }
@@ -303,6 +314,16 @@ export const initiateRefund = async (
     });
 
     if (!order) return next(new NotFoundError("Order not found"));
+
+    // Sellers can only refund orders that belong to their own store.
+    // Admins bypass this ownership check.
+    if (req.role === "seller") {
+      const storeId = req.seller?.store?.id;
+      if (!storeId || order.storeId !== storeId) {
+        return next(new NotFoundError("Order not found"));
+      }
+    }
+
     if (order.paymentStatus === "REFUNDED") {
       return next(new ValidationError("Order has already been refunded"));
     }

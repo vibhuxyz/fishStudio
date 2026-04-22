@@ -6,6 +6,7 @@ import React, {
     useState,
 } from "react";
 import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -38,31 +39,51 @@ export const WebSocketProvider = ({
   useEffect(() => {
     if (!user?.id) return;
 
-    const expoHost = getExpoHost();
-    const wsBase = process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI ||
-      (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
-        ? `ws://${expoHost}:6006`
-        : "ws://localhost:6006");
+    let cancelled = false;
 
-    const ws = new WebSocket(wsBase);
-    wsRef.current = ws;
+    const setup = async () => {
+      // Fix #2: include the access token so the worker-service can verify
+      // the connection identity. Without it the server rejects the upgrade.
+      const token = await SecureStore.getItemAsync("access_token").catch(() => null);
+      if (!token || cancelled) return;
 
-    ws.onopen = () => {
-      ws.send(`user_${user.id}`);
-      setWsReady(true);
+      const expoHost = getExpoHost();
+      const wsBase =
+        process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI ||
+        (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
+          ? `ws://${expoHost}:6006`
+          : "ws://localhost:6006");
+
+      const wsUrl = `${wsBase}${wsBase.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(
+        token,
+      )}`;
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (cancelled) return;
+        setWsReady(true);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "UNSEEN_COUNT_UPDATE") {
+            const { conversationId, count } = data.payload;
+            setUnreadCounts((prev) => ({ ...prev, [conversationId]: count }));
+          }
+        } catch {
+          // ignore malformed frames
+        }
+      };
     };
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "UNSEEN_COUNT_UPDATE") {
-        const { conversationId, count } = data.payload;
-        setUnreadCounts((prev) => ({ ...prev, [conversationId]: count }));
-      }
-    };
+    setup();
 
     return () => {
-      ws.close();
+      cancelled = true;
+      wsRef.current?.close();
     };
   }, [user?.id]);
 

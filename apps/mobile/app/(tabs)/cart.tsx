@@ -145,13 +145,38 @@ export default function CartScreen() {
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
     try {
-      const res = await axiosInstance.post("/order/api/verify-coupon", {
-        couponCode: couponCode.trim(),
-        cart: cart.map((item) => ({ id: item.id, quantity: item.quantity || 1, sale_price: item.price, shopId: item.shopId })),
+      const storeId = selectedLocation?.storeId || cart[0]?.shopId;
+      if (!storeId) {
+        toast.error("Select delivery location first");
+        return;
+      }
+
+      const res = await axiosInstance.post("/product/api/validate-coupon", {
+        code: couponCode.trim().toUpperCase(),
+        orderAmount: itemsTotal,
+        storeId,
       });
-      setDiscountAmount(res.data.discountAmount);
-      setStoredCouponCode(res.data.couponCode);
-      toast.success(`Coupon applied! Saving ₹${res.data.discountAmount}`);
+
+      if (!res.data.success || !res.data.coupon) {
+        toast.error(res.data.message || "Invalid coupon code");
+        return;
+      }
+
+      const coupon = res.data.coupon;
+      const nextDiscount =
+        coupon.discountType === "percentage"
+          ? Math.round((itemsTotal * coupon.discountValue) / 100)
+          : coupon.discountType === "fixed"
+            ? Math.min(coupon.discountValue, itemsTotal)
+            : 0;
+
+      setDiscountAmount(nextDiscount);
+      setStoredCouponCode(coupon.code);
+      toast.success(
+        coupon.discountType === "free_delivery"
+          ? `Coupon ${coupon.code} will unlock free delivery at checkout`
+          : `Coupon applied! Saving ₹${nextDiscount}`,
+      );
     } catch (e: any) {
       toast.error(e.response?.data?.message || "Invalid coupon code");
     }
@@ -159,64 +184,7 @@ export default function CartScreen() {
 
   // ── Place order ───────────────────────────────────────────────────────────
   const handleCheckout = async () => {
-    if (!user) {
-      router.push("/(routes)/login");
-      return;
-    }
-    if (!selectedAddress) {
-      toast.error("Please add a delivery address first");
-      router.push("/(routes)/shipping");
-      return;
-    }
-    if (cart.length === 0) return;
-
-    setIsPlacingOrder(true);
-    try {
-      // Group by shopId — use first shop's items (fish apps are typically single-shop)
-      const storeId = cart[0].shopId;
-      if (!storeId) {
-        toast.error("Unable to determine store. Please try again.");
-        return;
-      }
-
-      const payload = {
-        storeId,
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity || 1,
-          price: item.price,
-        })),
-        deliveryDetails: {
-          name: selectedAddress.name || user.name || "Customer",
-          phone: selectedAddress.phone || user.phone || "0000000000",
-          address: selectedAddress.street || (selectedAddress as any).address || "",
-          city: selectedAddress.city || "",
-          pincode: selectedAddress.pincode || (selectedAddress as any).zip || "000000",
-        },
-        billDetails: {
-          itemTotal: itemsTotal,
-          deliveryCharge: DELIVERY_CHARGE,
-          discount: discountAmount,
-          totalAmount: grandTotal,
-        },
-        paymentMethod: "COD" as const,
-        totalAmount: grandTotal,
-        discountAmount,
-        couponCode: storedCouponCode || undefined,
-        deliverySlot: "instant" as const,
-      };
-
-      const res = await axiosInstance.post("/order/api/create", payload);
-      setPlacedOrderId(res.data.orderId || "");
-      clearCart();
-      setShowSuccess(true);
-    } catch (e: any) {
-      console.error("Order error:", e.response?.data || e.message);
-      const msg = e.response?.data?.message || "Failed to place order. Please try again.";
-      toast.error(msg);
-    } finally {
-      setIsPlacingOrder(false);
-    }
+    router.push("/(routes)/checkout");
   };
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -545,12 +513,12 @@ export default function CartScreen() {
             ) : (
               <Text style={{ fontFamily: "Poppins-SemiBold", fontWeight: Platform.OS === "android" ? "600" : "normal" }} className="text-white text-base">
                 {!user
-                  ? "Login to Checkout"
+                  ? "Proceed to Checkout"
                   : addresses.length === 0
-                  ? "Add Address First"
+                  ? "Proceed to Checkout"
                   : !selectedAddress
-                  ? "Select Address"
-                  : "Place Order (COD)"}
+                  ? "Proceed to Checkout"
+                  : "Proceed to Checkout"}
               </Text>
             )}
           </TouchableOpacity>

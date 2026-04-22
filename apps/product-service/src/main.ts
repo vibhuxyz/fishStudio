@@ -12,6 +12,8 @@ import { initMeilisearchIndex } from "./lib/meilisearch.js";
 const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6003;
 
 const app = express();
+// Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
+app.set("trust proxy", 1);
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },

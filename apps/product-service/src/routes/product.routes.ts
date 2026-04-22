@@ -58,7 +58,7 @@ import {
 
 import { getAdminSellerInventory } from "../controllers/product/admin.inventory.controller.js";
 import { getProductStock } from "../controllers/product/stock.controller.js";
-import { allowRoles, isAuthenticated, isSeller } from "@repo/middlewares";
+import { allowRoles, isAuthenticated, isApprovedSeller, isSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
 
@@ -73,12 +73,14 @@ router.post(
   "/create-discount-code",
   isAuthenticated,
   allowRoles("seller"),
+  isApprovedSeller,
   createDiscountCodes,
 );
 router.post(
   "/create-event",
   isAuthenticated,
   allowRoles("seller"),
+  isApprovedSeller,
   createSellerEvent,
 );
 router.get(
@@ -139,6 +141,8 @@ router.post(
   "/upload-product-image",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   uploadProductImage,
 );
 router.post(
@@ -157,6 +161,8 @@ router.post(
   "/upload-banner",
   isAuthenticated,
   allowRoles("admin", "seller"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   uploadBanner,
 );
 
@@ -247,6 +253,7 @@ router.post(
   "/add-catalog-product-to-store/:catalogProductId",
   isAuthenticated,
   allowRoles("seller"),
+  isApprovedSeller,
   addCatalogProductToStore,
 );
 router.get(
@@ -265,12 +272,16 @@ router.put(
   "/update-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   updateProduct,
 );
 router.put(
   "/update-product-stock/:productId",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   updateProductStock,
 );
 
@@ -279,12 +290,16 @@ router.delete(
   "/delete-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   deleteProduct,
 );
 router.put(
   "/restore-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller"),
+  (req: any, res: any, next: any) =>
+    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
   restoreProduct,
 );
 
