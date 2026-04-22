@@ -1,5 +1,5 @@
 import * as amqp from "amqplib";
-import type { Channel, ChannelModel } from "amqplib";
+import type { Channel, ChannelModel, ConsumeMessage } from "amqplib";
 import { ENV } from "@repo/env-config";
 
 let connection: ChannelModel | null = null;
@@ -9,7 +9,7 @@ let isReconnecting = false;
 // Registered consumers — re-applied after reconnect
 const consumers: Array<{
   queue: string;
-  handler: (msg: amqp.Message | null) => void;
+  handler: (msg: ConsumeMessage | null) => void;
   options?: amqp.Options.Consume;
 }> = [];
 
@@ -93,7 +93,7 @@ export const publishToQueue = async (
 
 export const consumeQueue = async (
   queueName: string,
-  handler: (msg: amqp.Message | null) => void,
+  handler: (msg: ConsumeMessage | null) => void,
   options?: amqp.Options.Consume,
 ): Promise<void> => {
   const ch = await connectRabbitMQ();
