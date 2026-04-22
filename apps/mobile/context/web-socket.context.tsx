@@ -9,6 +9,21 @@ import Constants from "expo-constants";
 
 const WebSocketContext = createContext<any>(null);
 
+const getExpoHost = (): string | null => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).expoGoConfig?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
+    "";
+
+  const host = String(hostUri).split(":")[0]?.trim();
+  if (!host || host === "localhost" || host === "127.0.0.1") {
+    return null;
+  }
+
+  return host;
+};
+
 export const WebSocketProvider = ({
   children,
   user,
@@ -23,7 +38,7 @@ export const WebSocketProvider = ({
   useEffect(() => {
     if (!user?.id) return;
 
-    const expoHost = (Constants.expoConfig?.hostUri ?? "").split(":")[0];
+    const expoHost = getExpoHost();
     const wsBase = process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI ||
       (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
         ? `ws://${expoHost}:6006`

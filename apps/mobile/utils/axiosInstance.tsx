@@ -4,18 +4,55 @@ import { router } from "expo-router";
 import Constants from "expo-constants";
 import { CustomAxiosRequestConfig } from "./axiosInstance.types";
 
+const getExpoHost = (): string | null => {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).expoGoConfig?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
+    "";
+
+  const host = String(hostUri).split(":")[0]?.trim();
+  if (!host || host === "localhost" || host === "127.0.0.1") {
+    return null;
+  }
+
+  return host;
+};
+
+const normalizeDevUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    const isLocalhost =
+      parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+    const expoHost = getExpoHost();
+
+    if (isLocalhost && expoHost) {
+      parsed.hostname = expoHost;
+      return parsed.toString().replace(/\/$/, "");
+    }
+
+    return url.replace(/\/$/, "");
+  } catch {
+    return url.replace(/\/$/, "");
+  }
+};
+
 // Resolve the API base URL:
 // 1. Explicit env var (production / staging override)
 // 2. Auto-detect from Expo dev-server host (same machine → same LAN IP, works on
 //    physical devices + Android emulator without any manual IP config)
 // 3. Fall back to localhost (iOS simulator)
 const getApiBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  if (process.env.EXPO_PUBLIC_SERVER_URI) return process.env.EXPO_PUBLIC_SERVER_URI;
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return normalizeDevUrl(process.env.EXPO_PUBLIC_API_URL);
+  }
+  if (process.env.EXPO_PUBLIC_SERVER_URI) {
+    return normalizeDevUrl(process.env.EXPO_PUBLIC_SERVER_URI);
+  }
 
   // Constants.expoConfig?.hostUri looks like "192.168.1.5:8081"
-  const expoHost = (Constants.expoConfig?.hostUri ?? "").split(":")[0];
-  if (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1") {
+  const expoHost = getExpoHost();
+  if (expoHost) {
     return `http://${expoHost}:8080`;
   }
 
@@ -157,11 +194,6 @@ axiosInstance.interceptors.response.use(
         handleLogout();
         return Promise.reject(refreshError);
       }
-    }
-
-    // If 401 but no auth header (token never existed), redirect to login
-    if (is401 && !hasAuthHeader) {
-      handleLogout();
     }
 
     return Promise.reject(error);

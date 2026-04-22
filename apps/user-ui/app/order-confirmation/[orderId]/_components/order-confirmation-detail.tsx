@@ -27,7 +27,7 @@ interface OrderConfirmationDetailProps {
 export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirmationDetailProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
       return data.order;
     },
     initialData: initialOrder,
-    enabled: !!orderId,
+    enabled: !!orderId && isLoggedIn,
   });
 
   // WebSocket: refresh order when status changes
@@ -159,6 +159,29 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
 
   const billDetails = order.billDetails as Record<string, number> | null;
   const statusCfg = getStatusConfig(order.status);
+
+  if (!isLoggedIn) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-32 text-center">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
+          <Package className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground">Sign in to view this order</h2>
+        <p className="mt-2 text-muted-foreground">
+          Log in with the same account you used to place the order.
+        </p>
+        <div className="mt-8 flex justify-center">
+          <Button
+            variant="default"
+            className="h-12 px-8 rounded-full font-bold"
+            onClick={() => router.push("/orders")}
+          >
+            View My Orders
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:py-14">

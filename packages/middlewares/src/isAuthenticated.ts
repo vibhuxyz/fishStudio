@@ -10,16 +10,19 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
   try {
     let token;
     const requestedRole = req.headers["x-auth-role"];
+    const bearerToken = req.headers.authorization?.split(" ")[1];
 
     if (requestedRole === "admin" || req.path.includes("admin")) {
-      token = req.cookies["admin_access_token"];
+      token = req.cookies["admin_access_token"] || bearerToken;
     } else if (requestedRole === "staff") {
-      token = req.cookies["staff_access_token"];
+      token = req.cookies["staff_access_token"] || bearerToken;
     } else if (requestedRole === "seller" || req.path.includes("seller")) {
       token =
-        req.cookies["seller_access_token"] || req.cookies["staff_access_token"];
+        req.cookies["seller_access_token"] ||
+        req.cookies["staff_access_token"] ||
+        bearerToken;
     } else if (requestedRole === "user" || req.path.includes("user")) {
-      token = req.cookies["access_token"];
+      token = req.cookies["access_token"] || bearerToken;
     } else {
       // fallback: use whichever exists
       token =
@@ -27,7 +30,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
         req.cookies["seller_access_token"] ||
         req.cookies["admin_access_token"] ||
         req.cookies["access_token"] ||
-        req.headers.authorization?.split(" ")[1];
+        bearerToken;
     }
     if (!token) {
       return res.status(401).json({

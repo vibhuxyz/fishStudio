@@ -109,14 +109,6 @@ export default function Header() {
           )}
         </TouchableOpacity>
 
-        {/* Profile icon */}
-        <TouchableOpacity
-          className="w-9 h-9 bg-muted rounded-xl items-center justify-center mr-2"
-          onPress={() => router.push("/(tabs)/profile")}
-        >
-          <Ionicons name="person-outline" size={20} color="#64748B" />
-        </TouchableOpacity>
-
         {/* Cart pill */}
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/cart")}

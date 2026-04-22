@@ -1,28 +1,24 @@
-import { Suspense } from "react";
+"use client";
+
 import Link from "next/link";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
-import { cookies } from "next/headers";
+import { ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
 
-import { OrdersSkeleton } from "./_components/orders-skeleton";
 import { OrdersRealtimeLayer } from "./_components/orders-realtime-layer";
-import { fetchServerOrders } from "@/lib/orders-api";
-import { Button } from "@/components/ui/button";
+import { OrderLoginAction } from "./_components/order-login-action";
+import { useUserSession } from "@/hooks/useUserSession";
 
-// Optional: Server-side Auth Check for immediate Login redirect/view
-async function getIsLoggedIn() {
-  const cookieStore = await cookies();
-  return cookieStore.has("access_token");
-}
+export default function OrdersPage() {
+  const { isLoading, user } = useUserSession();
 
-async function OrdersListStream() {
-  const orders = await fetchServerOrders();
-  return <OrdersRealtimeLayer initialOrders={orders} />;
-}
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
+      </div>
+    );
+  }
 
-export default async function OrdersPage() {
-  const isLoggedIn = await getIsLoggedIn();
-
-  if (!isLoggedIn) {
+  if (!user) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
         <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
@@ -38,8 +34,8 @@ export default async function OrdersPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex items-center gap-3">
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -50,12 +46,7 @@ export default async function OrdersPage() {
         </div>
       </div>
 
-      <Suspense fallback={<OrdersSkeleton />}>
-        <OrdersListStream />
-      </Suspense>
+      <OrdersRealtimeLayer initialOrders={[]} />
     </div>
   );
 }
-
-// Client component to handle login trigger
-import { OrderLoginAction } from "./_components/order-login-action";

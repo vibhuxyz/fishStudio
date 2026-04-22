@@ -1,6 +1,14 @@
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
 
+export const clearStoredAuth = async () => {
+  await Promise.all([
+    SecureStore.deleteItemAsync("access_token").catch(() => {}),
+    SecureStore.deleteItemAsync("refresh_token").catch(() => {}),
+    SecureStore.deleteItemAsync("user").catch(() => {}),
+  ]);
+};
+
 /**
  * Check if user is fully authenticated (has both user data AND access token)
  */
@@ -30,12 +38,7 @@ export const logout = async (reason?: string) => {
     console.log("🚪 Logout triggered:", reason);
   }
 
-  // Clear all auth data
-  await Promise.all([
-    SecureStore.deleteItemAsync("access_token").catch(() => {}),
-    SecureStore.deleteItemAsync("refresh_token").catch(() => {}),
-    SecureStore.deleteItemAsync("user").catch(() => {}),
-  ]);
+  await clearStoredAuth();
 
   console.log("✅ All auth data cleared, redirecting to login");
 
@@ -51,7 +54,7 @@ export const validateAuth = async (): Promise<boolean> => {
 
   if (auth.hasUser && !auth.hasToken) {
     console.warn("⚠️ User exists but no token - logging out");
-    await logout("User exists but no access token");
+    await clearStoredAuth();
     return false;
   }
 

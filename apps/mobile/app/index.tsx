@@ -1,6 +1,6 @@
 import useUser from "@/hooks/useUser";
 import OnboardingScreen from "@/screens/onboarding/onboarding.screen";
-import { isAuthenticated } from "@/utils/auth";
+import { clearStoredAuth, isAuthenticated } from "@/utils/auth";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -13,6 +13,15 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       const auth = await isAuthenticated();
+
+      if (auth.hasUser && !auth.hasToken) {
+        console.log("⚠️ Clearing stale mobile auth and continuing as guest");
+        await clearStoredAuth();
+        setHasValidAuth(false);
+        setAuthChecked(true);
+        return;
+      }
+
       setHasValidAuth(auth.isAuthenticated);
       setAuthChecked(true);
     };
@@ -27,10 +36,9 @@ export default function Index() {
     );
   }
 
-  // User exists but no valid auth - clear data and redirect to login
+  // Stale or partial auth should fall back to guest browsing, not force login.
   if (user && !hasValidAuth) {
-    console.log("⚠️ User exists but invalid auth - clearing data and redirecting to login");
-    return <Redirect href={"/(routes)/login"} />;
+    return <Redirect href={"/(tabs)"} />;
   }
 
   // User with valid auth - redirect to tabs

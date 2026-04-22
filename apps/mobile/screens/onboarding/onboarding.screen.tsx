@@ -4,7 +4,7 @@ import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "rea
 
 export default function OnboardingScreen() {
   const handleGetStarted = () => {
-    router.replace("/(routes)/login");
+    router.replace("/(tabs)");
   };
 
   return (
@@ -33,6 +33,10 @@ export default function OnboardingScreen() {
           >
             <Text style={styles.buttonText}>Get Started</Text>
           </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.replace("/(routes)/login")}>
+          <Text style={styles.secondaryButtonText}>Login / Sign Up</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -98,5 +102,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  secondaryButton: {
+    marginTop: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+  },
+  secondaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    opacity: 0.88,
   },
 });

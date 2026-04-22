@@ -3,6 +3,7 @@ import { useAddress } from "@/hooks/useAddress";
 import { useAddressStore } from "@/lib/address-store";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import useUser from "@/hooks/useUser";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +19,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from "@/utils/axiosInstance";
 
 export default function ShippingAddressScreen() {
+  const { user } = useUser();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -39,8 +41,9 @@ export default function ShippingAddressScreen() {
   };
 
   useEffect(() => {
+    if (!user) return;
     loadAddresses();
-  }, []);
+  }, [user]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -62,6 +65,38 @@ export default function ShippingAddressScreen() {
 
   const getIconColor = (label: string, selected: boolean) =>
     selected ? "#22C55E" : label === "Home" ? "#2563EB" : label === "Work" ? "#059669" : "#6B7280";
+
+  if (!user) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={{ backgroundColor: "#fff", paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9", flexDirection: "row", alignItems: "center" }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F1F5F9", alignItems: "center", justifyContent: "center", marginRight: 12 }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#374151" />
+          </TouchableOpacity>
+          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
+        </View>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <Ionicons name="location-outline" size={64} color="#CBD5E1" />
+          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 8 }}>
+            You are not logged in
+          </Text>
+          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
+            Login to save and manage your delivery addresses.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(routes)/login")}
+            style={{ backgroundColor: "#6C3CE1", paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14, width: "100%", alignItems: "center" }}
+          >
+            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 15, color: "#fff" }}>Login / Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>

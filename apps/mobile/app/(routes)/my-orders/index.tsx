@@ -3,6 +3,7 @@ import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
+import useUser from "@/hooks/useUser";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -64,6 +65,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function MyOrders() {
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -74,9 +76,41 @@ export default function MyOrders() {
       const res = await axiosInstance.get("/order/api/user-orders");
       return res.data.orders as Order[];
     },
+    enabled: !!user,
   });
 
   const orders: Order[] = ordersData || [];
+
+  if (!user) {
+    return (
+      <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-white">
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center">
+          <TouchableOpacity onPress={() => router.back()} className="mr-4">
+            <Ionicons name="arrow-back" size={24} color="#374151" />
+          </TouchableOpacity>
+          <Text className="text-xl font-poppins-bold text-gray-900">My Orders</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8">
+          <Ionicons name="bag-outline" size={56} color="#9CA3AF" />
+          <Text className="text-xl font-poppins-bold text-gray-900 mt-5 mb-2">
+            You are not logged in
+          </Text>
+          <Text className="text-gray-500 font-poppins-medium text-center mb-8">
+            Login to see your orders and track deliveries.
+          </Text>
+          <TouchableOpacity
+            className="bg-primary w-full py-3.5 rounded-2xl items-center"
+            onPress={() => router.push("/(routes)/login")}
+          >
+            <Text className="text-white font-poppins-semibold text-base">
+              Login / Sign Up
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Cancel mutation — calls PUT /order/api/cancel/:orderId
   const { mutate: cancelOrder } = useMutation({

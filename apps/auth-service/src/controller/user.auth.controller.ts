@@ -237,7 +237,13 @@ export const refreshToken = async (
 
 export const getUser = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const user = req.user;
+    const userId = req.user?.id;
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return next(new NotFoundError("User not found"));
+    }
+
     res.status(200).json({
       success: true,
       user,
@@ -282,6 +288,15 @@ export const addUserAddress = async (
       data: { addresses },
     });
 
+    const token = req.cookies["access_token"];
+    if (token) {
+      try {
+        await redis.del(`auth:${token}`);
+      } catch {
+        // Non-fatal: address was still updated in DB.
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Address added successfully",
@@ -312,6 +327,15 @@ export const deleteUserAddress = async (
       where: { id: userId },
       data: { addresses },
     });
+
+    const token = req.cookies["access_token"];
+    if (token) {
+      try {
+        await redis.del(`auth:${token}`);
+      } catch {
+        // Non-fatal: address was still updated in DB.
+      }
+    }
 
     res.status(200).json({
       success: true,
