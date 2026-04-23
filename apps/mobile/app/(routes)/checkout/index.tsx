@@ -5,7 +5,7 @@ import { useCouponStore } from "@/lib/coupon-store";
 import { useStore } from "@/store";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -15,7 +15,6 @@ import {
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -29,25 +28,21 @@ export default function CheckoutScreen() {
   const {
     appliedCoupons,
     availableCoupons,
-    isLoadingCoupons,
     autoApplied,
     applyCoupon,
-    removeCoupon,
     clearAllCoupons,
     setAutoApplied,
     isCouponApplied,
     getDiscountForCoupon,
     getTotalDiscount,
     fetchAvailableCoupons,
-    validateCouponCode,
   } = useCouponStore();
 
-  const [couponInput, setCouponInput] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("morning");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [deliveryMetadata, setDeliveryMetadata] = useState({
-    availableSlots: ["morning", "evening"],
+    availableSlots: ["morning", "evening"] as string[],
     instantFee: 20,
     isStoreOpen: true,
     cartDeliveryTime: null as number | null,
@@ -101,7 +96,6 @@ export default function CheckoutScreen() {
       })
       .then(({ data }) => {
         if (!data.success) return;
-
         const nextSlots = data.availableSlots || ["morning", "evening"];
         setDeliveryMetadata({
           availableSlots: nextSlots,
@@ -111,9 +105,8 @@ export default function CheckoutScreen() {
           storeName: data.storeName || data.store?.name || null,
           openingHours: data.openingHours || data.store?.opening_hours || null,
         });
-
         setSelectedSlot((current) =>
-          nextSlots.includes(current) ? current : (nextSlots[0] || "morning"),
+          nextSlots.includes(current) ? current : nextSlots[0] || "morning",
         );
       })
       .catch(() => {});
@@ -127,14 +120,12 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     if (appliedCoupons.length > 0 || autoApplied) return;
-
     const eligibleAutoCoupon = availableCoupons.find(
       (coupon) =>
         coupon.autoApply &&
         subtotal >= coupon.minOrderValue &&
         !isCouponApplied(coupon.code),
     );
-
     if (eligibleAutoCoupon) {
       applyCoupon(eligibleAutoCoupon);
       setAutoApplied(true);
@@ -142,16 +133,12 @@ export default function CheckoutScreen() {
     }
   }, [availableCoupons, subtotal, appliedCoupons.length, autoApplied, applyCoupon, isCouponApplied, setAutoApplied]);
 
+  // ── Not logged in ────────────────────────────────────────────────────
   if (!user) {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-          </TouchableOpacity>
-          <Text className="text-xl font-poppins-bold text-gray-900">Checkout</Text>
-        </View>
+        <CheckoutHeader user={user} />
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="lock-closed-outline" size={56} color="#9CA3AF" />
           <Text className="text-xl font-poppins-bold text-gray-900 mt-5 mb-2">
@@ -173,16 +160,12 @@ export default function CheckoutScreen() {
     );
   }
 
+  // ── Empty cart ───────────────────────────────────────────────────────
   if (cart.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white">
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#374151" />
-          </TouchableOpacity>
-          <Text className="text-xl font-poppins-bold text-gray-900">Checkout</Text>
-        </View>
+        <CheckoutHeader user={user} />
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="bag-handle-outline" size={56} color="#9CA3AF" />
           <Text className="text-xl font-poppins-bold text-gray-900 mt-5 mb-2">
@@ -212,41 +195,11 @@ export default function CheckoutScreen() {
   const discount = Math.min(getTotalDiscount(subtotal), subtotal + totalDeliveryCost);
   const grandTotal = Math.max(0, subtotal + totalDeliveryCost - discount);
 
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) return;
-    const storeId = selectedLocation?.storeId || cart[0]?.shopId;
-    if (!storeId) {
-      toast.error("Select a delivery address first to unlock coupons.");
-      return;
-    }
-
-    const { coupon, error } = await validateCouponCode(
-      couponInput.trim(),
-      subtotal,
-      storeId,
-    );
-
-    if (error || !coupon) {
-      toast.error(error || "Invalid coupon code");
-      return;
-    }
-
-    if (isCouponApplied(coupon.code)) {
-      toast.info("Coupon already applied");
-      return;
-    }
-
-    applyCoupon(coupon);
-    setCouponInput("");
-    toast.success(`Coupon ${coupon.code} applied!`);
-  };
-
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       toast.error("Please add or select a delivery address first");
       return;
     }
-
     if (!selectedLocation?.storeId) {
       toast.error("Please set your delivery location first");
       return;
@@ -298,7 +251,7 @@ export default function CheckoutScreen() {
       clearAllCoupons();
       toast.success("Order placed successfully!");
       router.replace({
-        pathname: "/(routes)/order-details/[id]",
+        pathname: "/(routes)/order-confirmation/[id]" as any,
         params: { id: data.orderId },
       });
     } catch (error: any) {
@@ -311,318 +264,381 @@ export default function CheckoutScreen() {
     }
   };
 
+  const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
+  const slotOptions: Array<{
+    key: "instant" | "morning" | "evening";
+    title: string;
+    subtitle: string;
+    badge: string;
+    badgeKind: "charge" | "disabled";
+    emoji: string;
+    disabled?: boolean;
+  }> = [
+    {
+      key: "instant",
+      title: "Instant Delivery (30-45 mins)",
+      subtitle: isInstantAvailable
+        ? "Get it as soon as possible"
+        : "Quick delivery is off while the shop is closed",
+      badge: isInstantAvailable ? `+₹${deliveryMetadata.instantFee}` : "Quick delivery off",
+      badgeKind: isInstantAvailable ? "charge" : "disabled",
+      emoji: "⚡",
+      disabled: !isInstantAvailable,
+    },
+    {
+      key: "morning",
+      title: "Morning Delivery (6 AM – 10 AM)",
+      subtitle: "Fresh delivery before you start your day",
+      badge: "Lowest charge",
+      badgeKind: "charge",
+      emoji: "🌅",
+    },
+    {
+      key: "evening",
+      title: "Evening Delivery (5 PM – 9 PM)",
+      subtitle: "Delivered when you get home",
+      badge: "Lowest charge",
+      badgeKind: "charge",
+      emoji: "🌆",
+    },
+  ];
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
-      <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text className="text-xl font-poppins-bold text-gray-900">Checkout</Text>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <CheckoutHeader user={user} />
 
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-          <Text className="text-base font-poppins-bold text-gray-900 mb-3">
-            Order Summary
-          </Text>
-          {cart.map((item) => (
-            <View
-              key={`${item.id}-${item.cuttingType || ""}-${item.pieceSize || ""}`}
-              className="flex-row items-center py-3 border-b border-gray-100 last:border-b-0"
-            >
-              <Image
-                source={{ uri: item.image || "https://via.placeholder.com/80" }}
-                className="w-14 h-14 rounded-xl bg-gray-100"
-                resizeMode="cover"
-              />
-              <View className="flex-1 ml-3">
-                <Text className="text-sm font-poppins-semibold text-gray-900" numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                  Qty: {item.quantity || 1}
-                  {item.cuttingType ? ` · ${item.cuttingType}` : ""}
-                  {item.pieceSize ? ` · ${item.pieceSize}` : ""}
-                </Text>
-                {item.priceBreakdown?.cuttingCharge != null && item.priceBreakdown.cuttingCharge > 0 && (
-                  <Text className="text-[11px] text-amber-500 font-poppins-medium mt-0.5">
-                    ₹{item.priceBreakdown.baseRatePerKg}/kg + ₹{item.priceBreakdown.cuttingCharge} cut
-                    {item.priceBreakdown.sizeMultiplier && item.priceBreakdown.sizeMultiplier !== 1
-                      ? ` ×${item.priceBreakdown.sizeMultiplier}` : ""}
-                    {" = "}₹{item.priceBreakdown.effectiveRatePerKg}/kg
-                  </Text>
-                )}
-              </View>
-              <Text className="text-sm font-poppins-bold text-gray-900">
-                ₹{(item.price * (item.quantity || 1)).toFixed(0)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          className="bg-white rounded-2xl border border-gray-100 p-4 mb-4"
-          onPress={() => setShowAddressModal(true)}
-          activeOpacity={0.8}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 pr-4">
-              <Text className="text-base font-poppins-bold text-gray-900 mb-1">
-                Delivery Address
-              </Text>
-              {selectedAddress ? (
-                <>
-                  <Text className="text-sm font-poppins-semibold text-gray-900">
-                    {selectedAddress.name}
-                  </Text>
-                  <Text className="text-sm text-gray-500 font-poppins-medium mt-0.5">
-                    {selectedAddress.street}
-                    {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
-                  </Text>
-                  <Text className="text-sm text-gray-500 font-poppins-medium">
-                    {selectedAddress.city}, {selectedAddress.pincode}
-                  </Text>
-                </>
-              ) : (
-                <Text className="text-sm text-orange-500 font-poppins-medium">
-                  Add or select your delivery address
-                </Text>
-              )}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-          </View>
-        </TouchableOpacity>
-
-        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-          <Text className="text-base font-poppins-bold text-gray-900 mb-3">
-            Delivery Slot
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {deliveryMetadata.availableSlots.map((slot) => {
-              const selected = selectedSlot === slot;
-              const label =
-                slot === "instant"
-                  ? "Instant"
-                  : slot === "morning"
-                    ? "Morning"
-                    : "Evening";
-              return (
-                <TouchableOpacity
-                  key={slot}
-                  onPress={() => setSelectedSlot(slot)}
-                  className={`px-4 py-2.5 rounded-full border ${
-                    selected ? "bg-primary border-primary" : "bg-white border-gray-200"
-                  }`}
-                >
+        {/* ── 0. Order Summary ─────────────────────────────────────── */}
+        <SectionHeader number="0" title="Order Summary" />
+        <View className="mx-4 bg-white rounded-2xl border border-gray-100 p-4">
+          {cart.map((item, idx) => {
+            const weightKg = item.priceBreakdown?.weightGrams
+              ? ((item.priceBreakdown.weightGrams as number) * (item.quantity || 1)) / 1000
+              : null;
+            const options = [
+              weightKg ? `${weightKg.toFixed(1)}` : null,
+              item.cuttingType,
+              item.pieceSize,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <View
+                key={`${item.id}-${item.cuttingType || ""}-${item.pieceSize || ""}-${idx}`}
+                className={`flex-row items-center ${idx > 0 ? "border-t border-gray-100 pt-3 mt-3" : ""}`}
+              >
+                <Image
+                  source={{ uri: item.image || "https://via.placeholder.com/80" }}
+                  className="w-14 h-14 rounded-xl bg-gray-100"
+                  resizeMode="cover"
+                />
+                <View className="flex-1 ml-3">
                   <Text
-                    className={`text-sm font-poppins-medium ${
-                      selected ? "text-white" : "text-gray-700"
-                    }`}
+                    className="text-sm font-poppins-bold text-gray-900"
+                    numberOfLines={1}
                   >
-                    {label}
-                    {slot === "instant" ? ` (+₹${deliveryMetadata.instantFee})` : ""}
+                    {item.title}
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {deliveryMetadata.openingHours && !deliveryMetadata.isStoreOpen && (
-            <Text className="text-xs text-orange-500 font-poppins-medium mt-3">
-              Store opens at {deliveryMetadata.openingHours}
-            </Text>
-          )}
+                  {options ? (
+                    <Text
+                      className="text-xs text-gray-500 font-poppins-medium mt-0.5"
+                      numberOfLines={1}
+                    >
+                      {options}
+                    </Text>
+                  ) : null}
+                  <Text className="text-xs text-gray-900 font-poppins-semibold mt-0.5">
+                    Qty: {item.quantity || 1}
+                  </Text>
+                </View>
+                <Text className="text-sm font-poppins-bold text-gray-900">
+                  ₹{(item.price * (item.quantity || 1)).toFixed(0)}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
-        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
-          <Text className="text-base font-poppins-bold text-gray-900 mb-3">
-            Coupons & Offers
-          </Text>
-
-          {appliedCoupons.length > 0 && (
-            <View className="mb-3 gap-2">
-              {appliedCoupons.map((coupon) => (
-                <View
-                  key={coupon.code}
-                  className="flex-row items-center justify-between rounded-xl bg-green-50 px-3 py-3"
-                >
-                  <View className="flex-1 pr-3">
-                    <Text className="text-sm font-poppins-semibold text-green-700">
-                      {coupon.code} applied
-                    </Text>
-                    <Text className="text-xs text-green-600 font-poppins-medium">
-                      {coupon.discountType === "free_delivery"
-                        ? "Free delivery unlocked"
-                        : `Save ₹${getDiscountForCoupon(coupon, subtotal)}`}
+        {/* ── 1. Delivery Address ──────────────────────────────────── */}
+        <SectionHeader number="1" title="Delivery Address" />
+        {selectedAddress ? (
+          <View className="mx-4 bg-primary/5 rounded-2xl border-2 border-primary p-4">
+            <View className="flex-row items-start">
+              <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3">
+                <Ionicons name="location-outline" size={20} color="#6C3CE1" />
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center mb-1">
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-Bold",
+                      fontWeight: Platform.OS === "android" ? "700" : "normal",
+                    }}
+                    className="text-primary uppercase tracking-wider text-sm mr-1.5"
+                  >
+                    {selectedAddress.label || "HOME"}
+                  </Text>
+                  <Ionicons name="checkmark-circle" size={16} color="#6C3CE1" />
+                </View>
+                <Text className="text-sm font-poppins-bold text-gray-900">
+                  {selectedAddress.name}
+                </Text>
+                <Text className="text-sm text-gray-600 font-poppins-medium mt-0.5 leading-5">
+                  {selectedAddress.street}
+                  {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
+                  {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
+                  {selectedAddress.state ? `, ${selectedAddress.state}` : ""}
+                  {selectedAddress.pincode ? ` – ${selectedAddress.pincode}` : ""}
+                </Text>
+                {(selectedAddress.phone || user.phone) && (
+                  <View className="flex-row items-center mt-2">
+                    <Ionicons name="call-outline" size={14} color="#6B7280" />
+                    <Text className="text-sm text-gray-600 font-poppins-medium ml-1.5">
+                      {selectedAddress.phone || user.phone}
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => removeCoupon(coupon.code)}>
-                    <Ionicons name="close-circle-outline" size={20} color="#16A34A" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                )}
+              </View>
             </View>
-          )}
-
-          <View className="flex-row items-center rounded-xl border border-gray-200 px-3">
-            <TextInput
-              className="flex-1 py-3 text-sm font-poppins-medium text-gray-900"
-              placeholder="Enter coupon code"
-              placeholderTextColor="#9CA3AF"
-              value={couponInput}
-              onChangeText={(value) => setCouponInput(value.toUpperCase())}
-              autoCapitalize="characters"
-            />
-            <TouchableOpacity onPress={handleApplyCoupon}>
-              <Text className="text-primary text-sm font-poppins-semibold">Apply</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View className="mt-4">
-            <Text className="text-sm font-poppins-semibold text-gray-900 mb-2">
-              Available offers
-            </Text>
-            {isLoadingCoupons ? (
-              <View className="py-3 items-center">
-                <ActivityIndicator color="#6C3CE1" />
-              </View>
-            ) : availableCoupons.length === 0 ? (
-              <Text className="text-sm text-gray-500 font-poppins-medium">
-                No coupons available for this order yet.
+            <View className="border-t border-primary/20 mt-3 pt-3">
+              <Text className="text-xs text-gray-500 font-poppins-medium italic">
+                To change the address, go back to your cart and update your delivery location.
               </Text>
-            ) : (
-              <View className="gap-2">
-                {availableCoupons.map((coupon) => {
-                  const eligible = subtotal >= coupon.minOrderValue;
-                  const applied = isCouponApplied(coupon.code);
-                  return (
-                    <View
-                      key={coupon.code}
-                      className={`rounded-xl border px-3 py-3 ${
-                        applied
-                          ? "border-green-200 bg-green-50"
-                          : eligible
-                            ? "border-gray-200 bg-white"
-                            : "border-gray-100 bg-gray-50"
-                      }`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1 pr-3">
-                          <Text className="text-sm font-poppins-bold text-gray-900">
-                            {coupon.code}
-                          </Text>
-                          <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                            {coupon.description}
-                          </Text>
-                          {!eligible && (
-                            <Text className="text-xs text-orange-500 font-poppins-medium mt-1">
-                              Add ₹{coupon.minOrderValue - subtotal} more to unlock
-                            </Text>
-                          )}
-                        </View>
-                        <TouchableOpacity
-                          disabled={!eligible || applied}
-                          onPress={() => applyCoupon(coupon)}
-                          className={`px-3 py-2 rounded-lg ${
-                            applied
-                              ? "bg-green-100"
-                              : eligible
-                                ? "bg-primary"
-                                : "bg-gray-200"
-                          }`}
-                        >
-                          <Text
-                            className={`text-xs font-poppins-semibold ${
-                              applied
-                                ? "text-green-700"
-                                : eligible
-                                  ? "text-white"
-                                  : "text-gray-500"
-                            }`}
-                          >
-                            {applied ? "Applied" : "Apply"}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            className="mx-4 bg-white rounded-2xl border border-gray-200 p-4"
+            onPress={() => setShowAddressModal(true)}
+          >
+            <Text className="text-sm text-orange-500 font-poppins-semibold">
+              Tap to add or select a delivery address
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* ── 2. Delivery Slot ─────────────────────────────────────── */}
+        <SectionHeader number="2" title="Delivery Slot" />
+
+        {!deliveryMetadata.isStoreOpen && (
+          <View className="mx-4 mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+            <Text className="text-sm font-poppins-bold text-amber-900">
+              Shop is closed right now. Scheduled ordering is still available.
+            </Text>
+            <Text className="text-xs text-amber-700 font-poppins-medium mt-1 leading-5">
+              Quick delivery is off. Please choose a morning or evening slot.
+            </Text>
+          </View>
+        )}
+
+        <View className="mx-4 gap-2.5">
+          {slotOptions.map((opt) => {
+            const selected = selectedSlot === opt.key && !opt.disabled;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                activeOpacity={opt.disabled ? 1 : 0.8}
+                disabled={opt.disabled}
+                onPress={() => !opt.disabled && setSelectedSlot(opt.key)}
+                className={`rounded-2xl px-4 py-3.5 flex-row items-center ${
+                  selected
+                    ? "bg-primary/5 border-2 border-primary"
+                    : opt.disabled
+                      ? "bg-gray-50 border border-gray-100"
+                      : "bg-white border border-gray-200"
+                }`}
+              >
+                <Text style={{ fontSize: 28, marginRight: 12 }}>{opt.emoji}</Text>
+                <View className="flex-1 pr-2">
+                  <Text
+                    className={`text-[15px] font-poppins-bold leading-tight ${
+                      opt.disabled ? "text-gray-400" : "text-gray-900"
+                    }`}
+                  >
+                    {opt.title}
+                  </Text>
+                  <Text
+                    className={`text-xs font-poppins-medium mt-0.5 leading-4 ${
+                      opt.disabled ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {opt.subtitle}
+                  </Text>
+                </View>
+                <View className="items-end">
+                  <Text
+                    className={`text-xs font-poppins-semibold ${
+                      opt.badgeKind === "disabled"
+                        ? "text-gray-400"
+                        : opt.key === "instant"
+                          ? "text-primary"
+                          : "text-green-600"
+                    }`}
+                  >
+                    {opt.badge}
+                  </Text>
+                  {selected && (
+                    <View className="mt-1">
+                      <Ionicons name="checkmark-circle" size={22} color="#6C3CE1" />
                     </View>
-                  );
-                })}
-              </View>
-            )}
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* ── 3. Payment Method ────────────────────────────────────── */}
+        <SectionHeader number="3" title="Payment Method" />
+
+        <View className="mx-4 bg-primary/5 rounded-2xl border-2 border-primary p-4">
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons name="credit-card-outline" size={26} color="#6C3CE1" />
+            <View className="flex-1 ml-3">
+              <Text className="text-[15px] font-poppins-bold text-gray-900">
+                Pay on Delivery
+              </Text>
+              <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
+                Cash, UPI or Card at your doorstep
+              </Text>
+            </View>
+            <Ionicons name="checkmark-circle" size={22} color="#6C3CE1" />
           </View>
         </View>
 
-        <View className="bg-white rounded-2xl border border-gray-100 p-4">
-          <Text className="text-base font-poppins-bold text-gray-900 mb-3">
+        <View className="mx-4 mt-2 flex-row items-center">
+          <Text className="text-xs text-gray-500 font-poppins-medium italic flex-1">
+            Online payment options (Credit Card, Wallets) coming soon.
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
+        </View>
+
+        {/* ── Bill Details + Place Order ────────────────────────────── */}
+        <View className="mx-4 mt-5 bg-white rounded-2xl border border-gray-100 p-4">
+          <Text
+            style={{
+              fontFamily: "Poppins-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+            className="text-lg text-gray-900 mb-3"
+          >
             Bill Details
           </Text>
-          <BillRow label="Items total" value={`₹${subtotal.toFixed(0)}`} />
-          <BillRow label="Delivery charge" value={deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`} />
+
+          <View className="flex-row justify-between mb-2.5">
+            <Text className="text-sm text-gray-600 font-poppins-medium">Item Total</Text>
+            <Text className="text-sm text-gray-900 font-poppins-semibold">
+              ₹{subtotal.toFixed(2)}
+            </Text>
+          </View>
+
+          <View className="flex-row justify-between mb-2.5">
+            <View className="flex-row items-center">
+              <Ionicons name="car-outline" size={16} color="#6B7280" />
+              <Text className="text-sm text-gray-600 font-poppins-medium ml-1.5">
+                Delivery Charge
+              </Text>
+            </View>
+            <Text className="text-sm text-gray-900 font-poppins-semibold">
+              {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}.00`}
+            </Text>
+          </View>
+
           {slotExtraCharge > 0 && (
-            <BillRow label="Instant delivery fee" value={`₹${slotExtraCharge}`} />
+            <View className="flex-row justify-between mb-2.5">
+              <Text className="text-sm text-gray-600 font-poppins-medium">
+                Instant Delivery Fee
+              </Text>
+              <Text className="text-sm text-gray-900 font-poppins-semibold">
+                ₹{slotExtraCharge}.00
+              </Text>
+            </View>
           )}
+
           {appliedCoupons.map((coupon) => {
             const amount = getDiscountForCoupon(coupon, subtotal);
             if (amount <= 0 && coupon.discountType !== "free_delivery") return null;
             return (
-              <BillRow
-                key={coupon.code}
-                label={`Coupon (${coupon.code})`}
-                value={
-                  coupon.discountType === "free_delivery"
+              <View key={coupon.code} className="flex-row justify-between mb-2.5">
+                <Text className="text-sm text-gray-600 font-poppins-medium">
+                  Coupon ({coupon.code})
+                </Text>
+                <Text className="text-sm text-green-600 font-poppins-semibold">
+                  {coupon.discountType === "free_delivery"
                     ? "FREE Delivery"
-                    : `-₹${amount.toFixed(0)}`
-                }
-                green
-              />
+                    : `-₹${amount.toFixed(0)}`}
+                </Text>
+              </View>
             );
           })}
-          <View className="mt-3 pt-3 border-t border-gray-100 flex-row items-center justify-between">
-            <Text className="text-base font-poppins-bold text-gray-900">Grand total</Text>
-            <Text className="text-base font-poppins-bold text-gray-900">
-              ₹{grandTotal.toFixed(0)}
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
 
-      <View className="bg-white border-t border-gray-100 px-4 py-3">
-        <TouchableOpacity
-          onPress={handlePlaceOrder}
-          disabled={isPlacingOrder || !selectedAddress || !selectedLocation?.storeId}
-          className={`rounded-2xl px-5 py-4 flex-row items-center justify-between ${
-            isPlacingOrder || !selectedAddress || !selectedLocation?.storeId
-              ? "bg-gray-400"
-              : "bg-green-500"
-          }`}
-        >
-          <View>
-            <Text className="text-white text-lg font-poppins-bold">
-              ₹{grandTotal.toFixed(0)}
-            </Text>
-            <Text className="text-green-100 text-[10px] font-poppins-medium uppercase">
-              Total
-            </Text>
-          </View>
-          {isPlacingOrder ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
+          <View className="border-t border-gray-100 mt-2 pt-3 flex-row justify-between items-center mb-4">
             <Text
               style={{
-                fontFamily: "Poppins-SemiBold",
-                fontWeight: Platform.OS === "android" ? "600" : "normal",
+                fontFamily: "Poppins-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
-              className="text-white text-base"
+              className="text-lg text-gray-900"
             >
-              Place Order (COD)
+              Total Payable
             </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
+              }}
+              className="text-xl text-gray-900"
+            >
+              ₹{grandTotal.toFixed(2)}
+            </Text>
+          </View>
+
+          <View className="flex-row items-start bg-gray-50 rounded-xl px-3 py-2.5 mb-4">
+            <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+            <Text className="text-xs text-gray-600 font-poppins-medium ml-2 flex-1 leading-5">
+              By placing the order, you agree to our terms and conditions. Estimated delivery time:{" "}
+              {selectedSlot === "instant" ? "30-45 mins" : selectedSlot === "morning" ? "6 AM – 10 AM" : "5 PM – 9 PM"}.
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={handlePlaceOrder}
+            disabled={isPlacingOrder || !selectedAddress || !selectedLocation?.storeId}
+            activeOpacity={0.85}
+            className={`rounded-2xl py-4 items-center ${
+              isPlacingOrder || !selectedAddress || !selectedLocation?.storeId
+                ? "bg-gray-300"
+                : "bg-primary"
+            }`}
+          >
+            {isPlacingOrder ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
+                className="text-white text-base tracking-widest uppercase"
+              >
+                Place Order
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Trust icons ──────────────────────────────────────────── */}
+        <View className="flex-row items-start justify-around px-4 mt-6">
+          <TrustBadge icon="shield-checkmark-outline" label="SAFE & SECURE" />
+          <TrustBadge icon="cube-outline" label="CONTACTLESS" />
+          <TrustBadge icon="leaf-outline" label="ECO FRIENDLY" />
+        </View>
+      </ScrollView>
 
       <AddressModal
         visible={showAddressModal}
@@ -633,22 +649,65 @@ export default function CheckoutScreen() {
   );
 }
 
-function BillRow({
-  label,
-  value,
-  green = false,
-}: {
-  label: string;
-  value: string;
-  green?: boolean;
-}) {
+// ── Helper components ─────────────────────────────────────────────────
+function CheckoutHeader({ user }: { user: any }) {
   return (
-    <View className="flex-row justify-between mb-2.5">
-      <Text className="text-sm text-gray-600 font-poppins-medium">{label}</Text>
-      <Text
-        className={`text-sm font-poppins-medium ${green ? "text-green-600" : "text-gray-900"}`}
+    <View className="bg-white px-4 py-3.5 flex-row items-center justify-between border-b border-gray-100">
+      <TouchableOpacity
+        onPress={() => router.back()}
+        className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
       >
-        {value}
+        <MaterialCommunityIcons name="fish" size={22} color="#fff" />
+      </TouchableOpacity>
+      <Text
+        style={{
+          fontFamily: "Poppins-Bold",
+          fontWeight: Platform.OS === "android" ? "700" : "normal",
+          letterSpacing: 2,
+        }}
+        className="text-base text-gray-600 uppercase"
+      >
+        Secure Checkout
+      </Text>
+      <View className="flex-row items-center">
+        <View className="w-9 h-9 bg-primary rounded-full items-center justify-center">
+          <Text className="text-white font-poppins-bold text-sm">
+            {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
+          </Text>
+        </View>
+        <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+      </View>
+    </View>
+  );
+}
+
+function SectionHeader({ number, title }: { number: string; title: string }) {
+  return (
+    <View className="flex-row items-center px-4 py-4 mt-2">
+      <View className="w-7 h-7 bg-primary/10 rounded-full items-center justify-center mr-3">
+        <Text className="text-primary text-sm font-poppins-bold">{number}</Text>
+      </View>
+      <Text
+        style={{
+          fontFamily: "Poppins-Bold",
+          fontWeight: Platform.OS === "android" ? "700" : "normal",
+        }}
+        className="text-[22px] text-gray-900"
+      >
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+function TrustBadge({ icon, label }: { icon: any; label: string }) {
+  return (
+    <View className="items-center">
+      <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center mb-1.5">
+        <Ionicons name={icon} size={22} color="#6B7280" />
+      </View>
+      <Text className="text-[10px] font-poppins-bold text-gray-500 tracking-wider">
+        {label}
       </Text>
     </View>
   );

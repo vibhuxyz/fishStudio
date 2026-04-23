@@ -6,10 +6,21 @@ import { ENV } from "@repo/env-config";
 import { ValidationError, NotFoundError } from "@repo/error-handlers";
 
 /* ── Razorpay client (singleton) ────────────────────────────────────────── */
-const razorpay = new Razorpay({
-  key_id: ENV.RAZORPAY_KEY_ID as string,
-  key_secret: ENV.RAZORPAY_KEY_SECRET as string,
-});
+// Lazy init so the service can boot in dev without Razorpay creds. Routes
+// that actually need it throw a clear 503 instead of crashing the process.
+let _razorpay: Razorpay | null = null;
+const getRazorpay = (): Razorpay => {
+  if (_razorpay) return _razorpay;
+  const keyId = ENV.RAZORPAY_KEY_ID;
+  const keySecret = ENV.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) {
+    throw new ValidationError(
+      "Online payments are not configured on this environment. Please use Pay on Delivery.",
+    );
+  }
+  _razorpay = new Razorpay({ key_id: keyId as string, key_secret: keySecret as string });
+  return _razorpay;
+};
 
 /* ── Timing-safe hex-string compare ─────────────────────────────────────── */
 function safeHexEqual(a: string, b: string): boolean {
@@ -80,7 +91,7 @@ export const createRazorpayOrder = async (
     // Amount in paise (Razorpay uses smallest currency unit)
     const amountInPaise = Math.round(order.totalAmount * 100);
 
-    const rzpOrder = await razorpay.orders.create({
+    const rzpOrder = await getRazorpay().orders.create({
       amount: amountInPaise,
       currency: "INR",
       receipt: `rcpt_${order.id.slice(-10)}`,
@@ -338,7 +349,7 @@ export const initiateRefund = async (
       return next(new ValidationError("No completed Razorpay payment found for this order"));
     }
 
-    const refund = await razorpay.payments.refund(completedPayment.transactionId, {
+    const refund = await getRazorpay().payments.refund(completedPayment.transactionId, {
       amount: Math.round(order.totalAmount * 100), // full refund in paise
       notes: { orderId, reason: reason ?? "Refund requested", actorId },
     } as any);

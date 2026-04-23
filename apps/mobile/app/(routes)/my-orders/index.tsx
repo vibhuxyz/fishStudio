@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -278,59 +279,179 @@ export default function MyOrders() {
     );
   };
 
+  // ── Compact row card (matching web list layout) ─────────────────────
+  const renderOrderRow = (order: Order) => {
+    const cfg = STATUS_CONFIG[order.status] ?? {
+      bg: "#F3F4F6",
+      text: "#6B7280",
+      icon: "help-circle-outline",
+      label: order.status,
+    };
+    const orderNumber = `#${order.id.slice(-6).toUpperCase()}`;
+    const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+    const amount = order.totalAmount ?? order.total ?? 0;
+    const firstItem = order.items?.[0];
+    const image =
+      firstItem?.product?.images?.[0]?.url ||
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120";
+    const title = firstItem?.product?.title || `Order ${orderNumber}`;
+    const itemCount = order.items?.length ?? 0;
+
+    return (
+      <TouchableOpacity
+        key={order.id}
+        activeOpacity={0.85}
+        onPress={() =>
+          router.push({
+            pathname: "/(routes)/order-details/[id]",
+            params: { id: order.id },
+          })
+        }
+        className="bg-white rounded-2xl border border-gray-100 mb-3"
+      >
+        <View className="flex-row items-center p-3.5">
+          <Image
+            source={{ uri: image }}
+            className="w-14 h-14 rounded-xl bg-gray-100"
+            resizeMode="cover"
+          />
+          <View className="flex-1 ml-3">
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
+              }}
+              className="text-[15px] text-gray-900"
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            <View className="flex-row items-center mt-0.5">
+              <Text className="text-xs text-gray-500 font-poppins-medium">
+                {orderNumber}
+              </Text>
+              <View className="w-1 h-1 rounded-full bg-gray-300 mx-2" />
+              <Text className="text-xs text-gray-500 font-poppins-medium">
+                Fresh Studio
+              </Text>
+            </View>
+            <Text className="text-sm text-gray-700 font-poppins-medium mt-1">
+              {itemCount} item{itemCount !== 1 ? "s" : ""} · ₹{amount.toFixed(0)}
+            </Text>
+            <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">
+              {orderDate}
+            </Text>
+          </View>
+          <View className="items-end ml-2">
+            <View
+              className="px-2.5 py-1 rounded-full flex-row items-center"
+              style={{ backgroundColor: cfg.bg }}
+            >
+              <Ionicons name={cfg.icon as any} size={12} color={cfg.text} />
+              <Text
+                className="ml-1 text-[11px] font-poppins-semibold"
+                style={{ color: cfg.text }}
+              >
+                {cfg.label}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color="#9CA3AF"
+              style={{ marginTop: 10 }}
+            />
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
-      {/* Header */}
-      <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+      {/* Slim header */}
+      <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-gray-100">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+        >
+          <Ionicons name="chevron-back" size={20} color="#1F2937" />
         </TouchableOpacity>
-        <Text className="text-xl font-poppins-bold text-gray-900">My Orders</Text>
+        <View className="w-10" />
       </View>
 
-      {/* Status filters */}
-      <View className="bg-white px-4 py-3 border-b border-gray-100">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {STATUS_FILTERS.map((f) => (
-            <TouchableOpacity
-              key={f.key}
-              onPress={() => setSelectedStatus(f.key)}
-              className={`px-4 py-2 rounded-full mr-3 ${
-                selectedStatus === f.key ? "bg-blue-600" : "bg-gray-100"
-              }`}
-            >
-              <Text
-                className={`text-sm font-poppins-medium ${
-                  selectedStatus === f.key ? "text-white" : "text-gray-700"
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        {/* Title */}
+        <View className="px-4 pt-4 pb-2 bg-white">
+          <Text
+            style={{
+              fontFamily: "Poppins-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+            className="text-[32px] text-gray-900 leading-tight"
+          >
+            My Orders
+          </Text>
+          <Text className="text-sm text-gray-500 font-poppins-medium mt-1">
+            Manage your orders and track status
+          </Text>
+        </View>
+
+        {/* Status filters */}
+        <View className="bg-white px-4 pt-3 pb-3 border-b border-gray-100">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {STATUS_FILTERS.map((f) => (
+              <TouchableOpacity
+                key={f.key}
+                onPress={() => setSelectedStatus(f.key)}
+                className={`px-4 py-2 rounded-full mr-2 ${
+                  selectedStatus === f.key ? "bg-primary" : "bg-gray-100"
                 }`}
               >
-                {f.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+                <Text
+                  className={`text-sm font-poppins-medium ${
+                    selectedStatus === f.key ? "text-white" : "text-gray-700"
+                  }`}
+                >
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-      {/* List */}
-      <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <View className="flex-1 items-center justify-center py-24">
-            <ActivityIndicator size="large" color="#2563EB" />
-            <Text className="text-gray-500 font-poppins-medium mt-4">Loading orders…</Text>
-          </View>
-        ) : filteredOrders.length === 0 ? (
-          <View className="flex-1 items-center justify-center py-24">
-            <Ionicons name="bag-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 font-poppins-medium mt-4 text-lg text-center">
-              {selectedStatus === "all" ? "No orders yet" : `No ${STATUS_CONFIG[selectedStatus]?.label ?? selectedStatus} orders`}
-            </Text>
-          </View>
-        ) : (
-          filteredOrders.map(renderOrderCard)
-        )}
-        <View className="h-20" />
+        {/* List */}
+        <View className="px-3 pt-3">
+          {isLoading ? (
+            <View className="flex-1 items-center justify-center py-24">
+              <ActivityIndicator size="large" color="#6C3CE1" />
+              <Text className="text-gray-500 font-poppins-medium mt-4">
+                Loading orders…
+              </Text>
+            </View>
+          ) : filteredOrders.length === 0 ? (
+            <View className="flex-1 items-center justify-center py-24">
+              <Ionicons name="bag-outline" size={64} color="#9CA3AF" />
+              <Text className="text-gray-500 font-poppins-medium mt-4 text-lg text-center">
+                {selectedStatus === "all"
+                  ? "No orders yet"
+                  : `No ${STATUS_CONFIG[selectedStatus]?.label ?? selectedStatus} orders`}
+              </Text>
+            </View>
+          ) : (
+            filteredOrders.map(renderOrderRow)
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

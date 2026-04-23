@@ -75,8 +75,14 @@ export const sendOtp = async (
     template?: string;
   },
   ) => {
-  // Fix #9: 6-digit OTP (100000–999999) — ~111× larger keyspace than 4-digit.
-  const otp = crypto.randomInt(100000, 1000000).toString();
+  // Users (customer app) get a 4-digit OTP for faster UX.
+  // Admins / sellers / staff get 6 digits — larger keyspace against brute force
+  // since their accounts have higher privilege and admin/staff registrations
+  // are less frequent so slower UX is acceptable.
+  const otp =
+    userType === "user"
+      ? crypto.randomInt(1000, 10000).toString()       // 4-digit: 1000–9999
+      : crypto.randomInt(100000, 1000000).toString();  // 6-digit: 100000–999999
   //send otp email logic here
 
   const identifier = data.email || data.phone_number;

@@ -2,8 +2,7 @@ import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
-import Header from "@/components/home/header";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -321,49 +320,71 @@ export default function ProductDetailScreen() {
   const renderProductInfo = () => {
     const currentPrice = product?.sale_price || product?.regular_price || 0;
     const ratingCount = product?.reviews?.length || product?.ratingCount || 5;
-    const ratingValue = product?.rating || 4.5;
+    const ratingValue = product?.rating || 5;
+    // Web shows price per-kg; mobile mirrors that when we have weight info.
+    const weightGrams = product?.sizePricing?.find?.(
+      (s: any) => s.size === selectedPieceSize,
+    )?.weightGrams;
+    const totalGrams = weightGrams ? weightGrams * quantity : null;
 
     return (
       <View className="px-4 mb-2">
         {/* Breadcrumb */}
         <View className="flex-row items-center flex-wrap mb-3">
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text className="text-xs text-muted-foreground font-poppins-medium">HOME</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)")}>
+            <Text className="text-[11px] text-gray-500 font-poppins-semibold tracking-wider">
+              HOME
+            </Text>
           </TouchableOpacity>
-          <Ionicons name="chevron-forward" size={11} color="#94A3B8" />
-          <Text className="text-xs text-muted-foreground font-poppins-medium">
-            {product?.subCategory || product?.category || "FRESH WATER"}
+          <Ionicons name="chevron-forward" size={11} color="#9CA3AF" style={{ marginHorizontal: 4 }} />
+          <Text className="text-[11px] text-gray-500 font-poppins-semibold tracking-wider">
+            {(product?.subCategory || product?.category || "FRESH WATER").toUpperCase()}
           </Text>
-          <Ionicons name="chevron-forward" size={11} color="#94A3B8" />
-          <Text className="text-xs text-primary font-poppins-semibold" numberOfLines={1}>
+          <Ionicons name="chevron-forward" size={11} color="#9CA3AF" style={{ marginHorizontal: 4 }} />
+          <Text
+            className="text-[11px] text-primary font-poppins-bold tracking-wider flex-1"
+            numberOfLines={1}
+          >
             {(product?.title || "").toUpperCase()}
           </Text>
         </View>
 
-        {/* Category */}
-        <Text className="text-xs text-muted-foreground font-poppins-semibold uppercase tracking-wider mb-1">
-          {product?.category || ""}
+        {/* Category label */}
+        <Text className="text-xs text-gray-500 font-poppins-semibold uppercase tracking-widest mb-1">
+          {(product?.category || "").toUpperCase()}
         </Text>
 
-        {/* Title */}
+        {/* Title — purple/primary */}
         <Text
-          className="text-2xl text-primary mb-3"
-          style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }}
+          className="text-[26px] text-primary mb-3 leading-tight"
+          style={{
+            fontFamily: "Poppins-Bold",
+            fontWeight: Platform.OS === "android" ? "700" : "normal",
+          }}
         >
           {product?.title}
         </Text>
 
         {/* Description */}
-        <Text className="text-muted-foreground font-poppins leading-6 mb-3">
+        <Text className="text-gray-600 font-poppins-medium text-sm leading-6 mb-4">
           {product?.description || product?.short_description || ""}
         </Text>
 
-        {/* Product Code & Weight Loss */}
-        <Text className="text-muted-foreground font-poppins text-sm mb-4">
-          {product?.sku ? `Product Code: ${product.sku}` : ""}
-          {product?.sku && weightLoss ? "  " : ""}
-          {weightLoss ? `Weight Loss: ${weightLoss} kg` : ""}
-        </Text>
+        {/* Product Code | Weight Loss — split left/right */}
+        <View className="flex-row items-center justify-between mb-3">
+          {product?.sku ? (
+            <Text className="text-sm text-gray-600 font-poppins-medium">
+              Product Code:{" "}
+              <Text className="text-gray-900 font-poppins-semibold">{product.sku}</Text>
+            </Text>
+          ) : <View />}
+          {weightLoss ? (
+            <Text className="text-sm text-gray-600 font-poppins-medium">
+              Weight Loss:{" "}
+              <Text className="text-gray-900 font-poppins-semibold">{weightLoss} kg</Text>
+            </Text>
+          ) : null}
+        </View>
 
         {/* Star Rating */}
         <View className="flex-row items-center mb-4">
@@ -371,39 +392,44 @@ export default function ProductDetailScreen() {
             <Ionicons
               key={i}
               name="star"
-              size={20}
-              color={i < Math.round(ratingValue) ? "#FCD34D" : "#E5E7EB"}
+              size={18}
+              color={i < Math.round(ratingValue) ? "#F59E0B" : "#E5E7EB"}
+              style={{ marginRight: 2 }}
             />
           ))}
-          <Text className="text-muted-foreground font-poppins ml-2">
+          <Text className="text-green-600 font-poppins-medium text-sm ml-2">
             ({ratingCount} rating)
           </Text>
         </View>
 
-        {/* Price */}
+        {/* Price — /kg format */}
         <View className="flex-row items-baseline mb-5">
           <Text
-            className="text-2xl text-primary"
-            style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }}
+            className="text-[28px] text-primary"
+            style={{
+              fontFamily: "Poppins-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
           >
-            Price: Rs. {Number(currentPrice).toFixed(2)}
+            ₹{Number(currentPrice).toFixed(0)}
           </Text>
-          {product?.sale_price && product?.regular_price && (
-            <Text className="text-base text-muted-foreground line-through ml-3">
-              Rs. {Number(product.regular_price).toFixed(2)}
-            </Text>
-          )}
+          <Text className="text-base text-gray-500 font-poppins-medium ml-1">/kg</Text>
+          {product?.sale_price &&
+            product?.regular_price &&
+            product.regular_price > product.sale_price && (
+              <Text className="text-base text-gray-400 line-through font-poppins-medium ml-3">
+                ₹{Number(product.regular_price).toFixed(0)}/kg
+              </Text>
+            )}
         </View>
 
-        {/* Cutting Type Dropdown */}
+        {/* Dropdowns */}
         <Dropdown
           label="Cutting Type"
           value={selectedCuttingType}
           options={cuttingOptions}
           onSelect={setSelectedCuttingType}
         />
-
-        {/* Piece Size Dropdown (only if product has sizes) */}
         {pieceSizes.length > 0 && (
           <Dropdown
             label="Piece Size"
@@ -413,43 +439,69 @@ export default function ProductDetailScreen() {
           />
         )}
 
-        {/* Weight loss info */}
-        <View className="bg-muted rounded-xl px-4 py-3 mb-5 flex-row items-start border border-border">
-          <Ionicons name="information-circle-outline" size={18} color="#64748B" style={{ marginTop: 1 }} />
-          <Text className="text-muted-foreground font-poppins ml-2 flex-1 text-sm leading-5">
+        {/* Weight loss info — purple-tinted info banner */}
+        <View className="bg-primary/5 rounded-2xl px-4 py-3 mb-5 flex-row items-start">
+          <Ionicons
+            name="information-circle-outline"
+            size={18}
+            color="#6C3CE1"
+            style={{ marginTop: 1 }}
+          />
+          <Text className="text-gray-700 font-poppins-medium ml-2 flex-1 text-sm leading-5">
             Processing weight loss:{" "}
-            <Text className="text-foreground font-poppins-semibold">{weightLoss} kg.</Text>
-            {" "}Varies based on cutting type selected.
+            <Text className="text-gray-900 font-poppins-bold">{weightLoss} kg</Text>. Varies
+            based on cutting type selected.
           </Text>
         </View>
 
         {/* Quantity & Total */}
-        <View className="flex-row items-center justify-between pt-4 border-t border-border">
-          <View className="flex-row items-center border border-border rounded-full px-4 py-2 bg-white">
-            <TouchableOpacity
-              onPress={() => quantity > 1 && setQuantity((q) => q - 1)}
-              className="w-7 h-7 items-center justify-center"
-            >
-              <Ionicons name="remove" size={18} color="#64748B" />
-            </TouchableOpacity>
-            <Text className="mx-4 text-base font-poppins-semibold text-foreground">
-              {quantity} unit{quantity > 1 ? "s" : ""}
+        <View className="flex-row items-center justify-between pt-3">
+          <View className="flex-row items-center">
+            <View className="flex-row items-center border border-gray-200 rounded-xl px-1 py-1 bg-white">
+              <TouchableOpacity
+                onPress={() => quantity > 1 && setQuantity((q) => q - 1)}
+                className="w-8 h-8 items-center justify-center"
+              >
+                <Ionicons name="remove" size={18} color="#1F2937" />
+              </TouchableOpacity>
+              <Text
+                className="mx-2 text-base text-gray-900"
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
+              >
+                {totalGrams
+                  ? totalGrams >= 1000
+                    ? `${(totalGrams / 1000).toFixed(totalGrams % 1000 === 0 ? 0 : 2)} kg`
+                    : `${totalGrams} gm`
+                  : `${quantity} unit${quantity > 1 ? "s" : ""}`}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setQuantity((q) => q + 1)}
+                className="w-8 h-8 items-center justify-center"
+              >
+                <Ionicons name="add" size={18} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+            <Text className="text-xs text-gray-500 font-poppins-medium ml-2">
+              ₹{Number(currentPrice).toFixed(0)}/kg
             </Text>
-            <TouchableOpacity
-              onPress={() => setQuantity((q) => q + 1)}
-              className="w-7 h-7 items-center justify-center"
-            >
-              <Ionicons name="add" size={18} color="#64748B" />
-            </TouchableOpacity>
           </View>
 
           <View className="items-end">
-            <Text className="text-xs text-muted-foreground font-poppins">Total Payable</Text>
+            <Text className="text-xs text-gray-500 font-poppins-medium">Total Payable</Text>
             <Text
-              className="text-2xl text-foreground"
-              style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }}
+              className="text-2xl text-gray-900"
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
+              }}
             >
-              Rs. {(Number(currentPrice) * quantity).toFixed(2)}
+              Rs.{" "}
+              {totalGrams
+                ? ((Number(currentPrice) * totalGrams) / 1000).toFixed(2)
+                : (Number(currentPrice) * quantity).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -622,7 +674,39 @@ export default function ProductDetailScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      <Header />
+      {/* Slim header with back + title + share + cart */}
+      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+        >
+          <Ionicons name="chevron-back" size={20} color="#1F2937" />
+        </TouchableOpacity>
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => handleShare(product)}
+            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-2"
+          >
+            <Ionicons name="share-outline" size={18} color="#1F2937" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleWishlistToggle}
+            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-2"
+          >
+            <Ionicons
+              name={isWishlisted ? "heart" : "heart-outline"}
+              size={18}
+              color={isWishlisted ? "#EF4444" : "#1F2937"}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/cart")}
+            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+          >
+            <Ionicons name="bag-handle-outline" size={18} color="#1F2937" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {renderImageGallery()}
@@ -631,23 +715,36 @@ export default function ProductDetailScreen() {
         <View className="h-24" />
       </ScrollView>
 
-      {/* Bottom bar */}
-      <View className="flex-row items-center px-4 py-4 bg-white border-t border-border">
+      {/* Bottom bar — mint "Add to cart" + purple "Buy Now" like web */}
+      <View className="flex-row items-center px-4 py-3 bg-white border-t border-gray-100">
         <TouchableOpacity
-          className="flex-1 bg-accent py-4 rounded-xl mr-3"
+          className="flex-1 py-4 rounded-2xl mr-3"
+          style={{ backgroundColor: "#5EEAD4" }}
           onPress={handleAddToCart}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Text className="text-center text-white font-poppins-semibold text-base">
+          <Text
+            className="text-center text-white text-base"
+            style={{
+              fontFamily: "Poppins-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+          >
             Add to cart
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          className="flex-1 bg-primary py-4 rounded-xl"
+          className="flex-1 bg-primary py-4 rounded-2xl"
           onPress={handleBuyNow}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Text className="text-center text-white font-poppins-semibold text-base">
+          <Text
+            className="text-center text-white text-base"
+            style={{
+              fontFamily: "Poppins-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+          >
             Buy Now
           </Text>
         </TouchableOpacity>

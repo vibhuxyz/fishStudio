@@ -7,6 +7,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   FlatList,
+  Platform,
   ScrollView,
   StatusBar,
   Text,
@@ -37,7 +38,7 @@ export default function CategoryScreen() {
     queryKey: ["category-products", categoryName],
     queryFn: async () => {
       const res = await axiosInstance.get(
-        `/product/api/get-filtered-products?categories=${encodeURIComponent(categoryName)}&limit=50`
+        `/product/api/get-filtered-products?categories=${encodeURIComponent(categoryName)}&limit=50`,
       );
       return res.data;
     },
@@ -46,15 +47,12 @@ export default function CategoryScreen() {
 
   const allProducts: any[] = productsData?.products ?? [];
 
-  // Subcategories from API for this category
   const subCategories = useMemo(() => {
     if (!categoriesData) return [];
-    // Try exact key, then lowercased key
     const key = Object.keys(categoriesData.subCategories).find(
-      (k) => k.toLowerCase() === categoryName.toLowerCase()
+      (k) => k.toLowerCase() === categoryName.toLowerCase(),
     );
     const apiSubs = key ? categoriesData.subCategories[key] : [];
-    // Also collect from products
     const productSubs = allProducts
       .map((p) => p.subCategory)
       .filter((s): s is string => Boolean(s));
@@ -66,96 +64,136 @@ export default function CategoryScreen() {
     return allProducts.filter((p) => p.subCategory === activeSubCategory);
   }, [allProducts, activeSubCategory]);
 
-  const renderProduct = ({ item }: { item: any }) => (
-    <ProductCard product={item} />
-  );
-
   return (
-    <SafeAreaView edges={["bottom"]} className="flex-1 bg-white">
+    <SafeAreaView edges={["bottom"]} className="flex-1 bg-gray-50">
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* Header */}
-      <View className="bg-white px-4 py-4 border-b border-gray-100 flex-row items-center gap-3">
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#374151" />
+      {/* Slim nav header */}
+      <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-gray-100">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+        >
+          <Ionicons name="chevron-back" size={20} color="#1F2937" />
         </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-xl font-poppins-bold text-gray-900" numberOfLines={1}>
-            {categoryName}
-          </Text>
-          <Text className="text-xs text-gray-400 font-poppins-medium">
-            {allProducts.length} products
-          </Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/cart")}
+          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+        >
+          <Ionicons name="bag-handle-outline" size={18} color="#1F2937" />
+        </TouchableOpacity>
       </View>
 
-      {/* Subcategory pills */}
-      {subCategories.length > 0 && (
-        <View className="border-b border-gray-100">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
-          >
-            <TouchableOpacity
-              onPress={() => setActiveSubCategory(null)}
-              className={`px-4 py-2 rounded-full border ${
-                activeSubCategory === null
-                  ? "bg-primary border-primary"
-                  : "bg-white border-gray-200"
-              }`}
-            >
-              <Text
-                className={`text-sm ${
-                  activeSubCategory === null ? "text-white" : "text-gray-700"
-                }`}
+      <FlatList
+        data={isLoading ? [] : displayedProducts}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <View style={{ width: "48.5%", marginBottom: 12 }}>
+            <ProductCard product={item} />
+          </View>
+        )}
+        ListHeaderComponent={
+          <View>
+            {/* Back to Home link + Title */}
+            <View className="px-4 pt-5 pb-2 bg-white">
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)")}
+                className="flex-row items-center mb-3"
               >
-                All ({allProducts.length})
+                <Ionicons name="arrow-back" size={18} color="#374151" />
+                <Text className="ml-2 text-sm text-gray-700 font-poppins-medium">
+                  Back to Home
+                </Text>
+              </TouchableOpacity>
+              <Text
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
+                className="text-[32px] text-gray-900 leading-tight"
+              >
+                {categoryName}
               </Text>
-            </TouchableOpacity>
-            {subCategories.map((sub) => {
-              const count = allProducts.filter((p) => p.subCategory === sub).length;
-              return (
-                <TouchableOpacity
-                  key={sub}
-                  onPress={() => setActiveSubCategory(sub)}
-                  className={`px-4 py-2 rounded-full border ${
-                    activeSubCategory === sub
-                      ? "bg-primary border-primary"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  <Text
-                    className={`text-sm ${
-                      activeSubCategory === sub ? "text-white" : "text-gray-700"
-                    }`}
-                  >
-                    {sub} ({count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-      )}
+              <Text className="text-sm text-gray-500 font-poppins-medium mt-1 leading-5">
+                Browse our fresh selection of {categoryName.toLowerCase()} products.{" "}
+                {allProducts.length} product{allProducts.length !== 1 ? "s" : ""} available.
+              </Text>
+            </View>
 
-      {/* Products grid */}
-      {isLoading ? (
-        <View className="flex-row flex-wrap justify-between px-4 py-4">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <ProductSkeleton key={i} width={190} />
-          ))}
-        </View>
-      ) : (
-        <FlatList
-          data={displayedProducts}
-          renderItem={renderProduct}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={{ justifyContent: "space-between", marginBottom: 16 }}
-          contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
+            {/* Subcategories card */}
+            {subCategories.length > 0 && (
+              <View className="mx-3 mt-4 bg-white rounded-2xl border border-gray-100 p-4">
+                <View className="flex-row items-center mb-3">
+                  <Ionicons name="filter-outline" size={16} color="#1F2937" />
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-Bold",
+                      fontWeight: Platform.OS === "android" ? "700" : "normal",
+                    }}
+                    className="text-base text-gray-900 ml-2"
+                  >
+                    Subcategories
+                  </Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <Chip
+                    label="All"
+                    count={allProducts.length}
+                    active={activeSubCategory === null}
+                    onPress={() => setActiveSubCategory(null)}
+                  />
+                  {subCategories.map((sub) => {
+                    const count = allProducts.filter(
+                      (p) => p.subCategory === sub,
+                    ).length;
+                    return (
+                      <Chip
+                        key={sub}
+                        label={sub}
+                        count={count}
+                        active={activeSubCategory === sub}
+                        onPress={() => setActiveSubCategory(sub)}
+                      />
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Showing count */}
+            {!isLoading && (
+              <View className="px-4 pt-4 pb-2">
+                <Text className="text-sm text-gray-600 font-poppins-medium">
+                  Showing{" "}
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-Bold",
+                      fontWeight: Platform.OS === "android" ? "700" : "normal",
+                    }}
+                    className="text-gray-900"
+                  >
+                    {displayedProducts.length}
+                  </Text>{" "}
+                  product{displayedProducts.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+            )}
+          </View>
+        }
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="flex-row flex-wrap justify-between px-3 pt-2">
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={{ width: "48.5%", marginBottom: 12 }}>
+                  <ProductSkeleton width={190} />
+                </View>
+              ))}
+            </View>
+          ) : (
             <View className="flex-1 items-center justify-center py-24">
               <Ionicons name="fish-outline" size={64} color="#9CA3AF" />
               <Text className="text-lg font-poppins-bold text-gray-700 mt-4">
@@ -165,9 +203,54 @@ export default function CategoryScreen() {
                 Check back soon for products in this category.
               </Text>
             </View>
-          }
-        />
-      )}
+          )
+        }
+      />
     </SafeAreaView>
+  );
+}
+
+function Chip({
+  label,
+  count,
+  active,
+  onPress,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      className={`flex-row items-center px-4 py-2 rounded-full mr-2 ${
+        active ? "bg-primary" : "bg-gray-100"
+      }`}
+    >
+      <Text
+        style={{
+          fontFamily: active ? "Poppins-Bold" : "Poppins-Medium",
+          fontWeight: Platform.OS === "android" ? (active ? "700" : "500") : "normal",
+        }}
+        className={`text-sm ${active ? "text-white" : "text-gray-700"}`}
+      >
+        {label}
+      </Text>
+      <View
+        className={`ml-2 px-2 py-0.5 rounded-full ${
+          active ? "bg-white/25" : "bg-white"
+        }`}
+      >
+        <Text
+          className={`text-[10px] font-poppins-bold ${
+            active ? "text-white" : "text-gray-600"
+          }`}
+        >
+          {count}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
