@@ -15,6 +15,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "@/utils/toast";
 
+const OFFER_GREEN = "#22C55E";
+const PURPLE = "#6C3CE1";
+
 type ModalView = "list" | "pincode" | "add";
 
 interface AddressModalProps {
@@ -282,19 +285,21 @@ export default function AddressModal({
         activeOpacity={0.75}
         style={{
           borderWidth: 1.5,
-          borderColor: isSelected ? "#22C55E" : "#E2E8F0",
-          borderRadius: 12,
+          borderColor: isSelected ? OFFER_GREEN : "#E2E8F0",
+          borderRadius: 14,
           backgroundColor: isSelected ? "#F0FDF4" : "#fff",
           marginBottom: 10,
+          padding: 14,
+          gap: 12,
         }}
       >
         {/* Main row */}
-        <View style={{ flexDirection: "row", alignItems: "flex-start", padding: 14, gap: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 10,
+              borderRadius: 12,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: isSelected ? "#DCFCE7" : "#F1F5F9",
@@ -303,47 +308,43 @@ export default function AddressModal({
             <Ionicons
               name={address.label === "Home" ? "home-outline" : address.label === "Work" ? "briefcase-outline" : "location-outline"}
               size={20}
-              color={isSelected ? "#22C55E" : "#64748B"}
+              color={isSelected ? OFFER_GREEN : "#64748B"}
             />
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#1E293B" }}>
+              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 15, color: "#1E293B" }}>
                 {address.label}
               </Text>
               {isSelected && (
-                <Ionicons name="checkmark-circle" size={15} color="#22C55E" />
+                <Ionicons name="checkmark-circle" size={16} color={OFFER_GREEN} />
               )}
             </View>
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#64748B", lineHeight: 18 }} numberOfLines={2}>
-              {address.name}{address.phone ? ` · ${address.phone}` : ""}
-            </Text>
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#64748B" }} numberOfLines={2}>
-              {address.street}{address.landmark ? `, ${address.landmark}` : ""}{address.area ? `, ${address.area}` : ""}
-            </Text>
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#64748B" }}>
-              {address.city}{address.state ? `, ${address.state}` : ""} - {address.pincode}
+            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#64748B", lineHeight: 19 }}>
+              {address.name}
+              {address.street ? `, ${address.street}` : ""}
+              {address.landmark ? `, ${address.landmark}` : ""}
+              {address.area ? `, ${address.area}` : ""}
+              {address.city ? ` ${address.city}` : ""}
             </Text>
           </View>
         </View>
 
-        {/* Actions row */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingHorizontal: 14, paddingVertical: 10 }}>
-          {!isSelected ? (
-            <TouchableOpacity onPress={() => { selectAddress(address.id); toast.success(`${address.label} set as primary`); }}>
-              <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#6C3CE1" }}>Set as Default</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#94A3B8", fontStyle: "italic" }}>
-              Primary delivery address
-            </Text>
-          )}
+        {/* Actions row — just pencil + (optional) trash, matching user-ui */}
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <TouchableOpacity
+            style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil-outline" size={14} color="#64748B" />
+          </TouchableOpacity>
           {!isSelected && (
             <TouchableOpacity
               onPress={() => handleDeleteAddress(address.id)}
-              style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" }}
+              style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}
+              activeOpacity={0.7}
             >
-              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+              <Ionicons name="trash-outline" size={14} color="#64748B" />
             </TouchableOpacity>
           )}
         </View>
@@ -393,7 +394,7 @@ export default function AddressModal({
             onPress={() => handleCheckPincode()}
             disabled={pincode.length !== 6 || pincodeLoading}
             style={{
-              backgroundColor: pincode.length === 6 ? "#22C55E" : "#E2E8F0",
+              backgroundColor: pincode.length === 6 ? OFFER_GREEN : "#BBF7D0",
               borderRadius: 12,
               paddingHorizontal: 20,
               alignItems: "center",
@@ -404,10 +405,55 @@ export default function AddressModal({
             {pincodeLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: pincode.length === 6 ? "#fff" : "#94A3B8" }}>
+              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#fff" }}>
                 Check
               </Text>
             )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Detect / Search buttons */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => toast.info("Location detection not available. Please enter pincode.")}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              backgroundColor: OFFER_GREEN,
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 12,
+            }}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="navigate-outline" size={16} color="#fff" />
+            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 13, color: "#fff" }}>Detect my location</Text>
+          </TouchableOpacity>
+
+          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#94A3B8" }}>OR</Text>
+
+          <TouchableOpacity
+            onPress={() => toast.info("Please use pincode to search your area.")}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              borderWidth: 1.5,
+              borderColor: "#E2E8F0",
+              borderRadius: 12,
+              paddingVertical: 14,
+              paddingHorizontal: 12,
+              backgroundColor: "#fff",
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="search-outline" size={16} color="#64748B" />
+            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#64748B" }}>Search location</Text>
           </TouchableOpacity>
         </View>
 

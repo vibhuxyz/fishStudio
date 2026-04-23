@@ -82,6 +82,22 @@ export default function MyOrders() {
 
   const orders: Order[] = ordersData || [];
 
+  // Cancel mutation — calls PUT /order/api/cancel/:orderId
+  const { mutate: cancelOrder } = useMutation({
+    mutationFn: (orderId: string) =>
+      axiosInstance.put(`/order/api/cancel/${orderId}`),
+    onMutate: (orderId) => setCancellingId(orderId),
+    onSuccess: () => {
+      toast.success("Order cancelled successfully");
+      queryClient.invalidateQueries({ queryKey: ["user-orders"] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || "Could not cancel order";
+      toast.error(msg);
+    },
+    onSettled: () => setCancellingId(null),
+  });
+
   if (!user) {
     return (
       <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-white">
@@ -112,22 +128,6 @@ export default function MyOrders() {
       </SafeAreaView>
     );
   }
-
-  // Cancel mutation — calls PUT /order/api/cancel/:orderId
-  const { mutate: cancelOrder } = useMutation({
-    mutationFn: (orderId: string) =>
-      axiosInstance.put(`/order/api/cancel/${orderId}`),
-    onMutate: (orderId) => setCancellingId(orderId),
-    onSuccess: () => {
-      toast.success("Order cancelled successfully");
-      queryClient.invalidateQueries({ queryKey: ["user-orders"] });
-    },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || "Could not cancel order";
-      toast.error(msg);
-    },
-    onSettled: () => setCancellingId(null),
-  });
 
   const confirmCancel = (orderId: string) => {
     Alert.alert(

@@ -10,12 +10,16 @@ interface ProductCardProps {
   product: any;
   showActions?: boolean;
   isFlashSale?: boolean;
+  cardWidth?: number | `${number}%`;
+  noRightMargin?: boolean;
 }
 
 export default function ProductCard({
   product,
   showActions = true,
   isFlashSale = false,
+  cardWidth = 200,
+  noRightMargin = false,
 }: ProductCardProps) {
 
   const { wishlist, addToWishlist, removeFromWishlist } = useStore();
@@ -77,8 +81,10 @@ export default function ProductCard({
 
   return (
     <TouchableOpacity
-      className="bg-white rounded-2xl shadow-sm border border-border overflow-hidden mr-4"
-      style={{ width: 200 }}
+      className={`bg-white rounded-2xl shadow-sm border border-border overflow-hidden ${
+        noRightMargin ? "" : "mr-4"
+      }`}
+      style={{ width: cardWidth }}
       onPress={() => handleProductPress(product)}
       activeOpacity={0.9}
       disabled={isOutOfStock}

@@ -1,11 +1,11 @@
 import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
+import { useCouponStore } from "@/lib/coupon-store";
 import AddressModal from "@/components/shared/address-modal";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useMemo, useState, useEffect } from "react";
 import {
@@ -40,10 +40,16 @@ export default function CartScreen() {
   const { cart, removeFromCart, updateQuantity, checkAndIncrement, clearCart } = useStore();
   const { user } = useUser();
   const { selectedLocation, selectedAddressId, getSelectedAddress, addresses } = useAddressStore();
+  const {
+    appliedCoupons,
+    applyCoupon,
+    isCouponApplied,
+    getDiscountForCoupon,
+    getTotalDiscount,
+    validateCouponCode,
+  } = useCouponStore();
 
   const [couponCode, setCouponCode] = useState("");
-  const [storedCouponCode, setStoredCouponCode] = useState("");
-  const [discountAmount, setDiscountAmount] = useState(0);
   const [donation, setDonation] = useState(false);
   const [tip, setTip] = useState<number | null>(null);
   const [customTip, setCustomTip] = useState("");
@@ -163,6 +169,7 @@ export default function CartScreen() {
     (sum, item) => sum + item.price * (item.quantity || 1),
     0,
   );
+  const discountAmount = getTotalDiscount(itemsTotal);
   const grandTotal =
     itemsTotal +
     DELIVERY_CHARGE +
@@ -197,24 +204,24 @@ export default function CartScreen() {
         toast.error("Select delivery location first");
         return;
       }
-      const res = await axiosInstance.post("/product/api/validate-coupon", {
-        code: code.trim().toUpperCase(),
-        orderAmount: itemsTotal,
-        storeId,
-      });
-      if (!res.data.success || !res.data.coupon) {
-        toast.error(res.data.message || "Invalid coupon code");
+      const normalizedCode = code.trim().toUpperCase();
+      if (isCouponApplied(normalizedCode)) {
+        toast.info("Coupon already applied");
+        setCouponCode("");
         return;
       }
-      const coupon = res.data.coupon;
-      const nextDiscount =
-        coupon.discountType === "percentage"
-          ? Math.round((itemsTotal * coupon.discountValue) / 100)
-          : coupon.discountType === "fixed"
-            ? Math.min(coupon.discountValue, itemsTotal)
-            : 0;
-      setDiscountAmount(nextDiscount);
-      setStoredCouponCode(coupon.code);
+
+      const { coupon, error } = await validateCouponCode(
+        normalizedCode,
+        itemsTotal,
+        storeId,
+      );
+      if (!coupon) {
+        toast.error(error || "Invalid coupon code");
+        return;
+      }
+      applyCoupon(coupon);
+      const nextDiscount = getDiscountForCoupon(coupon, itemsTotal);
       setCouponCode("");
       toast.success(
         coupon.discountType === "free_delivery"
@@ -449,16 +456,34 @@ export default function CartScreen() {
               onChangeText={setCouponCode}
               autoCapitalize="characters"
             />
-            <TouchableOpacity onPress={() => applyCouponCode(couponCode)}>
-              <Text className="text-primary text-sm font-poppins-semibold">Apply</Text>
+            <TouchableOpacity
+              onPress={() => applyCouponCode(couponCode)}
+              disabled={!couponCode.trim()}
+            >
+              <Text
+                className={`text-sm font-poppins-semibold ${
+                  couponCode.trim() ? "text-primary" : "text-gray-400"
+                }`}
+              >
+                {couponCode.trim()
+                  ? "Apply"
+                  : appliedCoupons.length > 0
+                    ? "Applied"
+                    : "Apply"}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {storedCouponCode ? (
+          {appliedCoupons.length > 0 ? (
             <View className="px-4 pb-2 -mt-1">
-              <Text className="text-green-600 text-xs font-poppins-medium">
-                "{storedCouponCode}" applied — saving ₹{discountAmount}
-              </Text>
+              {appliedCoupons.map((coupon) => (
+                <Text key={coupon.code} className="text-green-600 text-xs font-poppins-medium">
+                  "{coupon.code}" applied
+                  {coupon.discountType !== "free_delivery"
+                    ? ` — saving ₹${getDiscountForCoupon(coupon, itemsTotal)}`
+                    : " — free delivery"}
+                </Text>
+              ))}
             </View>
           ) : null}
 
@@ -479,6 +504,7 @@ export default function CartScreen() {
             <View className="px-3 pb-3">
               {availableOffers.map((o) => {
                 const meetsMin = itemsTotal >= o.minOrderValue;
+                const applied = isCouponApplied(o.code);
                 const shortfall = Math.max(0, o.minOrderValue - itemsTotal);
                 return (
                   <View
@@ -500,17 +526,25 @@ export default function CartScreen() {
                     </View>
                     <TouchableOpacity
                       onPress={() => applyCouponCode(o.code)}
-                      disabled={!meetsMin}
+                      disabled={!meetsMin || applied}
                       className={`px-4 py-1.5 rounded-full border ${
-                        meetsMin ? "border-primary" : "border-gray-300"
+                        applied
+                          ? "border-green-500 bg-green-50"
+                          : meetsMin
+                            ? "border-primary"
+                            : "border-gray-300"
                       }`}
                     >
                       <Text
                         className={`text-sm font-poppins-semibold ${
-                          meetsMin ? "text-primary" : "text-gray-400"
+                          applied
+                            ? "text-green-600"
+                            : meetsMin
+                              ? "text-primary"
+                              : "text-gray-400"
                         }`}
                       >
-                        Apply
+                        {applied ? "Applied" : "Apply"}
                       </Text>
                     </TouchableOpacity>
                   </View>

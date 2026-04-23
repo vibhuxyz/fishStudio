@@ -2,10 +2,11 @@ import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { resolveProductSizePricing } from "@/utils/pricing";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -23,26 +24,11 @@ import { toast } from "@/utils/toast";
 
 const { width } = Dimensions.get("window");
 
-// Fallback cutting types if product doesn't specify them
-const DEFAULT_CUTTING_TYPES = [
-  "Whole-Cleaned",
-  "Whole-UnCleaned",
-  "Skinless & Boneless",
-  "Curry Cut",
-  "Steak Cut",
-  "Fillet",
-];
+const PER_KG_STEP = 50;
+const PER_KG_MIN = 50;
+const PER_KG_DEFAULT = 250;
 
-const WEIGHT_LOSS_MAP: Record<string, string> = {
-  "Whole-Cleaned": "15% - 20%",
-  "Whole-UnCleaned": "5% - 10%",
-  "Skinless & Boneless": "40% - 50%",
-  "Curry Cut": "25% - 30%",
-  "Steak Cut": "20% - 25%",
-  Fillet: "45% - 55%",
-};
-
-// Simple inline dropdown component
+// Inline bottom-sheet dropdown (mobile-native Modal)
 function Dropdown({
   label,
   value,
@@ -127,9 +113,6 @@ export default function ProductDetailScreen() {
   const { user } = useUser();
   const { wishlist, addToWishlist, removeFromWishlist, addToCart } = useStore();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedCuttingType, setSelectedCuttingType] = useState("");
-  const [selectedPieceSize, setSelectedPieceSize] = useState("");
-  const [quantity, setQuantity] = useState(1);
 
   const { selectedLocation, locationVersion } = useAddressStore();
   const locationParams = selectedLocation?.storeId
@@ -138,7 +121,7 @@ export default function ProductDetailScreen() {
     ? `pincode=${selectedLocation.pincode}&city=${selectedLocation.city}`
     : "";
 
-  // Fetch product details
+  // Fetch product details (same endpoint as user-ui's fetchStorefrontProductBySlug)
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", id, locationParams, locationVersion],
     queryFn: async () => {
@@ -149,24 +132,111 @@ export default function ProductDetailScreen() {
     },
   });
 
-  // Set default cutting type & piece size when product loads
+  // Selection state — mirrors user-ui's ProductDetailClient
+  const [selectedCutting, setSelectedCutting] = useState<string>("");
+  const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
+  const [selectedWeightGrams, setSelectedWeightGrams] = useState<number>(0);
+  const [perKgWeightGrams, setPerKgWeightGrams] = useState(PER_KG_DEFAULT);
+
+  // Reset selections whenever the product changes
   useEffect(() => {
-    if (product) {
-      const cuttingOpts: string[] =
-        product.cuttingOptions ||
-        product.cutting_options ||
-        DEFAULT_CUTTING_TYPES;
-      if (cuttingOpts.length > 0 && !selectedCuttingType) {
-        setSelectedCuttingType(cuttingOpts[0]);
-      }
-      const sizeOpts: string[] = product.pieceSizes || product.piece_sizes || [];
-      if (sizeOpts.length > 0 && !selectedPieceSize) {
-        setSelectedPieceSize(sizeOpts[0]);
-      }
-    }
+    if (!product) return;
+    setSelectedCutting(product.cuttingTypes?.[0] || "");
+    setSelectedPieceSize(product.pieceSizes?.[0] || "");
+    setSelectedSize(product.weight || product.sizes?.[0] || "");
   }, [product]);
 
-  // Related products — use get-all-products with category filter (avoids 404)
+  const { normalizedPricing, selected } = useMemo(
+    () => resolveProductSizePricing(product ?? {}, selectedSize),
+    [product, selectedSize],
+  );
+
+  const isWeightAdjustable = selected.weightGrams > 0;
+  const isPerKgMode =
+    (product?.sizes?.length ?? 0) === 0 &&
+    ((product?.cuttingTypes?.length ?? 0) > 0 ||
+      (product?.pieceSizes?.length ?? 0) > 0);
+  const basePricePerKg = isPerKgMode ? selected.salePrice : null;
+
+  useEffect(() => {
+    setSelectedWeightGrams(selected.weightGrams || 0);
+  }, [selected.size, selected.weightGrams]);
+
+  // Per-kg rate + size multiplier derivation (mirrors web exactly)
+  const perKgPricing = useMemo(() => {
+    if (!isPerKgMode || !basePricePerKg) return null;
+    const cuttingPricing = product?.cuttingTypePricing as
+      | Array<{ cuttingType: string; salePrice: number }>
+      | null
+      | undefined;
+    const piecePricing = product?.pieceSizePricing as
+      | Array<{ pieceSize: string; salePrice: number }>
+      | null
+      | undefined;
+
+    const cuttingCharge =
+      cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
+    const rawMultiplier =
+      piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
+    // Clamp multiplier to 0.5–3.0 — treat out-of-range as stale/bad data
+    const sizeMultiplier =
+      rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
+    const ratePerKg = basePricePerKg + cuttingCharge;
+
+    return { cuttingCharge, sizeMultiplier, ratePerKg };
+  }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, product]);
+
+  const computedSalePrice = useMemo(() => {
+    if (isPerKgMode && basePricePerKg && perKgPricing) {
+      return parseFloat(
+        ((perKgPricing.ratePerKg / 1000) *
+          perKgWeightGrams *
+          perKgPricing.sizeMultiplier).toFixed(2),
+      );
+    }
+    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
+      return parseFloat((selected.salePrice || 0).toFixed(2));
+    }
+    const pricePerGram = selected.salePrice / selected.weightGrams;
+    return parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
+  }, [
+    isPerKgMode,
+    basePricePerKg,
+    perKgPricing,
+    perKgWeightGrams,
+    isWeightAdjustable,
+    selected.salePrice,
+    selected.weightGrams,
+    selectedWeightGrams,
+  ]);
+
+  const computedRegularPrice = useMemo(() => {
+    if (isPerKgMode) return computedSalePrice;
+    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
+      return parseFloat((selected.regularPrice || 0).toFixed(2));
+    }
+    const pricePerGram = selected.regularPrice / selected.weightGrams;
+    return parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
+  }, [
+    isPerKgMode,
+    computedSalePrice,
+    isWeightAdjustable,
+    selected.regularPrice,
+    selected.weightGrams,
+    selectedWeightGrams,
+  ]);
+
+  const totalPayable = computedSalePrice;
+  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : selectedWeightGrams;
+  const weightDisplay =
+    isPerKgMode || (isWeightAdjustable && selectedWeightGrams > 0)
+      ? activeWeightGrams >= 1000
+        ? `${parseFloat((activeWeightGrams / 1000).toFixed(2))} kg`
+        : `${activeWeightGrams} gm`
+      : selected.size;
+
+  // Related products — use get-all-products with category filter
   const { data: relatedProducts, isLoading: relatedLoading } = useQuery({
     queryKey: ["related-products", product?.category, id],
     queryFn: async () => {
@@ -180,19 +250,10 @@ export default function ProductDetailScreen() {
             : {}),
         },
       });
-      // Exclude the current product
       return (res.data.products || []).filter((p: any) => p.id !== product.id);
     },
     enabled: !!product?.category,
   });
-
-  const cuttingOptions: string[] =
-    product?.cuttingOptions || product?.cutting_options || DEFAULT_CUTTING_TYPES;
-  const pieceSizes: string[] = product?.pieceSizes || product?.piece_sizes || [];
-  const weightLoss =
-    product?.weightLoss ||
-    WEIGHT_LOSS_MAP[selectedCuttingType] ||
-    "5% - 10%";
 
   const isWishlisted = product ? wishlist.some((i) => i.id === product.id) : false;
 
@@ -211,35 +272,47 @@ export default function ProductDetailScreen() {
     }
   };
 
-  const handleAddToCart = () => {
-    if (!user) { toast.error("Please login to add items to cart"); return; }
+  const buildBreakdown = () =>
+    isPerKgMode && perKgPricing
+      ? {
+          baseRatePerKg: selected.salePrice,
+          cuttingCharge: perKgPricing.cuttingCharge,
+          sizeMultiplier: perKgPricing.sizeMultiplier,
+          weightGrams: perKgWeightGrams,
+          effectiveRatePerKg: perKgPricing.ratePerKg,
+        }
+      : undefined;
+
+  const addCurrentToCart = () => {
     if (!product) return;
     addToCart(
       {
-        id: product.id, slug: product.slug, title: product.title,
-        price: product.sale_price || product.regular_price,
-        image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "",
-        quantity, cuttingType: selectedCuttingType || undefined,
+        id: product.id,
+        slug: product.slug,
+        title: product.title,
+        price: computedSalePrice,
+        image: product.images?.[0]?.url || "",
+        shopId: product.Shop?.id || "",
+        quantity: 1,
+        cuttingType: selectedCutting || undefined,
         pieceSize: selectedPieceSize || undefined,
+        priceBreakdown: buildBreakdown(),
       },
       user, null, "Mobile App"
     );
+  };
+
+  const handleAddToCart = () => {
+    if (!user) { toast.error("Please login to add items to cart"); return; }
+    if (!product) return;
+    addCurrentToCart();
     toast.success("Added to cart!");
   };
 
   const handleBuyNow = () => {
     if (!user) { toast.error("Please login to purchase"); return; }
     if (!product) return;
-    addToCart(
-      {
-        id: product.id, slug: product.slug, title: product.title,
-        price: product.sale_price || product.regular_price,
-        image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "",
-        quantity, cuttingType: selectedCuttingType || undefined,
-        pieceSize: selectedPieceSize || undefined,
-      },
-      user, null, "Mobile App"
-    );
+    addCurrentToCart();
     router.push("/(tabs)/cart");
   };
 
@@ -257,7 +330,6 @@ export default function ProductDetailScreen() {
 
     return (
       <View className="mb-4">
-        {/* Main image */}
         <View className="relative">
           <Image
             source={mainUri ? { uri: mainUri } : require("@/assets/images/icon.png")}
@@ -269,7 +341,6 @@ export default function ProductDetailScreen() {
               <Text className="text-white text-sm font-poppins-bold">{discountPct}% OFF</Text>
             </View>
           )}
-          {/* Prev / Next */}
           {images.length > 1 && (
             <>
               <TouchableOpacity
@@ -290,7 +361,6 @@ export default function ProductDetailScreen() {
           )}
         </View>
 
-        {/* Thumbnails */}
         {images.length > 1 && (
           <View className="flex-row px-4 pt-3">
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -318,14 +388,11 @@ export default function ProductDetailScreen() {
 
   // ─── Product Info ─────────────────────────────────────────────────────────
   const renderProductInfo = () => {
-    const currentPrice = product?.sale_price || product?.regular_price || 0;
     const ratingCount = product?.reviews?.length || product?.ratingCount || 5;
     const ratingValue = product?.rating || 5;
-    // Web shows price per-kg; mobile mirrors that when we have weight info.
-    const weightGrams = product?.sizePricing?.find?.(
-      (s: any) => s.size === selectedPieceSize,
-    )?.weightGrams;
-    const totalGrams = weightGrams ? weightGrams * quantity : null;
+    const hasCuttingTypes = (product?.cuttingTypes?.length ?? 0) > 0;
+    const hasPieceSizes = (product?.pieceSizes?.length ?? 0) > 0;
+    const hasSizes = (product?.sizes?.length ?? 0) > 0;
 
     return (
       <View className="px-4 mb-2">
@@ -338,7 +405,7 @@ export default function ProductDetailScreen() {
           </TouchableOpacity>
           <Ionicons name="chevron-forward" size={11} color="#9CA3AF" style={{ marginHorizontal: 4 }} />
           <Text className="text-[11px] text-gray-500 font-poppins-semibold tracking-wider">
-            {(product?.subCategory || product?.category || "FRESH WATER").toUpperCase()}
+            {(product?.subCategory || product?.category || "").toUpperCase()}
           </Text>
           <Ionicons name="chevron-forward" size={11} color="#9CA3AF" style={{ marginHorizontal: 4 }} />
           <Text
@@ -349,12 +416,10 @@ export default function ProductDetailScreen() {
           </Text>
         </View>
 
-        {/* Category label */}
         <Text className="text-xs text-gray-500 font-poppins-semibold uppercase tracking-widest mb-1">
           {(product?.category || "").toUpperCase()}
         </Text>
 
-        {/* Title — purple/primary */}
         <Text
           className="text-[26px] text-primary mb-3 leading-tight"
           style={{
@@ -365,12 +430,11 @@ export default function ProductDetailScreen() {
           {product?.title}
         </Text>
 
-        {/* Description */}
         <Text className="text-gray-600 font-poppins-medium text-sm leading-6 mb-4">
-          {product?.description || product?.short_description || ""}
+          {product?.short_description || product?.description || ""}
         </Text>
 
-        {/* Product Code | Weight Loss — split left/right */}
+        {/* Product Code | Weight Loss */}
         <View className="flex-row items-center justify-between mb-3">
           {product?.sku ? (
             <Text className="text-sm text-gray-600 font-poppins-medium">
@@ -378,10 +442,12 @@ export default function ProductDetailScreen() {
               <Text className="text-gray-900 font-poppins-semibold">{product.sku}</Text>
             </Text>
           ) : <View />}
-          {weightLoss ? (
+          {product?.processingWeightLoss ? (
             <Text className="text-sm text-gray-600 font-poppins-medium">
               Weight Loss:{" "}
-              <Text className="text-gray-900 font-poppins-semibold">{weightLoss} kg</Text>
+              <Text className="text-gray-900 font-poppins-semibold">
+                {product.processingWeightLoss}
+              </Text>
             </Text>
           ) : null}
         </View>
@@ -402,91 +468,198 @@ export default function ProductDetailScreen() {
           </Text>
         </View>
 
-        {/* Price — /kg format */}
-        <View className="flex-row items-baseline mb-5">
-          <Text
-            className="text-[28px] text-primary"
-            style={{
-              fontFamily: "Poppins-Bold",
-              fontWeight: Platform.OS === "android" ? "700" : "normal",
-            }}
-          >
-            ₹{Number(currentPrice).toFixed(0)}
-          </Text>
-          <Text className="text-base text-gray-500 font-poppins-medium ml-1">/kg</Text>
-          {product?.sale_price &&
-            product?.regular_price &&
-            product.regular_price > product.sale_price && (
-              <Text className="text-base text-gray-400 line-through font-poppins-medium ml-3">
-                ₹{Number(product.regular_price).toFixed(0)}/kg
-              </Text>
-            )}
-        </View>
-
-        {/* Dropdowns */}
-        <Dropdown
-          label="Cutting Type"
-          value={selectedCuttingType}
-          options={cuttingOptions}
-          onSelect={setSelectedCuttingType}
-        />
-        {pieceSizes.length > 0 && (
-          <Dropdown
-            label="Piece Size"
-            value={selectedPieceSize}
-            options={pieceSizes}
-            onSelect={setSelectedPieceSize}
-          />
-        )}
-
-        {/* Weight loss info — purple-tinted info banner */}
-        <View className="bg-primary/5 rounded-2xl px-4 py-3 mb-5 flex-row items-start">
-          <Ionicons
-            name="information-circle-outline"
-            size={18}
-            color="#6C3CE1"
-            style={{ marginTop: 1 }}
-          />
-          <Text className="text-gray-700 font-poppins-medium ml-2 flex-1 text-sm leading-5">
-            Processing weight loss:{" "}
-            <Text className="text-gray-900 font-poppins-bold">{weightLoss} kg</Text>. Varies
-            based on cutting type selected.
-          </Text>
-        </View>
-
-        {/* Quantity & Total */}
-        <View className="flex-row items-center justify-between pt-3">
-          <View className="flex-row items-center">
-            <View className="flex-row items-center border border-gray-200 rounded-xl px-1 py-1 bg-white">
-              <TouchableOpacity
-                onPress={() => quantity > 1 && setQuantity((q) => q - 1)}
-                className="w-8 h-8 items-center justify-center"
-              >
-                <Ionicons name="remove" size={18} color="#1F2937" />
-              </TouchableOpacity>
+        {/* Price headline */}
+        <View className="flex-row items-baseline flex-wrap mb-5">
+          {isPerKgMode ? (
+            <>
               <Text
-                className="mx-2 text-base text-gray-900"
+                className="text-[28px] text-primary"
                 style={{
                   fontFamily: "Poppins-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >
-                {totalGrams
-                  ? totalGrams >= 1000
-                    ? `${(totalGrams / 1000).toFixed(totalGrams % 1000 === 0 ? 0 : 2)} kg`
-                    : `${totalGrams} gm`
-                  : `${quantity} unit${quantity > 1 ? "s" : ""}`}
+                ₹{Number(selected.salePrice).toFixed(0)}
               </Text>
-              <TouchableOpacity
-                onPress={() => setQuantity((q) => q + 1)}
-                className="w-8 h-8 items-center justify-center"
+              <Text className="text-base text-gray-500 font-poppins-medium ml-1">
+                /kg
+              </Text>
+              {selected.regularPrice > selected.salePrice && (
+                <Text className="text-base text-gray-400 line-through font-poppins-medium ml-3">
+                  ₹{Number(selected.regularPrice).toFixed(0)}/kg
+                </Text>
+              )}
+              {perKgPricing && perKgPricing.cuttingCharge > 0 && (
+                <Text className="text-xs text-amber-600 font-poppins-medium ml-2">
+                  +₹{perKgPricing.cuttingCharge}/kg cutting
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text className="text-sm text-gray-600 font-poppins-medium mr-1">
+                Price:
+              </Text>
+              <Text
+                className="text-[28px] text-primary"
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
               >
-                <Ionicons name="add" size={18} color="#1F2937" />
-              </TouchableOpacity>
-            </View>
-            <Text className="text-xs text-gray-500 font-poppins-medium ml-2">
-              ₹{Number(currentPrice).toFixed(0)}/kg
+                Rs. {computedSalePrice.toFixed(2)}
+              </Text>
+              {computedRegularPrice > computedSalePrice && (
+                <Text className="text-base text-gray-400 line-through font-poppins-medium ml-3">
+                  Rs. {computedRegularPrice.toFixed(2)}
+                </Text>
+              )}
+              {isWeightAdjustable && selectedWeightGrams > 0 && (
+                <Text className="text-sm text-gray-500 font-poppins-medium ml-1">
+                  {" "}/ {weightDisplay}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* Dropdowns — only render if backend provides the options */}
+        {hasCuttingTypes && (
+          <Dropdown
+            label="Cutting Type"
+            value={selectedCutting}
+            options={product.cuttingTypes}
+            onSelect={setSelectedCutting}
+          />
+        )}
+        {hasPieceSizes && (
+          <Dropdown
+            label="Piece Size"
+            value={selectedPieceSize}
+            options={product.pieceSizes}
+            onSelect={setSelectedPieceSize}
+          />
+        )}
+        {hasSizes && (
+          <Dropdown
+            label="Fish / Pack Size"
+            value={selectedSize}
+            options={normalizedPricing.map((e) => e.size)}
+            onSelect={setSelectedSize}
+          />
+        )}
+
+        {/* Processing weight loss info — only when backend provides it */}
+        {product?.processingWeightLoss && (
+          <View className="bg-primary/5 rounded-2xl px-4 py-3 mb-5 flex-row items-start">
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color="#6C3CE1"
+              style={{ marginTop: 1 }}
+            />
+            <Text className="text-gray-700 font-poppins-medium ml-2 flex-1 text-sm leading-5">
+              Processing weight loss:{" "}
+              <Text className="text-gray-900 font-poppins-bold">
+                {product.processingWeightLoss}
+              </Text>
+              . Varies based on cutting type selected.
             </Text>
+          </View>
+        )}
+
+        {/* Weight stepper / size pill + Total Payable */}
+        <View className="flex-row items-center justify-between pt-3">
+          <View className="flex-row items-center">
+            {isPerKgMode ? (
+              <>
+                <View className="flex-row items-center border border-gray-200 rounded-xl px-1 py-1 bg-white">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setPerKgWeightGrams(
+                        Math.max(PER_KG_MIN, perKgWeightGrams - PER_KG_STEP),
+                      )
+                    }
+                    disabled={perKgWeightGrams <= PER_KG_MIN}
+                    className="w-8 h-8 items-center justify-center"
+                  >
+                    <Ionicons
+                      name="remove"
+                      size={18}
+                      color={perKgWeightGrams <= PER_KG_MIN ? "#9CA3AF" : "#1F2937"}
+                    />
+                  </TouchableOpacity>
+                  <Text
+                    className="mx-2 text-base text-gray-900 min-w-[64px] text-center"
+                    style={{
+                      fontFamily: "Poppins-Bold",
+                      fontWeight: Platform.OS === "android" ? "700" : "normal",
+                    }}
+                  >
+                    {weightDisplay}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setPerKgWeightGrams(perKgWeightGrams + PER_KG_STEP)}
+                    className="w-8 h-8 items-center justify-center"
+                  >
+                    <Ionicons name="add" size={18} color="#1F2937" />
+                  </TouchableOpacity>
+                </View>
+                {perKgPricing && (
+                  <Text className="text-xs text-gray-500 font-poppins-medium ml-2">
+                    {perKgPricing.cuttingCharge > 0 ? (
+                      <>
+                        ₹{selected.salePrice}/kg
+                        <Text className="text-amber-600"> +₹{perKgPricing.cuttingCharge} cut</Text>
+                        <Text className="text-gray-900 font-poppins-semibold"> = ₹{perKgPricing.ratePerKg.toFixed(0)}/kg</Text>
+                      </>
+                    ) : (
+                      <Text className="text-gray-900 font-poppins-semibold">
+                        ₹{perKgPricing.ratePerKg.toFixed(0)}/kg
+                      </Text>
+                    )}
+                  </Text>
+                )}
+              </>
+            ) : isWeightAdjustable ? (
+              <View className="flex-row items-center border border-gray-200 rounded-xl px-1 py-1 bg-white">
+                <TouchableOpacity
+                  onPress={() =>
+                    setSelectedWeightGrams(Math.max(50, selectedWeightGrams - 50))
+                  }
+                  className="w-8 h-8 items-center justify-center"
+                >
+                  <Ionicons name="remove" size={18} color="#1F2937" />
+                </TouchableOpacity>
+                <Text
+                  className="mx-2 text-base text-gray-900 min-w-[64px] text-center"
+                  style={{
+                    fontFamily: "Poppins-Bold",
+                    fontWeight: Platform.OS === "android" ? "700" : "normal",
+                  }}
+                >
+                  {weightDisplay}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
+                  className="w-8 h-8 items-center justify-center"
+                >
+                  <Ionicons name="add" size={18} color="#1F2937" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="rounded-full border border-gray-200 px-4 py-2 bg-white">
+                <Text
+                  className="text-sm text-gray-900"
+                  style={{
+                    fontFamily: "Poppins-SemiBold",
+                    fontWeight: Platform.OS === "android" ? "600" : "normal",
+                  }}
+                >
+                  {selected.size}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View className="items-end">
@@ -498,10 +671,7 @@ export default function ProductDetailScreen() {
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
             >
-              Rs.{" "}
-              {totalGrams
-                ? ((Number(currentPrice) * totalGrams) / 1000).toFixed(2)
-                : (Number(currentPrice) * quantity).toFixed(2)}
+              Rs. {totalPayable.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -518,7 +688,7 @@ export default function ProductDetailScreen() {
     return (
       <View className="pt-6 pb-4">
         <Text className="text-xs font-poppins-semibold text-primary uppercase tracking-wider text-center mb-1">
-          MORE FROM {product?.category || "FRESH WATER"}
+          MORE FROM {product?.category || ""}
         </Text>
         <Text
           className="text-2xl text-foreground text-center mb-5 px-4"
@@ -560,7 +730,6 @@ export default function ProductDetailScreen() {
                   }
                   activeOpacity={0.85}
                 >
-                  {/* Image */}
                   <View className="relative">
                     {itemImage ? (
                       <Image
@@ -580,13 +749,12 @@ export default function ProductDetailScreen() {
                     )}
                   </View>
 
-                  {/* Info */}
                   <View className="p-3">
                     <Text className="font-poppins-semibold text-foreground text-sm mb-1" numberOfLines={2}>
                       {item.title}
                     </Text>
                     <Text className="text-muted-foreground font-poppins text-xs mb-1" numberOfLines={2}>
-                      {item.description || item.short_description || ""}
+                      {item.short_description || item.description || ""}
                     </Text>
                     {(item.weight || item.serves) && (
                       <Text className="text-muted-foreground font-poppins text-xs mb-2">
@@ -596,7 +764,6 @@ export default function ProductDetailScreen() {
                       </Text>
                     )}
 
-                    {/* Price row */}
                     <View className="flex-row items-center mb-2">
                       <Text className="text-base font-poppins-bold text-foreground">
                         ₹{itemPrice}
@@ -608,7 +775,6 @@ export default function ProductDetailScreen() {
                       )}
                     </View>
 
-                    {/* Delivery time + Add button */}
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center">
                         <Ionicons name="time-outline" size={12} color="#F59E0B" />
@@ -674,7 +840,6 @@ export default function ProductDetailScreen() {
     <SafeAreaView className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* Slim header with back + title + share + cart */}
       <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
         <TouchableOpacity
           onPress={() => router.back()}
@@ -715,7 +880,6 @@ export default function ProductDetailScreen() {
         <View className="h-24" />
       </ScrollView>
 
-      {/* Bottom bar — mint "Add to cart" + purple "Buy Now" like web */}
       <View className="flex-row items-center px-4 py-3 bg-white border-t border-gray-100">
         <TouchableOpacity
           className="flex-1 py-4 rounded-2xl mr-3"

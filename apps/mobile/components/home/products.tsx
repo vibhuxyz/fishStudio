@@ -192,33 +192,6 @@ export default function ProductSection({
                   </View>
 
                   <View className="p-4">
-                    <View className="flex-row items-center mb-3">
-                      <Image
-                        source={{
-                          uri:
-                            product?.Shop?.avatar ||
-                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-                        }}
-                        className="w-6 h-6 rounded-full mr-2"
-                        resizeMode="cover"
-                      />
-
-                      <View className="flex-1">
-                        <Text
-                          className="text-xs text-gray-600 font-medium"
-                          numberOfLines={1}
-                        >
-                          {product.Shop?.name || "Official Store"}
-                        </Text>
-                        <View className="flex-row items-center mt-0.5">
-                          <Ionicons name="star" size={10} color="#FCD34D" />
-                          <Text className="text-xs text-gray-500 ml-1 font-medium">
-                            {product.Shop?.ratings}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
                     <Text
                       className="text-sm font-poppins-semibold text-gray-800 mb-2 leading-5"
                       numberOfLines={2}
