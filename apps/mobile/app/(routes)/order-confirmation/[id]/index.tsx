@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
+import { useAddressStore } from "@/lib/address-store";
 
 const STATUS_CONFIG: Record<
   string,
@@ -55,6 +57,7 @@ const SLOT_LABEL: Record<string, string> = {
 
 export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { selectedLocation } = useAddressStore();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -84,6 +87,7 @@ export default function OrderConfirmationScreen() {
   const slotLabel = SLOT_LABEL[order.deliverySlot] || "Standard Delivery";
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
+  const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
 
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
@@ -136,6 +140,17 @@ export default function OrderConfirmationScreen() {
             </Text>{" "}
             has been placed successfully.
           </Text>
+        </View>
+
+        {/* Live order tracker */}
+        <View className="mb-3">
+          <OrderTracker
+            status={order.status}
+            updatedAt={order.updatedAt}
+            deliverySlot={order.deliverySlot}
+            deliveryMinutes={deliveryMinutes}
+            storeName={order.store?.name}
+          />
         </View>
 
         {/* Order meta card */}

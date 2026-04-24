@@ -159,6 +159,8 @@ export const acceptOrRejectOrder = async (
       await publishToQueue("ORDER_EVENTS", {
         type: "ORDER_STATUS_UPDATE",
         userId: existingOrder.userId,
+        sellerId: req.seller?.id,
+        storeId: existingOrder.storeId,
         orderId,
         status: action === "accept" ? "ACCEPTED" : "REJECTED",
       });
@@ -298,6 +300,8 @@ export const updateOrderStatus = async (
       await publishToQueue("ORDER_EVENTS", {
         type: "ORDER_STATUS_UPDATE",
         userId: existing.userId,
+        sellerId: req.seller?.id,
+        storeId: existing.storeId,
         orderId,
         status,
       });

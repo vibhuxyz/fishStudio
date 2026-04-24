@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue, redis } from "@repo/libs";
 
 export const createStore = async (
   req: any,
@@ -118,6 +118,10 @@ export const updateStore = async (
         availableCities: validatedData.availableCities || store.availableCities,
       },
     });
+
+    // Bust the slim-store Redis cache so the next getSeller call returns
+    // fresh data with all store fields populated.
+    await redis.set(`cache:bypass:seller:${sellerId}`, "1", "EX", 30).catch(() => {});
 
     res.status(200).json({
       success: true,

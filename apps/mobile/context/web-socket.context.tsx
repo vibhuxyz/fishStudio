@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import { useQueryClient } from "@tanstack/react-query";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -35,6 +36,7 @@ export const WebSocketProvider = ({
   const [wsReady, setWsReady] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -72,6 +74,15 @@ export const WebSocketProvider = ({
           if (data.type === "UNSEEN_COUNT_UPDATE") {
             const { conversationId, count } = data.payload;
             setUnreadCounts((prev) => ({ ...prev, [conversationId]: count }));
+            return;
+          }
+          if (data.type === "ORDER_STATUS_UPDATE") {
+            const orderId = data.payload?.orderId;
+            if (orderId) {
+              queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+            return;
           }
         } catch {
           // ignore malformed frames
@@ -85,7 +96,7 @@ export const WebSocketProvider = ({
       cancelled = true;
       wsRef.current?.close();
     };
-  }, [user?.id]);
+  }, [user?.id, queryClient]);
 
   return (
     <WebSocketContext.Provider value={{ ws: wsReady ? wsRef.current : null, unreadCounts }}>

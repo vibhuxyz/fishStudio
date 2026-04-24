@@ -419,10 +419,15 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   const { deliveryMetadata, syncItems } = useCartStore();
   const locationVersion = useAddressStore((s) => s.locationVersion);
 
-  // Synchronize cart and header metadata whenever location changes
+  // Sync on location change and every 60 s so open/closed status stays fresh
   useEffect(() => {
     syncItems();
   }, [locationVersion]);
+
+  useEffect(() => {
+    const id = setInterval(() => { syncItems(); }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const deliveryLabel: { primary: string; secondary: string | null } = (() => {
     if (!hydrated) return { primary: "...", secondary: null };
@@ -435,14 +440,14 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     // Priority 2: Backend status from CartStore if cart validation has run
     if (deliveryMetadata.isStoreOpen === false) {
       return {
-        primary: "Delivery Scheduled order available",
+        primary: "Scheduled delivery available",
         secondary: `Opens at ${deliveryMetadata.openingHours || "9 AM"}`,
       };
     }
 
     if (deliveryMetadata.cartDeliveryTime) {
       return {
-        primary: `Delivery in ${deliveryMetadata.cartDeliveryTime} minutes`,
+        primary: `⚡ Instant · ${deliveryMetadata.cartDeliveryTime} min`,
         secondary: null,
       };
     }
@@ -451,18 +456,18 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     if (selectedLocation) {
       if (selectedLocation.isOpen === false) {
         return {
-          primary: "Delivery Scheduled order available",
+          primary: "Scheduled delivery available",
           secondary: `Opens at ${selectedLocation.opening_hours || "9 AM"}`,
         };
       }
       if (selectedLocation.deliveryTimeMinutes) {
         return {
-          primary: `Delivery in ${selectedLocation.deliveryTimeMinutes} minutes`,
+          primary: `⚡ Instant · ${selectedLocation.deliveryTimeMinutes} min`,
           secondary: null,
         };
       }
       return {
-        primary: "Delivery soon",
+        primary: "Scheduled delivery available",
         secondary: null,
       };
     }

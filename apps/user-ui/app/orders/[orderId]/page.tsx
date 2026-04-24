@@ -525,6 +525,56 @@ function trafficEase(t: number) {
   return 1;
 }
 
+// ── Mishap schedule (real-life delivery hiccups) ──
+// Each mishap fires at a fraction of baseTotalMs, runs for `durFrac` of it, and
+// extends the effective delivery time by `extraMs`. During a mishap we also
+// pin a speech bubble and can force a visual backtrack for wrong-turn events.
+type MishapKind = "signal" | "traffic" | "wrong-turn" | "address" | "pickup-delay";
+type Mishap = {
+  kind: MishapKind;
+  atFrac: number;     // when it starts (fraction of baseTotalMs)
+  durFrac: number;    // how long it lasts (fraction of baseTotalMs)
+  extraMs: number;    // extra time added to total
+  label: string;      // bubble/tag text
+  backtrackFrac?: number; // visual backtrack on progress for wrong-turns
+};
+const MISHAP_SCHEDULE: readonly Mishap[] = [
+  { kind: "pickup-delay", atFrac: 0.05, durFrac: 0.04, extraMs:  45_000,
+    label: "Store still packing 🍽️" },
+  { kind: "signal",       atFrac: 0.20, durFrac: 0.03, extraMs:  30_000,
+    label: "Waiting at signal 🚦" },
+  { kind: "traffic",      atFrac: 0.34, durFrac: 0.08, extraMs: 180_000,
+    label: "Heavy city traffic 🚗" },
+  { kind: "wrong-turn",   atFrac: 0.56, durFrac: 0.05, extraMs: 120_000,
+    label: "Missed a turn, rerouting 🔄", backtrackFrac: 0.035 },
+  { kind: "signal",       atFrac: 0.70, durFrac: 0.03, extraMs:  45_000,
+    label: "Another signal 🚦" },
+  { kind: "address",      atFrac: 0.88, durFrac: 0.04, extraMs:  60_000,
+    label: "Looking for your address 🔍" },
+];
+
+function getMishapState(elapsedMs: number, baseTotalMs: number) {
+  // Accumulated extra delay up to now, plus active mishap (if any)
+  let extra = 0;
+  let active: Mishap | null = null;
+  for (const m of MISHAP_SCHEDULE) {
+    const startMs = m.atFrac * baseTotalMs;
+    const endMs   = (m.atFrac + m.durFrac) * baseTotalMs;
+    if (elapsedMs >= endMs) {
+      extra += m.extraMs;
+    } else if (elapsedMs >= startMs) {
+      // partially-through this mishap → linear partial extra
+      const frac = (elapsedMs - startMs) / (endMs - startMs);
+      extra += m.extraMs * frac;
+      active = m;
+      break;
+    } else {
+      break;
+    }
+  }
+  return { extraMs: extra, active };
+}
+
 function ScheduledShipCard({
   deliverySlot,
   storeName,
@@ -681,11 +731,11 @@ function DeliveryMap({
 }) {
   const mode = getDeliveryMode(deliverySlot);
   const states = DELIVERY_MAP_STATES[mode];
-  const totalMin = normalizeDeliveryMinutes(deliveryMinutes) ?? 40;
 
-  // 🕐 Real-time progress based on when the order shipped.
-  // For a 40-min delivery with 5 states, each state lasts ~8 minutes.
-  const totalMs = totalMin * 60 * 1000;
+  // Store's instant-delivery time — already read from backend
+  // (order.store.cityDeliveryTimes) in getDeliveryEtaMinutes(). Fallback 40 min.
+  const baseMin = normalizeDeliveryMinutes(deliveryMinutes) ?? 40;
+  const baseTotalMs = baseMin * 60 * 1000;
 
   const [pathLength, setPathLength] = useState(600);
   const [nowTs, setNowTs] = useState(() => Date.now());
@@ -697,75 +747,104 @@ function DeliveryMap({
     }
   }, []);
 
-  // Tick every 6s so speed changes, signal pauses and approach feel live
+  // Tick every 5s so signal pauses, traffic jams, and arrival updates feel live.
   useEffect(() => {
-    const id = setInterval(() => setNowTs(Date.now()), 6000);
+    const id = setInterval(() => setNowTs(Date.now()), 5000);
     return () => clearInterval(id);
   }, []);
 
   const shippedAtMs = updatedAt ? new Date(updatedAt).getTime() : nowTs;
   const elapsedMs = Math.max(0, nowTs - shippedAtMs);
-  const rawT = Math.min(1, elapsedMs / totalMs);
 
-  // Map raw elapsed time through the traffic profile so the rider
-  // accelerates, pauses at signals, and slows down into your lane.
-  const progress = trafficEase(rawT);
+  // ── Mishaps extend the effective total time ──
+  const mishap = getMishapState(elapsedMs, baseTotalMs);
+  const effectiveTotalMs = baseTotalMs + mishap.extraMs;
 
-  // Derive state from progress using the state thresholds (t values)
-  let stateIdx = 0;
-  for (let i = states.length - 1; i >= 0; i--) {
-    if (progress >= states[i].t) { stateIdx = i; break; }
+  // Raw progression against the extended clock, then through the traffic curve
+  const rawT = Math.min(1, elapsedMs / effectiveTotalMs);
+  let easedProgress = trafficEase(rawT);
+
+  // Wrong-turn visual backtrack: during a wrong-turn mishap, the rider slips
+  // back on the map a bit, then recovers.
+  if (mishap.active?.kind === "wrong-turn" && mishap.active.backtrackFrac) {
+    const startMs = mishap.active.atFrac * baseTotalMs;
+    const span = mishap.active.durFrac * baseTotalMs;
+    const localT = Math.max(0, Math.min(1, (elapsedMs - startMs) / span));
+    // Dip down then return (sin curve)
+    const dip = Math.sin(localT * Math.PI) * mishap.active.backtrackFrac;
+    easedProgress = Math.max(0, easedProgress - dip);
   }
 
-  const state = states[stateIdx];
+  // Cap at 94% until staff flips status to DELIVERED. The tracker will unmount
+  // this map and render the DeliveredBanner in its place.
+  const progress = Math.min(0.94, easedProgress);
   const percent = Math.round(progress * 100);
   const covered = pathLength * progress;
 
-  // Sample a tiny window ahead in time to measure current speed (slope of
-  // traffic curve). Used to detect signal plateaus, slowdowns, bursts.
+  // Current speed (slope of the traffic curve) to detect plateaus / bursts
   const sampleAhead = 0.01;
   const momentarySpeed =
-    (trafficEase(Math.min(1, rawT + sampleAhead)) - progress) / sampleAhead;
+    (trafficEase(Math.min(1, rawT + sampleAhead)) - easedProgress) / sampleAhead;
 
-  const isInTraffic   = momentarySpeed < 0.3 && rawT > 0.02 && rawT < 0.95;
-  const isFastLane    = momentarySpeed > 1.4 && rawT < 0.9;
-  const isArrivingSoon = progress >= 0.82 && progress < 0.95;
-  const isAtDoor       = progress >= 0.95;
+  const isInTraffic =
+    mishap.active?.kind === "traffic" ||
+    (momentarySpeed < 0.3 && rawT > 0.02 && rawT < 0.95);
+  const isWrongTurn = mishap.active?.kind === "wrong-turn";
+  const isSignal = mishap.active?.kind === "signal";
+  const isAddressHunt = mishap.active?.kind === "address";
+  const isFastLane = momentarySpeed > 1.4 && rawT < 0.9 && !mishap.active;
+  const isArrivingSoon = progress >= 0.78 && progress < 0.92;
+  const isNearHome = progress >= 0.88; // rider hovering near the home pin
 
   // Floating bubble message that follows the rider
-  const bubbleMsg =
-    isAtDoor          ? "At your door 🔔"
-    : isInTraffic      ? (rawT < 0.4 ? "Stuck at a signal 🚦"
-                         : rawT < 0.75 ? "In traffic 🚗"
-                         : "Parking 🅿️")
-    : isArrivingSoon   ? "Almost there! 📍"
-    : isFastLane       ? "Cruising ⚡"
-    : null;
-
-  const bubbleColor = isInTraffic ? "#F59E0B" : isAtDoor ? "#22D3EE" : isArrivingSoon ? "#FB923C" : "#10B981";
-
-  const trafficHint: string | null =
-    rawT <= 0
-      ? null
-      : isInTraffic
-        ? (rawT < 0.4 ? "Paused at a signal 🚦"
-          : rawT < 0.75 ? "Heavy traffic ahead 🚗"
-          : "Parking the scooter 🅿️")
+  const bubbleMsg = mishap.active
+    ? mishap.active.label
+    : isNearHome
+      ? "Almost at your door 🔔"
+      : isArrivingSoon
+        ? "Entering your lane 📍"
         : isFastLane
-          ? "Open road — picking up pace ⚡"
+          ? "Cruising ⚡"
           : null;
 
-  // Arrival clock: HH:MM when the order is expected at the doorstep.
-  const etaClock = new Date(shippedAtMs + totalMs).toLocaleTimeString("en-IN", {
+  const bubbleColor = isInTraffic || isWrongTurn
+    ? "#F87171"
+    : isSignal
+      ? "#FBBF24"
+      : isAddressHunt
+        ? "#FB923C"
+        : isNearHome
+          ? "#22D3EE"
+          : isArrivingSoon
+            ? "#FCD34D"
+            : "#10B981";
+
+  // Route color shifts to red during traffic / wrong-turn mishaps
+  const routeInTroubleMode = isInTraffic || isWrongTurn;
+
+  // Derive state index from eased progress
+  let stateIdx = 0;
+  for (let i = states.length - 1; i >= 0; i--) {
+    if (easedProgress >= states[i].t) { stateIdx = i; break; }
+  }
+  const state = states[stateIdx];
+
+  // Arrival clock — shifts as mishaps extend effective time
+  const arrivalMs = shippedAtMs + effectiveTotalMs;
+  const etaClock = new Date(arrivalMs).toLocaleTimeString("en-IN", {
     hour: "numeric",
     minute: "2-digit",
   });
+  const remainingMin = Math.max(
+    isNearHome ? 1 : 2,
+    Math.ceil(Math.max(0, arrivalMs - nowTs) / 60000),
+  );
 
-  // Proximity chip shown near the end of the journey
+  // Ribbon near the end of the journey
   const proximityChip =
-    isAtDoor        ? { text: "Delivery starting 🔔", bg: "#22D3EE", fg: "#083344" }
-    : progress >= 0.88 ? { text: "Rider may call now 📞", bg: "#FACC15", fg: "#422006" }
-    : progress >= 0.75 ? { text: "Rider is nearby 📍", bg: "#FDBA74", fg: "#3B1D00" }
+    isNearHome        ? { text: "Delivery in moments 🔔", bg: "bg-cyan-400", fg: "text-cyan-950" }
+    : progress >= 0.78 ? { text: "Rider may call you 📞", bg: "bg-amber-300", fg: "text-amber-950" }
+    : progress >= 0.65 ? { text: "Rider is nearby 📍", bg: "bg-orange-300", fg: "text-orange-950" }
     : null;
 
   // Scooter position + tangent along path
@@ -780,49 +859,60 @@ function DeliveryMap({
 
   const TOTAL_DISTANCE_KM = 3.2;
   const remainingKm = (TOTAL_DISTANCE_KM * (1 - progress)).toFixed(1);
-  const remainingMin = Math.max(1, Math.ceil(totalMin * (1 - progress)));
+
+  // Delay badge (shown only if mishaps have added time)
+  const addedMinutes = Math.round(mishap.extraMs / 60000);
 
   return (
-    <div className="relative mt-5 overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0f1c] shadow-[0_30px_90px_-30px_rgba(16,185,129,0.55)]">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between px-5 pt-5">
-        <div>
-          <div className="flex items-center gap-2">
+    <div className="relative mt-5 overflow-hidden rounded-[24px] sm:rounded-[28px] border border-white/10 bg-[#0a0f1c] shadow-[0_30px_90px_-30px_rgba(16,185,129,0.55)]">
+      {/* ── Header ── mobile stacks, desktop side-by-side */}
+      <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-5 sm:pt-5">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`h-2 w-2 rounded-full ${isInTraffic ? "bg-amber-400" : "bg-emerald-400"}`}
+              className={`h-2 w-2 rounded-full ${routeInTroubleMode ? "bg-red-400" : isSignal ? "bg-amber-400" : "bg-emerald-400"}`}
               style={{ animation: "status-pulse 1.3s ease-in-out infinite" }}
             />
             <p
-              className={`text-[10px] font-black uppercase tracking-[0.32em] ${
-                isInTraffic ? "text-amber-300/90" : "text-emerald-300/80"
+              className={`text-[10px] font-black uppercase tracking-[0.28em] sm:tracking-[0.32em] ${
+                routeInTroubleMode ? "text-red-300/90" : isSignal ? "text-amber-300/90" : isNearHome ? "text-cyan-300/90" : "text-emerald-300/80"
               }`}
             >
-              {isInTraffic ? "Rider in traffic" : isAtDoor ? "At your doorstep" : "Live Delivery"}
+              {isWrongTurn ? "Rerouting" : isInTraffic ? "Rider in traffic" : isSignal ? "At a signal" : isNearHome ? "Near your home" : "Live Delivery"}
             </p>
+            {addedMinutes > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-red-300/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-200">
+                +{addedMinutes} min delay
+              </span>
+            )}
           </div>
-          <h3 className="mt-1 text-xl font-black tracking-tight text-white">
-            {isAtDoor ? "Delivering now 🔔" : `Arriving in ${remainingMin} min`}
+          <h3 className="mt-1 text-lg font-black leading-tight tracking-tight text-white sm:text-xl">
+            {isNearHome ? "Arriving any moment 🔔" : `Arriving in ${remainingMin} min`}
           </h3>
           <p className="mt-0.5 text-[11px] font-medium text-white/60">
             Expected by <span className="font-bold text-white/85">{etaClock}</span>
+            {addedMinutes > 0 && (
+              <span className="ml-1 text-red-300/90">(pushed by traffic)</span>
+            )}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-right backdrop-blur-md">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-white/50">ETA</p>
-          <p className={`text-lg font-black ${isInTraffic ? "text-amber-300" : "text-emerald-300"}`}>
-            {remainingMin} min
-          </p>
-          <p className="text-[9px] font-medium text-white/50">by {etaClock}</p>
+        <div className="inline-flex shrink-0 self-start rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-right backdrop-blur-md">
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-widest text-white/50">ETA</p>
+            <p className={`text-lg font-black ${routeInTroubleMode ? "text-red-300" : "text-emerald-300"}`}>
+              {remainingMin} min
+            </p>
+            <p className="text-[9px] font-medium text-white/50">by {etaClock}</p>
+          </div>
         </div>
       </div>
 
       {/* ── Map ── */}
-      <div className="relative mt-4 px-4 pb-4">
-        <div className="relative overflow-hidden rounded-[20px] border border-white/10 bg-[#0b1222]">
+      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+        <div className="relative overflow-hidden rounded-[16px] border border-white/10 bg-[#0b1222] sm:rounded-[20px]">
           <svg viewBox="0 0 400 220" className="block w-full">
             <defs>
-              {/* route glow */}
               <filter id="route-glow" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur stdDeviation="3.5" result="b1" />
                 <feMerge>
@@ -843,16 +933,11 @@ function DeliveryMap({
                 <stop offset="60%" stopColor="#EF4444" />
                 <stop offset="100%" stopColor="#B91C1C" />
               </linearGradient>
-              <radialGradient id="map-vignette" cx="50%" cy="50%" r="70%">
-                <stop offset="0%" stopColor="#0f172a" stopOpacity="0" />
-                <stop offset="100%" stopColor="#020617" stopOpacity="0.9" />
-              </radialGradient>
               <pattern id="street-grid" width="32" height="32" patternUnits="userSpaceOnUse">
                 <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#1e293b" strokeWidth="0.6" />
               </pattern>
             </defs>
 
-            {/* base + grid */}
             <rect width="400" height="220" fill="#0b1222" />
             <rect width="400" height="220" fill="url(#street-grid)" opacity="0.9" />
 
@@ -862,7 +947,6 @@ function DeliveryMap({
             <path d="M 120,0 L 120,220" stroke="#1e293b" strokeWidth="4" opacity="0.45" />
             <path d="M 280,0 L 280,220" stroke="#1e293b" strokeWidth="4" opacity="0.45" />
 
-            {/* district labels */}
             <text x="60" y="40" fill="#334155" fontSize="8" fontWeight="700" letterSpacing="2">
               WEST BLOCK
             </text>
@@ -891,11 +975,11 @@ function DeliveryMap({
               strokeDasharray="6 6"
               style={{ animation: "route-dash-flow 1.6s linear infinite" }}
             />
-            {/* route — covered, glows green normally, red when stuck in traffic */}
+            {/* route — covered (green normally, red during traffic / wrong-turn) */}
             <path
               d={ROUTE_PATH}
               fill="none"
-              stroke={isInTraffic ? "url(#route-grad-traffic)" : "url(#route-grad)"}
+              stroke={routeInTroubleMode ? "url(#route-grad-traffic)" : "url(#route-grad)"}
               strokeWidth="6"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -904,16 +988,15 @@ function DeliveryMap({
               style={{ transition: "stroke-dasharray 700ms cubic-bezier(0.22,1,0.36,1), stroke 500ms ease" }}
             />
 
-            {/* STORE PIN (left) */}
+            {/* STORE PIN (left) — label placed ABOVE-LEFT so it doesn't collide with overlays */}
             <g transform={`translate(${STORE_POINT.x},${STORE_POINT.y})`}>
               <circle r="14" fill="#10B981" opacity="0.22" filter="url(#pin-soft)" />
               <circle r="8" fill="#065F46" stroke="#10B981" strokeWidth="2" />
               <circle r="2.5" fill="#A7F3D0" />
-              {/* pin label */}
-              <g transform="translate(-4,-22)">
-                <rect x="0" y="-8" width={Math.min(72, ((storeName || "Hub").length * 4.2) + 14)} height="14" rx="7" fill="#0f172a" stroke="#10B981" strokeOpacity="0.5" strokeWidth="1" />
-                <text x="6" y="2" fill="#A7F3D0" fontSize="8.5" fontWeight="700" letterSpacing="0.3">
-                  {(storeName || "Hub").slice(0, 12)}
+              <g transform="translate(10,-10)">
+                <rect x="0" y="-8" width={Math.min(80, ((storeName || "Store").length * 4.6) + 14)} height="14" rx="7" fill="#0f172a" stroke="#10B981" strokeOpacity="0.5" strokeWidth="1" />
+                <text x="7" y="2" fill="#A7F3D0" fontSize="8.5" fontWeight="700" letterSpacing="0.3">
+                  {(storeName || "Store").slice(0, 14)}
                 </text>
               </g>
             </g>
@@ -922,9 +1005,8 @@ function DeliveryMap({
             <g transform={`translate(${HOME_POINT.x},${HOME_POINT.y})`} style={{ animation: "pin-glow 2.2s ease-in-out infinite", color: "#22D3EE" }}>
               <circle r="15" fill="#22D3EE" opacity="0.22" filter="url(#pin-soft)" />
               <circle r="9" fill="#0E7490" stroke="#22D3EE" strokeWidth="2" />
-              {/* little house icon */}
               <path d="M -4,-1 L 0,-5 L 4,-1 L 4,4 L -4,4 Z" fill="#ECFEFF" />
-              <g transform="translate(-18,-26)">
+              <g transform="translate(-44,-10)">
                 <rect x="0" y="-8" width="40" height="14" rx="7" fill="#0f172a" stroke="#22D3EE" strokeOpacity="0.5" strokeWidth="1" />
                 <text x="6" y="2" fill="#A5F3FC" fontSize="8.5" fontWeight="700" letterSpacing="0.4">
                   Home
@@ -935,11 +1017,11 @@ function DeliveryMap({
             {/* FLOATING BUBBLE above scooter */}
             {bubbleMsg && (
               <g
-                transform={`translate(${Math.max(44, Math.min(356, scooterPos.x))},${Math.max(26, scooterPos.y - 20)})`}
+                transform={`translate(${Math.max(48, Math.min(352, scooterPos.x))},${Math.max(24, scooterPos.y - 22)})`}
                 style={{ transition: "transform 900ms cubic-bezier(0.22,1,0.36,1)" }}
               >
                 {(() => {
-                  const w = Math.max(60, bubbleMsg.length * 5.2 + 14);
+                  const w = Math.max(64, bubbleMsg.length * 5.2 + 16);
                   return (
                     <>
                       <rect x={-w / 2} y={-11} width={w} height={18} rx={9}
@@ -952,7 +1034,6 @@ function DeliveryMap({
                             style={{ letterSpacing: "0.2px" }}>
                         {bubbleMsg}
                       </text>
-                      {/* little downward tail */}
                       <path d={`M -3 7 L 0 12 L 3 7 Z`} fill="#0b1222" stroke={bubbleColor} strokeWidth={1} />
                     </>
                   );
@@ -960,111 +1041,109 @@ function DeliveryMap({
               </g>
             )}
 
-            {/* SCOOTER (top-down view: cardboard box + body + red helmet) */}
+            {/* SCOOTER */}
             <g
               transform={`translate(${scooterPos.x},${scooterPos.y}) rotate(${scooterPos.angle})`}
               style={{ transition: "transform 900ms cubic-bezier(0.22,1,0.36,1)" }}
             >
               <g style={{ animation: "scooter-bob 0.9s ease-in-out infinite" }}>
-                {/* outer aura */}
-                <circle r="15" fill="#10B981" opacity="0.18" />
-                <circle r="10" fill="#10B981" opacity="0.28" />
-                {/* cardboard delivery box at back */}
+                <circle r="15" fill={routeInTroubleMode ? "#EF4444" : "#10B981"} opacity="0.18" />
+                <circle r="10" fill={routeInTroubleMode ? "#EF4444" : "#10B981"} opacity="0.28" />
                 <rect x="-8" y="-5" width="7" height="10" rx="1" fill="#C2824A" stroke="#7C4A1C" strokeWidth="0.6" />
                 <line x1="-4.5" y1="-5" x2="-4.5" y2="5" stroke="#7C4A1C" strokeWidth="0.5" />
                 <line x1="-8" y1="0" x2="-1" y2="0" stroke="#7C4A1C" strokeWidth="0.5" />
-                {/* scooter body */}
                 <rect x="-2" y="-4" width="9" height="8" rx="3" fill="#111827" stroke="#374151" strokeWidth="0.6" />
-                {/* side mirrors / handlebars */}
                 <line x1="5" y1="-5" x2="7" y2="-7" stroke="#9CA3AF" strokeWidth="0.8" />
                 <line x1="5" y1="5" x2="7" y2="7" stroke="#9CA3AF" strokeWidth="0.8" />
-                {/* red helmet */}
                 <circle cx="4.5" cy="0" r="2.4" fill="#DC2626" stroke="#7F1D1D" strokeWidth="0.5" />
                 <rect x="5.2" y="-0.8" width="1.6" height="1.6" rx="0.4" fill="#0f172a" />
-                {/* headlight */}
                 <circle cx="7.6" cy="0" r="0.9" fill="#FDE68A" opacity="0.9" />
               </g>
             </g>
           </svg>
 
-          {/* ── Glassmorphic Rider Status overlay ── */}
-          <div className="absolute left-4 right-4 top-4 rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-3 shadow-xl backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-300/80">
-                    Rider Status
-                  </p>
-                  {trafficHint && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold text-amber-200">
-                      <span
-                        className="h-1 w-1 rounded-full bg-amber-300"
-                        style={{ animation: "status-pulse 1s ease-in-out infinite" }}
-                      />
-                      {trafficHint}
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 truncate text-sm font-black text-white">
-                  {state.label} <span className="text-emerald-300">({percent}%)</span>
-                </p>
-                <p className="mt-0.5 line-clamp-1 text-[11px] text-white/70">
-                  {state.msg}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-white/50">
-                  Distance
-                </p>
-                <p className="text-sm font-black text-white">{remainingKm} km</p>
-              </div>
-            </div>
-
-            {/* progress bar */}
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${percent}%`,
-                  backgroundImage:
-                    "linear-gradient(90deg,#34D399,#10B981,#22D3EE)",
-                  boxShadow: "0 0 12px rgba(52,211,153,0.7)",
-                  transition: "width 800ms cubic-bezier(0.22,1,0.36,1)",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* "Rider may call" nudge near end */}
-          {progress >= 0.75 && progress < 0.95 && (
-            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-black text-slate-900 shadow-lg">
+          {/* proximity chip — bottom-right of map */}
+          {proximityChip && (
+            <div className={`absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full ${proximityChip.bg} px-2.5 py-1 text-[10px] font-black ${proximityChip.fg} shadow-lg`}>
               <span
-                className="h-1.5 w-1.5 rounded-full bg-slate-900"
+                className="h-1.5 w-1.5 rounded-full bg-current"
                 style={{ animation: "status-pulse 1s ease-in-out infinite" }}
               />
-              Rider may call soon
+              {proximityChip.text}
             </div>
           )}
         </div>
 
+        {/* ── Rider Status card (BELOW map to prevent overlap) ── */}
+        <div className="mt-3 rounded-2xl border border-white/15 bg-white/[0.05] px-3 py-3 backdrop-blur sm:px-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="text-[9px] font-black uppercase tracking-[0.28em] text-emerald-300/80 sm:tracking-[0.3em]">
+                  Rider Status
+                </p>
+                {mishap.active && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-red-300/30 bg-red-500/15 px-2 py-0.5 text-[9px] font-bold text-red-200">
+                    <span
+                      className="h-1 w-1 rounded-full bg-red-300"
+                      style={{ animation: "status-pulse 1s ease-in-out infinite" }}
+                    />
+                    {mishap.active.label}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm font-black text-white">
+                {state.label} <span className="text-emerald-300">({percent}%)</span>
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-[11px] text-white/70 sm:line-clamp-1">
+                {mishap.active ? mishap.active.label : state.msg}
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/50">
+                Distance
+              </p>
+              <p className="text-sm font-black text-white">{remainingKm} km</p>
+            </div>
+          </div>
+
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${percent}%`,
+                backgroundImage: routeInTroubleMode
+                  ? "linear-gradient(90deg,#F59E0B,#EF4444)"
+                  : "linear-gradient(90deg,#34D399,#10B981,#22D3EE)",
+                boxShadow: routeInTroubleMode
+                  ? "0 0 12px rgba(239,68,68,0.7)"
+                  : "0 0 12px rgba(52,211,153,0.7)",
+                transition: "width 800ms cubic-bezier(0.22,1,0.36,1), background-image 500ms ease",
+              }}
+            />
+          </div>
+        </div>
+
         {/* Footer — store & arrival summary */}
-        <div className="mt-3 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur">
+        <div className="mt-3 mb-3 flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 backdrop-blur sm:mb-4 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
               <Truck className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
                 Fulfilled by
               </p>
-              <p className="text-sm font-bold text-white">{storeName || "Your store"}</p>
+              <p className="truncate text-sm font-bold text-white">{storeName || "Your store"}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">
               Arriving
             </p>
-            <p className="text-sm font-black text-emerald-300">in {remainingMin} min</p>
+            <p className={`text-sm font-black ${routeInTroubleMode ? "text-red-300" : "text-emerald-300"}`}>
+              in {remainingMin} min · by {etaClock}
+            </p>
           </div>
         </div>
       </div>

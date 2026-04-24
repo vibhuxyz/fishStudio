@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
 import { HeroBanners } from "./_components/hero-banners";
 import { HomeProductsPrimary, HomeProductsSecondary } from "./_components/product-showcase";
 import { HomeBannerSkeleton, HomeProductSectionSkeleton } from "./_components/home-skeleton";

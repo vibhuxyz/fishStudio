@@ -13,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
+import { useAddressStore } from "@/lib/address-store";
 
 interface SelectedOptions {
   cuttingType?: string;
@@ -61,7 +63,7 @@ interface Order {
   deliveryPincode?: string;
   deliverySlot?: string;
   items: OrderItem[];
-  store?: { id: string; name: string };
+  store?: { id: string; name: string; cityDeliveryTimes?: Record<string, number>; city?: string; pincode?: string };
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
@@ -88,6 +90,7 @@ const PAYMENT_STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
 
 export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { selectedLocation } = useAddressStore();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -151,6 +154,7 @@ export default function OrderDetailsScreen() {
   const amount = order.totalAmount ?? order.total ?? 0;
   const orderNumber = `#${order.id.slice(-6).toUpperCase()}`;
   const itemTotal = order.items?.reduce((s, i) => s + i.price * i.quantity, 0) ?? 0;
+  const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
 
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
@@ -167,10 +171,19 @@ export default function OrderDetailsScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-4 gap-4">
 
-          {/* Status Card */}
+          {/* Live order tracker */}
+          <OrderTracker
+            status={order.status}
+            updatedAt={order.updatedAt}
+            deliverySlot={order.deliverySlot}
+            deliveryMinutes={deliveryMinutes}
+            storeName={order.store?.name}
+          />
+
+          {/* Meta card */}
           <View className="bg-white rounded-2xl border border-gray-100 p-5"
             style={{ shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 }}>
-            <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center justify-between mb-1">
               <Text className="text-xl font-poppins-bold text-gray-900">{orderNumber}</Text>
               <View className="px-3 py-1.5 rounded-full flex-row items-center" style={{ backgroundColor: statusCfg.bg }}>
                 <Ionicons name={statusCfg.icon as any} size={14} color={statusCfg.text} />
@@ -179,9 +192,8 @@ export default function OrderDetailsScreen() {
                 </Text>
               </View>
             </View>
-            <Text className="text-sm text-gray-500 font-poppins-medium mb-4">{statusCfg.description}</Text>
 
-            <View className="flex-row justify-between pt-4 border-t border-gray-100">
+            <View className="flex-row justify-between pt-4 border-t border-gray-100 mt-3">
               <View>
                 <Text className="text-xs text-gray-400 font-poppins-medium">Order Date</Text>
                 <Text className="text-sm text-gray-800 font-poppins-semibold mt-0.5">{formatDate(order.createdAt)}</Text>

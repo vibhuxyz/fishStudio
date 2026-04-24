@@ -857,6 +857,12 @@ const StaffOrdersPage = () => {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          if (data.type === "ORDER_STATUS_UPDATE") {
+            // A sibling staff screen (or this one) mutated the order — resync.
+            console.log("🔄 Staff: order status update via WebSocket", data.payload);
+            queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+            return;
+          }
           if (data.type === "NEW_ORDER") {
             const raw = data.payload?.order || data.payload;
             if (!raw) return;

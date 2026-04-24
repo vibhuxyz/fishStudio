@@ -3,13 +3,20 @@ import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Header() {
-  const { selectedLocation, getSelectedAddress } = useAddressStore();
+  const { selectedLocation, getSelectedAddress, locationVersion } = useAddressStore();
   const { cart } = useStore();
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  // Re-evaluate delivery label every 60 s so open/closed state stays current
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const cartTotal = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
@@ -23,7 +30,26 @@ export default function Header() {
       ? `${selectedAddress.city} · ${selectedAddress.pincode}`
       : null;
 
-  const openingHours = selectedLocation?.openingHours;
+  const deliveryLabel: { primary: string; secondary: string | null } = (() => {
+    if (!selectedLocation && !selectedAddress) return { primary: "Set delivery location", secondary: null };
+
+    if (selectedLocation?.isOpen === false) {
+      return {
+        primary: "Scheduled delivery available",
+        secondary: `Opens at ${selectedLocation.openingHours || "9 AM"}`,
+      };
+    }
+    if (selectedLocation?.deliveryTimeMinutes) {
+      return {
+        primary: `⚡ Instant · ${selectedLocation.deliveryTimeMinutes} min`,
+        secondary: null,
+      };
+    }
+    if (selectedLocation) {
+      return { primary: "Scheduled delivery available", secondary: null };
+    }
+    return { primary: "Set delivery location", secondary: null };
+  })();
 
   return (
     <View className="bg-white">
@@ -59,13 +85,13 @@ export default function Header() {
           onPress={() => setShowAddressModal(true)}
           activeOpacity={0.7}
         >
-          {/* "Delivery Scheduled order available ↓" */}
+          {/* Primary delivery label */}
           <View className="flex-row items-center mb-0.5">
             <Text
               className="text-sm font-poppins-semibold text-offer-green"
               numberOfLines={1}
             >
-              Delivery Scheduled order available
+              {deliveryLabel.primary}
             </Text>
             <Ionicons
               name="chevron-down"
@@ -75,12 +101,12 @@ export default function Header() {
             />
           </View>
 
-          {/* Opens at */}
-          {openingHours ? (
+          {/* Secondary line (opens at / slot window) */}
+          {deliveryLabel.secondary ? (
             <View className="flex-row items-center mb-0.5">
               <Ionicons name="time-outline" size={12} color="#64748B" />
               <Text className="text-xs text-muted-foreground font-poppins ml-1">
-                Opens at {openingHours}
+                {deliveryLabel.secondary}
               </Text>
             </View>
           ) : null}

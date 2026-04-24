@@ -410,12 +410,19 @@ export const getSeller = async (
   req: any,
   res: Response,
   next: NextFunction,
-  ) => {
+) => {
   try {
-    res.status(200).json({
-      success: true,
-      seller: req.seller,
+    const sellerId = req.seller?.id;
+    if (!sellerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    // Always fetch from DB with the full store so settings fields are never
+    // missing due to the slim-store Redis cache.
+    const seller = await prisma.sellers.findUnique({
+      where: { id: sellerId },
+      include: { store: true },
     });
+    res.status(200).json({ success: true, seller });
   } catch (error) {
     next(error);
   }

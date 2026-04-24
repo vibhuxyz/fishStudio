@@ -20,11 +20,20 @@ export const orderWorker = async () => {
           if (content.sellerId) socketManager.broadcastToSeller(content.sellerId, "NEW_ORDER", content.order);
         }
         if (content.type === "ORDER_STATUS_UPDATE") {
+          const payload = {
+            orderId: content.orderId,
+            status: content.status,
+          };
           if (content.userId) {
-            socketManager.broadcastToUser(content.userId, "ORDER_STATUS_UPDATE", {
-              orderId: content.orderId,
-              status: content.status,
-            });
+            socketManager.broadcastToUser(content.userId, "ORDER_STATUS_UPDATE", payload);
+          }
+          // Fan out to the store/seller room so sibling staff screens
+          // sync without a manual refresh when anyone moves a card.
+          if (content.storeId) {
+            socketManager.broadcastToStore(content.storeId, "ORDER_STATUS_UPDATE", payload);
+          }
+          if (content.sellerId) {
+            socketManager.broadcastToSeller(content.sellerId, "ORDER_STATUS_UPDATE", payload);
           }
         }
         if (content.type === "BANNER_REVIEWED") {
