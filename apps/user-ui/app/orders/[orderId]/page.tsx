@@ -437,7 +437,7 @@ const DELIVERY_MAP_STATES: Record<
 > = {
   instant:   buildStates(INSTANT_STATES_RAW),
   scheduled: buildStates(SCHEDULED_STATES_RAW),
-};
+}; 
 
 const SLOT_WINDOWS: Record<string, string> = {
   instant: "30 – 45 min",
