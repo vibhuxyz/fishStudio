@@ -478,11 +478,21 @@ export const getUserOrders = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const orders = await prismaPostgres.order.findMany({
-      where: { userId },
-      include: { orderItems: true },
-      orderBy: { createdAt: "desc" },
-    });
+    // Pagination: default 20, clamp to [1, 50]. Uses (userId, createdAt desc) index.
+    const page = Math.max(1, Math.floor(Number(req.query.page) || 1));
+    const limit = Math.min(50, Math.max(1, Math.floor(Number(req.query.limit) || 20)));
+    const skip = (page - 1) * limit;
+
+    const [orders, total] = await Promise.all([
+      prismaPostgres.order.findMany({
+        where: { userId },
+        include: { orderItems: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prismaPostgres.order.count({ where: { userId } }),
+    ]);
 
     const storeIds = [...new Set(orders.map((o) => o.storeId))];
     const productIds = [
@@ -513,7 +523,16 @@ export const getUserOrders = async (
       total: o.totalAmount,
     }));
 
-    res.status(200).json({ success: true, orders: mappedOrders });
+    res.status(200).json({
+      success: true,
+      orders: mappedOrders,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasMore: skip + orders.length < total,
+      },
+    });
   } catch (error) {
     next(error);
   }

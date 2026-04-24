@@ -680,26 +680,45 @@ export const getStoreProducts = async (
       ? { subCategory: normalizedSubCategory }
       : {};
 
-    // ── Step 1: Fetch all catalog root products ───────────────────────────────
-    // Catalog root products are the master templates created by the admin.
-    // Every catalog product is always shown — in-stock if a seller has a
-    // variant for it, OOS otherwise.
-    const adminProducts = await prisma.products.findMany({
-      where: {
-        adminId: { not: null },
-        isDeleted: false,
-        ...categoryFilter,
-        ...subCategoryFilter,
-      },
-      include: { images: true },
-      orderBy: { createdAt: "desc" },
-    });
-    const catalogProducts = adminProducts.filter(isCatalogRootProduct);
-    const catalogIds = catalogProducts.map((p) => p.id);
+    // ── Step 1: Paginate catalog products in the DB ──────────────────────────
+    // Previously we loaded the ENTIRE catalog into memory and sliced at the
+    // end. Now DB does the sort + pagination. We fetch a window larger than
+    // `limit` so the in-memory in-stock priority sort has room to shuffle
+    // in-stock items ahead of OOS within the page. Tradeoff: if the category
+    // has extremely sparse in-stock products, later pages may still be needed
+    // — acceptable given the performance win from removing the full scan.
+    const isHomepage = typeof scope === "string" && scope === "homepage";
+    // Match original semantics (adminId set, not deleted). Catalog-root check
+     // (!storeId && !catalogProductId) stays in JS because Prisma/Mongo `null`
+     // filters don't match missing fields — older docs may have these absent.
+    const catalogWhere = {
+      adminId: { not: null },
+      isDeleted: false,
+      ...categoryFilter,
+      ...subCategoryFilter,
+    };
+    const catalogOrderBy = isHomepage
+      ? [{ totalSold: "desc" as const }, { createdAt: "desc" as const }]
+      : [{ createdAt: "desc" as const }];
 
-    // ── Step 2: Fetch best variant per catalog product ────────────────────────
-    // No address  → look across ALL stores; in-stock = any store has stock > 0
-    // With address → scope to preferred store only; in-stock = that store has stock > 0
+    // Oversample so the JS catalog-root filter + in-stock priority sort
+    // still return a full page even after dropping non-root entries.
+    const windowSize = Math.min(Math.max(limit * 3, 60), limit + 80);
+
+    const [total, catalogWindow] = await Promise.all([
+      prisma.products.count({ where: catalogWhere }),
+      prisma.products.findMany({
+        where: catalogWhere,
+        include: { images: true },
+        orderBy: catalogOrderBy,
+        skip,
+        take: windowSize,
+      }),
+    ]);
+    const catalogProducts = catalogWindow.filter(isCatalogRootProduct);
+    const catalogIds = catalogProducts.map((p: any) => p.id);
+
+    // ── Step 2: Fetch best variant per catalog product (page-scoped) ─────────
     const variants = catalogIds.length
       ? await prisma.products.findMany({
           where: {
@@ -745,8 +764,8 @@ export const getStoreProducts = async (
       }
     }
 
-    // ── Step 3: Merge catalog + best variant ──────────────────────────────────
-    const allMerged = catalogProducts.map((catalog) =>
+    // ── Step 3: Merge + in-stock priority sort within the page window ───────
+    const windowMerged = catalogProducts.map((catalog: any) =>
       mergeCatalogWithVariant(
         catalog,
         bestVariantMap.get(catalog.id),
@@ -754,9 +773,7 @@ export const getStoreProducts = async (
       ),
     );
 
-    // ── Step 4: Sort in-stock first, then paginate ────────────────────────────
-    const isHomepage = typeof scope === "string" && scope === "homepage";
-    allMerged.sort((a: any, b: any) => {
+    windowMerged.sort((a: any, b: any) => {
       const aIn = Boolean(a.inStock);
       const bIn = Boolean(b.inStock);
       if (aIn !== bIn) return aIn ? -1 : 1;
@@ -767,8 +784,7 @@ export const getStoreProducts = async (
       );
     });
 
-    const total = allMerged.length;
-    const products = allMerged.slice(skip, skip + limit);
+    const products = windowMerged.slice(0, limit);
 
     // Ensure stock is 0 for OOS entries so the frontend renders them correctly
     for (const p of products as any[]) {

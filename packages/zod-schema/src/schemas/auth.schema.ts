@@ -59,3 +59,9 @@ export const resetPasswordSchema = z.object({
   otp: z.string().length(4, "OTP must be 4 digits"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
 });
+
+export const sellerResetPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});

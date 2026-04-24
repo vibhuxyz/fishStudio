@@ -85,6 +85,7 @@ app.use("/api", router);
 app.use(errorMiddleware);
 
 import { prismaMongo as prisma } from "@repo/db-mongo";
+import { redis } from "@repo/libs";
 
 // --- NEW STARTUP LOGIC ---
 const startServer = async () => {
@@ -98,17 +99,27 @@ const startServer = async () => {
     const server = app.listen(port, "0.0.0.0", () => {
       console.log(`🚀 Auth server fully ready on localhort :${port}`);
       
-      // Cleanup Task every hour
+      // Cleanup Task every hour. Wrapped in a Redis lock so only one replica
+      // runs it when auth-service is horizontally scaled. TTL < interval so
+      // the next hour's run can acquire the lock if the current holder crashes.
       setInterval(async () => {
+        const LOCK_KEY = "lock:auth-cleanup";
+        const LOCK_TTL = 55 * 60; // seconds
+        let acquired = false;
         try {
+          // SET NX EX — atomic acquire, returns "OK" or null
+          const result = await redis.set(LOCK_KEY, "1", "EX", LOCK_TTL, "NX");
+          acquired = result === "OK";
+          if (!acquired) return; // another replica already running
+
           console.log("Running hourly cleanup task...");
           const resCodes = await prisma.signupAccessCode.deleteMany({
             where: { expiresAt: { lt: new Date() } }
           });
           const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           const resSellers = await prisma.sellers.deleteMany({
-            where: { 
-              isApprovedByAdmin: false, 
+            where: {
+              isApprovedByAdmin: false,
               createdAt: { lt: twentyFourHoursAgo }
             }
           });

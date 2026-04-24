@@ -1,13 +1,7 @@
-import { Suspense } from "react";
-import { SearchDataStream } from "./_components/search-data-stream";
 import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface SearchPageProps {
-  searchParams: Promise<{ q?: string }>;
-}
-
-function SearchSkeleton() {
+export default function Loading() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="flex gap-6">
@@ -31,15 +25,5 @@ function SearchSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q = "" } = await searchParams;
-
-  return (
-    <Suspense fallback={<SearchSkeleton />}>
-      <SearchDataStream query={q} />
-    </Suspense>
   );
 }

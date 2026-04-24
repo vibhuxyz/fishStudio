@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +32,7 @@ function ProductCardComponent({
   const modals = useModals();
   const [hydrated, setHydrated] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
@@ -53,15 +54,42 @@ function ProductCardComponent({
     setHydrated(true);
   }, []);
 
-  // Auto-rotate images if multiple are present
+  // Auto-rotate images only while the card is on-screen. IntersectionObserver
+  // lets us skip the timer for off-screen cards — a 20-card grid was waking
+  // the main thread every 4s × 20 even when most cards were below the fold.
   React.useEffect(() => {
     if (images.length <= 1 || isOutOfStock || isComingSoon) return;
+    const el = cardRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      // Fallback: always rotate if IntersectionObserver unavailable
+      const id = setInterval(
+        () => setCurrentImageIndex((prev) => (prev + 1) % images.length),
+        4000,
+      );
+      return () => clearInterval(id);
+    }
 
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries[0]?.isIntersecting ?? false;
+        if (visible && !interval) {
+          interval = setInterval(
+            () => setCurrentImageIndex((prev) => (prev + 1) % images.length),
+            4000,
+          );
+        } else if (!visible && interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      },
+      { rootMargin: "100px" },
+    );
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
   }, [images.length, isOutOfStock, isComingSoon]);
 
   const quickAdd = useCartStore((s) => s.quickAdd);
@@ -151,7 +179,8 @@ function ProductCardComponent({
 
   if (variant === "compact") {
     return (
-      <div 
+      <div
+        ref={cardRef}
         onMouseEnter={handlePrefetch}
         onTouchStart={handlePrefetch}
         className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}
@@ -285,7 +314,8 @@ function ProductCardComponent({
 
   /* Full variant (used for featured/special lists) */
   return (
-    <div 
+    <div
+      ref={cardRef}
       onMouseEnter={handlePrefetch}
       onTouchStart={handlePrefetch}
       className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}

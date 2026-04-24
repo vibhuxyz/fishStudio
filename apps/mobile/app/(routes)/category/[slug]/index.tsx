@@ -197,6 +197,10 @@ export default function CategoryScreen() {
         columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={5}
+        removeClippedSubviews
         renderItem={({ item }) => (
           <View style={{ width: "48.5%", marginBottom: 12 }}>
             <ProductCard product={item} cardWidth="100%" noRightMargin />

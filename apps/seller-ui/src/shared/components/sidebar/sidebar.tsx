@@ -90,7 +90,9 @@ const SidebarBarWrapper = () => {
 
   const perms = seller?.permissions || [];
   const hasPerm = (p: string) =>
-    perms.includes("full_access") || perms.includes(p);
+    seller?.role === "seller" ||
+    perms.includes("full_access") ||
+    perms.includes(p);
 
   return (
     <Box

@@ -41,6 +41,8 @@ import {
   registerSeller,
   verifySeller,
   verifySellerSignupCode,
+  forgotPasswordSeller,
+  resetPasswordSeller,
 } from "../controller/seller/auth.controller.js";
 import {
   createStore,
@@ -125,6 +127,8 @@ router.post("/verify-seller-code", authRateLimiter, verifySellerSignupCode);
 router.post("/seller-registration", registrationRateLimiter, registerSeller);
 router.post("/verify-seller", authRateLimiter, verifySeller);
 router.post("/login-seller", authRateLimiter, loginSeller);
+router.post("/forgot-password-seller", otpRateLimiter, forgotPasswordSeller);
+router.post("/reset-password-seller", authRateLimiter, resetPasswordSeller);
 router.post("/create-store", isAuthenticated, isSeller, createStore);
 router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);

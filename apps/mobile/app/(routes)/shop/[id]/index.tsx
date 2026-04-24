@@ -399,6 +399,10 @@ export default function ShopDetailsScreen() {
               ItemSeparatorComponent={() => <View className="h-4" />}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
+              initialNumToRender={6}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews
               ListEmptyComponent={() => (
                 <View className="items-center py-8">
                   <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
@@ -444,6 +448,10 @@ export default function ShopDetailsScreen() {
               ItemSeparatorComponent={() => <View className="h-4" />}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
+              initialNumToRender={6}
+              maxToRenderPerBatch={8}
+              windowSize={5}
+              removeClippedSubviews
               ListEmptyComponent={() => (
                 <View className="items-center py-8">
                   <Ionicons name="pricetag-outline" size={48} color="#9CA3AF" />

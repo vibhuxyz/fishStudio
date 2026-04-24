@@ -22,6 +22,7 @@ export type VerifyStaffInput = z.infer<typeof schemas.verifyStaffSchema>;
 export type UpdateStaffAccessInput = z.infer<typeof schemas.updateStaffAccessSchema>;
 export type ForgetPasswordInput = z.infer<typeof schemas.forgetPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof schemas.resetPasswordSchema>;
+export type SellerResetPasswordInput = z.infer<typeof schemas.sellerResetPasswordSchema>;
 
 export type ProductInput = z.infer<typeof schemas.productSchema>;
 export type UpdateProductInput = z.infer<typeof schemas.updateProductSchema>;

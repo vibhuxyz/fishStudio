@@ -153,14 +153,48 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     req.role = decoded.role;
 
     // ── Write to cache ────────────────────────────────────────────────────
+    // Only cache the fields actually read by downstream handlers. Big nested
+    // arrays (addresses, availableCities, cityDeliveryTimes, following) are
+    // refetched from the DB when needed — keeps cache payloads small.
     try {
+      const slimUser = req.user
+        ? { id: req.user.id, name: req.user.name, email: req.user.email, phone_number: req.user.phone_number }
+        : null;
+      const slimStore = req.seller?.store
+        ? {
+            id: req.seller.store.id,
+            name: req.seller.store.name,
+            sellerId: req.seller.store.sellerId,
+          }
+        : null;
+      const slimSeller = req.seller
+        ? {
+            id: req.seller.id,
+            name: req.seller.name,
+            email: req.seller.email,
+            isApprovedByAdmin: req.seller.isApprovedByAdmin,
+            store: slimStore,
+          }
+        : null;
+      const slimStaff = req.staff
+        ? {
+            id: req.staff.id,
+            name: req.staff.name,
+            email: req.staff.email,
+            isActive: req.staff.isActive,
+            sellerId: req.staff.sellerId,
+          }
+        : null;
+      const slimAdmin = req.admin
+        ? { id: req.admin.id, name: req.admin.name, email: req.admin.email }
+        : null;
       const cacheData = {
         role: decoded.role,
         jti: decoded.jti,
-        seller: req.seller ?? null,
-        staff: req.staff ?? null,
-        admin: req.admin ?? null,
-        user: req.user ?? null,
+        seller: slimSeller,
+        staff: slimStaff,
+        admin: slimAdmin,
+        user: slimUser,
       };
       await redis.set(cacheKey, JSON.stringify(cacheData), "EX", AUTH_CACHE_TTL);
 

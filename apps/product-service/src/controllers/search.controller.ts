@@ -254,14 +254,24 @@ export const reindexProducts = async (
     }
     
     // 1. Flush Redis cache first to avoid stale results during/after reindexing
+    // Non-blocking: SCAN in chunks and UNLINK (async delete) instead of KEYS/DEL
     try {
-      const keys = await redis.keys("search:*");
-      const suggestKeys = await redis.keys("suggest:*");
-      const all = [...keys, ...suggestKeys];
-      if (all.length > 0) {
-        await redis.del(...all);
-        console.log(`[Cache] Flushed ${all.length} search/suggest keys`);
+      let flushed = 0;
+      for (const pattern of ["search:*", "suggest:*"]) {
+        const stream = (redis as any).scanStream({ match: pattern, count: 500 });
+        await new Promise<void>((resolve, reject) => {
+          stream.on("data", (batch: string[]) => {
+            if (batch.length === 0) return;
+            // unlink is non-blocking delete; fall back to del if unavailable
+            const del = (redis as any).unlink ?? redis.del.bind(redis);
+            del.call(redis, ...batch).catch(() => {});
+            flushed += batch.length;
+          });
+          stream.on("end", () => resolve());
+          stream.on("error", reject);
+        });
       }
+      if (flushed > 0) console.log(`[Cache] Flushed ${flushed} search/suggest keys`);
     } catch (err) {
       console.error("[Cache] Flush failed during reindex:", err);
     }

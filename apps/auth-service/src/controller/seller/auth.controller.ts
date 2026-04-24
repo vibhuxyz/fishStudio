@@ -28,6 +28,8 @@ import {
   registerSellerSchema,
   verifySellerSchema,
   loginSchema,
+  forgetPasswordSchema,
+  sellerResetPasswordSchema,
   validate,
 } from "@repo/zod-schema";
 
@@ -325,6 +327,80 @@ export const loginSeller = async (
       role: "staff",
       user: { id: staff.id, name: staff.name, email: staff.email, isActive: staff.isActive },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const forgotPasswordSeller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email } = validate(forgetPasswordSchema, req.body);
+
+    const seller = await prisma.sellers.findUnique({ where: { email } });
+    const staff = !seller ? await prisma.staffs.findUnique({ where: { email } }) : null;
+
+    if (!seller && !staff) {
+      // Don't reveal whether the email exists
+      return res.status(200).json({
+        success: true,
+        message: "If an account with that email exists, an OTP has been sent.",
+      });
+    }
+
+    await checkOtpRestrictions(email, next);
+    await trackOtpRequests(email, next);
+
+    const name = seller ? seller.name : staff!.name;
+    await sendOtp("seller", {
+      name: name ?? "User",
+      email,
+      template: "seller-activation",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "If an account with that email exists, an OTP has been sent.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPasswordSeller = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email, otp, newPassword } = validate(sellerResetPasswordSchema, req.body);
+
+    await verifyOtp(email, otp, next);
+
+    const hashedPassword = await argon2.hash(newPassword);
+
+    const seller = await prisma.sellers.findUnique({ where: { email } });
+    if (seller) {
+      await prisma.sellers.update({
+        where: { email },
+        data: { password: hashedPassword },
+      });
+      return res.status(200).json({ success: true, message: "Password reset successfully." });
+    }
+
+    const staff = await prisma.staffs.findUnique({ where: { email } });
+    if (staff) {
+      await prisma.staffs.update({
+        where: { email },
+        data: { password: hashedPassword },
+      });
+      return res.status(200).json({ success: true, message: "Password reset successfully." });
+    }
+
+    next(new ValidationError("Account not found."));
   } catch (error) {
     next(error);
   }

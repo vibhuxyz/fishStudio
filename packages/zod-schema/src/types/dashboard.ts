@@ -279,6 +279,7 @@ export type AdminSellerAccessCode = {
   email?: string | null;
   role: string;
   code: string;
+  plainCode?: string | null;
   expiresAt?: string | null;
   createdAt?: string;
 };

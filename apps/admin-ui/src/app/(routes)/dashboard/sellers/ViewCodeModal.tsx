@@ -6,7 +6,7 @@ export default function ViewCodeModal({
   code,
   onClose,
 }: {
-  code: string;
+  code: string | null;
   onClose: () => void;
 }) {
   return (
@@ -20,13 +20,21 @@ export default function ViewCodeModal({
         </button>
 
         <h2 className="mb-2 text-xl font-bold text-white">Seller Access Code</h2>
-        <p className="mb-6 text-sm text-gray-400">
-          Share this 6-digit code with the seller.
-        </p>
 
-        <div className="mb-6 rounded-lg bg-gray-800 py-4 text-3xl font-mono tracking-widest text-green-400 font-bold border border-green-500/20">
-          {code}
-        </div>
+        {code ? (
+          <>
+            <p className="mb-6 text-sm text-gray-400">
+              Share this 6-digit code with the seller.
+            </p>
+            <div className="mb-6 rounded-lg bg-gray-800 py-4 text-3xl font-mono tracking-widest text-green-400 font-bold border border-green-500/20">
+              {code}
+            </div>
+          </>
+        ) : (
+          <p className="mb-6 text-sm text-amber-400">
+            Code was sent to the seller's email. To view the code here, delete this invitation and regenerate it.
+          </p>
+        )}
 
         <Button
           onClick={onClose}

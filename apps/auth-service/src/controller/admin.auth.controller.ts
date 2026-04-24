@@ -273,11 +273,11 @@ export const generateSellerSignupCode = async (
     if (existingCode) {
       await prisma.signupAccessCode.update({
         where: { id: existingCode.id },
-        data: { code: codeHash, expiresAt },
+        data: { code: codeHash, plainCode: code, expiresAt },
       });
     } else {
       await prisma.signupAccessCode.create({
-        data: { email, role: "SELLER", code: codeHash, expiresAt },
+        data: { email, role: "SELLER", code: codeHash, plainCode: code, expiresAt },
       });
     }
 
@@ -293,6 +293,7 @@ export const generateSellerSignupCode = async (
     res.status(200).json({
       success: true,
       message: `Signup access code generated and sent to ${email}`,
+      code,
     });
   } catch (error) {
     next(error);

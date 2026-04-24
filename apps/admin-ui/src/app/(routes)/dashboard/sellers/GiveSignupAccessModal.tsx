@@ -11,6 +11,7 @@ export default function GiveSignupAccessModal({
   onClose: () => void;
 }) {
   const [email, setEmail] = useState("");
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -20,9 +21,8 @@ export default function GiveSignupAccessModal({
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Code generated successfully!");
       queryClient.invalidateQueries({ queryKey: ["admin", "sellerCodes"] });
-      onClose();
+      setGeneratedCode(data.code);
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to generate code");
@@ -45,50 +45,72 @@ export default function GiveSignupAccessModal({
           <X size={20} />
         </button>
 
-        <h2 className="mb-2 text-xl font-bold text-white">Generate Seller Access Code</h2>
-        <p className="mb-6 text-sm text-gray-400">
-          Enter the email address of the seller you want to invite. A 6-digit code valid for 24 hours will be generated.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">
-              Seller Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-white focus:border-blue-500 focus:outline-none"
-              placeholder="seller@example.com"
-              required
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
+        {generatedCode ? (
+          <>
+            <h2 className="mb-2 text-xl font-bold text-white">Access Code Generated</h2>
+            <p className="mb-4 text-sm text-gray-400">
+              Code sent to <span className="text-white font-medium">{email}</span>. Share this 6-digit code with the seller — it expires in 24 hours.
+            </p>
+            <div className="mb-6 rounded-lg bg-gray-800 py-4 text-3xl font-mono tracking-widest text-green-400 font-bold border border-green-500/20 text-center">
+              {generatedCode}
+            </div>
             <Button
-              type="button"
               onClick={onClose}
-              variant="indigo"
-              glow={false}
-              fullWidth={false}
-              className="!bg-gray-700 hover:!bg-gray-600 !py-2 !px-4 !rounded-lg !w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={generateMutation.isPending || !email}
-              isLoading={generateMutation.isPending}
-              loaderLabel="Generating..."
               variant="emerald"
-              fullWidth={false}
-              className="!py-2 !px-4 !rounded-lg !w-auto"
+              fullWidth
+              className="!rounded-lg !py-2 !font-medium"
             >
-              Generate Code
+              Done
             </Button>
-          </div>
-        </form>
+          </>
+        ) : (
+          <>
+            <h2 className="mb-2 text-xl font-bold text-white">Generate Seller Access Code</h2>
+            <p className="mb-6 text-sm text-gray-400">
+              Enter the email address of the seller you want to invite. A 6-digit code valid for 24 hours will be generated.
+            </p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-300">
+                  Seller Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-800 p-3 text-white focus:border-blue-500 focus:outline-none"
+                  placeholder="seller@example.com"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-800">
+                <Button
+                  type="button"
+                  onClick={onClose}
+                  variant="indigo"
+                  glow={false}
+                  fullWidth={false}
+                  className="!bg-gray-700 hover:!bg-gray-600 !py-2 !px-4 !rounded-lg !w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={generateMutation.isPending || !email}
+                  isLoading={generateMutation.isPending}
+                  loaderLabel="Generating..."
+                  variant="emerald"
+                  fullWidth={false}
+                  className="!py-2 !px-4 !rounded-lg !w-auto"
+                >
+                  Generate Code
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

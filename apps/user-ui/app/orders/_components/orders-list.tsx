@@ -39,7 +39,7 @@ export function OrdersList({ orders, isLoading }: { orders: any[]; isLoading?: b
         return (
           <Link
             key={order.id}
-            href={`/order-confirmation/${order.id}`}
+            href={`/orders/${order.id}`}
             className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
           >
             {/* Image / Icon */}

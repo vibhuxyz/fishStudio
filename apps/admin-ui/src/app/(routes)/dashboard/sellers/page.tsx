@@ -18,8 +18,7 @@ const SellersPage = () => {
   const [selectedSellerId, setSelectedSellerId] = React.useState<string | null>(
     null,
   );
-  const [viewingCode, setViewingCode] = React.useState<string | null>(null);
-
+  const [viewingCode, setViewingCode] = React.useState<{ code: string | null } | null>(null);
   const [isGiveSignupAccessOpen, setIsGiveSignupAccessOpen] =
     React.useState(false);
 
@@ -162,7 +161,7 @@ const SellersPage = () => {
                   </td>
                   <td className="p-3">
                     <Button
-                      onClick={() => setViewingCode(invite.code)}
+                      onClick={() => setViewingCode({ code: invite.plainCode ?? null })}
                       variant="emerald"
                       glow={false}
                       className="!py-2 !px-3 !rounded-lg !text-sm !inline-flex !w-auto !bg-emerald-600/20 !text-emerald-400 border !border-emerald-600/30 hover:!bg-emerald-600/30"
@@ -197,9 +196,9 @@ const SellersPage = () => {
         />
       )}
 
-      {viewingCode && (
+      {viewingCode !== null && (
         <ViewCodeModal
-          code={viewingCode}
+          code={viewingCode.code}
           onClose={() => setViewingCode(null)}
         />
       )}

@@ -541,6 +541,10 @@ export default function ProductsScreen() {
           }}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={8}
+          windowSize={5}
+          removeClippedSubviews
           ListFooterComponent={renderPagination}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-20">

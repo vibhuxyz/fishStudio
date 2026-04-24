@@ -1,54 +1,7 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { CategoryDataStream } from "./_components/category-data-stream";
 import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface PageProps {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sub?: string }>;
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const categoryName = decodeURIComponent(slug)
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-
-  const title = `${categoryName} | Fresh Selection | Fish Studio`;
-  const description = `Shop the freshest ${categoryName.toLowerCase()} products at Fish Studio. Premium quality, same-day delivery.`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `/category/${slug}`,
-      images: [
-        {
-          url: "/og-image.png",
-          width: 1200,
-          height: 630,
-          alt: categoryName,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["/og-image.png"],
-    },
-  };
-}
-
-function CategorySkeleton() {
+export default function Loading() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
@@ -83,19 +36,5 @@ function CategorySkeleton() {
         </div>
       </main>
     </div>
-  );
-}
-
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: PageProps) {
-  const { slug } = await params;
-  const { sub } = await searchParams;
-
-  return (
-    <Suspense fallback={<CategorySkeleton />}>
-      <CategoryDataStream slug={slug} initialSub={sub} />
-    </Suspense>
   );
 }
