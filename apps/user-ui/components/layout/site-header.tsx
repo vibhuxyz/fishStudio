@@ -93,6 +93,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
           className="absolute right-2 rounded-full p-1 text-muted-foreground hover:text-foreground"
           onClick={onClear}
           tabIndex={-1}
+          aria-label="Clear search"
         >
           <X className="h-4 w-4" />
         </button>
@@ -576,6 +577,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                 type="button"
                 className="flex min-w-0 flex-1 flex-shrink-0 flex-col items-start rounded-lg px-2 py-1 transition-colors hover:bg-muted sm:flex-initial sm:px-3"
                 onClick={() => setShowAddressModal(true)}
+                aria-label={`Delivery address. ${hydrated ? addressShort : "Select location"}`}
               >
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-bold text-offer-green sm:text-xs">
@@ -682,6 +684,9 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                             setShowCategoryDropdown(!showCategoryDropdown);
                           }
                         }}
+                        aria-label="Browse categories"
+                        aria-expanded={showCategoryDropdown}
+                        aria-haspopup="menu"
                       >
                         <LayoutGrid className="h-5 w-5 sm:h-6 sm:w-6" />
                       </Button>
@@ -751,6 +756,11 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
                     ? "bg-offer-green text-white hover:bg-offer-green/90 border border-offer-green"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border border-transparent"
                 }`}
+                aria-label={
+                  hydrated && totalItems > 0
+                    ? `Open cart with ${totalItems} ${totalItems > 1 ? "items" : "item"}`
+                    : "Open cart"
+                }
               >
                 <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                 {hydrated && totalItems > 0 ? (

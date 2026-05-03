@@ -63,6 +63,7 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
         type="button"
         className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
         onClick={modals.openLogin}
+        aria-label="Log in or sign up"
       >
         <User className="h-5 w-5" />
         <span className="hidden md:inline">Log in/Sign up</span>
@@ -77,6 +78,9 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
         type="button"
         className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
         onClick={() => setOpen(!open)}
+        aria-label="Open account menu"
+        aria-expanded={open}
+        aria-haspopup="menu"
       >
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {user?.name.charAt(0).toUpperCase()}
@@ -100,6 +104,7 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
               type="button"
               className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-secondary"
               onClick={() => setOpen(false)}
+              aria-label="Close account menu"
             >
               <X className="h-3.5 w-3.5" />
             </button>

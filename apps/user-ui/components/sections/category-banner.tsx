@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -55,10 +56,12 @@ export function CategoryBanner({ category }: { category: string }) {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="h-full w-full"
         >
-          <img
+          <Image
             src={banners[currentIndex]?.imageUrl}
-            alt={`${category} Banner`}
-            className="h-full w-full object-cover"
+            alt={`${category} banner`}
+            fill
+            sizes="(max-width: 768px) 100vw, 1280px"
+            className="object-cover"
           />
         </motion.div>
       </AnimatePresence>
@@ -69,6 +72,7 @@ export function CategoryBanner({ category }: { category: string }) {
         <>
           <div className="absolute inset-y-0 left-0 flex items-center px-4">
             <button
+              type="button"
               onClick={handlePrev}
               className="rounded-full bg-background/30 p-2.5 text-white backdrop-blur-md transition-all hover:bg-background/60 hover:scale-110 active:scale-95"
               aria-label="Previous banner"
@@ -78,6 +82,7 @@ export function CategoryBanner({ category }: { category: string }) {
           </div>
           <div className="absolute inset-y-0 right-0 flex items-center px-4">
             <button
+              type="button"
               onClick={handleNext}
               className="rounded-full bg-background/30 p-2.5 text-white backdrop-blur-md transition-all hover:bg-background/60 hover:scale-110 active:scale-95"
               aria-label="Next banner"
@@ -89,6 +94,7 @@ export function CategoryBanner({ category }: { category: string }) {
             {banners.map((_: any, index: number) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => setCurrentIndex(index)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   index === currentIndex ? "w-8 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"

@@ -83,6 +83,7 @@ export function AnnouncementTopBar() {
     <div
       className="fixed top-0 left-0 right-0 z-[70] flex items-center bg-black text-white"
       style={{ height: BAR_HEIGHT }}
+      aria-label="Announcement banner"
     >
       <div className="flex flex-1 items-center justify-center gap-2 px-10 overflow-hidden">
         {banner.imageUrl && (
@@ -124,11 +125,20 @@ export function AnnouncementTopBar() {
           {banners.map((_, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => setCurrentIndex(i)}
-              className={`h-0.5 rounded-full transition-all ${
-                i === currentIndex ? "w-4 bg-yellow-400" : "w-1.5 bg-gray-600"
+              className={`min-h-6 min-w-6 rounded-full transition-all ${
+                i === currentIndex ? "bg-yellow-400/20" : "bg-transparent"
               }`}
-            />
+              aria-label={`Show announcement ${i + 1}`}
+              aria-pressed={i === currentIndex}
+            >
+              <span
+                className={`mx-auto block h-1.5 rounded-full transition-all ${
+                  i === currentIndex ? "w-4 bg-yellow-400" : "w-1.5 bg-gray-600"
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
@@ -136,5 +146,3 @@ export function AnnouncementTopBar() {
     </div>
   );
 }
-
-

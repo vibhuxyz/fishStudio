@@ -44,6 +44,7 @@ export const useNotifications = (userId?: string) => {
       const result = await response.json();
       return result.notifications as Notification[];
     },
+    enabled: !!userId,
     refetchInterval: 300_000, // 5 min — WebSocket handles real-time updates
   });
 
