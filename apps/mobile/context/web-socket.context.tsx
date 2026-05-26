@@ -79,9 +79,18 @@ export const WebSocketProvider = ({
           if (data.type === "ORDER_STATUS_UPDATE") {
             const orderId = data.payload?.orderId;
             if (orderId) {
+              queryClient.setQueryData(["order", orderId], (old: any) =>
+                old
+                  ? {
+                      ...old,
+                      status: data.payload?.status || old.status,
+                      updatedAt: data.payload?.updatedAt || new Date().toISOString(),
+                    }
+                  : old,
+              );
               queryClient.invalidateQueries({ queryKey: ["order", orderId] });
             }
-            queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["user-orders"] });
             return;
           }
         } catch {

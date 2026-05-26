@@ -55,7 +55,6 @@ If you want, I can next give you a quick “expected env checklist” for Compos
 
 
 
-meili_data is just a persistent volume for the Meilisearch container. It isn’t referenced anywhere in the code or build scripts, and you only need it if you want Meilisearch to keep its indexes between container restarts. When you run docker compose up, the getmeili/meilisearch:latest image will automatically initialize /meili_data inside the container and store its data there; if the host directory doesn’t exist yet, Docker will create it for you. You only need to keep the volume entry if you want search indexes to survive a restart (the image doesn’t rebuild them on every start), otherwise you can drop the volume and let Meilisearch use its internal storage.
-
+meili_data is just a persistent volume for the Meilisearch container. It isn’t referenced anywhere in the code or build scripts, and you only need it if you want Meilisearch to keep its indexes between container restarts. When you run docker compose up, the pinned getmeili/meilisearch image will automatically initialize /meili_data inside the container and store its data there; if the host directory doesn’t exist yet, Docker will create it for you. You only need to keep the volume entry if you want search indexes to survive a restart (the image doesn’t rebuild them on every start), otherwise you can drop the volume and let Meilisearch use its internal storage.
 
 

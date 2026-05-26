@@ -1,6 +1,4 @@
-import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import {
@@ -15,6 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
 import { useAddressStore } from "@/lib/address-store";
+import { LiveOrderBadge } from "@/components/live-order-badge";
+import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 
 interface SelectedOptions {
   cuttingType?: string;
@@ -67,9 +67,9 @@ interface Order {
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
-  PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Pending",   description: "Your order has been placed and is awaiting confirmation" },
-  ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Accepted",  description: "Your order has been accepted and is being prepared" },
-  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "Shipped",   description: "Your order is on its way to you" },
+  PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Order Placed", description: "Your order has been placed and is awaiting confirmation" },
+  ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Preparing",    description: "Your order is being prepared" },
+  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "On the Way",    description: "Your order is on its way to you" },
   DELIVERED: { bg: "#D1FAE5", text: "#059669", icon: "bag-check-outline",        label: "Delivered", description: "Your order has been delivered successfully" },
   REJECTED:  { bg: "#FEE2E2", text: "#DC2626", icon: "close-circle-outline",     label: "Rejected",  description: "Your order was rejected by the store" },
   CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled", description: "Your order has been cancelled" },
@@ -92,14 +92,14 @@ export default function OrderDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedLocation } = useAddressStore();
 
-  const { data: order, isLoading } = useQuery({
-    queryKey: ["order", id],
-    queryFn: async () => {
-      const response = await axiosInstance.get(`/order/api/get-order/${id}`);
-      return response.data.order as Order;
-    },
-    enabled: !!id,
-  });
+  const liveOrder = useLiveOrder(id);
+  const order = liveOrder.order as Order | undefined;
+  const {
+    isLoading,
+    isFetching,
+    isRealtimeConnected,
+    lastLiveUpdateAt,
+  } = liveOrder;
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("en-IN", {
@@ -148,7 +148,7 @@ export default function OrderDetailsScreen() {
 
   const statusCfg = STATUS_CONFIG[order.status] ?? {
     bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline",
-    label: order.status, description: "",
+    label: getOrderStatusLabel(order.status), description: "",
   };
   const payStatusCfg = PAYMENT_STATUS_CONFIG[order.paymentStatus] ?? PAYMENT_STATUS_CONFIG.PENDING;
   const amount = order.totalAmount ?? order.total ?? 0;
@@ -172,6 +172,11 @@ export default function OrderDetailsScreen() {
         <View className="p-4 gap-4">
 
           {/* Live order tracker */}
+          <LiveOrderBadge
+            connected={isRealtimeConnected}
+            isFetching={isFetching}
+            lastLiveUpdateAt={lastLiveUpdateAt}
+          />
           <OrderTracker
             status={order.status}
             updatedAt={order.updatedAt}
@@ -188,7 +193,7 @@ export default function OrderDetailsScreen() {
               <View className="px-3 py-1.5 rounded-full flex-row items-center" style={{ backgroundColor: statusCfg.bg }}>
                 <Ionicons name={statusCfg.icon as any} size={14} color={statusCfg.text} />
                 <Text className="ml-1.5 text-xs font-poppins-semibold" style={{ color: statusCfg.text }}>
-                  {statusCfg.label}
+                  {getOrderStatusLabel(order.status)}
                 </Text>
               </View>
             </View>

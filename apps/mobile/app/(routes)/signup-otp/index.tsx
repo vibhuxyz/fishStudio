@@ -1,19 +1,27 @@
-import { Ionicons } from "@expo/vector-icons";
+import axiosInstance from "@/utils/axiosInstance";
+import { haptic } from "@/utils/haptics";
+import { toast } from "@/utils/toast";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import axiosInstance from "@/utils/axiosInstance";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useGlobalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { toast } from "@/utils/toast";
 
 interface VerifyOTPData {
   otp: string;
@@ -29,27 +37,66 @@ interface ResendOTPData {
 }
 
 export default function SignupOtp() {
+  const { width, height } = useWindowDimensions();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const float = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
 
-  // Get dynamic parameters from signup screen
   const { name, email, password } = useGlobalSearchParams<{
     name: string;
     email: string;
     password: string;
   }>();
 
-  // Create refs for each input
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const compact = height < 720;
+  const otpBoxSize = Math.max(48, Math.min(62, (width - 96) / 4));
+  const isOTPComplete = otp.every((digit) => digit !== "");
 
-  // countdown timer effect
   useEffect(() => {
-    let timer: NodeJS.Timeout | any;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, {
+          toValue: 1,
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(float, {
+          toValue: 0,
+          duration: 2600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [float, pulse]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
 
     if (countdown > 0 && !canResend) {
       timer = setTimeout(() => {
-        setCountdown(countdown - 1);
+        setCountdown((current) => current - 1);
       }, 1000);
     } else if (countdown === 0) {
       setCanResend(true);
@@ -60,13 +107,11 @@ export default function SignupOtp() {
     };
   }, [countdown, canResend]);
 
-  // Start countdown on component mount
   useEffect(() => {
     setCanResend(false);
     setCountdown(60);
   }, []);
 
-  // Validate required parameters
   useEffect(() => {
     if (!name || !email || !password) {
       toast.error("Missing Information", {
@@ -76,17 +121,21 @@ export default function SignupOtp() {
     }
   }, [name, email, password]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 220);
+    return () => clearTimeout(timer);
+  }, []);
+
   const verifyOtp = async (data: VerifyOTPData) => {
     try {
-      const response = await axiosInstance.post(
-        "/auth/api/verify-user",
-        {
-          otp: data.otp,
-          email: data.email,
-          name: data?.name,
-          password: data?.password,
-        }
-      );
+      const response = await axiosInstance.post("/auth/api/verify-user", {
+        otp: data.otp,
+        email: data.email,
+        name: data.name,
+        password: data.password,
+      });
       return response.data;
     } catch (error) {
       console.error("OTP verification error:", error);
@@ -96,9 +145,8 @@ export default function SignupOtp() {
           throw new Error("Network error. Please check your connection!");
         }
 
-        // handle different status codes
-        const status = error?.response?.status;
-        const errorData = error?.response?.data;
+        const status = error.response.status;
+        const errorData = error.response.data;
 
         if (status === 400 || status === 422) {
           throw new Error(errorData?.message || "Invalid OTP or signup data");
@@ -108,25 +156,26 @@ export default function SignupOtp() {
           throw new Error(errorData?.message || "User already exists");
         } else if (status === 429) {
           throw new Error(
-            errorData?.message || "Too many attempts. Please try again later."
+            errorData?.message || "Too many attempts. Please try again later.",
           );
         } else if (status >= 500) {
           throw new Error(
-            errorData?.message || "Server error. Please try again later."
+            errorData?.message || "Server error. Please try again later.",
           );
         } else {
           throw new Error(errorData?.message || "OTP verification failed");
         }
       }
+
+      throw new Error("An unexpected error occurred");
     }
   };
 
-  // API function for resending OTP
   const resendOTP = async (data: ResendOTPData) => {
     try {
       const response = await axiosInstance.post(
         "/auth/api/user-registration",
-        data
+        data,
       );
       return response.data;
     } catch (error) {
@@ -145,11 +194,11 @@ export default function SignupOtp() {
         } else if (status === 429) {
           throw new Error(
             errorData?.message ||
-              "Too many requests. Please wait before requesting again."
+              "Too many requests. Please wait before requesting again.",
           );
         } else if (status >= 500) {
           throw new Error(
-            errorData?.message || "Server error. Please try again later."
+            errorData?.message || "Server error. Please try again later.",
           );
         } else {
           throw new Error(errorData?.message || "Failed to resend OTP");
@@ -162,12 +211,11 @@ export default function SignupOtp() {
 
   const verifyOTPMutation = useMutation({
     mutationFn: verifyOtp,
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Welcome!", {
         description: `Account created successfully for ${name}!`,
       });
-
-      // Navigate to next screen on success
+      haptic.success();
       router.replace("/(routes)/login");
     },
     onError: (error: Error) => {
@@ -179,15 +227,12 @@ export default function SignupOtp() {
 
   const resendOTPMutation = useMutation({
     mutationFn: resendOTP,
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("OTP Sent!", {
         description: `A new OTP has been sent to ${email}.`,
       });
-      // Clear current OTP
       setOtp(["", "", "", ""]);
-      // Focus first input
       inputRefs.current[0]?.focus();
-      // Restart countdown
       setCanResend(false);
       setCountdown(60);
     },
@@ -198,28 +243,39 @@ export default function SignupOtp() {
     },
   });
 
-  const handleOtpChange = (value: string, index: number) => {
-    //  only allow single digit
-    if (value.length > 1) return;
+  const isVerifying = verifyOTPMutation.isPending;
+  const isResending = resendOTPMutation.isPending;
 
+  const handleOtpChange = (value: string, index: number) => {
+    const digits = value.replace(/\D/g, "");
     const newOtp = [...otp];
-    newOtp[index] = value;
+
+    if (!digits) {
+      newOtp[index] = "";
+      setOtp(newOtp);
+      return;
+    }
+
+    digits
+      .slice(0, 4 - index)
+      .split("")
+      .forEach((digit, offset) => {
+        newOtp[index + offset] = digit;
+      });
     setOtp(newOtp);
 
-    // Auto focus next input if value is entered
-    if (value && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
+    const nextFocus = Math.min(index + digits.length, 3);
+    inputRefs.current[nextFocus]?.focus();
   };
 
   const handleKeyPress = (key: string, index: number) => {
-    // handle backspace - go to previous input if current is empty
     if (key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
   const handleVerifyOtp = () => {
+    haptic.press();
     const otpCode = otp.join("");
 
     if (otpCode.length !== 4) {
@@ -236,18 +292,18 @@ export default function SignupOtp() {
       return;
     }
 
-    // Trigger the verification mutation with all signup data
     verifyOTPMutation.mutate({
       otp: otpCode,
-      email: email,
-      name: name,
-      password: password,
+      email,
+      name,
+      password,
     });
   };
 
   const handleResendOTP = () => {
     if (!canResend || resendOTPMutation.isPending) return;
 
+    haptic.press();
     if (!email) {
       toast.error("Missing Email", {
         description: "Email address is required to resend OTP.",
@@ -255,7 +311,6 @@ export default function SignupOtp() {
       return;
     }
 
-    // Trigger the resend mutation
     resendOTPMutation.mutate({
       email: email as string,
       name: name as string,
@@ -264,22 +319,15 @@ export default function SignupOtp() {
   };
 
   const handleGoBack = () => {
+    haptic.press();
     router.back();
   };
 
-  // Auto-focus first input on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
+  const handleSkip = () => {
+    haptic.press();
+    router.replace("/(tabs)");
+  };
 
-  const isOTPComplete = otp.every((digit) => digit !== "");
-  const isVerifying = verifyOTPMutation.isPending;
-  const isResending = resendOTPMutation.isPending;
-
-  // Format countdown time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -289,112 +337,393 @@ export default function SignupOtp() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={["#FFFFFF", "#F0FDFF", "#F7F3FF"]}
+        locations={[0, 0.58, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <Animated.View
+        style={[
+          styles.bubbleOne,
+          {
+            transform: [
+              {
+                translateY: float.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -18],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.bubbleTwo,
+          {
+            opacity: pulse.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.18, 0.4],
+            }),
+            transform: [
+              {
+                scale: pulse.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.94, 1.06],
+                }),
+              },
+            ],
+          },
+        ]}
+      />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.flex}
       >
-        {/* Header with Back Button */}
-        <View className="flex-row items-center px-6 mt-6 mb-8">
-          <TouchableOpacity
-            onPress={handleGoBack}
-            className="mr-4 p-2 rounded-full bg-muted"
-            disabled={isVerifying}
-          >
-            <Ionicons name="arrow-back" size={24} color="#1E293B" />
-          </TouchableOpacity>
-          <Text className="text-2xl font-poppins-bold text-foreground">
-            Verify OTP
-          </Text>
+        <View style={styles.topBar}>
+          <Pressable onPress={handleGoBack} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={20} color="#475569" />
+          </Pressable>
+          <Pressable onPress={handleSkip} style={styles.skipButton}>
+            <Text style={styles.skipText}>Skip</Text>
+            <Ionicons name="arrow-forward" size={14} color="#6C3CE1" />
+          </Pressable>
         </View>
 
-        <View className="flex-1 px-6">
-          <View className="items-center mb-8">
-            <View className="w-20 h-20 bg-primary/10 rounded-full items-center justify-center mb-6">
-              <Ionicons name="shield-checkmark" size={40} color={"#6C3CE1"} />
-            </View>
-
-            <Text className="text-xl font-poppins-bold text-foreground mb-2 text-center">
-              Hi {name || "User"}! Verify Your Account
-            </Text>
-            <Text className="text-muted-foreground font-poppins text-base text-center">
-              Enter OTP sent to{"\n"}
-              <Text className="text-primary font-poppins-semibold">
-                {email || "your email"}
-              </Text>
-            </Text>
-            <Text className="text-muted-foreground font-poppins text-sm text-center mt-2">
-              We&apos;ve sent a 4-digit code. It expires in 2 minutes.
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { minHeight: Math.max(560, height - 108) },
+            compact && styles.scrollContentCompact,
+          ]}
+        >
+          <View style={styles.hero}>
+            <Animated.View
+              style={[
+                styles.logoWrap,
+                {
+                  transform: [
+                    {
+                      translateY: float.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, -8],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <LinearGradient
+                colors={["#7C3AED", "#14B8A6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoGradient}
+              >
+                <MaterialCommunityIcons name="shield-check" size={42} color="#FFFFFF" />
+              </LinearGradient>
+            </Animated.View>
+            <Text style={styles.brand}>FishStudio</Text>
+            <Text style={styles.title}>Verify your fresh account</Text>
+            <Text style={styles.subtitle}>
+              Enter the 4-digit code sent to {email || "your email"}.
             </Text>
           </View>
 
-          {/* OTP Input Fields */}
-          <View className="flex-row justify-center mb-8 gap-4">
-            {otp?.map((digit, index) => (
-              <View key={index} className="w-16 h-16">
+          <View style={styles.card}>
+            <View style={styles.otpRow}>
+              {otp.map((digit, index) => (
                 <TextInput
-                  ref={(ref: TextInput | null): void => {
+                  key={index}
+                  ref={(ref) => {
                     inputRefs.current[index] = ref;
                   }}
-                  className={`w-full h-full text-center text-2xl font-poppins-bold border-2 rounded-xl ${
-                    digit
-                      ? "border-primary bg-primary/5"
-                      : "border-input bg-white"
-                  }`}
+                  style={[
+                    styles.otpInput,
+                    {
+                      width: otpBoxSize,
+                      height: otpBoxSize,
+                      borderRadius: Math.max(15, otpBoxSize * 0.28),
+                    },
+                    digit && styles.otpInputFilled,
+                  ]}
                   value={digit}
                   onChangeText={(value) => handleOtpChange(value, index)}
                   onKeyPress={({ nativeEvent }) =>
                     handleKeyPress(nativeEvent.key, index)
                   }
-                  keyboardType="numeric"
-                  maxLength={1}
+                  keyboardType="number-pad"
+                  textContentType="oneTimeCode"
+                  maxLength={4}
                   selectTextOnFocus
                   editable={!isVerifying}
                 />
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
 
-          {/* Verify Button */}
-          <TouchableOpacity
-            className={`rounded-xl py-4 mb-6 ${
-              isOTPComplete && !isVerifying ? "bg-primary" : "bg-muted"
-            }`}
-            onPress={handleVerifyOtp}
-            disabled={!isOTPComplete || isVerifying}
-            activeOpacity={0.8}
-          >
-            <Text className="text-white text-center text-lg font-poppins-semibold">
-              {isVerifying ? "Verifying..." : "Verify OTP"}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Resend OTP */}
-          <View className="flex-row justify-center">
-            <Text className="text-muted-foreground font-poppins">
-              Didn&apos;t receive the code?
-            </Text>
-            {canResend ? (
-              <TouchableOpacity
-                onPress={handleResendOTP}
-                disabled={isResending}
+            <Pressable
+              onPress={handleVerifyOtp}
+              disabled={!isOTPComplete || isVerifying}
+              style={({ pressed }) => [
+                styles.primaryButton,
+                (!isOTPComplete || isVerifying) && styles.buttonDisabled,
+                pressed && isOTPComplete && styles.buttonPressed,
+              ]}
+            >
+              <LinearGradient
+                colors={
+                  isOTPComplete && !isVerifying
+                    ? ["#7C3AED", "#6C3CE1"]
+                    : ["#E2E8F0", "#E2E8F0"]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.buttonGradient}
               >
-                <Text
-                  className={`font-poppins-semibold ml-1 ${
-                    isResending ? "text-muted-foreground" : "text-primary"
-                  }`}
-                >
-                  {isResending ? "Sending..." : "Resend OTP"}
+                {isVerifying ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text
+                    style={[
+                      styles.primaryText,
+                      !isOTPComplete && styles.primaryTextDisabled,
+                    ]}
+                  >
+                    Verify OTP
+                  </Text>
+                )}
+              </LinearGradient>
+            </Pressable>
+
+            <View style={styles.resendWrap}>
+              <Text style={styles.mutedText}>Didn&apos;t receive the code?</Text>
+              {canResend ? (
+                <Pressable onPress={handleResendOTP} disabled={isResending}>
+                  <Text
+                    style={[
+                      styles.resendText,
+                      isResending && styles.resendTextDisabled,
+                    ]}
+                  >
+                    {isResending ? "Sending..." : "Resend OTP"}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.timerText}>
+                  Resend in {formatTime(countdown)}
                 </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text className="text-foreground font-poppins-semibold ml-1">
-                Resend OTP in {formatTime(countdown)}
-              </Text>
-            )}
+              )}
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  flex: {
+    flex: 1,
+  },
+  topBar: {
+    height: 56,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.88)",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  skipButton: {
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+    backgroundColor: "#F4F0FF",
+    borderWidth: 1,
+    borderColor: "#E7E5FF",
+  },
+  skipText: {
+    color: "#6C3CE1",
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0,
+  },
+  scrollContent: {
+    paddingHorizontal: 22,
+    paddingBottom: 24,
+    justifyContent: "center",
+  },
+  scrollContentCompact: {
+    justifyContent: "flex-start",
+    paddingTop: 4,
+  },
+  bubbleOne: {
+    position: "absolute",
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    left: -74,
+    top: 98,
+    backgroundColor: "rgba(20, 184, 166, 0.16)",
+  },
+  bubbleTwo: {
+    position: "absolute",
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    right: -98,
+    bottom: 72,
+    backgroundColor: "rgba(108, 60, 225, 0.16)",
+  },
+  hero: {
+    alignItems: "center",
+    marginBottom: 22,
+  },
+  logoWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 30,
+    marginBottom: 14,
+    shadowColor: "#6C3CE1",
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+  },
+  logoGradient: {
+    flex: 1,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brand: {
+    color: "#111827",
+    fontFamily: "Poppins-Bold",
+    fontSize: 18,
+    letterSpacing: 0,
+    marginBottom: 6,
+  },
+  title: {
+    color: "#111827",
+    fontFamily: "Poppins-Bold",
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: 0,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: "#64748B",
+    fontFamily: "Poppins-Regular",
+    fontSize: 14,
+    lineHeight: 22,
+    letterSpacing: 0,
+    textAlign: "center",
+    marginTop: 8,
+    maxWidth: 330,
+  },
+  card: {
+    borderRadius: 22,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.93)",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+  otpRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    marginVertical: 8,
+  },
+  otpInput: {
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+    color: "#111827",
+    textAlign: "center",
+    fontFamily: "Poppins-Bold",
+    fontSize: 23,
+    letterSpacing: 0,
+  },
+  otpInputFilled: {
+    borderColor: "#6C3CE1",
+    backgroundColor: "#F4F0FF",
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 18,
+    overflow: "hidden",
+    marginTop: 14,
+  },
+  buttonGradient: {
+    flex: 1,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonDisabled: {
+    shadowOpacity: 0,
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.99 }],
+  },
+  primaryText: {
+    color: "#FFFFFF",
+    fontFamily: "Poppins-Bold",
+    fontSize: 16,
+    letterSpacing: 0,
+  },
+  primaryTextDisabled: {
+    color: "#94A3B8",
+  },
+  resendWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+    gap: 6,
+  },
+  mutedText: {
+    color: "#64748B",
+    fontFamily: "Poppins-Regular",
+    fontSize: 13,
+    letterSpacing: 0,
+    textAlign: "center",
+  },
+  resendText: {
+    color: "#6C3CE1",
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
+    letterSpacing: 0,
+  },
+  resendTextDisabled: {
+    color: "#94A3B8",
+  },
+  timerText: {
+    color: "#111827",
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 13,
+    letterSpacing: 0,
+  },
+});

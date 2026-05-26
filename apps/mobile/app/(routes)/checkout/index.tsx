@@ -4,6 +4,7 @@ import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { useStore } from "@/store";
 import axiosInstance from "@/utils/axiosInstance";
+import { haptic } from "@/utils/haptics";
 import { toast } from "@/utils/toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -249,7 +250,8 @@ export default function CheckoutScreen() {
       const { data } = await axiosInstance.post("/order/api/create", orderData);
       clearCart();
       clearAllCoupons();
-      toast.success("Order placed successfully!");
+      haptic.orderPlaced();
+      toast.success("Order placed successfully!", { haptic: false });
       router.replace({
         pathname: "/(routes)/order-confirmation/[id]" as any,
         params: { id: data.orderId },

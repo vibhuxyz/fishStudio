@@ -11,7 +11,9 @@ config.resolver.nodeModulesPaths = [
   rootNodeModules,
 ];
 
-config.watchFolders = [rootNodeModules];
+config.watchFolders = Array.from(
+  new Set([...(config.watchFolders ?? []), rootNodeModules]),
+);
 
 // Stub out native-only packages when bundling for web (expo export)
 const WEB_STUBS = {

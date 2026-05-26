@@ -19,6 +19,17 @@ const getExpoHost = (): string | null => {
   return host;
 };
 
+const PRODUCTION_API_BASE_URL = "https://fish-api.ddns.net";
+
+const normalizeUrl = (url: string): string => {
+  try {
+    const parsed = new URL(url);
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return url.replace(/\/$/, "");
+  }
+};
+
 const normalizeDevUrl = (url: string): string => {
   try {
     const parsed = new URL(url);
@@ -39,15 +50,24 @@ const normalizeDevUrl = (url: string): string => {
 
 // Resolve the API base URL:
 // 1. Explicit env var (production / staging override)
-// 2. Auto-detect from Expo dev-server host (same machine → same LAN IP, works on
+// 2. Production fallback (keeps release APKs from crashing if env injection is missed)
+// 3. Auto-detect from Expo dev-server host (same machine -> same LAN IP, works on
 //    physical devices + Android emulator without any manual IP config)
-// 3. Fall back to localhost (iOS simulator)
+// 4. Fall back to localhost (iOS simulator)
 const getApiBaseUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return normalizeDevUrl(process.env.EXPO_PUBLIC_API_URL);
+    return __DEV__
+      ? normalizeDevUrl(process.env.EXPO_PUBLIC_API_URL)
+      : normalizeUrl(process.env.EXPO_PUBLIC_API_URL);
   }
   if (process.env.EXPO_PUBLIC_SERVER_URI) {
-    return normalizeDevUrl(process.env.EXPO_PUBLIC_SERVER_URI);
+    return __DEV__
+      ? normalizeDevUrl(process.env.EXPO_PUBLIC_SERVER_URI)
+      : normalizeUrl(process.env.EXPO_PUBLIC_SERVER_URI);
+  }
+
+  if (!__DEV__) {
+    return PRODUCTION_API_BASE_URL;
   }
 
   // Constants.expoConfig?.hostUri looks like "192.168.1.5:8081"
@@ -61,16 +81,18 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Fix #23: refuse to run in production if the resolved API URL is not HTTPS.
-// Bearer tokens sent over plain HTTP are trivially sniffable on public Wi-Fi.
+// Release builds must never send bearer tokens over plain HTTP.
 if (!__DEV__ && !/^https:\/\//i.test(API_BASE_URL)) {
-  throw new Error(
-    `Refusing to start: API base URL must use HTTPS in production (got: ${API_BASE_URL})`,
+  console.error(
+    `Ignoring insecure production API base URL: ${API_BASE_URL}. Falling back to ${PRODUCTION_API_BASE_URL}.`,
   );
 }
 
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL:
+    !__DEV__ && !/^https:\/\//i.test(API_BASE_URL)
+      ? PRODUCTION_API_BASE_URL
+      : API_BASE_URL,
   withCredentials: false, // Disable cookies for React Native (using Bearer tokens)
   headers: {
     "Content-Type": "application/json",

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Eshop",
+    "name": "FishStudio",
     "slug": "Eshop",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.vibhuxyz.Eshop"
     },
     "web": {
       "bundler": "metro",
@@ -29,9 +30,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 280,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#F8FBFF"
         }
       ],
       "expo-font",
@@ -40,6 +41,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "43b86ab5-8fd3-4e44-b316-4ac5c2545916"
+      }
     }
   }
 }

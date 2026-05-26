@@ -81,7 +81,7 @@ services:
 
   meilisearch:
     container_name: meilisearch_prod
-    image: getmeili/meilisearch:latest
+    image: getmeili/meilisearch:v1.40.0
     restart: always
     environment:
       - MEILI_MASTER_KEY=masterKey123

@@ -49,9 +49,9 @@ interface Order {
 }
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string }> = {
-  PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Pending" },
-  ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Accepted" },
-  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "Shipped" },
+  PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Order Placed" },
+  ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Preparing" },
+  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "On the Way" },
   DELIVERED: { bg: "#D1FAE5", text: "#059669", icon: "bag-check-outline",        label: "Delivered" },
   REJECTED:  { bg: "#FEE2E2", text: "#DC2626", icon: "close-circle-outline",     label: "Rejected" },
   CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled" },
@@ -59,9 +59,9 @@ const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; la
 
 const STATUS_FILTERS = [
   { key: "all",       label: "All" },
-  { key: "PENDING",   label: "Pending" },
-  { key: "ACCEPTED",  label: "Accepted" },
-  { key: "SHIPPED",   label: "Shipped" },
+  { key: "PENDING",   label: "Placed" },
+  { key: "ACCEPTED",  label: "Preparing" },
+  { key: "SHIPPED",   label: "On the Way" },
   { key: "DELIVERED", label: "Delivered" },
 ];
 
@@ -78,6 +78,7 @@ export default function MyOrders() {
       return res.data.orders as Order[];
     },
     enabled: !!user,
+    refetchInterval: 15000,
   });
 
   const orders: Order[] = ordersData || [];

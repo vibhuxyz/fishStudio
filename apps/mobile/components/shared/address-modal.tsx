@@ -1,4 +1,8 @@
-import { useAddressStore, type Address, type SelectedLocation } from "@/lib/address-store";
+import {
+  useAddressStore,
+  type Address,
+  type SelectedLocation,
+} from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
@@ -116,7 +120,9 @@ export default function AddressModal({
     setServiceablePincodes([]);
 
     try {
-      const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${pin}`);
+      const res = await axiosInstance.get(
+        `/auth/api/check-pincode?pincode=${pin}`,
+      );
       const data = res.data;
 
       if (data.success && data.store) {
@@ -124,17 +130,21 @@ export default function AddressModal({
       } else {
         // Fetch serviceable areas for suggestion
         try {
-          const areasRes = await axiosInstance.get("/auth/api/serviceable-areas");
+          const areasRes = await axiosInstance.get(
+            "/auth/api/serviceable-areas",
+          );
           if (areasRes.data.areas) {
             setServiceablePincodes(
-              areasRes.data.areas.map((a: any) => a.pincode)
+              areasRes.data.areas.map((a: any) => a.pincode),
             );
           }
         } catch {}
         setPincodeError("coming-soon");
       }
     } catch (err: any) {
-      setPincodeError(err.response?.data?.message || "Failed to check pincode. Try again.");
+      setPincodeError(
+        err.response?.data?.message || "Failed to check pincode. Try again.",
+      );
     } finally {
       setPincodeLoading(false);
     }
@@ -207,7 +217,9 @@ export default function AddressModal({
 
     // Resolve full store info in background
     try {
-      const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${address.pincode}`);
+      const res = await axiosInstance.get(
+        `/auth/api/check-pincode?pincode=${address.pincode}`,
+      );
       const data = res.data;
       if (data.success && data.store) {
         const city = address.city || data.store.availableCities?.[0] || "";
@@ -228,7 +240,9 @@ export default function AddressModal({
   // ── Delete a saved address ────────────────────────────────────────────────
   const handleDeleteAddress = async (id: string) => {
     try {
-      const { data } = await axiosInstance.delete(`/auth/api/delete-address/${id}`);
+      const { data } = await axiosInstance.delete(
+        `/auth/api/delete-address/${id}`,
+      );
       if (data.success) {
         setAddresses(data.addresses);
         toast.success("Address removed");
@@ -241,13 +255,28 @@ export default function AddressModal({
   // ── Save new address ──────────────────────────────────────────────────────
   const handleSaveAddress = async () => {
     setFormError("");
-    if (!form.name.trim()) { setFormError("Full Name is required"); return; }
-    if (!form.phone.trim() || form.phone.length < 10) { setFormError("Valid 10-digit phone is required"); return; }
-    if (!form.street.trim()) { setFormError("House / Street / Flat is required"); return; }
-    if (!form.pincode || form.pincode.length < 6) { setFormError("Valid 6-digit pincode is required"); return; }
-    if (!form.city.trim()) { setFormError("City is required"); return; }
+    if (!form.name.trim()) {
+      setFormError("Full Name is required");
+      return;
+    }
+    if (!form.phone.trim() || form.phone.length < 10) {
+      setFormError("Valid 10-digit phone is required");
+      return;
+    }
+    if (!form.street.trim()) {
+      setFormError("House / Street / Flat is required");
+      return;
+    }
+    if (!form.pincode || form.pincode.length < 6) {
+      setFormError("Valid 6-digit pincode is required");
+      return;
+    }
+    if (!form.city.trim()) {
+      setFormError("City is required");
+      return;
+    }
 
-    setSaving(true);  
+    setSaving(true);
     try {
       const { data } = await axiosInstance.post("/auth/api/add-address", {
         address: { ...form, isDefault: addresses.length === 0 },
@@ -265,7 +294,8 @@ export default function AddressModal({
   };
 
   const getTitle = () => {
-    if (view === "list") return savedAddressesOnly ? "Deliver to" : "My Addresses";
+    if (view === "list")
+      return savedAddressesOnly ? "Deliver to" : "My Addresses";
     if (view === "pincode") return "Enter Pincode";
     return "Add New Address";
   };
@@ -294,7 +324,9 @@ export default function AddressModal({
         }}
       >
         {/* Main row */}
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+        <View
+          style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}
+        >
           <View
             style={{
               width: 44,
@@ -306,21 +338,51 @@ export default function AddressModal({
             }}
           >
             <Ionicons
-              name={address.label === "Home" ? "home-outline" : address.label === "Work" ? "briefcase-outline" : "location-outline"}
+              name={
+                address.label === "Home"
+                  ? "home-outline"
+                  : address.label === "Work"
+                    ? "briefcase-outline"
+                    : "location-outline"
+              }
               size={20}
               color={isSelected ? OFFER_GREEN : "#64748B"}
             />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 }}>
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 15, color: "#1E293B" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 2,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontSize: 15,
+                  color: "#1E293B",
+                }}
+              >
                 {address.label}
               </Text>
               {isSelected && (
-                <Ionicons name="checkmark-circle" size={16} color={OFFER_GREEN} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={OFFER_GREEN}
+                />
               )}
             </View>
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#64748B", lineHeight: 19 }}>
+            <Text
+              style={{
+                fontFamily: "Poppins-Medium",
+                fontSize: 13,
+                color: "#64748B",
+                lineHeight: 19,
+              }}
+            >
               {address.name}
               {address.street ? `, ${address.street}` : ""}
               {address.landmark ? `, ${address.landmark}` : ""}
@@ -333,7 +395,16 @@ export default function AddressModal({
         {/* Actions row — just pencil + (optional) trash, matching user-ui */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity
-            style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#fff",
+            }}
             activeOpacity={0.7}
           >
             <Ionicons name="pencil-outline" size={14} color="#64748B" />
@@ -341,7 +412,16 @@ export default function AddressModal({
           {!isSelected && (
             <TouchableOpacity
               onPress={() => handleDeleteAddress(address.id)}
-              style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#fff",
+              }}
               activeOpacity={0.7}
             >
               <Ionicons name="trash-outline" size={14} color="#64748B" />
@@ -354,9 +434,19 @@ export default function AddressModal({
 
   // ── PINCODE VIEW ──────────────────────────────────────────────────────────
   const renderPincodeView = () => (
-    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={{ padding: 20, gap: 16 }}>
-        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#64748B", lineHeight: 22 }}>
+        <Text
+          style={{
+            fontFamily: "Poppins-Medium",
+            fontSize: 14,
+            color: "#64748B",
+            lineHeight: 22,
+          }}
+        >
           Enter your 6-digit pincode to find serviceable addresses in your area.
         </Text>
 
@@ -374,7 +464,12 @@ export default function AddressModal({
             }}
           >
             <TextInput
-              style={{ fontFamily: "Poppins-SemiBold", fontSize: 18, color: "#1E293B", letterSpacing: 4 }}
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 18,
+                color: "#1E293B",
+                letterSpacing: 4,
+              }}
               placeholder="e.g. 843111"
               placeholderTextColor="#94A3B8"
               value={pincode}
@@ -405,7 +500,13 @@ export default function AddressModal({
             {pincodeLoading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#fff" }}>
+              <Text
+                style={{
+                  fontFamily: "Poppins-Bold",
+                  fontSize: 14,
+                  color: "#fff",
+                }}
+              >
                 Check
               </Text>
             )}
@@ -415,7 +516,11 @@ export default function AddressModal({
         {/* Detect / Search buttons */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <TouchableOpacity
-            onPress={() => toast.info("Location detection not available. Please enter pincode.")}
+            onPress={() =>
+              toast.info(
+                "Location detection not available. Please enter pincode.",
+              )
+            }
             style={{
               flex: 1,
               flexDirection: "row",
@@ -430,13 +535,31 @@ export default function AddressModal({
             activeOpacity={0.85}
           >
             <Ionicons name="navigate-outline" size={16} color="#fff" />
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 13, color: "#fff" }}>Detect my location</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontSize: 13,
+                color: "#fff",
+              }}
+            >
+              Detect my location
+            </Text>
           </TouchableOpacity>
 
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#94A3B8" }}>OR</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 12,
+              color: "#94A3B8",
+            }}
+          >
+            OR
+          </Text>
 
           <TouchableOpacity
-            onPress={() => toast.info("Please use pincode to search your area.")}
+            onPress={() =>
+              toast.info("Please use pincode to search your area.")
+            }
             style={{
               flex: 1,
               flexDirection: "row",
@@ -453,45 +576,133 @@ export default function AddressModal({
             activeOpacity={0.7}
           >
             <Ionicons name="search-outline" size={16} color="#64748B" />
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#64748B" }}>Search location</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 13,
+                color: "#64748B",
+              }}
+            >
+              Search location
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Generic error */}
         {pincodeError && pincodeError !== "coming-soon" && (
-          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#EF4444" }}>{pincodeError}</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-Medium",
+              fontSize: 13,
+              color: "#EF4444",
+            }}
+          >
+            {pincodeError}
+          </Text>
         )}
 
         {/* Coming soon */}
         {pincodeError === "coming-soon" && (
-          <View style={{ borderWidth: 1, borderColor: "#FDE68A", borderRadius: 14, backgroundColor: "#FFFBEB", padding: 16, gap: 10 }}>
-            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-              <Ionicons name="location-outline" size={20} color="#D97706" style={{ marginTop: 2 }} />
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: "#FDE68A",
+              borderRadius: 14,
+              backgroundColor: "#FFFBEB",
+              padding: 16,
+              gap: 10,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color="#D97706"
+                style={{ marginTop: 2 }}
+              />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#92400E" }}>Coming Soon to your area!</Text>
-                <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#B45309", marginTop: 2 }}>
-                  We don't deliver to <Text style={{ fontFamily: "Poppins-Bold" }}>{pincode}</Text> yet.
+                <Text
+                  style={{
+                    fontFamily: "Poppins-SemiBold",
+                    fontSize: 13,
+                    color: "#92400E",
+                  }}
+                >
+                  Coming Soon to your area!
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Poppins-Medium",
+                    fontSize: 12,
+                    color: "#B45309",
+                    marginTop: 2,
+                  }}
+                >
+                  We don't deliver to{" "}
+                  <Text style={{ fontFamily: "Poppins-Bold" }}>{pincode}</Text>{" "}
+                  yet.
                 </Text>
               </View>
             </View>
             {serviceablePincodes.length > 0 && (
               <View>
-                <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#92400E", marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "Poppins-SemiBold",
+                    fontSize: 12,
+                    color: "#92400E",
+                    marginBottom: 8,
+                  }}
+                >
                   We currently serve (Pincodes):
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  <View
+                    style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
+                  >
                     {serviceablePincodes.slice(0, 14).map((pin) => (
                       <TouchableOpacity
                         key={pin}
-                        onPress={() => { setPincode(pin); setPincodeError(""); handleCheckPincode(pin); }}
-                        style={{ backgroundColor: "#FEF3C7", borderWidth: 1, borderColor: "#FCD34D", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 }}
+                        onPress={() => {
+                          setPincode(pin);
+                          setPincodeError("");
+                          handleCheckPincode(pin);
+                        }}
+                        style={{
+                          backgroundColor: "#FEF3C7",
+                          borderWidth: 1,
+                          borderColor: "#FCD34D",
+                          borderRadius: 20,
+                          paddingHorizontal: 12,
+                          paddingVertical: 4,
+                        }}
                       >
-                        <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#92400E" }}>{pin}</Text>
+                        <Text
+                          style={{
+                            fontFamily: "Poppins-SemiBold",
+                            fontSize: 12,
+                            color: "#92400E",
+                          }}
+                        >
+                          {pin}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                     {serviceablePincodes.length > 14 && (
-                      <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#B45309", alignSelf: "center" }}>
+                      <Text
+                        style={{
+                          fontFamily: "Poppins-Medium",
+                          fontSize: 12,
+                          color: "#B45309",
+                          alignSelf: "center",
+                        }}
+                      >
                         +{serviceablePincodes.length - 14} more
                       </Text>
                     )}
@@ -505,7 +716,13 @@ export default function AddressModal({
         {/* Serviceable cities list */}
         {storeInfo && (
           <View style={{ gap: 10 }}>
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#1E293B" }}>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontSize: 14,
+                color: "#1E293B",
+              }}
+            >
               Nearby areas in {pincode}
             </Text>
             {storeInfo.availableCities.map((city) => {
@@ -514,16 +731,48 @@ export default function AddressModal({
                 <TouchableOpacity
                   key={city}
                   onPress={() => handleSelectCity(city)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, padding: 14 }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    borderRadius: 12,
+                    padding: 14,
+                  }}
                   activeOpacity={0.7}
                 >
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#EEE9FD", alignItems: "center", justifyContent: "center" }}>
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: "#EEE9FD",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     <Ionicons name="location" size={18} color="#6C3CE1" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 14, color: "#1E293B" }}>{city}</Text>
+                    <Text
+                      style={{
+                        fontFamily: "Poppins-SemiBold",
+                        fontSize: 14,
+                        color: "#1E293B",
+                      }}
+                    >
+                      {city}
+                    </Text>
                     {mins ? (
-                      <Text style={{ fontFamily: "Poppins-Medium", fontSize: 12, color: "#22C55E", marginTop: 1 }}>
+                      <Text
+                        style={{
+                          fontFamily: "Poppins-Medium",
+                          fontSize: 12,
+                          color: "#22C55E",
+                          marginTop: 1,
+                        }}
+                      >
                         ~{mins} min delivery
                       </Text>
                     ) : null}
@@ -536,27 +785,69 @@ export default function AddressModal({
             {/* Enter manually */}
             <TouchableOpacity
               onPress={handleEnterManually}
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#C4B5FD", borderRadius: 12, padding: 14 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                borderWidth: 1.5,
+                borderStyle: "dashed",
+                borderColor: "#C4B5FD",
+                borderRadius: 12,
+                padding: 14,
+              }}
               activeOpacity={0.7}
             >
               <Ionicons name="add" size={18} color="#6C3CE1" />
-              <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 14, color: "#6C3CE1" }}>Enter address manually</Text>
+              <Text
+                style={{
+                  fontFamily: "Poppins-SemiBold",
+                  fontSize: 14,
+                  color: "#6C3CE1",
+                }}
+              >
+                Enter address manually
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Saved addresses shortcut */}
-        {addresses.length > 0 && !storeInfo && pincodeError !== "coming-soon" && (
-          <View style={{ gap: 10, paddingTop: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#1E293B" }}>Saved Addresses</Text>
-              <TouchableOpacity onPress={() => setView("list")}>
-                <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#6C3CE1" }}>View All</Text>
-              </TouchableOpacity>
+        {addresses.length > 0 &&
+          !storeInfo &&
+          pincodeError !== "coming-soon" && (
+            <View style={{ gap: 10, paddingTop: 4 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Poppins-Bold",
+                    fontSize: 14,
+                    color: "#1E293B",
+                  }}
+                >
+                  Saved Addresses
+                </Text>
+                <TouchableOpacity onPress={() => setView("list")}>
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-SemiBold",
+                      fontSize: 12,
+                      color: "#6C3CE1",
+                    }}
+                  >
+                    View All
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {addresses.slice(0, 2).map(renderAddressCard)}
             </View>
-            {addresses.slice(0, 2).map(renderAddressCard)}
-          </View>
-        )}
+          )}
       </View>
     </ScrollView>
   );
@@ -567,13 +858,28 @@ export default function AddressModal({
       <View style={{ padding: 20, gap: 12 }}>
         {addresses.length > 0 ? (
           <>
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 14, color: "#1E293B" }}>Your saved addresses</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontSize: 14,
+                color: "#1E293B",
+              }}
+            >
+              Your saved addresses
+            </Text>
             {addresses.map(renderAddressCard)}
           </>
         ) : (
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
             <Ionicons name="location-outline" size={56} color="#CBD5E1" />
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#94A3B8", marginTop: 12 }}>
+            <Text
+              style={{
+                fontFamily: "Poppins-Medium",
+                fontSize: 14,
+                color: "#94A3B8",
+                marginTop: 12,
+              }}
+            >
               No saved addresses yet
             </Text>
           </View>
@@ -582,11 +888,29 @@ export default function AddressModal({
         {/* Add new */}
         <TouchableOpacity
           onPress={() => setView("pincode")}
-          style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderWidth: 1.5, borderStyle: "dashed", borderColor: "#C4B5FD", borderRadius: 12, padding: 14 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            borderWidth: 1.5,
+            borderStyle: "dashed",
+            borderColor: "#C4B5FD",
+            borderRadius: 12,
+            padding: 14,
+          }}
           activeOpacity={0.7}
         >
           <Ionicons name="add" size={18} color="#6C3CE1" />
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 14, color: "#6C3CE1" }}>Add new address</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 14,
+              color: "#6C3CE1",
+            }}
+          >
+            Add new address
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -594,12 +918,23 @@ export default function AddressModal({
 
   // ── ADD FORM VIEW ─────────────────────────────────────────────────────────
   const renderAddView = () => (
-    <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={{ padding: 20, gap: 16 }}>
-
         {/* Address type chips */}
         <View>
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#1E293B", marginBottom: 8 }}>Address type</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 13,
+              color: "#1E293B",
+              marginBottom: 8,
+            }}
+          >
+            Address type
+          </Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {ADDRESS_TYPE_CONFIG.map(({ label, icon }) => {
               const selected = form.label === label;
@@ -608,15 +943,33 @@ export default function AddressModal({
                   key={label}
                   onPress={() => setForm((f) => ({ ...f, label }))}
                   style={{
-                    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-                    gap: 6, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5,
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    paddingVertical: 10,
+                    borderRadius: 12,
+                    borderWidth: 1.5,
                     borderColor: selected ? "#6C3CE1" : "#E2E8F0",
                     backgroundColor: selected ? "#F5F0FF" : "#fff",
                   }}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name={icon} size={16} color={selected ? "#6C3CE1" : "#94A3B8"} />
-                  <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: selected ? "#6C3CE1" : "#94A3B8" }}>{label}</Text>
+                  <Ionicons
+                    name={icon}
+                    size={16}
+                    color={selected ? "#6C3CE1" : "#94A3B8"}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-Medium",
+                      fontSize: 13,
+                      color: selected ? "#6C3CE1" : "#94A3B8",
+                    }}
+                  >
+                    {label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
@@ -625,9 +978,28 @@ export default function AddressModal({
 
         {/* Full Name */}
         <View>
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>Full Name *</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 12,
+              color: "#1E293B",
+              marginBottom: 6,
+            }}
+          >
+            Full Name *
+          </Text>
           <TextInput
-            style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              fontFamily: "Poppins-Medium",
+              fontSize: 14,
+              color: "#1E293B",
+            }}
             placeholder="John Doe"
             placeholderTextColor="#94A3B8"
             value={form.name}
@@ -637,13 +1009,37 @@ export default function AddressModal({
 
         {/* Phone */}
         <View>
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>Phone Number *</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 12,
+              color: "#1E293B",
+              marginBottom: 6,
+            }}
+          >
+            Phone Number *
+          </Text>
           <TextInput
-            style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              fontFamily: "Poppins-Medium",
+              fontSize: 14,
+              color: "#1E293B",
+            }}
             placeholder="9876543210"
             placeholderTextColor="#94A3B8"
             value={form.phone}
-            onChangeText={(t) => setForm((f) => ({ ...f, phone: t.replace(/\D/g, "").slice(0, 10) }))}
+            onChangeText={(t) =>
+              setForm((f) => ({
+                ...f,
+                phone: t.replace(/\D/g, "").slice(0, 10),
+              }))
+            }
             keyboardType="phone-pad"
             maxLength={10}
           />
@@ -651,9 +1047,28 @@ export default function AddressModal({
 
         {/* Street */}
         <View>
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>House / Street / Flat *</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 12,
+              color: "#1E293B",
+              marginBottom: 6,
+            }}
+          >
+            House / Street / Flat *
+          </Text>
           <TextInput
-            style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              fontFamily: "Poppins-Medium",
+              fontSize: 14,
+              color: "#1E293B",
+            }}
             placeholder="Flat 3B, Marine Drive"
             placeholderTextColor="#94A3B8"
             value={form.street}
@@ -663,9 +1078,28 @@ export default function AddressModal({
 
         {/* Landmark */}
         <View>
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>Landmark (Optional)</Text>
+          <Text
+            style={{
+              fontFamily: "Poppins-SemiBold",
+              fontSize: 12,
+              color: "#1E293B",
+              marginBottom: 6,
+            }}
+          >
+            Landmark (Optional)
+          </Text>
           <TextInput
-            style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 13,
+              fontFamily: "Poppins-Medium",
+              fontSize: 14,
+              color: "#1E293B",
+            }}
             placeholder="Near Fish Market"
             placeholderTextColor="#94A3B8"
             value={form.landmark}
@@ -676,9 +1110,28 @@ export default function AddressModal({
         {/* Area + Pincode */}
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>Area</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 12,
+                color: "#1E293B",
+                marginBottom: 6,
+              }}
+            >
+              Area
+            </Text>
             <TextInput
-              style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+              style={{
+                backgroundColor: "#F8FAFC",
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 13,
+                fontFamily: "Poppins-Medium",
+                fontSize: 14,
+                color: "#1E293B",
+              }}
               placeholder="Marine Lines"
               placeholderTextColor="#94A3B8"
               value={form.area}
@@ -686,13 +1139,38 @@ export default function AddressModal({
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>Pincode *</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 12,
+                color: "#1E293B",
+                marginBottom: 6,
+              }}
+            >
+              Pincode *
+            </Text>
             <TextInput
-              style={{ backgroundColor: pincode ? "#F1F5F9" : "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+              style={{
+                backgroundColor: pincode ? "#F1F5F9" : "#F8FAFC",
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 13,
+                fontFamily: "Poppins-Medium",
+                fontSize: 14,
+                color: "#1E293B",
+              }}
               placeholder="201310"
               placeholderTextColor="#94A3B8"
               value={form.pincode}
-              onChangeText={(t) => !pincode && setForm((f) => ({ ...f, pincode: t.replace(/\D/g, "").slice(0, 6) }))}
+              onChangeText={(t) =>
+                !pincode &&
+                setForm((f) => ({
+                  ...f,
+                  pincode: t.replace(/\D/g, "").slice(0, 6),
+                }))
+              }
               editable={!pincode}
               keyboardType="numeric"
               maxLength={6}
@@ -704,37 +1182,131 @@ export default function AddressModal({
         <View style={{ flexDirection: "row", gap: 10 }}>
           {/* City — dropdown if storeInfo has cities, else text */}
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>City *</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 12,
+                color: "#1E293B",
+                marginBottom: 6,
+              }}
+            >
+              City *
+            </Text>
             {allCities.length > 0 ? (
               <>
                 <TouchableOpacity
                   onPress={() => setCityPickerOpen(true)}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13 }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    backgroundColor: "#F8FAFC",
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                    paddingVertical: 13,
+                  }}
                   activeOpacity={0.7}
                 >
-                  <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: form.city ? "#1E293B" : "#94A3B8", flex: 1 }} numberOfLines={1}>
+                  <Text
+                    style={{
+                      fontFamily: "Poppins-Medium",
+                      fontSize: 14,
+                      color: form.city ? "#1E293B" : "#94A3B8",
+                      flex: 1,
+                    }}
+                    numberOfLines={1}
+                  >
                     {form.city || "Select City"}
                   </Text>
                   <Ionicons name="chevron-down" size={16} color="#94A3B8" />
                 </TouchableOpacity>
-                <Modal visible={cityPickerOpen} transparent animationType="fade" onRequestClose={() => setCityPickerOpen(false)}>
-                  <TouchableOpacity style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }} activeOpacity={1} onPress={() => setCityPickerOpen(false)}>
-                    <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 32 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
-                        <Text style={{ fontFamily: "Poppins-Bold", fontSize: 16, color: "#1E293B" }}>Select City</Text>
-                        <TouchableOpacity onPress={() => setCityPickerOpen(false)}>
+                <Modal
+                  visible={cityPickerOpen}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setCityPickerOpen(false)}
+                >
+                  <TouchableOpacity
+                    style={{
+                      flex: 1,
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      justifyContent: "flex-end",
+                    }}
+                    activeOpacity={1}
+                    onPress={() => setCityPickerOpen(false)}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "#fff",
+                        borderTopLeftRadius: 24,
+                        borderTopRightRadius: 24,
+                        paddingBottom: 32,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          paddingHorizontal: 20,
+                          paddingVertical: 16,
+                          borderBottomWidth: 1,
+                          borderBottomColor: "#F1F5F9",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Poppins-Bold",
+                            fontSize: 16,
+                            color: "#1E293B",
+                          }}
+                        >
+                          Select City
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => setCityPickerOpen(false)}
+                        >
                           <Ionicons name="close" size={22} color="#64748B" />
                         </TouchableOpacity>
                       </View>
                       {allCities.map((city) => (
                         <TouchableOpacity
                           key={city}
-                          onPress={() => { setForm((f) => ({ ...f, city })); setCityPickerOpen(false); }}
-                          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F8FAFC", backgroundColor: city === form.city ? "#F5F0FF" : undefined }}
+                          onPress={() => {
+                            setForm((f) => ({ ...f, city }));
+                            setCityPickerOpen(false);
+                          }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            paddingHorizontal: 20,
+                            paddingVertical: 16,
+                            borderBottomWidth: 1,
+                            borderBottomColor: "#F8FAFC",
+                            backgroundColor:
+                              city === form.city ? "#F5F0FF" : undefined,
+                          }}
                           activeOpacity={0.7}
                         >
-                          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 15, color: city === form.city ? "#6C3CE1" : "#1E293B" }}>{city}</Text>
-                          {city === form.city && <Ionicons name="checkmark" size={18} color="#6C3CE1" />}
+                          <Text
+                            style={{
+                              fontFamily: "Poppins-Medium",
+                              fontSize: 15,
+                              color: city === form.city ? "#6C3CE1" : "#1E293B",
+                            }}
+                          >
+                            {city}
+                          </Text>
+                          {city === form.city && (
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color="#6C3CE1"
+                            />
+                          )}
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -743,7 +1315,17 @@ export default function AddressModal({
               </>
             ) : (
               <TextInput
-                style={{ backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: "#1E293B" }}
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  borderRadius: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 13,
+                  fontFamily: "Poppins-Medium",
+                  fontSize: 14,
+                  color: "#1E293B",
+                }}
                 placeholder="City"
                 placeholderTextColor="#94A3B8"
                 value={form.city}
@@ -754,9 +1336,28 @@ export default function AddressModal({
 
           {/* State — readonly */}
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 12, color: "#1E293B", marginBottom: 6 }}>State</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-SemiBold",
+                fontSize: 12,
+                color: "#1E293B",
+                marginBottom: 6,
+              }}
+            >
+              State
+            </Text>
             <TextInput
-              style={{ backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontFamily: "Poppins-Medium", fontSize: 14, color: form.state ? "#1E293B" : "#94A3B8" }}
+              style={{
+                backgroundColor: "#F1F5F9",
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                borderRadius: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 13,
+                fontFamily: "Poppins-Medium",
+                fontSize: 14,
+                color: form.state ? "#1E293B" : "#94A3B8",
+              }}
               placeholder="Bihar"
               placeholderTextColor="#94A3B8"
               value={form.state}
@@ -767,9 +1368,30 @@ export default function AddressModal({
 
         {/* Inline error */}
         {formError ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: "#FEF2F2",
+              borderWidth: 1,
+              borderColor: "#FECACA",
+              borderRadius: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+            }}
+          >
             <Ionicons name="alert-circle-outline" size={18} color="#EF4444" />
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#DC2626", flex: 1 }}>{formError}</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-Medium",
+                fontSize: 13,
+                color: "#DC2626",
+                flex: 1,
+              }}
+            >
+              {formError}
+            </Text>
           </View>
         ) : null}
 
@@ -777,13 +1399,27 @@ export default function AddressModal({
         <TouchableOpacity
           onPress={handleSaveAddress}
           disabled={saving}
-          style={{ backgroundColor: saving ? "#94A3B8" : "#22C55E", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 4 }}
+          style={{
+            backgroundColor: saving ? "#94A3B8" : "#22C55E",
+            borderRadius: 12,
+            paddingVertical: 16,
+            alignItems: "center",
+            marginTop: 4,
+          }}
           activeOpacity={0.85}
         >
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 16, color: "#fff" }}>Save Address</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontSize: 16,
+                color: "#fff",
+              }}
+            >
+              Save Address
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -792,22 +1428,69 @@ export default function AddressModal({
 
   // ── MAIN RENDER ───────────────────────────────────────────────────────────
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
         {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: 8 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            borderBottomColor: "#F1F5F9",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flex: 1,
+              gap: 8,
+            }}
+          >
             {view !== "list" && (
               <TouchableOpacity
-                onPress={() => setView(view === "pincode" ? "list" : getBackView())}
-                style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" }}
+                onPress={() =>
+                  setView(view === "pincode" ? "list" : getBackView())
+                }
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
                 <Ionicons name="arrow-back" size={20} color="#1E293B" />
               </TouchableOpacity>
             )}
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 18, color: "#1E293B" }}>{getTitle()}</Text>
+            <Text
+              style={{
+                fontFamily: "Poppins-Bold",
+                fontSize: 18,
+                color: "#1E293B",
+              }}
+            >
+              {getTitle()}
+            </Text>
           </View>
-          <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" }}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             <Ionicons name="close" size={22} color="#64748B" />
           </TouchableOpacity>
         </View>

@@ -1,6 +1,4 @@
-import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import {
@@ -16,19 +14,21 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
 import { useAddressStore } from "@/lib/address-store";
+import { LiveOrderBadge } from "@/components/live-order-badge";
+import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 
 const STATUS_CONFIG: Record<
   string,
   { bg: string; text: string; icon: string; label: string }
 > = {
-  PENDING: { bg: "#FEF3C7", text: "#D97706", icon: "time-outline", label: "Pending" },
+  PENDING: { bg: "#FEF3C7", text: "#D97706", icon: "time-outline", label: "Order Placed" },
   ACCEPTED: {
     bg: "#DBEAFE",
     text: "#2563EB",
     icon: "checkmark-circle-outline",
-    label: "Accepted",
+    label: "Preparing",
   },
-  SHIPPED: { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline", label: "Shipped" },
+  SHIPPED: { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline", label: "On the Way" },
   DELIVERED: {
     bg: "#D1FAE5",
     text: "#059669",
@@ -59,14 +59,13 @@ export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedLocation } = useAddressStore();
 
-  const { data: order, isLoading } = useQuery({
-    queryKey: ["order", id],
-    queryFn: async () => {
-      const res = await axiosInstance.get(`/order/api/get-order/${id}`);
-      return res.data.order;
-    },
-    enabled: !!id,
-  });
+  const {
+    order,
+    isLoading,
+    isFetching,
+    isRealtimeConnected,
+    lastLiveUpdateAt,
+  } = useLiveOrder(id);
 
   if (isLoading || !order) {
     return (
@@ -144,6 +143,11 @@ export default function OrderConfirmationScreen() {
 
         {/* Live order tracker */}
         <View className="mb-3">
+          <LiveOrderBadge
+            connected={isRealtimeConnected}
+            isFetching={isFetching}
+            lastLiveUpdateAt={lastLiveUpdateAt}
+          />
           <OrderTracker
             status={order.status}
             updatedAt={order.updatedAt}
@@ -202,7 +206,7 @@ export default function OrderConfirmationScreen() {
                   className="text-xs font-poppins-bold"
                   style={{ color: statusCfg.text }}
                 >
-                  {statusCfg.label}
+                  {getOrderStatusLabel(order.status)}
                 </Text>
               </View>
             </View>
