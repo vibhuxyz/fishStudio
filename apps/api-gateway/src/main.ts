@@ -7,7 +7,7 @@ process.on("unhandledRejection", (reason) => {
 
 import express from "express";
 import proxy from "express-http-proxy";
-import morgan from "morgan"; 
+import morgan from "morgan";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -36,7 +36,10 @@ const defaultLocalOrigins = [
 // Fix #20: In production CORS_ORIGINS must be explicit. Refuse to start if
 // it's missing — silently falling back to localhost origins in prod is worse
 // than a hard failure because it hides misconfiguration.
-if (isProduction && (!ENV.CORS_ORIGINS || ENV.CORS_ORIGINS.trim().length === 0)) {
+if (
+  isProduction &&
+  (!ENV.CORS_ORIGINS || ENV.CORS_ORIGINS.trim().length === 0)
+) {
   console.error("❌ [Gateway] CORS_ORIGINS is required in production.");
   process.exit(1);
 }
@@ -57,7 +60,9 @@ if (isProduction) {
   app.use((req, res, next) => {
     // When behind a load balancer / reverse proxy (Railway, Render, nginx),
     // the original protocol is in x-forwarded-proto, not req.protocol.
-    const proto = (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0]?.trim();
+    const proto = (req.headers["x-forwarded-proto"] as string | undefined)
+      ?.split(",")[0]
+      ?.trim();
     if (proto && proto !== "https") {
       const httpsUrl = `https://${req.headers.host}${req.url}`;
       return res.redirect(301, httpsUrl);
@@ -124,12 +129,12 @@ app.get("/gateway-health", (_req, res) => {
 });
 
 // 5. UPSTREAM SERVICE URLs
-const authUrl        = ENV.AUTH_SERVICE_URL        || "http://localhost:6001";
-const productUrl     = ENV.PRODUCT_SERVICE_URL     || "http://localhost:6003";
-const orderUrl       = ENV.ORDER_SERVICE_URL       || "http://localhost:6004";
-const notificationUrl= ENV.NOTIFICATION_SERVICE_URL|| "http://localhost:6005";
-const paymentUrl     = ENV.PAYMENT_SERVICE_URL     || "http://localhost:6007";
-const workerUrl      = new URL(ENV.WORKER_SERVICE_URL || "http://localhost:6006");
+const authUrl = ENV.AUTH_SERVICE_URL || "http://localhost:6001";
+const productUrl = ENV.PRODUCT_SERVICE_URL || "http://localhost:6003";
+const orderUrl = ENV.ORDER_SERVICE_URL || "http://localhost:6004";
+const notificationUrl = ENV.NOTIFICATION_SERVICE_URL || "http://localhost:6005";
+const paymentUrl = ENV.PAYMENT_SERVICE_URL || "http://localhost:6007";
+const workerUrl = new URL(ENV.WORKER_SERVICE_URL || "http://localhost:6006");
 
 // 6. SHARED PROXY OPTIONS
 const proxyOptions = {
@@ -148,31 +153,39 @@ const proxyOptions = {
     }
     // Add HSTS on every response in production (belt-and-suspenders)
     if (isProduction) {
-      headers["strict-transport-security"] = "max-age=31536000; includeSubDomains; preload";
+      headers["strict-transport-security"] =
+        "max-age=31536000; includeSubDomains; preload";
     }
     return headers;
   },
   proxyErrorHandler: (err: any, res: any, next: any) => {
     console.error("[Gateway] Upstream proxy error:", err?.message || err);
     if (res.headersSent) return;
-    res.status(502).json({ success: false, message: "Service temporarily unavailable. Please try again." });
+    res
+      .status(502)
+      .json({
+        success: false,
+        message: "Service temporarily unavailable. Please try again.",
+      });
   },
 };
 
 // 7. PROXY ROUTES
 // NOTE: The Razorpay webhook sends a raw body that must not be re-parsed.
 //       We pass parseReqBody:false globally so proxy streams the raw body as-is.
-app.use("/auth",         proxy(authUrl,         proxyOptions));
-app.use("/product",      proxy(productUrl,      proxyOptions));
-app.use("/order",        proxy(orderUrl,        proxyOptions));
+app.use("/auth", proxy(authUrl, proxyOptions));
+app.use("/product", proxy(productUrl, proxyOptions));
+app.use("/order", proxy(orderUrl, proxyOptions));
 app.use("/notification", proxy(notificationUrl, proxyOptions));
-app.use("/payment",      proxy(paymentUrl,      proxyOptions));
+app.use("/payment", proxy(paymentUrl, proxyOptions));
 
 // 8. START SERVER
 const port = Number(ENV.API_GATEWAY_PORT) || 8080;
 
 const server = app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Gateway running on http://localhost:${port} [${ENV.NODE_ENV}]`);
+  console.log(
+    `🚀 Gateway running on http://localhost:${port} [${ENV.NODE_ENV}]`,
+  );
 });
 
 // 9. WEBSOCKET UPGRADE PROXY (worker service)
@@ -197,11 +210,16 @@ const serializeHeaders = (headers: IncomingMessage["headers"]) => {
 };
 
 server.on("upgrade", (req, socket, head) => {
-  const requestImpl = workerUrl.protocol === "https:" ? httpsRequest : httpRequest;
-  const forwardedFor = [req.headers["x-forwarded-for"], req.socket.remoteAddress]
+  const requestImpl =
+    workerUrl.protocol === "https:" ? httpsRequest : httpRequest;
+  const forwardedFor = [
+    req.headers["x-forwarded-for"],
+    req.socket.remoteAddress,
+  ]
     .filter(Boolean)
     .join(", ");
-  const isSecureSocket = "encrypted" in req.socket && Boolean((req.socket as any).encrypted);
+  const isSecureSocket =
+    "encrypted" in req.socket && Boolean((req.socket as any).encrypted);
 
   const proxyReq = requestImpl({
     protocol: workerUrl.protocol,

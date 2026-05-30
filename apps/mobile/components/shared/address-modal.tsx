@@ -6,7 +6,7 @@ import {
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "@/utils/toast";
 
 const OFFER_GREEN = "#22C55E";
-const PURPLE = "#6C3CE1";
+
 
 type ModalView = "list" | "pincode" | "add";
 
@@ -644,6 +644,7 @@ export default function AddressModal({
                     marginTop: 2,
                   }}
                 >
+
                   We don't deliver to{" "}
                   <Text style={{ fontFamily: "Poppins-Bold" }}>{pincode}</Text>{" "}
                   yet.

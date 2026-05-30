@@ -19,7 +19,7 @@ const getExpoHost = (): string | null => {
   return host;
 };
 
-const PRODUCTION_API_BASE_URL = "https://fish-api.ddns.net";
+const PRODUCTION_API_BASE_URL = "https://api.fishstudio.in";
 
 const normalizeUrl = (url: string): string => {
   try {

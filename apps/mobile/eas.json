@@ -14,9 +14,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_SERVER_URI": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://fish-api.ddns.net"
+        "EXPO_PUBLIC_API_URL": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/"
       }
     },
     "preview-compact": {
@@ -26,9 +26,9 @@
       },
       "env": {
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a",
-        "EXPO_PUBLIC_API_URL": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_SERVER_URI": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://fish-api.ddns.net"
+        "EXPO_PUBLIC_API_URL": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/"
       }
     },
     "preview-aab": {
@@ -37,17 +37,17 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_SERVER_URI": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://fish-api.ddns.net"
+        "EXPO_PUBLIC_API_URL": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_SERVER_URI": "https://fish-api.ddns.net",
-        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://fish-api.ddns.net"
+        "EXPO_PUBLIC_API_URL": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
+        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/"
       }
     }
   },
