@@ -194,9 +194,42 @@ export const createOrder = async (
     const totalDiscount = Math.min(couponDiscount, itemTotal);
     const totalAmount = Math.max(0, itemTotal + totalDelivery - totalDiscount);
 
-    /* ── 5. Create order + coupon usage inside a Postgres transaction ────── */
-    // The coupon per-user check happens INSIDE the transaction to prevent the
-    // race condition where two concurrent requests both pass the usage check.
+    /* ── 5. Atomic stock decrement in MongoDB (First to prevent overselling) ── */
+    const decrementedItems: Array<{ productId: string; quantity: number }> = [];
+
+    try {
+      for (const item of items) {
+        const result = await prismaMongo.products.updateMany({
+          where: { id: item.productId, stock: { gte: item.quantity } },
+          data: {
+            stock: { decrement: item.quantity },
+            totalSold: { increment: item.quantity },
+          },
+        });
+
+        if (result.count === 0) {
+          throw new ValidationError(
+            `"${productMap.get(item.productId)?.title ?? item.productId}" just went out of stock. Please remove it from your cart.`,
+          );
+        }
+        decrementedItems.push({ productId: item.productId, quantity: item.quantity });
+      }
+    } catch (stockError) {
+      // Rollback any items already decremented if we failed midway
+      if (decrementedItems.length > 0) {
+        await Promise.allSettled(
+          decrementedItems.map(({ productId, quantity }) =>
+            prismaMongo.products.update({
+              where: { id: productId },
+              data: { stock: { increment: quantity }, totalSold: { decrement: quantity } },
+            }),
+          ),
+        );
+      }
+      return next(stockError);
+    }
+
+    /* ── 6. Create order + coupon usage inside a Postgres transaction ────── */
     let order: { id: string; deliverySlot: string | null; paymentMethod: string | null; totalAmount: number };
 
     try {
@@ -264,31 +297,11 @@ export const createOrder = async (
         });
 
         return newOrder;
-      });
+      }, { isolationLevel: "Serializable" });
     } catch (txError: any) {
-      // Prisma transaction errors (including our ValidationError throws) bubble here
-      return next(txError);
-    }
-
-    /* ── 6. Atomic stock decrement in MongoDB ───────────────────────────── */
-    // Done AFTER the Postgres order is created. Atomic conditional update:
-    // only decrements if stock >= quantity. If any item fails (race-lost),
-    // we rollback already-decremented items and cancel the order.
-    const decrementedItems: Array<{ productId: string; quantity: number }> = [];
-
-    for (const item of items) {
-      const result = await prismaMongo.products.updateMany({
-        where: { id: item.productId, stock: { gte: item.quantity } },
-        data: {
-          stock: { decrement: item.quantity },
-          totalSold: { increment: item.quantity },
-        },
-      });
-
-      if (result.count === 0) {
-        // This item lost the stock race — rollback any items already decremented
-        console.warn(`[createOrder] Stock race lost for product ${item.productId}. Rolling back.`);
-
+      // Postgres failed (e.g., coupon race condition caught by Serializable).
+      // Rollback the Mongo stock reservation to prevent stock leaks!
+      if (decrementedItems.length > 0) {
         await Promise.allSettled(
           decrementedItems.map(({ productId, quantity }) =>
             prismaMongo.products.update({
@@ -297,29 +310,11 @@ export const createOrder = async (
             }),
           ),
         );
-
-        // Cancel the order so it doesn't linger as orphaned PENDING
-        await prismaPostgres.order
-          .update({
-            where: { id: order.id },
-            data: { status: "CANCELLED", rejectionReason: "Stock unavailable at time of reservation" },
-          })
-          .catch((e) => console.error("[createOrder] Failed to cancel orphaned order:", e));
-
-        writeAuditLog("STOCK", order.id, "STOCK_RESERVE_FAILED", userId, "USER", {
-          failedProductId: item.productId,
-          requestedQty: item.quantity,
-        });
-
-        return next(
-          new ValidationError(
-            `"${productMap.get(item.productId)?.title ?? item.productId}" just went out of stock. Please remove it from your cart.`,
-          ),
-        );
       }
-
-      decrementedItems.push({ productId: item.productId, quantity: item.quantity });
+      return next(txError);
     }
+
+    // Stock decrement is now handled BEFORE the Postgres transaction.
 
     /* ── 7. Respond immediately ─────────────────────────────────────────── */
     const responsePayload = { success: true, orderId: order.id, order };

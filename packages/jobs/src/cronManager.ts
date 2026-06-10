@@ -1,6 +1,7 @@
 import cron, { ScheduledTask } from "node-cron";
 import * as cleanupJobs from "./jobs/cleanup.jobs.js";
 import { checkAbandonedCarts } from "./jobs/abandoned-cart.job.js";
+import { cancelStaleUnpaidOrders } from "./jobs/stale-orders.job.js";
 
 export class CronManager {
   private static instance: CronManager;
@@ -38,6 +39,14 @@ export class CronManager {
     this.schedule("*/30 * * * *", async () => {
       console.log("[CRON] Checking for abandoned carts...");
       await checkAbandonedCarts();
+    });
+
+    // 3. Stale unpaid online orders (runs every 10 minutes)
+    // Cancels orders whose online payment never completed and releases the
+    // Mongo stock that was reserved at order creation.
+    this.schedule("*/10 * * * *", async () => {
+      console.log("[CRON] Cancelling stale unpaid orders...");
+      await cancelStaleUnpaidOrders();
     });
 
     console.log(`Registered ${this.jobs.length} cron job(s).`);

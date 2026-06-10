@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAddressStore } from "@/lib/address-store";
 import { axiosInstance } from "@/lib/utils";
+import { frontendEnv } from "@/lib/env";
 import { useUserSession } from "@/hooks/useUserSession";
 import { Button } from "@/components/ui/button";
 
@@ -1500,8 +1501,11 @@ export default function OrderDetailsPage({
   // ── Real-time WebSocket ──
   useEffect(() => {
     if (!user?.id || !orderId) return;
+    const derivedWs = frontendEnv.apiUrl.startsWith("https")
+      ? frontendEnv.apiUrl.replace(/^https/, "wss")
+      : null;
     const wsBase = (
-      process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
+      process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006"
     ).replace(/\?.*$/, "");
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;

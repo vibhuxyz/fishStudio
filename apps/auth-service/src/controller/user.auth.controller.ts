@@ -142,7 +142,7 @@ export const verifyOtpAndLogin = async (
 
     // Fix #11: access/refresh tokens carry a jti and refresh tokens carry a
     // family generation so they can be revoked.
-    const accessToken = signAccessToken({ id: user.id, role: "user" }, "7d");
+    const accessToken = signAccessToken({ id: user.id, role: "user" }, "15m");
     const refreshToken = await signRefreshToken({ id: user.id, role: "user" }, "7d");
 
     setCookie(res, "access_token", accessToken);
@@ -258,7 +258,7 @@ export const refreshToken = async (
     await revokeToken(refreshToken);
 
     const accessTtl =
-      decoded.role === "user" ? "7d" : "24h";
+      decoded.role === "user" ? "15m" : "15m";
     const refreshTtl =
       decoded.role === "user" ? "7d" : "24h";
 
@@ -332,8 +332,14 @@ export const addUserAddress = async (
 
     // Add new address with a generated ID if not present
     const newAddress = {
-      ...address,
       id: address.id || new Date().getTime().toString(),
+      name: address.name,
+      phone: address.phone,
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      isDefault: Boolean(address.isDefault),
     };
     addresses.push(newAddress);
 

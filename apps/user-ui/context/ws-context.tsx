@@ -25,6 +25,7 @@ import {
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-store";
+import { frontendEnv } from "@/lib/env";
 
 type EventHandler = (payload: any) => void;
 type Unsubscribe = () => void;
@@ -72,8 +73,14 @@ export function WsProvider({ children }: { children: React.ReactNode }) {
     destroyedRef.current = false;
     attemptRef.current = 0;
 
+    // If the WS env var is missing in production, derive wss:// from the API
+    // URL instead of falling back to ws://localhost (which browsers also
+    // block as mixed content on an https page).
+    const derivedWs = frontendEnv.apiUrl.startsWith("https")
+      ? frontendEnv.apiUrl.replace(/^https/, "wss")
+      : null;
     const wsBase = (
-      process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
+      process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006"
     ).replace(/\?.*$/, "");
 
     // Authenticated: register for userId room so ORDER_STATUS_UPDATE is delivered.

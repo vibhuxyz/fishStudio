@@ -52,7 +52,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
         style={{ minHeight: "250px" }}
       />
 
-      <style jsx global>{`
+      <style>{`
         .ql-toolbar {
           background: transparent;
           border-color: #444;

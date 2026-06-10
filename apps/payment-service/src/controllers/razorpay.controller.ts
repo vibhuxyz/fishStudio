@@ -175,6 +175,24 @@ export const verifyPayment = async (
       return res.status(200).json({ success: true, orderId, alreadyVerified: true });
     }
 
+    // The signature only proves SOME payment on this merchant account is
+    // genuine — it doesn't tie it to THIS order. Require the razorpayOrderId
+    // to match the one created for this order in createRazorpayOrder,
+    // otherwise a cheap order's payment could mark an expensive order paid.
+    const pendingPayment = await prismaPostgres.payment.findFirst({
+      where: { orderId, status: "PENDING" },
+      select: { metadata: true },
+    });
+    const boundRazorpayOrderId = (pendingPayment?.metadata as any)?.razorpayOrderId;
+    if (!boundRazorpayOrderId || boundRazorpayOrderId !== razorpayOrderId) {
+      writeAuditLog("PAYMENT", orderId, "PAYMENT_ORDER_MISMATCH", userId, "USER", {
+        suppliedRazorpayOrderId: razorpayOrderId,
+        boundRazorpayOrderId: boundRazorpayOrderId ?? null,
+        razorpayPaymentId,
+      });
+      return next(new ValidationError("Payment verification failed: payment does not belong to this order"));
+    }
+
     // Mark order and payment as completed atomically
     await prismaPostgres.$transaction([
       prismaPostgres.order.update({
@@ -237,25 +255,28 @@ export const handleWebhook = async (req: Request, res: Response, next: NextFunct
       // Extract our orderId from the notes field set during order creation
       const orderId = payload.notes?.orderId as string | undefined;
       if (orderId) {
-        await prismaPostgres.$transaction([
-          prismaPostgres.order.update({
-            where: { id: orderId },
-            data: { paymentStatus: "COMPLETED", paymentRef: payload.id },
-          }),
-          prismaPostgres.payment.updateMany({
-            where: { orderId, status: "PENDING" },
-            data: {
-              status: "COMPLETED",
-              transactionId: payload.id,
-              metadata: { razorpayPaymentId: payload.id, source: "webhook" },
-            },
-          }),
-        ]);
-        writeAuditLog("PAYMENT", orderId, "PAYMENT_VERIFIED", null, "SYSTEM", {
-          razorpayPaymentId: payload.id,
-          source: "webhook",
-          event: eventType,
-        });
+        const order = await prismaPostgres.order.findUnique({ where: { id: orderId } });
+        if (order && order.paymentStatus !== "COMPLETED") {
+          await prismaPostgres.$transaction([
+            prismaPostgres.order.update({
+              where: { id: orderId },
+              data: { paymentStatus: "COMPLETED", paymentRef: payload.id },
+            }),
+            prismaPostgres.payment.updateMany({
+              where: { orderId, status: "PENDING" },
+              data: {
+                status: "COMPLETED",
+                transactionId: payload.id,
+                metadata: { razorpayPaymentId: payload.id, source: "webhook" },
+              },
+            }),
+          ]);
+          writeAuditLog("PAYMENT", orderId, "PAYMENT_VERIFIED", null, "SYSTEM", {
+            razorpayPaymentId: payload.id,
+            source: "webhook",
+            event: eventType,
+          });
+        }
       }
     } else if (eventType === "payment.failed") {
       const orderId = payload.notes?.orderId as string | undefined;

@@ -7,6 +7,7 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import ImagePlaceHolder from "@/shared/components/image-placeholder";
 import axiosInstance from "@/utils/axiosInstance";
+import { frontendEnv } from "@/config/env";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 import useSeller from "@/hooks/useSeller";
@@ -28,7 +29,10 @@ const BannersPage = () => {
     const sellerId = seller?.id || (seller?.role === "staff" ? seller.sellerId : null);
     if (!sellerId) return;
 
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const derivedWs = frontendEnv.apiUrl.startsWith("https")
+      ? frontendEnv.apiUrl.replace(/^https/, "wss")
+      : null;
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006").replace(/\?.*$/, "");
     const wsUrl = `${wsBase}?sellerId=${sellerId}`;
 
     let ws: WebSocket;

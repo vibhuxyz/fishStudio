@@ -18,6 +18,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
+import { frontendEnv } from "@/config/env";
 
 type EventHandler = (payload: any) => void;
 type Unsubscribe = () => void;
@@ -46,7 +47,7 @@ export const WorkerWSProvider = ({
   const wsRef = useRef<WebSocket | null>(null);
   const listenersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
   const destroyedRef = useRef(false);
-  const reconnectRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attemptRef = useRef(0);
 
   const emit = useCallback((type: string, payload: any) => {
@@ -73,8 +74,14 @@ export const WorkerWSProvider = ({
     destroyedRef.current = false;
     attemptRef.current = 0;
 
+    // If the WS env var is missing in production, derive wss:// from the API
+    // URL instead of falling back to ws://localhost (which browsers also
+    // block as mixed content on an https page).
+    const derivedWs = frontendEnv.apiUrl.startsWith("https")
+      ? frontendEnv.apiUrl.replace(/^https/, "wss")
+      : null;
     const wsBase = (
-      process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006"
+      process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006"
     ).replace(/\?.*$/, "");
 
     const wsUrl = `${wsBase}?adminId=${adminId}`;

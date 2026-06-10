@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { axiosInstance } from "@/lib/utils";
+import { frontendEnv } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { useUserSession } from "@/hooks/useUserSession";
 
@@ -50,7 +51,10 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   useEffect(() => {
     if (!user?.id || !orderId) return;
 
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || "ws://localhost:6006").replace(/\?.*$/, "");
+    const derivedWs = frontendEnv.apiUrl.startsWith("https")
+      ? frontendEnv.apiUrl.replace(/^https/, "wss")
+      : null;
+    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006").replace(/\?.*$/, "");
     const wsUrl = `${wsBase}?userId=${user.id}`;
 
     let ws: WebSocket;

@@ -91,6 +91,7 @@ app.use((req, res, next) => {
       "ngrok-skip-browser-warning",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    maxAge: 86400, // Cache preflight requests for 24 hours
   };
 
   if (origin && allowedOrigins.includes(origin)) {
@@ -114,7 +115,7 @@ app.set("trust proxy", 1);
 // Authenticated users get a higher cap (1000 req / 15 min) vs anonymous (100).
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: (req: any) => (req.user ? 1000 : 100),
+  max: 1000, // Allow 1000 requests per IP per 15 minutes globally since Gateway doesn't authenticate
   message: { error: "Too many requests from this IP, please try again later" },
   standardHeaders: true,
   legacyHeaders: true,

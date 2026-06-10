@@ -115,9 +115,11 @@ export const searchProducts = async (
       return res.json({ success: true, ...JSON.parse(cached), fromCache: true });
     }
 
+    const escapeFilter = (str: string) => str.replace(/"/g, '\\"');
+
     const filters: string[] = ["isDeleted = false", "isStoreVariant = true"];
-    if (category) filters.push(`category = "${category}"`);
-    if (storeId) filters.push(`storeId = "${storeId}"`);
+    if (category) filters.push(`category = "${escapeFilter(category)}"`);
+    if (storeId) filters.push(`storeId = "${escapeFilter(storeId)}"`);
 
     const sortParam: string[] = [];
     if (sort === "price_asc") sortParam.push("sale_price:asc");
@@ -199,8 +201,9 @@ export const searchSuggestions = async (
 
     try {
       const index = meiliClient.index(PRODUCTS_INDEX);
+      const escapeFilter = (str: string) => str.replace(/"/g, '\\"');
       const filters = ["isDeleted = false", "isStoreVariant = true"];
-      if (storeId) filters.push(`storeId = "${storeId}"`);
+      if (storeId) filters.push(`storeId = "${escapeFilter(storeId)}"`);
 
         const result = await index.search(q, {
           limit: 6,
