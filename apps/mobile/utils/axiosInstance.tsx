@@ -192,20 +192,29 @@ axiosInstance.interceptors.response.use(
           throw new Error("No refresh token available");
         }
 
-        const response = await axiosInstance.post(
-          `/auth/api/refresh-token`,
-          { refreshToken },
+        // Use bare axios (NOT axiosInstance): the request interceptor would
+        // overwrite Authorization with the expired access token, and a 401
+        // here must not re-enter this response interceptor.
+        const response = await axios.post(
+          `${axiosInstance.defaults.baseURL}/auth/api/refresh-token`,
+          {},
           {
             headers: {
               "Content-Type": "application/json",
+              "x-auth-role": "user",
               Authorization: `Bearer ${refreshToken}`,
             },
-          } as CustomAxiosRequestConfig
+          }
         );
 
-        // Store new access token
+        // Store the new access token AND the rotated refresh token — the
+        // server revokes the old refresh token on every refresh, so keeping
+        // the old one would log the user out on the next refresh.
         if (response.data?.accessToken) {
           await storeAccessToken(response.data.accessToken);
+        }
+        if (response.data?.refreshToken) {
+          await SecureStore.setItemAsync("refresh_token", response.data.refreshToken);
         }
 
         isRefreshing = false;

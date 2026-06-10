@@ -34,6 +34,10 @@ const getWsBase = () => {
   const configured = process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI;
   if (configured) return configured.replace(/\?.*$/, "");
 
+  // Release builds must never fall back to localhost — use the production
+  // endpoint if env injection was missed (mirrors axiosInstance fallback).
+  if (!__DEV__) return "wss://api.fishstudio.in";
+
   const expoHost = getExpoHost();
   if (expoHost) return `ws://${expoHost}:6006`;
   return "ws://localhost:6006";

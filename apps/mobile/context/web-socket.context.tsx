@@ -50,11 +50,15 @@ export const WebSocketProvider = ({
       if (!token || cancelled) return;
 
       const expoHost = getExpoHost();
+      // Release builds must never fall back to localhost — use the production
+      // endpoint if env injection was missed (mirrors axiosInstance fallback).
       const wsBase =
         process.env.EXPO_PUBLIC_CHATTING_WEBSOCKET_URI ||
-        (expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
-          ? `ws://${expoHost}:6006`
-          : "ws://localhost:6006");
+        (!__DEV__
+          ? "wss://api.fishstudio.in/"
+          : expoHost && expoHost !== "localhost" && expoHost !== "127.0.0.1"
+            ? `ws://${expoHost}:6006`
+            : "ws://localhost:6006");
 
       const wsUrl = `${wsBase}${wsBase.includes("?") ? "&" : "?"}access_token=${encodeURIComponent(
         token,
