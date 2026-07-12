@@ -37,7 +37,13 @@
       ],
       "expo-font",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Fish Studio uses your location to prefill your delivery address and find the nearest store."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

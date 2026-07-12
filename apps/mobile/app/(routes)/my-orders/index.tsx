@@ -51,7 +51,7 @@ interface Order {
 const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string }> = {
   PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Order Placed" },
   ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Preparing" },
-  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "On the Way" },
+  SHIPPED:   { bg: "#EDE9FE", text: "#5A2C96", icon: "car-outline",              label: "On the Way" },
   DELIVERED: { bg: "#D1FAE5", text: "#059669", icon: "bag-check-outline",        label: "Delivered" },
   REJECTED:  { bg: "#FEE2E2", text: "#DC2626", icon: "close-circle-outline",     label: "Rejected" },
   CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled" },
@@ -323,7 +323,7 @@ export default function MyOrders() {
           <View className="flex-1 ml-3">
             <Text
               style={{
-                fontFamily: "Poppins-Bold",
+                fontFamily: "Inter-Bold",
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
               className="text-[15px] text-gray-900"
@@ -396,7 +396,7 @@ export default function MyOrders() {
         <View className="px-4 pt-4 pb-2 bg-white">
           <Text
             style={{
-              fontFamily: "Poppins-Bold",
+              fontFamily: "Inter-Bold",
               fontWeight: Platform.OS === "android" ? "700" : "normal",
             }}
             className="text-[32px] text-gray-900 leading-tight"
@@ -435,7 +435,7 @@ export default function MyOrders() {
         <View className="px-3 pt-3">
           {isLoading ? (
             <View className="flex-1 items-center justify-center py-24">
-              <ActivityIndicator size="large" color="#6C3CE1" />
+              <ActivityIndicator size="large" color="#5A2C96" />
               <Text className="text-gray-500 font-poppins-medium mt-4">
                 Loading orders…
               </Text>

@@ -1,11 +1,14 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Image,
   Platform,
   ScrollView,
+  Share,
   StatusBar,
   Text,
   TouchableOpacity,
@@ -28,7 +31,7 @@ const STATUS_CONFIG: Record<
     icon: "checkmark-circle-outline",
     label: "Preparing",
   },
-  SHIPPED: { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline", label: "On the Way" },
+  SHIPPED: { bg: "#EDE9FE", text: "#5A2C96", icon: "car-outline", label: "On the Way" },
   DELIVERED: {
     bg: "#D1FAE5",
     text: "#059669",
@@ -72,7 +75,7 @@ export default function OrderConfirmationScreen() {
       <SafeAreaView className="flex-1 pt-12 bg-gray-50">
         <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6C3CE1" />
+          <ActivityIndicator size="large" color="#5A2C96" />
           <Text className="text-gray-500 font-poppins-medium mt-4">
             Loading your order…
           </Text>
@@ -87,6 +90,43 @@ export default function OrderConfirmationScreen() {
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
   const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
+
+  // Share Order — native share sheet with a deep link to the order.
+  const handleShareOrder = async () => {
+    try {
+      await Share.share({
+        message: `My Fish Studio order #${shortId} is confirmed! Total ₹${order.totalAmount}. Track it in the app.`,
+      });
+    } catch {
+      // user dismissed the sheet — ignore
+    }
+  };
+
+  // Download Invoice — no PDF lib on mobile, so we share a formatted invoice
+  // summary through the native sheet (user can save it / send to print).
+  const handleDownloadInvoice = async () => {
+    const lines = (order.items || [])
+      .map(
+        (item: any) =>
+          `• ${item.product?.title || "Product"} ×${item.quantity}  ₹${(
+            item.price * item.quantity
+          ).toFixed(0)}`,
+      )
+      .join("\n");
+    const invoice =
+      `FISH STUDIO — Invoice #${shortId}\n` +
+      `${createdAt.toLocaleString("en-IN")}\n\n` +
+      `Deliver to:\n${order.deliveryName}\n${order.deliveryAddress}\n${order.deliveryCity} – ${order.deliveryPincode}\n\n` +
+      `Items:\n${lines}\n\n` +
+      `Total Paid: ₹${order.totalAmount}\n` +
+      `Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod}\n\n` +
+      `Thank you for shopping with Fish Studio.`;
+    try {
+      await Share.share({ message: invoice });
+    } catch {
+      // user dismissed the sheet — ignore
+    }
+  };
 
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
@@ -112,15 +152,13 @@ export default function OrderConfirmationScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Success header */}
+        {/* Success header (animated) */}
         <View className="items-center mt-4 mb-6">
-          <View className="w-20 h-20 rounded-full bg-emerald-50 items-center justify-center">
-            <Ionicons name="checkmark-circle" size={56} color="#10B981" />
-          </View>
+          <AnimatedSuccessCheck />
           <Text
             className="mt-4 text-emerald-500 uppercase tracking-widest text-[28px] italic"
             style={{
-              fontFamily: "Poppins-Bold",
+              fontFamily: "Inter-Bold",
               fontWeight: Platform.OS === "android" ? "700" : "normal",
             }}
           >
@@ -131,7 +169,7 @@ export default function OrderConfirmationScreen() {
             <Text
               className="text-gray-900"
               style={{
-                fontFamily: "Poppins-Bold",
+                fontFamily: "Inter-Bold",
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
             >
@@ -139,6 +177,24 @@ export default function OrderConfirmationScreen() {
             </Text>{" "}
             has been placed successfully.
           </Text>
+
+          {/* Delivery time highlight */}
+          <View
+            className="flex-row items-center mt-3 px-3.5 py-1.5 rounded-full"
+            style={{ backgroundColor: "#EDE9FE" }}
+          >
+            <Ionicons name="time-outline" size={15} color="#5A2C96" />
+            <Text
+              className="ml-1.5 text-xs"
+              style={{
+                color: "#5A2C96",
+                fontFamily: "Inter-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
+              }}
+            >
+              {deliveryMinutes ? `Arriving in ~${deliveryMinutes} mins` : slotLabel}
+            </Text>
+          </View>
         </View>
 
         {/* Live order tracker */}
@@ -160,7 +216,7 @@ export default function OrderConfirmationScreen() {
         {/* Order meta card */}
         <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
           <MetaRow
-            icon={<Ionicons name="calendar-outline" size={18} color="#6C3CE1" />}
+            icon={<Ionicons name="calendar-outline" size={18} color="#5A2C96" />}
             label="ORDER PLACED"
             value={`${createdAt.toLocaleDateString("en-IN", {
               day: "numeric",
@@ -172,18 +228,18 @@ export default function OrderConfirmationScreen() {
             })}`}
           />
           <MetaRow
-            icon={<Ionicons name="location-outline" size={18} color="#6C3CE1" />}
+            icon={<Ionicons name="location-outline" size={18} color="#5A2C96" />}
             label="DELIVERING TO"
             value={`${order.deliveryName}\n${order.deliveryAddress}\n${order.deliveryCity} – ${order.deliveryPincode}`}
             multiline
           />
           <MetaRow
-            icon={<Ionicons name="car-outline" size={18} color="#6C3CE1" />}
+            icon={<Ionicons name="car-outline" size={18} color="#5A2C96" />}
             label="DELIVERY SLOT"
             value={slotLabel}
           />
           <MetaRow
-            icon={<MaterialCommunityIcons name="credit-card-outline" size={18} color="#6C3CE1" />}
+            icon={<MaterialCommunityIcons name="credit-card-outline" size={18} color="#5A2C96" />}
             label="PAYMENT"
             value={
               order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod
@@ -260,7 +316,7 @@ export default function OrderConfirmationScreen() {
                 <Text
                   className="text-sm text-gray-900"
                   style={{
-                    fontFamily: "Poppins-Bold",
+                    fontFamily: "Inter-Bold",
                     fontWeight: Platform.OS === "android" ? "700" : "normal",
                   }}
                 >
@@ -281,7 +337,7 @@ export default function OrderConfirmationScreen() {
               <Text
                 className="text-primary uppercase italic"
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >
@@ -290,7 +346,7 @@ export default function OrderConfirmationScreen() {
               <Text
                 className="text-2xl text-primary"
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >
@@ -311,7 +367,7 @@ export default function OrderConfirmationScreen() {
             <Text
               className="text-white text-base mr-2"
               style={{
-                fontFamily: "Poppins-Bold",
+                fontFamily: "Inter-Bold",
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
             >
@@ -321,24 +377,144 @@ export default function OrderConfirmationScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/(routes)/my-orders")}
-            className="py-4 rounded-full border border-gray-200 flex-row items-center justify-center"
+            onPress={() => router.push(`/(routes)/order-details/${order.id}` as any)}
+            className="py-4 rounded-full flex-row items-center justify-center"
+            style={{ backgroundColor: "#5A2C96" }}
             activeOpacity={0.85}
           >
-            <Ionicons name="bag-handle-outline" size={18} color="#1F2937" />
+            <Ionicons name="navigate-outline" size={18} color="#fff" />
             <Text
-              className="text-gray-900 text-base ml-2"
+              className="text-white text-base ml-2"
               style={{
-                fontFamily: "Poppins-Bold",
+                fontFamily: "Inter-Bold",
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
             >
+              Track Order
+            </Text>
+          </TouchableOpacity>
+
+          {/* Secondary row */}
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              onPress={handleDownloadInvoice}
+              className="flex-1 py-3.5 rounded-full border border-gray-200 flex-row items-center justify-center"
+              activeOpacity={0.85}
+            >
+              <Ionicons name="download-outline" size={17} color="#1F2937" />
+              <Text
+                className="text-gray-900 text-sm ml-1.5"
+                style={{
+                  fontFamily: "Inter-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
+              >
+                Invoice
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleShareOrder}
+              className="flex-1 py-3.5 rounded-full border border-gray-200 flex-row items-center justify-center"
+              activeOpacity={0.85}
+            >
+              <Ionicons name="share-social-outline" size={17} color="#1F2937" />
+              <Text
+                className="text-gray-900 text-sm ml-1.5"
+                style={{
+                  fontFamily: "Inter-Bold",
+                  fontWeight: Platform.OS === "android" ? "700" : "normal",
+                }}
+              >
+                Share
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            onPress={() => router.push("/(routes)/my-orders")}
+            className="py-3 flex-row items-center justify-center"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="bag-handle-outline" size={16} color="#6B7280" />
+            <Text className="text-gray-500 text-sm ml-1.5 font-poppins-medium">
               View My Orders
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// Animated success badge: the green circle springs in, the check scales up,
+// and a soft ring pulses outward on a loop. Uses RN's built-in Animated so it
+// needs no extra native module.
+function AnimatedSuccessCheck() {
+  const circleScale = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
+  const ring = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.spring(circleScale, {
+        toValue: 1,
+        friction: 5,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(checkScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 140,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const loop = Animated.loop(
+      Animated.timing(ring, {
+        toValue: 1,
+        duration: 1500,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [circleScale, checkScale, ring]);
+
+  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.8] });
+  const ringOpacity = ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
+
+  return (
+    <View className="w-24 h-24 items-center justify-center">
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: "#10B981",
+          opacity: ringOpacity,
+          transform: [{ scale: ringScale }],
+        }}
+      />
+      <Animated.View
+        style={{
+          width: 80,
+          height: 80,
+          borderRadius: 40,
+          backgroundColor: "#10B981",
+          alignItems: "center",
+          justifyContent: "center",
+          transform: [{ scale: circleScale }],
+        }}
+      >
+        <Animated.View style={{ transform: [{ scale: checkScale }] }}>
+          <Ionicons name="checkmark-sharp" size={46} color="#fff" />
+        </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 

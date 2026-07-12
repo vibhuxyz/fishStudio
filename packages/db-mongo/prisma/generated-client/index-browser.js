@@ -225,6 +225,17 @@ exports.Prisma.FavoritesScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.ReviewsScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  productId: 'productId',
+  rating: 'rating',
+  comment: 'comment',
+  images: 'images',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.Site_configScalarFieldEnum = {
   id: 'id',
   categories: 'categories',
@@ -258,6 +269,15 @@ exports.Prisma.ProductsScalarFieldEnum = {
   regular_price: 'regular_price',
   totalSold: 'totalSold',
   ratings: 'ratings',
+  origin: 'origin',
+  source: 'source',
+  shelfLife: 'shelfLife',
+  storageInstructions: 'storageInstructions',
+  cookingTips: 'cookingTips',
+  highlightDescription: 'highlightDescription',
+  nutritionProtein: 'nutritionProtein',
+  nutritionOmega3: 'nutritionOmega3',
+  nutritionCalories: 'nutritionCalories',
   cashOnDelivery: 'cashOnDelivery',
   discount_codes: 'discount_codes',
   status: 'status',
@@ -308,6 +328,7 @@ exports.Prisma.SignupAccessCodeScalarFieldEnum = {
   email: 'email',
   role: 'role',
   code: 'code',
+  plainCode: 'plainCode',
   expiresAt: 'expiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -323,6 +344,18 @@ exports.Prisma.Abandoned_cartsScalarFieldEnum = {
   notifiedAt: 'notifiedAt',
   isConverted: 'isConverted',
   lastUpdatedAt: 'lastUpdatedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.Product_viewsScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  deviceId: 'deviceId',
+  productId: 'productId',
+  catalogProductId: 'catalogProductId',
+  category: 'category',
+  subCategory: 'subCategory',
+  source: 'source',
   createdAt: 'createdAt'
 };
 
@@ -362,12 +395,14 @@ exports.Prisma.ModelName = {
   staffs: 'staffs',
   stores: 'stores',
   favorites: 'favorites',
+  reviews: 'reviews',
   site_config: 'site_config',
   products: 'products',
   banners: 'banners',
   seller_events: 'seller_events',
   SignupAccessCode: 'SignupAccessCode',
-  abandoned_carts: 'abandoned_carts'
+  abandoned_carts: 'abandoned_carts',
+  product_views: 'product_views'
 };
 
 /**

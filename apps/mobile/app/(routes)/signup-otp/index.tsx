@@ -388,7 +388,7 @@ export default function SignupOtp() {
           </Pressable>
           <Pressable onPress={handleSkip} style={styles.skipButton}>
             <Text style={styles.skipText}>Skip</Text>
-            <Ionicons name="arrow-forward" size={14} color="#6C3CE1" />
+            <Ionicons name="arrow-forward" size={14} color="#5A2C96" />
           </Pressable>
         </View>
 
@@ -418,7 +418,7 @@ export default function SignupOtp() {
               ]}
             >
               <LinearGradient
-                colors={["#7C3AED", "#14B8A6"]}
+                colors={["#5A2C96", "#14B8A6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.logoGradient}
@@ -476,7 +476,7 @@ export default function SignupOtp() {
               <LinearGradient
                 colors={
                   isOTPComplete && !isVerifying
-                    ? ["#7C3AED", "#6C3CE1"]
+                    ? ["#5A2C96", "#5A2C96"]
                     : ["#E2E8F0", "#E2E8F0"]
                 }
                 start={{ x: 0, y: 0 }}
@@ -561,8 +561,8 @@ const styles = StyleSheet.create({
     borderColor: "#E7E5FF",
   },
   skipText: {
-    color: "#6C3CE1",
-    fontFamily: "Poppins-SemiBold",
+    color: "#5A2C96",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     borderRadius: 105,
     right: -98,
     bottom: 72,
-    backgroundColor: "rgba(108, 60, 225, 0.16)",
+    backgroundColor: "rgba(90, 44, 150, 0.16)",
   },
   hero: {
     alignItems: "center",
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 30,
     marginBottom: 14,
-    shadowColor: "#6C3CE1",
+    shadowColor: "#5A2C96",
     shadowOpacity: 0.28,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
@@ -616,14 +616,14 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: "#111827",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 18,
     letterSpacing: 0,
     marginBottom: 6,
   },
   title: {
     color: "#111827",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 28,
     lineHeight: 34,
     letterSpacing: 0,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: "#64748B",
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     fontSize: 14,
     lineHeight: 22,
     letterSpacing: 0,
@@ -663,12 +663,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     color: "#111827",
     textAlign: "center",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 23,
     letterSpacing: 0,
   },
   otpInputFilled: {
-    borderColor: "#6C3CE1",
+    borderColor: "#5A2C96",
     backgroundColor: "#F4F0FF",
   },
   primaryButton: {
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     color: "#FFFFFF",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 16,
     letterSpacing: 0,
   },
@@ -706,14 +706,14 @@ const styles = StyleSheet.create({
   },
   mutedText: {
     color: "#64748B",
-    fontFamily: "Poppins-Regular",
+    fontFamily: "Inter-Regular",
     fontSize: 13,
     letterSpacing: 0,
     textAlign: "center",
   },
   resendText: {
-    color: "#6C3CE1",
-    fontFamily: "Poppins-SemiBold",
+    color: "#5A2C96",
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
     letterSpacing: 0,
   },
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: "#111827",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 13,
     letterSpacing: 0,
   },

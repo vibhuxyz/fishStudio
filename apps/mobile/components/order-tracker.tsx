@@ -41,7 +41,7 @@ const STEPS: {
 }[] = [
   { key: "PENDING",   label: "Order Placed", sub: "We received your order",        icon: "bag-outline",           color: "#F59E0B", light: "#FEF9EC", ring: "#FDE68A" },
   { key: "ACCEPTED",  label: "Preparing",    sub: "Freshly being prepared for you", icon: "cube-outline",          color: "#3B82F6", light: "#EFF6FF", ring: "#BFDBFE" },
-  { key: "SHIPPED",   label: "On the Way",   sub: "Out for delivery to you",        icon: "bicycle-outline",       color: "#8B5CF6", light: "#F5F3FF", ring: "#DDD6FE" },
+  { key: "SHIPPED",   label: "On the Way",   sub: "Out for delivery to you",        icon: "bicycle-outline",       color: "#5A2C96", light: "#F5F3FF", ring: "#DDD6FE" },
   { key: "DELIVERED", label: "Delivered",    sub: "Enjoy your order!",              icon: "checkmark-circle-outline", color: "#10B981", light: "#ECFDF5", ring: "#A7F3D0" },
 ];
 const STEP_KEYS = STEPS.map((s) => s.key);

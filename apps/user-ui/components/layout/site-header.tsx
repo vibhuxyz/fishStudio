@@ -26,7 +26,7 @@ import { CategoryMenu } from "./category-menu";
 import { useCart, useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
-// import NotificationBell from "./NotificationBell"; // Removed as per request
+import NotificationBell from "./NotificationBell";
 import { useAddressStore } from "@/lib/address-store";
 import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
@@ -743,7 +743,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
 
           {/* Account + Cart */}
           <div className="flex flex-shrink-0 items-center gap-0.5 sm:gap-2">
-            {/* <NotificationBell /> */}
+            <NotificationBell />
             <UserProfileDropdown
               onAddressClick={() => setShowAddressModal(true)}
             />

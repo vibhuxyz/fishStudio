@@ -6,6 +6,7 @@ import { ModalProvider } from "@/components/providers/modal-provider";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AnnouncementProvider } from "@/components/providers/announcement-provider";
@@ -92,6 +93,7 @@ export default function RootLayout({
                   <div className="flex-1">{children}</div>
                   <SiteFooter />
                 </div>
+                <BottomNav />
               </AnnouncementProvider>
             </ModalProvider>
           </QueryProvider>

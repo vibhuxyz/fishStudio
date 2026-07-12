@@ -221,7 +221,7 @@ export default function CategoryScreen() {
               </TouchableOpacity>
               <Text
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
                 className="text-[32px] text-gray-900 leading-tight"
@@ -296,7 +296,7 @@ export default function CategoryScreen() {
                   <Ionicons name="filter-outline" size={16} color="#1F2937" />
                   <Text
                     style={{
-                      fontFamily: "Poppins-Bold",
+                      fontFamily: "Inter-Bold",
                       fontWeight: Platform.OS === "android" ? "700" : "normal",
                     }}
                     className="text-base text-gray-900 ml-2"
@@ -336,7 +336,7 @@ export default function CategoryScreen() {
                   Showing{" "}
                   <Text
                     style={{
-                      fontFamily: "Poppins-Bold",
+                      fontFamily: "Inter-Bold",
                       fontWeight: Platform.OS === "android" ? "700" : "normal",
                     }}
                     className="text-gray-900"
@@ -396,7 +396,7 @@ function Chip({
     >
       <Text
         style={{
-          fontFamily: active ? "Poppins-Bold" : "Poppins-Medium",
+          fontFamily: active ? "Inter-Bold" : "Inter-Medium",
           fontWeight: Platform.OS === "android" ? (active ? "700" : "500") : "normal",
         }}
         className={`text-sm ${active ? "text-white" : "text-gray-700"}`}

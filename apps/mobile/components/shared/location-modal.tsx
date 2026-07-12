@@ -153,7 +153,7 @@ export default function LocationModal({
                     >
                       <View className="flex-row items-center">
                         <View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
-                          <Ionicons name="location" size={20} color="#6C3CE1" />
+                          <Ionicons name="location" size={20} color="#5A2C96" />
                         </View>
                         <View>
                           <Text className="text-foreground font-poppins-semibold text-base">
@@ -174,7 +174,7 @@ export default function LocationModal({
                   className="mt-4 border-2 border-dashed border-primary/50 rounded-xl px-6 py-4 flex-row items-center justify-center"
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="add" size={20} color="#6C3CE1" />
+                  <Ionicons name="add" size={20} color="#5A2C96" />
                   <Text className="text-primary font-poppins-semibold text-base ml-2">
                     Enter address manually
                   </Text>

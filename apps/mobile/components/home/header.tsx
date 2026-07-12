@@ -1,176 +1,232 @@
 import AddressModal from "@/components/shared/address-modal";
+import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
+import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
 export default function Header() {
-  const { selectedLocation, getSelectedAddress, locationVersion } = useAddressStore();
+  const { selectedLocation, getSelectedAddress } = useAddressStore();
   const { cart } = useStore();
+  const { user } = useUser();
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [tick, setTick] = useState(0);
-
-  // Re-evaluate delivery label every 60 s so open/closed state stays current
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
 
   const selectedAddress = getSelectedAddress();
 
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications-unread-count"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/admin/api/get-user-notifications");
+      const notifications = res.data?.notifications ?? [];
+      return notifications.filter((n: any) => n.status === "Unread").length;
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60,
+  });
+
   const locationLine =
-    selectedLocation?.city && selectedLocation?.pincode
-      ? `${selectedLocation.city} · ${selectedLocation.pincode}`
+    selectedLocation?.city
+      ? selectedLocation.pincode
+        ? `${selectedLocation.city}, ${selectedLocation.pincode}`
+        : selectedLocation.city
       : selectedAddress
-      ? `${selectedAddress.city} · ${selectedAddress.pincode}`
-      : null;
-
-  const deliveryLabel: { primary: string; secondary: string | null } = (() => {
-    if (!selectedLocation && !selectedAddress) return { primary: "Set delivery location", secondary: null };
-
-    if (selectedLocation?.isOpen === false) {
-      return {
-        primary: "Scheduled delivery available",
-        secondary: `Opens at ${selectedLocation.openingHours || "9 AM"}`,
-      };
-    }
-    if (selectedLocation?.deliveryTimeMinutes) {
-      return {
-        primary: `⚡ Instant · ${selectedLocation.deliveryTimeMinutes} min`,
-        secondary: null,
-      };
-    }
-    if (selectedLocation) {
-      return { primary: "Scheduled delivery available", secondary: null };
-    }
-    return { primary: "Set delivery location", secondary: null };
-  })();
+      ? `${selectedAddress.city}, ${selectedAddress.pincode}`
+      : "Set location";
 
   return (
-    <View className="bg-white">
-      {/* ── Main row: icon | delivery info | cart ── */}
-      <View className="flex-row items-center px-4 pt-3 pb-2">
-        {/* iOS-style squircle icon — no text */}
+    <View className="bg-white px-4 pt-4 pb-2">
+      {/* ── Top row: Logo | Delivery | Profile ── */}
+      <View className="flex-row items-center">
+
+        {/* Logo group */}
         <TouchableOpacity
+          className="flex-row items-center"
           onPress={() => setShowAddressModal(true)}
           activeOpacity={0.85}
         >
           <View
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              backgroundColor: "#6C3CE1",
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              backgroundColor: "#5A2C96",
               alignItems: "center",
               justifyContent: "center",
-              shadowColor: "#6C3CE1",
-              shadowOpacity: 0.35,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
+              shadowColor: "#5A2C96",
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 5,
             }}
           >
-            <MaterialCommunityIcons name="fish" size={26} color="white" />
+            <MaterialCommunityIcons name="fish" size={24} color="white" />
+          </View>
+          <View className="ml-2">
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C" }}>
+              Fish Studio
+            </Text>
+            <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#898B8A" }}>
+              Fresh fish, meat & more
+            </Text>
           </View>
         </TouchableOpacity>
 
-        {/* Delivery details — tappable to open modal */}
+        {/* Delivery location */}
         <TouchableOpacity
-          className="flex-1 mx-3"
+          className="items-start mx-2"
+          style={{ flex: 1 }}
           onPress={() => setShowAddressModal(true)}
           activeOpacity={0.7}
         >
-          {/* Primary delivery label */}
-          <View className="flex-row items-center mb-0.5">
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: "#898B8A" }}>
+            Delivering to
+          </Text>
+          <View className="flex-row items-center" style={{ maxWidth: "100%" }}>
+            <Ionicons name="location-outline" size={12} color="#5A2C96" />
             <Text
-              className="text-sm font-poppins-semibold text-offer-green"
+              style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#1A1C1C", flexShrink: 1, marginLeft: 2 }}
               numberOfLines={1}
             >
-              {deliveryLabel.primary}
+              {locationLine}
             </Text>
-            <Ionicons
-              name="chevron-down"
-              size={14}
-              color="#22C55E"
-              style={{ marginLeft: 2 }}
-            />
+            <Ionicons name="chevron-down" size={12} color="#676968" style={{ marginLeft: 1 }} />
           </View>
-
-          {/* Secondary line (opens at / slot window) */}
-          {deliveryLabel.secondary ? (
-            <View className="flex-row items-center mb-0.5">
-              <Ionicons name="time-outline" size={12} color="#64748B" />
-              <Text className="text-xs text-muted-foreground font-poppins ml-1">
-                {deliveryLabel.secondary}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Location bold */}
-          {locationLine ? (
-            <View className="flex-row items-center mb-0.5">
-              <Ionicons name="location-outline" size={12} color="#64748B" />
-              <Text
-                className="text-xs font-poppins-semibold text-foreground ml-1"
-                numberOfLines={1}
-              >
-                {locationLine}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Fallback if no location set */}
-          {!locationLine && (
-            <View className="flex-row items-center">
-              <Ionicons name="location-outline" size={12} color="#94A3B8" />
-              <Text className="text-xs text-muted-foreground font-poppins ml-1">
-                Tap to set delivery location
-              </Text>
-            </View>
-          )}
+          <View className="flex-row items-center" style={{ marginTop: 2 }}>
+            <Ionicons name="time-outline" size={11} color="#898B8A" />
+            <Text style={{ fontFamily: "Inter-Medium", fontSize: 10, color: "#676968", marginLeft: 3 }}>
+              {selectedLocation?.deliveryTimeMinutes
+                ? `${selectedLocation.deliveryTimeMinutes}-${selectedLocation.deliveryTimeMinutes + 15} mins delivery`
+                : "30-45 mins delivery"}
+            </Text>
+          </View>
         </TouchableOpacity>
 
-        {/* Cart pill */}
+        {/* Notifications */}
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/cart")}
-          activeOpacity={0.85}
+          onPress={() => router.push("/(routes)/notifications" as any)}
+          activeOpacity={0.8}
+          style={{ marginLeft: 8 }}
         >
-          {cartCount > 0 ? (
-            <View
-              style={{ backgroundColor: "#22C55E", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", alignItems: "center" }}
-            >
-              <Ionicons name="cart-outline" size={16} color="white" />
-              <Text style={{ color: "white", fontSize: 11, fontFamily: "Poppins-SemiBold", marginLeft: 4 }}>
-                {cartCount} item{cartCount !== 1 ? "s" : ""}{"\n"}
-                <Text style={{ fontFamily: "Poppins-Bold", fontSize: 12 }}>₹{cartTotal}</Text>
-              </Text>
-            </View>
-          ) : (
-            <View className="w-9 h-9 bg-muted rounded-xl items-center justify-center">
-              <Ionicons name="cart-outline" size={20} color="#64748B" />
-            </View>
-          )}
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#F3F3F3",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="notifications-outline" size={20} color="#1A1C1C" />
+            {unreadCount > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  paddingHorizontal: 3,
+                  backgroundColor: "#EF4444",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1.5,
+                  borderColor: "#FFFFFF",
+                }}
+              >
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 9, color: "#FFFFFF" }}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Cart icon */}
+        <TouchableOpacity
+          onPress={() => {
+            const cartCount = cart.reduce((s, i) => s + (i.quantity || 1), 0);
+            cartCount > 0
+              ? router.push("/(tabs)/cart")
+              : router.push("/(routes)/login");
+          }}
+          activeOpacity={0.8}
+          style={{ marginLeft: 8 }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#F3F3F3",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="cart-outline" size={20} color="#1A1C1C" />
+            {cart.length > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -2,
+                  minWidth: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  paddingHorizontal: 3,
+                  backgroundColor: "#5A2C96",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1.5,
+                  borderColor: "#FFFFFF",
+                }}
+              >
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 9, color: "#FFFFFF" }}>
+                  {cart.reduce((s, i) => s + (i.quantity || 1), 0)}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* ── Search bar ── */}
-      <View className="px-4 pb-4">
-        <TouchableOpacity
-          className="flex-row items-center bg-muted rounded-xl px-4 py-3"
-          onPress={() => router.push("/(routes)/products")}
-          activeOpacity={0.7}
+      <TouchableOpacity
+        className="flex-row items-center mt-4 mb-1"
+        style={{
+          backgroundColor: "#EFEFEF",
+          borderRadius: 50,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+        }}
+        onPress={() => router.push("/(routes)/products")}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="search-outline" size={18} color="#A1A1AA" />
+        <Text
+          style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#A1A1AA", marginLeft: 10, flex: 1 }}
+          numberOfLines={1}
         >
-          <Ionicons name="search" size={18} color="#94A3B8" />
-          <Text className="flex-1 ml-3 text-muted-foreground font-poppins text-sm">
-            Search for fish, meat, cuts...
-          </Text>
-        </TouchableOpacity>
-      </View>
+          Search for fish, seafood, chicken, mutton...
+        </Text>
+        <View
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 15,
+            backgroundColor: "#5A2C96",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="mic-outline" size={16} color="#FFFFFF" />
+        </View>
+      </TouchableOpacity>
 
       <AddressModal
         visible={showAddressModal}

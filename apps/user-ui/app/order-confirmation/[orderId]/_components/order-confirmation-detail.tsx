@@ -3,22 +3,27 @@
 import React, { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { 
-  CheckCircle2, 
-  Package, 
-  MapPin, 
-  Calendar, 
-  ArrowRight, 
-  ShoppingBag, 
-  Clock, 
-  CreditCard, 
-  Truck 
+import {
+  CheckCircle2,
+  Package,
+  MapPin,
+  Calendar,
+  ArrowRight,
+  ShoppingBag,
+  Clock,
+  CreditCard,
+  Truck,
+  Check,
+  Download,
+  Share2,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { axiosInstance } from "@/lib/utils";
 import { frontendEnv } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { useUserSession } from "@/hooks/useUserSession";
+import { toast } from "sonner";
 
 interface OrderConfirmationDetailProps {
   initialOrder: any;
@@ -209,24 +214,139 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
 
   const billDetails = order.billDetails as Record<string, number> | null;
   const statusCfg = getStatusConfig(order.status);
+  const shortId = String(order.id).slice(-6).toUpperCase();
+
+  // Download Invoice — opens a print-ready invoice in a new window. Dependency
+  // free: the user can print or "Save as PDF" from the browser dialog.
+  const handleDownloadInvoice = () => {
+    const rows = (order.items || [])
+      .map(
+        (item: any) =>
+          `<tr>
+            <td>${item.product?.title || "Product"}</td>
+            <td style="text-align:center">${item.quantity}</td>
+            <td style="text-align:right">₹${(item.price * item.quantity).toFixed(0)}</td>
+          </tr>`,
+      )
+      .join("");
+
+    const html = `<!doctype html><html><head><meta charset="utf-8" />
+      <title>Invoice ${shortId}</title>
+      <style>
+        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1C1C1C;padding:32px;max-width:640px;margin:auto}
+        h1{color:#5A2C96;margin:0 0 4px}
+        .muted{color:#8E8E93;font-size:12px}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{padding:8px 4px;border-bottom:1px solid #eee;font-size:13px}
+        th{text-align:left;color:#8E8E93;text-transform:uppercase;font-size:11px}
+        .total{display:flex;justify-content:space-between;margin-top:16px;font-weight:700;font-size:18px;color:#5A2C96}
+        .box{margin-top:20px;font-size:13px;line-height:1.6}
+      </style></head><body>
+      <h1>Fish Studio</h1>
+      <div class="muted">Tax Invoice</div>
+      <div class="box">
+        <strong>Invoice #${shortId}</strong><br/>
+        Date: ${new Date(order.createdAt).toLocaleString("en-IN")}<br/>
+        Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod || "—"}
+      </div>
+      <div class="box">
+        <strong>Deliver to</strong><br/>
+        ${order.deliveryName || ""}<br/>
+        ${order.deliveryAddress || ""}<br/>
+        ${order.deliveryCity || ""} – ${order.deliveryPincode || ""}
+      </div>
+      <table>
+        <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="total"><span>Total Paid</span><span>₹${order.totalAmount}</span></div>
+      <p class="muted" style="margin-top:32px">Thank you for shopping with Fish Studio.</p>
+      </body></html>`;
+
+    const w = window.open("", "_blank", "width=720,height=900");
+    if (!w) {
+      toast.error("Allow pop-ups to download the invoice");
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  };
+
+  // Share Order — native share where available, otherwise copy the link.
+  const handleShareOrder = async () => {
+    const url = `${window.location.origin}/orders/${order.id}`;
+    const text = `My Fish Studio order #${shortId} is confirmed! Track it here:`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Fish Studio Order", text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        toast.success("Order link copied to clipboard");
+      }
+    } catch {
+      // user cancelled share — ignore
+    }
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:py-14">
-      {/* ── Success Header ── */}
+      {/* ── Success Header (animated) ── */}
       <div className="text-center space-y-3 mb-10">
-        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-offer-green/10 text-offer-green">
-          <CheckCircle2 className="h-12 w-12" />
+        <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+          {/* Expanding ring pulse */}
+          <motion.span
+            className="absolute inset-0 rounded-full bg-offer-green/20"
+            initial={{ scale: 0.6, opacity: 0.8 }}
+            animate={{ scale: 1.6, opacity: 0 }}
+            transition={{ duration: 1.1, ease: "easeOut", repeat: Infinity, repeatDelay: 0.4 }}
+          />
+          {/* Circle pop */}
+          <motion.div
+            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-offer-green text-white"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+          >
+            {/* Check draw-in */}
+            <motion.span
+              initial={{ scale: 0, rotate: -25 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.18, type: "spring", stiffness: 300, damping: 15 }}
+            >
+              <Check className="h-11 w-11" strokeWidth={3} />
+            </motion.span>
+          </motion.div>
         </div>
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground uppercase italic text-offer-green">
+        <motion.h1
+          className="text-3xl md:text-4xl font-black tracking-tight uppercase italic text-offer-green"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
           Order Confirmed!
-        </h1>
-        <p className="text-muted-foreground text-lg">
+        </motion.h1>
+        <motion.p
+          className="text-muted-foreground text-lg"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
           Your order{" "}
-          <span className="font-bold text-foreground">
-            #{String(order.id).slice(-6).toUpperCase()}
-          </span>{" "}
+          <span className="font-bold text-foreground">#{shortId}</span>{" "}
           has been placed successfully.
-        </p>
+        </motion.p>
+        {/* Delivery time highlight */}
+        <motion.div
+          className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold text-primary"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Clock className="h-4 w-4" />
+          {slotLabel}
+        </motion.div>
       </div>
 
       {/* ── Info Cards ── */}
@@ -390,22 +510,52 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
       </div>
 
       {/* ── Actions ── */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button
-          className="h-14 px-8 rounded-full font-bold text-base shadow-xl group bg-offer-green hover:bg-offer-green/90"
-          onClick={() => router.push("/")}
-        >
-          Continue Shopping
-          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-        </Button>
-        <Button
-          variant="outline"
-          className="h-14 px-8 rounded-full font-bold text-base"
-          onClick={() => router.push("/orders")}
-        >
-          <ShoppingBag className="mr-2 h-4 w-4" />
-          View My Orders
-        </Button>
+      <div className="space-y-3">
+        {/* Primary row */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            className="h-14 px-8 rounded-full font-bold text-base shadow-xl group bg-offer-green hover:bg-offer-green/90"
+            onClick={() => router.push("/")}
+          >
+            Continue Shopping
+            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Button>
+          <Button
+            className="h-14 px-8 rounded-full font-bold text-base"
+            onClick={() => router.push(`/orders/${order.id}`)}
+          >
+            <Truck className="mr-2 h-4 w-4" />
+            Track Order
+          </Button>
+        </div>
+
+        {/* Secondary row */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            variant="outline"
+            className="h-12 px-6 rounded-full font-bold"
+            onClick={handleDownloadInvoice}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download Invoice
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 px-6 rounded-full font-bold"
+            onClick={handleShareOrder}
+          >
+            <Share2 className="mr-2 h-4 w-4" />
+            Share Order
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-12 px-6 rounded-full font-bold"
+            onClick={() => router.push("/orders")}
+          >
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            My Orders
+          </Button>
+        </div>
       </div>
     </div>
   );

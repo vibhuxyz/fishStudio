@@ -10,6 +10,7 @@ import { useModals } from "@/components/providers/modal-provider";
 import { useAddressStore } from "@/lib/address-store";
 import { isUserLoggedIn } from "@/lib/auth-store";
 import { Product } from "@repo/zod-schema";
+import { ProductBadges } from "@/components/shared/product-badge";
 import { toast } from "sonner";
 
 // 8x8 warm-toned blur placeholder for a smooth loading effect
@@ -186,6 +187,7 @@ function ProductCardComponent({
         className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}
       >
         <div className="relative h-[200px] w-full bg-muted">
+          <ProductBadges badges={(product as any).badges} max={2} />
           {isOutOfStock || isComingSoon ? (
             <Image
               src={images[0]}
@@ -321,6 +323,7 @@ function ProductCardComponent({
       className={`group flex w-full min-w-0 h-[380px] flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-md ${isOutOfStock || isComingSoon ? "opacity-80" : ""}`}
     >
       <div className="relative h-[200px] w-full bg-muted">
+        <ProductBadges badges={(product as any).badges} max={2} />
         {isOutOfStock || isComingSoon ? (
           <Image
             src={images[0]}

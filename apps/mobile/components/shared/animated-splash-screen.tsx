@@ -212,7 +212,7 @@ export default function AnimatedSplashScreen({
           ]}
         >
           <LinearGradient
-            colors={["#7C3AED", "#6C3CE1", "#22C55E"]}
+            colors={["#5A2C96", "#5A2C96", "#22C55E"]}
             start={{ x: 0.1, y: 0.1 }}
             end={{ x: 1, y: 1 }}
             style={styles.logo}
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     left: -width * 0.1,
   },
   waveFront: {
-    backgroundColor: "rgba(108, 60, 225, 0.12)",
+    backgroundColor: "rgba(90, 44, 150, 0.12)",
     left: -width * 0.16,
     bottom: -118,
   },
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     marginBottom: 22,
-    shadowColor: "#6C3CE1",
+    shadowColor: "#5A2C96",
     shadowOpacity: 0.28,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 14 },
@@ -310,14 +310,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: "#1F2937",
-    fontFamily: "Poppins-Bold",
+    fontFamily: "Inter-Bold",
     fontSize: 32,
     letterSpacing: 0,
     textAlign: "center",
   },
   subtitle: {
     color: "#64748B",
-    fontFamily: "Poppins-Medium",
+    fontFamily: "Inter-Medium",
     fontSize: 14,
     letterSpacing: 0,
     textAlign: "center",
@@ -334,11 +334,11 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "#6C3CE1",
+    backgroundColor: "#5A2C96",
   },
   caption: {
     color: "#22C55E",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Inter-SemiBold",
     fontSize: 12,
     letterSpacing: 0,
     textAlign: "center",

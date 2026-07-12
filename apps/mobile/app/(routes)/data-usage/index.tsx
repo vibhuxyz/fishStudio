@@ -359,7 +359,7 @@ export default function DataUsageScreen() {
             "Images",
             storageInfo.imagesSize,
             "image-outline",
-            "#7C3AED",
+            "#5A2C96",
             "#EDE9FE"
           )}
         </View>

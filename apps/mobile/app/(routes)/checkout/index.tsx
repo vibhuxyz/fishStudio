@@ -2,25 +2,33 @@ import AddressModal from "@/components/shared/address-modal";
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
 import { useStore } from "@/store";
+import { SLOT_OPTIONS } from "@/constants/delivery-slots";
+import { BASE_DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD, GST_RATE, PACKAGING_CHARGE } from "@/constants/pricing";
 import axiosInstance from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
 import { toast } from "@/utils/toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+type PaymentMethod = "upi" | "card" | "cod";
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function CheckoutScreen() {
   const { user } = useUser();
   const { cart, clearCart } = useStore();
@@ -31,6 +39,7 @@ export default function CheckoutScreen() {
     availableCoupons,
     autoApplied,
     applyCoupon,
+    removeCoupon,
     clearAllCoupons,
     setAutoApplied,
     isCouponApplied,
@@ -39,27 +48,31 @@ export default function CheckoutScreen() {
     fetchAvailableCoupons,
   } = useCouponStore();
 
-  const [selectedSlot, setSelectedSlot] = useState("morning");
+  const { selectedSlot, setSelectedSlot } = useDeliverySlotStore();
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [couponInput, setCouponInput] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [deliveryMetadata, setDeliveryMetadata] = useState({
-    availableSlots: ["morning", "evening"] as string[],
-    instantFee: 20,
-    isStoreOpen: true,
-    cartDeliveryTime: null as number | null,
-    storeName: null as string | null,
-    openingHours: null as string | null,
-  });
+  const couponInputRef = useRef<TextInput>(null);
 
   const selectedAddress = getSelectedAddress();
+
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0),
     [cart],
   );
 
+  // Fetch coupons when store is known
+  useEffect(() => {
+    if (selectedLocation?.storeId) {
+      fetchAvailableCoupons(selectedLocation.storeId, user?.id);
+    }
+  }, [selectedLocation?.storeId, user?.id, fetchAvailableCoupons]);
+
+  // Resolve store from address pincode if not set
   useEffect(() => {
     if (selectedLocation?.storeId || !selectedAddress?.pincode) return;
-
     axiosInstance
       .get(`/auth/api/check-pincode?pincode=${selectedAddress.pincode}`)
       .then(({ data }) => {
@@ -76,139 +89,87 @@ export default function CheckoutScreen() {
         }
       })
       .catch(() => {});
-  }, [selectedLocation?.storeId, selectedAddress?.pincode, selectedAddress?.city, setSelectedLocation]);
+  }, [selectedLocation?.storeId, selectedAddress?.pincode]);
 
-  useEffect(() => {
-    const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
-    const city = selectedLocation?.city || selectedAddress?.city;
-    if (!pincode || cart.length === 0) return;
-
-    const cartItems = cart.map((item) => ({
-      productId: item.id,
-      quantity: item.quantity || 1,
-    }));
-
-    axiosInstance
-      .post("/product/api/validate-cart", {
-        cartItems,
-        pincode,
-        city,
-        storeId: selectedLocation?.storeId || undefined,
-      })
-      .then(({ data }) => {
-        if (!data.success) return;
-        const nextSlots = data.availableSlots || ["morning", "evening"];
-        setDeliveryMetadata({
-          availableSlots: nextSlots,
-          instantFee: data.instantFee || 20,
-          isStoreOpen: data.isStoreOpen !== false,
-          cartDeliveryTime: data.cartDeliveryTime || null,
-          storeName: data.storeName || data.store?.name || null,
-          openingHours: data.openingHours || data.store?.opening_hours || null,
-        });
-        setSelectedSlot((current) =>
-          nextSlots.includes(current) ? current : nextSlots[0] || "morning",
-        );
-      })
-      .catch(() => {});
-  }, [cart, selectedLocation?.storeId, selectedLocation?.pincode, selectedLocation?.city, selectedAddress?.pincode, selectedAddress?.city]);
-
-  useEffect(() => {
-    if (selectedLocation?.storeId) {
-      fetchAvailableCoupons(selectedLocation.storeId, user?.id);
-    }
-  }, [selectedLocation?.storeId, user?.id, fetchAvailableCoupons]);
-
+  // Auto-apply eligible coupon once
   useEffect(() => {
     if (appliedCoupons.length > 0 || autoApplied) return;
-    const eligibleAutoCoupon = availableCoupons.find(
-      (coupon) =>
-        coupon.autoApply &&
-        subtotal >= coupon.minOrderValue &&
-        !isCouponApplied(coupon.code),
+    const eligible = availableCoupons.find(
+      (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code),
     );
-    if (eligibleAutoCoupon) {
-      applyCoupon(eligibleAutoCoupon);
+    if (eligible) {
+      applyCoupon(eligible);
       setAutoApplied(true);
-      toast.success(`Coupon ${eligibleAutoCoupon.code} auto-applied!`);
     }
-  }, [availableCoupons, subtotal, appliedCoupons.length, autoApplied, applyCoupon, isCouponApplied, setAutoApplied]);
+  }, [availableCoupons, subtotal, appliedCoupons.length, autoApplied]);
 
-  // ── Not logged in ────────────────────────────────────────────────────
-  if (!user) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <CheckoutHeader user={user} />
-        <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="lock-closed-outline" size={56} color="#9CA3AF" />
-          <Text className="text-xl font-poppins-bold text-gray-900 mt-5 mb-2">
-            You are not logged in
-          </Text>
-          <Text className="text-gray-500 font-poppins-medium text-center mb-8">
-            Login to continue to checkout and place your order.
-          </Text>
-          <TouchableOpacity
-            className="bg-primary w-full py-3.5 rounded-2xl items-center"
-            onPress={() => router.push("/(routes)/login")}
-          >
-            <Text className="text-white font-poppins-semibold text-base">
-              Login / Sign Up
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Empty cart ───────────────────────────────────────────────────────
-  if (cart.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <CheckoutHeader user={user} />
-        <View className="flex-1 items-center justify-center px-8">
-          <Ionicons name="bag-handle-outline" size={56} color="#9CA3AF" />
-          <Text className="text-xl font-poppins-bold text-gray-900 mt-5 mb-2">
-            Your cart is empty
-          </Text>
-          <TouchableOpacity
-            className="bg-primary w-full py-3.5 rounded-2xl items-center mt-4"
-            onPress={() => router.replace("/(tabs)")}
-          >
-            <Text className="text-white font-poppins-semibold text-base">
-              Browse Products
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const slotExtraCharge =
-    selectedSlot === "instant" ? deliveryMetadata.instantFee : 0;
-  const baseDeliveryCharge = subtotal > 500 ? 0 : 49;
+  // ── Pricing ────────────────────────────────────────────────────────────────
   const isFreeDelivery = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && subtotal >= c.minOrderValue,
   );
-  const deliveryCharge = isFreeDelivery ? 0 : baseDeliveryCharge;
-  const totalDeliveryCost = deliveryCharge + slotExtraCharge;
-  const discount = Math.min(getTotalDiscount(subtotal), subtotal + totalDeliveryCost);
-  const grandTotal = Math.max(0, subtotal + totalDeliveryCost - discount);
+  const baseDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
+  const deliveryCharge = isFreeDelivery ? 0 : baseDelivery;
+  const packagingCharge = PACKAGING_CHARGE;
+  const discount = Math.min(getTotalDiscount(subtotal), subtotal);
+  const gstAmount = Math.round(subtotal * GST_RATE);
+  const grandTotal = Math.max(0, subtotal - discount + deliveryCharge + packagingCharge + gstAmount);
 
+  // ── Apply coupon handler ────────────────────────────────────────────────────
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (isCouponApplied(code)) {
+      toast.error("Coupon already applied");
+      return;
+    }
+    // First check if it's in available list
+    const found = availableCoupons.find((c) => c.code.toUpperCase() === code);
+    if (found) {
+      if (subtotal < found.minOrderValue) {
+        toast.error(`Minimum order ₹${found.minOrderValue} required for this coupon`);
+        return;
+      }
+      applyCoupon(found);
+      setCouponInput("");
+      toast.success(`Coupon ${found.code} applied!`);
+      return;
+    }
+    // Validate from server
+    setCouponLoading(true);
+    try {
+      const { data } = await axiosInstance.post("/product/api/validate-coupon", {
+        code,
+        storeId: selectedLocation?.storeId,
+        userId: user?.id,
+        orderTotal: subtotal,
+      });
+      if (data.valid && data.coupon) {
+        applyCoupon(data.coupon);
+        setCouponInput("");
+        toast.success(`Coupon ${data.coupon.code} applied!`);
+      } else {
+        toast.error(data.message || "Invalid coupon code");
+      }
+    } catch {
+      toast.error("Coupon not found or expired");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // ── Place order ─────────────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
-      toast.error("Please add or select a delivery address first");
+      toast.error("Please select a delivery address");
       return;
     }
     if (!selectedLocation?.storeId) {
-      toast.error("Please set your delivery location first");
+      toast.error("Please set your delivery location");
       return;
     }
-
     setIsPlacingOrder(true);
     try {
-      const orderData = {
+      const { data } = await axiosInstance.post("/order/api/create", {
         storeId: selectedLocation.storeId,
         items: cart.map((item) => ({
           productId: item.id,
@@ -222,7 +183,7 @@ export default function CheckoutScreen() {
         })),
         deliveryDetails: {
           name: selectedAddress.name,
-          phone: selectedAddress.phone || user.phone || "",
+          phone: selectedAddress.phone || user?.phone || "",
           address: `${selectedAddress.street}${selectedAddress.area ? `, ${selectedAddress.area}` : ""}`,
           city: selectedAddress.city,
           pincode: selectedAddress.pincode,
@@ -230,24 +191,20 @@ export default function CheckoutScreen() {
         billDetails: {
           itemTotal: subtotal,
           deliveryCharge,
-          extraCharge: slotExtraCharge,
+          packagingCharge,
+          gstAmount,
           discount,
-          discountBreakdown: appliedCoupons.map((coupon) => ({
-            code: coupon.code,
-            amount: getDiscountForCoupon(coupon, subtotal),
+          discountBreakdown: appliedCoupons.map((c) => ({
+            code: c.code,
+            amount: getDiscountForCoupon(c, subtotal),
           })),
         },
         totalAmount: grandTotal,
-        paymentMethod: "COD",
+        paymentMethod,
         deliverySlot: selectedSlot,
-        couponCode:
-          appliedCoupons.length > 0
-            ? appliedCoupons.map((coupon) => coupon.code).join(",")
-            : undefined,
+        couponCode: appliedCoupons.length > 0 ? appliedCoupons.map((c) => c.code).join(",") : undefined,
         discountAmount: discount,
-      };
-
-      const { data } = await axiosInstance.post("/order/api/create", orderData);
+      });
       clearCart();
       clearAllCoupons();
       haptic.orderPlaced();
@@ -257,388 +214,367 @@ export default function CheckoutScreen() {
         params: { id: data.orderId },
       });
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to place order. Please try again.",
-      );
+      toast.error(error.response?.data?.message || "Failed to place order. Please try again.");
     } finally {
       setIsPlacingOrder(false);
     }
   };
 
-  const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
-  const slotOptions: Array<{
-    key: "instant" | "morning" | "evening";
-    title: string;
-    subtitle: string;
-    badge: string;
-    badgeKind: "charge" | "disabled";
-    emoji: string;
-    disabled?: boolean;
-  }> = [
-    {
-      key: "instant",
-      title: "Instant Delivery (30-45 mins)",
-      subtitle: isInstantAvailable
-        ? "Get it as soon as possible"
-        : "Quick delivery is off while the shop is closed",
-      badge: isInstantAvailable ? `+₹${deliveryMetadata.instantFee}` : "Quick delivery off",
-      badgeKind: isInstantAvailable ? "charge" : "disabled",
-      emoji: "⚡",
-      disabled: !isInstantAvailable,
-    },
-    {
-      key: "morning",
-      title: "Morning Delivery (6 AM – 10 AM)",
-      subtitle: "Fresh delivery before you start your day",
-      badge: "Lowest charge",
-      badgeKind: "charge",
-      emoji: "🌅",
-    },
-    {
-      key: "evening",
-      title: "Evening Delivery (5 PM – 9 PM)",
-      subtitle: "Delivered when you get home",
-      badge: "Lowest charge",
-      badgeKind: "charge",
-      emoji: "🌆",
-    },
-  ];
+  // ── Guard: not logged in ────────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
+        <PageHeader />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <Ionicons name="lock-closed-outline" size={56} color="#A1A1AA" />
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#1A1C1C", marginTop: 20, marginBottom: 8 }}>
+            Not logged in
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(routes)/login")}
+            style={{ backgroundColor: "#5A2C96", width: "100%", paddingVertical: 16, borderRadius: 50, alignItems: "center", marginTop: 16 }}
+          >
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#FFFFFF" }}>Login / Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (cart.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
+        <PageHeader />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <Ionicons name="bag-handle-outline" size={56} color="#A1A1AA" />
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#1A1C1C", marginTop: 20, marginBottom: 8 }}>
+            Your cart is empty
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace("/(tabs)")}
+            style={{ backgroundColor: "#5A2C96", width: "100%", paddingVertical: 16, borderRadius: 50, alignItems: "center", marginTop: 16 }}
+          >
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#FFFFFF" }}>Browse Products</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <CheckoutHeader user={user} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
+      <PageHeader />
 
-      <ScrollView
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {/* ── 0. Order Summary ─────────────────────────────────────── */}
-        <SectionHeader number="0" title="Order Summary" />
-        <View className="mx-4 bg-white rounded-2xl border border-gray-100 p-4">
-          {cart.map((item, idx) => {
-            const weightKg = item.priceBreakdown?.weightGrams
-              ? ((item.priceBreakdown.weightGrams as number) * (item.quantity || 1)) / 1000
-              : null;
-            const options = [
-              weightKg ? `${weightKg.toFixed(1)}` : null,
-              item.cuttingType,
-              item.pieceSize,
-            ]
-              .filter(Boolean)
-              .join(" · ");
-            return (
-              <View
-                key={`${item.id}-${item.cuttingType || ""}-${item.pieceSize || ""}-${idx}`}
-                className={`flex-row items-center ${idx > 0 ? "border-t border-gray-100 pt-3 mt-3" : ""}`}
-              >
-                <Image
-                  source={{ uri: item.image || "https://via.placeholder.com/80" }}
-                  className="w-14 h-14 rounded-xl bg-gray-100"
-                  resizeMode="cover"
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+
+        {/* ── Delivery Address ─────────────────────────────────────── */}
+        <SectionTitle title="Delivery Address" right={
+          <TouchableOpacity onPress={() => setShowAddressModal(true)}>
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#5A2C96" }}>Add New</Text>
+          </TouchableOpacity>
+        } />
+
+        <View style={{ paddingHorizontal: 16, gap: 10 }}>
+          {addresses && addresses.length > 0 ? (
+            addresses.map((addr: any, i: number) => {
+              const isSelected =
+                selectedAddress?.id === addr.id ||
+                (i === 0 && !selectedAddress);
+              return (
+                <AddressCard
+                  key={addr.id || i}
+                  address={addr}
+                  isSelected={isSelected}
+                  isDefault={i === 0}
+                  onPress={() => {/* address selection handled by store */}}
                 />
-                <View className="flex-1 ml-3">
-                  <Text
-                    className="text-sm font-poppins-bold text-gray-900"
-                    numberOfLines={1}
-                  >
-                    {item.title}
-                  </Text>
-                  {options ? (
-                    <Text
-                      className="text-xs text-gray-500 font-poppins-medium mt-0.5"
-                      numberOfLines={1}
-                    >
-                      {options}
-                    </Text>
-                  ) : null}
-                  <Text className="text-xs text-gray-900 font-poppins-semibold mt-0.5">
-                    Qty: {item.quantity || 1}
-                  </Text>
-                </View>
-                <Text className="text-sm font-poppins-bold text-gray-900">
-                  ₹{(item.price * (item.quantity || 1)).toFixed(0)}
-                </Text>
-              </View>
-            );
-          })}
+              );
+            })
+          ) : (
+            <TouchableOpacity
+              onPress={() => setShowAddressModal(true)}
+              style={{
+                borderWidth: 1.5,
+                borderColor: "#E2E2E2",
+                borderRadius: 16,
+                padding: 16,
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#5A2C96" }}>
+                + Add delivery address
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* ── 1. Delivery Address ──────────────────────────────────── */}
-        <SectionHeader number="1" title="Delivery Address" />
-        {selectedAddress ? (
-          <View className="mx-4 bg-primary/5 rounded-2xl border-2 border-primary p-4">
-            <View className="flex-row items-start">
-              <View className="w-10 h-10 rounded-full bg-white items-center justify-center mr-3">
-                <Ionicons name="location-outline" size={20} color="#6C3CE1" />
-              </View>
-              <View className="flex-1">
-                <View className="flex-row items-center mb-1">
-                  <Text
-                    style={{
-                      fontFamily: "Poppins-Bold",
-                      fontWeight: Platform.OS === "android" ? "700" : "normal",
-                    }}
-                    className="text-primary uppercase tracking-wider text-sm mr-1.5"
-                  >
-                    {selectedAddress.label || "HOME"}
-                  </Text>
-                  <Ionicons name="checkmark-circle" size={16} color="#6C3CE1" />
-                </View>
-                <Text className="text-sm font-poppins-bold text-gray-900">
-                  {selectedAddress.name}
-                </Text>
-                <Text className="text-sm text-gray-600 font-poppins-medium mt-0.5 leading-5">
-                  {selectedAddress.street}
-                  {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
-                  {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
-                  {selectedAddress.state ? `, ${selectedAddress.state}` : ""}
-                  {selectedAddress.pincode ? ` – ${selectedAddress.pincode}` : ""}
-                </Text>
-                {(selectedAddress.phone || user.phone) && (
-                  <View className="flex-row items-center mt-2">
-                    <Ionicons name="call-outline" size={14} color="#6B7280" />
-                    <Text className="text-sm text-gray-600 font-poppins-medium ml-1.5">
-                      {selectedAddress.phone || user.phone}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            <View className="border-t border-primary/20 mt-3 pt-3">
-              <Text className="text-xs text-gray-500 font-poppins-medium italic">
-                To change the address, go back to your cart and update your delivery location.
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity
-            className="mx-4 bg-white rounded-2xl border border-gray-200 p-4"
-            onPress={() => setShowAddressModal(true)}
-          >
-            <Text className="text-sm text-orange-500 font-poppins-semibold">
-              Tap to add or select a delivery address
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* ── 2. Delivery Slot ─────────────────────────────────────── */}
-        <SectionHeader number="2" title="Delivery Slot" />
-
-        {!deliveryMetadata.isStoreOpen && (
-          <View className="mx-4 mb-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
-            <Text className="text-sm font-poppins-bold text-amber-900">
-              Shop is closed right now. Scheduled ordering is still available.
-            </Text>
-            <Text className="text-xs text-amber-700 font-poppins-medium mt-1 leading-5">
-              Quick delivery is off. Please choose a morning or evening slot.
-            </Text>
-          </View>
-        )}
-
-        <View className="mx-4 gap-2.5">
-          {slotOptions.map((opt) => {
-            const selected = selectedSlot === opt.key && !opt.disabled;
+        {/* ── Delivery Slot ────────────────────────────────────────── */}
+        <SectionTitle title="Delivery Slot" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+          {SLOT_OPTIONS.map((slot) => {
+            const selected = selectedSlot === slot.key;
             return (
               <TouchableOpacity
-                key={opt.key}
-                activeOpacity={opt.disabled ? 1 : 0.8}
-                disabled={opt.disabled}
-                onPress={() => !opt.disabled && setSelectedSlot(opt.key)}
-                className={`rounded-2xl px-4 py-3.5 flex-row items-center ${
-                  selected
-                    ? "bg-primary/5 border-2 border-primary"
-                    : opt.disabled
-                      ? "bg-gray-50 border border-gray-100"
-                      : "bg-white border border-gray-200"
-                }`}
+                key={slot.key}
+                onPress={() => setSelectedSlot(slot.key)}
+                activeOpacity={0.8}
+                style={{
+                  width: 110,
+                  paddingVertical: 14,
+                  paddingHorizontal: 12,
+                  borderRadius: 16,
+                  borderWidth: selected ? 2 : 1.5,
+                  borderColor: selected ? "#5A2C96" : "#E2E2E2",
+                  backgroundColor: "#FFFFFF",
+                  alignItems: "flex-start",
+                }}
               >
-                <Text style={{ fontSize: 28, marginRight: 12 }}>{opt.emoji}</Text>
-                <View className="flex-1 pr-2">
-                  <Text
-                    className={`text-[15px] font-poppins-bold leading-tight ${
-                      opt.disabled ? "text-gray-400" : "text-gray-900"
-                    }`}
-                  >
-                    {opt.title}
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#898B8A", letterSpacing: 0.5, marginBottom: 4 }}>
+                  {slot.day}
+                </Text>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C", lineHeight: 20 }}>
+                  {slot.time}
+                </Text>
+                {slot.badge && (
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#5A2C96", marginTop: 4 }}>
+                    {slot.badge}
                   </Text>
-                  <Text
-                    className={`text-xs font-poppins-medium mt-0.5 leading-4 ${
-                      opt.disabled ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
-                    {opt.subtitle}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <Text
-                    className={`text-xs font-poppins-semibold ${
-                      opt.badgeKind === "disabled"
-                        ? "text-gray-400"
-                        : opt.key === "instant"
-                          ? "text-primary"
-                          : "text-green-600"
-                    }`}
-                  >
-                    {opt.badge}
-                  </Text>
-                  {selected && (
-                    <View className="mt-1">
-                      <Ionicons name="checkmark-circle" size={22} color="#6C3CE1" />
-                    </View>
-                  )}
-                </View>
+                )}
               </TouchableOpacity>
             );
           })}
+        </ScrollView>
+
+        {/* ── Payment Method ───────────────────────────────────────── */}
+        <SectionTitle title="Payment Method" />
+        <View style={{ paddingHorizontal: 16, gap: 0 }}>
+          <PaymentOption
+            id="upi"
+            selected={paymentMethod === "upi"}
+            onPress={() => setPaymentMethod("upi")}
+            icon={<MaterialCommunityIcons name="bank-transfer" size={22} color="#5A2C96" />}
+            label="UPI (GPay / PhonePe)"
+          />
+          <PaymentOption
+            id="card"
+            selected={paymentMethod === "card"}
+            onPress={() => setPaymentMethod("card")}
+            icon={<MaterialCommunityIcons name="credit-card-outline" size={22} color="#676968" />}
+            label="Credit / Debit Card"
+            subtitle="Visa, Mastercard, Amex"
+            rightChevron
+          />
+          <PaymentOption
+            id="cod"
+            selected={paymentMethod === "cod"}
+            onPress={() => setPaymentMethod("cod")}
+            icon={<MaterialCommunityIcons name="cash" size={22} color="#676968" />}
+            label="Cash on Delivery"
+            badge="AVAILABLE"
+          />
         </View>
 
-        {/* ── 3. Payment Method ────────────────────────────────────── */}
-        <SectionHeader number="3" title="Payment Method" />
-
-        <View className="mx-4 bg-primary/5 rounded-2xl border-2 border-primary p-4">
-          <View className="flex-row items-center">
-            <MaterialCommunityIcons name="credit-card-outline" size={26} color="#6C3CE1" />
-            <View className="flex-1 ml-3">
-              <Text className="text-[15px] font-poppins-bold text-gray-900">
-                Pay on Delivery
-              </Text>
-              <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                Cash, UPI or Card at your doorstep
-              </Text>
-            </View>
-            <Ionicons name="checkmark-circle" size={22} color="#6C3CE1" />
-          </View>
-        </View>
-
-        <View className="mx-4 mt-2 flex-row items-center">
-          <Text className="text-xs text-gray-500 font-poppins-medium italic flex-1">
-            Online payment options (Credit Card, Wallets) coming soon.
-          </Text>
-          <Ionicons name="chevron-forward" size={14} color="#9CA3AF" />
-        </View>
-
-        {/* ── Bill Details + Place Order ────────────────────────────── */}
-        <View className="mx-4 mt-5 bg-white rounded-2xl border border-gray-100 p-4">
-          <Text
-            style={{
-              fontFamily: "Poppins-Bold",
-              fontWeight: Platform.OS === "android" ? "700" : "normal",
-            }}
-            className="text-lg text-gray-900 mb-3"
-          >
-            Bill Details
+        {/* ── Apply Coupon ─────────────────────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#898B8A", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
+            Apply Coupon
           </Text>
 
-          <View className="flex-row justify-between mb-2.5">
-            <Text className="text-sm text-gray-600 font-poppins-medium">Item Total</Text>
-            <Text className="text-sm text-gray-900 font-poppins-semibold">
-              ₹{subtotal.toFixed(2)}
-            </Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <View style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#EFEFEF",
+              borderRadius: 12,
+              paddingHorizontal: 12,
+            }}>
+              <MaterialCommunityIcons name="ticket-percent-outline" size={18} color="#898B8A" />
+              <TextInput
+                ref={couponInputRef}
+                value={couponInput}
+                onChangeText={(t) => setCouponInput(t.toUpperCase())}
+                placeholder="Enter coupon code"
+                placeholderTextColor="#A1A1AA"
+                autoCapitalize="characters"
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  paddingHorizontal: 10,
+                  fontFamily: "Inter-SemiBold",
+                  fontSize: 14,
+                  color: "#1A1C1C",
+                }}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={handleApplyCoupon}
+              disabled={couponLoading || !couponInput.trim()}
+              style={{
+                backgroundColor: "#E2E2E2",
+                paddingHorizontal: 20,
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {couponLoading ? (
+                <ActivityIndicator size="small" color="#5A2C96" />
+              ) : (
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }}>Apply</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
-          <View className="flex-row justify-between mb-2.5">
-            <View className="flex-row items-center">
-              <Ionicons name="car-outline" size={16} color="#6B7280" />
-              <Text className="text-sm text-gray-600 font-poppins-medium ml-1.5">
-                Delivery Charge
-              </Text>
-            </View>
-            <Text className="text-sm text-gray-900 font-poppins-semibold">
-              {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}.00`}
-            </Text>
-          </View>
-
-          {slotExtraCharge > 0 && (
-            <View className="flex-row justify-between mb-2.5">
-              <Text className="text-sm text-gray-600 font-poppins-medium">
-                Instant Delivery Fee
-              </Text>
-              <Text className="text-sm text-gray-900 font-poppins-semibold">
-                ₹{slotExtraCharge}.00
-              </Text>
-            </View>
-          )}
-
+          {/* Applied coupon success banners */}
           {appliedCoupons.map((coupon) => {
-            const amount = getDiscountForCoupon(coupon, subtotal);
-            if (amount <= 0 && coupon.discountType !== "free_delivery") return null;
+            const saved = getDiscountForCoupon(coupon, subtotal);
             return (
-              <View key={coupon.code} className="flex-row justify-between mb-2.5">
-                <Text className="text-sm text-gray-600 font-poppins-medium">
-                  Coupon ({coupon.code})
+              <View
+                key={coupon.code}
+                style={{
+                  marginTop: 10,
+                  backgroundColor: "rgba(90, 44, 150,0.1)",
+                  borderRadius: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#5A2C96", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                </View>
+                <Text style={{ flex: 1, fontFamily: "Inter-SemiBold", fontSize: 13, color: "#300861" }}>
+                  Coupon '{coupon.code}' applied!{saved > 0 ? ` You saved ₹${saved.toFixed(2)}` : " Free delivery!"}
                 </Text>
-                <Text className="text-sm text-green-600 font-poppins-semibold">
-                  {coupon.discountType === "free_delivery"
-                    ? "FREE Delivery"
-                    : `-₹${amount.toFixed(0)}`}
-                </Text>
+                <TouchableOpacity onPress={() => removeCoupon?.(coupon.code)}>
+                  <Ionicons name="close-circle" size={18} color="#5A2C96" />
+                </TouchableOpacity>
               </View>
             );
           })}
 
-          <View className="border-t border-gray-100 mt-2 pt-3 flex-row justify-between items-center mb-4">
-            <Text
+          {/* Available coupon chips (from backend) */}
+          {availableCoupons.length > 0 && appliedCoupons.length === 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+              {availableCoupons.slice(0, 5).map((c) => (
+                <TouchableOpacity
+                  key={c.code}
+                  onPress={() => { setCouponInput(c.code); couponInputRef.current?.focus(); }}
+                  style={{
+                    borderWidth: 1.5,
+                    borderColor: "#5A2C96",
+                    borderRadius: 50,
+                    paddingHorizontal: 14,
+                    paddingVertical: 6,
+                    marginRight: 8,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#5A2C96" }}>{c.code}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* ── Order Summary ────────────────────────────────────────── */}
+        <SectionTitle title="Order Summary" />
+        <View style={{ paddingHorizontal: 16 }}>
+          {/* Cart items */}
+          {cart.map((item, idx) => (
+            <View
+              key={`${item.id}-${idx}`}
               style={{
-                fontFamily: "Poppins-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 14,
               }}
-              className="text-lg text-gray-900"
             >
-              Total Payable
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Poppins-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-              className="text-xl text-gray-900"
-            >
+              <Image
+                source={{ uri: item.image || "https://via.placeholder.com/56" }}
+                style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "#E2E2E2" }}
+                resizeMode="cover"
+              />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 2 }}>
+                  Qty: {item.quantity || 1}
+                </Text>
+              </View>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C" }}>
+                ₹{(item.price * (item.quantity || 1)).toFixed(2)}
+              </Text>
+            </View>
+          ))}
+
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: "#EFEFEF", marginVertical: 8 }} />
+
+          {/* Bill rows */}
+          <BillRow label="Item Total (MRP)" value={`₹${subtotal.toFixed(2)}`} />
+          {discount > 0 && <BillRow label="Product Discount" value={`-₹${discount.toFixed(2)}`} valueColor="#22C55E" />}
+          <BillRow
+            label="Delivery Fee"
+            value={deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}.00`}
+            strikeValue={deliveryCharge === 0 ? `₹${baseDelivery}.00` : undefined}
+            valueColor={deliveryCharge === 0 ? "#22C55E" : undefined}
+          />
+          <BillRow label="Packaging Charges" value={`₹${packagingCharge}.00`} />
+          <BillRow label="Taxes (incl. GST)" value={`₹${gstAmount}.00`} />
+
+          {/* Total */}
+          <View style={{ height: 1, backgroundColor: "#EFEFEF", marginVertical: 12 }} />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>Total Amount</Text>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#5A2C96" }}>
               ₹{grandTotal.toFixed(2)}
             </Text>
           </View>
 
-          <View className="flex-row items-start bg-gray-50 rounded-xl px-3 py-2.5 mb-4">
-            <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
-            <Text className="text-xs text-gray-600 font-poppins-medium ml-2 flex-1 leading-5">
-              By placing the order, you agree to our terms and conditions. Estimated delivery time:{" "}
-              {selectedSlot === "instant" ? "30-45 mins" : selectedSlot === "morning" ? "6 AM – 10 AM" : "5 PM – 9 PM"}.
-            </Text>
-          </View>
-
+          {/* Place Order button */}
           <TouchableOpacity
             onPress={handlePlaceOrder}
             disabled={isPlacingOrder || !selectedAddress || !selectedLocation?.storeId}
             activeOpacity={0.85}
-            className={`rounded-2xl py-4 items-center ${
-              isPlacingOrder || !selectedAddress || !selectedLocation?.storeId
-                ? "bg-gray-300"
-                : "bg-primary"
-            }`}
           >
-            {isPlacingOrder ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text
-                style={{
-                  fontFamily: "Poppins-Bold",
-                  fontWeight: Platform.OS === "android" ? "700" : "normal",
-                }}
-                className="text-white text-base tracking-widest uppercase"
-              >
-                Place Order
-              </Text>
-            )}
+            <LinearGradient
+              colors={["#0DB3D9", "#5A2C96"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                borderRadius: 50,
+                paddingVertical: 18,
+                alignItems: "center",
+                opacity: isPlacingOrder || !selectedAddress || !selectedLocation?.storeId ? 0.5 : 1,
+              }}
+            >
+              {isPlacingOrder ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 17, color: "#FFFFFF", letterSpacing: 0.3 }}>
+                  Place Order
+                </Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
-        </View>
 
-        {/* ── Trust icons ──────────────────────────────────────────── */}
-        <View className="flex-row items-start justify-around px-4 mt-6">
-          <TrustBadge icon="shield-checkmark-outline" label="SAFE & SECURE" />
-          <TrustBadge icon="cube-outline" label="CONTACTLESS" />
-          <TrustBadge icon="leaf-outline" label="ECO FRIENDLY" />
+          {/* Footer note */}
+          <Text style={{
+            fontFamily: "Inter-Regular",
+            fontSize: 9,
+            color: "#A1A1AA",
+            textAlign: "center",
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            marginTop: 12,
+            lineHeight: 14,
+          }}>
+            By placing an order, you agree to our{"\n"}Terms of Service and Freshness Guarantee.
+          </Text>
         </View>
       </ScrollView>
 
@@ -651,66 +587,137 @@ export default function CheckoutScreen() {
   );
 }
 
-// ── Helper components ─────────────────────────────────────────────────
-function CheckoutHeader({ user }: { user: any }) {
+// ─── Helper components ────────────────────────────────────────────────────────
+
+function PageHeader() {
   return (
-    <View className="bg-white px-4 py-3.5 flex-row items-center justify-between border-b border-gray-100">
-      <TouchableOpacity
-        onPress={() => router.back()}
-        className="w-10 h-10 bg-primary rounded-xl items-center justify-center"
-      >
-        <MaterialCommunityIcons name="fish" size={22} color="#fff" />
+    <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, flexDirection: "row", alignItems: "center" }}>
+      <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12, padding: 4 }}>
+        <Ionicons name="arrow-back" size={22} color="#300861" />
       </TouchableOpacity>
-      <Text
-        style={{
-          fontFamily: "Poppins-Bold",
-          fontWeight: Platform.OS === "android" ? "700" : "normal",
-          letterSpacing: 2,
-        }}
-        className="text-base text-gray-600 uppercase"
-      >
-        Secure Checkout
+      <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#300861", letterSpacing: -0.3, lineHeight: 26 }}>
+        {"MEAT. FISH.\nREPEAT"}
       </Text>
-      <View className="flex-row items-center">
-        <View className="w-9 h-9 bg-primary rounded-full items-center justify-center">
-          <Text className="text-white font-poppins-bold text-sm">
-            {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
-          </Text>
+    </View>
+  );
+}
+
+function SectionTitle({ title, right }: { title: string; right?: React.ReactNode }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12 }}>
+      <Text style={{ fontFamily: "Inter-Bold", fontSize: 22, color: "#1A1C1C" }}>{title}</Text>
+      {right}
+    </View>
+  );
+}
+
+function AddressCard({ address, isSelected, isDefault, onPress }: any) {
+  const isHome = (address.label || "").toLowerCase() === "home";
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{
+        borderWidth: isSelected ? 2 : 1.5,
+        borderColor: isSelected ? "#5A2C96" : "#E2E2E2",
+        borderRadius: 16,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F3F3", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+          <Ionicons name={isHome ? "home-outline" : "briefcase-outline"} size={18} color="#676968" />
         </View>
-        <Ionicons name="chevron-down" size={16} color="#9CA3AF" style={{ marginLeft: 4 }} />
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C", marginRight: 8 }}>
+              {address.label || address.name || "Address"} {isHome ? "(Primary)" : ""}
+            </Text>
+            {isDefault && (
+              <View style={{ backgroundColor: "#EFEFEF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#676968", letterSpacing: 0.5 }}>DEFAULT</Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#676968", lineHeight: 18 }}>
+            {address.street}{address.area ? `, ${address.area}` : ""}{address.city ? `, ${address.city}` : ""}
+          </Text>
+          {address.phone && (
+            <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#1A1C1C", marginTop: 4 }}>
+              +91 {address.phone}
+            </Text>
+          )}
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-function SectionHeader({ number, title }: { number: string; title: string }) {
+function PaymentOption({ id, selected, onPress, icon, label, subtitle, rightChevron, badge }: any) {
   return (
-    <View className="flex-row items-center px-4 py-4 mt-2">
-      <View className="w-7 h-7 bg-primary/10 rounded-full items-center justify-center mr-3">
-        <Text className="text-primary text-sm font-poppins-bold">{number}</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 16,
+        paddingHorizontal: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: "#F3F3F3",
+      }}
+    >
+      {/* Radio */}
+      <View style={{
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: selected ? 6 : 2,
+        borderColor: selected ? "#5A2C96" : "#A1A1AA",
+        marginRight: 14,
+      }} />
+
+      {/* Icon */}
+      <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#F3F3F3", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+        {icon}
       </View>
-      <Text
-        style={{
-          fontFamily: "Poppins-Bold",
-          fontWeight: Platform.OS === "android" ? "700" : "normal",
-        }}
-        className="text-[22px] text-gray-900"
-      >
-        {title}
-      </Text>
-    </View>
+
+      {/* Label */}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#1A1C1C" }}>{label}</Text>
+        {subtitle && <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 1 }}>{subtitle}</Text>}
+      </View>
+
+      {badge && (
+        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#A1A1AA", letterSpacing: 0.5 }}>{badge}</Text>
+      )}
+      {rightChevron && (
+        <Ionicons name="chevron-forward" size={16} color="#A1A1AA" />
+      )}
+    </TouchableOpacity>
   );
 }
 
-function TrustBadge({ icon, label }: { icon: any; label: string }) {
+function BillRow({ label, value, strikeValue, valueColor }: {
+  label: string;
+  value: string;
+  strikeValue?: string;
+  valueColor?: string;
+}) {
   return (
-    <View className="items-center">
-      <View className="w-12 h-12 bg-gray-100 rounded-full items-center justify-center mb-1.5">
-        <Ionicons name={icon} size={22} color="#6B7280" />
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+      <Text style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#676968" }}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {strikeValue && (
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#A1A1AA", textDecorationLine: "line-through" }}>
+            {strikeValue}
+          </Text>
+        )}
+        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: valueColor || "#1A1C1C" }}>
+          {value}
+        </Text>
       </View>
-      <Text className="text-[10px] font-poppins-bold text-gray-500 tracking-wider">
-        {label}
-      </Text>
     </View>
   );
 }

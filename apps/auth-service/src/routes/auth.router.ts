@@ -30,6 +30,8 @@ import {
   deleteUserAddress,
   getUser,
   logOutUser,
+  updateUserProfile,
+  deleteUser,
   refreshToken,
   sendOtpToUser,
   verifyOtpAndLogin,
@@ -66,7 +68,7 @@ import {
   verifyStaff,
 } from "../controller/staff.auth.controller.js";
 
-import { saveCart, clearCart } from "../controller/cart.controller.js";
+import { saveCart, clearCart, getCart } from "../controller/cart.controller.js";
 
 const router: Router = express.Router();
 
@@ -75,6 +77,8 @@ router.post("/send-otp", otpRateLimiter, sendOtpToUser);
 router.post("/verify-otp", authRateLimiter, verifyOtpAndLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
+router.put("/update-user-profile", isAuthenticated, isUser, updateUserProfile);
+router.delete("/delete-user", isAuthenticated, isUser, deleteUser);
 
 // user address routes
 router.post("/add-address", isAuthenticated, isUser, addUserAddress);
@@ -158,5 +162,6 @@ router.put(
 // ── Cart (server-side persistence for abandoned cart detection) ───────────
 router.post("/save-cart",  isAuthenticated, isUser, saveCart);
 router.post("/clear-cart", isAuthenticated, isUser, clearCart);
+router.get("/get-cart",    isAuthenticated, isUser, getCart);
 
 export default router;

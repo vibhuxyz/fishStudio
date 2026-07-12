@@ -83,14 +83,17 @@ export function useAddress() {
   // Add new address
   const addNewAddress = async (data: {
     name: string;
-    label: "Home" | "Work" | "Other";
+    label: "Home" | "Work" | "Other" | "Gift";
+    savedAs?: string;
     street: string;
     area?: string;
+    landmark?: string;
     city: string;
     state?: string;
     pincode: string;
     phone?: string;
     country: string;
+    deliveryInstructions?: string;
   }) => {
     const response = await axiosInstance.post("/auth/api/add-address", {
       address: {

@@ -620,6 +620,16 @@ export const cancelOrder = async (
         ),
       );
     }
+    // A paid order is still PENDING until the seller accepts it. Plain cancel
+    // restores stock without refunding, so refuse it here — a paid order must
+    // go through the refund flow instead.
+    if (order.paymentStatus === "COMPLETED") {
+      return next(
+        new ValidationError(
+          "This order is already paid and cannot be cancelled here. Please request a refund instead.",
+        ),
+      );
+    }
 
     // Mark cancelled in Postgres
     const cancelled = await prismaPostgres.order.update({

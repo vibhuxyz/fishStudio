@@ -46,6 +46,19 @@ export interface BackendProduct {
   favorites: any[];
   status: "Active" | "NonActive";
   basePricePerKg?: number | null;
+  // Premium badges computed by the storefront API (e.g. "Best Seller").
+  badges?: string[];
+
+  // Product detail page content
+  origin?: string | null;
+  source?: string | null;
+  shelfLife?: string | null;
+  storageInstructions?: string | null;
+  cookingTips?: string[];
+  highlightDescription?: string | null;
+  nutritionProtein?: string | null;
+  nutritionOmega3?: string | null;
+  nutritionCalories?: string | null;
 }
 
 // 2. The transformed shape your Frontend Components use
@@ -84,4 +97,7 @@ export interface Product {
   // Derived logic
   isBestseller: boolean;
   isFavorite: boolean;
+
+  // Premium badges computed by the storefront API (e.g. "Best Seller").
+  badges?: string[];
 }

@@ -88,7 +88,7 @@ export default function FloatingTabBar() {
                   style={
                     active
                       ? {
-                          backgroundColor: "#6C3CE115",
+                          backgroundColor: "#5A2C9615",
                           borderRadius: 12,
                           padding: 7,
                         }
@@ -98,7 +98,7 @@ export default function FloatingTabBar() {
                   <Feather
                     name={tab.icon}
                     size={21}
-                    color={active ? "#6C3CE1" : "#94A3B8"}
+                    color={active ? "#5A2C96" : "#94A3B8"}
                   />
                 </View>
 
@@ -109,7 +109,7 @@ export default function FloatingTabBar() {
                       position: "absolute",
                       top: 2,
                       right: 2,
-                      backgroundColor: "#6C3CE1",
+                      backgroundColor: "#5A2C96",
                       borderRadius: 8,
                       minWidth: 16,
                       height: 16,

@@ -6,7 +6,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 export interface Address {
   id: string;
   name: string;
-  label: "Home" | "Work" | "Other";
+  label: "Home" | "Work" | "Other" | "Gift";
+  savedAs?: string;
   street: string;
   area?: string;
   landmark?: string;
@@ -15,6 +16,7 @@ export interface Address {
   pincode: string;
   phone?: string;
   country: string;
+  deliveryInstructions?: string;
   isDefault: boolean;
   userId: string;
   createdAt: string;

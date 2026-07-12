@@ -60,6 +60,34 @@ export const saveCart = async (req: any, res: Response, next: NextFunction) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
+   GET /api/get-cart
+   Returns the user's saved cart so it can be restored on another device /
+   after re-login. Returns an empty cart if none exists or it was converted.
+───────────────────────────────────────────────────────────────────────── */
+export const getCart = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id as string;
+    const cart = await prisma.abandoned_carts.findFirst({ where: { userId } });
+
+    if (!cart || cart.isConverted) {
+      return res
+        .status(200)
+        .json({ success: true, items: [], storeId: null, storeName: null });
+    }
+
+    return res.status(200).json({
+      success: true,
+      items: Array.isArray(cart.items) ? cart.items : [],
+      storeId: cart.storeId ?? null,
+      storeName: cart.storeName ?? null,
+      totalAmount: cart.totalAmount ?? 0,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
    POST /api/clear-cart
    Marks the user's cart as converted (order placed).
    Called by the frontend after a successful order creation.

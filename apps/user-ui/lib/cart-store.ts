@@ -20,14 +20,12 @@ function scheduleSaveCart(
   if (_saveCartTimer) clearTimeout(_saveCartTimer);
   _saveCartTimer = setTimeout(async () => {
     try {
+      // Persist the FULL cart line (options, size, price breakdown, product)
+      // so it can be restored exactly on another device / after re-login —
+      // not just a lite snapshot. The abandoned-cart reminder only reads
+      // items.length, so the richer shape is safe.
       await axiosInstance.post("/auth/api/save-cart", {
-        items: items.map((i) => ({
-          productId: i.product.id,
-          title:     i.product.name ?? (i.product as any).title,
-          image:     i.product.image ?? (i.product.images as any)?.[0]?.url,
-          quantity:  i.quantity,
-          price:     i.product.price ?? (i.product as any).sale_price,
-        })),
+        items,
         storeId,
         storeName,
         totalAmount,
@@ -36,6 +34,23 @@ function scheduleSaveCart(
       // Silently ignore — this is background persistence only
     }
   }, 5_000); // 5-second debounce
+}
+
+/** Stable signature for a cart line so the same product+options dedupes. */
+function cartItemSignature(i: CartItem): string {
+  return [i.product?.id, i.cuttingType?.id, i.pieceSize?.id, i.size].join("|");
+}
+
+/** Merge server-restored items into local items, deduping by signature. */
+function mergeCartItems(local: CartItem[], incoming: CartItem[]): CartItem[] {
+  const bySig = new Map<string, CartItem>();
+  for (const item of local) bySig.set(cartItemSignature(item), item);
+  for (const item of incoming) {
+    const sig = cartItemSignature(item);
+    // Local edits win for a line that exists on both devices.
+    if (!bySig.has(sig)) bySig.set(sig, item);
+  }
+  return [...bySig.values()];
 }
 
 async function clearServerCart() {
@@ -100,6 +115,8 @@ interface CartState {
   totalItems: () => number;
   totalPrice: () => number;
   clearCart: () => void;
+  /** Restore the user's server-saved cart (cross-device) and merge with local. */
+  loadServerCart: () => Promise<void>;
   syncItems: () => Promise<any>;
   deliveryMetadata: {
     cartDeliveryTime: number | null;
@@ -386,6 +403,34 @@ export const useCartStore = create<CartState>()(
         openingHours: null,
       },
     });
+  },
+
+  loadServerCart: async () => {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/get-cart");
+      if (!data?.success || !Array.isArray(data.items) || data.items.length === 0) {
+        return;
+      }
+      // Only accept the rich cart shape — legacy lite snapshots (productId only,
+      // no full product/options) can't rebuild a valid line, so ignore them.
+      const restorable: CartItem[] = data.items.filter(
+        (i: any) => i?.product?.id && i?.cuttingType && i?.pieceSize,
+      );
+      if (restorable.length === 0) return;
+
+      set((state) => {
+        const merged = mergeCartItems(state.items, restorable);
+        const total = merged.reduce((sum, i) => sum + (i.totalPayable ?? 0), 0);
+        // Keep the server copy in sync with the merged result.
+        scheduleSaveCart(merged, data.storeId ?? state.cartStoreId, state.deliveryMetadata.storeName, total);
+        return {
+          items: merged,
+          cartStoreId: data.storeId ?? state.cartStoreId,
+        };
+      });
+    } catch {
+      // Non-critical — fall back to whatever is in local storage.
+    }
   },
 
   syncItems: async () => {

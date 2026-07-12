@@ -19,6 +19,11 @@ import {
   updateProduct,
   updateProductStock,
   validateCart,
+  getHomepageSections,
+  trackProductView,
+  getRecentlyViewed,
+  getForYou,
+  mergeActivity,
 } from "../controllers/product/product.controller.js";
 import {
   createCategory,
@@ -58,6 +63,11 @@ import {
 
 import { getAdminSellerInventory } from "../controllers/product/admin.inventory.controller.js";
 import { getProductStock } from "../controllers/product/stock.controller.js";
+import {
+  createReview,
+  deleteReview,
+  getProductReviews,
+} from "../controllers/product/review.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller, isSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
@@ -240,8 +250,17 @@ router.get(
 router.get("/stock/:productId", getProductStock);
 
 router.get("/get-all-products", getStoreProducts);
+// ── Home sections + user activity (public; auth optional) ────────────────────
+router.get("/get-homepage-sections", getHomepageSections);
+router.post("/track-view", trackProductView);
+router.get("/recently-viewed", getRecentlyViewed);
+router.get("/for-you", getForYou);
+router.post("/merge-activity", mergeActivity);
 router.post("/validate-cart", validateCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
+router.get("/get-product-reviews/:productId", getProductReviews);
+router.post("/create-review", isAuthenticated, createReview);
+router.delete("/delete-review/:reviewId", isAuthenticated, deleteReview);
 router.get("/public/store-offers/:storeId", getStorePublicOffers);
 router.get(
   "/get-catalog-products",

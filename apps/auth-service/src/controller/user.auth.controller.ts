@@ -333,12 +333,18 @@ export const addUserAddress = async (
     // Add new address with a generated ID if not present
     const newAddress = {
       id: address.id || new Date().getTime().toString(),
+      label: address.label || "Home",
+      savedAs: address.savedAs || undefined,
       name: address.name,
       phone: address.phone,
       street: address.street,
+      area: address.area || undefined,
+      landmark: address.landmark || undefined,
       city: address.city,
       state: address.state,
       pincode: address.pincode,
+      country: address.country || "India",
+      deliveryInstructions: address.deliveryInstructions || undefined,
       isDefault: Boolean(address.isDefault),
     };
     addresses.push(newAddress);
@@ -427,4 +433,105 @@ export const logOutUser = async (req: any, res: Response) => {
   clearCookie(res, "refresh_token");
 
   res.status(200).json({ success: true });
+};
+
+// Edit Profile — updates the user's name and email. Phone number is the login
+// identity and intentionally not editable here.
+export const updateUserProfile = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { name, email } = req.body ?? {};
+
+    const data: { name?: string; email?: string } = {};
+    if (typeof name === "string" && name.trim()) data.name = name.trim();
+    if (typeof email === "string") {
+      const trimmed = email.trim();
+      if (trimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return next(new ValidationError("Please enter a valid email address"));
+      }
+      data.email = trimmed || (null as any);
+    }
+
+    if (Object.keys(data).length === 0) {
+      return next(new ValidationError("Nothing to update"));
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data,
+    });
+
+    // Invalidate the cached auth payload so the new profile is served next request.
+    const token =
+      req.cookies["access_token"] || req.headers.authorization?.split(" ")[1];
+    if (token) {
+      try {
+        await redis.del(`auth:${hashToken(token)}`);
+      } catch {
+        // Non-fatal: profile was still updated in DB.
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    // Mongo unique index violation on email.
+    if (error?.code === "P2002") {
+      return next(new ValidationError("That email is already in use"));
+    }
+    next(error);
+  }
+};
+
+// Delete Account — permanently removes the user and their personal data from
+// Mongo, then revokes the session. Past orders live in Postgres and are kept
+// for business/legal records (they reference the userId as a plain string).
+export const deleteUser = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next(new NotFoundError("User not found"));
+
+    // Remove personal data. Each is best-effort so a missing collection or
+    // already-empty relation never blocks the account deletion.
+    await prisma.favorites
+      .deleteMany({ where: { userId } })
+      .catch(() => {});
+    await (prisma as any).abandoned_carts
+      ?.deleteMany({ where: { userId } })
+      .catch(() => {});
+    await (prisma as any).product_views
+      ?.deleteMany({ where: { userId } })
+      .catch(() => {});
+
+    await prisma.users.delete({ where: { id: userId } });
+
+    // Revoke the session so the now-orphaned token can't be reused.
+    const accessToken =
+      req.cookies["access_token"] || req.headers.authorization?.split(" ")[1];
+    const refreshToken = req.cookies["refresh_token"];
+    await revokeToken(accessToken).catch(() => {});
+    await revokeToken(refreshToken).catch(() => {});
+    await bumpRefreshFamily("user", userId).catch(() => {});
+
+    clearCookie(res, "access_token");
+    clearCookie(res, "refresh_token");
+
+    res.status(200).json({
+      success: true,
+      message: "Your account has been deleted",
+    });
+  } catch (error) {
+    next(error);
+  }
 };

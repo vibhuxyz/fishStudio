@@ -30,6 +30,7 @@ export type ProductImage = z.infer<typeof schemas.productImageSchema>;
 export type ProductSizePricing = z.infer<typeof schemas.productSizePricingSchema>;
 export type ProductCuttingTypePricing = z.infer<typeof schemas.productCuttingTypePricingSchema>;
 export type ProductPieceSizePricing = z.infer<typeof schemas.productPieceSizePricingSchema>;
+export type CreateReviewInput = z.infer<typeof schemas.createReviewSchema>;
 
 export type CreateOrderInput = z.infer<typeof schemas.createOrderSchema>;
 export type AcceptOrRejectOrderInput = z.infer<typeof schemas.acceptOrRejectOrderSchema>;

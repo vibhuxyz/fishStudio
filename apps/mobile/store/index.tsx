@@ -17,6 +17,8 @@ type Product = {
   slug: string;
   title: string;
   price: number;
+  regularPrice?: number;
+  badges?: string[];
   image: string;
   quantity?: number;
   shopId: string;

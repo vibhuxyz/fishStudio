@@ -37,6 +37,15 @@ export type AdminProduct = {
     url?: string | null;
     file_url?: string | null;
   }>;
+  origin?: string | null;
+  source?: string | null;
+  shelfLife?: string | null;
+  storageInstructions?: string | null;
+  cookingTips?: string[];
+  highlightDescription?: string | null;
+  nutritionProtein?: string | null;
+  nutritionOmega3?: string | null;
+  nutritionCalories?: string | null;
 };
 
 export type DiscountCode = {
@@ -312,7 +321,17 @@ export type UpdateProductPayload = {
   sale_price?: number;
   stock?: number;
   status?: string;
+  tags?: string;
   images?: Array<{ url: string; file_id: string }>;
+  origin?: string;
+  source?: string;
+  shelfLife?: string;
+  storageInstructions?: string;
+  cookingTips?: string;
+  highlightDescription?: string;
+  nutritionProtein?: string;
+  nutritionOmega3?: string;
+  nutritionCalories?: string;
 };
 
 export type AdminBanner = {

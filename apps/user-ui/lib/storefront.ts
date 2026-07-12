@@ -50,6 +50,11 @@ export interface StorefrontProductListingParams {
   page?: number;
   limit?: number;
   scope?: "homepage" | "listing" | "category";
+  sortBy?: "price_asc" | "price_desc" | "popular" | "newest";
+  onSale?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  hasVariants?: boolean;
 }
 
 export interface StorefrontProductListingResponse {
@@ -81,6 +86,11 @@ export const storefrontKeys = {
       params.city || "",
       params.page || 1,
       params.limit || "",
+      params.sortBy || "",
+      params.onSale ?? "",
+      params.minPrice ?? "",
+      params.maxPrice ?? "",
+      params.hasVariants ?? "",
     ] as const,
   product: (slug: string) => ["storefront", "product", slug] as const,
   categories: ["storefront", "categories"] as const,
@@ -303,6 +313,7 @@ export const transformProduct = (bp: BackendProduct): Product => {
     basePricePerKg: bp.basePricePerKg ?? null,
     isBestseller: (bp.totalSold || 0) > 50,
     isFavorite: Array.isArray(bp.favorites) && bp.favorites.length > 0,
+    badges: Array.isArray(bp.badges) ? bp.badges : [],
   };
 };
 
@@ -322,6 +333,11 @@ export async function fetchStorefrontProductListing(
   if (params.page) queryParams.append("page", String(page));
   if (params.limit) queryParams.append("limit", String(limit));
   if (params.scope) queryParams.append("scope", params.scope);
+  if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params.onSale) queryParams.append("onSale", "true");
+  if (params.minPrice !== undefined) queryParams.append("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) queryParams.append("maxPrice", String(params.maxPrice));
+  if (params.hasVariants) queryParams.append("hasVariants", "true");
 
   const queryString = queryParams.toString();
   const url = getStorefrontUrl(

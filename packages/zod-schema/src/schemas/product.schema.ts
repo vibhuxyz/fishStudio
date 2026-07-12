@@ -67,6 +67,23 @@ export const productSchema = z.object({
   status: wrapValue(z.enum(["Active", "NonActive"])).optional(),
   cash_on_delivery: wrapValue(z.enum(["yes", "no"])).optional().default("yes"),
   discountCodes: z.array(z.string()).optional(),
+
+  // Product detail page content
+  origin: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  shelfLife: z.string().nullable().optional(),
+  storageInstructions: z.string().nullable().optional(),
+  cookingTips: z.preprocess((val) => {
+    if (typeof val === "string") return val.split("\n").map((t) => t.trim()).filter(Boolean);
+    if (Array.isArray(val)) {
+      return val.map((item) => (typeof item === "object" && item !== null && "value" in item ? String(item.value) : item));
+    }
+    return val;
+  }, z.array(z.string())).optional(),
+  highlightDescription: z.string().nullable().optional(),
+  nutritionProtein: z.string().nullable().optional(),
+  nutritionOmega3: z.string().nullable().optional(),
+  nutritionCalories: z.string().nullable().optional(),
 });
 
 export const slugSchema = z.object({
@@ -102,3 +119,10 @@ export const validateCartSchema = z.object({
 });
 
 export const updateProductSchema = productSchema.partial();
+
+export const createReviewSchema = z.object({
+  productId: z.string().min(1, "Product id is required"),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(2000).optional(),
+  images: z.array(z.string()).optional(),
+});

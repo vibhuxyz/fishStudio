@@ -61,6 +61,8 @@ model Order {
   @@index([storeId])
   @@index([userId])
   @@index([status])
+  @@index([userId, createdAt(sort: Desc)]) // user order history with recent-first sort
+  @@index([storeId, createdAt(sort: Desc)]) // seller order dashboard
 }
 
 model OrderItem {

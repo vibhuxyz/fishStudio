@@ -1,349 +1,94 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { haptic } from "@/utils/haptics";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useRef } from "react";
+import React from "react";
 import {
-  Animated,
   Dimensions,
-  Easing,
-  Image,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
-
-const floatingBubbles = [
-  { size: 11, left: "10%", delay: 0, duration: 2800 },
-  { size: 6, left: "24%", delay: 420, duration: 2200 },
-  { size: 14, left: "78%", delay: 160, duration: 3000 },
-  { size: 8, left: "88%", delay: 720, duration: 2400 },
-] as const;
-
-const products = [
-  {
-    colors: ["#67E8F9", "#0EA5E9"],
-    icon: "fish",
-    label: "Fresh fish",
-  },
-  {
-    colors: ["#FDE68A", "#F97316"],
-    icon: "food-steak",
-    label: "Clean cuts",
-  },
-  {
-    colors: ["#BBF7D0", "#22C55E"],
-    icon: "truck-fast",
-    label: "Fast delivery",
-  },
-] as const;
+const QR_SIZE = Math.min(width * 0.52, 200);
 
 export default function OnboardingScreen() {
-  const logoScale = useRef(new Animated.Value(0.86)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const contentY = useRef(new Animated.Value(24)).current;
-  const contentOpacity = useRef(new Animated.Value(0)).current;
-  const wave = useRef(new Animated.Value(0)).current;
-  const productDrift = useRef(new Animated.Value(0)).current;
-
-  const bubbles = useMemo(
-    () => floatingBubbles.map(() => new Animated.Value(0)),
-    [],
-  );
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        damping: 10,
-        stiffness: 86,
-        mass: 0.85,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 520,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(contentY, {
-        toValue: 0,
-        duration: 700,
-        delay: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(contentOpacity, {
-        toValue: 1,
-        duration: 620,
-        delay: 180,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(wave, {
-          toValue: 1,
-          duration: 2400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(wave, {
-          toValue: 0,
-          duration: 2400,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(productDrift, {
-          toValue: 1,
-          duration: 3200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(productDrift, {
-          toValue: 0,
-          duration: 3200,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-
-    const loops = bubbles.map((animation, index) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(floatingBubbles[index].delay),
-          Animated.timing(animation, {
-            toValue: 1,
-            duration: floatingBubbles[index].duration,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(animation, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    );
-    loops.forEach((loop) => loop.start());
-
-    return () => {
-      loops.forEach((loop) => loop.stop());
-    };
-  }, [
-    bubbles,
-    contentOpacity,
-    contentY,
-    logoOpacity,
-    logoScale,
-    productDrift,
-    wave,
-  ]);
-
-  const waveTranslate = wave.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-22, 18],
-  });
-
-  const productTranslate = productDrift.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-8, 8],
-  });
-
-  const handleGetStarted = () => {
-    haptic.press();
-    router.replace("/(tabs)");
-  };
-
-  const handleLogin = () => {
+  const handleLoginSignup = () => {
     haptic.press();
     router.replace("/(routes)/login");
+  };
+
+  const handleGuestContinue = () => {
+    haptic.press();
+    router.replace("/(tabs)");
   };
 
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={["#FFFFFF", "#F0FDFF", "#ECFDF5"]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <Animated.View
-        style={[
-          styles.wave,
-          styles.waveMint,
-          { transform: [{ translateX: waveTranslate }] },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.wave,
-          styles.wavePurple,
-          { transform: [{ translateX: Animated.multiply(waveTranslate, -1) }] },
-        ]}
-      />
-
-      {floatingBubbles.map((bubble, index) => {
-        const animation = bubbles[index];
-        return (
-          <Animated.View
-            key={`${bubble.left}-${bubble.size}`}
-            style={[
-              styles.bubble,
-              {
-                width: bubble.size,
-                height: bubble.size,
-                borderRadius: bubble.size / 2,
-                left: bubble.left,
-                opacity: animation.interpolate({
-                  inputRange: [0, 0.24, 1],
-                  outputRange: [0, 0.74, 0],
-                }),
-                transform: [
-                  {
-                    translateY: animation.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [130, -170],
-                    }),
-                  },
-                  {
-                    scale: animation.interpolate({
-                      inputRange: [0, 0.5, 1],
-                      outputRange: [0.72, 1, 0.82],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-        );
-      })}
-
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.topBar}>
-          <View style={styles.brandMini}>
-            <MaterialCommunityIcons name="fish" size={18} color="#FFFFFF" />
-          </View>
-          <Text style={styles.brandMiniText}>FishStudio</Text>
-        </View>
-
-        <View style={styles.hero}>
-          <Animated.View
-            style={[
-              styles.logoShadow,
-              {
-                opacity: logoOpacity,
-                transform: [{ scale: logoScale }],
-              },
-            ]}
-          >
-            <Image
-              source={require("@/assets/images/icon.png")}
-              style={styles.logoImage}
-            />
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.productShelf,
-              { transform: [{ translateX: productTranslate }] },
-            ]}
-          >
-            {products.map((product, index) => (
-              <LinearGradient
-                key={index}
-                colors={product.colors}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[
-                  styles.productTile,
-                  index === 1 ? styles.productTileCenter : null,
-                ]}
-              >
-                <View style={styles.productTileGlow} />
-                <MaterialCommunityIcons
-                  name={product.icon}
-                  size={index === 1 ? 34 : 28}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.productTileText}>{product.label}</Text>
-              </LinearGradient>
-            ))}
-          </Animated.View>
-        </View>
-
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: contentOpacity,
-              transform: [{ translateY: contentY }],
-            },
-          ]}
-        >
-          <View style={styles.label}>
-            <Ionicons name="sparkles" size={14} color="#6C3CE1" />
-            <Text style={styles.labelText}>Fresh from trusted sellers</Text>
-          </View>
-
-          <Text style={styles.title}>Live-cut fresh fish, packed for you.</Text>
-          <Text style={styles.subtitle}>
-            Get hygienic seafood, quick delivery, and daily fresh arrivals in one
-            clean FishStudio experience.
-          </Text>
-
-          <View style={styles.featureRow}>
-            <FeaturePill icon="shield-check" label="Hygienic" />
-            <FeaturePill icon="flash" label="Fast delivery" />
-            <FeaturePill icon="fish" label="Fresh catch" />
-          </View>
-
-          <Pressable onPress={handleGetStarted} style={styles.primaryButton}>
-            <LinearGradient
-              colors={["#7C3AED", "#6C3CE1"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.primaryGradient}
+        colors={["#5B2ECC", "#5A2C96"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <SafeAreaView edges={["top"]} style={styles.headerSafe}>
+          <View style={styles.headerRow}>
+            <View style={styles.flex1} />
+            <Pressable
+              onPress={handleGuestContinue}
+              style={styles.closeButton}
+              hitSlop={14}
             >
-              <Text style={styles.primaryButtonText}>Get Started</Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+              <Ionicons name="close" size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <SafeAreaView edges={["bottom"]} style={styles.body}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Scan to Download or Login</Text>
+
+          <View style={styles.qrWrapper}>
+            <QRCode
+              value="https://fishstudio.app/download"
+              size={QR_SIZE}
+              color="#000000"
+              backgroundColor="#FFFFFF"
+            />
+          </View>
+
+          <Pressable
+            onPress={handleLoginSignup}
+            style={styles.loginButton}
+            android_ripple={{ color: "rgba(255,255,255,0.2)" }}
+          >
+            <LinearGradient
+              colors={["#4FC3F7", "#5A2C96"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.loginGradient}
+            >
+              <Text style={styles.loginText}>Login/Signup</Text>
             </LinearGradient>
           </Pressable>
 
-          <Pressable onPress={handleLogin} style={styles.secondaryButton}>
-            <Ionicons name="person-outline" size={18} color="#6C3CE1" />
-            <Text style={styles.secondaryButtonText}>Log in / Sign up</Text>
+          <Pressable onPress={handleGuestContinue} style={styles.guestButton}>
+            <Text style={styles.guestText}>Continue as Guest</Text>
           </Pressable>
-        </Animated.View>
-      </SafeAreaView>
-    </View>
-  );
-}
 
-function FeaturePill({
-  icon,
-  label,
-}: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  label: string;
-}) {
-  return (
-    <View style={styles.featurePill}>
-      <MaterialCommunityIcons name={icon} size={15} color="#22C55E" />
-      <Text style={styles.featureText}>{label}</Text>
+          <Text style={styles.tagline}>Live-Cut. Fresh. Packed For You.</Text>
+
+          <Pressable style={styles.termsRow}>
+            <Text style={styles.termsText}>Terms </Text>
+            <Ionicons name="arrow-forward" size={14} color="#1F2937" />
+          </Pressable>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -351,230 +96,111 @@ function FeaturePill({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    overflow: "hidden",
+    backgroundColor: "#F2F2F7",
   },
-  safeArea: {
+  flex1: {
     flex: 1,
-    paddingHorizontal: 22,
   },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 10,
-  },
-  brandMini: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
-    backgroundColor: "#6C3CE1",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#6C3CE1",
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 6,
-  },
-  brandMiniText: {
-    marginLeft: 10,
-    color: "#1F2937",
-    fontFamily: "Poppins-Bold",
-    fontSize: 16,
-    letterSpacing: 0,
-  },
-  wave: {
-    position: "absolute",
-    width: width * 1.25,
-    height: 210,
-    borderTopLeftRadius: width,
-    borderTopRightRadius: width,
-    left: -width * 0.12,
-  },
-  waveMint: {
-    bottom: -82,
-    backgroundColor: "rgba(34, 197, 94, 0.13)",
-  },
-  wavePurple: {
-    bottom: -126,
-    backgroundColor: "rgba(108, 60, 225, 0.12)",
-  },
-  bubble: {
-    position: "absolute",
-    bottom: 96,
-    backgroundColor: "rgba(14, 165, 233, 0.24)",
-    borderColor: "rgba(255,255,255,0.9)",
-    borderWidth: 1,
-  },
-  hero: {
-    flex: 1,
-    minHeight: 320,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoShadow: {
-    width: 188,
-    height: 188,
-    borderRadius: 46,
-    shadowColor: "#6C3CE1",
-    shadowOpacity: 0.28,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 14,
-  },
-  logoImage: {
+  header: {
     width: "100%",
-    height: "100%",
-    borderRadius: 46,
   },
-  productShelf: {
-    position: "absolute",
-    bottom: 12,
+  headerSafe: {
+    width: "100%",
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 18,
   },
-  productTile: {
-    width: 86,
-    height: 92,
-    borderRadius: 18,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-    padding: 9,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 7,
+  closeButton: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  productTileCenter: {
-    width: 102,
-    height: 108,
-    marginBottom: 12,
-  },
-  productTileGlow: {
-    position: "absolute",
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    top: -20,
-    right: -16,
-    backgroundColor: "rgba(255,255,255,0.28)",
-  },
-  productTileText: {
-    color: "#FFFFFF",
-    fontFamily: "Poppins-Bold",
-    fontSize: 10,
-    lineHeight: 13,
-    letterSpacing: 0,
-    marginTop: 8,
-    textShadowColor: "rgba(15,23,42,0.18)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+  body: {
+    flex: 1,
+    backgroundColor: "#F2F2F7",
   },
   content: {
-    paddingBottom: 24,
-  },
-  label: {
-    alignSelf: "center",
-    flexDirection: "row",
+    flex: 1,
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: "#F4F0FF",
-    marginBottom: 14,
-  },
-  labelText: {
-    color: "#6C3CE1",
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 12,
-    letterSpacing: 0,
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    paddingBottom: 16,
   },
   title: {
+    fontSize: 22,
+    fontFamily: "Inter-Bold",
     color: "#111827",
-    fontFamily: "Poppins-Bold",
-    fontSize: 32,
-    lineHeight: 39,
-    letterSpacing: 0,
     textAlign: "center",
+    marginBottom: 32,
   },
-  subtitle: {
-    color: "#64748B",
-    fontFamily: "Poppins-Regular",
-    fontSize: 14,
-    lineHeight: 22,
-    letterSpacing: 0,
-    textAlign: "center",
-    marginTop: 10,
-  },
-  featureRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 20,
-    marginBottom: 22,
-    flexWrap: "wrap",
-  },
-  featurePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    borderWidth: 1,
-    borderColor: "#DCFCE7",
-    backgroundColor: "rgba(240, 253, 244, 0.92)",
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  featureText: {
-    color: "#1F2937",
-    fontFamily: "Poppins-SemiBold",
-    fontSize: 11,
-    letterSpacing: 0,
-  },
-  primaryButton: {
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#6C3CE1",
-    shadowOpacity: 0.26,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 9 },
-    elevation: 10,
-  },
-  primaryGradient: {
-    height: 56,
-    borderRadius: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontFamily: "Poppins-Bold",
-    fontSize: 16,
-    letterSpacing: 0,
-  },
-  secondaryButton: {
-    height: 52,
-    borderRadius: 17,
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  qrWrapper: {
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E7E5FF",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 40,
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  secondaryButtonText: {
-    color: "#6C3CE1",
-    fontFamily: "Poppins-SemiBold",
+  loginButton: {
+    width: "100%",
+    borderRadius: 32,
+    overflow: "hidden",
+    marginBottom: 14,
+    shadowColor: "#5A2C96",
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 7,
+  },
+  loginGradient: {
+    height: 54,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loginText: {
+    color: "#FFFFFF",
+    fontFamily: "Inter-Bold",
+    fontSize: 16,
+  },
+  guestButton: {
+    width: "100%",
+    height: 54,
+    borderRadius: 32,
+    borderWidth: 1.5,
+    borderColor: "#5A2C96",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 36,
+  },
+  guestText: {
+    color: "#5A2C96",
+    fontFamily: "Inter-SemiBold",
+    fontSize: 16,
+  },
+  tagline: {
     fontSize: 15,
-    letterSpacing: 0,
+    fontFamily: "Inter-SemiBold",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  termsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  termsText: {
+    fontSize: 14,
+    fontFamily: "Inter-Regular",
+    color: "#111827",
+    textDecorationLine: "underline",
   },
 });

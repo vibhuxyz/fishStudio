@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, CheckCircle2, CreditCard, ChevronRight, Phone, ArrowLeft, Ticket } from "lucide-react";
+import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
 import { useModals } from "@/components/providers/modal-provider";
@@ -44,6 +44,7 @@ export function CheckoutClient() {
   });
 
   const [selectedSlot, setSelectedSlot] = useState<string>("morning");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "RAZORPAY">("COD");
   const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
 
   // Sync cart data to get latest delivery slots and fees
@@ -141,6 +142,102 @@ export function CheckoutClient() {
   const discount = Math.min(rawDiscount, totalPrice + totalDeliveryCost);
   const grandTotal = Math.max(0, totalPrice + totalDeliveryCost - discount);
 
+  // Load the Razorpay Checkout SDK on demand (only once).
+  const loadRazorpay = () =>
+    new Promise<boolean>((resolve) => {
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  // Roll back an unpaid online order when the user cancels or payment fails,
+  // so it doesn't linger as a "placed" order and its reserved stock is freed.
+  const cancelUnpaidOrder = (orderId: string) =>
+    axiosInstance
+      .put(`/order/api/cancel/${orderId}`)
+      .catch(() => {/* webhook / cleanup job will reconcile if this fails */});
+
+  // Order created with paymentMethod RAZORPAY is unpaid until verified.
+  // Open the Razorpay popup, then verify the signature server-side.
+  const startRazorpayPayment = async (orderId: string) => {
+    const ok = await loadRazorpay();
+    if (!ok) {
+      toast.error("Could not load the payment gateway. Please try Pay on Delivery.");
+      setIsPlacingOrder(false);
+      return;
+    }
+
+    const { data: rzp } = await axiosInstance.post(
+      "/payment/api/create-razorpay-order",
+      { orderId }
+    );
+
+    // Once payment verifies we must NOT cancel the order on modal close.
+    let paymentSettled = false;
+
+    const razorpay = new (window as any).Razorpay({
+      key: rzp.keyId, // public key_id, supplied by the backend
+      amount: rzp.amount, // in paise, computed server-side from the order
+      currency: rzp.currency,
+      order_id: rzp.razorpayOrderId,
+      name: "Fish Studio",
+      description: "Order payment",
+      prefill: {
+        name: selectedAddress?.name,
+        contact: selectedAddress?.phone,
+        email: user?.email,
+      },
+      theme: { color: "#0ea5e9" },
+      handler: async (response: any) => {
+        try {
+          const { data: verified } = await axiosInstance.post("/payment/api/verify", {
+            orderId,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+          if (verified.success) {
+            paymentSettled = true;
+            toast.success("Payment successful!");
+            clearCart();
+            clearAllCoupons();
+            router.push(`/order-confirmation/${orderId}`);
+          } else {
+            toast.error("Payment could not be verified. Please contact support.");
+          }
+        } catch {
+          toast.error(
+            "Payment verification failed. If money was deducted, it will be auto-confirmed shortly."
+          );
+        } finally {
+          setIsPlacingOrder(false);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          // Modal closed without a verified payment (cancelled, or gave up
+          // after a failure) — roll back the unpaid order so it isn't placed.
+          if (!paymentSettled) {
+            cancelUnpaidOrder(orderId);
+            toast.info("Payment cancelled. Your order was not placed.");
+          }
+          setIsPlacingOrder(false);
+        },
+      },
+    });
+
+    // Razorpay keeps the modal open after a failure so the user can retry,
+    // so we don't cancel here — ondismiss handles rollback when they close it.
+    razorpay.on("payment.failed", () => {
+      toast.error("Payment failed. Please try again or choose Pay on Delivery.");
+    });
+
+    razorpay.open();
+  };
+
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
       toast.error("No delivery address found. Please add an address from your cart.");
@@ -188,7 +285,7 @@ export function CheckoutClient() {
           discountBreakdown,
         },
         totalAmount: grandTotal,
-        paymentMethod: "COD",
+        paymentMethod,
         deliverySlot: selectedSlot,
         couponCode: appliedCoupons.length > 0 ? appliedCoupons.map((c) => c.code).join(",") : undefined,
         discountAmount: discount,
@@ -196,15 +293,25 @@ export function CheckoutClient() {
 
       const { data } = await axiosInstance.post("/order/api/create", orderData);
 
-      if (data.success) {
-        toast.success("Order placed successfully!");
-        clearCart();
-        clearAllCoupons();
-        router.push(`/order-confirmation/${data.orderId}`);
+      if (!data.success) {
+        setIsPlacingOrder(false);
+        return;
       }
+
+      if (paymentMethod === "RAZORPAY") {
+        // Online payment: keep the loading state until the popup resolves.
+        await startRazorpayPayment(data.orderId);
+        return;
+      }
+
+      // Cash on Delivery: order is placed immediately.
+      toast.success("Order placed successfully!");
+      clearCart();
+      clearAllCoupons();
+      router.push(`/order-confirmation/${data.orderId}`);
+      setIsPlacingOrder(false);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to place order. Please try again.");
-    } finally {
       setIsPlacingOrder(false);
     }
   };
@@ -451,20 +558,41 @@ export function CheckoutClient() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
               <h2 className="text-xl font-bold">Payment Method</h2>
             </div>
-            <div className="rounded-xl border-2 border-primary bg-primary/5 p-4 flex items-center justify-between cursor-pointer">
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-6 w-6 text-primary" />
-                <div>
-                   <p className="font-bold text-sm">Pay on Delivery</p>
-                   <p className="text-xs text-muted-foreground">Cash, UPI or Card at your doorstep</p>
+            <div className="space-y-3">
+              {/* Pay Online */}
+              <div
+                onClick={() => setPaymentMethod("RAZORPAY")}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                  paymentMethod === "RAZORPAY" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-6 w-6 text-primary" />
+                  <div>
+                    <p className="font-bold text-sm">Pay Online</p>
+                    <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking & Wallets via Razorpay</p>
+                  </div>
                 </div>
+                {paymentMethod === "RAZORPAY" && <CheckCircle2 className="h-5 w-5 text-primary" />}
               </div>
-              <CheckCircle2 className="h-5 w-5 text-primary" />
+
+              {/* Pay on Delivery */}
+              <div
+                onClick={() => setPaymentMethod("COD")}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                  paymentMethod === "COD" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">💵</span>
+                  <div>
+                    <p className="font-bold text-sm">Pay on Delivery</p>
+                    <p className="text-xs text-muted-foreground">Cash, UPI or Card at your doorstep</p>
+                  </div>
+                </div>
+                {paymentMethod === "COD" && <CheckCircle2 className="h-5 w-5 text-primary" />}
+              </div>
             </div>
-            <p className="text-[11px] text-muted-foreground italic flex items-center gap-1 group cursor-help">
-               Online payment options (Credit Card, Wallets) coming soon.
-               <ChevronRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-            </p>
           </section>
 
         </div>

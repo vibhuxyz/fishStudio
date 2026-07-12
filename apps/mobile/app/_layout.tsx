@@ -28,16 +28,10 @@ export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(false);
   const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     "Inter-Regular": require("../assets/fonts/Inter-Regular.otf"),
+    "Inter-Medium": require("../assets/fonts/Inter-Medium.otf"),
     "Inter-SemiBold": require("../assets/fonts/Inter-SemiBold.otf"),
     "Inter-Bold": require("../assets/fonts/Inter-Bold.otf"),
-    "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
-    "Poppins-Medium": require("../assets/fonts/Poppins-Medium.ttf"),
-    "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
-    "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
-    Railway: require("../assets/fonts/Railway.otf"),
-    "Railway-Bold": require("../assets/fonts/railway.bold.otf"),
   });
 
   useEffect(() => {

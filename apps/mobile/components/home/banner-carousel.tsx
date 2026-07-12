@@ -1,10 +1,13 @@
 import axiosInstance from "@/utils/axiosInstance";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
   ScrollView,
+  Text,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,13 +18,14 @@ interface Banner {
   fileId: string;
   isActive: boolean;
   sellerId: string;
-  bannerType?: string;
   title?: string;
   subtitle?: string;
+  ctaText?: string;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const BANNER_HEIGHT = SCREEN_WIDTH * 0.42; // ~3:1 ratio matching web's 33%
+const BANNER_HEIGHT = SCREEN_WIDTH * 0.62;
+const CARD_WIDTH = SCREEN_WIDTH - 32;
 
 async function fetchBanners(): Promise<Banner[]> {
   const { data } = await axiosInstance.get("/product/api/get-banners");
@@ -30,66 +34,63 @@ async function fetchBanners(): Promise<Banner[]> {
     : [];
 }
 
+// Fallback banner shown when no banners are returned from the API
+const FALLBACK_BANNER: Banner = {
+  id: "fallback",
+  imageUrl:
+    "https://images.unsplash.com/photo-1534482421-64566f976cfa?w=800&h=500&fit=crop",
+  fileId: "",
+  isActive: true,
+  sellerId: "",
+  title: "Delivered\nSuper fresh",
+  ctaText: "Place your order",
+};
+
 export default function BannerCarousel() {
   const [current, setCurrent] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { data: banners = [], isLoading } = useQuery({
+  const { data: fetchedBanners = [], isLoading } = useQuery({
     queryKey: ["storefront-banners"],
     queryFn: fetchBanners,
-    staleTime: 1000 * 60 * 10, // 10 min — matches web's revalidate: 600
+    staleTime: 1000 * 60 * 10,
   });
 
+  const banners = fetchedBanners.length > 0 ? fetchedBanners : [FALLBACK_BANNER];
   const total = banners.length;
 
-  const scrollTo = useCallback(
-    (index: number) => {
-      scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
-      setCurrent(index);
-    },
-    []
-  );
+  const scrollTo = useCallback((index: number) => {
+    scrollRef.current?.scrollTo({ x: index * CARD_WIDTH, animated: true });
+    setCurrent(index);
+  }, []);
 
   const next = useCallback(() => {
-    if (total === 0) return;
-    const nextIndex = (current + 1) % total;
-    scrollTo(nextIndex);
+    scrollTo((current + 1) % total);
   }, [current, total, scrollTo]);
 
-  // Auto-advance every 4 seconds — same as web
   useEffect(() => {
     if (total <= 1) return;
     autoPlayRef.current = setInterval(next, 4000);
-    return () => {
-      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-    };
+    return () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
   }, [next, total]);
 
   const handleScrollEnd = (e: any) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-    setCurrent(index);
+    setCurrent(Math.round(e.nativeEvent.contentOffset.x / CARD_WIDTH));
   };
 
-  // Skeleton
   if (isLoading) {
     return (
       <View
-        className="mx-4 my-3 rounded-2xl bg-muted overflow-hidden"
+        className="mx-4 my-3 rounded-3xl bg-muted overflow-hidden"
         style={{ height: BANNER_HEIGHT }}
       />
     );
   }
 
-  // No active banners — show nothing (same as web)
-  if (total === 0) return null;
-
   return (
     <View className="mx-4 my-3">
-      <View
-        className="rounded-2xl overflow-hidden"
-        style={{ height: BANNER_HEIGHT }}
-      >
+      <View className="rounded-3xl overflow-hidden" style={{ height: BANNER_HEIGHT }}>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -100,29 +101,102 @@ export default function BannerCarousel() {
           decelerationRate="fast"
         >
           {banners.map((banner, i) => (
-            <TouchableOpacity
-              key={banner.id}
-              activeOpacity={0.95}
-              style={{ width: SCREEN_WIDTH - 32, height: BANNER_HEIGHT }}
-            >
+            <View key={banner.id} style={{ width: CARD_WIDTH, height: BANNER_HEIGHT }}>
+              {/* Background image */}
               <Image
                 source={{ uri: banner.imageUrl }}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: "100%", height: "100%", position: "absolute" }}
                 resizeMode="cover"
               />
-            </TouchableOpacity>
+
+              {/* Dark gradient overlay on top ~60% */}
+              <LinearGradient
+                colors={["rgba(48,8,97,0.85)", "rgba(48,8,97,0.6)", "transparent"]}
+                style={{ position: "absolute", left: 0, right: 0, top: 0, height: "65%" }}
+              />
+
+              {/* Text content */}
+              <View style={{ position: "absolute", top: 24, left: 20, right: 20 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter-Bold",
+                    fontSize: 32,
+                    color: "#FFFFFF",
+                    lineHeight: 38,
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  {banner.title || "Delivered\nSuper fresh"}
+                </Text>
+              </View>
+
+              {/* Place your order button */}
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 36,
+                  left: 0,
+                  right: 0,
+                  alignItems: "center",
+                }}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "rgba(255,255,255,0.92)",
+                    paddingHorizontal: 28,
+                    paddingVertical: 14,
+                    borderRadius: 50,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.15,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 5,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter-SemiBold",
+                      fontSize: 15,
+                      color: "#1A1C1C",
+                      marginRight: 8,
+                    }}
+                  >
+                    {banner.ctaText || "Place your order"}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={18} color="#1A1C1C" />
+                </TouchableOpacity>
+              </View>
+            </View>
           ))}
         </ScrollView>
 
         {/* Dot indicators */}
         {total > 1 && (
-          <View className="absolute bottom-3 left-0 right-0 flex-row justify-center gap-1.5">
+          <View
+            style={{
+              position: "absolute",
+              bottom: 10,
+              left: 0,
+              right: 0,
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
             {banners.map((_, i) => (
               <TouchableOpacity key={i} onPress={() => scrollTo(i)}>
                 <View
-                  className={`h-2 rounded-full bg-white ${
-                    i === current ? "w-6 opacity-100" : "w-2 opacity-50"
-                  }`}
+                  style={{
+                    width: i === current ? 20 : 8,
+                    height: 8,
+                    borderRadius: 4,
+                    borderWidth: 1.5,
+                    borderColor: "rgba(255,255,255,0.8)",
+                    backgroundColor: i === current ? "rgba(255,255,255,0.9)" : "transparent",
+                  }}
                 />
               </TouchableOpacity>
             ))}

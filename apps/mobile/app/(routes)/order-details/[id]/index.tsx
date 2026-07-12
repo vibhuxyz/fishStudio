@@ -69,7 +69,7 @@ interface Order {
 const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string; description: string }> = {
   PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Order Placed", description: "Your order has been placed and is awaiting confirmation" },
   ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Preparing",    description: "Your order is being prepared" },
-  SHIPPED:   { bg: "#EDE9FE", text: "#7C3AED", icon: "car-outline",              label: "On the Way",    description: "Your order is on its way to you" },
+  SHIPPED:   { bg: "#EDE9FE", text: "#5A2C96", icon: "car-outline",              label: "On the Way",    description: "Your order is on its way to you" },
   DELIVERED: { bg: "#D1FAE5", text: "#059669", icon: "bag-check-outline",        label: "Delivered", description: "Your order has been delivered successfully" },
   REJECTED:  { bg: "#FEE2E2", text: "#DC2626", icon: "close-circle-outline",     label: "Rejected",  description: "Your order was rejected by the store" },
   CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled", description: "Your order has been cancelled" },
@@ -85,7 +85,7 @@ const PAYMENT_STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
   COMPLETED: { bg: "#D1FAE5", text: "#059669" },
   PENDING:   { bg: "#FEF3C7", text: "#D97706" },
   FAILED:    { bg: "#FEE2E2", text: "#DC2626" },
-  REFUNDED:  { bg: "#EDE9FE", text: "#7C3AED" },
+  REFUNDED:  { bg: "#EDE9FE", text: "#5A2C96" },
 };
 
 export default function OrderDetailsScreen() {

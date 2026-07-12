@@ -77,21 +77,21 @@ export default function ShippingAddressScreen() {
           >
             <Ionicons name="arrow-back" size={20} color="#374151" />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
         </View>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
           <Ionicons name="location-outline" size={64} color="#CBD5E1" />
-          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 8 }}>
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 8 }}>
             You are not logged in
           </Text>
-          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
+          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
             Login to save and manage your delivery addresses.
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/(routes)/login")}
-            style={{ backgroundColor: "#6C3CE1", paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14, width: "100%", alignItems: "center" }}
+            style={{ backgroundColor: "#5A2C96", paddingHorizontal: 24, paddingVertical: 13, borderRadius: 14, width: "100%", alignItems: "center" }}
           >
-            <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 15, color: "#fff" }}>Login / Sign Up</Text>
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#fff" }}>Login / Sign Up</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -112,8 +112,8 @@ export default function ShippingAddressScreen() {
             <Ionicons name="arrow-back" size={20} color="#374151" />
           </TouchableOpacity>
           <View>
-            <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
-            <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#111827" }}>Saved Addresses</Text>
+            <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#6B7280" }}>
               {addresses.length} address{addresses.length !== 1 ? "es" : ""} saved
             </Text>
           </View>
@@ -124,15 +124,15 @@ export default function ShippingAddressScreen() {
           activeOpacity={0.85}
         >
           <Ionicons name="add" size={18} color="#fff" />
-          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#fff" }}>Add New</Text>
+          <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: "#fff" }}>Add New</Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
       {isLoading && addresses.length === 0 ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color="#6C3CE1" />
-          <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", marginTop: 12 }}>
+          <ActivityIndicator size="large" color="#5A2C96" />
+          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#6B7280", marginTop: 12 }}>
             Loading addresses...
           </Text>
         </View>
@@ -145,18 +145,18 @@ export default function ShippingAddressScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={() => loadAddresses(true)}
-              colors={["#6C3CE1"]}
-              tintColor="#6C3CE1"
+              colors={["#5A2C96"]}
+              tintColor="#5A2C96"
             />
           }
         >
           {addresses.length === 0 ? (
             <View style={{ alignItems: "center", paddingVertical: 80 }}>
               <Ionicons name="location-outline" size={72} color="#CBD5E1" />
-              <Text style={{ fontFamily: "Poppins-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 6 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#111827", marginTop: 16, marginBottom: 6 }}>
                 No saved addresses
               </Text>
-              <Text style={{ fontFamily: "Poppins-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
+              <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#6B7280", textAlign: "center", marginBottom: 24 }}>
                 Add your home or work address for faster checkout.
               </Text>
               <TouchableOpacity
@@ -165,7 +165,7 @@ export default function ShippingAddressScreen() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="add" size={20} color="#fff" />
-                <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 15, color: "#fff" }}>Add Address</Text>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#fff" }}>Add Address</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -194,23 +194,23 @@ export default function ShippingAddressScreen() {
                       </View>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                          <Text style={{ fontFamily: "Poppins-Bold", fontSize: 15, color: "#111827" }}>{address.label}</Text>
+                          <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#111827" }}>{address.label}</Text>
                           {isSelected && (
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#DCFCE7", borderWidth: 1, borderColor: "#BBF7D0", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 }}>
                               <Ionicons name="checkmark-circle" size={11} color="#22C55E" />
-                              <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 10, color: "#22C55E" }}>Default</Text>
+                              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#22C55E" }}>Default</Text>
                             </View>
                           )}
                         </View>
-                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280", lineHeight: 20 }}>
+                        <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#6B7280", lineHeight: 20 }}>
                           {address.name}{(address as any).phone ? ` · ${(address as any).phone}` : ""}
                         </Text>
-                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+                        <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#6B7280" }}>
                           {address.street}
                           {(address as any).landmark ? `, ${(address as any).landmark}` : ""}
                           {address.area ? `, ${address.area}` : ""}
                         </Text>
-                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#6B7280" }}>
+                        <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#6B7280" }}>
                           {address.city}{address.state ? `, ${address.state}` : ""} - {address.pincode}
                         </Text>
                       </View>
@@ -220,10 +220,10 @@ export default function ShippingAddressScreen() {
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingHorizontal: 16, paddingVertical: 10 }}>
                       {!isSelected ? (
                         <TouchableOpacity onPress={() => { selectAddress(address.id); toast.success(`${address.label} set as primary address`); }}>
-                          <Text style={{ fontFamily: "Poppins-SemiBold", fontSize: 13, color: "#6C3CE1" }}>Set as Default</Text>
+                          <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: "#5A2C96" }}>Set as Default</Text>
                         </TouchableOpacity>
                       ) : (
-                        <Text style={{ fontFamily: "Poppins-Medium", fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
+                        <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
                           Primary delivery address
                         </Text>
                       )}

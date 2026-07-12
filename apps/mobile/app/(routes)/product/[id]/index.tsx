@@ -1,10 +1,12 @@
 import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
+import { trackProductView } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
 import { resolveProductSizePricing } from "@/utils/pricing";
+import { ProductBadges } from "@/components/home/badge";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -16,97 +18,100 @@ import {
   Share,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "@/utils/toast";
 
-const { width } = Dimensions.get("window");
-
-const PER_KG_STEP = 50;
-const PER_KG_MIN = 50;
-const PER_KG_DEFAULT = 250;
-
-// Inline bottom-sheet dropdown (mobile-native Modal)
-function Dropdown({
+// Pill-style single-select row — replaces the bottom-sheet Dropdown for
+// on-screen choices like cleaning type / weight (matches the product mock).
+function PillSelector({
   label,
   value,
   options,
   onSelect,
+  renderCaption,
+  learnMore,
 }: {
   label: string;
   value: string;
   options: string[];
   onSelect: (v: string) => void;
+  renderCaption?: (option: string) => string | undefined;
+  learnMore?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  if (!options || options.length === 0) return null;
   return (
-    <View className="mb-4">
-      <Text className="text-base font-poppins-semibold text-foreground mb-2">
-        {label}
-      </Text>
-      <TouchableOpacity
-        className="flex-row items-center justify-between border border-border rounded-xl px-4 py-3 bg-white"
-        onPress={() => setOpen(true)}
-        activeOpacity={0.8}
-      >
-        <Text className="text-foreground font-poppins text-base flex-1 mr-2">
-          {value || `Select ${label}`}
+    <View className="mb-5">
+      <View className="flex-row items-center justify-between mb-2">
+        <Text className="text-base font-poppins-semibold text-foreground">
+          {label}
         </Text>
-        <Ionicons name="chevron-down" size={18} color="#64748B" />
-      </TouchableOpacity>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
-          activeOpacity={1}
-          onPress={() => setOpen(false)}
-        >
-          <View className="bg-white rounded-t-3xl pb-8">
-            <View className="px-6 py-4 border-b border-border flex-row items-center justify-between">
-              <Text className="text-lg font-poppins-semibold text-foreground">
-                {label}
-              </Text>
-              <TouchableOpacity onPress={() => setOpen(false)}>
-                <Ionicons name="close" size={22} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-            {options.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                className={`px-6 py-4 flex-row items-center justify-between border-b border-border/50 ${
-                  opt === value ? "bg-primary/5" : ""
-                }`}
-                onPress={() => {
-                  onSelect(opt);
-                  setOpen(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  className={`font-poppins text-base ${
-                    opt === value ? "text-primary font-poppins-semibold" : "text-foreground"
-                  }`}
-                >
-                  {opt}
-                </Text>
-                {opt === value && (
-                  <Ionicons name="checkmark" size={20} color="#6C3CE1" />
-                )}
-              </TouchableOpacity>
-            ))}
+        {learnMore && (
+          <View className="flex-row items-center">
+            <Text className="text-xs text-primary font-poppins-medium mr-1">
+              Learn more
+            </Text>
+            <Ionicons name="information-circle-outline" size={14} color="#5A2C96" />
           </View>
-        </TouchableOpacity>
-      </Modal>
+        )}
+      </View>
+      <View className="flex-row flex-wrap" style={{ gap: 10 }}>
+        {options.map((opt) => {
+          const active = opt === value;
+          const caption = renderCaption?.(opt);
+          return (
+            <TouchableOpacity
+              key={opt}
+              onPress={() => onSelect(opt)}
+              activeOpacity={0.8}
+              style={{
+                minWidth: 78,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 14,
+                borderWidth: active ? 1.5 : 1,
+                borderColor: active ? "#5A2C96" : "#E5E7EB",
+                backgroundColor: active ? "#F3EEFB" : "#FFFFFF",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: active ? "Inter-Bold" : "Inter-SemiBold",
+                  fontSize: 13,
+                  color: active ? "#5A2C96" : "#1A1C1C",
+                }}
+              >
+                {opt}
+              </Text>
+              {caption ? (
+                <Text
+                  style={{
+                    fontFamily: "Inter-Regular",
+                    fontSize: 11,
+                    color: active ? "#5A2C96" : "#898B8A",
+                    marginTop: 1,
+                  }}
+                >
+                  {caption}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
+
+const { width } = Dimensions.get("window");
+
+const PER_KG_STEP = 50;
+const PER_KG_MIN = 50;
+const PER_KG_DEFAULT = 250;
 
 export default function ProductDetailScreen() {
   const { id } = useGlobalSearchParams();
@@ -131,6 +136,11 @@ export default function ProductDetailScreen() {
       return response.data.product;
     },
   });
+
+  // Record the view for recently-viewed + recommendations (fire-and-forget).
+  useEffect(() => {
+    if (product?.id) trackProductView(product.id);
+  }, [product?.id]);
 
   // Selection state — mirrors user-ui's ProductDetailClient
   const [selectedCutting, setSelectedCutting] = useState<string>("");
@@ -255,6 +265,52 @@ export default function ProductDetailScreen() {
     enabled: !!product?.category,
   });
 
+  // Reviews — real per-product reviews (average rating, list, write-a-review)
+  const queryClient = useQueryClient();
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+
+  const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
+    queryKey: ["product-reviews", product?.id],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/product/api/get-product-reviews/${product.id}`,
+        { params: { limit: 5 } },
+      );
+      return res.data as {
+        reviews: any[];
+        totalReviews: number;
+        averageRating: number | null;
+      };
+    },
+    enabled: !!product?.id,
+  });
+
+  const submitReviewMutation = useMutation({
+    mutationFn: async () => {
+      return axiosInstance.post("/product/api/create-review", {
+        productId: product.id,
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Review submitted!");
+      setReviewModalOpen(false);
+      setReviewComment("");
+      setReviewRating(5);
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", product.id] });
+      queryClient.invalidateQueries({ queryKey: ["product", id] });
+    },
+    onError: () => toast.error("Couldn't submit your review. Try again."),
+  });
+
+  const handleSubmitReview = () => {
+    if (!user) { toast.error("Please login to write a review"); return; }
+    submitReviewMutation.mutate();
+  };
+
   const isWishlisted = product ? wishlist.some((i) => i.id === product.id) : false;
 
   const handleWishlistToggle = () => {
@@ -291,6 +347,8 @@ export default function ProductDetailScreen() {
         slug: product.slug,
         title: product.title,
         price: computedSalePrice,
+        regularPrice: computedRegularPrice > computedSalePrice ? computedRegularPrice : undefined,
+        badges: product.badges,
         image: product.images?.[0]?.url || "",
         shopId: product.Shop?.id || "",
         quantity: 1,
@@ -307,13 +365,6 @@ export default function ProductDetailScreen() {
     if (!product) return;
     addCurrentToCart();
     toast.success("Added to cart!");
-  };
-
-  const handleBuyNow = () => {
-    if (!user) { toast.error("Please login to purchase"); return; }
-    if (!product) return;
-    addCurrentToCart();
-    router.push("/(tabs)/cart");
   };
 
   // ─── Image Gallery ────────────────────────────────────────────────────────
@@ -336,11 +387,26 @@ export default function ProductDetailScreen() {
             style={{ width, height: width * 0.85 }}
             resizeMode="cover"
           />
+          {/* Freshness / handling badges — computed by the storefront API from tags */}
+          <ProductBadges badges={product?.badges} max={3} />
+
           {discountPct > 0 && (
-            <View className="absolute top-4 left-4 bg-offer-green px-3 py-1 rounded-full">
+            <View className="absolute top-4 right-4 bg-offer-green px-3 py-1 rounded-full">
               <Text className="text-white text-sm font-poppins-bold">{discountPct}% OFF</Text>
             </View>
           )}
+
+          {images.length > 1 && (
+            <View
+              className="absolute bg-black/60 px-2.5 py-1 rounded-full"
+              style={{ bottom: 12, right: 12 }}
+            >
+              <Text className="text-white text-xs font-poppins-semibold">
+                {selectedImageIndex + 1}/{images.length}
+              </Text>
+            </View>
+          )}
+
           {images.length > 1 && (
             <>
               <TouchableOpacity
@@ -360,39 +426,23 @@ export default function ProductDetailScreen() {
             </>
           )}
         </View>
-
-        {images.length > 1 && (
-          <View className="flex-row px-4 pt-3">
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {images.map((img: any, i: number) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => setSelectedImageIndex(i)}
-                  className={`mr-3 rounded-xl overflow-hidden ${
-                    i === selectedImageIndex ? "border-2 border-primary" : "border border-border"
-                  }`}
-                >
-                  <Image
-                    source={{ uri: img?.url || img }}
-                    style={{ width: 64, height: 64 }}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
       </View>
     );
   };
 
   // ─── Product Info ─────────────────────────────────────────────────────────
   const renderProductInfo = () => {
-    const ratingCount = product?.reviews?.length || product?.ratingCount || 5;
-    const ratingValue = product?.rating || 5;
+    const ratingCount = reviewsData?.totalReviews ?? 0;
+    const ratingValue = reviewsData?.averageRating ?? product?.rating ?? product?.ratings ?? 5;
     const hasCuttingTypes = (product?.cuttingTypes?.length ?? 0) > 0;
     const hasPieceSizes = (product?.pieceSizes?.length ?? 0) > 0;
     const hasSizes = (product?.sizes?.length ?? 0) > 0;
+    const ordersLabel =
+      product?.totalSold >= 1000
+        ? `${(product.totalSold / 1000).toFixed(product.totalSold >= 10000 ? 0 : 1)}K+ orders`
+        : product?.totalSold > 0
+          ? `${product.totalSold}+ orders`
+          : null;
 
     return (
       <View className="px-4 mb-2">
@@ -423,12 +473,19 @@ export default function ProductDetailScreen() {
         <Text
           className="text-[26px] text-primary mb-3 leading-tight"
           style={{
-            fontFamily: "Poppins-Bold",
+            fontFamily: "Inter-Bold",
             fontWeight: Platform.OS === "android" ? "700" : "normal",
           }}
         >
           {product?.title}
         </Text>
+
+        {/* Source • Origin */}
+        {(product?.source || product?.origin) && (
+          <Text className="text-gray-500 font-poppins-medium text-sm mb-2">
+            {[product?.source, product?.origin].filter(Boolean).join(" • ")}
+          </Text>
+        )}
 
         <Text className="text-gray-600 font-poppins-medium text-sm leading-6 mb-4">
           {product?.short_description || product?.description || ""}
@@ -454,28 +511,38 @@ export default function ProductDetailScreen() {
 
         {/* Star Rating */}
         <View className="flex-row items-center mb-4">
+          <Text className="text-gray-900 font-poppins-bold text-sm mr-1">
+            {Number(ratingValue).toFixed(1)}
+          </Text>
           {[...Array(5)].map((_, i) => (
             <Ionicons
               key={i}
               name="star"
-              size={18}
+              size={16}
               color={i < Math.round(ratingValue) ? "#F59E0B" : "#E5E7EB"}
-              style={{ marginRight: 2 }}
+              style={{ marginRight: 1 }}
             />
           ))}
-          <Text className="text-green-600 font-poppins-medium text-sm ml-2">
-            ({ratingCount} rating)
-          </Text>
+          {ratingCount > 0 && (
+            <Text className="text-gray-500 font-poppins-medium text-sm ml-2">
+              ({ratingCount})
+            </Text>
+          )}
+          {ordersLabel && (
+            <Text className="text-gray-500 font-poppins-medium text-sm ml-2">
+              • {ordersLabel}
+            </Text>
+          )}
         </View>
 
         {/* Price headline */}
-        <View className="flex-row items-baseline flex-wrap mb-5">
+        <View className="flex-row items-baseline flex-wrap mb-1">
           {isPerKgMode ? (
             <>
               <Text
                 className="text-[28px] text-primary"
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >
@@ -503,7 +570,7 @@ export default function ProductDetailScreen() {
               <Text
                 className="text-[28px] text-primary"
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >
@@ -522,30 +589,49 @@ export default function ProductDetailScreen() {
             </>
           )}
         </View>
+        <Text className="text-xs text-gray-400 font-poppins-medium mb-4">
+          Inclusive of all taxes
+        </Text>
 
-        {/* Dropdowns — only render if backend provides the options */}
+        {/* Temperature-controlled delivery strip */}
+        <View
+          className="flex-row items-center bg-primary/5 rounded-2xl px-4 py-3 mb-5"
+        >
+          <Ionicons name="thermometer-outline" size={18} color="#5A2C96" />
+          <Text className="text-gray-700 font-poppins-medium text-xs ml-2 flex-1">
+            Temperature controlled delivery • 0-4°C fresh chain
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color="#5A2C96" />
+        </View>
+
+        {/* Cleaning type / piece size / weight — pill selectors */}
         {hasCuttingTypes && (
-          <Dropdown
-            label="Cutting Type"
+          <PillSelector
+            label="Select Cleaning Type"
             value={selectedCutting}
             options={product.cuttingTypes}
             onSelect={setSelectedCutting}
+            learnMore
           />
         )}
         {hasPieceSizes && (
-          <Dropdown
-            label="Piece Size"
+          <PillSelector
+            label="Select Piece Size"
             value={selectedPieceSize}
             options={product.pieceSizes}
             onSelect={setSelectedPieceSize}
           />
         )}
         {hasSizes && (
-          <Dropdown
-            label="Fish / Pack Size"
+          <PillSelector
+            label="Select Weight"
             value={selectedSize}
             options={normalizedPricing.map((e) => e.size)}
             onSelect={setSelectedSize}
+            renderCaption={(opt) => {
+              const entry = normalizedPricing.find((e) => e.size === opt);
+              return entry ? `₹${Number(entry.salePrice).toFixed(0)}` : undefined;
+            }}
           />
         )}
 
@@ -555,7 +641,7 @@ export default function ProductDetailScreen() {
             <Ionicons
               name="information-circle-outline"
               size={18}
-              color="#6C3CE1"
+              color="#5A2C96"
               style={{ marginTop: 1 }}
             />
             <Text className="text-gray-700 font-poppins-medium ml-2 flex-1 text-sm leading-5">
@@ -569,7 +655,10 @@ export default function ProductDetailScreen() {
         )}
 
         {/* Weight stepper / size pill + Total Payable */}
-        <View className="flex-row items-center justify-between pt-3">
+        <Text className="text-base font-poppins-semibold text-foreground mb-2 pt-1">
+          Quantity
+        </Text>
+        <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             {isPerKgMode ? (
               <>
@@ -592,7 +681,7 @@ export default function ProductDetailScreen() {
                   <Text
                     className="mx-2 text-base text-gray-900 min-w-[64px] text-center"
                     style={{
-                      fontFamily: "Poppins-Bold",
+                      fontFamily: "Inter-Bold",
                       fontWeight: Platform.OS === "android" ? "700" : "normal",
                     }}
                   >
@@ -634,7 +723,7 @@ export default function ProductDetailScreen() {
                 <Text
                   className="mx-2 text-base text-gray-900 min-w-[64px] text-center"
                   style={{
-                    fontFamily: "Poppins-Bold",
+                    fontFamily: "Inter-Bold",
                     fontWeight: Platform.OS === "android" ? "700" : "normal",
                   }}
                 >
@@ -652,7 +741,7 @@ export default function ProductDetailScreen() {
                 <Text
                   className="text-sm text-gray-900"
                   style={{
-                    fontFamily: "Poppins-SemiBold",
+                    fontFamily: "Inter-SemiBold",
                     fontWeight: Platform.OS === "android" ? "600" : "normal",
                   }}
                 >
@@ -667,13 +756,362 @@ export default function ProductDetailScreen() {
             <Text
               className="text-2xl text-gray-900"
               style={{
-                fontFamily: "Poppins-Bold",
+                fontFamily: "Inter-Bold",
                 fontWeight: Platform.OS === "android" ? "700" : "normal",
               }}
             >
               Rs. {totalPayable.toFixed(2)}
             </Text>
           </View>
+        </View>
+      </View>
+    );
+  };
+
+  // ─── Why choose FishStudio (static trust strip) ───────────────────────────
+  const renderTrustStrip = () => {
+    const items = [
+      { icon: "fish-outline" as const, label: "Freshly sourced\nevery day" },
+      { icon: "cut-outline" as const, label: "Cut fresh\nafter order" },
+      { icon: "shield-checkmark-outline" as const, label: "Hygienic &\nchemical free" },
+      { icon: "car-outline" as const, label: "Cold chain\nsafe delivery" },
+      { icon: "ribbon-outline" as const, label: "Premium quality\nassurance" },
+    ];
+    return (
+      <View className="px-4 py-5 border-t border-gray-100">
+        <Text className="text-base font-poppins-bold text-foreground mb-4">
+          Why choose FishStudio?
+        </Text>
+        <View className="flex-row justify-between">
+          {items.map((item) => (
+            <View key={item.label} style={{ width: 62, alignItems: "center" }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: "#F3EEFB",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <Ionicons name={item.icon} size={20} color="#5A2C96" />
+              </View>
+              <Text
+                className="text-gray-600 font-poppins-medium text-center"
+                style={{ fontSize: 10, lineHeight: 13 }}
+              >
+                {item.label}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  // ─── Product Information / What makes it great / Cooking tips ─────────────
+  const renderProductInformation = () => {
+    const infoRows = [
+      { label: "Type", value: product?.subCategory },
+      { label: "Source", value: product?.source },
+      { label: "Origin", value: product?.origin },
+      { label: "Shelf Life", value: product?.shelfLife },
+      { label: "Storage", value: product?.storageInstructions },
+    ].filter((row) => row.value);
+
+    const nutrition = [
+      { icon: "barbell-outline" as const, label: "Protein", value: product?.nutritionProtein },
+      { icon: "water-outline" as const, label: "Omega 3", value: product?.nutritionOmega3 },
+      { icon: "flame-outline" as const, label: "Calories", value: product?.nutritionCalories },
+    ].filter((n) => n.value);
+
+    const highlight = product?.highlightDescription || product?.short_description;
+    const hasCookingTips = Array.isArray(product?.cookingTips) && product.cookingTips.length > 0;
+
+    if (infoRows.length === 0 && !highlight && !hasCookingTips) return null;
+
+    return (
+      <View className="px-4 py-5 border-t border-gray-100">
+        <View className="flex-row" style={{ gap: 16 }}>
+          {infoRows.length > 0 && (
+            <View style={{ flex: 1 }}>
+              <Text className="text-sm font-poppins-bold text-foreground mb-2">
+                Product Information
+              </Text>
+              {infoRows.map((row) => (
+                <View key={row.label} className="flex-row justify-between mb-1.5">
+                  <Text className="text-gray-500 font-poppins text-xs">{row.label}</Text>
+                  <Text
+                    className="text-gray-900 font-poppins-medium text-xs text-right ml-2 flex-1"
+                    numberOfLines={2}
+                  >
+                    {row.value}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {(highlight || nutrition.length > 0) && (
+            <View style={{ flex: 1 }}>
+              <Text className="text-sm font-poppins-bold text-foreground mb-2">
+                What makes it great?
+              </Text>
+              {highlight && (
+                <Text className="text-gray-600 font-poppins text-xs leading-5 mb-3">
+                  {highlight}
+                </Text>
+              )}
+              {nutrition.length > 0 && (
+                <View className="flex-row" style={{ gap: 10 }}>
+                  {nutrition.map((n) => (
+                    <View key={n.label} style={{ alignItems: "center" }}>
+                      <Ionicons name={n.icon} size={16} color="#5A2C96" />
+                      <Text className="text-gray-900 font-poppins-bold text-[11px] mt-1">
+                        {n.value}
+                      </Text>
+                      <Text className="text-gray-400 font-poppins text-[9px]">{n.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
+        {hasCookingTips && (
+          <View className="mt-4">
+            <Text className="text-sm font-poppins-bold text-foreground mb-2">
+              Cooking Tips
+            </Text>
+            {product.cookingTips.map((tip: string, i: number) => (
+              <View key={i} className="flex-row items-start mb-1.5">
+                <Text className="text-primary font-poppins-bold text-xs mr-2">•</Text>
+                <Text className="text-gray-600 font-poppins text-xs leading-5 flex-1">
+                  {tip}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // ─── Reviews ────────────────────────────────────────────────────────────
+  const renderReviews = () => {
+    const reviews = reviewsData?.reviews ?? [];
+    const totalReviews = reviewsData?.totalReviews ?? 0;
+    const averageRating = reviewsData?.averageRating;
+
+    return (
+      <View className="px-4 py-5 border-t border-gray-100">
+        <View className="flex-row items-center justify-between mb-4">
+          <View>
+            <Text className="text-base font-poppins-bold text-foreground">Reviews</Text>
+            {averageRating != null && totalReviews > 0 && (
+              <View className="flex-row items-center mt-1">
+                <Ionicons name="star" size={14} color="#F59E0B" />
+                <Text className="text-gray-700 font-poppins-semibold text-xs ml-1">
+                  {averageRating.toFixed(1)} · {totalReviews} review{totalReviews === 1 ? "" : "s"}
+                </Text>
+              </View>
+            )}
+          </View>
+          <TouchableOpacity
+            onPress={() => setReviewModalOpen(true)}
+            className="bg-primary/10 px-3 py-2 rounded-xl"
+            activeOpacity={0.8}
+          >
+            <Text className="text-primary font-poppins-semibold text-xs">Write a review</Text>
+          </TouchableOpacity>
+        </View>
+
+        {reviewsLoading ? (
+          <Text className="text-muted-foreground font-poppins text-sm">Loading reviews...</Text>
+        ) : reviews.length === 0 ? (
+          <Text className="text-muted-foreground font-poppins text-sm">
+            No reviews yet. Be the first to share your experience!
+          </Text>
+        ) : (
+          reviews.map((review: any) => (
+            <View key={review.id} className="mb-4 pb-4 border-b border-gray-100">
+              <View className="flex-row items-center justify-between mb-1">
+                <Text className="text-gray-900 font-poppins-semibold text-sm">
+                  {review.user?.name || "Fish Studio customer"}
+                </Text>
+                <Text className="text-gray-400 font-poppins text-[11px]">
+                  {new Date(review.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
+              <View className="flex-row items-center mb-1">
+                {[...Array(5)].map((_, i) => (
+                  <Ionicons
+                    key={i}
+                    name="star"
+                    size={12}
+                    color={i < review.rating ? "#F59E0B" : "#E5E7EB"}
+                    style={{ marginRight: 1 }}
+                  />
+                ))}
+              </View>
+              {review.comment ? (
+                <Text className="text-gray-600 font-poppins text-xs leading-5">
+                  {review.comment}
+                </Text>
+              ) : null}
+            </View>
+          ))
+        )}
+
+        {/* Write-a-review modal */}
+        <Modal
+          visible={reviewModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setReviewModalOpen(false)}
+        >
+          <TouchableOpacity
+            className="flex-1 bg-black/40 justify-end"
+            activeOpacity={1}
+            onPress={() => setReviewModalOpen(false)}
+          >
+            <TouchableOpacity activeOpacity={1} className="bg-white rounded-t-3xl p-6">
+              <Text className="text-lg font-poppins-semibold text-foreground mb-4">
+                Rate this product
+              </Text>
+              <View className="flex-row justify-center mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setReviewRating(star)} className="px-1">
+                    <Ionicons
+                      name={star <= reviewRating ? "star" : "star-outline"}
+                      size={32}
+                      color="#F59E0B"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                value={reviewComment}
+                onChangeText={setReviewComment}
+                placeholder="Share your experience (optional)"
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={4}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E5E7EB",
+                  borderRadius: 12,
+                  padding: 12,
+                  fontFamily: "Inter-Regular",
+                  fontSize: 14,
+                  color: "#1A1C1C",
+                  minHeight: 90,
+                  textAlignVertical: "top",
+                }}
+              />
+              <TouchableOpacity
+                onPress={handleSubmitReview}
+                disabled={submitReviewMutation.isPending}
+                className="bg-primary rounded-2xl py-4 mt-4"
+                activeOpacity={0.85}
+              >
+                <Text className="text-white text-center font-poppins-semibold">
+                  {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                </Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      </View>
+    );
+  };
+
+  // ─── Frequently Bought Together ────────────────────────────────────────────
+  const renderFrequentlyBoughtTogether = () => {
+    const bundleItems = (relatedProducts ?? []).slice(0, 2);
+    if (!product || bundleItems.length === 0) return null;
+
+    const bundleTotal =
+      (product.sale_price || product.regular_price || 0) +
+      bundleItems.reduce((sum: number, item: any) => sum + (item.sale_price || item.regular_price || 0), 0);
+
+    const allItems = [product, ...bundleItems];
+
+    return (
+      <View className="px-4 py-5 border-t border-gray-100">
+        <Text className="text-base font-poppins-bold text-foreground mb-4">
+          Frequently Bought Together
+        </Text>
+        <View className="flex-row items-center flex-wrap">
+          {allItems.map((item, index) => {
+            const itemImage = item.images?.[0]?.url || item.images?.[0];
+            return (
+            <React.Fragment key={item.id}>
+              <View style={{ alignItems: "center", width: 72 }}>
+                <View className="rounded-xl overflow-hidden border border-gray-200 bg-muted items-center justify-center" style={{ width: 60, height: 60 }}>
+                  {itemImage ? (
+                    <Image
+                      source={{ uri: itemImage }}
+                      style={{ width: 60, height: 60 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons name="fish-outline" size={22} color="#94A3B8" />
+                  )}
+                </View>
+                <Text className="text-gray-900 font-poppins-bold text-[11px] mt-1">
+                  ₹{item.sale_price || item.regular_price}
+                </Text>
+              </View>
+              {index < allItems.length - 1 && (
+                <Ionicons name="add" size={16} color="#9CA3AF" style={{ marginHorizontal: 4 }} />
+              )}
+            </React.Fragment>
+            );
+          })}
+        </View>
+
+        <View className="flex-row items-center justify-between mt-4 bg-primary/5 rounded-2xl px-4 py-3">
+          <Text className="text-gray-700 font-poppins-medium text-sm">
+            Total: <Text className="text-gray-900 font-poppins-bold">₹{bundleTotal.toFixed(0)}</Text>
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (!user) { toast.error("Please login to add items to cart"); return; }
+              addCurrentToCart();
+              bundleItems.forEach((item: any) => {
+                addToCart(
+                  {
+                    id: item.id,
+                    slug: item.slug,
+                    title: item.title,
+                    price: item.sale_price || item.regular_price || 0,
+                    regularPrice:
+                      item.regular_price > item.sale_price ? item.regular_price : undefined,
+                    badges: item.badges,
+                    image: item.images?.[0]?.url || item.images?.[0] || "",
+                    shopId: item.Shop?.id || "",
+                    quantity: 1,
+                  },
+                  user, null, "Mobile App"
+                );
+              });
+              toast.success(`Added ${allItems.length} items to cart!`);
+            }}
+            className="bg-primary rounded-xl px-4 py-2.5"
+            activeOpacity={0.85}
+          >
+            <Text className="text-white font-poppins-semibold text-xs">
+              Add all {allItems.length} to cart
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -692,7 +1130,7 @@ export default function ProductDetailScreen() {
         </Text>
         <Text
           className="text-2xl text-foreground text-center mb-5 px-4"
-          style={{ fontFamily: "Poppins-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }}
+          style={{ fontFamily: "Inter-Bold", fontWeight: Platform.OS === "android" ? "700" : "normal" }}
         >
           You May Also Like
         </Text>
@@ -787,7 +1225,17 @@ export default function ProductDetailScreen() {
                         onPress={() => {
                           if (!user) { toast.error("Please login"); return; }
                           addToCart(
-                            { id: item.id, slug: item.slug, title: item.title, price: itemPrice, image: itemImage || "", shopId: item.Shop?.id || "", quantity: 1 },
+                            {
+                              id: item.id,
+                              slug: item.slug,
+                              title: item.title,
+                              price: itemPrice,
+                              regularPrice: discountPct > 0 ? originalPrice : undefined,
+                              badges: item.badges,
+                              image: itemImage || "",
+                              shopId: item.Shop?.id || "",
+                              quantity: 1,
+                            },
                             user, null, "Mobile App"
                           );
                           toast.success("Added!");
@@ -876,40 +1324,44 @@ export default function ProductDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {renderImageGallery()}
         {renderProductInfo()}
+        {renderTrustStrip()}
+        {renderProductInformation()}
+        {renderReviews()}
+        {renderFrequentlyBoughtTogether()}
         {renderRelatedProducts()}
         <View className="h-24" />
       </ScrollView>
 
-      <View className="flex-row items-center px-4 py-3 bg-white border-t border-gray-100">
+      {/* Bottom fixed bar — price + single Add to Cart action */}
+      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-100">
+        <View>
+          <Text
+            className="text-primary text-xl"
+            style={{
+              fontFamily: "Inter-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+          >
+            Rs. {totalPayable.toFixed(2)}
+          </Text>
+          <Text className="text-gray-500 font-poppins-medium text-xs">
+            {weightDisplay}
+          </Text>
+        </View>
         <TouchableOpacity
-          className="flex-1 py-4 rounded-2xl mr-3"
-          style={{ backgroundColor: "#5EEAD4" }}
+          className="flex-row items-center bg-primary rounded-2xl px-8 py-4"
           onPress={handleAddToCart}
           activeOpacity={0.85}
         >
+          <Ionicons name="cart-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text
             className="text-center text-white text-base"
             style={{
-              fontFamily: "Poppins-Bold",
+              fontFamily: "Inter-Bold",
               fontWeight: Platform.OS === "android" ? "700" : "normal",
             }}
           >
-            Add to cart
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 bg-primary py-4 rounded-2xl"
-          onPress={handleBuyNow}
-          activeOpacity={0.85}
-        >
-          <Text
-            className="text-center text-white text-base"
-            style={{
-              fontFamily: "Poppins-Bold",
-              fontWeight: Platform.OS === "android" ? "700" : "normal",
-            }}
-          >
-            Buy Now
+            Add to Cart
           </Text>
         </TouchableOpacity>
       </View>

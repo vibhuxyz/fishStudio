@@ -1,27 +1,37 @@
 import AddToCartModal from "@/components/home/add-to-cart-modal";
+import { ProductBadges } from "@/components/home/badge";
 import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Dimensions,
   Image,
-  Platform,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { toast } from "@/utils/toast";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16 side padding each + 16 gap
+
+interface ProductSectionProps {
+  title?: string;
+  products: any[];
+  hideTitle?: boolean;
+  isFlashSale?: boolean;
+  onEndReached?: () => void;
+}
+
 export default function ProductSection({
   title,
   products,
-  showTimer = false,
-  isFlashSale = false,
   hideTitle = false,
-}: any) {
-  const [timers, setTimers] = useState<{ [key: string]: string }>({});
+  isFlashSale = false,
+  onEndReached,
+}: ProductSectionProps) {
   const [cartProduct, setCartProduct] = useState<any>(null);
   const { user } = useUser();
   const { wishlist, addToWishlist, removeFromWishlist } = useStore();
@@ -29,23 +39,18 @@ export default function ProductSection({
   const handleProductPress = (product: any) => {
     router.push({
       pathname: "/(routes)/product/[id]",
-      params: {
-        id: product.slug || product.id,
-      },
+      params: { id: product.slug || product.id },
     });
   };
 
   const handleWishlistToggle = (product: any, e: any) => {
     e.stopPropagation();
-
     if (!user) {
       toast.error("Please login to add items to wishlist");
       return;
     }
-
-    const isInWishlist = wishlist.some((item) => item.id === product.id);
-
-    if (isInWishlist) {
+    const inWishlist = wishlist.some((item) => item.id === product.id);
+    if (inWishlist) {
       removeFromWishlist(product.id, user, null, "Mobile App");
     } else {
       addToWishlist(
@@ -64,18 +69,9 @@ export default function ProductSection({
     }
   };
 
-  const isInWishlist = (productId: string) => {
-    return wishlist.some((item) => item.id === productId);
-  };
+  const isInWishlist = (id: string) => wishlist.some((item) => item.id === id);
 
-  const handleAddToCart = (product: any, e: any) => {
-    e.stopPropagation();
-    if (!user) {
-      toast.error("Please login to add items to cart");
-      return;
-    }
-    setCartProduct(product);
-  };
+  if (!products || products.length === 0) return null;
 
   return (
     <View className="px-4">
@@ -84,179 +80,198 @@ export default function ProductSection({
         visible={!!cartProduct}
         onClose={() => setCartProduct(null)}
       />
-      {!hideTitle && (
-        <View className="flex-row items-center justify-between mb-6">
-          <Text
-            className="text-2xl text-gray-900"
-            style={{
-              fontFamily: "Inter-SemiBold",
-              fontWeight: Platform.OS === "android" ? "600" : "normal",
-            }}
-          >
-            {title}
-          </Text>
-          {showTimer && (
-            <View className="flex-row items-center  bg-gradient-to-r from-red-50 to-red-100 px-4 py-2 rounded-full shadow-sm">
-              <Ionicons name="time" size={16} color="#EF4444" />
-              <Text className="text-red-600 font-semibold ml-2 text-sm">
-                02:30:45
-              </Text>
-            </View>
-          )}
 
-          <TouchableOpacity
-            className="flex-row items-center bg-blue-50 px-3 py-2 rounded-full"
-            onPress={() => router.push("/(routes)/products")}
-          >
-            <Text className="text-blue-600 font-semibold mr-1 text-sm">
-              See All
-            </Text>
-            <Ionicons name="chevron-forward" size={14} color="#2563EB" />
-          </TouchableOpacity>
-        </View>
-      )}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="-mx-1"
-      >
-        <View className="flex-row px-1">
-          {products?.map((product: any, index: number) => {
-            const discountPercentage = product?.sale_price
-              ? Math.round(
-                  ((product.regular_price - product.sale_price) /
-                    product.regular_price) *
-                    100
-                )
-              : 0;
-            return (
-              <View key={index} className={`${index > 0 ? "ml-4" : ""}`}>
+      {/* 2-column grid */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+        {products.map((product: any, index: number) => {
+          const discountPercentage = product?.sale_price
+            ? Math.round(
+                ((product.regular_price - product.sale_price) /
+                  product.regular_price) *
+                  100
+              )
+            : 0;
+          const currentPrice = product.sale_price || product.regular_price;
+          const isOutOfStock = product.stock === 0 || product.outOfStock;
+          const rating = product.rating ?? product.averageRating ?? 4.9;
+
+          return (
+            <TouchableOpacity
+              key={product.id || index}
+              style={{
+                width: CARD_WIDTH,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 20,
+                overflow: "hidden",
+                shadowColor: "#000",
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 4,
+              }}
+              onPress={() => handleProductPress(product)}
+              activeOpacity={0.9}
+              disabled={isOutOfStock}
+            >
+              {/* Image */}
+              <View style={{ position: "relative" }}>
+                <Image
+                  source={{
+                    uri:
+                      product?.images?.[0]?.url ||
+                      "https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&h=300&fit=crop",
+                  }}
+                  style={{ width: "100%", height: 130 }}
+                  resizeMode="cover"
+                />
+
+                {/* Premium badges */}
+                <ProductBadges badges={product.badges} max={2} small />
+
+                {/* Wishlist heart */}
                 <TouchableOpacity
-                  className="w-40 bg-white rounded-2xl shadow-lg border border-gray-50 overflow-hidden"
-                  onPress={() => handleProductPress(product)}
-                  activeOpacity={0.9}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: "rgba(255,255,255,0.9)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onPress={(e) => handleWishlistToggle(product, e)}
+                  activeOpacity={0.7}
                 >
-                  <View className="relative">
-                    <Image
-                      source={{
-                        uri:
-                          product?.images[0]?.url ||
-                          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop&crop=center",
-                      }}
-                      className="w-full h-36 bg-gray-100"
-                      resizeMode="cover"
-                    />
-                    {/* Wishlist Heart Icon */}
-                    <TouchableOpacity
-                      className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full items-center justify-center shadow-md"
-                      activeOpacity={0.7}
-                      onPress={(e) => handleWishlistToggle(product, e)}
-                    >
-                      <Ionicons
-                        name={
-                          isInWishlist(product.id) ? "heart" : "heart-outline"
-                        }
-                        size={18}
-                        color={"#EF4444"}
-                      />
-                    </TouchableOpacity>
+                  <Ionicons
+                    name={isInWishlist(product.id) ? "heart" : "heart-outline"}
+                    size={16}
+                    color="#EF4444"
+                  />
+                </TouchableOpacity>
 
-                    {/* Out of stock overlay */}
-                    {product.stock === 0 && (
-                      <View className="absolute inset-0 bg-black/50 items-center justify-center">
-                        <Text className="text-white text-xs font-bold bg-black/70 px-3 py-1 rounded-full">
-                          Out of Stock
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Flash Sale Timer or Discount Badge */}
-                    {isFlashSale ? (
-                      <View className="absolute top-3 left-3 bg-red-500/95 backdrop-blur-sm px-2 py-1.5 rounded-lg shadow-lg">
-                        <View className="flex-row items-center">
-                          <Ionicons name="flash" size={10} color="#FFFFFF" />
-                          <Text className="text-white text-xs font-bold ml-1">
-                            {timers[product.id] || "00:00:00"}
-                          </Text>
-                        </View>
-                      </View>
-                    ) : (
-                      discountPercentage > 0 && (
-                        <View className="absolute top-3 left-3 bg-red-500 px-2 py-1 rounded-full">
-                          <Text className="text-white text-xs font-bold">
-                            -{discountPercentage}%
-                          </Text>
-                        </View>
-                      )
-                    )}
-                  </View>
-
-                  <View className="p-4">
-                    <Text
-                      className="text-sm font-poppins-semibold text-gray-800 mb-2 leading-5"
-                      numberOfLines={2}
-                    >
-                      {product.title}
-                    </Text>
-
-                    {/* Rating */}
-                    <View className="flex-row items-center mb-2">
-                      <View className="flex-row items-center">
-                        <Ionicons name="star" size={12} color="#FCD34D" />
-                        <Text className="text-xs text-gray-600 ml-1 font-medium">
-                          {product.ratings || "4.5"} (
-                          {product.reviews?.length || "1"})
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Delivery time */}
-                    <View className="flex-row items-center mb-2">
-                      <View className="w-5 h-5 bg-orange-100 rounded-full items-center justify-center mr-1">
-                        <Ionicons name="flash" size={10} color="#F59E0B" />
-                      </View>
-                      <Text className="text-xs text-gray-500 font-poppins-medium">
-                        {product.deliveryTime ?? product.Shop?.deliveryTime ?? 30} mins
+                {/* Out of stock */}
+                {isOutOfStock && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundColor: "rgba(0,0,0,0.5)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <View style={{ backgroundColor: "white", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
+                      <Text style={{ color: "#EF4444", fontFamily: "Inter-Bold", fontSize: 11 }}>
+                        OUT OF STOCK
                       </Text>
                     </View>
+                  </View>
+                )}
+              </View>
 
-                    {/* Price + Cart button */}
-                    <View className="flex-row items-center justify-between">
-                      <View>
+              {/* Content */}
+              <View style={{ padding: 10 }}>
+                {/* Title + Rating */}
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 2 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Bold",
+                      fontSize: 14,
+                      color: "#1A1C1C",
+                      flex: 1,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {product.title || "Item Name"}
+                  </Text>
+                  <Ionicons name="star" size={12} color="#F59E0B" style={{ marginLeft: 4 }} />
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#1A1C1C", marginLeft: 2 }}>
+                    {rating}
+                  </Text>
+                </View>
+
+                {/* Description */}
+                <Text
+                  style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#898B8A", marginBottom: 1 }}
+                  numberOfLines={1}
+                >
+                  {product.description || product.short_description || "Description of the item"}
+                </Text>
+
+                {/* Unit / Serves */}
+                <Text
+                  style={{ fontFamily: "Inter-Regular", fontSize: 10, color: "#898B8A", marginBottom: 8 }}
+                >
+                  {product.unit || "Unit"} | Serves {product.serves || "2-4"}
+                </Text>
+
+                {/* Price row */}
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>
+                    ₹{currentPrice}
+                  </Text>
+                  {product.sale_price && product.regular_price && (
+                    <>
+                      <Text
+                        style={{
+                          fontFamily: "Inter-Regular",
+                          fontSize: 11,
+                          color: "#A1A1AA",
+                          textDecorationLine: "line-through",
+                          marginLeft: 4,
+                        }}
+                      >
+                        ₹{product.regular_price}
+                      </Text>
+                      {discountPercentage > 0 && (
                         <Text
-                          className="text-base text-gray-900"
                           style={{
                             fontFamily: "Inter-SemiBold",
-                            fontWeight:
-                              Platform.OS === "android" ? "600" : "normal",
+                            fontSize: 10,
+                            color: "#22C55E",
+                            marginLeft: 3,
                           }}
                         >
-                          ₹{product?.sale_price ?? product?.regular_price}
+                          {discountPercentage}% off
                         </Text>
-                        {discountPercentage > 0 && (
-                          <Text className="text-xs text-gray-400 line-through">
-                            ₹{product?.regular_price}
-                          </Text>
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        className="w-8 h-8 bg-primary rounded-full items-center justify-center"
-                        activeOpacity={0.8}
-                        onPress={(e) => handleAddToCart(product, e)}
-                        disabled={product.stock === 0}
-                      >
-                        <Ionicons name="cart-outline" size={16} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+
+                  <View style={{ flex: 1 }} />
+
+                  {/* Add button */}
+                  {!isOutOfStock && (
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        if (!user) {
+                          toast.error("Please login to add items to cart");
+                          return;
+                        }
+                        setCartProduct(product);
+                      }}
+                      activeOpacity={0.7}
+                      style={{
+                        backgroundColor: "#5A2C96",
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 50,
+                      }}
+                    >
+                      <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#FFFFFF" }}>
+                        Add
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
-            );
-          })}
-          {/* Add some padding at the end */}
-          <View className="w-4" />
-        </View>
-      </ScrollView>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }

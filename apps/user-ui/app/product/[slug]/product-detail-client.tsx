@@ -31,6 +31,7 @@ import {
 } from "@/lib/storefront";
 import { useAddressStore } from "@/lib/address-store";
 import { useAuth } from "@/lib/auth-store";
+import { trackProductView } from "@/lib/activity";
 import { toast } from "sonner";
 
 const BLUR_DATA =
@@ -90,6 +91,11 @@ export function ProductDetailClient({ product, coupon }: Props) {
     setResolvedProduct(product);
     setResolvedCoupon(coupon);
   }, [product, coupon]);
+
+  // Record the view for recently-viewed + recommendations (fire-and-forget).
+  useEffect(() => {
+    if (product?.id) trackProductView(product.id);
+  }, [product?.id]);
 
   useEffect(() => {
     if (!selectedLocation?.storeId && !selectedLocation?.pincode && !selectedLocation?.city) {

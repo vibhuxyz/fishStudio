@@ -76,17 +76,17 @@ export default function AnnouncementBanner() {
         <Ionicons name="megaphone-outline" size={14} color="#FCD34D" />
         <Text
           numberOfLines={1}
-          style={{ color: "#FCD34D", fontFamily: "Poppins-Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}
+          style={{ color: "#FCD34D", fontFamily: "Inter-Bold", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}
         >
           {banner.title}
         </Text>
         {banner.subtitle ? (
-          <Text numberOfLines={1} style={{ color: "#C4B5FD", fontFamily: "Poppins-Medium", fontSize: 11 }}>
+          <Text numberOfLines={1} style={{ color: "#C4B5FD", fontFamily: "Inter-Medium", fontSize: 11 }}>
             {banner.subtitle}
           </Text>
         ) : null}
         {banner.price ? (
-          <Text style={{ color: "#fff", fontFamily: "Poppins-Bold", fontSize: 11 }}>
+          <Text style={{ color: "#fff", fontFamily: "Inter-Bold", fontSize: 11 }}>
             ₹{banner.price}
           </Text>
         ) : null}

@@ -91,7 +91,7 @@ function InlineDropdown({
                 {opt}
               </Text>
               {opt === value && (
-                <Ionicons name="checkmark" size={17} color="#6C3CE1" />
+                <Ionicons name="checkmark" size={17} color="#5A2C96" />
               )}
             </TouchableOpacity>
           ))}
@@ -217,6 +217,10 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
         slug: product.slug,
         title: product.title,
         price: isPerKgMode ? totalPayable : resolved.salePrice,
+        regularPrice: isPerKgMode
+          ? (product.regular_price > product.sale_price ? product.regular_price : undefined)
+          : (hasDiscount ? resolved.regularPrice : undefined),
+        badges: product.badges,
         image: product.images?.[selectedImageIndex]?.url || product.images?.[0]?.url || "",
         shopId: product.Shop?.id || "",
         quantity: isPerKgMode ? 1 : quantity,
@@ -297,7 +301,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
               <Text
                 className="text-base text-foreground leading-5 mb-2"
                 style={{
-                  fontFamily: "Poppins-SemiBold",
+                  fontFamily: "Inter-SemiBold",
                   fontWeight: Platform.OS === "android" ? "600" : "normal",
                 }}
                 numberOfLines={2}
@@ -310,7 +314,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
                     <Text
                       className="text-lg text-primary"
                       style={{
-                        fontFamily: "Poppins-Bold",
+                        fontFamily: "Inter-Bold",
                         fontWeight: Platform.OS === "android" ? "700" : "normal",
                       }}
                     >
@@ -328,7 +332,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
                     <Text
                       className="text-lg text-primary"
                       style={{
-                        fontFamily: "Poppins-Bold",
+                        fontFamily: "Inter-Bold",
                         fontWeight: Platform.OS === "android" ? "700" : "normal",
                       }}
                     >
@@ -506,7 +510,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
               <Text
                 className="text-xl text-foreground"
                 style={{
-                  fontFamily: "Poppins-Bold",
+                  fontFamily: "Inter-Bold",
                   fontWeight: Platform.OS === "android" ? "700" : "normal",
                 }}
               >

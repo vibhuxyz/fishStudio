@@ -6,6 +6,7 @@ import { isProtected } from "@/utils/protected";
 import { useCartStore } from "@/lib/cart-store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+import { mergeActivity } from "@/lib/activity";
 import { QueryClient } from "@tanstack/react-query";
 
 // Shared reference so logoutUser can invalidate cache
@@ -24,6 +25,8 @@ export interface User {
 
 let currentUser: User | null = null;
 let listeners: Array<() => void> = [];
+// Guard so the server cart is pulled once per login, not on every session check.
+let _serverCartLoadedFor: string | null = null;
 
 function emitChange() {
   for (const listener of listeners) {
@@ -45,6 +48,17 @@ function getSnapshot(): User | null {
 export function setAuthenticatedUser(user: User | null) {
   currentUser = user;
   emitChange();
+  // Pull the user's server-saved cart so it follows them across devices.
+  // Guarded to run once per user, even though session checks may re-set them.
+  if (user && _serverCartLoadedFor !== user.id) {
+    _serverCartLoadedFor = user.id;
+    useCartStore.getState().loadServerCart();
+    // Fold any guest browsing history into the now-authenticated account.
+    mergeActivity();
+  }
+  if (!user) {
+    _serverCartLoadedFor = null;
+  }
 }
 
 export function isUserLoggedIn(): boolean {
@@ -75,6 +89,31 @@ export async function logoutUser() {
       _queryClient.invalidateQueries({ queryKey: ["category-banners"] });
     }
   }
+}
+
+// Edit Profile — updates name/email server-side and reflects it in the store.
+export async function updateProfile(input: { name?: string; email?: string }) {
+  const { data } = await axiosInstance.put(
+    "/auth/api/update-user-profile",
+    input,
+    isProtected,
+  );
+  const updated = data?.user;
+  if (updated && currentUser) {
+    setAuthenticatedUser({
+      ...currentUser,
+      name: updated.name ?? currentUser.name,
+      email: updated.email ?? currentUser.email,
+    });
+  }
+  return data;
+}
+
+// Delete Account — permanently removes the account, then clears local session.
+export async function deleteAccount() {
+  await axiosInstance.delete("/auth/api/delete-user", isProtected);
+  // Reuse the logout teardown so all local state/caches are cleared.
+  await logoutUser();
 }
 
 export function useAuth() {

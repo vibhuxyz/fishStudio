@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Filter } from "lucide-react";
+import { ArrowLeft, Filter, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/shared/product-card";
 import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProducts } from "@/hooks/useProducts";
+import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
 import { useCategories } from "@/hooks/useCategories";
 import {
   getCategoryConfigKey,
   type StorefrontCategories,
+  type StorefrontProductListingParams,
   type StorefrontProductListingResponse,
 } from "@/lib/storefront";
 import { CategoryBanner } from "@/components/sections/category-banner";
@@ -28,22 +29,33 @@ interface CategoryClientProps {
   resolvedCategory?: string | null;
 }
 
+type SortOption = StorefrontProductListingParams["sortBy"];
+
+const SORT_OPTIONS: { label: string; value: SortOption }[] = [
+  { label: "Newest", value: "newest" },
+  { label: "Price ↑", value: "price_asc" },
+  { label: "Price ↓", value: "price_desc" },
+  { label: "Popular", value: "popular" },
+];
+
 export function CategoryClient({
   slug,
   initialSub,
   initialCategories,
-  initialProductListing,
   resolvedCategory,
 }: CategoryClientProps) {
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(
     initialSub || null,
   );
+  const [sortBy, setSortBy] = useState<SortOption>(undefined);
+  const [onSale, setOnSale] = useState(false);
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const categorySlug = decodeURIComponent(slug);
   const { data: categoriesData, isLoading: categoriesLoading } =
     useCategories(initialCategories);
 
-  // Find the real category name from the API by matching the slug
   const matchedCategory = useMemo(() => {
     return (
       (categoriesData?.categories ?? []).find(
@@ -57,17 +69,40 @@ export function CategoryClient({
   const {
     allProducts,
     isLoading: productsLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     pagination,
-  } = useProducts({
-    initialData: initialProductListing,
+  } = useInfiniteProducts({
     scope: "category",
     category: matchedCategory ?? undefined,
-    limit: initialProductListing?.pagination.limit ?? 24,
+    subCategory: activeSubCategory ?? undefined,
+    limit: 24,
+    sortBy,
+    onSale: onSale || undefined,
+    enabled: matchedCategory !== null,
   });
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "400px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const isLoading = productsLoading || categoriesLoading;
 
-  // Use the real name if found, otherwise fall back to slug-based title
   const categoryDisplayName =
     matchedCategory ??
     categorySlug
@@ -75,14 +110,12 @@ export function CategoryClient({
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
-  // Subcategories from the API for this category
   const apiSubCategories = useMemo(() => {
     if (!matchedCategory || !categoriesData) return [];
     const key = getCategoryConfigKey(matchedCategory);
     return categoriesData.subCategories[key] ?? [];
   }, [matchedCategory, categoriesData]);
 
-  // Filter products that belong to this category
   const categoryProducts = useMemo(() => {
     return allProducts.filter((p) => {
       if (!p.category) return false;
@@ -90,7 +123,6 @@ export function CategoryClient({
     });
   }, [allProducts, categorySlug]);
 
-  // Subcategories for the sidebar: API subs first, then any extra from products
   const subCategories = useMemo(() => {
     const productSubs = categoryProducts
       .map((p) => p.subCategory)
@@ -99,7 +131,6 @@ export function CategoryClient({
     return Array.from(merged);
   }, [apiSubCategories, categoryProducts]);
 
-  // Pre-compute subcategory counts once
   const subCategoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const p of categoryProducts) {
@@ -110,7 +141,6 @@ export function CategoryClient({
     return counts;
   }, [categoryProducts]);
 
-  // Products filtered by active subcategory
   const displayedProducts = useMemo(() => {
     if (!activeSubCategory) return categoryProducts;
     return categoryProducts.filter((p) => p.subCategory === activeSubCategory);
@@ -198,15 +228,47 @@ export function CategoryClient({
             <p className="mt-2 text-muted-foreground">
               Browse our fresh selection of {categoryDisplayName.toLowerCase()}{" "}
               products.
-              {categoryProducts.length > 0
-                ? ` ${categoryProducts.length} products available.`
-                : ""}
+              {pagination?.total
+                ? ` ${pagination.total} products available.`
+                : categoryProducts.length > 0
+                  ? ` ${categoryProducts.length} products available.`
+                  : ""}
             </p>
           </div>
         </div>
 
         <div className="mx-auto max-w-7xl px-4 py-8">
           {matchedCategory && <CategoryBanner category={matchedCategory} />}
+
+          {/* Filter bar */}
+          <div className="mb-6 flex flex-wrap items-center gap-2">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSortBy(sortBy === opt.value ? undefined : opt.value)}
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                  sortBy === opt.value
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setOnSale((v) => !v)}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+                onSale
+                  ? "border-green-500 bg-green-500 text-white"
+                  : "border-border bg-card text-muted-foreground hover:border-green-500 hover:text-foreground"
+              }`}
+            >
+              On Sale
+            </button>
+          </div>
+
           <div className="flex flex-col gap-8 lg:flex-row">
             {subCategories.length > 0 && (
               <aside className="w-full flex-shrink-0 lg:w-60">
@@ -274,7 +336,7 @@ export function CategoryClient({
                     </p>
                     {pagination?.total ? (
                       <p className="text-xs text-muted-foreground">
-                        Total catalog items: {pagination.total}
+                        Total: {pagination.total}
                       </p>
                     ) : null}
                   </div>
@@ -348,6 +410,18 @@ export function CategoryClient({
                       )}
                     </div>
                   )}
+
+                  {/* Infinite scroll sentinel */}
+                  <div ref={sentinelRef} className="mt-8 flex justify-center py-4">
+                    {isFetchingNextPage && (
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    )}
+                    {!hasNextPage && categoryProducts.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        All products loaded
+                      </p>
+                    )}
+                  </div>
                 </>
               )}
             </div>

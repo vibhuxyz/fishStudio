@@ -7,6 +7,7 @@ import {
   validateProductSlug,
 } from "@/hooks/useAdminQueries";
 import ImagePlaceHolder from "@/shared/components/image-placeholder";
+import { MarketingBadgeSelector } from "@/shared/components/marketing-badge-selector";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Wand2 } from "lucide-react";
@@ -40,6 +41,15 @@ type ProductFormValues = {
   pieceSizes?: unknown;
   processingWeightLoss?: string;
   discountCodes?: string[];
+  origin?: string;
+  source?: string;
+  shelfLife?: string;
+  storageInstructions?: string;
+  cookingTips?: string;
+  highlightDescription?: string;
+  nutritionProtein?: string;
+  nutritionOmega3?: string;
+  nutritionCalories?: string;
   [key: string]: unknown;
 };
 
@@ -386,6 +396,12 @@ const Page = () => {
                     {errors.tags.message as string}
                   </p>
                 )}
+                <MarketingBadgeSelector
+                  value={watch("tags")}
+                  onChange={(next) =>
+                    setValue("tags", next, { shouldValidate: true })
+                  }
+                />
               </div>
 
               <div className="mt-2">
@@ -591,6 +607,73 @@ const Page = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Product Detail Page Content */}
+      <div className="w-full mt-4 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+        <h3 className="text-lg font-semibold text-white mb-3">
+          Product Detail Page Content (optional)
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="Origin"
+            placeholder="e.g., India"
+            {...register("origin")}
+          />
+          <Input
+            label="Source"
+            placeholder="e.g., Freshwater, Saltwater, Farmed"
+            {...register("source")}
+          />
+          <Input
+            label="Shelf Life"
+            placeholder="e.g., 1-2 Days"
+            {...register("shelfLife")}
+          />
+          <Input
+            label="Storage Instructions"
+            placeholder="e.g., Keep refrigerated (0-4°C)"
+            {...register("storageInstructions")}
+          />
+        </div>
+
+        <div className="mt-2">
+          <Input
+            type="textarea"
+            rows={3}
+            label="Cooking Tips (one per line)"
+            placeholder={"Marinate for 20 mins before frying\nBest grilled on high heat"}
+            {...register("cookingTips")}
+          />
+        </div>
+
+        <div className="mt-2">
+          <Input
+            type="textarea"
+            rows={3}
+            label={'"What makes it great?" description'}
+            placeholder="Rohu is a nutritious freshwater fish with soft texture and rich taste. Perfect for curry, fry, grilling and steaming."
+            {...register("highlightDescription")}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mt-2">
+          <Input
+            label="Protein (per 100g)"
+            placeholder="e.g., 18g"
+            {...register("nutritionProtein")}
+          />
+          <Input
+            label="Omega 3 (per 100g)"
+            placeholder="e.g., 1.2g"
+            {...register("nutritionOmega3")}
+          />
+          <Input
+            label="Calories (per 100g)"
+            placeholder="e.g., 120 kcal"
+            {...register("nutritionCalories")}
+          />
         </div>
       </div>
 

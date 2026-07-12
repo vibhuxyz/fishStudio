@@ -22,6 +22,7 @@ import { useModals } from "@/components/providers/modal-provider";
 const QR_MOCK = "https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://fishstudio.app/download&bgcolor=ffffff";
 
 const MENU_ITEMS = [
+  { label: "My Account", icon: User, href: "/account" },
   { label: "My Orders", icon: ShoppingBag, href: "/orders" },
   { label: "Saved Addresses", icon: MapPin, href: "/addresses" },
   { label: "FAQ's", icon: HelpCircle, href: "/faqs" },

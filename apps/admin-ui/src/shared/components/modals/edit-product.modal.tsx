@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
+import { MarketingBadgeSelector } from "@/shared/components/marketing-badge-selector";
 import {
   getCategoryConfigKey,
   useAdminCategories,
@@ -39,6 +40,15 @@ const EditProductModal = ({
       subCategory: product.subCategory || "",
       short_description: product.short_description || "",
       tags: product.tags?.join(", ") || "",
+      origin: product.origin || "",
+      source: product.source || "",
+      shelfLife: product.shelfLife || "",
+      storageInstructions: product.storageInstructions || "",
+      cookingTips: product.cookingTips?.join("\n") || "",
+      highlightDescription: product.highlightDescription || "",
+      nutritionProtein: product.nutritionProtein || "",
+      nutritionOmega3: product.nutritionOmega3 || "",
+      nutritionCalories: product.nutritionCalories || "",
     },
   });
 
@@ -51,6 +61,15 @@ const EditProductModal = ({
       subCategory: product.subCategory || "",
       short_description: product.short_description || "",
       tags: product.tags?.join(", ") || "",
+      origin: product.origin || "",
+      source: product.source || "",
+      shelfLife: product.shelfLife || "",
+      storageInstructions: product.storageInstructions || "",
+      cookingTips: product.cookingTips?.join("\n") || "",
+      highlightDescription: product.highlightDescription || "",
+      nutritionProtein: product.nutritionProtein || "",
+      nutritionOmega3: product.nutritionOmega3 || "",
+      nutritionCalories: product.nutritionCalories || "",
     });
     setImages(product.images || []);
   }, [product, reset]);
@@ -206,6 +225,10 @@ const EditProductModal = ({
               {...register("tags")}
               className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
             />
+            <MarketingBadgeSelector
+              value={watch("tags") as string}
+              onChange={(next) => setValue("tags", next)}
+            />
           </div>
 
           <div className="rounded-md border border-slate-700 bg-slate-900/60 px-3 py-2 text-sm text-slate-300">
@@ -266,6 +289,102 @@ const EditProductModal = ({
               {...register("short_description")}
               className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
             />
+          </div>
+
+          <div className="md:col-span-2 border-t border-gray-700 pt-4 mt-2">
+            <h4 className="text-sm font-semibold text-gray-200 mb-3">
+              Product Detail Page Content
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Origin</label>
+                <input
+                  {...register("origin")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Source</label>
+                <input
+                  placeholder="e.g., Freshwater, Saltwater, Farmed"
+                  {...register("source")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Shelf Life</label>
+                <input
+                  placeholder="e.g., 1-2 Days"
+                  {...register("shelfLife")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Storage Instructions
+                </label>
+                <input
+                  placeholder="e.g., Keep refrigerated (0-4°C)"
+                  {...register("storageInstructions")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-sm text-gray-300 mb-1">
+                Cooking Tips (one per line)
+              </label>
+              <textarea
+                rows={3}
+                {...register("cookingTips")}
+                className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              />
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-sm text-gray-300 mb-1">
+                &quot;What makes it great?&quot; description
+              </label>
+              <textarea
+                rows={3}
+                {...register("highlightDescription")}
+                className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Protein (per 100g)
+                </label>
+                <input
+                  placeholder="e.g., 18g"
+                  {...register("nutritionProtein")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Omega 3 (per 100g)
+                </label>
+                <input
+                  placeholder="e.g., 1.2g"
+                  {...register("nutritionOmega3")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Calories (per 100g)
+                </label>
+                <input
+                  placeholder="e.g., 120 kcal"
+                  {...register("nutritionCalories")}
+                  className="w-full rounded-md border border-gray-700 bg-transparent px-3 py-2 text-white outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="md:col-span-2 flex justify-end gap-3 pt-2">
