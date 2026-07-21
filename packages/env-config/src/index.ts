@@ -113,8 +113,8 @@ export const ENV = {
   RABBITMQ_PASSWORD: logEnv("RABBITMQ_PASSWORD", process.env.RABBITMQ_PASSWORD),
   RABBITMQ_PORT: logEnv("RABBITMQ_PORT", process.env.RABBITMQ_PORT),
 
-
-
+  // Payments & SMS
+  STRIPE_SECRET_KEY: logEnv("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY),
   FAST2SMS_API_KEY: logEnv("FAST2SMS_API_KEY", process.env.FAST2SMS_API_KEY),
 
   // Razorpay

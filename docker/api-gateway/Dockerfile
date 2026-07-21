@@ -1,109 +1,62 @@
-# syntax=docker/dockerfile:1
-
-# ============================================================
-# Stage 1 — Pruner
-# ============================================================
-FROM oven/bun:1 AS pruner
-
-ENV HUSKY=0
-
+# ==========================================
+# 1. Builder Stage (Uses Bun)
+# ==========================================
+FROM oven/bun:1 AS builder
 WORKDIR /app
 
+# Copy the entire monorepo context
 COPY . .
 
-RUN bunx turbo prune @repo/api-gateway --docker
+# Install dependencies (creates node_modules with symlinks)
+RUN bun install --frozen-lockfile
 
-# ============================================================
-# Stage 2 — Production Dependencies
-# ============================================================
-FROM oven/bun:1 AS prod-deps
+# --- FIX: Generate Prisma Client for Docker ---
+# Switch to the database package directory
+# Switch to the database package directory
 
-ENV HUSKY=0
+WORKDIR /app/packages/db-postgres
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_oUHCPa3zQpW6@ep-wispy-hill-ao2txbj1.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"' > .env
+RUN bunx prisma generate
 
-WORKDIR /app
-
-COPY --from=pruner /app/out/json/ .
-COPY --from=pruner /app/out/bun.lock ./bun.lock
-
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile --production
-
-# ============================================================
-# Stage 3 — Builder
-# ============================================================
-FROM oven/bun:1 AS builder
-
-ENV HUSKY=0
-
-WORKDIR /app
-
-COPY --from=pruner /app/out/json/ .
-COPY --from=pruner /app/out/bun.lock ./bun.lock
-
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
-
-# Copy the complete pruned source
-COPY --from=pruner /app/out/full/ .
-
-# -----------------------------
-# Generate Prisma Clients
-# -----------------------------
-
-WORKDIR /app
-
-RUN find . -name schema.prisma
-
-RUN find /app/packages/db-mongo -type d -name "generated*"
 
 WORKDIR /app/packages/db-mongo
 
-RUN MONGO_URL="mongodb://x:x@localhost:27017/x" \
-    bunx prisma generate \
-    --schema=./prisma/schema.prisma
+RUN echo 'MONGO_URL="mongodb+srv://fishstudio:fishstudioxyz12@primarydb.zzfdeea.mongodb.net/fishStudio?authSource=admin"' > .env
+RUN bunx prisma generate
 
-# -----------------------------
-# Build only api-gateway
-# -----------------------------
-
+# Switch back to root to continue the build
 WORKDIR /app
+# --------------------------------------------
 
-RUN --mount=type=cache,target=/root/.turbo \
-    bunx turbo run build --filter=@repo/api-gateway...
+# Build the specific service (and its dependencies like @repo/db)
+RUN bunx turbo run build --filter=@repo/api-gateway...
 
-# ============================================================
-# Stage 4 — Runtime
-# ============================================================
+# ==========================================
+# 2. Runtime Stage (Uses Node)
+# ==========================================
 FROM node:20-slim AS runner
 
 WORKDIR /app
 
+# Set production environment
 ENV NODE_ENV=production
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-    openssl \
-    ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# ------------------------------------------------
-# Production dependencies
-# ------------------------------------------------
-COPY --from=prod-deps /app/node_modules ./node_modules
 
-# ------------------------------------------------
-# db-mongo
-# ------------------------------------------------
-COPY --from=builder /app/packages/db-mongo/package.json ./packages/db-mongo/package.json
-COPY --from=builder /app/packages/db-mongo/dist ./packages/db-mongo/dist
-COPY --from=builder /app/packages/db-mongo/prisma/generated-client ./packages/db-mongo/prisma/generated-client
+# 1. Copy Root node_modules (Shared hoisted dependencies)
+COPY --from=builder /app/node_modules ./node_modules
 
-# ------------------------------------------------
-# api-gateway
-# ------------------------------------------------
-COPY --from=builder /app/apps/api-gateway/package.json ./apps/api-gateway/package.json
-COPY --from=builder /app/apps/api-gateway/dist ./apps/api-gateway/dist
+# 2. Copy Shared Packages
+# This creates /app/packages/db which contains the 'dist' (code) AND
+# the 'src/generated' (Prisma binary engines) created in the builder stage.
+COPY --from=builder /app/packages ./packages
 
+# 3. Copy the specific App
+COPY --from=builder /app/apps/api-gateway ./apps/api-gateway
+
+# Run from the app directory so it resolves dependencies correctly
 WORKDIR /app/apps/api-gateway
 
 EXPOSE 8080

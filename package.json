@@ -40,7 +40,7 @@
     "format": "prettier --write \"**/*.{js,ts,jsx,tsx,md,json}\"",
     "check-format": "prettier --check \"**/*.{js,ts,jsx,tsx,md,json}\"",
     "check-types": "turbo run check-types",
-    "prepare": "husky || true",
+    "prepare": "husky",
     "db:setup": "cd packages/db && bun run db:setup",
     "db:generate": "cd packages/db-postgres && bunx prisma generate && cd ../db-mongo && bunx prisma generate",
     "db:migrate": "cd packages/db-postgres && bunx prisma migrate dev && cd ../db-mongo && bunx prisma db push",
