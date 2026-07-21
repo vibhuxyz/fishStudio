@@ -14,13 +14,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/api-gateway/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
+
+      - name: Build and Push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/api-gateway/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
 
   # ==========================================
   # 2. AUTH SERVICE
@@ -30,13 +44,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/auth-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/auth-service:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:prod
+
+      - name: Build and Push Auth Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/auth-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auth-service:prod
 
   # ==========================================
   # 3. PRODUCT SERVICE
@@ -46,13 +74,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/product-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/product-service:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/product-service:prod
+
+      - name: Build and Push Product Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/product-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/product-service:prod
 
   # ==========================================
   # 4. ORDER SERVICE
@@ -62,13 +104,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/order-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/order-service:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/order-service:prod
+
+      - name: Build and Push Order Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/order-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/order-service:prod
 
   # ==========================================
   # 5. NOTIFICATION SERVICE
@@ -78,13 +134,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/notification-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/notification-service:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/notification-service:prod
+
+      - name: Build and Push Notification Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/notification-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/notification-service:prod
 
   # ==========================================
   # 6. WORKER SERVICE
@@ -94,19 +164,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - run: |
-          docker build -f docker/worker-service/Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/worker-service:prod .
-          docker push ${{ secrets.DOCKER_USERNAME }}/worker-service:prod
+
+      - name: Build and Push Worker Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/worker-service/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/worker-service:prod
 
   # ==========================================
-  # 7. DEPLOY TO DIGITALOCEAN
+  # 7. DEPLOY TO AWS EC2
   # ==========================================
-  deploy-to-droplet:
-    name: Deploy to DigitalOcean
+  deploy-to-ec2:
+    name: Deploy to AWS EC2
     needs:
       [
         api-gateway,
@@ -116,7 +200,7 @@ jobs:
         notification-service,
         worker-service,
       ]
-    # This logic ensures deployment ONLY runs if at least one build ran and succeeded.
+    # Ensure deployment ONLY runs if at least one build ran and succeeded.
     if: |
       always() &&
       !contains(needs.*.result, 'failure') &&
@@ -127,11 +211,11 @@ jobs:
       - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: root
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          host: ${{ secrets.EC2_HOST_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd fish-studio
-            sudo docker compose pull
-            sudo docker compose up -d
-            sudo docker image prune -f
+            cd ~/fish-studio
+            docker compose pull
+            docker compose up -d
+            docker image prune -f

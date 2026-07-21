@@ -58,7 +58,7 @@ export function CheckoutClient() {
             instantFee: res.instantFee || 20,
             isStoreOpen: res.isStoreOpen !== false,
           });
-          
+
           // Auto-select best available slot
           if (res.availableSlots?.includes("instant")) {
             setSelectedSlot("instant");
@@ -129,20 +129,22 @@ export function CheckoutClient() {
     (c) => c.discountType === "free_delivery" && totalPrice >= c.minOrderValue
   );
   const deliveryCharge = isFreeDelivery ? 0 : baseDeliveryCharge;
-  
-  // Total delivery cost includes base + slot extra
+
+
   const totalDeliveryCost = deliveryCharge + slotExtraCharge;
 
-  // Cap discount so total never goes negative
+
   const rawDiscount = getTotalDiscount(totalPrice);
+  
   const discountBreakdown = appliedCoupons.map((c) => ({
     code: c.code,
     amount: useCouponStore.getState().getDiscountForCoupon(c, totalPrice),
   }));
+  
   const discount = Math.min(rawDiscount, totalPrice + totalDeliveryCost);
   const grandTotal = Math.max(0, totalPrice + totalDeliveryCost - discount);
 
-  // Load the Razorpay Checkout SDK on demand (only once).
+  // Load the Razorpay Checkout SDK 
   const loadRazorpay = () =>
     new Promise<boolean>((resolve) => {
       if ((window as any).Razorpay) return resolve(true);

@@ -38,17 +38,7 @@ const Signup = () => {
   const { setLoggedIn } = useAuthStore();
   const { seller, isLoading: isProfileLoading } = useSeller();
 
-  useEffect(() => {
-    if (!isProfileLoading && seller) {
-      toast.info("You are already logged in. Redirecting to dashboard...", {
-        description: "Please logout to create another account",
-        duration: 3000,
-      });
-      setTimeout(() => {
-        router.replace("/dashboard");
-      }, 2000);
-    }
-  }, [seller, isProfileLoading, router]);
+
 
   const currentStep = !codeVerified ? 1 : !showOtp ? 2 : 3;
   const steps = ["Authorization", "Profile", "Security"];
@@ -128,6 +118,18 @@ const Signup = () => {
       router.push("/dashboard");
     },
   });
+
+  useEffect(() => {
+    if (!isProfileLoading && seller && !verifyOtpMutation.isPending && !verifyOtpMutation.isSuccess) {
+      toast.info("You are already logged in. Redirecting to dashboard...", {
+        description: "Please logout to create another account",
+        duration: 3000,
+      });
+      setTimeout(() => {
+        router.replace("/dashboard");
+      }, 2000);
+    }
+  }, [seller, isProfileLoading, router, verifyOtpMutation.isPending, verifyOtpMutation.isSuccess]);
 
   const onSubmit = (data: SignupFormData) => {
     signupMutation.mutate(data);

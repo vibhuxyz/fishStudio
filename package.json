@@ -10,7 +10,10 @@
     "prettier": "^3.7.4",
     "turbo": "^2.7.2",
     "concurrently": "^9.1.0",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "@repo/db-mongo": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "@types/bcryptjs": "^3.0.0"
   },
   "engines": {
     "node": ">=18"
@@ -42,7 +45,8 @@
     "db:generate": "cd packages/db-postgres && bunx prisma generate && cd ../db-mongo && bunx prisma generate",
     "db:migrate": "cd packages/db-postgres && bunx prisma migrate dev && cd ../db-mongo && bunx prisma db push",
     "db:seed": "cd packages/db-mongo && bun run db:seed",
-    "db:reset": "bun run scripts/reset-db.ts"
+    "db:reset": "bun run scripts/reset-db.ts",
+    "admin:init": "bun run scripts/initAdmin.ts"
   },
   "workspaces": [
     "apps/*",

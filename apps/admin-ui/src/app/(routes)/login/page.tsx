@@ -47,17 +47,7 @@ const Login = () => {
   };
 
 
-  useEffect(() => {
-    if (!isProfileLoading && seller) {
-      toast.info("You are already logged in. Redirecting to dashboard...", {
-        description: "Please logout to create another account",
-        duration: 3000,
-      });
-      setTimeout(() => {
-        router.replace("/dashboard");
-      }, 2000);
-    }
-  }, [seller, isProfileLoading, router]);
+
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -81,6 +71,18 @@ const Login = () => {
       setServerError(errorMessage);
     },
   });
+
+  useEffect(() => {
+    if (!isProfileLoading && seller && !loginMutation.isPending && !loginMutation.isSuccess) {
+      toast.info("You are already logged in. Redirecting to dashboard...", {
+        description: "Please logout to create another account",
+        duration: 3000,
+      });
+      setTimeout(() => {
+        router.replace("/dashboard");
+      }, 2000);
+    }
+  }, [seller, isProfileLoading, router, loginMutation.isPending, loginMutation.isSuccess]);
 
   const onSubmit = (data: FormData) => {
     loginMutation.mutate(data);
