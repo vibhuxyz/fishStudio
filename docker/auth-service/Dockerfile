@@ -13,14 +13,14 @@ COPY . .
 RUN bun install --frozen-lockfile
 
 WORKDIR /app/packages/db-postgres
-
-RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_0LSmuGOPyjg9@ep-square-violet-ak8f7sdn-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_oUHCPa3zQpW6@ep-wispy-hill-ao2txbj1.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"' > .env
 RUN bunx prisma generate
 
 
 WORKDIR /app/packages/db-mongo
 
-RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
+RUN echo 'MONGO_URL="mongodb+srv://fishstudio:fishstudioxyz12@primarydb.zzfdeea.mongodb.net/fishStudio?authSource=admin"' > .env
 RUN bunx prisma generate
 
 
