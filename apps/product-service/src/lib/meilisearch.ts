@@ -136,7 +136,7 @@ export async function initMeilisearchIndex() {
   }
 }
 
-/** Fire-and-forget helpers (non-blocking) */
+/** Fire-and-forget helper (non-blocking) — upserts one product doc. */
 export async function indexProduct(product: Parameters<typeof toMeiliDoc>[0]) {
   try {
     const index = meiliClient.index(PRODUCTS_INDEX);
@@ -149,19 +149,9 @@ export async function indexProduct(product: Parameters<typeof toMeiliDoc>[0]) {
   }
 }
 
-export async function updateIndexedProduct(
-  product: Parameters<typeof toMeiliDoc>[0],
-) {
-  try {
-    const index = meiliClient.index(PRODUCTS_INDEX);
-    const doc = toMeiliDoc(product);
-    // Atomic update: delete then add to prevent duplicates/stale state
-    await index.deleteDocument(doc.id).catch(() => {});
-    await index.addDocuments([doc]);
-  } catch (e) {
-    console.error("[Meili] update error:", (e as Error).message);
-  }
-}
+// Same upsert as indexProduct — kept as a distinct export so call sites can
+// say what they mean (create vs. update flows).
+export const updateIndexedProduct = indexProduct;
 
 export function removeIndexedProduct(id: string) {
   const index = meiliClient.index(PRODUCTS_INDEX);

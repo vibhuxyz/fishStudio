@@ -15,8 +15,6 @@ const BannersPage = () => {
   const queryClient = useQueryClient();
   const { data: banners = [], isLoading } = useAdminBanners();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
-  const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const [newBannerImages, setNewBannerImages] = useState<any[]>([null]);
 
   const deleteMutation = useMutation({
@@ -33,30 +31,32 @@ const BannersPage = () => {
   });
 
   const handleUpload = async () => {
-    const imagesToUpload = newBannerImages
-      .map((img, idx) => ({ ...img, originalIndex: idx }))
-      .filter(img => img !== null && img.base64);
+    if (newBannerImages.some((img) => img?.uploading)) {
+      toast.error("Please wait for the images to finish uploading.");
+      return;
+    }
 
-    if (imagesToUpload.length === 0) {
+    // Cloudinary already has these — the banner record just needs the URLs.
+    const uploadedImages = newBannerImages.filter((img) => img?.fileId);
+
+    if (uploadedImages.length === 0) {
       toast.error("Please select at least one image to upload");
       return;
     }
 
     try {
       setIsUploading(true);
-      setUploadedIndices([]);
-      for (const imgData of imagesToUpload) {
-        setUploadingIndex(imgData.originalIndex);
-        await axiosInstance.post(
-          "/product/api/upload-banner",
-          {
-            images: [imgData.base64],
-          },
-          isProtected
-        );
-        setUploadedIndices(prev => [...prev, imgData.originalIndex]);
-      }
-      
+      await axiosInstance.post(
+        "/product/api/upload-banner",
+        {
+          images: uploadedImages.map((img) => ({
+            file_url: img.file_url,
+            fileId: img.fileId,
+          })),
+        },
+        isProtected
+      );
+
       toast.success("Banners uploaded successfully");
       setNewBannerImages([null]);
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.banners });
@@ -65,8 +65,6 @@ const BannersPage = () => {
        console.error(error);
     } finally {
       setIsUploading(false);
-      setUploadingIndex(null);
-      setUploadedIndices([]);
     }
   };
 
@@ -85,28 +83,19 @@ const BannersPage = () => {
           </div>
           
           <div className="space-y-4">
-            {newBannerImages.map((_, index) => {
-              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
-              if (isUploading) {
-                if (uploadingIndex === index) status = "uploading";
-                else if (uploadedIndices.includes(index)) status = "success";
-                else if (newBannerImages[index] && newBannerImages[index].base64) status = "waiting";
-              }
-
-              return (
-                <ImagePlaceHolder
-                  key={index}
-                  index={index}
-                  size="1920 x 450"
-                  small={true}
-                  images={newBannerImages}
-                  setImages={setNewBannerImages}
-                  setValue={() => {}} // dummy for now
-                  isUploading={status === "uploading"}
-                  uploadStatus={status}
-                />
-              );
-            })}
+            {newBannerImages.map((_, index) => (
+              <ImagePlaceHolder
+                key={index}
+                index={index}
+                size="1920 x 450"
+                small={true}
+                images={newBannerImages}
+                setImages={setNewBannerImages}
+                setValue={() => {}} // dummy for now
+                autoUpload
+                folder="banners"
+              />
+            ))}
           </div>
 
           <Button

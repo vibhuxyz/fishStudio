@@ -18,7 +18,7 @@ import { useAuth } from "@/lib/auth-store";
 import { AddressModal } from "@/components/shared/address-modal";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { axiosInstance } from "@/lib/utils";
+import axiosInstance from "@/utils/axiosInstance";
 import { useModals } from "@/components/providers/modal-provider";
 import { useUserSession } from "@/hooks/useUserSession";
 import { Loader2 } from "lucide-react";

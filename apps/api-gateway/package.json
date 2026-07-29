@@ -19,12 +19,10 @@
     "express": "^5.2.1",
     "express-http-proxy": "^2.1.2",
     "express-rate-limit": "^8.2.1",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "@repo/env-config": "workspace:*"
   },
   "devDependencies": {
-    "@repo/db-mongo": "workspace:*",
-    "@repo/env-config": "workspace:*",
-    "@repo/libs": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "@types/cookie-parser": "^1.4.10",

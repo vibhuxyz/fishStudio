@@ -5,9 +5,9 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12">
-        <div className="grid grid-cols-4 gap-x-2 gap-y-8 sm:grid-cols-2 lg:grid-cols-4" style={{ textAlign: 'left', alignItems: 'start' }}>
+        <div className="grid grid-cols-4 gap-x-2 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand - 50% on mobile */}
-          <div className="col-span-2 flex flex-col items-start !text-left sm:col-span-1 lg:col-span-1">
+          <div className="col-span-2 flex flex-col items-start sm:col-span-1 lg:col-span-1">
             <div className="flex items-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
                 <Fish className="h-6 w-6 text-primary-foreground" />
@@ -16,22 +16,22 @@ export function SiteFooter() {
                 Fish Studio
               </span>
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground sm:text-sm !text-left">
+            <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground sm:text-sm">
               Enjoy premium taste delivered to your doorstep
             </p>
           </div>
 
           {/* Useful links - 25% on mobile */}
-          <div className="col-span-1 flex flex-col items-start !text-left sm:col-span-1">
-            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm !text-left">
+          <div className="col-span-1 flex flex-col items-start sm:col-span-1">
+            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm">
               Useful links
             </h3>
-            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2 !text-left">
+            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2">
               {["About us", "Events", "Blogs", "FAQ"].map((link) => (
-                <li key={link} className="!text-left w-full">
+                <li key={link} className="w-full">
                   <Link
                     href="/"
-                    className="text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-sm block !text-left"
+                    className="text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-sm block"
                   >
                     {link}
                   </Link>
@@ -41,16 +41,16 @@ export function SiteFooter() {
           </div>
 
           {/* Main Menu - 25% on mobile */}
-          <div className="col-span-1 flex flex-col items-start !text-left sm:col-span-1">
-            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm !text-left">
+          <div className="col-span-1 flex flex-col items-start sm:col-span-1">
+            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm">
               Main Menu
             </h3>
-            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2 !text-left">
+            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2">
               {["Home", "Offers", "Menus", "Reservation"].map((link) => (
-                <li key={link} className="!text-left w-full">
+                <li key={link} className="w-full">
                   <Link
                     href="/"
-                    className="text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-sm block !text-left"
+                    className="text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-sm block"
                   >
                     {link}
                   </Link>
@@ -60,16 +60,16 @@ export function SiteFooter() {
           </div>
 
           {/* Contact Us - 100% on mobile */}
-          <div className="col-span-4 mt-6 flex flex-col items-start !text-left sm:col-span-1 sm:mt-0 lg:col-span-1">
-            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm !text-left">
+          <div className="col-span-4 mt-6 flex flex-col items-start sm:col-span-1 sm:mt-0 lg:col-span-1">
+            <h3 className="font-serif text-[12px] font-bold text-foreground sm:text-sm">
               Contact Us
             </h3>
-            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2 !text-left">
-              <li className="text-[11px] text-muted-foreground sm:text-sm !text-left">
+            <ul className="mt-2 flex flex-col items-start gap-1.5 sm:mt-3 sm:gap-2">
+              <li className="text-[11px] text-muted-foreground sm:text-sm">
                 fishstudio@gmail.com
               </li>
-              <li className="text-[11px] text-muted-foreground sm:text-sm !text-left">+91 8899442255</li>
-              <li className="text-[11px] text-muted-foreground sm:text-sm !text-left">Social media</li>
+              <li className="text-[11px] text-muted-foreground sm:text-sm">+91 8899442255</li>
+              <li className="text-[11px] text-muted-foreground sm:text-sm">Social media</li>
             </ul>
           </div>
         </div>
@@ -81,8 +81,7 @@ export function SiteFooter() {
               <Link
                 key={i}
                 href="/"
-                className="flex h-9 w-9 items-center justify-center !rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
-                style={{ borderRadius: '9999px !important' }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-80"
               >
                 <Icon className="h-4 w-4" />
                 <span className="sr-only">Social media</span>
@@ -90,7 +89,7 @@ export function SiteFooter() {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
-            {"Copyright \u00A9 2025 Fishstudio | All rights reserved"}
+            Copyright © 2025 Fishstudio | All rights reserved
           </p>
         </div>
       </div>

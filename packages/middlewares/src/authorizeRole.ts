@@ -38,6 +38,17 @@ export const isApprovedSeller = (req: any, res: Response, next: NextFunction) =>
   return next();
 };
 
+/**
+ * Money-moving routes (refunds): admins always pass, sellers only once
+ * approved. Staff are deliberately excluded — they act within a seller's shop
+ * but must not trigger refunds.
+ */
+export const isAdminOrApprovedSeller = (req: any, res: Response, next: NextFunction) => {
+  if (req.role === "admin") return next();
+  if (req.role === "seller") return isApprovedSeller(req, res, next);
+  return next(new AuthError("Access denied"));
+};
+
 export const isAdmin = (req: any, res: Response, next: NextFunction) => {
   if (req.role !== "admin") {
     return next(new AuthError("Access denied: Admin only"));

@@ -19,14 +19,15 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { axiosInstance } from "@/lib/utils";
-import { frontendEnv } from "@/lib/env";
+import axiosInstance from "@/utils/axiosInstance";
 import { Button } from "@/components/ui/button";
 import { useUserSession } from "@/hooks/useUserSession";
+import { useWs } from "@/context/ws-context";
 import { toast } from "sonner";
+import type { Order } from "@/lib/orders-api";
 
 interface OrderConfirmationDetailProps {
-  initialOrder: any;
+  initialOrder: Order | null;
   orderId: string;
 }
 
@@ -36,6 +37,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   // useUserSession reads from TanStack Query cache — available synchronously on
   // first render (no effect/store hop), so enabled is correct immediately.
   const { user, isLoading: isSessionLoading } = useUserSession();
+  const { subscribe } = useWs();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -46,51 +48,21 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
     queryKey: ["order", orderId],
     queryFn: async () => {
       const { data } = await axiosInstance.get(`/order/api/get-order/${orderId}`);
-      return data.order;
+      return data.order as Order;
     },
     initialData: initialOrder ?? undefined,
     enabled: !!orderId && !!user,
   });
 
-  // WebSocket: refresh order when status changes
+  // Refresh the order when its status changes, via the app's single shared WS connection.
   useEffect(() => {
     if (!user?.id || !orderId) return;
-
-    const derivedWs = frontendEnv.apiUrl.startsWith("https")
-      ? frontendEnv.apiUrl.replace(/^https/, "wss")
-      : null;
-    const wsBase = (process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006").replace(/\?.*$/, "");
-    const wsUrl = `${wsBase}?userId=${user.id}`;
-
-    let ws: WebSocket;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let destroyed = false;
-
-    const connect = () => {
-      if (destroyed) return;
-      ws = new WebSocket(wsUrl);
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "ORDER_STATUS_UPDATE" && data.payload?.orderId === orderId) {
-            queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-          }
-        } catch {}
-      };
-
-      ws.onclose = () => {
-        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-    return () => {
-      destroyed = true;
-      clearTimeout(reconnectTimeout);
-      ws?.close();
-    };
-  }, [user?.id, orderId, queryClient]);
+    return subscribe("ORDER_STATUS_UPDATE", (payload: any) => {
+      if (payload?.orderId === orderId) {
+        queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      }
+    });
+  }, [user?.id, orderId, subscribe, queryClient]);
 
   const getStatusConfig = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -221,7 +193,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   const handleDownloadInvoice = () => {
     const rows = (order.items || [])
       .map(
-        (item: any) =>
+        (item) =>
           `<tr>
             <td>${item.product?.title || "Product"}</td>
             <td style="text-align:center">${item.quantity}</td>
@@ -441,7 +413,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
               Order Items
             </h3>
             <div className="space-y-3">
-              {(order.items || []).map((item: any) => (
+              {(order.items || []).map((item) => (
                 <div key={item.id} className="flex items-center gap-3">
                   {item.product?.images?.[0]?.url && (
                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-border">

@@ -3,7 +3,7 @@ import React from "react";
 // Visual style per badge. Mirrors the mobile palette so badges read the same
 // across platforms. Brand purple anchors premium/social-proof badges.
 const BADGE_STYLES: Record<string, string> = {
-  "Best Seller": "bg-[#5A2C96] text-white",
+  "Best Seller": "bg-primary text-white",
   Trending: "bg-[#7C3AED] text-white",
   "Limited Stock": "bg-[#EF4444] text-white",
   "New Arrival": "bg-[#16A34A] text-white",
@@ -14,7 +14,7 @@ const BADGE_STYLES: Record<string, string> = {
   "Vacuum Packed": "bg-[#1C1C1C] text-white",
 };
 
-const DEFAULT_STYLE = "bg-[#5A2C96] text-white";
+const DEFAULT_STYLE = "bg-primary text-white";
 
 export function ProductBadge({ label }: { label: string }) {
   return (

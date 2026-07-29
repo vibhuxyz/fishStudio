@@ -95,7 +95,6 @@ export function ProductCarousel({
         ref={scrollRef}
         className="hide-scrollbar flex gap-4 overflow-x-auto px-1 pb-2"
       >
-        {/* ✅ LOADING STATE: Show 6 Skeletons */}
         {isLoading
           ? Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -105,8 +104,7 @@ export function ProductCarousel({
                 <ProductCardSkeleton />
               </div>
             ))
-          : /* ✅ DATA STATE: Show Products with animation */
-            uniqueProducts.map((product, index) => (
+          : uniqueProducts.map((product, index) => (
               <motion.div
                 key={`${product.id}-${index}`}
                 initial={{ opacity: 0 }}
@@ -123,7 +121,6 @@ export function ProductCarousel({
               </motion.div>
             ))}
 
-        {/* ✅ VIEW ALL CARD: Shown at the end if viewAllHref is provided */}
         {!isLoading && viewAllHref && (
           <motion.div
             initial={{ opacity: 0 }}

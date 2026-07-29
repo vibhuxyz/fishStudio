@@ -7,12 +7,21 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { ENV } from "@repo/env-config";
 import { errorMiddleware } from "@repo/error-handlers";
-import { connectRabbitMQ } from "@repo/libs";
+import { connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { logger } from "@repo/libs/logger";
 import notificationRouter from "./routes/notification.router.js";
 import { startNotificationConsumer } from "./consumers/notification.consumer.js";
 
+// Prevent silent crashes — log and keep the process alive
+process.on("uncaughtException", (err) => {
+  logger.error("[Notification Service] Uncaught Exception", err);
+});
+process.on("unhandledRejection", (reason) => {
+  logger.error("[Notification Service] Unhandled Rejection", reason);
+});
+
 const app = express();
-// Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
+// Trust gateway's X-Forwarded-* so req.ip is the real client IP
 app.set("trust proxy", 1);
 const port = Number(ENV.NOTIFICATION_SERVICE_PORT) || 6005;
 
@@ -36,7 +45,6 @@ const allowedOrigins = [
   ),
 ];
 
-app.set("trust proxy", 1);
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
@@ -50,20 +58,19 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false,
 }));
-app.use(compression() as any);
+app.use(compression());
 app.use(express.json({ limit: "512kb" }));
-app.use(morgan("dev"));
+app.use(morgan(ENV.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(cookieParser());
-app.use((req: any, res: any, next: any) => {
-  const origin = req.headers.origin;
-  const corsOptions: any = {
-    credentials: true,
-    allowedHeaders: ["Authorization", "Content-Type", "x-auth-role", "ngrok-skip-browser-warning"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    origin: origin && allowedOrigins.includes(origin) ? origin : false,
-  };
-  cors(corsOptions)(req, res, next);
-});
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Origin not allowed by CORS"));
+  },
+  credentials: true,
+  allowedHeaders: ["Authorization", "Content-Type", "x-auth-role", "ngrok-skip-browser-warning"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+}));
 
 // Routes
 app.get("/", (req, res) => {
@@ -76,21 +83,40 @@ app.use("/api/notifications", notificationRouter);
 app.use(errorMiddleware);
 
 // Start server
+let server: ReturnType<typeof app.listen>;
+
 const start = async () => {
     try {
         await connectRabbitMQ();
-        console.log("✅ Connected to RabbitMQ");
+        logger.info("[Notification Service] Connected to RabbitMQ");
 
         await startNotificationConsumer();
-        console.log("✅ Notification Consumer started");
+        logger.info("[Notification Service] Notification Consumer started");
 
-        app.listen(port, () => {
-            console.log(`🚀 Notification Service listening on port ${port}`);
+        server = app.listen(port, () => {
+            logger.info(`[Notification Service] Listening on port ${port}`);
         });
     } catch (error) {
-        console.error("❌ Service failed to start:", error);
+        logger.error("[Notification Service] Failed to start", error);
         process.exit(1);
     }
 };
 
+// Graceful shutdown
+const shutdown = async (signal: string) => {
+  logger.info(`[Notification Service] ${signal} received — shutting down`);
+  if (server) {
+    server.close(() => {
+      logger.info("[Notification Service] HTTP server closed");
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
 start();
+

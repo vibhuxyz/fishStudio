@@ -3,7 +3,7 @@ import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { trackProductView } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
-import { resolveProductSizePricing } from "@/utils/pricing";
+import { computePerKgSalePrice, resolvePerKgPricing, resolveProductSizePricing } from "@/utils/pricing";
 import { ProductBadges } from "@/components/home/badge";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -119,7 +119,8 @@ export default function ProductDetailScreen() {
   const { wishlist, addToWishlist, removeFromWishlist, addToCart } = useStore();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const { selectedLocation, locationVersion } = useAddressStore();
+  const { selectedLocation, locationVersion, getSelectedAddress } = useAddressStore();
+  const selectedAddress = getSelectedAddress();
   const locationParams = selectedLocation?.storeId
     ? `storeId=${selectedLocation.storeId}&pincode=${selectedLocation.pincode}&city=${selectedLocation.city}`
     : selectedLocation?.pincode
@@ -176,34 +177,18 @@ export default function ProductDetailScreen() {
   // Per-kg rate + size multiplier derivation (mirrors web exactly)
   const perKgPricing = useMemo(() => {
     if (!isPerKgMode || !basePricePerKg) return null;
-    const cuttingPricing = product?.cuttingTypePricing as
-      | Array<{ cuttingType: string; salePrice: number }>
-      | null
-      | undefined;
-    const piecePricing = product?.pieceSizePricing as
-      | Array<{ pieceSize: string; salePrice: number }>
-      | null
-      | undefined;
-
-    const cuttingCharge =
-      cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
-    const rawMultiplier =
-      piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
-    // Clamp multiplier to 0.5–3.0 — treat out-of-range as stale/bad data
-    const sizeMultiplier =
-      rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
-    const ratePerKg = basePricePerKg + cuttingCharge;
-
-    return { cuttingCharge, sizeMultiplier, ratePerKg };
+    return resolvePerKgPricing(
+      basePricePerKg,
+      product?.cuttingTypePricing,
+      product?.pieceSizePricing,
+      selectedCutting,
+      selectedPieceSize,
+    );
   }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, product]);
 
   const computedSalePrice = useMemo(() => {
     if (isPerKgMode && basePricePerKg && perKgPricing) {
-      return parseFloat(
-        ((perKgPricing.ratePerKg / 1000) *
-          perKgWeightGrams *
-          perKgPricing.sizeMultiplier).toFixed(2),
-      );
+      return computePerKgSalePrice(perKgPricing, perKgWeightGrams);
     }
     if (!isWeightAdjustable || selectedWeightGrams <= 0) {
       return parseFloat((selected.salePrice || 0).toFixed(2));
@@ -317,12 +302,12 @@ export default function ProductDetailScreen() {
     if (!user) { toast.error("Please login to add items to wishlist"); return; }
     if (!product) return;
     if (isWishlisted) {
-      removeFromWishlist(product.id, user, null, "Mobile App");
+      removeFromWishlist(product.id, user, selectedAddress, "Mobile App");
       toast.success("Removed from wishlist");
     } else {
       addToWishlist(
         { id: product.id, slug: product.slug, title: product.title, price: product.sale_price || product.regular_price, image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "" },
-        user, null, "Mobile App"
+        user, selectedAddress, "Mobile App"
       );
       toast.success("Added to wishlist");
     }
@@ -356,7 +341,7 @@ export default function ProductDetailScreen() {
         pieceSize: selectedPieceSize || undefined,
         priceBreakdown: buildBreakdown(),
       },
-      user, null, "Mobile App"
+      user, selectedAddress, "Mobile App"
     );
   };
 
@@ -1100,7 +1085,7 @@ export default function ProductDetailScreen() {
                     shopId: item.Shop?.id || "",
                     quantity: 1,
                   },
-                  user, null, "Mobile App"
+                  user, selectedAddress, "Mobile App"
                 );
               });
               toast.success(`Added ${allItems.length} items to cart!`);
@@ -1236,7 +1221,7 @@ export default function ProductDetailScreen() {
                               shopId: item.Shop?.id || "",
                               quantity: 1,
                             },
-                            user, null, "Mobile App"
+                            user, selectedAddress, "Mobile App"
                           );
                           toast.success("Added!");
                         }}

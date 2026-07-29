@@ -1,20 +1,21 @@
-// Prevent silent crashes — log the error and keep the process alive
-process.on("uncaughtException", (err) => {
-  console.error("❌ [Auth Service] Uncaught Exception:", err);
-});
-process.on("unhandledRejection", (reason) => {
-  console.error("❌ [Auth Service] Unhandled Rejection:", reason);
-});
-
 import express from "express";
 import helmet from "helmet";
 import compression from "compression";
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/auth.router.js";
-import { connectRabbitMQ } from "@repo/libs";
+import { connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { logger } from "@repo/libs/logger";
 import cors from "cors";
 import { ENV } from "@repo/env-config";
+
+// Prevent silent crashes — log the error and keep the process alive
+process.on("uncaughtException", (err) => {
+  logger.error("[Auth Service] Uncaught Exception", err);
+});
+process.on("unhandledRejection", (reason) => {
+  logger.error("[Auth Service] Unhandled Rejection", reason);
+});
 
 const port = Number(ENV.AUTH_SERVICE_PORT) || 6001;
 const app = express();
@@ -85,20 +86,20 @@ app.use("/api", router);
 app.use(errorMiddleware);
 
 import { prismaMongo as prisma } from "@repo/db-mongo";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 
 // --- NEW STARTUP LOGIC ---
 const startServer = async () => {
   try {
     // 1. Connect to dependencies FIRST
-    console.log("Connecting to RabbitMQ...");
+    logger.info("Connecting to RabbitMQ...");
     await connectRabbitMQ();
-    console.log("✅ Connected to RabbitMQ");
+    logger.info("Connected to RabbitMQ");
 
     // 2. Start listening ONLY after dependencies are ready
     const server = app.listen(port, "0.0.0.0", () => {
-      console.log(`🚀 Auth server fully ready on localhort :${port}`);
-      
+      logger.info(`Auth server fully ready on port ${port}`);
+
       // Cleanup Task every hour. Wrapped in a Redis lock so only one replica
       // runs it when auth-service is horizontally scaled. TTL < interval so
       // the next hour's run can acquire the lock if the current holder crashes.
@@ -112,7 +113,7 @@ const startServer = async () => {
           acquired = result === "OK";
           if (!acquired) return; // another replica already running
 
-          console.log("Running hourly cleanup task...");
+          logger.info("Running hourly cleanup task...");
           const resCodes = await prisma.signupAccessCode.deleteMany({
             where: { expiresAt: { lt: new Date() } }
           });
@@ -123,18 +124,18 @@ const startServer = async () => {
               createdAt: { lt: twentyFourHoursAgo }
             }
           });
-          console.log(`Cleanup run: deleted ${resCodes.count} expired codes and ${resSellers.count} unapproved expired sellers.`);
+          logger.info(`Cleanup run: deleted ${resCodes.count} expired codes and ${resSellers.count} unapproved expired sellers.`);
         } catch (err) {
-          console.error("Cleanup task error:", err);
+          logger.error("Cleanup task error", err);
         }
       }, 1000 * 60 * 60); // 1 hour
     });
 
     server.on("error", (err) => {
-      console.error("Critical Server Error:", err);
+      logger.error("Critical Server Error", err);
     });
   } catch (error) {
-    console.error("❌ Failed to start Auth Service:", error);
+    logger.error("Failed to start Auth Service", error);
     process.exit(1); // Force container to restart if it fails
   }
 };

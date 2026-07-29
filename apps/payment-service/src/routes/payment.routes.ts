@@ -4,8 +4,9 @@ import {
   verifyPayment,
   handleWebhook,
   initiateRefund,
-} from "../controllers/razorpay.controller.js";
-import { isAuthenticated, allowRoles, isApprovedSeller } from "@repo/middlewares";
+  listPaymentsNeedingAttention,
+} from "../controllers/payment.controller.js";
+import { isAuthenticated, allowRoles, isAdmin, isAdminOrApprovedSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
 
@@ -21,13 +22,11 @@ router.post("/verify", isAuthenticated, allowRoles("user"), verifyPayment);
 router.post("/webhook", handleWebhook);
 
 // ── Admin/Seller: trigger refund ──────────────────────────────────────────
-router.post(
-  "/refund",
-  isAuthenticated,
-  allowRoles("admin", "seller"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
-  initiateRefund,
-);
+// Ops-only: no UI calls this yet, it's driven directly against the API.
+// Full-amount refunds only; partial refunds are not supported.
+router.post("/refund", isAuthenticated, isAdminOrApprovedSeller, initiateRefund);
+
+// ── Admin: payments the automated paths could not settle ──────────────────
+router.get("/admin/attention", isAuthenticated, isAdmin, listPaymentsNeedingAttention);
 
 export default router;

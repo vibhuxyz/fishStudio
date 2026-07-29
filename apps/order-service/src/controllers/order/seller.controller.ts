@@ -2,9 +2,11 @@ import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Response } from "express";
-import { invalidateSellerStatsCache } from "./utils.js";
+import { invalidateSellerStatsCache, restoreOrderStock } from "./utils.js";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue } from "@repo/libs/rabbitmq";
+import { QUEUE_NAMES } from "@repo/libs/queues";
+import { logger } from "@repo/libs/logger";
 import { ENV } from "@repo/env-config";
 
 export const getSellerOrders = async (
@@ -123,20 +125,7 @@ export const acceptOrRejectOrder = async (
         },
       });
 
-      try {
-        for (const item of existingOrder.orderItems) {
-          // Products are in Mongo
-          await prismaMongo.products.update({
-            where: { id: item.productId },
-            data: { 
-              stock: { increment: item.quantity },
-              totalSold: { decrement: item.quantity }
-            }
-          });
-        }
-      } catch (stockError) {
-        console.error("Failed to restore stock during order rejection:", stockError);
-      }
+      restoreOrderStock(existingOrder.orderItems, "acceptOrRejectOrder");
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
@@ -144,7 +133,7 @@ export const acceptOrRejectOrder = async (
     /* ── Notify User ── */
     try {
       const shortId = orderId.slice(-6).toUpperCase();
-      await publishToQueue("NOTIFICATION_QUEUE", {
+      await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
         userId: existingOrder.userId,
         title: action === "accept" ? "Order Accepted" : "Order Rejected",
         message: action === "accept"
@@ -156,7 +145,7 @@ export const acceptOrRejectOrder = async (
         channels: ["IN_APP", "SMS"],
       });
 
-      await publishToQueue("ORDER_EVENTS", {
+      await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
         type: "ORDER_STATUS_UPDATE",
         userId: existingOrder.userId,
         sellerId: req.seller?.id,
@@ -165,7 +154,7 @@ export const acceptOrRejectOrder = async (
         status: action === "accept" ? "ACCEPTED" : "REJECTED",
       });
     } catch (notifyErr) {
-      console.error("Failed to notify user of order status change:", notifyErr);
+      logger.error("Failed to notify user of order status change", { notifyErr });
     }
 
     return res.status(200).json({
@@ -208,17 +197,7 @@ export const updateOrderStatus = async (
 
     // Restore stock when seller manually cancels an order
     if (status === "CANCELLED") {
-      Promise.all(
-        existing.orderItems.map((item) =>
-          prismaMongo.products.update({
-            where: { id: item.productId },
-            data: {
-              stock:     { increment: item.quantity },
-              totalSold: { decrement: item.quantity },
-            },
-          }),
-        ),
-      ).catch((err) => console.error("[updateOrderStatus] stock restore failed:", err));
+      restoreOrderStock(existing.orderItems, "updateOrderStatus");
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
@@ -238,7 +217,16 @@ export const updateOrderStatus = async (
       }
 
       const channels: ("IN_APP" | "EMAIL" | "SMS")[] = ["IN_APP"];
-      let orderMetadata: any = { orderId };
+      let orderMetadata: {
+        orderId: string;
+        totalAmount?: number;
+        deliveryName?: string | null;
+        deliveryAddress?: string | null;
+        deliveryCity?: string | null;
+        deliveryPincode?: string | null;
+        template?: string;
+        items?: { name: string; quantity: number; price: number }[];
+      } = { orderId };
 
       if (status === "DELIVERED") {
         const [user, orderWithItems] = await Promise.all([
@@ -287,7 +275,7 @@ export const updateOrderStatus = async (
         }
       }
 
-      await publishToQueue("NOTIFICATION_QUEUE", {
+      await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
         userId: existing.userId,
         title,
         message,
@@ -297,7 +285,7 @@ export const updateOrderStatus = async (
         channels,
       });
 
-      await publishToQueue("ORDER_EVENTS", {
+      await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
         type: "ORDER_STATUS_UPDATE",
         userId: existing.userId,
         sellerId: req.seller?.id,
@@ -306,7 +294,7 @@ export const updateOrderStatus = async (
         status,
       });
     } catch (notifyErr) {
-      console.error("Failed to notify user of order status update:", notifyErr);
+      logger.error("Failed to notify user of order status update", { notifyErr });
     }
 
     return res.status(200).json({ success: true, order: updated });

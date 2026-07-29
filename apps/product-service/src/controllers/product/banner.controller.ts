@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { cloudinary, redis } from "@repo/libs";
+import { cloudinary } from "@repo/libs/cloudinary";
+import { redis } from "@repo/libs/redis";
 import { ENV } from "@repo/env-config";
 import { AuthRequest, getRequiredParam, interleaveBanners } from "./utils.js";
 import { uploadBannerSchema, updateBannerSchema, reviewBannerSchema, validate } from "@repo/zod-schema";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue } from "@repo/libs/rabbitmq";
+import { QUEUE_NAMES } from "@repo/libs/queues";
 
 const ANNOUNCEMENT_CACHE_TTL = 120; // 2 minutes
 const announcementCacheKey = (storeId?: string, city?: string, pincode?: string) =>
@@ -131,7 +133,7 @@ export const uploadBanner = async (
     // Publish to ADMIN_EVENTS queue for real-time dashboard updates
     try {
       if (sellerId) {
-        await publishToQueue("ADMIN_EVENTS", {
+        await publishToQueue(QUEUE_NAMES.ADMIN_EVENTS, {
           type: "BANNER_SUBMITTED",
           sellerId,
           bannerCount: createdBanners.length,
@@ -408,7 +410,7 @@ export const reviewBanner = async (
       // Notify seller of approval
       if (banner.sellerId) {
         try {
-          await publishToQueue("ORDER_EVENTS", {
+          await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
             type: "BANNER_REVIEWED",
             sellerId: banner.sellerId,
             bannerId,
@@ -438,7 +440,7 @@ export const reviewBanner = async (
       // Notify seller of rejection
       if (banner.sellerId) {
         try {
-          await publishToQueue("ORDER_EVENTS", {
+          await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
             type: "BANNER_REVIEWED",
             sellerId: banner.sellerId,
             bannerId,
@@ -467,8 +469,14 @@ export const getActiveBanners = async (
   next: NextFunction,
 ) => {
   try {
-    const { category, storeId, pincode } = req.query;
+    const { category, storeId, pincode, bannerType } = req.query;
     const queryCategory = category ? String(category) : null;
+    // Storefront placements other than the hero carousel (the home screen's
+    // combo card) ask for their slot by name; announcements keep their own route.
+    const queryBannerType =
+      bannerType && String(bannerType) !== "announcement"
+        ? String(bannerType)
+        : null;
 
     // Resolve which seller IDs match the user's location (for filtering seller banners)
     let matchingSellerIds: string[] | null = null; // null = no location filter
@@ -508,12 +516,19 @@ export const getActiveBanners = async (
         };
 
     const filteredBanners = await prisma.banners.findMany({
-      where: {
-        isActive: true,
-        bannerType: { not: "announcement" },
-        ...sellerCondition,
-        ...categoryCondition,
-      },
+      where: queryBannerType
+        ? {
+            isActive: true,
+            bannerType: queryBannerType,
+            // AND rather than a spread: both halves can carry their own OR.
+            AND: [sellerCondition],
+          }
+        : {
+            isActive: true,
+            bannerType: { not: "announcement" },
+            ...sellerCondition,
+            ...categoryCondition,
+          },
       orderBy: [{ sellerId: "asc" }, { createdAt: "asc" }],
     });
 
@@ -569,7 +584,7 @@ export const getAnnouncementBanners = async (
       ];
     }
 
-    const stores = await (prisma as any).stores.findMany({
+    const stores = await prisma.stores.findMany({
       where: storeWhere,
       select: { sellerId: true },
     });

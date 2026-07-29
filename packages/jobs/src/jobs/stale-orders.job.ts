@@ -1,6 +1,6 @@
 import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue } from "@repo/libs/rabbitmq";
 
 /**
  * Cancel online-payment orders that were never paid.

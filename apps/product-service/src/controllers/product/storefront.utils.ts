@@ -1,0 +1,269 @@
+import { prismaMongo as prisma } from "@repo/db-mongo";
+import { redis } from "@repo/libs/redis";
+
+// Shared by storefront reads, cart validation, and homepage/activity
+// sections — all of them resolve a preferred store from location and cache
+// their payloads under the same "storefront:*" key namespace.
+
+export const STOREFRONT_CACHE_TTL = 300;
+export const MAX_STOREFRONT_LIMIT = 48;
+
+export const storefrontVariantInclude = {
+  images: true,
+  store: {
+    select: {
+      id: true,
+      name: true,
+      pincode: true,
+      city: true,
+      seller: { include: { events: true } },
+    },
+  },
+} as const;
+
+export const parseStorefrontLimit = (value: unknown, fallback: number) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.min(Math.floor(numeric), MAX_STOREFRONT_LIMIT);
+};
+
+export const parseStorefrontPage = (value: unknown, fallback = 1) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return fallback;
+  return Math.floor(numeric);
+};
+
+export const buildStorefrontCacheKey = (
+  key: string,
+  payload: Record<string, unknown>,
+) => {
+  const serialized = Object.entries(payload)
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== "",
+    )
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, value]) => `${name}=${String(value)}`)
+    .join("&");
+
+  return `storefront:${key}:${serialized || "default"}`;
+};
+
+export const getCachedPayload = async <T>(key: string): Promise<T | null> => {
+  try {
+    const cached = await redis.get(key);
+    return cached ? (JSON.parse(cached) as T) : null;
+  } catch (error) {
+    console.error("[Storefront Cache Read Error]", error);
+    return null;
+  }
+};
+
+export const setCachedPayload = (key: string, payload: unknown) => {
+  redis
+    .setex(key, STOREFRONT_CACHE_TTL, JSON.stringify(payload))
+    .catch((error) => console.error("[Storefront Cache Write Error]", error));
+};
+
+export type StoreLocationInput = {
+  storeId?: string;
+  pincode?: string;
+  city?: string;
+};
+
+const normalizeLocationValue = (value?: string | null) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const buildStoreLocationWhere = ({
+  storeId,
+  pincode,
+  city,
+}: StoreLocationInput) => {
+  const filters: Record<string, unknown>[] = [];
+
+  if (storeId) {
+    filters.push({ id: String(storeId) });
+  }
+  if (pincode) {
+    filters.push({ pincode: String(pincode) });
+    filters.push({ availableCities: { has: String(pincode) } });
+  }
+  if (city) {
+    filters.push({ city: { equals: String(city), mode: "insensitive" } });
+    filters.push({ availableCities: { has: String(city) } });
+  }
+
+  return filters.length > 0 ? { OR: filters } : undefined;
+};
+
+const scoreStoreForLocation = (
+  store: {
+    id: string;
+    pincode: string;
+    city: string;
+    availableCities: string[];
+  },
+  location: StoreLocationInput,
+) => {
+  const normalizedPincode = normalizeLocationValue(location.pincode);
+  const normalizedCity = normalizeLocationValue(location.city);
+  const normalizedStoreCity = normalizeLocationValue(store.city);
+  const normalizedAvailableCities = Array.isArray(store.availableCities)
+    ? store.availableCities.map(normalizeLocationValue)
+    : [];
+
+  if (location.storeId && store.id === location.storeId) return 1000;
+  if (
+    normalizedPincode &&
+    normalizeLocationValue(store.pincode) === normalizedPincode
+  ) {
+    return 900;
+  }
+  if (normalizedCity && normalizedStoreCity === normalizedCity) {
+    return 800;
+  }
+  if (
+    normalizedPincode &&
+    normalizedAvailableCities.includes(normalizedPincode)
+  ) {
+    return 700;
+  }
+  if (normalizedCity && normalizedAvailableCities.includes(normalizedCity)) {
+    return 600;
+  }
+
+  return 0;
+};
+
+export const resolvePreferredStore = async (location: StoreLocationInput) => {
+  const where = buildStoreLocationWhere(location);
+  if (!where) return null;
+
+  const stores = await prisma.stores.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      pincode: true,
+      opening_hours: true,
+      closing_hours: true,
+      is_instant_delivery_enabled: true,
+      instant_delivery_fee: true,
+      instant_delivery_window_start: true,
+      instant_delivery_window_end: true,
+      cityDeliveryTimes: true,
+      availableCities: true,
+      sellerId: true,
+    },
+  });
+
+  if (stores.length === 0) return null;
+
+  return stores
+    .slice()
+    .sort(
+      (a, b) =>
+        scoreStoreForLocation(b, location) - scoreStoreForLocation(a, location),
+    )[0]!;
+};
+
+// Picks the best variant per catalog product: prefer in-stock (stock > 0)
+// first, then cheapest sale_price. Shared by getStoreProducts and
+// buildMergedFromCatalogs, which both merge a catalog-root list against a
+// same-page variant list using this exact selection rule.
+export const pickBestVariantPerCatalog = <
+  T extends {
+    catalogProductId: string | null;
+    stock: number | null;
+    sale_price: number | null;
+  },
+>(
+  variants: T[],
+) => {
+  const bestVariantMap = new Map<string, T>();
+  for (const v of variants) {
+    const cid = v.catalogProductId!;
+    const existing = bestVariantMap.get(cid);
+    if (!existing) {
+      bestVariantMap.set(cid, v);
+      continue;
+    }
+    const vInStock = (v.stock ?? 0) > 0;
+    const exInStock = (existing.stock ?? 0) > 0;
+    if (
+      (vInStock && !exInStock) ||
+      (vInStock === exInStock && (v.sale_price ?? 0) < (existing.sale_price ?? 0))
+    ) {
+      bestVariantMap.set(cid, v);
+    }
+  }
+  return bestVariantMap;
+};
+
+export const mergeCatalogWithVariant = (
+  catalog: any,
+  variant: any,
+  preferredStore?: any,
+) => {
+  if (!variant) {
+    return {
+      ...catalog,
+      catalogProductId: catalog.id,
+      stock: 0,
+      inStock: false,
+      sale_price: null,
+      regular_price: null,
+      storeId: preferredStore?.id ?? null,
+      store: preferredStore
+        ? {
+            id: preferredStore.id,
+            name: preferredStore.name,
+            pincode: preferredStore.pincode,
+            city: preferredStore.city,
+          }
+        : null,
+      activeEvents: [],
+      availabilityStatus: preferredStore
+        ? "Out of stock in your area"
+        : "Check local availability",
+      nearbyHint: preferredStore ? null : "Try another location",
+    };
+  }
+
+  const now = new Date();
+  const activeEvents =
+    variant.store?.seller?.events?.filter(
+      (event: any) =>
+        event.isActive &&
+        new Date(event.startTime) <= now &&
+        new Date(event.endTime) >= now,
+    ) ?? [];
+
+  return {
+    ...catalog,
+    id: variant.id,
+    catalogProductId: catalog.id,
+    stock: variant.stock,
+    sale_price: variant.sale_price,
+    regular_price: variant.regular_price,
+    sizePricing: variant.sizePricing ?? catalog.sizePricing,
+    cuttingTypePricing:
+      variant.cuttingTypePricing ?? catalog.cuttingTypePricing,
+    pieceSizePricing: variant.pieceSizePricing ?? catalog.pieceSizePricing,
+    basePricePerKg: variant.basePricePerKg ?? catalog.basePricePerKg ?? null,
+    storeId: variant.storeId,
+    inStock: (variant.stock ?? 0) > 0,
+    discount_codes: variant.discount_codes ?? [],
+    images: catalog.images?.length ? catalog.images : variant.images,
+    activeEvents,
+    store: variant.store
+      ? {
+          id: variant.store.id,
+          name: variant.store.name,
+          pincode: variant.store.pincode,
+          city: variant.store.city,
+        }
+      : null,
+    slug: catalog.slug ?? variant.slug,
+  };
+};

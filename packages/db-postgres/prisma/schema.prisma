@@ -22,6 +22,10 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+  // Refund submitted to the gateway but not yet settled. Gateway refunds are
+  // asynchronous and can still fail, so REFUNDED is only set once the
+  // refund.processed webhook confirms it.
+  REFUND_PENDING
   REFUNDED
 }
 
@@ -79,20 +83,28 @@ model OrderItem {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  orderId       String
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount        Float
-  status        PaymentStatus @default(PENDING)
-  method        String // "COD", "RAZORPAY", etc.
-  transactionId String?       @unique
-  metadata      Json?
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount  Float
+  status  PaymentStatus @default(PENDING)
+  method  String // "COD", "RAZORPAY", etc.
+
+  // The gateway's own payment id (Razorpay payment_id), set on capture.
+  transactionId String? @unique
+  // The gateway's order id (Razorpay order_id), bound at checkout creation.
+  // Indexed because reconciliation looks payments up by it — it previously
+  // lived in `metadata` and could only be found by an unindexed JSON scan.
+  gatewayOrderId String? @unique
+
+  metadata Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([orderId])
   @@index([status])
+  @@index([status, createdAt]) // reconciliation sweep over stale PENDING rows
 }
 
 model CouponUsage {
@@ -137,4 +149,64 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
+}
+
+// Durable record of gateway webhooks. Dedupe used to live only in Redis on a
+// TTL, which is a cache, not an audit trail — a replay after eviction would
+// re-apply, and there was no record of what the gateway actually sent.
+model WebhookEvent {
+  id        String @id @default(cuid())
+  provider  String // "RAZORPAY"
+  eventId   String // the gateway's own event id (x-razorpay-event-id)
+  eventType String
+  payload   Json
+
+  receivedAt DateTime  @default(now())
+  // Null means received but not yet applied — either in flight or it failed
+  // and the gateway's retry will pick it up. Dedupe keys off this, not mere
+  // row existence, so a failed attempt doesn't block the retry.
+  processedAt DateTime?
+
+  @@unique([provider, eventId])
+  @@index([receivedAt])
+  @@index([processedAt])
+}
+
+// Transactional outbox. Written inside the same Postgres transaction as the
+// state change it describes, so "committed" and "will be published" are
+// atomic. Publishing straight to RabbitMQ after a commit loses the message if
+// the process dies in between.
+model OutboxEvent {
+  id          String    @id @default(cuid())
+  aggregate   String // "ORDER" | "PAYMENT"
+  aggregateId String
+  eventType   String // "ORDER_CREATED" | "COUPON_APPLIED"
+  queue       String // target RabbitMQ queue
+  payload     Json
+  status      String    @default("PENDING") // PENDING | PUBLISHED | FAILED
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([aggregate, aggregateId])
+}
+
+// Durable record of a Mongo stock decrement. Stock is reserved in Mongo before
+// the Postgres order transaction (so we never sell stock we didn't hold), which
+// leaves a window where a crash loses the only record of the reservation. This
+// row is written first and marked CONSUMED inside the order transaction; a
+// sweeper releases anything left HELD.
+model StockReservation {
+  id        String   @id @default(cuid())
+  orderId   String? // set once the order transaction commits
+  userId    String
+  items     Json // [{ productId, quantity }]
+  status    String   @default("HELD") // HELD | CONSUMED | RELEASED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([orderId])
 }

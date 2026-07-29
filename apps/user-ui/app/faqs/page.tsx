@@ -42,7 +42,7 @@ export default function FaqsPage() {
           >
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-foreground">
               {item.q}
-              <span className="ml-2 text-[#5A2C96] transition-transform group-open:rotate-45">
+              <span className="ml-2 text-primary transition-transform group-open:rotate-45">
                 +
               </span>
             </summary>

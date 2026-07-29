@@ -1,20 +1,27 @@
 import BannerCarousel from "@/components/home/banner-carousel";
+import BestSellersCombos from "@/components/home/best-sellers-combos";
 import CategoryRow from "@/components/home/category-row";
+import AddToCartModal from "@/components/home/add-to-cart-modal";
+import { useComboBanner } from "@/components/home/combo-card";
 import Header from "@/components/home/header";
 import ProductSection from "@/components/home/products";
 import SectionCarousel from "@/components/home/section-carousel";
+import TrustStrip from "@/components/home/trust-strip";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { fetchForYou, fetchRecentlyViewed } from "@/actions/activity";
 import { useAddressStore } from "@/lib/address-store";
 import { useUIStore } from "@/store/ui-store";
+import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ScrollView,
   StatusBar,
   Text,
@@ -22,6 +29,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+interface ProductListingPage {
+  products: Product[];
+  pagination?: { page: number; hasMore?: boolean };
+}
 
 export default function Index() {
   const { selectedLocation, locationVersion } = useAddressStore();
@@ -42,19 +54,19 @@ export default function Index() {
     fetchNextPage,
   } = useInfiniteQuery({
     queryKey: ["products-infinite", locationParams.storeId, locationParams.pincode, locationVersion],
-    queryFn: async ({ pageParam = 1 }) => {
+    queryFn: async ({ pageParam = 1 }): Promise<ProductListingPage> => {
       const res = await axiosInstance.get("/product/api/get-all-products", {
         params: { page: pageParam, limit: 20, ...locationParams },
       });
       return res.data;
     },
     initialPageParam: 1,
-    getNextPageParam: (lastPage: any) =>
-      lastPage.pagination?.hasMore ? lastPage.pagination.page + 1 : undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination?.hasMore ? (lastPage.pagination.page ?? 1) + 1 : undefined,
     staleTime: 1000 * 60 * 5,
   });
 
-  const products = infiniteData?.pages.flatMap((p: any) => p.products) ?? [];
+  const products = infiniteData?.pages.flatMap((p) => p.products) ?? [];
 
   // Home sections (Fresh Today / Best Seller / Trending / New Arrival)
   const { data: sectionsData } = useQuery({
@@ -67,7 +79,7 @@ export default function Index() {
     },
     staleTime: 1000 * 60 * 5,
   });
-  const sections: { key: string; title: string; products: any[] }[] =
+  const sections: { key: string; title: string; products: Product[] }[] =
     sectionsData?.sections ?? [];
   const getSection = (key: string) => sections.find((s) => s.key === key);
   const freshArrivals = getSection("fresh-arrivals");
@@ -78,16 +90,23 @@ export default function Index() {
   // Personalised rails
   const { data: recentlyViewed = [] } = useQuery({
     queryKey: ["recently-viewed", locationParams.storeId, locationParams.pincode, locationVersion],
-    queryFn: () => fetchRecentlyViewed(locationParams as any),
+    queryFn: () => fetchRecentlyViewed(locationParams),
     staleTime: 1000 * 60 * 2,
   });
   const { data: forYou = [] } = useQuery({
     queryKey: ["for-you", locationParams.storeId, locationParams.pincode, locationVersion],
-    queryFn: () => fetchForYou(locationParams as any),
+    queryFn: () => fetchForYou(locationParams),
     staleTime: 1000 * 60 * 5,
   });
 
-  const handleScroll = (e: any) => {
+  // Combo artwork is uploaded from admin as a "combo" banner.
+  const { data: comboBanner = null } = useComboBanner();
+  const [cartProduct, setCartProduct] = useState<Product | null>(null);
+
+  const openSection = (key: string) =>
+    router.push({ pathname: "/(routes)/section/[key]", params: { key } });
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
     const currentY = contentOffset.y;
     const diff = currentY - lastScrollY.current;
@@ -110,17 +129,45 @@ export default function Index() {
         <Header />
       </View>
 
+      <AddToCartModal
+        product={cartProduct}
+        visible={!!cartProduct}
+        onClose={() => setCartProduct(null)}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         style={{ backgroundColor: "#F4F4F4" }}
       >
-        {/* Banner Carousel */}
+        {/* Hero banner — the artwork carries its own headline and CTA */}
         <BannerCarousel />
+
+        {/* Service promises */}
+        <TrustStrip />
 
         {/* Category shortcuts */}
         <CategoryRow />
+
+        {/* Fresh Arrivals */}
+        {freshArrivals && (
+          <SectionCarousel
+            title={freshArrivals.title}
+            products={freshArrivals.products}
+            onSeeAll={() => openSection(freshArrivals.key)}
+          />
+        )}
+
+        {/* Best Sellers sits beside the combo offer, per the comp */}
+        <BestSellersCombos
+          bestSellers={bestSellers?.products ?? []}
+          comboBanner={comboBanner}
+          comboProduct={combos?.products?.[0]}
+          onViewAllBestSellers={() => openSection("best-sellers")}
+          onViewAllCombos={() => openSection("combos")}
+          onAddToCart={setCartProduct}
+        />
 
         {/* Tagline + WhatsApp CTA */}
         <View
@@ -162,38 +209,11 @@ export default function Index() {
           </TouchableOpacity>
         </View>
 
-        {/* Fresh Arrivals */}
-        {freshArrivals && (
-          <SectionCarousel
-            title={freshArrivals.title}
-            products={freshArrivals.products}
-            onSeeAll={() => router.push("/(routes)/products" as any)}
-          />
-        )}
-
-        {/* Best Sellers */}
-        {bestSellers && (
-          <SectionCarousel
-            title={bestSellers.title}
-            products={bestSellers.products}
-            onSeeAll={() => router.push("/(routes)/products" as any)}
-          />
-        )}
-
-        {/* Combos */}
-        {combos && (
-          <SectionCarousel
-            title={combos.title}
-            products={combos.products}
-            onSeeAll={() => router.push("/(routes)/products" as any)}
-          />
-        )}
-
         {/* Recently viewed rail */}
         <SectionCarousel
           title="Recently Viewed"
           products={recentlyViewed}
-          onSeeAll={() => router.push("/(routes)/products" as any)}
+          onSeeAll={() => openSection("recently-viewed")}
         />
 
         {/* Seasonal Specials */}
@@ -201,7 +221,7 @@ export default function Index() {
           <SectionCarousel
             title={seasonal.title}
             products={seasonal.products}
-            onSeeAll={() => router.push("/(routes)/products" as any)}
+            onSeeAll={() => openSection(seasonal.key)}
           />
         )}
 
@@ -209,7 +229,7 @@ export default function Index() {
         <SectionCarousel
           title="Recommended Products"
           products={forYou}
-          onSeeAll={() => router.push("/(routes)/products" as any)}
+          onSeeAll={() => openSection("for-you")}
         />
 
         {/* All products heading */}

@@ -1,12 +1,15 @@
 import AddToCartModal from "@/components/home/add-to-cart-modal";
 import { ProductBadges } from "@/components/home/badge";
 import useUser from "@/hooks/useUser";
+import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
+import type { Product } from "@/types/product";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Dimensions,
+  GestureResponderEvent,
   Image,
   Text,
   TouchableOpacity,
@@ -19,7 +22,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16 side padding each + 16 gap
 
 interface ProductSectionProps {
   title?: string;
-  products: any[];
+  products: Product[];
   hideTitle?: boolean;
   isFlashSale?: boolean;
   onEndReached?: () => void;
@@ -32,18 +35,20 @@ export default function ProductSection({
   isFlashSale = false,
   onEndReached,
 }: ProductSectionProps) {
-  const [cartProduct, setCartProduct] = useState<any>(null);
+  const [cartProduct, setCartProduct] = useState<Product | null>(null);
   const { user } = useUser();
+  const { getSelectedAddress } = useAddressStore();
+  const selectedAddress = getSelectedAddress();
   const { wishlist, addToWishlist, removeFromWishlist } = useStore();
 
-  const handleProductPress = (product: any) => {
+  const handleProductPress = (product: Product) => {
     router.push({
       pathname: "/(routes)/product/[id]",
       params: { id: product.slug || product.id },
     });
   };
 
-  const handleWishlistToggle = (product: any, e: any) => {
+  const handleWishlistToggle = (product: Product, e: GestureResponderEvent) => {
     e.stopPropagation();
     if (!user) {
       toast.error("Please login to add items to wishlist");
@@ -51,7 +56,7 @@ export default function ProductSection({
     }
     const inWishlist = wishlist.some((item) => item.id === product.id);
     if (inWishlist) {
-      removeFromWishlist(product.id, user, null, "Mobile App");
+      removeFromWishlist(product.id, user, selectedAddress, "Mobile App");
     } else {
       addToWishlist(
         {
@@ -63,7 +68,7 @@ export default function ProductSection({
           shopId: product.Shop?.id || "",
         },
         user,
-        null,
+        selectedAddress,
         "Mobile App"
       );
     }
@@ -83,7 +88,7 @@ export default function ProductSection({
 
       {/* 2-column grid */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
-        {products.map((product: any, index: number) => {
+        {products.map((product, index: number) => {
           const discountPercentage = product?.sale_price
             ? Math.round(
                 ((product.regular_price - product.sale_price) /

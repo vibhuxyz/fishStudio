@@ -3,16 +3,21 @@
 import React, { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, UploadCloud, X, Loader2 } from "lucide-react";
+import { Plus, UploadCloud, X, Loader2, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { Input, Button } from "@repo/ui";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import DeleteCategoryModal, {
+  CategoryDeleteTarget,
+} from "@/shared/components/modals/delete.category.modal";
 import {
   adminQueryKeys,
   createAdminCategory,
   createAdminSubCategory,
+  deleteAdminCategory,
+  deleteAdminSubCategory,
   getCategoryConfigKey,
   useAdminCategories,
 } from "@/hooks/useAdminQueries";
@@ -47,7 +52,9 @@ const CategoriesPage = () => {
   /* ── Image upload state ─────────────────────────── */
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [removingImage, setRemovingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +71,7 @@ const CategoriesPage = () => {
         isProtected,
       );
       setUploadedImageUrl(res.data.images[0].file_url);
+      setUploadedImageId(res.data.images[0].fileId);
     } catch {
       toast.error("Image upload failed");
       setImagePreview(null);
@@ -72,10 +80,34 @@ const CategoriesPage = () => {
     }
   };
 
-  const clearImage = () => {
+  const resetImageState = () => {
     setImagePreview(null);
     setUploadedImageUrl(null);
+    setUploadedImageId(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Drops the asset from Cloudinary as well — the admin is discarding an image
+  // that was already pushed there the moment they picked it.
+  const deleteImage = async () => {
+    if (uploading || removingImage) return;
+
+    if (uploadedImageId) {
+      setRemovingImage(true);
+      try {
+        await axiosInstance.post(
+          "/product/api/admin/delete-cloudinary-image",
+          { fileId: uploadedImageId },
+          isProtected,
+        );
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message || "Could not delete the image");
+        setRemovingImage(false);
+        return;
+      }
+      setRemovingImage(false);
+    }
+    resetImageState();
   };
 
   /* ── Forms ──────────────────────────────────────── */
@@ -103,7 +135,7 @@ const CategoriesPage = () => {
     onSuccess: () => {
       toast.success("Category created");
       resetCategory();
-      clearImage();
+      resetImageState();
       refreshCategories();
     },
     onError: (error: any) => {
@@ -124,6 +156,23 @@ const CategoriesPage = () => {
     },
   });
 
+  const [deleteTarget, setDeleteTarget] = useState<CategoryDeleteTarget | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (target: CategoryDeleteTarget) =>
+      target.subCategory
+        ? deleteAdminSubCategory(target.category, target.subCategory)
+        : deleteAdminCategory(target.category),
+    onSuccess: (_data, target) => {
+      toast.success(target.subCategory ? "Subcategory deleted" : "Category deleted");
+      setDeleteTarget(null);
+      refreshCategories();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to delete");
+    },
+  });
+
   return (
     <DashboardPageShell
       title="Categories"
@@ -138,9 +187,13 @@ const CategoriesPage = () => {
             <h3 className="mb-4 text-lg font-semibold text-white">Add Category</h3>
             <form
               className="space-y-4"
-              onSubmit={handleCategorySubmit((values) =>
-                createCategoryMutation.mutate(values),
-              )}
+              onSubmit={handleCategorySubmit((values) => {
+                if (uploading) {
+                  toast.error("Please wait for the image to finish uploading.");
+                  return;
+                }
+                createCategoryMutation.mutate(values);
+              })}
             >
               <Input
                 label="Category Name"
@@ -167,30 +220,44 @@ const CategoriesPage = () => {
                   </label>
                 ) : (
                   <div className="relative flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800 p-3">
-                    <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-gray-600 bg-gray-900 flex-shrink-0">
-                      {uploading ? (
+                    <div className="group relative h-16 w-16 overflow-hidden rounded-full border-2 border-gray-600 bg-gray-900 flex-shrink-0">
+                      {uploading || removingImage ? (
                         <div className="flex h-full w-full items-center justify-center">
                           <Loader2 size={20} className="animate-spin text-gray-400" />
                         </div>
                       ) : (
-                        <Image
-                          src={imagePreview}
-                          alt="category preview"
-                          fill
-                          className="object-cover"
-                        />
+                        <>
+                          <Image
+                            src={imagePreview}
+                            alt="category preview"
+                            fill
+                            className="object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={deleteImage}
+                            title="Delete image"
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
                       )}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-white">
-                        {uploading ? "Uploading..." : "Image ready"}
+                        {uploading
+                          ? "Uploading..."
+                          : removingImage
+                            ? "Removing..."
+                            : "Image ready"}
                       </p>
                       <p className="text-xs text-gray-400">Will appear as circular icon</p>
                     </div>
-                    {!uploading && (
+                    {!uploading && !removingImage && (
                       <button
                         type="button"
-                        onClick={clearImage}
+                        onClick={deleteImage}
                         className="rounded-full p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
                       >
                         <X size={16} />
@@ -230,7 +297,7 @@ const CategoriesPage = () => {
 
               <Button
                 type="submit"
-                disabled={createCategoryMutation.isPending || uploading || !previewName}
+                disabled={createCategoryMutation.isPending || !previewName}
                 isLoading={createCategoryMutation.isPending}
                 loaderLabel="Creating..."
                 variant="blue"
@@ -347,9 +414,19 @@ const CategoriesPage = () => {
                         )}
                         <div className="flex flex-1 items-center justify-between">
                           <h4 className="text-base font-semibold text-white">{category}</h4>
-                          <span className="text-xs text-slate-400">
-                            {items.length} subcategories
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-400">
+                              {items.length} subcategories
+                            </span>
+                            <button
+                              type="button"
+                              title="Delete category"
+                              onClick={() => setDeleteTarget({ category })}
+                              className="rounded-md p-1.5 text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -359,9 +436,19 @@ const CategoriesPage = () => {
                         {items.map((item) => (
                           <span
                             key={item}
-                            className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200"
+                            className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200"
                           >
                             {item}
+                            <button
+                              type="button"
+                              title="Delete subcategory"
+                              onClick={() =>
+                                setDeleteTarget({ category, subCategory: item })
+                              }
+                              className="text-slate-500 transition hover:text-red-400"
+                            >
+                              <X size={14} />
+                            </button>
                           </span>
                         ))}
                       </div>
@@ -373,6 +460,15 @@ const CategoriesPage = () => {
           )}
         </div>
       </div>
+
+      {deleteTarget && (
+        <DeleteCategoryModal
+          target={deleteTarget}
+          isLoading={deleteMutation.isPending}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => deleteMutation.mutate(deleteTarget)}
+        />
+      )}
     </DashboardPageShell>
   );
 };

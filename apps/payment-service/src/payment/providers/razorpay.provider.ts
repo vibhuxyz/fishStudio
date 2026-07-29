@@ -1,11 +1,12 @@
 import crypto from "node:crypto";
 import Razorpay from "razorpay";
 import { ENV } from "@repo/env-config";
-import { ValidationError } from "@repo/error-handlers";
+import { AppError } from "@repo/error-handlers";
 import type {
   PaymentProvider,
   CreateOrderParams,
   GatewayOrder,
+  GatewaySettlement,
   VerifySignatureParams,
   NormalizedWebhookEvent,
   RefundParams,
@@ -40,11 +41,13 @@ export class RazorpayProvider implements PaymentProvider {
     const keyId = ENV.RAZORPAY_KEY_ID;
     const keySecret = ENV.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
-      throw new ValidationError(
+      // Missing server credentials, not bad client input — surface as 503.
+      throw new AppError(
         "Online payments are not configured on this environment. Please use Pay on Delivery.",
+        503,
       );
     }
-    this._client = new Razorpay({ key_id: keyId as string, key_secret: keySecret as string });
+    this._client = new Razorpay({ key_id: keyId, key_secret: keySecret });
     return this._client;
   }
 
@@ -66,8 +69,11 @@ export class RazorpayProvider implements PaymentProvider {
   }
 
   verifySignature({ gatewayOrderId, gatewayPaymentId, signature }: VerifySignatureParams): boolean {
+    const keySecret = ENV.RAZORPAY_KEY_SECRET;
+    // No creds means no order was ever created through us — nothing can verify.
+    if (!keySecret) return false;
     const expected = crypto
-      .createHmac("sha256", ENV.RAZORPAY_KEY_SECRET as string)
+      .createHmac("sha256", keySecret)
       .update(`${gatewayOrderId}|${gatewayPaymentId}`)
       .digest("hex");
     return safeHexEqual(expected, signature);
@@ -76,22 +82,36 @@ export class RazorpayProvider implements PaymentProvider {
   verifyWebhookSignature(rawBody: Buffer, signature: string): boolean {
     if (!signature || !rawBody) return false;
     // NOTE: webhooks are signed with the WEBHOOK secret, not the key secret.
+    const webhookSecret = ENV.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) return false;
     const expected = crypto
-      .createHmac("sha256", ENV.RAZORPAY_WEBHOOK_SECRET as string)
+      .createHmac("sha256", webhookSecret)
       .update(rawBody)
       .digest("hex");
     return safeHexEqual(expected, signature);
   }
 
   parseWebhookEvent(rawBody: Buffer): NormalizedWebhookEvent {
-    const event = JSON.parse(rawBody.toString("utf8"));
+    let event: any;
+    try {
+      event = JSON.parse(rawBody.toString("utf8"));
+    } catch {
+      // Signature already verified upstream, so this shouldn't happen — but a
+      // malformed body must not crash the handler into an endless retry loop.
+      return { kind: "UNHANDLED", eventType: "unparseable-body" };
+    }
     const eventType: string = event.event;
     const payload = event.payload?.payment?.entity ?? event.payload?.refund?.entity ?? {};
     const orderId = payload.notes?.orderId as string | undefined;
 
     switch (eventType) {
       case "payment.captured":
-        return { kind: "PAYMENT_CAPTURED", orderId, gatewayPaymentId: payload.id };
+        return {
+          kind: "PAYMENT_CAPTURED",
+          orderId,
+          gatewayPaymentId: payload.id,
+          amountInPaise: typeof payload.amount === "number" ? payload.amount : undefined,
+        };
       case "payment.failed":
         return { kind: "PAYMENT_FAILED", orderId, gatewayPaymentId: payload.id, reason: payload.error_description };
       case "refund.created":
@@ -100,7 +120,15 @@ export class RazorpayProvider implements PaymentProvider {
           kind: "REFUND",
           orderId,
           refundId: payload.id,
+          gatewayPaymentId: payload.payment_id,
           amount: payload.amount ? payload.amount / 100 : undefined,
+        };
+      case "refund.failed":
+        return {
+          kind: "REFUND_FAILED",
+          orderId,
+          refundId: payload.id,
+          gatewayPaymentId: payload.payment_id,
         };
       default:
         return { kind: "UNHANDLED", eventType };
@@ -111,7 +139,40 @@ export class RazorpayProvider implements PaymentProvider {
     const refund = await this.client().payments.refund(gatewayPaymentId, {
       amount: amountInPaise,
       notes,
-    } as any);
+    });
     return { refundId: refund.id };
+  }
+
+  async fetchOrderSettlement(gatewayOrderId: string): Promise<GatewaySettlement | null> {
+    const { items } = await this.client().orders.fetchPayments(gatewayOrderId);
+
+    // A checkout can produce several attempts against one order. A capture
+    // anywhere in that list means the money moved.
+    const captured = items.find((p) => p.status === "captured");
+    if (captured) {
+      return {
+        status: "CAPTURED",
+        gatewayPaymentId: captured.id,
+        amountInPaise: Number(captured.amount),
+      };
+    }
+
+    // "authorized" is money held but not yet taken, "created" is still in
+    // flight — neither is a final outcome, so leave the order pending.
+    if (items.some((p) => p.status === "authorized" || p.status === "created")) {
+      return null;
+    }
+
+    const failed = items.find((p) => p.status === "failed");
+    if (failed) {
+      return {
+        status: "FAILED",
+        gatewayPaymentId: failed.id,
+        reason: failed.error_description ?? undefined,
+      };
+    }
+
+    // No attempts at all — the user never got as far as paying.
+    return null;
   }
 }

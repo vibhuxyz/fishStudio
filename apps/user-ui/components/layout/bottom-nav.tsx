@@ -23,7 +23,7 @@ export function BottomNav() {
 
   const itemClass = (active: boolean) =>
     `flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-      active ? "text-[#5A2C96]" : "text-muted-foreground"
+      active ? "text-primary" : "text-muted-foreground"
     }`;
 
   const handleAccount = () => {
@@ -54,7 +54,7 @@ export function BottomNav() {
           <span className="relative">
             <ShoppingCart className="h-5 w-5" />
             {totalItems > 0 && (
-              <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5A2C96] px-1 text-[9px] font-bold text-white">
+              <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white">
                 {totalItems > 9 ? "9+" : totalItems}
               </span>
             )}

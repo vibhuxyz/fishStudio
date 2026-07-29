@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fish } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
-import { normalizeSlug } from "@/lib/normalize-slug";
+import { normalizeSlug } from "@repo/slug";
 
 // Home "Categories" section — a horizontally scrollable strip of category tiles
 // (image + name) linking into each category page.
@@ -23,7 +23,7 @@ export function CategoriesSection() {
         </h2>
         <Link
           href="/categories"
-          className="text-xs font-semibold text-[#5A2C96] hover:underline"
+          className="text-xs font-semibold text-primary hover:underline"
         >
           See all
         </Link>
@@ -55,7 +55,7 @@ export function CategoriesSection() {
                         className="object-cover"
                       />
                     ) : (
-                      <Fish className="h-7 w-7 text-[#5A2C96]" />
+                      <Fish className="h-7 w-7 text-primary" />
                     )}
                   </div>
                   <span className="line-clamp-1 text-center text-[11px] font-medium text-foreground">

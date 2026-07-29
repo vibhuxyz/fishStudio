@@ -1,6 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
+import axiosInstance from "@/utils/axiosInstance";
+import { isProtected } from "@/utils/protected";
+
+// Keep a trailing empty slot so there is always somewhere to add the next
+// image, and never leave the grid with nothing to click.
+const withTrailingSlot = (list: any[]) => {
+  const next = [...list];
+  if (next.length === 0) next.push(null);
+  else if (next[next.length - 1] !== null && next.length < 5) next.push(null);
+  return next;
+};
 
 const ImagePlaceHolder = ({
   small,
@@ -11,6 +22,9 @@ const ImagePlaceHolder = ({
   setImages,
   isUploading = false,
   uploadStatus = "idle",
+  autoUpload = false,
+  folder = "products",
+  productTitle,
 }: {
   size: string;
   small?: boolean;
@@ -21,8 +35,57 @@ const ImagePlaceHolder = ({
   setImages: any;
   isUploading?: boolean;
   uploadStatus?: "idle" | "waiting" | "uploading" | "success";
+  // Opt-in: push to Cloudinary as soon as a file is picked rather than waiting
+  // for the parent form to submit.
+  autoUpload?: boolean;
+  folder?: string;
+  productTitle?: string;
 }) => {
-  const imagePreview = images[index]?.base64 || null;
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const slot = images[index];
+  const imagePreview = slot?.file_url || slot?.base64 || null;
+  const slotUploading = Boolean(slot?.uploading);
+  const busy = isUploading || slotUploading || isDeleting;
+
+  const uploadSlot = async (uid: string, base64: string) => {
+    try {
+      const res = await axiosInstance.post(
+        "/product/api/admin/upload-cloudinary-image",
+        {
+          images: [base64],
+          folder,
+          ...(productTitle?.trim() ? { productTitle } : {}),
+        },
+        isProtected,
+      );
+      const uploaded = res.data?.images?.[0];
+      if (!uploaded?.fileId) {
+        throw new Error("Upload response did not include an image");
+      }
+      setImages((current: any[]) =>
+        current.map((img: any) =>
+          img?.uid === uid
+            ? {
+                ...img,
+                uploading: false,
+                file_url: uploaded.file_url,
+                fileId: uploaded.fileId,
+              }
+            : img,
+        ),
+      );
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Image upload failed. Please pick the file again.",
+      );
+      // Drop the slot instead of leaving a spinner the admin can't clear.
+      setImages((current: any[]) =>
+        withTrailingSlot(current.filter((img: any) => img?.uid !== uid)),
+      );
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Check if limit already reached (excluding the current slot if it's empty)
@@ -45,9 +108,14 @@ const ImagePlaceHolder = ({
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64 = reader.result as string;
+      // Completion is matched by uid, not index — deleting another slot while
+      // this one is in flight shifts every index after it.
+      const uid = crypto.randomUUID();
 
       const updated = [...images];
-      updated[index] = { base64, file };
+      updated[index] = autoUpload
+        ? { base64, file, uid, uploading: true }
+        : { base64, file };
 
       // Push one more empty slot if this was the last image and we haven't reached a limit
       if (index === images.length - 1 && images.length < 5) {
@@ -56,27 +124,46 @@ const ImagePlaceHolder = ({
 
       setImages(updated);
       setValue("images", updated);
+
+      if (autoUpload) {
+        uploadSlot(uid, base64);
+      }
     };
 
     reader.readAsDataURL(file);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    if (isUploading) return;
+    if (busy) return;
 
-    const updated = [...images];
-    
-    if (updated[index]) {
-        updated.splice(index, 1);
-        if (updated.length === 0) updated.push(null);
-        if (updated[updated.length - 1] !== null && updated.length < 5) {
-            updated.push(null);
-        }
-        setImages(updated);
-        setValue("images", updated);
+    const target = images[index];
+    if (!target) return;
+
+    if (target.fileId) {
+      setIsDeleting(true);
+      try {
+        await axiosInstance.post(
+          "/product/api/admin/delete-cloudinary-image",
+          { fileId: target.fileId },
+          isProtected,
+        );
+      } catch (error: any) {
+        toast.error(
+          error?.response?.data?.message || "Could not delete the image",
+        );
+        setIsDeleting(false);
+        return;
+      }
+      setIsDeleting(false);
     }
+
+    const updated = withTrailingSlot(
+      images.filter((_: any, i: number) => i !== index),
+    );
+    setImages(updated);
+    setValue("images", updated);
   };
 
   return (
@@ -86,10 +173,17 @@ const ImagePlaceHolder = ({
       } w-full bg-[#1e1e1e] border border-gray-600 rounded-lg flex flex-col justify-center items-center group transition-all hover:border-blue-500/50 overflow-hidden shadow-inner`}
     >
       {/* Loading Overlays */}
-      {isUploading && uploadStatus === "uploading" && (
+      {(slotUploading || (isUploading && uploadStatus === "uploading")) && (
         <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3">
           <Loader2 className="animate-spin text-blue-500" size={small ? 24 : 40} />
           <span className="text-white text-sm font-medium animate-pulse">Uploading...</span>
+        </div>
+      )}
+
+      {isDeleting && (
+        <div className="absolute inset-0 z-10 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3">
+          <Loader2 className="animate-spin text-rose-500" size={small ? 24 : 40} />
+          <span className="text-white text-sm font-medium animate-pulse">Removing...</span>
         </div>
       )}
 
@@ -111,7 +205,7 @@ const ImagePlaceHolder = ({
 
       <label
         htmlFor={`image-upload-${index}`}
-        className={`w-full h-full flex flex-col justify-center items-center ${isUploading ? "cursor-wait" : "cursor-pointer"}`}
+        className={`w-full h-full flex flex-col justify-center items-center ${busy ? "cursor-wait" : "cursor-pointer"}`}
       >
         {imagePreview ? (
           <div className="relative w-full h-full">
@@ -120,10 +214,12 @@ const ImagePlaceHolder = ({
               alt="preview"
               className="w-full h-full object-cover rounded-lg"
             />
-            {!isUploading && (
+            {!busy && (
               <button
                 onClick={handleDelete}
-                className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm"
+                className={`absolute top-2 right-2 z-20 p-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full ${
+                  autoUpload ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                } transition-opacity shadow-lg backdrop-blur-sm`}
                 title="Delete image"
               >
                 <Trash2 size={16} />
@@ -151,7 +247,7 @@ const ImagePlaceHolder = ({
         )}
       </label>
 
-      {!isUploading && (
+      {!busy && (
         <input
           type="file"
           accept="image/*"

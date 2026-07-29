@@ -45,8 +45,8 @@ export default function HelpPage() {
               rel="noopener noreferrer"
               className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-muted/40"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#5A2C96]/10">
-                <Icon className="h-5 w-5 text-[#5A2C96]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">{c.label}</p>
@@ -59,7 +59,7 @@ export default function HelpPage() {
 
       <div className="mt-8 rounded-2xl border border-border bg-[#F8F8FA] p-4">
         <p className="text-sm font-semibold text-foreground">Common topics</p>
-        <ul className="mt-2 space-y-1.5 text-sm text-[#5A2C96]">
+        <ul className="mt-2 space-y-1.5 text-sm text-primary">
           <li><Link href="/orders" className="hover:underline">Track or manage an order</Link></li>
           <li><Link href="/faqs" className="hover:underline">Read frequently asked questions</Link></li>
           <li><Link href="/addresses" className="hover:underline">Update delivery addresses</Link></li>

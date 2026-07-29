@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 import { NotFoundError } from "@repo/error-handlers";
 
 const STOCK_CACHE_TTL = 15; // 15 seconds — short TTL for accuracy

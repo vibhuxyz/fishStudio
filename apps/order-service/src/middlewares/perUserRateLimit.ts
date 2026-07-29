@@ -1,5 +1,6 @@
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 import { RateLimitError } from "@repo/error-handlers";
+import { logger } from "@repo/libs/logger";
 import { Response, NextFunction } from "express";
 
 interface PerUserRateLimitOptions {
@@ -50,7 +51,7 @@ export function perUserRateLimit(options: PerUserRateLimitOptions) {
       res.setHeader("X-RateLimit-Remaining", Math.max(0, options.max - current));
     } catch (err) {
       // Redis is down — fail open to avoid blocking real orders
-      console.warn("[perUserRateLimit] Redis unavailable, skipping rate limit:", err);
+      logger.warn("[perUserRateLimit] Redis unavailable, skipping rate limit", { err });
     }
 
     return next();

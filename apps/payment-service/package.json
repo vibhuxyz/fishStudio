@@ -11,34 +11,36 @@
   "scripts": {
     "dev": "bun --watch src/main.ts",
     "build": "tsup",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/db-postgres": "workspace:*",
-    "@repo/db-mongo": "workspace:*",
-    "@repo/env-config": "workspace:*",
-    "@repo/middlewares": "workspace:*",
-    "@repo/libs": "workspace:*",
-    "@repo/error-handlers": "workspace:*",
-    "@repo/zod-schema": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
-    "tsup": "^8.5.0"
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "tsup": "^8.5.0",
+    "@types/node-cron": "^3.0.11"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "compression": "^1.8.1",
-    "@types/compression": "^1.8.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
     "helmet": "^8.1.0",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "@repo/db-postgres": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
+    "node-cron": "^4.2.1"
   }
 }

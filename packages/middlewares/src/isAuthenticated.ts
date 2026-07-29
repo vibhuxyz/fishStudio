@@ -3,7 +3,7 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 
 const AUTH_CACHE_TTL = 300; // 5 minutes — reduces DB lookups per authenticated user
 
@@ -29,6 +29,13 @@ const isTokenRevoked = async (token: string, jti?: string): Promise<boolean> => 
   }
 };
 
+const ROLE_ACCESS_COOKIES: Record<string, string> = {
+  admin: "admin_access_token",
+  staff: "staff_access_token",
+  seller: "seller_access_token",
+  user: "access_token",
+};
+
 // Fix #12: role detection is driven purely by the `x-auth-role` header. If
 // it's missing, we try each cookie in a fixed order — the JWT payload's
 // signed `role` is still the authoritative source downstream.
@@ -36,21 +43,24 @@ const pickToken = (req: any): { token: string | null; requestedRole: string | nu
   const requestedRole = (req.headers["x-auth-role"] as string | undefined)?.trim() || null;
   const bearer = (req.headers.authorization as string | undefined)?.split(" ")[1] || null;
 
-  if (requestedRole === "admin") return { token: req.cookies["admin_access_token"] || bearer, requestedRole };
-  if (requestedRole === "staff") return { token: req.cookies["staff_access_token"] || bearer, requestedRole };
-  if (requestedRole === "seller")
+  if (requestedRole === "seller") {
+    // Staff act within their seller's shop context, so a seller-scoped
+    // request also accepts a staff access token.
     return {
       token: req.cookies["seller_access_token"] || req.cookies["staff_access_token"] || bearer,
       requestedRole,
     };
-  if (requestedRole === "user") return { token: req.cookies["access_token"] || bearer, requestedRole };
+  }
+  const cookieName = requestedRole ? ROLE_ACCESS_COOKIES[requestedRole] : undefined;
+  if (cookieName) {
+    return { token: req.cookies[cookieName] || bearer, requestedRole };
+  }
 
   // No explicit role header — use whichever cookie is present.
   const token =
-    req.cookies["staff_access_token"] ||
-    req.cookies["seller_access_token"] ||
-    req.cookies["admin_access_token"] ||
-    req.cookies["access_token"] ||
+    Object.values(ROLE_ACCESS_COOKIES)
+      .map((cookieName) => req.cookies[cookieName])
+      .find(Boolean) ||
     bearer ||
     null;
   return { token, requestedRole };

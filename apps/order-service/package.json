@@ -11,40 +11,40 @@
   "scripts": {
     "dev": "bun --watch src/main.ts",
     "build": "tsup",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/db-postgres": "workspace:*",
-    "@repo/db-mongo": "workspace:*",
-    "@repo/env-config": "workspace:*",
-    "@repo/middlewares": "workspace:*",
-    "@repo/libs": "workspace:*",
-    "@repo/error-handlers": "workspace:*",
-    "@repo/zod-schema": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "@types/node-cron": "^3.0.11"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@repo/db-mongo": "workspace:*",
+    "@repo/db-postgres": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/pricing": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
     "@types/body-parser": "^1.19.6",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
-    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
-    "@types/nodemailer": "^7.0.11",
     "body-parser": "^2.2.2",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "ejs": "^5.0.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
     "helmet": "^8.1.0",
-    "nodemailer": "^8.0.3"
+    "node-cron": "^4.2.1"
   }
 }

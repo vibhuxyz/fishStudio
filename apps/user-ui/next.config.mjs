@@ -66,6 +66,8 @@ const nextConfig = {
   },
   transpilePackages: [
     "@repo/ui",
+    "@repo/pricing",
+    "@repo/slug",
     "@repo/zod-schema",
     "@repo/libs",
     "@repo/env-config",

@@ -35,8 +35,17 @@ export type CreateReviewInput = z.infer<typeof schemas.createReviewSchema>;
 export type CreateOrderInput = z.infer<typeof schemas.createOrderSchema>;
 export type AcceptOrRejectOrderInput = z.infer<typeof schemas.acceptOrRejectOrderSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof schemas.updateOrderStatusSchema>;
+export type UpdateAdminOrderStatusInput = z.infer<typeof schemas.updateAdminOrderStatusSchema>;
+export type AdminOrderListQueryInput = z.infer<typeof schemas.adminOrderListQuerySchema>;
 export type StoreInput = z.infer<typeof schemas.storeSchema>;
 
 export type CreateCouponInput = z.infer<typeof schemas.createCouponSchema>;
 export type ValidateCouponInput = z.infer<typeof schemas.validateCouponSchema>;
 export type ToggleCouponStatusInput = z.infer<typeof schemas.toggleCouponStatusSchema>;
+
+export type NotificationMessageInput = z.infer<typeof schemas.notificationMessageSchema>;
+export type OtpMessageInput = z.infer<typeof schemas.otpMessageSchema>;
+
+export type CreateRazorpayOrderInput = z.infer<typeof schemas.createRazorpayOrderSchema>;
+export type VerifyPaymentInput = z.infer<typeof schemas.verifyPaymentSchema>;
+export type InitiateRefundInput = z.infer<typeof schemas.initiateRefundSchema>;

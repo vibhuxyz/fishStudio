@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import {
   meiliClient,
@@ -8,11 +8,7 @@ import {
   clearAndReindexAll,
   initMeilisearchIndex,
 } from "../lib/meilisearch.js";
-
-interface AuthRequest extends Request {
-  role?: string;
-  admin?: { id: string };
-}
+import { AuthRequest } from "./product/utils.js";
 
 const SEARCH_CACHE_TTL = 180;   // 3 min
 const SUGGEST_CACHE_TTL = 300;  // 5 min

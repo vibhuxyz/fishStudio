@@ -13,6 +13,34 @@ export const colors = {
   primarySurface: "#F1ECF8",    // tint of primary — active nav tab bg
   primaryMuted: "#56357E",      // active nav icon / label
 
+  // Brand purple family sampled off the splash / login / OTP comps. These run
+  // a touch more saturated than `primary`, which the older screens still use.
+  brandMark: "#5C1FAA",         // logo circle, section headings
+  brandCta: "#4F20A4",          // solid CTA fill (Continue / Create Account)
+  brandAccent: "#C08BFF",       // highlight text inside the purple panel
+  panelStart: "#3B1973",        // deep panel gradient — top-left
+  panelMid: "#4B1C8F",
+  panelEnd: "#5A1D96",          // deep panel gradient — bottom-right
+
+  // Lavender wash behind the splash and auth screens
+  lavenderDeep: "#F0EAFD",
+  lavenderTop: "#F7F3FD",
+  lavenderMid: "#F1EDFB",
+  lavenderSoft: "#EFE7F9",
+  lavenderBottom: "#E9E1FA",
+
+  // Ink + hairlines used on the lavender surfaces
+  inkStrong: "#1C1C1C",
+  inkSoft: "#6B6577",
+  hairline: "#E7DFF5",          // card borders, OTP box outline
+  hairlineStrong: "#DCD2EE",    // dividers inside inputs / feature strip
+
+  // Translucent brand tints — splash glow, ripples, copy on the purple panel
+  brandGlow: "rgba(122, 47, 212, 0.10)",
+  brandGlowSoft: "rgba(122, 47, 212, 0.07)",
+  brandRipple: "rgba(90, 29, 150, 0.32)",
+  onPanelMuted: "rgba(255, 255, 255, 0.68)",
+
   // Gradient (left→right: cyan to purple)
   gradientStart: "#0DB3D9",
   gradientEnd: "#5A2C96",
@@ -20,16 +48,23 @@ export const colors = {
   // Semantic — success
   success: "#15803D",
   successSurface: "#DCFCE7",
+  offerGreen: "#22C55E",        // discount copy on product cards (tailwind: offer-green)
 
   // Semantic — info / blue badge
   info: "#1D4ED8",
   infoSurface: "#DBEAFE",
+
+  // Semantic — validation errors
+  danger: "#DC2626",
 
   // Semantic — Google brand colours (for the Sign in with Google button)
   googleBlue: "#4285F4",
   googleGreen: "#34A853",
   googleYellow: "#FBBC05",
   googleRed: "#EA4335",
+
+  // Semantic — WhatsApp brand colour (social sign-in button)
+  whatsappGreen: "#25D366",
 
   // Text
   textPrimary: "#1C1C1C",       // headings, strong labels (brand dark black)
@@ -42,6 +77,7 @@ export const colors = {
   // Backgrounds
   white: "#FFFFFF",             // primary background (brand)
   screenBg: "#FFFFFF",          // page background
+  card: "#FFFFFF",              // raised surface on the lavender auth screens
   secondaryBg: "#F8F8FA",       // secondary background (brand)
   surfaceAlt: "#F8F8FA",        // card / surface bg
   inputBg: "#F8F8FA",           // text input & OTP box bg
@@ -52,6 +88,7 @@ export const colors = {
 
   // Misc
   overlay: "rgba(0,0,0,0.4)",
+  scrim: "rgba(28, 28, 28, 0.72)", // out-of-stock band across a product image
   transparent: "transparent",
 } as const;
 
@@ -65,6 +102,13 @@ export const fonts = {
   semiBold: "Inter-SemiBold",
   bold: "Inter-Bold",
   interBold: "Inter-Bold",      // used for floating pill label
+
+  // Poppins carries the brand voice on the splash and auth screens — it is the
+  // face the logotype was drawn in.
+  displayRegular: "Poppins-Regular",
+  displayMedium: "Poppins-Medium",
+  displaySemiBold: "Poppins-SemiBold",
+  displayBold: "Poppins-Bold",
 } as const;
 
 export const fontSizes = {
@@ -177,6 +221,17 @@ export const gradients = {
   primaryDiagonal: [colors.gradientStart, colors.gradientEnd] as const,
   // Solid brand purple as a 2-stop gradient (for LinearGradient consumers)
   purple: [colors.primary, colors.primaryDark] as const,
+  // Deep panel that closes the splash / login screens (CSS 150deg)
+  panel: [colors.panelStart, colors.panelMid, colors.panelEnd] as const,
+  panelLocations: [0, 0.55, 1] as const,
+  // Lavender wash behind the splash and auth screens
+  lavender: [
+    colors.lavenderDeep,
+    colors.lavenderTop,
+    colors.lavenderSoft,
+    colors.lavenderBottom,
+  ] as const,
+  lavenderLocations: [0, 0.42, 0.72, 1] as const,
 } as const;
 
 // ─── Component tokens ────────────────────────────────────────────────────────
@@ -213,4 +268,58 @@ export const secondaryButtonToken = {
   fontFamily: fonts.semiBold,
   fontSize: fontSizes.body,
   color: colors.textPrimary,
+} as const;
+
+// Splash / login / OTP comps, measured on the 370x800 frame they were drawn on.
+// The login screen has to fit one viewport, so the auth screens push these
+// through their own vertical scale (`components/auth/layout.ts`) before use —
+// keep them raw here.
+export const authScreen = {
+  // Brand lockup
+  markSize: 52,
+  wordmarkWidth: 118,
+  inlineWordmarkWidth: 148,
+
+  // Type
+  headlineSize: 24,
+  titleSize: fontSizes["3xl"],
+  titleLine: 27,
+  bodySize: 13,
+  bodyLine: 18,
+  captionSize: 12.5,
+  captionLine: 18,
+  microSize: 10.5,
+  microLine: 13,
+  otpDigitSize: 24,
+
+  // Icons
+  featureIconSize: 22,
+  socialIconSize: 26,
+  googleMarkSize: 24,
+  fieldIconSize: 19,
+  chevronSize: 14,
+  globeSize: 15,
+  arrowSize: 18,
+  backSize: 24,
+
+  // Controls
+  fieldHeight: 50,
+  fieldRadius: 14,
+  ctaHeight: 50,
+  ctaRadius: 14,
+  socialSize: 48,
+  cardRadius: radii.sm,
+  checkboxSize: 19,
+  checkboxRadius: 5,
+
+  // OTP boxes
+  otpBoxWidth: 62,
+  otpBoxHeight: 68,
+  otpBoxRadius: 14,
+
+  // Curved footer — food.png is 740x428 and carries the purple curve baked into
+  // its bottom corners, so the panel must overlap it by `panelOverlap`.
+  heroAspect: 428 / 740,
+  heroHeightRatio: 0.17,
+  panelOverlap: 34,
 } as const;

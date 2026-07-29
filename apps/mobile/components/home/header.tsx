@@ -22,7 +22,7 @@ export default function Header() {
     queryFn: async () => {
       const res = await axiosInstance.get("/admin/api/get-user-notifications");
       const notifications = res.data?.notifications ?? [];
-      return notifications.filter((n: any) => n.status === "Unread").length;
+      return notifications.filter((n: { status: string }) => n.status === "Unread").length;
     },
     enabled: !!user,
     staleTime: 1000 * 60,
@@ -65,14 +65,6 @@ export default function Header() {
           >
             <MaterialCommunityIcons name="fish" size={24} color="white" />
           </View>
-          <View className="ml-2">
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C" }}>
-              Fish Studio
-            </Text>
-            <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#898B8A" }}>
-              Fresh fish, meat & more
-            </Text>
-          </View>
         </TouchableOpacity>
 
         {/* Delivery location */}
@@ -107,7 +99,7 @@ export default function Header() {
 
         {/* Notifications */}
         <TouchableOpacity
-          onPress={() => router.push("/(routes)/notifications" as any)}
+          onPress={() => router.push("/(routes)/notifications")}
           activeOpacity={0.8}
           style={{ marginLeft: 8 }}
         >

@@ -1,19 +1,25 @@
+import { ProductBadges } from "@/components/home/badge";
+import { colors, fonts, radii, shadows, spacing } from "@/constants/theme";
 import useUser from "@/hooks/useUser";
+import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
+import type { Product } from "@/types/product";
+import { toast } from "@/utils/toast";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-import { toast } from "@/utils/toast";
-import { ProductBadges } from "@/components/home/badge";
-import { Ionicons } from "@expo/vector-icons";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop";
 
 interface ProductCardProps {
-  product: any;
+  product: Product;
   showActions?: boolean;
   isFlashSale?: boolean;
   cardWidth?: number | `${number}%`;
   noRightMargin?: boolean;
-  onAddToCart?: (product: any) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 export default function ProductCard({
@@ -24,191 +30,322 @@ export default function ProductCard({
   noRightMargin = false,
   onAddToCart,
 }: ProductCardProps) {
-  const { wishlist, addToWishlist, removeFromWishlist } = useStore();
+  const { cart, addToCart, updateQuantity, checkAndIncrement } = useStore();
   const { user } = useUser();
+  const { selectedLocation, getSelectedAddress } = useAddressStore();
 
-  const handleProductPress = () => {
+  const quantity = cart.find((item) => item.id === product.id)?.quantity ?? 0;
+  const isOutOfStock = product.stock === 0 || product.outOfStock;
+  const currentPrice = product.sale_price || product.regular_price;
+  const discountPercentage =
+    product.sale_price && product.regular_price > product.sale_price
+      ? Math.round(
+          ((product.regular_price - product.sale_price) / product.regular_price) *
+            100,
+        )
+      : 0;
+  const deliveryMinutes = selectedLocation?.deliveryTimeMinutes ?? 40;
+
+  const openProduct = () => {
     router.push({
       pathname: "/(routes)/product/[id]",
       params: { id: product.slug || product.id },
     });
   };
 
-  const handleWishlistToggle = (e: any) => {
-    e.stopPropagation();
+  const handleAdd = () => {
     if (!user) {
-      toast.error("Please login to add items to wishlist");
+      toast.error("Please login to add items to cart");
       return;
     }
-    const isInWishlist = wishlist.some((item) => item.id === product.id);
-    if (isInWishlist) {
-      removeFromWishlist(product.id, user, null, "Mobile App");
-      toast.success("Removed from wishlist");
-    } else {
-      addToWishlist(
-        {
-          id: product.id,
-          slug: product.slug,
-          title: product.title,
-          price: product.sale_price || product.regular_price,
-          image: product.images?.[0]?.url || "",
-          shopId: product.Shop?.id || "",
-        },
-        user,
-        null,
-        "Mobile App"
-      );
-      toast.success("Added to wishlist");
+    // Cut type / weight still need picking, so defer to the sheet when the
+    // screen supplies one.
+    if (onAddToCart) {
+      onAddToCart(product);
+      return;
+    }
+    addToCart(
+      {
+        id: product.id,
+        slug: product.slug,
+        title: product.title,
+        price: currentPrice,
+        regularPrice: product.regular_price,
+        image: product.images?.[0]?.url || "",
+        shopId: product.Shop?.id || "",
+        quantity: 1,
+      },
+      user,
+      getSelectedAddress(),
+      "Mobile App",
+    );
+  };
+
+  const handleIncrement = async () => {
+    const result = await checkAndIncrement(product.id);
+    if (!result.ok && result.message) {
+      toast.error(result.message);
     }
   };
 
-  const discountPercentage = product?.sale_price
-    ? Math.round(
-        ((product.regular_price - product.sale_price) / product.regular_price) * 100
-      )
-    : 0;
-
-  const currentPrice = product.sale_price || product.regular_price;
-  const isOutOfStock = product.stock === 0 || product.outOfStock;
-  const rating = product.rating ?? product.averageRating ?? 4.9;
-
   return (
     <TouchableOpacity
-      className={`bg-white rounded-2xl overflow-hidden ${noRightMargin ? "" : "mr-4"}`}
-      style={{
-        width: cardWidth,
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 4,
-      }}
-      onPress={handleProductPress}
+      style={[
+        styles.card,
+        { width: cardWidth },
+        !noRightMargin && styles.cardSpacing,
+      ]}
+      onPress={openProduct}
       activeOpacity={0.9}
-      disabled={isOutOfStock}
     >
-      {/* ── Image ── */}
-      <View className="relative">
+      <View>
         <Image
-          source={{
-            uri:
-              product.images?.[0]?.url ||
-              "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
-          }}
-          style={{ width: "100%", height: 170 }}
+          source={{ uri: product.images?.[0]?.url || FALLBACK_IMAGE }}
+          style={[styles.image, isOutOfStock && styles.imageMuted]}
           resizeMode="cover"
         />
+        {/* Sits over the image so the photo reads as greyed-out rather than
+            just dim — RN has no filter, so this is a desaturating wash. */}
+        {isOutOfStock && <View style={styles.imageWash} />}
 
-        {/* Premium badges */}
-        <ProductBadges badges={(product as any).badges} max={2} />
+        <ProductBadges badges={product.badges} max={2} />
 
-        {/* Out of stock overlay */}
         {isOutOfStock && (
-          <View className="absolute inset-0 bg-black/50 items-center justify-center">
-            <View className="bg-white px-4 py-2 rounded-full">
-              <Text className="text-red-500 font-poppins-bold text-sm">OUT OF STOCK</Text>
-            </View>
+          <View style={styles.stockBand}>
+            <Text style={styles.stockBandText}>OUT OF STOCK</Text>
           </View>
         )}
       </View>
 
-      {/* ── Content ── */}
-      <View className="px-3 pt-3 pb-3">
-
-        {/* Title + Rating */}
-        <View className="flex-row items-center mb-1">
-          <Text
-            className="font-poppins-bold text-foreground flex-1"
-            style={{ fontSize: 17, lineHeight: 24 }}
-            numberOfLines={1}
-          >
-            {product.title || "Item Name"}
-          </Text>
-          <View className="flex-row items-center ml-2">
-            <Ionicons name="star" size={14} color="#F59E0B" />
-            <Text
-              className="font-poppins-semibold text-foreground ml-1"
-              style={{ fontSize: 13 }}
-            >
-              {rating}
-            </Text>
-          </View>
-        </View>
-
-        {/* Description */}
-        <Text
-          className="font-poppins text-muted-foreground mb-0.5"
-          style={{ fontSize: 13 }}
-          numberOfLines={1}
-        >
-          {product.description || product.short_description || "Description of the item"}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {product.title}
         </Text>
 
-        {/* Unit / Serves */}
-        <Text
-          className="font-poppins text-muted-foreground mb-3"
-          style={{ fontSize: 12 }}
-        >
-          {product.unit || "Unit"} | Serves {product.serves || "2-4"}
+        <Text style={styles.description} numberOfLines={1}>
+          {product.description || product.short_description || ""}
         </Text>
 
-        {/* Price row + Add button */}
-        <View className="flex-row items-center">
-          {/* Prices */}
-          <Text
-            className="font-poppins-bold text-foreground"
-            style={{ fontSize: 20 }}
-          >
-            ₹{currentPrice}
-          </Text>
+        <Text style={styles.meta}>
+          {product.unit || "500g"} | Serves {product.serves || "2-4"}
+        </Text>
 
-          {product.sale_price && product.regular_price && (
-            <>
-              <Text
-                className="font-poppins text-muted-foreground line-through ml-2"
-                style={{ fontSize: 13 }}
-              >
-                ₹{product.regular_price}
-              </Text>
-              {discountPercentage > 0 && (
-                <Text
-                  className="font-poppins-semibold text-offer-green ml-1.5"
-                  style={{ fontSize: 12 }}
-                >
-                  {discountPercentage}% off
-                </Text>
-              )}
-            </>
-          )}
-
-          {/* Spacer */}
-          <View className="flex-1" />
-
-          {/* Add button */}
-          {showActions && !isOutOfStock && (
+        {isOutOfStock ? (
+          <View style={styles.footer}>
+            <Text style={styles.outOfStockLabel}>OUT OF STOCK</Text>
             <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                if (!user) {
-                  toast.error("Please login to add items to cart");
-                  return;
-                }
-                if (onAddToCart) {
-                  onAddToCart(product);
-                } else {
-                  toast.success("Added to cart");
-                }
-              }}
+              onPress={() => router.push("/(routes)/shipping")}
               activeOpacity={0.7}
-              className="bg-primary rounded-full px-5 py-2"
             >
-              <Text className="text-white font-poppins-semibold" style={{ fontSize: 14 }}>
-                Add
-              </Text>
+              <Text style={styles.tryAnotherLocation}>Try another location</Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        ) : (
+          <View style={styles.footer}>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>₹{currentPrice}</Text>
+              {discountPercentage > 0 && (
+                <>
+                  <Text style={styles.strikePrice}>₹{product.regular_price}</Text>
+                  <Text style={styles.discount}>{discountPercentage}% off</Text>
+                </>
+              )}
+            </View>
+
+            <View style={styles.actionRow}>
+              <View style={styles.deliveryChip}>
+                <View style={styles.deliveryIcon}>
+                  <Ionicons name="flash" size={11} color={colors.primary} />
+                </View>
+                <Text style={styles.deliveryText}>{deliveryMinutes} mins</Text>
+              </View>
+
+              {showActions &&
+                (quantity > 0 ? (
+                  <View style={styles.stepper}>
+                    <TouchableOpacity
+                      onPress={() => updateQuantity(product.id, quantity - 1)}
+                      hitSlop={6}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="remove" size={16} color={colors.textWhite} />
+                    </TouchableOpacity>
+                    <Text style={styles.stepperCount}>{quantity}</Text>
+                    <TouchableOpacity
+                      onPress={handleIncrement}
+                      hitSlop={6}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="add" size={16} color={colors.textWhite} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleAdd}
+                    activeOpacity={0.85}
+                    style={styles.addButton}
+                  >
+                    <Text style={styles.addButtonText}>ADD</Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radii.sm,
+    overflow: "hidden",
+    ...shadows.card,
+  },
+  cardSpacing: {
+    marginRight: spacing[4],
+  },
+  image: {
+    width: "100%",
+    height: 150,
+  },
+  imageMuted: {
+    opacity: 0.45,
+  },
+  imageWash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.textSecondary,
+    opacity: 0.35,
+  },
+  stockBand: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingVertical: spacing[2],
+    alignItems: "center",
+    backgroundColor: colors.scrim,
+  },
+  stockBandText: {
+    color: colors.textWhite,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
+  body: {
+    paddingHorizontal: spacing[3],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[3],
+    flex: 1,
+  },
+  title: {
+    color: colors.inkStrong,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  description: {
+    marginTop: spacing[1] / 2,
+    color: colors.textSecondary,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  meta: {
+    marginTop: spacing[1],
+    color: colors.textSecondary,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
+  },
+  footer: {
+    marginTop: spacing[3],
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    flexWrap: "wrap",
+  },
+  price: {
+    color: colors.inkStrong,
+    fontFamily: fonts.displayBold,
+    fontSize: 17,
+  },
+  strikePrice: {
+    marginLeft: spacing[2],
+    color: colors.textSecondary,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
+    textDecorationLine: "line-through",
+  },
+  discount: {
+    marginLeft: spacing[2] - 2,
+    color: colors.offerGreen,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 12,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: spacing[3],
+  },
+  deliveryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[1] + 2,
+  },
+  deliveryIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primarySurface,
+  },
+  deliveryText: {
+    color: colors.inkStrong,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
+  },
+  stepper: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minWidth: 82,
+    paddingHorizontal: spacing[2] + 2,
+    paddingVertical: spacing[1] + 2,
+    borderRadius: radii.sm - 4,
+    backgroundColor: colors.primary,
+  },
+  stepperCount: {
+    color: colors.textWhite,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 13,
+    marginHorizontal: spacing[2],
+  },
+  addButton: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: radii.sm - 4,
+    backgroundColor: colors.primary,
+  },
+  addButtonText: {
+    color: colors.textWhite,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 13,
+  },
+  outOfStockLabel: {
+    color: colors.danger,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 12,
+    letterSpacing: 0.3,
+  },
+  tryAnotherLocation: {
+    marginTop: spacing[1] + 2,
+    color: colors.textSecondary,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+});

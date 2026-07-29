@@ -100,4 +100,15 @@ export interface Product {
 
   // Premium badges computed by the storefront API (e.g. "Best Seller").
   badges?: string[];
+
+  // Detail page content — authored on the catalog root, inherited by variants.
+  origin?: string | null;
+  source?: string | null;
+  shelfLife?: string | null;
+  storageInstructions?: string | null;
+  cookingTips?: string[];
+  highlightDescription?: string | null;
+  nutritionProtein?: string | null;
+  nutritionOmega3?: string | null;
+  nutritionCalories?: string | null;
 }

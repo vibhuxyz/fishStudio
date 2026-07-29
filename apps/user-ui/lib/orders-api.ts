@@ -1,54 +1,49 @@
-import { cookies } from "next/headers";
-import { frontendEnv } from "@/lib/env";
-
-export async function fetchServerOrders() {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
-
-  try {
-    const response = await fetch(`${frontendEnv.apiUrl}/order/api/user-orders`, {
-      headers: {
-        Cookie: cookieHeader,
-        "x-auth-role": "user",
-        "ngrok-skip-browser-warning": "true",
-      },
-      next: {
-        revalidate: 0, // Orders are dynamic, don't cache on server indefinitely
-        tags: ["user-orders"],
-      },
-    });
-
-    if (!response.ok) return [];
-    const data = await response.json();
-    return data.orders || [];
-  } catch (error) {
-    console.error("Error fetching orders on server:", error);
-    return [];
-  }
+export interface OrderItemSelectedOptions {
+  cuttingType?: string;
+  pieceSize?: string;
+  weightGrams?: number;
+  baseRatePerKg?: number;
+  cuttingCharge?: number;
+  sizeMultiplier?: number;
+  effectiveRatePerKg?: number;
 }
 
-export async function fetchServerOrderById(orderId: string) {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore.toString();
+export interface OrderItem {
+  id: string;
+  productId?: string;
+  price: number;
+  quantity: number;
+  product?: {
+    title: string;
+    images?: { url: string }[];
+  };
+  selectedOptions?: OrderItemSelectedOptions;
+}
 
-  try {
-    const response = await fetch(`${frontendEnv.apiUrl}/order/api/get-order/${orderId}`, {
-      headers: {
-        Cookie: cookieHeader,
-        "x-auth-role": "user",
-        "ngrok-skip-browser-warning": "true",
-      },
-      next: {
-        revalidate: 0,
-        tags: [`order-${orderId}`],
-      },
-    });
+export interface OrderStore {
+  name: string;
+  city?: string;
+  pincode?: string;
+  cityDeliveryTimes?: Record<string, number>;
+}
 
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.order || null;
-  } catch (error) {
-    console.error(`Error fetching order ${orderId} on server:`, error);
-    return null;
-  }
+export interface Order {
+  id: string;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+  items: OrderItem[];
+  store?: OrderStore | null;
+  totalAmount: number;
+  billDetails?: Record<string, number> | null;
+  paymentMethod: string;
+  deliverySlot?: string;
+  deliveryName?: string;
+  deliveryPhone?: string;
+  deliveryAddress?: string;
+  deliveryCity?: string;
+  deliveryPincode?: string;
+  deliveryCharge?: number;
+  discountAmount?: number;
+  couponCode?: string;
 }

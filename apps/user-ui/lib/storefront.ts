@@ -3,6 +3,12 @@ import type {
   Product,
   ProductSizePricing,
 } from "@repo/zod-schema";
+import {
+  normalizeSizePricing as sharedNormalizeSizePricing,
+  parseWeightToGrams,
+  resolvePriceFromSizePricing,
+  resolveSizePricing,
+} from "@repo/pricing";
 import { frontendEnv } from "@/lib/env";
 
 export interface StorefrontBanner {
@@ -121,98 +127,26 @@ export const getCategoryConfigKey = (category: string) =>
     )
     .join("");
 
-export const parseWeightToGrams = (value: string) => {
-  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
-
-  const sameUnitRangeMatch = normalized.match(
-    /(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(kg|g|gm)/,
-  );
-  if (sameUnitRangeMatch) {
-    const min = Number(sameUnitRangeMatch[1]);
-    const max = Number(sameUnitRangeMatch[2]);
-    const unit = sameUnitRangeMatch[3];
-    const average = (min + max) / 2;
-    return unit === "kg" ? Math.round(average * 1000) : Math.round(average);
-  }
-
-  const repeatedUnitRangeMatch = normalized.match(
-    /(\d+(?:\.\d+)?)\s*(kg|g|gm)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(kg|g|gm)/,
-  );
-  if (repeatedUnitRangeMatch) {
-    const min = Number(repeatedUnitRangeMatch[1]);
-    const minUnit = repeatedUnitRangeMatch[2];
-    const max = Number(repeatedUnitRangeMatch[3]);
-    const maxUnit = repeatedUnitRangeMatch[4];
-    if (minUnit === maxUnit) {
-      const average = (min + max) / 2;
-      return minUnit === "kg"
-        ? Math.round(average * 1000)
-        : Math.round(average);
-    }
-  }
-
-  const match = normalized.match(/(\d+(?:\.\d+)?)\s*(kg|g|gm)/);
-  if (!match) return 0;
-
-  const amount = Number(match[1]);
-  return match[2] === "kg" ? Math.round(amount * 1000) : Math.round(amount);
-};
+export { parseWeightToGrams };
 
 export const normalizeSizePricing = (
   sizePricing: ProductSizePricing[] | null | undefined,
   sizes: string[],
   salePrice: number,
   regularPrice: number,
-): ProductSizePricing[] => {
-  if (Array.isArray(sizePricing) && sizePricing.length > 0) {
-    return sizes.map((size) => {
-      const matched = sizePricing.find((entry) => entry.size === size);
-      return (
-        matched ?? {
-          size,
-          weightGrams: parseWeightToGrams(size),
-          salePrice,
-          regularPrice,
-        }
-      );
-    });
-  }
-
-  return sizes.map((size) => ({
-    size,
-    weightGrams: parseWeightToGrams(size),
-    salePrice,
-    regularPrice,
-  }));
-};
+): ProductSizePricing[] => sharedNormalizeSizePricing(sizePricing, sizes, salePrice, regularPrice);
 
 export const resolveProductSizePricing = (
   product: Pick<Product, "sizes" | "sizePricing" | "price" | "originalPrice">,
   size?: string,
-) => {
-  const normalizedPricing = normalizeSizePricing(
+) =>
+  resolveSizePricing(
     product.sizePricing,
     product.sizes,
     product.price,
     product.originalPrice ?? product.price,
+    size,
   );
-  const targetSize =
-    size || normalizedPricing[0]?.size || product.sizes[0] || "";
-  const selected = normalizedPricing.find(
-    (entry) => entry.size === targetSize,
-  ) ||
-    normalizedPricing[0] || {
-      size: targetSize,
-      weightGrams: parseWeightToGrams(targetSize),
-      salePrice: product.price,
-      regularPrice: product.originalPrice ?? product.price,
-    };
-
-  return {
-    normalizedPricing,
-    selected,
-  };
-};
 
 /**
  * Resolves the displayed price based on selected size.
@@ -221,31 +155,13 @@ export const resolveProductSizePricing = (
 export const resolvePrice = (
   product: Pick<Product, "sizes" | "sizePricing" | "price" | "originalPrice">,
   selectedSize?: string,
-): { salePrice: number; regularPrice: number; unit: string } => {
-  const fallback = {
-    salePrice: product.price,
-    regularPrice: product.originalPrice ?? product.price,
-    unit: selectedSize || "unit",
-  };
-
-  if (
-    selectedSize &&
-    Array.isArray(product.sizePricing) &&
-    product.sizePricing.length > 0
-  ) {
-    const entry = product.sizePricing.find((e) => e.size === selectedSize);
-    if (entry && entry.salePrice > 0) {
-      return {
-        salePrice: entry.salePrice,
-        regularPrice:
-          entry.regularPrice > 0 ? entry.regularPrice : entry.salePrice,
-        unit: entry.size,
-      };
-    }
-  }
-
-  return fallback;
-};
+): { salePrice: number; regularPrice: number; unit: string } =>
+  resolvePriceFromSizePricing(
+    product.sizePricing,
+    product.price,
+    product.originalPrice ?? product.price,
+    selectedSize,
+  );
 
 /**
  * Computes the default price for a product using the first available size.
@@ -314,6 +230,15 @@ export const transformProduct = (bp: BackendProduct): Product => {
     isBestseller: (bp.totalSold || 0) > 50,
     isFavorite: Array.isArray(bp.favorites) && bp.favorites.length > 0,
     badges: Array.isArray(bp.badges) ? bp.badges : [],
+    origin: bp.origin,
+    source: bp.source,
+    shelfLife: bp.shelfLife,
+    storageInstructions: bp.storageInstructions,
+    cookingTips: Array.isArray(bp.cookingTips) ? bp.cookingTips : [],
+    highlightDescription: bp.highlightDescription,
+    nutritionProtein: bp.nutritionProtein,
+    nutritionOmega3: bp.nutritionOmega3,
+    nutritionCalories: bp.nutritionCalories,
   };
 };
 

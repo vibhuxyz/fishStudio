@@ -1,6 +1,46 @@
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
+import { prismaMongo } from "@repo/db-mongo";
+import { prismaPostgres } from "@repo/db-postgres";
+import { logger } from "@repo/libs/logger";
 
 export const STATS_CACHE_TTL = 120; // 2 minutes
+
+// Shared Mongo `select` shapes for admin order endpoints — identical fields
+// requested by both the list and detail views, kept in one place so the two
+// don't silently drift out of sync.
+export const ADMIN_ORDER_CUSTOMER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone_number: true,
+  addresses: true,
+  createdAt: true,
+} as const;
+
+export const ADMIN_ORDER_SELLER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone_number: true,
+  isApprovedByAdmin: true,
+  createdAt: true,
+} as const;
+
+/**
+ * Self-heals orders that are DELIVERED but still show a PENDING payment
+ * (e.g. a COD order whose delivery-triggered payment update never landed).
+ * Fire-and-forget: called after the response data has already been read,
+ * so a failure here just means the fix is retried next time the order is read.
+ */
+export function queueStalePaymentFix(orderIds: string[]) {
+  if (orderIds.length === 0) return;
+  prismaPostgres.order
+    .updateMany({
+      where: { id: { in: orderIds } },
+      data: { paymentStatus: "COMPLETED" },
+    })
+    .catch(() => {});
+}
 
 export type Period = "week" | "month" | "year";
 
@@ -15,6 +55,29 @@ export const invalidateSellerStatsCache = async (sellerId: string) => {
     // Non-fatal
   }
 };
+
+/**
+ * Restores stock + totalSold for cancelled/rejected order items.
+ * Fire-and-forget: called after the status change is already committed,
+ * so a failure here shouldn't fail the request — it's logged and left
+ * for manual reconciliation instead.
+ */
+export function restoreOrderStock(
+  orderItems: { productId: string; quantity: number }[],
+  context: string,
+) {
+  return Promise.all(
+    orderItems.map((item) =>
+      prismaMongo.products.update({
+        where: { id: item.productId },
+        data: {
+          stock: { increment: item.quantity },
+          totalSold: { decrement: item.quantity },
+        },
+      }),
+    ),
+  ).catch((err) => logger.error(`[${context}] stock restore failed`, { err }));
+}
 
 export function getPeriodStart(period: Period): Date {
   const now = new Date();

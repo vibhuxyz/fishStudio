@@ -1,61 +1,68 @@
-import { connectRabbitMQ } from "@repo/libs";
-import { NotificationService } from "../services/notification.service.js";
+import { connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { QUEUE_NAMES } from "@repo/libs/queues";
+import { logger } from "@repo/libs/logger";
+import { notificationMessageSchema, otpMessageSchema } from "@repo/zod-schema";
+import { send, sendOtp } from "../services/notification.service.js";
+import type { Channel } from "amqplib";
+import type { z } from "zod";
 
-const QUEUE_NAME = "NOTIFICATION_QUEUE";
-const OTP_QUEUE = "OTP_QUEUE";
+async function consumeQueue<T>(
+    channel: Channel,
+    queueName: string,
+    schema: z.ZodSchema<T>,
+    handler: (data: T) => Promise<void>,
+    logContext: (data: T) => object
+) {
+    await channel.assertQueue(queueName, { durable: true });
+    logger.info(`[Consumer] Listening on queue: ${queueName}`);
+
+    channel.consume(queueName, async (msg) => {
+        if (!msg) return;
+        try {
+            const raw = JSON.parse(msg.content.toString());
+            const parsed = schema.safeParse(raw);
+
+            if (!parsed.success) {
+                logger.error(`[Consumer] Invalid message on ${queueName}`, {
+                    errors: parsed.error.flatten().fieldErrors,
+                    raw,
+                });
+                channel.nack(msg, false, false);
+                return;
+            }
+
+            logger.info(`[Consumer] Received event on ${queueName}`, logContext(parsed.data));
+            await handler(parsed.data);
+            channel.ack(msg);
+        } catch (error) {
+            logger.error(`[Consumer] Processing error on ${queueName}`, error);
+            channel.nack(msg, false, false);
+        }
+    });
+}
 
 export const startNotificationConsumer = async () => {
     try {
         const channel = await connectRabbitMQ();
         if (!channel) throw new Error("Could not connect to RabbitMQ");
 
-        await channel.assertQueue(QUEUE_NAME, { durable: true });
-        console.log(`📬 Notification Consumer listening on queue: ${QUEUE_NAME}`);
+        await consumeQueue(
+            channel,
+            QUEUE_NAMES.NOTIFICATION_QUEUE,
+            notificationMessageSchema,
+            send,
+            (data) => ({ userId: data.userId, type: data.type })
+        );
 
-        channel.consume(QUEUE_NAME, async (msg) => {
-            if (!msg) return;
-
-            try {
-                const content = JSON.parse(msg.content.toString());
-                console.log("📥 Received notification event:", content);
-
-                const { userId, title, message, type, category, metadata, channels } = content;
-
-                await NotificationService.send({
-                    userId,
-                    title,
-                    message,
-                    type,
-                    category,
-                    metadata,
-                    channels,
-                });
-
-                channel.ack(msg);
-            } catch (error) {
-                console.error("❌ Notification Consumer error:", error);
-                // Nack and requeue if it's transient, but for now just acknowledge to avoid infinite loops on bad data
-                channel.nack(msg, false, false);
-            }
-        });
-
-        // 2. Consume OTP Queue
-        await channel.assertQueue(OTP_QUEUE, { durable: true });
-        console.log(`📬 Notification Consumer listening on queue: ${OTP_QUEUE}`);
-
-        channel.consume(OTP_QUEUE, async (msg) => {
-            if (!msg) return;
-            try {
-                const content = JSON.parse(msg.content.toString());
-                console.log("📥 Received OTP event:", content);
-                await NotificationService.sendOtp(content);
-                channel.ack(msg);
-            } catch (error) {
-                console.error("❌ OTP Consumer error:", error);
-                channel.nack(msg, false, false);
-            }
-        });
+        await consumeQueue(
+            channel,
+            QUEUE_NAMES.OTP_QUEUE,
+            otpMessageSchema,
+            sendOtp,
+            (data) => ({ userType: data.userType })
+        );
     } catch (error) {
-        console.error("❌ Failed to start Notification Consumer:", error);
+        logger.error("[Consumer] Failed to start Notification Consumer", error);
     }
 };
+

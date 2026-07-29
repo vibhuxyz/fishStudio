@@ -13,7 +13,7 @@ import {
   otpRateLimiter,
   registrationRateLimiter,
   refreshRateLimiter,
-} from "../middleware/rate-limiter.js";
+} from "../middlewares/rate-limiter.js";
 import {
   getAdmin,
   loginAdmin,
@@ -23,7 +23,7 @@ import {
   verifyAdminSignupCode,
   generateSellerSignupCode,
   getSellerSignupCodes,
-} from "../controller/admin.auth.controller.js";
+} from "../modules/admin/admin.controller.js";
 
 import {
   addUserAddress,
@@ -31,11 +31,13 @@ import {
   getUser,
   logOutUser,
   updateUserProfile,
+  updateAvatar,
+  uploadAvatarImage,
   deleteUser,
   refreshToken,
   sendOtpToUser,
   verifyOtpAndLogin,
-} from "../controller/user.auth.controller.js";
+} from "../modules/user/user.controller.js";
 import {
   getSeller,
   loginSeller,
@@ -45,18 +47,18 @@ import {
   verifySellerSignupCode,
   forgotPasswordSeller,
   resetPasswordSeller,
-} from "../controller/seller/auth.controller.js";
+} from "../modules/seller/seller.controller.js";
 import {
   createStore,
   checkPincode,
   updateStore,
   getServiceableAreas,
-} from "../controller/seller/store.controller.js";
+} from "../modules/seller/store.controller.js";
 import {
   getAllSellersForAdmin,
   getSellerDetailsForAdmin,
   updateSellerApproval,
-} from "../controller/seller/admin.controller.js";
+} from "../modules/admin/seller-admin.controller.js";
 
 import {
   getMyStaffs,
@@ -66,9 +68,7 @@ import {
   searchStaffByEmail,
   updateStaffAccess,
   verifyStaff,
-} from "../controller/staff.auth.controller.js";
-
-import { saveCart, clearCart, getCart } from "../controller/cart.controller.js";
+} from "../modules/staff/staff.controller.js";
 
 const router: Router = express.Router();
 
@@ -78,6 +78,8 @@ router.post("/verify-otp", authRateLimiter, verifyOtpAndLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 router.put("/update-user-profile", isAuthenticated, isUser, updateUserProfile);
+router.post("/upload-avatar-image", isAuthenticated, isUser, uploadAvatarImage);
+router.put("/update-avatar", isAuthenticated, isUser, updateAvatar);
 router.delete("/delete-user", isAuthenticated, isUser, deleteUser);
 
 // user address routes
@@ -158,10 +160,5 @@ router.put(
   isSeller,
   updateStaffAccess,
 );
-
-// ── Cart (server-side persistence for abandoned cart detection) ───────────
-router.post("/save-cart",  isAuthenticated, isUser, saveCart);
-router.post("/clear-cart", isAuthenticated, isUser, clearCart);
-router.get("/get-cart",    isAuthenticated, isUser, getCart);
 
 export default router;

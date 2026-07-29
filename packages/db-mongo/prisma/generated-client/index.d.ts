@@ -21975,7 +21975,6 @@ export namespace Prisma {
 
   export type SignupAccessCodeWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    email_role?: SignupAccessCodeEmailRoleCompoundUniqueInput
     AND?: SignupAccessCodeWhereInput | SignupAccessCodeWhereInput[]
     OR?: SignupAccessCodeWhereInput[]
     NOT?: SignupAccessCodeWhereInput | SignupAccessCodeWhereInput[]
@@ -21986,7 +21985,7 @@ export namespace Prisma {
     expiresAt?: DateTimeNullableFilter<"SignupAccessCode"> | Date | string | null
     createdAt?: DateTimeFilter<"SignupAccessCode"> | Date | string
     updatedAt?: DateTimeFilter<"SignupAccessCode"> | Date | string
-  }, "id" | "email_role">
+  }, "id">
 
   export type SignupAccessCodeOrderByWithAggregationInput = {
     id?: SortOrder
@@ -25062,11 +25061,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumsellerEventTypeFilter<$PrismaModel>
     _max?: NestedEnumsellerEventTypeFilter<$PrismaModel>
-  }
-
-  export type SignupAccessCodeEmailRoleCompoundUniqueInput = {
-    email: string
-    role: string
   }
 
   export type SignupAccessCodeCountOrderByAggregateInput = {

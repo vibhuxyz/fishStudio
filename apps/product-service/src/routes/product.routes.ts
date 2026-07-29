@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express, { Router, Response, NextFunction } from "express";
 import {
   searchProducts,
   searchSuggestions,
@@ -11,23 +11,30 @@ import {
   getCatalogProducts,
   getOwnedProductById,
   getOwnedProducts,
-  getStoreProductBySlug,
-  getStoreProducts,
-  getStorePublicOffers,
   restoreProduct,
   slugValidator,
   updateProduct,
   updateProductStock,
-  validateCart,
+} from "../controllers/product/product.controller.js";
+import {
+  getStoreProductBySlug,
+  getStoreProducts,
+  getStorePublicOffers,
+} from "../controllers/product/storefront.controller.js";
+import { validateCart } from "../controllers/product/cart.controller.js";
+import {
   getHomepageSections,
+  getSectionProducts,
   trackProductView,
   getRecentlyViewed,
   getForYou,
   mergeActivity,
-} from "../controllers/product/product.controller.js";
+} from "../controllers/product/activity.controller.js";
 import {
   createCategory,
   createSubCategory,
+  deleteCategory,
+  deleteSubCategory,
   getCategories,
 } from "../controllers/product/category.controller.js";
 import {
@@ -57,8 +64,10 @@ import {
 } from "../controllers/product/banner.controller.js";
 import {
   deleteCloudinaryImage,
+  deleteStoreImage,
   uploadCloudinaryImage,
   uploadProductImage,
+  uploadStoreImage,
 } from "../controllers/product/image.controller.js";
 
 import { getAdminSellerInventory } from "../controllers/product/admin.inventory.controller.js";
@@ -68,9 +77,14 @@ import {
   deleteReview,
   getProductReviews,
 } from "../controllers/product/review.controller.js";
-import { allowRoles, isAuthenticated, isApprovedSeller, isSeller } from "@repo/middlewares";
+import { allowRoles, isAuthenticated, isApprovedSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
+
+// Admins bypass the approved-seller check entirely; sellers must be approved.
+// Shared by every route where either role can act but only sellers need vetting.
+const allowAdminOrApprovedSeller = (req: any, res: Response, next: NextFunction) =>
+  req.role === "admin" ? next() : isApprovedSeller(req, res, next);
 
 router.post(
   "/slug-validator",
@@ -146,13 +160,25 @@ router.post(
   allowRoles("admin"),
   createSubCategory,
 );
+// Names, not ids, identify these — so they travel in the body rather than the path.
+router.delete(
+  "/delete-category",
+  isAuthenticated,
+  allowRoles("admin"),
+  deleteCategory,
+);
+router.delete(
+  "/delete-subcategory",
+  isAuthenticated,
+  allowRoles("admin"),
+  deleteSubCategory,
+);
 
 router.post(
   "/upload-product-image",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   uploadProductImage,
 );
 router.post(
@@ -167,12 +193,26 @@ router.post(
   allowRoles("admin"),
   deleteCloudinaryImage,
 );
+// Seller-side equivalents — scoped to the seller's own Cloudinary folder.
+router.post(
+  "/upload-store-image",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  allowAdminOrApprovedSeller,
+  uploadStoreImage,
+);
+router.post(
+  "/delete-store-image",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  allowAdminOrApprovedSeller,
+  deleteStoreImage,
+);
 router.post(
   "/upload-banner",
   isAuthenticated,
   allowRoles("admin", "seller"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   uploadBanner,
 );
 
@@ -252,6 +292,7 @@ router.get("/stock/:productId", getProductStock);
 router.get("/get-all-products", getStoreProducts);
 // ── Home sections + user activity (public; auth optional) ────────────────────
 router.get("/get-homepage-sections", getHomepageSections);
+router.get("/get-section-products", getSectionProducts);
 router.post("/track-view", trackProductView);
 router.get("/recently-viewed", getRecentlyViewed);
 router.get("/for-you", getForYou);
@@ -291,16 +332,14 @@ router.put(
   "/update-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   updateProduct,
 );
 router.put(
   "/update-product-stock/:productId",
   isAuthenticated,
   allowRoles("admin", "seller", "staff"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   updateProductStock,
 );
 
@@ -309,16 +348,14 @@ router.delete(
   "/delete-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   deleteProduct,
 );
 router.put(
   "/restore-product/:productId",
   isAuthenticated,
   allowRoles("admin", "seller"),
-  (req: any, res: any, next: any) =>
-    req.role === "admin" ? next() : isApprovedSeller(req, res, next),
+  allowAdminOrApprovedSeller,
   restoreProduct,
 );
 

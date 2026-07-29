@@ -40,6 +40,13 @@ export const getOwnedProductFilter = (req: AuthRequest) => {
   throw new ValidationError("Only admin, seller, or authorized staff can manage products!");
 };
 
+export const hasProductOwnerAccess = (
+  product: { storeId?: string | null; adminId?: string | null },
+  ownerFilter: ReturnType<typeof getOwnedProductFilter>,
+) =>
+  ("storeId" in ownerFilter && product.storeId === ownerFilter.storeId) ||
+  ("adminId" in ownerFilter && product.adminId === ownerFilter.adminId);
+
 export const getSellerStore = (req: AuthRequest) => {
   if ((req.role === "seller" || req.role === "staff") && req.seller?.store?.id) {
     return req.seller.store;
@@ -119,7 +126,7 @@ export const isCatalogRootProduct = (
 
 export const normalizeDynamicValues = (items: unknown) => {
   if (!Array.isArray(items)) return [];
-  return items
+  const values = items
     .map((item) => {
       if (typeof item === "string") return item;
       if (item && typeof item === "object" && "value" in item) {
@@ -129,6 +136,9 @@ export const normalizeDynamicValues = (items: unknown) => {
     })
     .map((item) => item.trim())
     .filter(Boolean);
+  // These render as dropdown options keyed by their own value, so a repeated
+  // entry breaks the storefront rather than just looking odd.
+  return [...new Set(values)];
 };
 
 export type NormalizedSizePricing = {

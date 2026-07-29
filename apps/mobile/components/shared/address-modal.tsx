@@ -160,7 +160,7 @@ export default function AddressModal({
     }
     onClose();
     router.push({
-      pathname: "/(routes)/add-address" as any,
+      pathname: "/(routes)/add-address",
       params: {
         pincode,
         city: storeInfo?.city || "",

@@ -2,7 +2,9 @@ import ProductCard from "@/components/cards/product.card";
 import Header from "@/components/home/header";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { useAddressStore } from "@/lib/address-store";
+import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
+import { normalizeSlug } from "@repo/slug";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,14 +21,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const normalizeSlug = (str: string) =>
-  str
-    .toLowerCase()
-    .trim()
-    .replace(/[&\s\-_]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
 
 const titleizeSlug = (str: string) =>
   str
@@ -166,7 +160,7 @@ export default function CategoryScreen() {
     enabled: !!categoryForFetch,
   });
 
-  const allProducts: any[] = productsData?.products ?? [];
+  const allProducts: Product[] = productsData?.products ?? [];
 
   const subCategories = useMemo(() => {
     if (!categoriesData) return [];

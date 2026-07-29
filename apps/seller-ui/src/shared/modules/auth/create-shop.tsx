@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { frontendEnv } from "@/config/env";
+import axiosInstance from "@/utils/axiosInstance";
 import { Plus, X, Clock, Store, MapPin, Globe, Briefcase, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,9 +51,10 @@ const CreateShop = ({
     const cleanCity = cityInput.trim().replace(/\s+/g, " ");
     const mins = parseInt(minutesInput, 10);
 
-    if (!cleanCity) { toast.error("Enter a city name"); return; }
-    if (!/^[a-zA-Z\s]+$/.test(cleanCity)) {
-      toast.error("City name should only contain letters and spaces");
+    if (!cleanCity) { toast.error("Enter an area name"); return; }
+    // Sector/phase/block areas carry digits — "Sector 46", "Phase 3", "Block C-2".
+    if (!/^[a-zA-Z0-9\s-]+$/.test(cleanCity)) {
+      toast.error("Area name can only contain letters, numbers, spaces and hyphens");
       return;
     }
     if (isNaN(mins) || mins < 1 || mins > 300) {
@@ -89,14 +90,7 @@ const CreateShop = ({
         cityDeliveryTimes: cityDeliveryTimesMap,
       };
 
-      const response = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/create-store`,
-        shopData,
-        { 
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true
-        },
-      );
+      const response = await axiosInstance.post("/auth/api/create-store", shopData);
       return response.data;
     },
     onSuccess: () => {

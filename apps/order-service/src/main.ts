@@ -7,7 +7,9 @@ import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import { errorMiddleware } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
+import { logger } from "@repo/libs/logger";
 import router from "./routes/order.route.js";
+import { stockReservationSweeper } from "./jobs/stock-reservation.sweeper.js";
 
 const app = express();
 // Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
@@ -16,7 +18,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: false,
 }));
-app.use(compression() as any);
+app.use(compression());
 app.use(
   cors({
     origin: ENV.CORS_ORIGINS
@@ -49,6 +51,15 @@ app.use(errorMiddleware);
 
 const port = Number(ENV.ORDER_SERVICE_PORT) || 6004;
 const server = app.listen(port, () => {
-  console.log(`Listening at http://localhost:${port}/api`);
+  logger.info(`Listening at http://localhost:${port}/api`);
 });
-server.on("error", console.error);
+server.on("error", (err) => logger.error("Server error", { err }));
+
+const shutdown = () => {
+  logger.info("Shutting down order-service...");
+  stockReservationSweeper.stop();
+  server.close(() => process.exit(0));
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

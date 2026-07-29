@@ -17,7 +17,7 @@ config.watchFolders = Array.from(
 
 // Stub out native-only packages when bundling for web (expo export)
 const WEB_STUBS = {
-  "@stripe/stripe-react-native": path.resolve(__dirname, "stubs/stripe-react-native.js"),
+  "react-native-razorpay": path.resolve(__dirname, "stubs/react-native-razorpay.js"),
 };
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {

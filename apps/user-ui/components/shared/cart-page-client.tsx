@@ -20,143 +20,56 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
-import { useCouponStore, type Coupon } from "@/lib/coupon-store";
-import { useAddressStore } from "@/lib/address-store";
-import { useAuth } from "@/lib/auth-store";
-import { axiosInstance, cn } from "@/lib/utils";
+import { useCartCheckoutSummary, TIP_OPTIONS } from "@/hooks/useCartCheckoutSummary";
+import { cn } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
-import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-
-const TIP_OPTIONS = [20, 30, 50];
 
 export function CartPageClient() {
   const router = useRouter();
-  const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const syncItems = useCartStore((s) => s.syncItems);
   const deliveryMetadata = useCartStore((s) => s.deliveryMetadata);
   const [isSyncing, setIsSyncing] = useState(false);
-
-  const {
-    appliedCoupons,
-    autoApplied,
-    applyCoupon,
-    removeCoupon,
-    setAutoApplied,
-    isCouponApplied,
-    getTotalDiscount,
-    getDiscountForCoupon,
-    availableCoupons,
-    fetchAvailableCoupons,
-  } = useCouponStore();
-  const { user } = useAuth();
-  const { getSelectedAddress, selectedLocation, setSelectedLocation } = useAddressStore();
-  const selectedAddress = getSelectedAddress();
-
-  const [couponInput, setCouponInput] = useState("");
-  const [showCouponPanel, setShowCouponPanel] = useState(false);
-  const [selectedTip, setSelectedTip] = useState<number | null>(null);
-  const [customTip, setCustomTip] = useState("");
-  const [showCustomTip, setShowCustomTip] = useState(false);
-  const [donationEnabled, setDonationEnabled] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const subtotal = items.reduce((sum, item) => sum + item.totalPayable, 0);
-  const deliveryCharge = subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
-  const handlingCharge = items.length > 0 ? 8 : 0;
-  const discount = getTotalDiscount(subtotal);
-  const tip = showCustomTip ? (Number(customTip) || 0) : (selectedTip ?? 0);
-  const donation = donationEnabled ? 1 : 0;
-  const grandTotal = subtotal + deliveryCharge + handlingCharge - discount + tip + donation;
-
-  // Auto-resolve storeId from address pincode if selectedLocation is missing
-  useEffect(() => {
-    if (selectedLocation?.storeId) return;
-    const addr = getSelectedAddress();
-    if (!addr?.pincode) return;
-    axiosInstance
-      .get(`/auth/api/check-pincode?pincode=${addr.pincode}`)
-      .then(({ data }) => {
-        if (data.success && data.store?.id) {
-          setSelectedLocation({
-            storeId: data.store.id,
-            storeName: data.store.name,
-            pincode: addr.pincode,
-            city: addr.city || data.store.city || "",
-          });
-        }
-      })
-      .catch(() => {});
-  }, [selectedLocation?.storeId]);
-
-  // Fetch real coupons when storeId available
-  useEffect(() => {
-    if (selectedLocation?.storeId) {
-      fetchAvailableCoupons(selectedLocation.storeId, user?.id);
-    }
-  }, [selectedLocation?.storeId, user?.id]);
+  const {
+    items,
+    subtotal,
+    deliveryCharge,
+    handlingCharge,
+    discount,
+    tip,
+    grandTotal,
+    appliedCoupons,
+    rankedCoupons,
+    isCouponApplied,
+    getDiscountForCoupon,
+    couponInput,
+    setCouponInput,
+    showCouponPanel,
+    setShowCouponPanel,
+    handleApplyCouponCode,
+    handleSelectCoupon,
+    handleRemoveCoupon,
+    selectedTip,
+    setSelectedTip,
+    customTip,
+    setCustomTip,
+    showCustomTip,
+    setShowCustomTip,
+    donationEnabled,
+    setDonationEnabled,
+    selectedAddress,
+    selectedLocation,
+  } = useCartCheckoutSummary();
 
   // Sync cart items on mount
   useEffect(() => {
     setIsSyncing(true);
     syncItems().finally(() => setIsSyncing(false));
   }, []);
-
-  useEffect(() => {
-    if (autoApplied) return;
-    if (subtotal === 0) return;
-    const autoCoupon = availableCoupons.find(
-      (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code)
-    );
-    if (autoCoupon) {
-      applyCoupon(autoCoupon);
-      setAutoApplied(true);
-      toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
-    }
-  }, [subtotal, availableCoupons]);
-
-  const handleApplyCouponCode = () => {
-    const found = availableCoupons.find(
-      (c) => c.code.toUpperCase() === couponInput.toUpperCase()
-    );
-    if (!found) {
-      toast.error("Invalid coupon code");
-      return;
-    }
-    if (isCouponApplied(found.code)) {
-      toast.info("Coupon already applied");
-      return;
-    }
-    if (subtotal < found.minOrderValue) {
-      toast.error(`Minimum order ₹${found.minOrderValue} required`);
-      return;
-    }
-    applyCoupon(found);
-    setCouponInput("");
-    setShowCouponPanel(false);
-    toast.success(`Coupon ${found.code} applied!`);
-  };
-
-  const handleSelectCoupon = (coupon: Coupon) => {
-    if (isCouponApplied(coupon.code)) {
-      toast.info("Already applied");
-      return;
-    }
-    if (subtotal < coupon.minOrderValue) {
-      toast.error(`Minimum order ₹${coupon.minOrderValue} required for this coupon`);
-      return;
-    }
-    applyCoupon(coupon);
-    setShowCouponPanel(false);
-    toast.success(`Coupon ${coupon.code} applied!`);
-  };
-
-  const handleRemoveCoupon = (code: string) => {
-    removeCoupon(code);
-    toast.info("Coupon removed");
-  };
 
   if (items.length === 0) {
     return (
@@ -361,27 +274,34 @@ export function CartPageClient() {
                 className="overflow-hidden"
               >
                 <div className="space-y-2 border-t border-border px-4 py-3">
-                  {availableCoupons.length === 0 && (
+                  {rankedCoupons.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-2">No offers available for your area</p>
                   )}
-                  {availableCoupons.map((coupon) => {
-                    const eligible = subtotal >= coupon.minOrderValue;
+                  {rankedCoupons.map(({ coupon, eligible, saving, amountToUnlock }, index) => {
                     const applied = isCouponApplied(coupon.code);
+                    const isBest = index === 0 && eligible && !applied;
                     return (
                       <div
                         key={coupon.code}
                         className={`rounded-xl border p-3 ${
                           applied
                             ? "border-offer-green/50 bg-offer-green/5"
-                            : eligible
-                              ? "border-primary/30 bg-primary/5"
-                              : "border-border bg-muted/30"
+                            : isBest
+                              ? "border-primary bg-primary/10"
+                              : eligible
+                                ? "border-primary/30 bg-primary/5"
+                                : "border-border bg-muted/30"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-sm font-bold tracking-wider text-primary">{coupon.code}</span>
+                              {isBest && (
+                                <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                                  Best offer
+                                </span>
+                              )}
                               {coupon.badge && (
                                 <span className="rounded-full bg-offer-green/10 px-2 py-0.5 text-[10px] font-semibold text-offer-green">
                                   {coupon.badge}
@@ -389,9 +309,14 @@ export function CartPageClient() {
                               )}
                             </div>
                             <p className="mt-0.5 text-xs text-muted-foreground">{coupon.description}</p>
+                            {eligible && !applied && saving > 0 && (
+                              <p className="mt-0.5 text-[10px] font-semibold text-offer-green">
+                                Saves ₹{saving} on this order
+                              </p>
+                            )}
                             {!eligible && !applied && (
                               <p className="mt-0.5 text-[10px] text-destructive">
-                                Add ₹{coupon.minOrderValue - subtotal} more to unlock
+                                Add ₹{amountToUnlock} more to unlock
                               </p>
                             )}
                           </div>

@@ -1,8 +1,11 @@
-import { consumeQueue, connectRabbitMQ } from "@repo/libs";
+import { consumeQueue, connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { logger } from "@repo/libs/logger";
+import { QUEUE_NAMES } from "../config/queues.js";
 import { SocketManager } from "../socket.js";
+import { isValidAdminEvent } from "../types/adminEvent.js";
 
 export const adminWorker = async () => {
-  const queueName = "ADMIN_EVENTS";
+  const queueName = QUEUE_NAMES.ADMIN_EVENTS;
 
   await consumeQueue(queueName, async (msg) => {
     if (!msg) return;
@@ -11,7 +14,10 @@ export const adminWorker = async () => {
 
     try {
       const content = JSON.parse(msg.content.toString());
-      console.log(`📦 Received admin event: ${content.type}`);
+      if (!isValidAdminEvent(content)) {
+        throw new Error(`Invalid admin event structure: ${JSON.stringify(content)}`);
+      }
+      logger.info(`📦 Received admin event: ${content.type}`);
 
       const socketManager = SocketManager.getInstance();
       if (socketManager) {
@@ -47,10 +53,12 @@ export const adminWorker = async () => {
 
       channel.ack(msg);
     } catch (error) {
-      console.error("❌ Error processing admin event:", error);
-      channel.ack(msg);
+      logger.error("❌ Error processing admin event:", error);
+      // No dead-letter queue configured — requeue=false drops the message
+      // rather than looping a malformed/unhandleable event forever.
+      channel.nack(msg, false, false);
     }
   });
 
-  console.log(`📥 Admin Worker listening on: ${queueName}`);
+  logger.info(`📥 Admin Worker listening on: ${queueName}`);
 };

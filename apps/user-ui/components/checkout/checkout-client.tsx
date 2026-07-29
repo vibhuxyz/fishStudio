@@ -179,6 +179,11 @@ export function CheckoutClient() {
 
     // Once payment verifies we must NOT cancel the order on modal close.
     let paymentSettled = false;
+    // Razorpay handed us a payment, so money has very likely moved even if the
+    // verify call below never lands. Cancelling on dismiss after this point
+    // could void an order the customer has already paid for — leave it to the
+    // webhook and payment-service's reconciliation sweep instead.
+    let paymentAttempted = false;
 
     const razorpay = new (window as any).Razorpay({
       key: rzp.keyId, // public key_id, supplied by the backend
@@ -194,6 +199,7 @@ export function CheckoutClient() {
       },
       theme: { color: "#0ea5e9" },
       handler: async (response: any) => {
+        paymentAttempted = true;
         try {
           const { data: verified } = await axiosInstance.post("/payment/api/verify", {
             orderId,
@@ -220,9 +226,10 @@ export function CheckoutClient() {
       },
       modal: {
         ondismiss: () => {
-          // Modal closed without a verified payment (cancelled, or gave up
-          // after a failure) — roll back the unpaid order so it isn't placed.
-          if (!paymentSettled) {
+          // Modal closed without a verified payment. Only roll back if no
+          // payment was ever handed to us — otherwise the order may be paid
+          // and the server will settle it.
+          if (!paymentSettled && !paymentAttempted) {
             cancelUnpaidOrder(orderId);
             toast.info("Payment cancelled. Your order was not placed.");
           }

@@ -1,15 +1,18 @@
 import AddToCartModal from "@/components/home/add-to-cart-modal";
-import ProductCard from "@/components/cards/product.card";
+import ProductCompactCard from "@/components/cards/product.compact.card";
+import type { Product } from "@/types/product";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Dimensions, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = Math.min(180, SCREEN_WIDTH * 0.46);
+// The comp fits roughly three cards per screen. The floor is set by the price
+// row — "₹1,299/kg" plus the add button stops fitting much below this.
+const CARD_WIDTH = Math.min(150, SCREEN_WIDTH * 0.34);
 
 interface SectionCarouselProps {
   title: string;
-  products: any[];
+  products: Product[];
   onSeeAll?: () => void;
 }
 
@@ -20,7 +23,7 @@ export default function SectionCarousel({
   products,
   onSeeAll,
 }: SectionCarouselProps) {
-  const [cartProduct, setCartProduct] = useState<any>(null);
+  const [cartProduct, setCartProduct] = useState<Product | null>(null);
 
   if (!products || products.length === 0) return null;
 
@@ -78,8 +81,8 @@ export default function SectionCarousel({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       >
-        {products.map((product: any, index: number) => (
-          <ProductCard
+        {products.map((product, index: number) => (
+          <ProductCompactCard
             key={product.id || index}
             product={product}
             cardWidth={CARD_WIDTH}

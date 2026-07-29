@@ -12,6 +12,7 @@
     "concurrently": "^9.1.0",
     "typescript": "5.9.2",
     "@repo/db-mongo": "workspace:*",
+    "@repo/libs": "workspace:*",
     "bcryptjs": "^3.0.3",
     "@types/bcryptjs": "^3.0.0"
   },
@@ -31,7 +32,7 @@
   "private": true,
   "scripts": {
     "build": "dotenv -e .env -- turbo run build  --concurrency=20",
-    "dev": "dotenv -e .env -- turbo run build --filter=./packages/* && dotenv -e .env -- turbo run dev --filter=./packages/* --filter=./apps/* --concurrency=20",
+    "dev": "dotenv -e .env -- turbo run build --filter=./packages/* && dotenv -e .env -- turbo run dev --filter=./packages/* --filter=./apps/* --filter=!@repo/mobile --concurrency=25",
     "dev:packages": "dotenv -e .env -- turbo run dev --filter=./packages/*",
     "dev:apps": "dotenv -e .env -- turbo run dev --filter=./apps/* --concurrency=20",
     "dev:ui": "dotenv -e .env -- turbo run dev --filter=seller-ui --filter=user-ui --filter=admin-ui --concurrency=4",

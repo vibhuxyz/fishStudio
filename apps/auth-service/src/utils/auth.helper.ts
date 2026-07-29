@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import { ValidationError, RateLimitError } from "@repo/error-handlers";
-import { redis, publishToQueue } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
+import { publishToQueue } from "@repo/libs/rabbitmq";
+import { QUEUE_NAMES } from "@repo/libs/queues";
+import { logger } from "@repo/libs/logger";
 import { NextFunction, Request, Response } from "express";
 
 // Fix #9: timing-safe compare for OTP / code strings.
@@ -15,6 +18,10 @@ export const timingSafeStringEqual = (a: string, b: string): boolean => {
 };
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Signup access codes are stored as SHA-256 hashes, never in plaintext.
+export const hashSignupCode = (code: string) =>
+  crypto.createHash("sha256").update(String(code).trim()).digest("hex");
 
 export const validateRegistrationData = (data: any, role: string) => {
   if (!data.name || !data.email) {
@@ -63,7 +70,6 @@ export const trackOtpRequests = async (
     );
   }
   await redis.set(otpRequestsKey, otpRequests + 1, "EX", 10 * 60); // count resets after 10 minutes
-  // x// remove comment later to test the api
 };
 
 export const sendOtp = async (
@@ -87,7 +93,7 @@ export const sendOtp = async (
 
     // Publish job to RabbitMQ (not sending OTP directly)
 
-    await publishToQueue("otp_queue", {
+    await publishToQueue(QUEUE_NAMES.OTP_QUEUE, {
       userType,
       name: data.name,
       email: data.email,
@@ -97,12 +103,12 @@ export const sendOtp = async (
     });
 
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[DEV] OTP ${otp} published to otp_queue for ${identifier}`);
+      logger.info(`[DEV] OTP ${otp} published to ${QUEUE_NAMES.OTP_QUEUE} for ${identifier}`);
     }
 
     return { success: true, message: "OTP request queued" };
   } catch (error) {
-    console.error("Unified OTP Error:", error);
+    logger.error("Unified OTP Error", error);
     throw new Error("Could not send OTP");
   }
 };
@@ -163,115 +169,3 @@ export const verifyForgetPasswordOtp = async (
   }
 };
 
-export const createRazorpayAccount = async (
-  email: string,
-  contact: string,
-  name: string,
-  line1: string,
-  country: string,
-) => {};
-
-// export const handleForgetPassword = async (
-//   req: Request,
-//
-//   res: Response,
-//   next: NextFunction,
-//   userType: "user" | "seller",
-//   ) => {
-//   try {
-//     const { email } = req.body;
-
-//     if (!email) {
-//       throw new ValidationError("Email is required");
-//     }
-
-//     // find the user/seller in db
-
-//     const user =
-//       userType === "user"
-//         ? await prisma.sellers.findUnique({
-//             where: { email },
-//           })
-//         : await prisma.sellers.findUnique({
-//             where: { email },
-//           });
-
-//     // if (!user) {
-//     //   throw new AuthError(`${userType} not found`);
-//     // }
-
-//     // check otp checkOtpRestriction
-//     await checkOtpRestrictions(email, next);
-//     await trackOtpRequests(email, next);
-
-//     // Generate  OTP and send
-//     await sendOtp(
-//       seller.name,
-//       email,
-//       userType === "user"
-//         ? "forget-password-user-mail"
-//         : "forget-password-seller-mail",
-//     );
-
-//     res.status(200).json({
-//       success: true,
-//       message: `OTP sent successfully to your email. Please Verify your account!!!`,
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-//
-//
-//
-//
-//
-// // export const sendOtpPhone = async (name: string, phone_number: string) => {
-//   const otp = crypto.randomInt(1000, 9999).toString();
-
-//   try {
-//     if (process.env.NODE_ENV !== "production") {
-//       console.log(`DEV OTP for ${phone_number}: ${otp}`);
-
-//       await redis.set(`otp:${phone_number}`, otp, "EX", 5 * 60);
-//       await redis.set(`otp_cooldown:${phone_number}`, "true", "EX", 60);
-
-//       return { success: true, otp };
-//     }
-
-//     const payload = {
-//       route: "v3",
-//       sender_id: "TXTIND",
-//       message: `Hello ${name}, Your OTP is ${otp}`,
-//       language: "english",
-//       numbers: phone_number,
-//     };
-
-//     const response = await axios.post(
-//       "https://www.fast2sms.com/dev/bulkV2",
-//       payload,
-//       {
-//         headers: {
-//           authorization: process.env.FAST2SMS_API_KEY!,
-//         },
-//       },
-//     );
-
-//     console.log("SMS API response:", response.data);
-
-//     if (!response.data || response.data.return === false) {
-//       throw new Error("Failed to send OTP");
-//     }
-
-//     // Save OTP to Redis
-//     await redis.set(`otp:${phone_number}`, otp, "EX", 5 * 60);
-//     await redis.set(`otp_cooldown:${phone_number}`, "true", "EX", 60);
-
-//     return { success: true, otp };
-//   } catch (err) {
-//     console.error("OTP Send Error:", err);
-//     throw new Error("Could not send OTP");
-//   }
-// };
-//
-//

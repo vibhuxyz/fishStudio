@@ -1,6 +1,5 @@
 import { Response } from "express";
-
-const isProduction = process.env.NODE_ENV === "production";
+import { baseCookieOptions } from "./cookieOptions.js";
 
 /**
  * Clears a cookie with the same options used in setCookie.
@@ -8,10 +7,5 @@ const isProduction = process.env.NODE_ENV === "production";
  * especially when using sameSite: "none" and secure: true.
  */
 export const clearCookie = (res: Response, name: string) => {
-  res.clearCookie(name, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    path: "/", // Usually defaults to "/", but explicit is safer
-  });
+  res.clearCookie(name, { ...baseCookieOptions, path: "/" });
 };

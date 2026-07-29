@@ -37,6 +37,9 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@repo/pricing": "workspace:*",
+    "@repo/slug": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@types/leaflet": "^1.9.21",
     "autoprefixer": "^10.4.20",
@@ -48,6 +51,7 @@
     "embla-carousel-react": "8.5.1",
     "framer-motion": "^12.38.0",
     "input-otp": "1.4.1",
+    "isomorphic-dompurify": "^3.19.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
     "mapbox-gl": "^3.22.0",
@@ -67,7 +71,6 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@repo/zod-schema": "workspace:*",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22",
     "@types/react": "^19",

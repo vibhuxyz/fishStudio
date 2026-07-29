@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { sendKafkaEvent } from "../actions/track-user";
+import type { Address } from "../lib/address-store";
+import type { User } from "../lib/user-store";
 import axiosInstance from "../utils/axiosInstance";
 
 export type PriceBreakdown = {
@@ -12,7 +14,9 @@ export type PriceBreakdown = {
   effectiveRatePerKg?: number;
 };
 
-type Product = {
+// Cart/wishlist line item — a converted subset of the raw product (see
+// types/product.ts for the full backend shape), not the product itself.
+export type CartItem = {
   id: string;
   slug: string;
   title: string;
@@ -30,11 +34,11 @@ type Product = {
 };
 
 type Store = {
-  cart: Product[];
-  wishlist: Product[];
+  cart: CartItem[];
+  wishlist: CartItem[];
 
-  addToCart: (product: Product, user: any, location: any, deviceInfo: any) => void;
-  removeFromCart: (id: string, user: any, location: any, deviceInfo: any) => void;
+  addToCart: (product: CartItem, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
+  removeFromCart: (id: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
   /** Update quantity for a cart item by id. Removes the item if qty <= 0. */
   updateQuantity: (id: string, quantity: number) => void;
   /**
@@ -44,8 +48,8 @@ type Store = {
   checkAndIncrement: (id: string, step?: number) => Promise<{ ok: boolean; message?: string }>;
   clearCart: () => void;
 
-  addToWishlist: (product: Product, user: any, location: any, deviceInfo: any) => void;
-  removeFromWishlist: (id: string, user: any, location: any, deviceInfo: any) => void;
+  addToWishlist: (product: CartItem, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
+  removeFromWishlist: (id: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
 };
 
 export const useStore = create<Store>()(

@@ -7,3 +7,6 @@ export * from "./coupon.schema.js";
 export * from "./event.schema.js";
 export * from "./banner.schema.js";
 export * from "./image.schema.js";
+export * from "./notification.schema.js";
+export * from "./payment.schema.js";
+

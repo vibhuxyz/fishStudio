@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { cloudinary } from "@repo/libs";
+import { cloudinary } from "@repo/libs/cloudinary";
 import { ENV } from "@repo/env-config";
-import { ValidationError } from "@repo/error-handlers";
+import { ForbiddenError, ValidationError } from "@repo/error-handlers";
+import { AuthRequest } from "./utils.js";
 import {
   uploadProductImageSchema,
   uploadCloudinaryImageSchema,
@@ -11,6 +12,10 @@ import {
 
 // Hard limit on base64 upload size (~10 MB of image data -> ~13.3 MB base64).
 const MAX_BASE64_LENGTH = 15 * 1024 * 1024;
+
+// Cloudinary's SDK default is a 60s socket-inactivity timeout, which a batch of
+// full-size images uploading in parallel blows through and returns as a 499.
+const UPLOAD_TIMEOUT_MS = 2 * 60 * 1000;
 
 // Only allow `data:image/<type>;base64,...` URIs to prevent Cloudinary from
 // fetching arbitrary URLs (SSRF / metadata-service exfiltration / cost abuse).
@@ -41,6 +46,7 @@ export const uploadProductImage = async (
       quality: "auto:good",
       fetch_format: "auto",
       transformation: [{ width: 1200, crop: "limit" }],
+      timeout: UPLOAD_TIMEOUT_MS,
     });
     res.status(201).json({
       success: true,
@@ -99,6 +105,7 @@ export const uploadCloudinaryImage = async (
         quality: "auto:good",
         fetch_format: "auto",
         transformation: [{ width: 1200, crop: "limit" }],
+        timeout: UPLOAD_TIMEOUT_MS,
       });
       return {
         file_url: response.secure_url,
@@ -114,6 +121,69 @@ export const uploadCloudinaryImage = async (
     });
   } catch (error) {
     console.error("Cloudinary Upload Error:", error);
+    next(error);
+  }
+};
+
+// Every asset a seller uploads lands under their own prefix. Deletion is
+// checked against it because `deleteCloudinaryImage` destroys whatever
+// public_id it is handed — without this a seller could wipe another shop's
+// images just by knowing the id.
+const storeImageFolder = (sellerId: string) =>
+  `${ENV.CLOUDINARY_FOLDER || "fishStudio"}/stores/${sellerId}/banners`;
+
+export const uploadStoreImage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sellerId = req.seller?.id;
+    if (!sellerId) {
+      return next(new ForbiddenError("Seller context missing"));
+    }
+    const { fileName } = validate(uploadProductImageSchema, req.body);
+    const safeSource = assertSafeImageSource(fileName);
+    const response = await cloudinary.uploader.upload(safeSource, {
+      folder: storeImageFolder(sellerId),
+      resource_type: "image",
+      quality: "auto:good",
+      fetch_format: "auto",
+      transformation: [{ width: 1600, crop: "limit" }],
+      timeout: UPLOAD_TIMEOUT_MS,
+    });
+    res.status(201).json({
+      success: true,
+      file_url: response.secure_url,
+      fileId: response.public_id,
+    });
+  } catch (error) {
+    console.error("Store Image Upload Error:", error);
+    next(error);
+  }
+};
+
+export const deleteStoreImage = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const sellerId = req.seller?.id;
+    if (!sellerId) {
+      return next(new ForbiddenError("Seller context missing"));
+    }
+    const { fileId } = validate(deleteCloudinaryImageSchema, req.body);
+    if (!fileId.startsWith(`${storeImageFolder(sellerId)}/`)) {
+      return next(new ForbiddenError("You can only delete your own store images"));
+    }
+    const result = await cloudinary.uploader.destroy(fileId);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error("Store Image Delete Error:", error);
     next(error);
   }
 };

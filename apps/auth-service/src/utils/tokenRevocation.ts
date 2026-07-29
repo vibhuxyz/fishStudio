@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { ENV } from "@repo/env-config";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 
 // Longest access-token lifetime in the system (user: 7d). We keep blocklist
 // entries for this long so revoked tokens can't be replayed until they expire.

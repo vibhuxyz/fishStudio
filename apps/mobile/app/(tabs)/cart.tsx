@@ -1,5 +1,5 @@
 import useUser from "@/hooks/useUser";
-import { useStore } from "@/store";
+import { CartItem, useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
@@ -180,15 +180,15 @@ export default function CartScreen() {
     itemsTotal + deliveryCharge + PACKAGING_CHARGE + gstAmount - discountAmount,
   );
 
-  const rowKeyFor = (p: any) =>
+  const rowKeyFor = (p: CartItem) =>
     `${p.id}__${p.cuttingType || "default"}__${p.pieceSize || "default"}`;
 
-  const handleDecrement = (product: any) => {
+  const handleDecrement = (product: CartItem) => {
     const newQty = (product.quantity || 1) - 1;
     updateQuantity(product.id, newQty);
   };
 
-  const handleIncrement = async (product: any) => {
+  const handleIncrement = async (product: CartItem) => {
     const key = rowKeyFor(product);
     setIncrementingKey(key);
     const result = await checkAndIncrement(product.id, 1);
@@ -426,7 +426,7 @@ export default function CartScreen() {
                       {product.title}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => removeFromCart(product.id, user, null, "Mobile App")}
+                      onPress={() => removeFromCart(product.id, user, selectedAddress, "Mobile App")}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Ionicons name="trash-outline" size={17} color="#9CA3AF" />

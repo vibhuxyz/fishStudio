@@ -12,7 +12,6 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.3",
@@ -26,6 +25,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.71.1",
-    "react-quill-new": "^3.7.0"
+    "react-quill-new": "^3.7.0",
+    "@repo/eslint-config": "*"
   }
 }

@@ -16,41 +16,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
+import { STATUS_CONFIG } from "@/constants/order";
 import { useAddressStore } from "@/lib/address-store";
 import { LiveOrderBadge } from "@/components/live-order-badge";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
-
-const STATUS_CONFIG: Record<
-  string,
-  { bg: string; text: string; icon: string; label: string }
-> = {
-  PENDING: { bg: "#FEF3C7", text: "#D97706", icon: "time-outline", label: "Order Placed" },
-  ACCEPTED: {
-    bg: "#DBEAFE",
-    text: "#2563EB",
-    icon: "checkmark-circle-outline",
-    label: "Preparing",
-  },
-  SHIPPED: { bg: "#EDE9FE", text: "#5A2C96", icon: "car-outline", label: "On the Way" },
-  DELIVERED: {
-    bg: "#D1FAE5",
-    text: "#059669",
-    icon: "bag-check-outline",
-    label: "Delivered",
-  },
-  REJECTED: {
-    bg: "#FEE2E2",
-    text: "#DC2626",
-    icon: "close-circle-outline",
-    label: "Rejected",
-  },
-  CANCELLED: {
-    bg: "#F3F4F6",
-    text: "#6B7280",
-    icon: "ban-outline",
-    label: "Cancelled",
-  },
-};
 
 const SLOT_LABEL: Record<string, string> = {
   instant: "⚡ Instant (30–45 mins)",
@@ -377,7 +346,7 @@ export default function OrderConfirmationScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push(`/(routes)/order-details/${order.id}` as any)}
+            onPress={() => router.push({ pathname: "/(routes)/order-details/[id]", params: { id: order.id } })}
             className="py-4 rounded-full flex-row items-center justify-center"
             style={{ backgroundColor: "#5A2C96" }}
             activeOpacity={0.85}

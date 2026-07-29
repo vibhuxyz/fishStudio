@@ -14,11 +14,13 @@ services:
       - product-service
       - order-service
       - notification-service
+      - payment-service
     environment:
       AUTH_SERVICE_URL: http://auth-service:6001
       PRODUCT_SERVICE_URL: http://product-service:6003
       ORDER_SERVICE_URL: http://order-service:6004
       NOTIFICATION_SERVICE_URL: http://notification-service:6005
+      PAYMENT_SERVICE_URL: http://payment-service:6007
     networks:
       - fish-studio-net
 
@@ -89,6 +91,21 @@ services:
       fish-studio-net:
         aliases:
           - notification-service
+
+  payment-service:
+    container_name: payment-service
+    image: 10xdevian134/payment-service:prod
+    build:
+      context: .
+      dockerfile: docker/payment-service/Dockerfile
+    restart: always
+    env_file: .env.prod
+    expose:
+      - "6007"
+    networks:
+      fish-studio-net:
+        aliases:
+          - payment-service
 
   rabbitmq-service:
     container_name: rabbitmq-service_prod

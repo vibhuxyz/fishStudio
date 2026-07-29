@@ -26,7 +26,7 @@ import { CategoryMenu } from "./category-menu";
 import { useCart, useCartStore } from "@/lib/cart-store";
 import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
-import NotificationBell from "./NotificationBell";
+import NotificationBell from "./notification-bell";
 import { useAddressStore } from "@/lib/address-store";
 import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";

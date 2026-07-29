@@ -15,13 +15,13 @@ export default function NotificationsPage() {
   if (!isLoggedIn) {
     return (
       <div className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-        <Bell className="h-12 w-12 text-[#5A2C96]" />
+        <Bell className="h-12 w-12 text-primary" />
         <p className="text-sm text-muted-foreground">
           Log in to see your notifications.
         </p>
         <button
           onClick={modals.openLogin}
-          className="rounded-xl bg-[#5A2C96] px-6 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white"
         >
           Log in / Sign up
         </button>
@@ -38,7 +38,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={() => markAllAsRead()}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#5A2C96] hover:underline"
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
           >
             <CheckCheck className="h-4 w-4" />
             Mark all read
@@ -58,13 +58,13 @@ export default function NotificationsPage() {
               key={n.id}
               onClick={() => !n.isRead && markAsRead(n.id)}
               className={`flex w-full gap-3 rounded-2xl border border-border p-4 text-left transition-colors hover:bg-muted/40 ${
-                n.isRead ? "bg-card" : "bg-[#5A2C96]/5"
+                n.isRead ? "bg-card" : "bg-primary/5"
               }`}
             >
               <div className="mt-0.5">
                 <span
                   className={`block h-2.5 w-2.5 rounded-full ${
-                    n.isRead ? "bg-transparent" : "bg-[#5A2C96]"
+                    n.isRead ? "bg-transparent" : "bg-primary"
                   }`}
                 />
               </div>

@@ -18,14 +18,13 @@
     "amqplib": "^0.10.9",
     "cookie": "^0.6.0",
     "jsonwebtoken": "^9.0.2",
-    "node-cron": "^4.2.1",
     "ws": "^8.18.0",
-    "@repo/jobs": "workspace:*"
-  },
-  "devDependencies": {
-    "@repo/db-postgres": "workspace:*",
+    "@repo/jobs": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/libs": "workspace:*",
+    "@repo/db-postgres": "workspace:*"
+  },
+  "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/amqplib": "^0.10.8",
     "@types/bun": "latest",

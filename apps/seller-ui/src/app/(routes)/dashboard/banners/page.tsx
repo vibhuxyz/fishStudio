@@ -69,8 +69,6 @@ const BannersPage = () => {
 
   // Category banner state
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
-  const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [newBannerImages, setNewBannerImages] = useState<any[]>([null]);
 
@@ -106,7 +104,7 @@ const BannersPage = () => {
 
   const uploadMutation = useMutation({
     mutationFn: async (data: {
-      image?: string;
+      image?: { file_url: string; fileId: string };
       category?: string;
       bannerType?: string;
       title?: string;
@@ -116,6 +114,7 @@ const BannersPage = () => {
       const payload: Record<string, any> = {
         bannerType: data.bannerType || "category",
       };
+      // Already in Cloudinary — send the URL so the banner API doesn't re-upload.
       if (data.image) payload.images = [data.image];
       if (data.category) payload.category = data.category;
       if (data.title) payload.title = data.title;
@@ -152,26 +151,26 @@ const BannersPage = () => {
       return;
     }
 
-    const validIndices = newBannerImages
-      .map((img, idx) => (img !== null && img.base64 ? idx : -1))
-      .filter((idx) => idx !== -1);
+    if (newBannerImages.some((img) => img?.uploading)) {
+      toast.error("Please wait for the images to finish uploading.");
+      return;
+    }
 
-    if (validIndices.length === 0) {
+    const readyImages = newBannerImages.filter((img) => img?.fileId);
+
+    if (readyImages.length === 0) {
       toast.error("Please select at least one image");
       return;
     }
 
     setIsUploading(true);
-    setUploadedIndices([]);
     try {
-      for (const idx of validIndices) {
-        setUploadingIndex(idx);
+      for (const img of readyImages) {
         await uploadMutation.mutateAsync({
-          image: newBannerImages[idx].base64,
+          image: { file_url: img.file_url, fileId: img.fileId },
           category: selectedCategory,
           bannerType: "category",
         });
-        setUploadedIndices((prev) => [...prev, idx]);
       }
       toast.success("All banners uploaded successfully and sent for review");
       setNewBannerImages([null]);
@@ -180,8 +179,6 @@ const BannersPage = () => {
       console.error("Upload failed", error);
     } finally {
       setIsUploading(false);
-      setUploadingIndex(null);
-      setUploadedIndices([]);
     }
   };
 
@@ -191,11 +188,18 @@ const BannersPage = () => {
       return;
     }
 
+    if (announcementImages.some((img) => img?.uploading)) {
+      toast.error("Please wait for the image to finish uploading.");
+      return;
+    }
+
     setIsUploadingAnnouncement(true);
     try {
       const imageFile = announcementImages[0];
       await uploadMutation.mutateAsync({
-        image: imageFile?.base64 || undefined,
+        image: imageFile?.fileId
+          ? { file_url: imageFile.file_url, fileId: imageFile.fileId }
+          : undefined,
         bannerType: "announcement",
         title: announcementTitle.trim(),
         subtitle: announcementSubtitle.trim() || undefined,
@@ -302,28 +306,18 @@ const BannersPage = () => {
                 <label className="block text-sm font-medium text-gray-400 mb-2">
                   Banner Image <span className="text-gray-600">(1920 × 450px)</span>
                 </label>
-                {newBannerImages.map((_, index) => {
-                  let status: "idle" | "waiting" | "uploading" | "success" = "idle";
-                  if (isUploading) {
-                    if (uploadingIndex === index) status = "uploading";
-                    else if (uploadedIndices.includes(index)) status = "success";
-                    else if (newBannerImages[index] && newBannerImages[index].base64) status = "waiting";
-                  }
-
-                  return (
-                    <ImagePlaceHolder
-                      key={index}
-                      index={index}
-                      size="1920 x 450"
-                      small={true}
-                      images={newBannerImages}
-                      setImages={setNewBannerImages}
-                      isUploading={status === "uploading"}
-                      uploadStatus={status}
-                      setValue={() => {}}
-                    />
-                  );
-                })}
+                {newBannerImages.map((_, index) => (
+                  <ImagePlaceHolder
+                    key={index}
+                    index={index}
+                    size="1920 x 450"
+                    small={true}
+                    images={newBannerImages}
+                    setImages={setNewBannerImages}
+                    autoUpload
+                    setValue={() => {}}
+                  />
+                ))}
               </div>
 
               <button
@@ -397,9 +391,9 @@ const BannersPage = () => {
             <div className="rounded-lg overflow-hidden border border-gray-700">
               <p className="text-[10px] text-gray-500 px-3 pt-2 pb-1">Preview</p>
               <div className="bg-black flex items-center gap-2 px-3 py-2 min-h-[40px]">
-                {announcementImages[0]?.base64 && (
+                {(announcementImages[0]?.file_url || announcementImages[0]?.base64) && (
                   <img
-                    src={announcementImages[0].base64}
+                    src={announcementImages[0].file_url || announcementImages[0].base64}
                     alt="preview"
                     className="h-7 w-7 object-cover rounded flex-shrink-0"
                   />
@@ -476,8 +470,7 @@ const BannersPage = () => {
                   small={true}
                   images={announcementImages}
                   setImages={setAnnouncementImages}
-                  isUploading={false}
-                  uploadStatus="idle"
+                  autoUpload
                   setValue={() => {}}
                 />
               </div>

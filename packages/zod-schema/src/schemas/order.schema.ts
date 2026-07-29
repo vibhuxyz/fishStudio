@@ -1,10 +1,14 @@
 import { z } from "zod";
 
+// Per-item customization (cutting type, piece size, price-breakdown fields
+// like effectiveRatePerKg) varies by product type, so the key set is open —
+// but every value the storefront/mobile clients send is a string, number,
+// or boolean, never a nested object.
 export const orderItemSchema = z.object({
   productId: z.string().min(1, "Product ID is required"),
   quantity: z.number().positive("Quantity must be greater than 0"),
   price: z.number().nonnegative(),
-  selectedOptions: z.record(z.any()).optional(),
+  selectedOptions: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 
 export const deliveryDetailsSchema = z.object({
@@ -21,7 +25,7 @@ export const billDetailsSchema = z.object({
   extraCharge: z.number().nonnegative().optional().default(0),
   discount: z.number().nonnegative().default(0),
   totalAmount: z.number().nonnegative().optional(),
-  discountBreakdown: z.array(z.any()).optional(),
+  discountBreakdown: z.array(z.object({ code: z.string(), amount: z.number() })).optional(),
 });
 
 export const createOrderSchema = z.object({
@@ -51,4 +55,27 @@ export const acceptOrRejectOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(["SHIPPED", "DELIVERED", "CANCELLED"]),
+});
+
+// Admin can set any status, unlike the seller-facing updateOrderStatusSchema above.
+export const orderStatusValues = [
+  "PENDING",
+  "ACCEPTED",
+  "REJECTED",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
+
+export const paymentStatusValues = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"] as const;
+
+export const updateAdminOrderStatusSchema = z.object({
+  status: z.enum(orderStatusValues),
+});
+
+export const adminOrderListQuerySchema = z.object({
+  status: z.enum(orderStatusValues).optional(),
+  paymentStatus: z.enum(paymentStatusValues).optional(),
+  sortBy: z.enum(["createdAt", "totalAmount"]).default("createdAt"),
+  sortDir: z.enum(["asc", "desc"]).default("desc"),
 });

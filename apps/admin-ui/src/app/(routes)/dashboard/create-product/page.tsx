@@ -82,11 +82,16 @@ const Page = () => {
   });
 
   const [images, setImages] = useState<
-    (null | { file: File; base64: string })[]
+    (null | {
+      file: File;
+      base64: string;
+      uid?: string;
+      uploading?: boolean;
+      file_url?: string;
+      fileId?: string;
+    })[]
   >([null]);
   const [loading, setLoading] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
-  const [uploadedIndices, setUploadedIndices] = useState<number[]>([]);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [slugValue, setSlugValue] = useState("");
@@ -192,42 +197,22 @@ const Page = () => {
     try {
       setLoading(true);
 
-      const imagesWithIndex = images
-        .map((img, idx) => ({ ...img, originalIndex: idx }))
-        .filter((img) => img !== null && img?.base64);
-
-      if (imagesWithIndex.length === 0) {
-        toast.error("At least one product image is required!");
+      // Images are already in Cloudinary — they upload as soon as they're picked.
+      if (images.some((img) => img?.uploading)) {
+        toast.error("Please wait for the images to finish uploading.");
         setLoading(false);
         return;
       }
 
-      const productTitle = data.title;
-      const finalImages = [];
+      const finalImages = images
+        .filter((img) => img?.fileId)
+        .map((img) => ({ file_url: img!.file_url, fileId: img!.fileId }));
 
-      // Sequential Upload Images to Cloudinary
-      for (const imgData of imagesWithIndex) {
-        setUploadingIndex(imgData.originalIndex);
-        const uploadRes = await axiosInstance.post(
-          "/product/api/admin/upload-cloudinary-image",
-          {
-            images: [imgData.base64],
-            folder: "products",
-            productTitle,
-          },
-          isProtected,
-        );
-
-        if (uploadRes.data.success && uploadRes.data.images?.[0]) {
-          finalImages.push(uploadRes.data.images[0]);
-          setUploadedIndices((prev) => [...prev, imgData.originalIndex]);
-        } else {
-          throw new Error("Failed to upload one or more images.");
-        }
+      if (finalImages.length === 0) {
+        toast.error("At least one product image is required!");
+        setLoading(false);
+        return;
       }
-
-      setUploadingIndex(null);
-      setUploadedIndices([]);
 
       const submitData = {
         ...data,
@@ -269,8 +254,6 @@ const Page = () => {
       console.error(error);
     } finally {
       setLoading(false);
-      setUploadingIndex(null);
-      setUploadedIndices([]);
     }
   };
 
@@ -290,38 +273,23 @@ const Page = () => {
         {/* Left side - Image upload section */}
        
         <div className="md:w-[35%]">
-          {images?.length > 0 &&
-            (() => {
-              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
-              if (loading) {
-                if (uploadingIndex === 0) status = "uploading";
-                else if (uploadedIndices.includes(0)) status = "success";
-                else if (images[0] && images[0].base64) status = "waiting";
-              }
-              return (
-                <ImagePlaceHolder
-                  size="765 x 850"
-                  small={false}
-                  images={images}
-                  setImages={setImages}
-                  setValue={setValue}
-                  index={0}
-                  isUploading={status === "uploading"}
-                  uploadStatus={status}
-                />
-              );
-            })()}
+          {images?.length > 0 && (
+            <ImagePlaceHolder
+              size="765 x 850"
+              small={false}
+              images={images}
+              setImages={setImages}
+              setValue={setValue}
+              index={0}
+              autoUpload
+              folder="products"
+              productTitle={watch("title")}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-3 mt-4">
             {images.slice(1).map((_, index) => {
               const realIndex = index + 1;
-              let status: "idle" | "waiting" | "uploading" | "success" = "idle";
-              if (loading) {
-                if (uploadingIndex === realIndex) status = "uploading";
-                else if (uploadedIndices.includes(realIndex)) status = "success";
-                else if (images[realIndex] && images[realIndex].base64)
-                  status = "waiting";
-              }
               return (
                 <ImagePlaceHolder
                   size="765 x 850"
@@ -331,8 +299,9 @@ const Page = () => {
                   small
                   setValue={setValue}
                   index={realIndex}
-                  isUploading={status === "uploading"}
-                  uploadStatus={status}
+                  autoUpload
+                  folder="products"
+                  productTitle={watch("title")}
                 />
               );
             })}

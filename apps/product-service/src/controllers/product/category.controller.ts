@@ -1,9 +1,14 @@
 import { Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 import { AuthRequest, getCategoryConfigKey } from "./utils.js";
-import { categorySchema, subCategorySchema, validate } from "@repo/zod-schema";
+import {
+  categorySchema,
+  deleteCategorySchema,
+  subCategorySchema,
+  validate,
+} from "@repo/zod-schema";
 
 const SITE_CONFIG_CACHE_KEY = "site_config:v1";
 const SITE_CONFIG_TTL = 600; // 10 minutes
@@ -182,6 +187,135 @@ export const createSubCategory = async (
     return res.status(201).json({
       success: true,
       message: "Subcategory created successfully",
+      config: updatedConfig,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteCategory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { name } = validate(deleteCategorySchema, req.body);
+    const config = await prisma.site_config.findFirst();
+    if (!config) {
+      return next(new NotFoundError("Site config not found"));
+    }
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
+    // Match on the stored spelling so the config keys below line up — the client
+    // may send a different casing than what was originally created.
+    const storedCategory = categories.find(
+      (category) => category.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (!storedCategory) {
+      return next(new NotFoundError("Category not found"));
+    }
+    // Products carry the category as a plain string, so dropping it from the
+    // config would leave them live but unreachable from category browse.
+    const productCount = await prisma.products.count({
+      where: { category: storedCategory, isDeleted: false },
+    });
+    if (productCount > 0) {
+      return next(
+        new ValidationError(
+          `Cannot delete "${storedCategory}" — ${productCount} product(s) still use it`,
+        ),
+      );
+    }
+    const subCategories =
+      config.subCategories && typeof config.subCategories === "object"
+        ? { ...(config.subCategories as Record<string, string[]>) }
+        : {};
+    const categoryImages =
+      config.categoryImages && typeof config.categoryImages === "object"
+        ? { ...(config.categoryImages as Record<string, string>) }
+        : {};
+    delete subCategories[storedCategory];
+    delete categoryImages[storedCategory];
+    const updatedConfig = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        categories: categories.filter((category) => category !== storedCategory),
+        subCategories,
+        categoryImages,
+      },
+    });
+    invalidateSiteConfigCache();
+    return res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+      config: updatedConfig,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteSubCategory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { category, name } = validate(subCategorySchema, req.body);
+    const config = await prisma.site_config.findFirst();
+    if (!config) {
+      return next(new NotFoundError("Site config not found"));
+    }
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
+    const storedCategory = categories.find(
+      (existingCategory) =>
+        existingCategory.toLowerCase() === category.trim().toLowerCase(),
+    );
+    if (!storedCategory) {
+      return next(new ValidationError("Selected category does not exist"));
+    }
+    const subCategories =
+      config.subCategories && typeof config.subCategories === "object"
+        ? { ...(config.subCategories as Record<string, string[]>) }
+        : {};
+    const categorySubCategories = subCategories[storedCategory] || [];
+    const storedSubCategory = categorySubCategories.find(
+      (sub) => sub.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (!storedSubCategory) {
+      return next(new NotFoundError("Subcategory not found"));
+    }
+    const productCount = await prisma.products.count({
+      where: {
+        category: storedCategory,
+        subCategory: storedSubCategory,
+        isDeleted: false,
+      },
+    });
+    if (productCount > 0) {
+      return next(
+        new ValidationError(
+          `Cannot delete "${storedSubCategory}" — ${productCount} product(s) still use it`,
+        ),
+      );
+    }
+    subCategories[storedCategory] = categorySubCategories.filter(
+      (sub) => sub !== storedSubCategory,
+    );
+    const updatedConfig = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        subCategories,
+      },
+    });
+    invalidateSiteConfigCache();
+    return res.status(200).json({
+      success: true,
+      message: "Subcategory deleted successfully",
       config: updatedConfig,
     });
   } catch (error) {

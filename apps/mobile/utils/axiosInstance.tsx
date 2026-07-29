@@ -1,25 +1,9 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
-import Constants from "expo-constants";
+import { getExpoHost, PRODUCTION_API_BASE_URL } from "@/config/network";
+import { useUserStore } from "@/lib/user-store";
 import { CustomAxiosRequestConfig } from "./axiosInstance.types";
-
-const getExpoHost = (): string | null => {
-  const hostUri =
-    Constants.expoConfig?.hostUri ||
-    (Constants as any).expoGoConfig?.debuggerHost ||
-    (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
-    "";
-
-  const host = String(hostUri).split(":")[0]?.trim();
-  if (!host || host === "localhost" || host === "127.0.0.1") {
-    return null;
-  }
-
-  return host;
-};
-
-const PRODUCTION_API_BASE_URL = "https://api.fishstudio.in";
 
 const normalizeUrl = (url: string): string => {
   try {
@@ -135,7 +119,7 @@ const handleLogout = () => {
   // Clear all auth data
   SecureStore.deleteItemAsync("access_token").catch(() => {});
   SecureStore.deleteItemAsync("refresh_token").catch(() => {});
-  SecureStore.deleteItemAsync("user").catch(() => {});
+  useUserStore.getState().clearUser().catch(() => {});
   // Redirect to login
   router.replace("/(routes)/login");
 };

@@ -35,7 +35,8 @@ export interface VerifySignatureParams {
 export interface RefundParams {
   gatewayPaymentId: string;
   amountInPaise: number;
-  notes?: Record<string, unknown>;
+  /** Echoed back on the gateway's refund webhooks — keep values primitive. */
+  notes?: Record<string, string | number | null>;
 }
 
 /**
@@ -43,10 +44,20 @@ export interface RefundParams {
  * has to know which provider sent it or how its payload is structured.
  */
 export type NormalizedWebhookEvent =
-  | { kind: "PAYMENT_CAPTURED"; orderId?: string; gatewayPaymentId: string }
+  | { kind: "PAYMENT_CAPTURED"; orderId?: string; gatewayPaymentId: string; amountInPaise?: number }
   | { kind: "PAYMENT_FAILED"; orderId?: string; gatewayPaymentId: string; reason?: string }
-  | { kind: "REFUND"; orderId?: string; refundId: string; amount?: number }
+  | { kind: "REFUND"; orderId?: string; refundId: string; gatewayPaymentId?: string; amount?: number }
+  | { kind: "REFUND_FAILED"; orderId?: string; refundId: string; gatewayPaymentId?: string }
   | { kind: "UNHANDLED"; eventType: string };
+
+/**
+ * The gateway's own view of how a previously created order settled. Used by
+ * reconciliation to recover payments whose webhook and client callback were
+ * both lost — the gateway, not our DB, is the source of truth for this.
+ */
+export type GatewaySettlement =
+  | { status: "CAPTURED"; gatewayPaymentId: string; amountInPaise: number }
+  | { status: "FAILED"; gatewayPaymentId: string; reason?: string };
 
 export interface PaymentProvider {
   /** Stored on Order.paymentMethod / Payment.method, e.g. "RAZORPAY". */
@@ -66,4 +77,10 @@ export interface PaymentProvider {
 
   /** Issue a refund against a captured payment. */
   refund(params: RefundParams): Promise<{ refundId: string }>;
+
+  /**
+   * Ask the gateway how an order actually settled. Returns null while the
+   * outcome is still open (no attempt yet, or authorized-not-captured).
+   */
+  fetchOrderSettlement(gatewayOrderId: string): Promise<GatewaySettlement | null>;
 }

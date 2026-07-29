@@ -162,6 +162,7 @@ exports.Prisma.PaymentScalarFieldEnum = {
   status: 'status',
   method: 'method',
   transactionId: 'transactionId',
+  gatewayOrderId: 'gatewayOrderId',
   metadata: 'metadata',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -199,6 +200,40 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.WebhookEventScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  eventId: 'eventId',
+  eventType: 'eventType',
+  payload: 'payload',
+  receivedAt: 'receivedAt',
+  processedAt: 'processedAt'
+};
+
+exports.Prisma.OutboxEventScalarFieldEnum = {
+  id: 'id',
+  aggregate: 'aggregate',
+  aggregateId: 'aggregateId',
+  eventType: 'eventType',
+  queue: 'queue',
+  payload: 'payload',
+  status: 'status',
+  attempts: 'attempts',
+  lastError: 'lastError',
+  createdAt: 'createdAt',
+  publishedAt: 'publishedAt'
+};
+
+exports.Prisma.StockReservationScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  userId: 'userId',
+  items: 'items',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -206,6 +241,10 @@ exports.Prisma.SortOrder = {
 
 exports.Prisma.NullableJsonNullValueInput = {
   DbNull: Prisma.DbNull,
+  JsonNull: Prisma.JsonNull
+};
+
+exports.Prisma.JsonNullValueInput = {
   JsonNull: Prisma.JsonNull
 };
 
@@ -237,6 +276,7 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
+  REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED'
 };
 
@@ -246,7 +286,10 @@ exports.Prisma.ModelName = {
   Payment: 'Payment',
   CouponUsage: 'CouponUsage',
   Notification: 'Notification',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  WebhookEvent: 'WebhookEvent',
+  OutboxEvent: 'OutboxEvent',
+  StockReservation: 'StockReservation'
 };
 
 /**

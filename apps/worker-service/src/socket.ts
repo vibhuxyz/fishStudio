@@ -3,6 +3,7 @@ import { Server, IncomingMessage } from "http";
 import jwt from "jsonwebtoken";
 import cookie from "cookie";
 import { ENV } from "@repo/env-config";
+import { logger } from "@repo/libs/logger";
 
 interface SocketClient extends WebSocket {
   storeId?: string;   // seller connects; storeId resolved from verified JWT
@@ -11,7 +12,7 @@ interface SocketClient extends WebSocket {
   userId?: string;    // user connects; userId resolved from verified JWT
   adminId?: string;   // admin connects; adminId resolved from verified JWT
   isAlive: boolean;
-  role?: "user" | "seller" | "staff" | "admin";
+  identity?: VerifiedIdentity;
 }
 
 /**
@@ -89,7 +90,7 @@ export class SocketManager {
       }
 
       this.wss.handleUpgrade(req, socket as any, head, (ws) => {
-        (ws as any).__identity = identity;
+        (ws as SocketClient).identity = identity ?? undefined;
         this.wss.emit("connection", ws, req);
       });
     });
@@ -107,10 +108,9 @@ export class SocketManager {
 
   private setupWss() {
     this.wss.on("connection", (ws: SocketClient, req: IncomingMessage) => {
-      const identity = (ws as any).__identity as VerifiedIdentity | undefined;
+      const identity = ws.identity;
 
       ws.isAlive = true;
-      ws.role = identity?.role;
 
       // Pin the room purely from the verified JWT. Anonymous connections get
       // no identity fields — they only receive broadcastAll messages.
@@ -156,73 +156,50 @@ export class SocketManager {
     });
   }
 
-  public broadcastToStore(storeId: string, type: string, payload: any) {
+  private broadcastToRoom(
+    field: "storeId" | "staffId" | "sellerId" | "userId" | "adminId",
+    id: string,
+    type: string,
+    payload: unknown,
+  ) {
     const message = JSON.stringify({ type, payload });
     let count = 0;
 
     this.clients.forEach((client) => {
-      if (client.storeId === storeId && client.readyState === WebSocket.OPEN) {
+      if (client[field] === id && client.readyState === WebSocket.OPEN) {
         client.send(message);
         count++;
       }
     });
 
-    console.log(`📢 Broadcasted ${type} to ${count} clients in store ${storeId}`);
+    logger.info(` Broadcasted ${type} to ${count} clients (${field}=${id})`);
+  }
+
+  public broadcastToStore(storeId: string, type: string, payload: unknown) {
+    this.broadcastToRoom("storeId", storeId, type, payload);
   }
 
   /** Broadcast to staff clients connected with their own ?staffId=xxx */
-  public broadcastToStaff(staffId: string, type: string, payload: any) {
-    const message = JSON.stringify({ type, payload });
-    let count = 0;
-    this.clients.forEach((client) => {
-      if (client.staffId === staffId && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-        count++;
-      }
-    });
-    console.log(`📢 Broadcasted ${type} to ${count} clients in staff room ${staffId}`);
+  public broadcastToStaff(staffId: string, type: string, payload: unknown) {
+    this.broadcastToRoom("staffId", staffId, type, payload);
   }
 
   /** Broadcast to staff clients connected with ?sellerId=xxx */
-  public broadcastToSeller(sellerId: string, type: string, payload: any) {
-    const message = JSON.stringify({ type, payload });
-    let count = 0;
-    this.clients.forEach((client) => {
-      if (client.sellerId === sellerId && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-        count++;
-      }
-    });
-    console.log(`📢 Broadcasted ${type} to ${count} staff clients for seller ${sellerId}`);
+  public broadcastToSeller(sellerId: string, type: string, payload: unknown) {
+    this.broadcastToRoom("sellerId", sellerId, type, payload);
   }
 
   /** Broadcast to user clients connected with ?userId=xxx */
-  public broadcastToUser(userId: string, type: string, payload: any) {
-    const message = JSON.stringify({ type, payload });
-    let count = 0;
-    this.clients.forEach((client) => {
-      if (client.userId === userId && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-        count++;
-      }
-    });
-    console.log(`📢 Broadcasted ${type} to ${count} user clients for user ${userId}`);
+  public broadcastToUser(userId: string, type: string, payload: unknown) {
+    this.broadcastToRoom("userId", userId, type, payload);
   }
 
   /** Broadcast to admin clients connected with ?adminId=xxx */
-  public broadcastToAdmin(adminId: string, type: string, payload: any) {
-    const message = JSON.stringify({ type, payload });
-    let count = 0;
-    this.clients.forEach((client) => {
-      if (client.adminId === adminId && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-        count++;
-      }
-    });
-    console.log(`📢 Broadcasted ${type} to ${count} admin clients for admin ${adminId}`);
+  public broadcastToAdmin(adminId: string, type: string, payload: unknown) {
+    this.broadcastToRoom("adminId", adminId, type, payload);
   }
 
-  public broadcastAll(type: string, payload: any) {
+  public broadcastAll(type: string, payload: unknown) {
     const message = JSON.stringify({ type, payload });
     this.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {

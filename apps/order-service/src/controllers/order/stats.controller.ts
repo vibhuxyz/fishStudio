@@ -2,7 +2,7 @@ import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 import { 
   Period, 
   getPeriodStart, 

@@ -1,3 +1,4 @@
+import { Order, STATUS_CONFIG } from "@/constants/order";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,45 +18,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface OrderItem {
-  id: string;
-  orderId: string;
-  productId: string;
-  quantity: number;
-  price: number;
-  selectedOptions?: Record<string, string>;
-  product?: {
-    id: string;
-    title: string;
-    images: { url: string }[];
-    sale_price?: number;
-    regular_price?: number;
-  };
-}
-
-interface Order {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  totalAmount: number;
-  total?: number;
-  status: string;
-  paymentStatus: string;
-  paymentMethod?: string;
-  couponCode?: string;
-  discountAmount?: number;
-  items: OrderItem[];
-}
-
-const STATUS_CONFIG: Record<string, { bg: string; text: string; icon: string; label: string }> = {
-  PENDING:   { bg: "#FEF3C7", text: "#D97706", icon: "time-outline",             label: "Order Placed" },
-  ACCEPTED:  { bg: "#DBEAFE", text: "#2563EB", icon: "checkmark-circle-outline", label: "Preparing" },
-  SHIPPED:   { bg: "#EDE9FE", text: "#5A2C96", icon: "car-outline",              label: "On the Way" },
-  DELIVERED: { bg: "#D1FAE5", text: "#059669", icon: "bag-check-outline",        label: "Delivered" },
-  REJECTED:  { bg: "#FEE2E2", text: "#DC2626", icon: "close-circle-outline",     label: "Rejected" },
-  CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled" },
-};
 
 const STATUS_FILTERS = [
   { key: "all",       label: "All" },
@@ -224,17 +186,17 @@ export default function MyOrders() {
                   {item.product?.title || `Product …${item.productId.slice(-6)}`}
                 </Text>
                 <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                  {(item as any).selectedOptions?.weightGrams
-                    ? `${(item as any).selectedOptions.weightGrams >= 1000
-                        ? `${((item as any).selectedOptions.weightGrams / 1000).toFixed(2)} kg`
-                        : `${(item as any).selectedOptions.weightGrams} gm`} · ₹${item.price.toFixed(0)}`
+                  {item.selectedOptions?.weightGrams
+                    ? `${item.selectedOptions.weightGrams >= 1000
+                        ? `${(item.selectedOptions.weightGrams / 1000).toFixed(2)} kg`
+                        : `${item.selectedOptions.weightGrams} gm`} · ₹${item.price.toFixed(0)}`
                     : `Qty: ${item.quantity} · ₹${item.price.toFixed(0)}`}
                 </Text>
-                {((item as any).selectedOptions?.cuttingType) && (
+                {(item.selectedOptions?.cuttingType) && (
                   <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5" numberOfLines={1}>
-                    {(item as any).selectedOptions.cuttingType}
-                    {(item as any).selectedOptions.pieceSize
-                      ? ` · ${(item as any).selectedOptions.pieceSize}` : ""}
+                    {item.selectedOptions.cuttingType}
+                    {item.selectedOptions.pieceSize
+                      ? ` · ${item.selectedOptions.pieceSize}` : ""}
                   </Text>
                 )}
               </View>

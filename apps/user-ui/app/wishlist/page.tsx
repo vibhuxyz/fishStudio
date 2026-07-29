@@ -14,7 +14,7 @@ export default function WishlistPage() {
       </h1>
 
       <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border bg-[#F8F8FA] py-20 text-center">
-        <Heart className="h-12 w-12 text-[#5A2C96]" />
+        <Heart className="h-12 w-12 text-primary" />
         <div>
           <p className="text-base font-semibold text-foreground">
             Your wishlist is empty
@@ -25,7 +25,7 @@ export default function WishlistPage() {
         </div>
         <Link
           href="/search"
-          className="rounded-xl bg-[#5A2C96] px-6 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white"
         >
           Browse products
         </Link>

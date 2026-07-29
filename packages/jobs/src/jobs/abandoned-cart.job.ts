@@ -1,5 +1,5 @@
 import { prismaMongo } from "@repo/db-mongo";
-import { publishToQueue } from "@repo/libs";
+import { publishToQueue } from "@repo/libs/rabbitmq";
 
 const ABANDON_THRESHOLD_HOURS = 1;   // Notify after 1 hour of no activity
 const MAX_NOTIFY_AGAIN_HOURS  = 24;  // Don't re-notify within 24 hours

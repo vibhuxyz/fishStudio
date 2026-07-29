@@ -26,7 +26,7 @@ export default function ReferEarnPage() {
         Refer &amp; Earn
       </h1>
 
-      <div className="rounded-2xl bg-[#5A2C96] p-6 text-center text-white">
+      <div className="rounded-2xl bg-primary p-6 text-center text-white">
         <Gift className="mx-auto h-10 w-10" />
         <p className="mt-3 text-lg font-bold">Give ₹50, Get ₹50</p>
         <p className="mt-1 text-sm text-white/80">

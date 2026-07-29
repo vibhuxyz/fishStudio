@@ -28,7 +28,7 @@ export default function EditProfilePage() {
         <p className="text-sm text-muted-foreground">Please log in to edit your profile.</p>
         <button
           onClick={modals.openLogin}
-          className="rounded-xl bg-[#5A2C96] px-6 py-2.5 text-sm font-semibold text-white"
+          className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white"
         >
           Log in / Sign up
         </button>
@@ -79,7 +79,7 @@ export default function EditProfilePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-[#5A2C96]"
+            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary"
           />
         </div>
 
@@ -92,7 +92,7 @@ export default function EditProfilePage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-[#5A2C96]"
+            className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary"
           />
         </div>
 
@@ -114,7 +114,7 @@ export default function EditProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-xl bg-[#5A2C96] px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save Changes"}
         </button>

@@ -9,10 +9,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Fish Studio brand colors (matching user-ui)
-        primary: "#6C3CE1", // Vibrant purple
-        "primary-dark": "#5A2DC5",
-        "primary-light": "#7D4EE8",
+        // Fish Studio brand colors (matching user-ui and constants/theme.ts)
+        primary: "#5A2C96", // Brand purple
+        "primary-dark": "#300861",
+        "primary-light": "#7A4CB8",
+        // Splash / auth palette — keep in sync with constants/theme.ts
+        "brand-mark": "#5C1FAA",
+        "brand-cta": "#4F20A4",
+        "brand-accent": "#C08BFF",
+        "panel-start": "#3B1973",
+        "panel-mid": "#4B1C8F",
+        "panel-end": "#5A1D96",
+        "lavender-deep": "#F0EAFD",
+        "lavender-top": "#F7F3FD",
+        "lavender-mid": "#F1EDFB",
+        "lavender-soft": "#EFE7F9",
+        "lavender-bottom": "#E9E1FA",
+        "ink-strong": "#1C1C1C",
+        "ink-soft": "#6B6577",
+        hairline: "#E7DFF5",
+        "hairline-strong": "#DCD2EE",
         accent: "#5EC4B6", // Teal/cyan
         "accent-dark": "#4DB0A3",
         "offer-green": "#22C55E", // Green for discounts

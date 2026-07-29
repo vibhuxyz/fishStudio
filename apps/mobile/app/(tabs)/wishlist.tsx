@@ -1,4 +1,6 @@
-import { useStore } from "@/store";
+import { useAddressStore } from "@/lib/address-store";
+import { CartItem, useStore } from "@/store";
+import useUser from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
@@ -7,12 +9,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Wishlist() {
   const { wishlist, removeFromWishlist, addToCart } = useStore();
+  const { user } = useUser();
+  const { getSelectedAddress } = useAddressStore();
+  const selectedAddress = getSelectedAddress();
 
   const handleRemoveFromWishlist = (productId: string) => {
-    removeFromWishlist(productId, null, null, "Mobile App");
+    removeFromWishlist(productId, user, selectedAddress, "Mobile App");
   };
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: CartItem) => {
     addToCart(
       {
         id: product.id,
@@ -23,14 +28,14 @@ export default function Wishlist() {
         shopId: product.shopId,
         quantity: 1,
       },
-      null,
-      null,
+      user,
+      selectedAddress,
       "Mobile App"
     );
     router.push("/(tabs)/cart");
   };
 
-  const handleProductPress = (product: any) => {
+  const handleProductPress = (product: CartItem) => {
     router.push({
       pathname: "/(routes)/product/[id]",
       params: {
@@ -66,7 +71,7 @@ export default function Wishlist() {
             Start adding products to your wishlist to see them here
           </Text>
           <TouchableOpacity
-            className="bg-blue-600 px-8 py-4 rounded-xl"
+            className="bg-primary px-8 py-4 rounded-xl"
             onPress={() => router.push("/(tabs)")}
           >
             <Text className="text-white font-poppins-semibold text-lg">
@@ -123,14 +128,14 @@ export default function Wishlist() {
                     </TouchableOpacity>
 
                     {/* Price */}
-                    <Text className="text-xl font-poppins-bold text-blue-600 mb-4">
-                      ${product.price}
+                    <Text className="text-xl font-poppins-bold text-primary mb-4">
+                      ₹{product.price}
                     </Text>
 
                     {/* Action Buttons */}
                     <View className="flex-row items-center justify-between">
                       <TouchableOpacity
-                        className="bg-blue-600 px-6 py-3 rounded-xl flex-1 mr-3"
+                        className="bg-primary px-6 py-3 rounded-xl flex-1 mr-3"
                         onPress={() => handleAddToCart(product)}
                       >
                         <Text className="text-white font-poppins-semibold text-center">Add To Cart</Text>

@@ -1,4 +1,4 @@
-import { redis } from "./src/lib/redis";
+import { redis } from "@repo/libs/redis";
 
 async function main() {
   console.log("🚀 Flushing search cache...");

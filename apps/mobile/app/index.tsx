@@ -1,4 +1,3 @@
-import OnboardingScreen from "@/screens/onboarding/onboarding.screen";
 import { clearStoredAuth, isAuthenticated } from "@/utils/auth";
 import { Redirect } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -34,6 +33,7 @@ export default function Index() {
     return <Redirect href={"/(tabs)"} />;
   }
 
-  // No user - show onboarding
-  return <OnboardingScreen />;
+  // No user - the splash hands straight over to the login screen, which still
+  // offers a Skip for guest browsing.
+  return <Redirect href={"/(routes)/login"} />;
 }

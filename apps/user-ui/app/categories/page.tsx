@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fish } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
-import { normalizeSlug } from "@/lib/normalize-slug";
+import { normalizeSlug } from "@repo/slug";
 
 export default function CategoriesPage() {
   const { data, isLoading } = useCategories();
@@ -43,7 +43,7 @@ export default function CategoriesPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <Fish className="h-8 w-8 text-[#5A2C96]" />
+                      <Fish className="h-8 w-8 text-primary" />
                     )}
                   </div>
                   <span className="line-clamp-1 text-center text-xs font-medium text-foreground">

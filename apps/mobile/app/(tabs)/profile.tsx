@@ -28,11 +28,12 @@ const PRIMARY_DARK = "#300861";
 const SCREEN_BG = "#F4F4F4";
 
 export default function Profile() {
-  const { user: cachedUser, updateUserData } = useUser();
+  const { user: cachedUser, updateUserData, clearUserData } = useUser();
   const { wishlist } = useStore();
 
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedImageId, setUploadedImageId] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
@@ -77,21 +78,17 @@ export default function Profile() {
         const reader = new FileReader();
         reader.onload = async () => {
           try {
-            const base64 = (reader.result as string).split(",")[1];
-            const formData = new FormData();
-            formData.append("file", base64);
-            formData.append("fileName", `profile_${Date.now()}.jpg`);
-            formData.append("useUniqueFileName", "true");
-            formData.append("folder", "/profile-avatars");
-            const ikRes = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
-              method: "POST",
-              headers: { Authorization: `Basic ${btoa(process.env.EXPO_PUBLIC_IMAGEKIT_PRIVATE_KEY! + ":")}` },
-              body: formData,
-            });
-            const ikData = await ikRes.json();
-            if (ikData.url) { setUploadedImageUrl(ikData.url); setUploadedImageId(ikData.fileId); toast.success("Photo uploaded!"); }
-            else throw new Error("Upload failed");
-            resolve(ikData);
+            // Full data: URI — the backend validates the data:image/...;base64,
+            // prefix itself, so we don't strip it before sending.
+            const dataUri = reader.result as string;
+            const { data } = await axiosInstance.post("/auth/api/upload-avatar-image", { fileName: dataUri });
+            if (data.success) {
+              setOriginalImageUrl(data.file_url);
+              setUploadedImageUrl(data.file_url);
+              setUploadedImageId(data.file_id);
+              toast.success("Photo uploaded!");
+            } else throw new Error("Upload failed");
+            resolve(data);
           } catch (e) { toast.error("Failed to upload image"); reject(e); }
           finally { setIsUploading(false); }
         };
@@ -101,16 +98,28 @@ export default function Profile() {
     } catch { setIsUploading(false); toast.error("Failed to process image"); }
   };
 
+  // Cloudinary transforms are URL path segments (not query params like
+  // ImageKit's `?tr=`), so each toggle recomputes from the clean upload URL
+  // rather than layering onto whatever's currently displayed.
   const applyAIFeature = async (feature: string) => {
-    if (!uploadedImageUrl) return;
+    if (!originalImageUrl) return;
     setIsApplyingAI(true);
     try {
-      const baseUrl = uploadedImageUrl.split("?")[0];
-      const trMap: Record<string, string> = { "bg-remove": "e-bgremove", relight: "e-relight", "quality-improve": "e-retouch" };
-      const finalUrl = `${baseUrl}?tr=${trMap[feature]}&t=${Date.now()}`;
+      const trMap: Record<string, string> = {
+        "bg-remove": "e_background_removal", // requires Cloudinary's Background Removal add-on
+        relight: "e_improve:outdoor",
+        "quality-improve": "e_improve",
+      };
+      const nextFeatures = appliedFeatures.includes(feature)
+        ? appliedFeatures.filter((f) => f !== feature)
+        : [...appliedFeatures, feature];
+      const transformSegment = nextFeatures.map((f) => trMap[f]).join(",");
+      const finalUrl = transformSegment
+        ? originalImageUrl.replace("/upload/", `/upload/${transformSegment}/`)
+        : originalImageUrl;
       await new Promise((r) => setTimeout(r, 4000));
       setUploadedImageUrl(finalUrl);
-      setAppliedFeatures((prev) => prev.includes(feature) ? prev.filter((f) => f !== feature) : [...prev, feature]);
+      setAppliedFeatures(nextFeatures);
       toast.success(`${feature} applied!`);
     } catch { toast.error(`Failed to apply ${feature}`); }
     finally { setIsApplyingAI(false); }
@@ -119,11 +128,11 @@ export default function Profile() {
   const saveFinalImage = async () => {
     if (!uploadedImageUrl) return;
     try {
-      const res = await axiosInstance.post("/auth/api/update-avatar", { avatar: { file_id: uploadedImageId, url: uploadedImageUrl } });
+      const res = await axiosInstance.put("/auth/api/update-avatar", { avatar: { file_id: uploadedImageId, url: uploadedImageUrl } });
       if (res.data.success) {
         if (res.data.user) await updateUserData(res.data.user);
         toast.success("Profile photo updated!");
-        setShowPhotoModal(false); setSelectedImage(null); setUploadedImageUrl(null); setAppliedFeatures([]);
+        setShowPhotoModal(false); setSelectedImage(null); setOriginalImageUrl(null); setUploadedImageUrl(null); setAppliedFeatures([]);
         refetchUser();
       }
     } catch { toast.error("Failed to update photo"); }
@@ -131,7 +140,7 @@ export default function Profile() {
 
   const logOutHandler = async () => {
     try { await axiosInstance.post("/auth/api/logout-user"); } catch {}
-    await SecureStore.deleteItemAsync("user");
+    await clearUserData();
     await SecureStore.deleteItemAsync("access_token");
     await SecureStore.deleteItemAsync("refresh_token");
     router.replace("/(routes)/login");
@@ -273,20 +282,12 @@ export default function Profile() {
 
         {/* ── Payment ──────────────────────────────────────────────────── */}
         <Card>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>Payment</Text>
-            <TouchableOpacity>
-              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#A1A1AA", letterSpacing: 0.5 }}>MANAGE</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C", marginBottom: 12 }}>Payment</Text>
           <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F7F7F7", borderRadius: 12, padding: 14 }}>
-            <View style={{ backgroundColor: "#E2E2E2", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, marginRight: 14 }}>
-              <Text style={{ fontFamily: "Inter-Bold", fontSize: 11, color: "#1A1C1C", letterSpacing: 0.5 }}>VISA</Text>
-            </View>
-            <View>
-              <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C" }}>•••• 4242</Text>
-              <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 2 }}>Expires 12/26</Text>
-            </View>
+            <Ionicons name="shield-checkmark-outline" size={20} color="#898B8A" style={{ marginRight: 10 }} />
+            <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A", flex: 1 }}>
+              No cards are saved. Pay securely via UPI, card, or net banking at checkout.
+            </Text>
           </View>
         </Card>
 
@@ -376,7 +377,7 @@ export default function Profile() {
               Have a party order?
             </Text>
             <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20, lineHeight: 20 }}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Bulk orders of fresh fish and meat for weddings, parties, and events — chat with us for custom cuts, quantities, and delivery scheduling.
             </Text>
             <TouchableOpacity
               onPress={() => Linking.openURL("https://wa.me/919999999999")}
@@ -404,7 +405,7 @@ export default function Profile() {
         <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F3F3" }}>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>Change Photo</Text>
-            <TouchableOpacity onPress={() => { setShowPhotoModal(false); setSelectedImage(null); setUploadedImageUrl(null); setAppliedFeatures([]); }}>
+            <TouchableOpacity onPress={() => { setShowPhotoModal(false); setSelectedImage(null); setOriginalImageUrl(null); setUploadedImageUrl(null); setAppliedFeatures([]); }}>
               <Ionicons name="close" size={24} color="#676968" />
             </TouchableOpacity>
           </View>
@@ -488,7 +489,7 @@ export default function Profile() {
 
                 <View style={{ flexDirection: "row", gap: 12, paddingTop: 4 }}>
                   <TouchableOpacity
-                    onPress={() => { setSelectedImage(null); setUploadedImageUrl(null); setAppliedFeatures([]); }}
+                    onPress={() => { setSelectedImage(null); setOriginalImageUrl(null); setUploadedImageUrl(null); setAppliedFeatures([]); }}
                     style={{ flex: 1, paddingVertical: 14, borderWidth: 1.5, borderColor: "#E2E2E2", borderRadius: 50, alignItems: "center" }}
                   >
                     <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#676968" }}>Retake</Text>

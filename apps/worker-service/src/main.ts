@@ -1,17 +1,17 @@
 import { createServer } from "http";
 import { orderWorker } from "./workers/order.worker.js";
 import { adminWorker } from "./workers/admin.worker.js";
-import { otpWorker } from "./workers/otpWorker.js";
+import { otpWorker } from "./workers/otp.worker.js";
+import { outboxRelay, stopOutboxRelay } from "./workers/outbox.relay.js";
 
 import { SocketManager } from "./socket.js";
 import { ENV } from "@repo/env-config";
 import { CronManager } from "@repo/jobs";
-
-console.log("Hello Workers")
+import { logger } from "@repo/libs/logger";
 
 async function mainWorkerService() {
   try {
-    console.log("🚀 Starting FishStudio Worker Service...");
+    logger.info("🚀 Starting FishStudio Worker Service...");
 
     // 1. Create HTTP Server for WebSockets
     const server = createServer((req, res) => {
@@ -19,9 +19,9 @@ async function mainWorkerService() {
       res.end("Worker Service WebSocket Server");
     });
 
-    const port = Number(ENV.WORKER_SERVICE_PORT) || 6006;
+    const port = Number(ENV.WORKER_SERVICE_PORT);
     server.listen(port, () => {
-      console.log(`🌐 WebSocket server listening on port ${port}`);
+      logger.info(`🌐 WebSocket server listening on port ${port}`);
     });
 
     // 2. Initialize Socket Manager
@@ -29,14 +29,16 @@ async function mainWorkerService() {
 
     // 3. Start Workers
     await orderWorker();
-    console.log("✅ Order worker started");
+    logger.info("✅ Order worker started");
 
     await otpWorker();
-    console.log("✅ OTP worker started");
+    logger.info("✅ OTP worker started");
 
     await adminWorker();
-    console.log("✅ Admin worker started");
+    logger.info("✅ Admin worker started");
 
+    outboxRelay();
+    logger.info("✅ Outbox relay started");
 
     // 4. Initialize Cron Jobs
     const cronManager = CronManager.getInstance();
@@ -44,8 +46,9 @@ async function mainWorkerService() {
 
     // Graceful shutdown
     const shutdown = () => {
-      console.log("🛑 Shutting down Worker Service...");
+      logger.info("🛑 Shutting down Worker Service...");
       server.close(() => {
+        stopOutboxRelay();
         cronManager.stopAll();
         process.exit(0);
       });
@@ -54,7 +57,7 @@ async function mainWorkerService() {
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
   } catch (error) {
-    console.error("❌ Worker Service failed to start:", error);
+    logger.error("❌ Worker Service failed to start:", error);
     process.exit(1);
   }
 }

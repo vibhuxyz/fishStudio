@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
-import { redis } from "@repo/libs";
+import { redis } from "@repo/libs/redis";
 
 const INVENTORY_CACHE_TTL = 120; // 2 minutes
+// When searching, the seller/store/product-name filter runs in JS after
+// hydration (below), so DB-level pagination can't be used — we scan this many
+// candidate stores instead and paginate the filtered result in memory.
+const SEARCH_SCAN_LIMIT: number = 500;
 
 /* ─────────────────────────────────────────────────────────────────────────
    GET /api/admin/seller-inventory
@@ -65,11 +69,14 @@ export const getAdminSellerInventory = async (
           },
         },
       },
-      skip,
-      take: limit,
+      // Search filters post-hydration below, so it can't be paginated at the
+      // DB level — scan a bounded window instead and paginate in memory.
+      ...(search ? { take: SEARCH_SCAN_LIMIT } : { skip, take: limit }),
     });
 
-    const totalStores = await prisma.stores.count({ where: storeWhere });
+    const totalStores = search
+      ? null // computed from the filtered result below
+      : await prisma.stores.count({ where: storeWhere });
     const storeIds = stores.map((s) => s.id);
 
     /* ── 2. Fetch products for these stores ───────────────────────────── */
@@ -171,7 +178,9 @@ export const getAdminSellerInventory = async (
       };
     });
 
-    // If searching by seller name or store name, filter after hydration
+    // If searching by seller name or store name, filter after hydration,
+    // then paginate the filtered result (DB-level skip/take was skipped above).
+    let total = totalStores ?? 0;
     if (search) {
       const q = search.toLowerCase();
       sellers = sellers.filter(
@@ -180,6 +189,8 @@ export const getAdminSellerInventory = async (
           s.store.name?.toLowerCase().includes(q) ||
           s.products.some((p) => p.title.toLowerCase().includes(q)),
       );
+      total = sellers.length;
+      sellers = sellers.slice(skip, skip + limit);
     }
 
     const payload = {
@@ -188,9 +199,9 @@ export const getAdminSellerInventory = async (
       pagination: {
         page,
         limit,
-        total:      totalStores,
-        totalPages: Math.ceil(totalStores / limit),
-        hasNextPage: page * limit < totalStores,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
         hasPrevPage: page > 1,
       },
     };

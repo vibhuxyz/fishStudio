@@ -7,10 +7,10 @@ import { Animated, Platform, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TABS = [
-  { name: "Home", route: "/(tabs)/", icon: "home" as const },
+  { name: "Home", route: "/(tabs)", icon: "home" as const },
   { name: "Cart", route: "/(tabs)/cart", icon: "shopping-bag" as const },
   { name: "Profile", route: "/(tabs)/profile", icon: "user" as const },
-];
+] as const;
 
 export default function FloatingTabBar() {
   const { cart } = useStore();
@@ -35,7 +35,7 @@ export default function FloatingTabBar() {
   if (!isHome) return null;
 
   const isActive = (route: string) => {
-    if (route === "/(tabs)/") return pathname === "/" || pathname === "/index";
+    if (route === "/(tabs)") return pathname === "/" || pathname === "/index";
     return pathname.includes(route.replace("/(tabs)", ""));
   };
 
@@ -74,7 +74,7 @@ export default function FloatingTabBar() {
           return (
             <TouchableOpacity
               key={tab.name}
-              onPress={() => router.push(tab.route as any)}
+              onPress={() => router.push(tab.route)}
               style={{
                 flex: 1,
                 alignItems: "center",

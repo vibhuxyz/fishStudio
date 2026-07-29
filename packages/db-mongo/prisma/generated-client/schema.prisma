@@ -406,7 +406,9 @@ model SignupAccessCode {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([email, role])
+  // Uniqueness for non-null emails is enforced via sparse indexes created directly
+  // in MongoDB: db.signup_access_codes.createIndex({email:1, role:1},{unique:true,sparse:true})
+  @@index([email, role])
   @@map("signup_access_codes")
 }
 

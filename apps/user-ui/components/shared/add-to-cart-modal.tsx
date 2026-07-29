@@ -22,6 +22,7 @@ import {
 import { addToCart, useCartStore } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
 import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
+import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/pricing";
 import { useModals } from "@/components/providers/modal-provider";
 import { toast } from "sonner";
 
@@ -86,13 +87,13 @@ export function AddToCartModal({
 
   const perKgPricing = useMemo(() => {
     if (!isPerKgMode || !basePricePerKg || !product) return null;
-    const cuttingPricing = (product as any).cuttingTypePricing as Array<{ cuttingType: string; salePrice: number }> | undefined;
-    const piecePricing   = (product as any).pieceSizePricing   as Array<{ pieceSize:    string; salePrice: number }> | undefined;
-    const cuttingCharge  = cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
-    const rawMultiplier  = piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
-    const sizeMultiplier = rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
-    const ratePerKg = basePricePerKg + cuttingCharge;
-    return { cuttingCharge, sizeMultiplier, ratePerKg };
+    return resolvePerKgPricing(
+      basePricePerKg,
+      (product as any).cuttingTypePricing,
+      (product as any).pieceSizePricing,
+      selectedCutting,
+      selectedPieceSize,
+    );
   }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, product]);
 
   const weightDisplay = isPerKgMode
@@ -103,7 +104,7 @@ export function AddToCartModal({
 
   const totalPayable = useMemo(() => {
     if (isPerKgMode && perKgPricing) {
-      return Number.parseFloat(((perKgPricing.ratePerKg / 1000) * perKgWeightGrams * perKgPricing.sizeMultiplier).toFixed(2));
+      return computePerKgSalePrice(perKgPricing, perKgWeightGrams);
     }
     return Number.parseFloat((resolved.salePrice * quantity).toFixed(2));
   }, [isPerKgMode, perKgPricing, perKgWeightGrams, resolved.salePrice, quantity]);

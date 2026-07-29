@@ -93,7 +93,10 @@ export const slugSchema = z.object({
 export const addCatalogProductToStoreSchema = z.object({
   regular_price: z.preprocess((val) => Number(val), z.number().nonnegative()).optional(),
   sale_price: z.preprocess((val) => Number(val), z.number().nonnegative()).optional(),
-  sizePricing: z.array(z.any()).optional(),
+  // Loosely-shaped: normalizeSizePricing() accepts both camelCase and
+  // snake_case keys (salePrice/sale_price etc.) and fills in the rest, so we
+  // only rule out non-object entries here rather than pinning exact fields.
+  sizePricing: z.array(z.record(z.string(), z.unknown())).optional(),
   stock: z.preprocess((val) => Number(val), z.number().nonnegative()).optional(),
   cash_on_delivery: z.enum(["yes", "no"]).optional(),
   discountCodes: z.array(z.string()).optional(),

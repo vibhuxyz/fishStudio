@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
     "x-auth-role": "user",
-    // ✅ ADD THIS LINE to bypass ngrok warning page
+    // Bypasses the ngrok interstitial warning page when the API is tunneled through ngrok.
     "ngrok-skip-browser-warning": "true",
   },
 });
@@ -62,12 +62,6 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        // await axios.post(
-        //   `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
-        //   {},
-        //   { withCredentials: true },
-        // );
-        //
         await axiosInstance.post(
           `/auth/api/refresh-token`, // Using relative path since baseURL is set
           {},

@@ -7,7 +7,6 @@ import {
   Home,
   Briefcase,
   MoreHorizontal,
-  Pencil,
   Trash2,
   Plus,
   ArrowLeft,
@@ -28,7 +27,7 @@ import {
   type SelectedLocation,
 } from "@/lib/address-store";
 import { toast } from "sonner";
-import { axiosInstance } from "@/lib/utils";
+import axiosInstance from "@/utils/axiosInstance";
 import { useAuth } from "@/lib/auth-store";
 import {
   Select,
@@ -429,8 +428,10 @@ export function AddressModal({
                             View All
                           </button>
                         </div>
-                        <div className="space-y-3">
-                          {addresses.slice(0, 2).map((address) => (
+                        {/* Scrolls rather than caps — a shopper with five
+                            addresses was only ever shown the first two. */}
+                        <div className="space-y-3 max-h-72 overflow-y-auto">
+                          {addresses.map((address) => (
                             <AddressCard
                               key={address.id}
                               address={address}
@@ -779,12 +780,6 @@ function AddressCard({
         </div>
       </button>
       <div className="flex gap-2 px-4 pb-3">
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
         {!isSelected && (
           <button
             type="button"

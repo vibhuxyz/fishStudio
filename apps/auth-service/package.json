@@ -14,12 +14,6 @@
     "start": "node dist/main.js"
   },
   "devDependencies": {
-    "@repo/db-mongo": "workspace:*",
-    "@repo/env-config": "workspace:*",
-    "@repo/middlewares": "workspace:*",
-    "@repo/libs": "workspace:*",
-    "@repo/zod-schema": "workspace:*",
-    "@repo/error-handlers": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "tsup": "^8.5.0",
@@ -41,6 +35,12 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "@repo/db-mongo": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
+    "@repo/error-handlers": "workspace:*"
   }
 }

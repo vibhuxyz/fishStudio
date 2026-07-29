@@ -1,9 +1,13 @@
 import useUser from "@/hooks/useUser";
+import { useAddressStore } from "@/lib/address-store";
 import {
+  computePerKgSalePrice,
   normalizeSizePricing,
+  resolvePerKgPricing,
   resolvePrice,
 } from "@/utils/pricing";
 import { useStore } from "@/store";
+import type { Product } from "@/types/product";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -27,7 +31,7 @@ const PER_KG_MIN = 50;
 const PER_KG_DEFAULT = 250;
 
 interface Props {
-  product: any;
+  product: Product | null;
   visible: boolean;
   onClose: () => void;
 }
@@ -103,6 +107,8 @@ function InlineDropdown({
 
 export default function AddToCartModal({ product, visible, onClose }: Props) {
   const { user } = useUser();
+  const { getSelectedAddress } = useAddressStore();
+  const selectedAddress = getSelectedAddress();
   const { addToCart } = useStore();
 
   const [selectedCutting, setSelectedCutting] = useState<string>("");
@@ -154,22 +160,13 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
 
   const perKgPricing = useMemo(() => {
     if (!isPerKgMode || !basePricePerKg || !product) return null;
-    const cuttingPricing = product.cuttingTypePricing as
-      | Array<{ cuttingType: string; salePrice: number }>
-      | null
-      | undefined;
-    const piecePricing = product.pieceSizePricing as
-      | Array<{ pieceSize: string; salePrice: number }>
-      | null
-      | undefined;
-    const cuttingCharge =
-      cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
-    const rawMultiplier =
-      piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
-    const sizeMultiplier =
-      rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
-    const ratePerKg = basePricePerKg + cuttingCharge;
-    return { cuttingCharge, sizeMultiplier, ratePerKg };
+    return resolvePerKgPricing(
+      basePricePerKg,
+      product.cuttingTypePricing,
+      product.pieceSizePricing,
+      selectedCutting,
+      selectedPieceSize,
+    );
   }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, product]);
 
   const weightDisplay = isPerKgMode
@@ -229,7 +226,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
         priceBreakdown: breakdown,
       },
       user,
-      null,
+      selectedAddress,
       "Mobile App"
     );
     onClose();
@@ -356,7 +353,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
               showsHorizontalScrollIndicator={false}
               className="mb-4"
             >
-              {images.map((img: any, i: number) => (
+              {images.map((img: { url: string } | string, i: number) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => setSelectedImageIndex(i)}
@@ -365,7 +362,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
                   }`}
                 >
                   <Image
-                    source={{ uri: img?.url || img }}
+                    source={{ uri: typeof img === "string" ? img : img?.url }}
                     style={{ width: 56, height: 56 }}
                     resizeMode="cover"
                   />

@@ -2,7 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import "./jobs/product.cron.jobs.js"
+import { productCleanupTask } from "./jobs/product.cron.jobs.js";
 import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
@@ -50,3 +50,12 @@ const server = app.listen(port, "0.0.0.0", () => {
 server.on("error", (err) => {
   console.log("Server error", err);
 });
+
+const shutdown = () => {
+  console.log("Shutting down Product Service...");
+  productCleanupTask.stop();
+  server.close(() => process.exit(0));
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

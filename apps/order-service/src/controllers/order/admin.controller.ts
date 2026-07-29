@@ -2,6 +2,13 @@ import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
+import { adminOrderListQuerySchema, updateAdminOrderStatusSchema, validate } from "@repo/zod-schema";
+import {
+  restoreOrderStock,
+  queueStalePaymentFix,
+  ADMIN_ORDER_CUSTOMER_SELECT,
+  ADMIN_ORDER_SELLER_SELECT,
+} from "./utils.js";
 
 /* ─────────────────────────────────────────────────────────────────────────
    GET /api/admin/orders
@@ -32,38 +39,25 @@ export const getAdminOrderList = async (
     const skip  = (page - 1) * limit;
 
     const {
-      status,
       from,
       to,
       search,
       sellerId,
       paymentMethod,
-      paymentStatus,
       pincode,
       minAmount,
       maxAmount,
-      sortBy  = "createdAt",
-      sortDir = "desc",
     } = req.query as Record<string, string>;
+
+    const { status, paymentStatus, sortBy, sortDir } = validate(adminOrderListQuerySchema, {
+      status: req.query.status,
+      paymentStatus: req.query.paymentStatus,
+      sortBy: req.query.sortBy,
+      sortDir: req.query.sortDir,
+    });
 
     const minAmt = minAmount ? parseFloat(minAmount) : undefined;
     const maxAmt = maxAmount ? parseFloat(maxAmount) : undefined;
-
-    const validStatuses = ["PENDING","ACCEPTED","REJECTED","SHIPPED","DELIVERED","CANCELLED"];
-    const validPayStatuses = ["PENDING","COMPLETED","FAILED","REFUNDED"];
-
-    if (status && !validStatuses.includes(status)) {
-      return next(new ValidationError(`Invalid status. Must be one of: ${validStatuses.join(", ")}`));
-    }
-    if (paymentStatus && !validPayStatuses.includes(paymentStatus)) {
-      return next(new ValidationError(`Invalid paymentStatus. Must be one of: ${validPayStatuses.join(", ")}`));
-    }
-    if (!["asc","desc"].includes(sortDir)) {
-      return next(new ValidationError("sortDir must be asc or desc"));
-    }
-    if (!["createdAt","totalAmount"].includes(sortBy)) {
-      return next(new ValidationError("sortBy must be createdAt or totalAmount"));
-    }
 
     /* ── 2. If sellerId filter is given, resolve storeId from Mongo first ── */
     let storeIdFilter: string | undefined;
@@ -122,14 +116,7 @@ export const getAdminOrderList = async (
     const [users, stores, products] = await Promise.all([
       prismaMongo.users.findMany({
         where: { id: { in: userIds } },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone_number: true,
-          addresses: true,
-          createdAt: true,
-        },
+        select: ADMIN_ORDER_CUSTOMER_SELECT,
       }),
       prismaMongo.stores.findMany({
         where: { id: { in: storeIds } },
@@ -140,14 +127,7 @@ export const getAdminOrderList = async (
           city: true,
           sellerId: true,
           seller: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone_number: true,
-              isApprovedByAdmin: true,
-              createdAt: true,
-            },
+            select: ADMIN_ORDER_SELLER_SELECT,
           },
         },
       }),
@@ -171,14 +151,7 @@ export const getAdminOrderList = async (
     const staleDelivered = ordersRaw.filter(
       (o) => o.status === "DELIVERED" && o.paymentStatus === "PENDING",
     );
-    if (staleDelivered.length > 0) {
-      prismaPostgres.order
-        .updateMany({
-          where: { id: { in: staleDelivered.map((o) => o.id) } },
-          data: { paymentStatus: "COMPLETED" },
-        })
-        .catch(() => {});
-    }
+    queueStalePaymentFix(staleDelivered.map((o) => o.id));
 
     const orders = ordersRaw.map((order) => ({
       id:             order.id,
@@ -279,9 +252,7 @@ export const getAdminOrderDetail = async (
 
     /* ── Auto-correct stale payment status for delivered COD orders ────────── */
     if (order.status === "DELIVERED" && order.paymentStatus === "PENDING") {
-      prismaPostgres.order
-        .update({ where: { id: orderId }, data: { paymentStatus: "COMPLETED" } })
-        .catch(() => {});
+      queueStalePaymentFix([orderId]);
       (order as any).paymentStatus = "COMPLETED";
     }
 
@@ -303,14 +274,7 @@ export const getAdminOrderDetail = async (
     const [customer, store, products] = await Promise.all([
       prismaMongo.users.findUnique({
         where: { id: order.userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone_number: true,
-          addresses: true,
-          createdAt: true,
-        },
+        select: ADMIN_ORDER_CUSTOMER_SELECT,
       }),
       prismaMongo.stores.findUnique({
         where: { id: order.storeId },
@@ -324,14 +288,7 @@ export const getAdminOrderDetail = async (
           closing_hours: true,
           is_instant_delivery_enabled: true,
           seller: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone_number: true,
-              isApprovedByAdmin: true,
-              createdAt: true,
-            },
+            select: ADMIN_ORDER_SELLER_SELECT,
           },
         },
       }),
@@ -520,24 +477,29 @@ export const updateAdminOrderStatus = async (
 ) => {
   try {
     const { orderId } = req.params as { orderId: string };
-    const { status } = req.body as { status: string };
+    const { status } = validate(updateAdminOrderStatusSchema, req.body);
 
-    const validStatuses = ["PENDING","ACCEPTED","REJECTED","SHIPPED","DELIVERED","CANCELLED"];
-    if (!status || !validStatuses.includes(status)) {
-      return next(new ValidationError(`Invalid status. Must be one of: ${validStatuses.join(", ")}`));
-    }
-
-    const existing = await prismaPostgres.order.findUnique({ where: { id: orderId } });
+    const existing = await prismaPostgres.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true },
+    });
     if (!existing) return next(new NotFoundError("Order not found"));
 
     const updated = await prismaPostgres.order.update({
       where: { id: orderId },
       data: {
-        status: status as any,
+        status,
         updatedAt: new Date(),
         ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" } : {}),
       },
     });
+
+    // Restore stock when admin cancels an order — mirrors the seller-side
+    // CANCELLED path in updateOrderStatus, which this admin endpoint had
+    // been missing (orders cancelled here previously left stock reserved).
+    if (status === "CANCELLED") {
+      restoreOrderStock(existing.orderItems, "updateAdminOrderStatus");
+    }
 
     return res.status(200).json({ success: true, order: updated });
   } catch (error) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import DOMPurify from "isomorphic-dompurify";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,6 +12,7 @@ import {
   Star,
   Info,
   BadgePercent,
+  ChefHat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +31,7 @@ import {
   fetchStorefrontProductBySlug,
   resolveProductSizePricing,
 } from "@/lib/storefront";
+import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/pricing";
 import { useAddressStore } from "@/lib/address-store";
 import { useAuth } from "@/lib/auth-store";
 import { trackProductView } from "@/lib/activity";
@@ -70,6 +73,42 @@ export function ProductDetailClient({ product, coupon }: Props) {
   const [selectedWeightGrams, setSelectedWeightGrams] = useState(
     selected.weightGrams || 0,
   );
+
+  const productSpecs = [
+    { label: "Origin", value: resolvedProduct.origin },
+    { label: "Source", value: resolvedProduct.source },
+    { label: "Shelf Life", value: resolvedProduct.shelfLife },
+    { label: "Storage", value: resolvedProduct.storageInstructions },
+  ].filter((spec): spec is { label: string; value: string } =>
+    Boolean(spec.value?.trim()),
+  );
+
+  const nutritionFacts = [
+    { label: "Protein", value: resolvedProduct.nutritionProtein },
+    { label: "Omega 3", value: resolvedProduct.nutritionOmega3 },
+    { label: "Calories", value: resolvedProduct.nutritionCalories },
+  ].filter((fact): fact is { label: string; value: string } =>
+    Boolean(fact.value?.trim()),
+  );
+
+  // Admin enters these one per line, so blank lines are expected.
+  const cookingTips = (resolvedProduct.cookingTips ?? [])
+    .map((tip) => tip.trim())
+    .filter(Boolean);
+
+  const hasProductDetails =
+    Boolean(resolvedProduct.highlightDescription?.trim()) ||
+    productSpecs.length > 0 ||
+    nutritionFacts.length > 0 ||
+    cookingTips.length > 0;
+
+  // Drives the option-selector grid: two selectors sit side by side rather
+  // than leaving a half-width gap.
+  const optionSelectorCount = [
+    resolvedProduct.cuttingTypes?.length,
+    resolvedProduct.pieceSizes?.length,
+    resolvedProduct.sizes?.length,
+  ].filter((count) => (count ?? 0) > 0).length;
 
   // Per-KG pricing mode: product has cutting types or piece sizes but no size tiers
   const isPerKgMode = resolvedProduct.sizes.length === 0 &&
@@ -152,24 +191,18 @@ export function ProductDetailClient({ product, coupon }: Props) {
   // Derived per-kg pricing factors — rate display is weight-independent, only total changes
   const perKgPricing = useMemo(() => {
     if (!isPerKgMode || !basePricePerKg) return null;
-    const cuttingPricing = (resolvedProduct as any).cuttingTypePricing as Array<{ cuttingType: string; salePrice: number }> | null | undefined;
-    const piecePricing   = (resolvedProduct as any).pieceSizePricing   as Array<{ pieceSize:    string; salePrice: number }> | null | undefined;
-
-    const cuttingCharge = cuttingPricing?.find((c) => c.cuttingType === selectedCutting)?.salePrice ?? 0;
-    const rawMultiplier = piecePricing?.find((p) => p.pieceSize === selectedPieceSize)?.salePrice ?? 1.0;
-    // Clamp: a multiplier outside 0.5–3.0 is stale/corrupted data — treat as 1.0
-    const sizeMultiplier = rawMultiplier > 0 && rawMultiplier <= 3 ? rawMultiplier : 1.0;
-
-    // ratePerKg = base + cutting surcharge (shown in header, NEVER changes with weight)
-    const ratePerKg = basePricePerKg + cuttingCharge;
-
-    return { cuttingCharge, sizeMultiplier, ratePerKg };
+    return resolvePerKgPricing(
+      basePricePerKg,
+      (resolvedProduct as any).cuttingTypePricing,
+      (resolvedProduct as any).pieceSizePricing,
+      selectedCutting,
+      selectedPieceSize,
+    );
   }, [isPerKgMode, basePricePerKg, selectedCutting, selectedPieceSize, resolvedProduct]);
 
   const computedSalePrice = useMemo(() => {
     if (isPerKgMode && basePricePerKg && perKgPricing) {
-      // Total = ratePerKg × weight × sizeMultiplier (only this changes when weight/size changes)
-      return Number.parseFloat(((perKgPricing.ratePerKg / 1000) * perKgWeightGrams * perKgPricing.sizeMultiplier).toFixed(2));
+      return computePerKgSalePrice(perKgPricing, perKgWeightGrams);
     }
     if (!isWeightAdjustable || selectedWeightGrams <= 0) {
       return Number.parseFloat(selected.salePrice.toFixed(2));
@@ -359,7 +392,7 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 <div className="mt-2 text-sm text-muted-foreground md:text-base">
                   <div
                     className={`relative ${!isExpanded ? "line-clamp-3" : ""}`}
-                    dangerouslySetInnerHTML={{ __html: resolvedProduct.description }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(resolvedProduct.description) }}
                   />
                   {resolvedProduct.description.length > 180 && (
                     <button
@@ -453,7 +486,17 @@ export function ProductDetailClient({ product, coupon }: Props) {
                   )}
                 </p>
 
-                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Option selectors share one row — a product may expose any
+                    one, two or all three of them. */}
+                <div
+                  className={`mt-5 grid grid-cols-1 gap-4 ${
+                    optionSelectorCount === 2
+                      ? "md:grid-cols-2"
+                      : optionSelectorCount === 3
+                        ? "md:grid-cols-3"
+                        : ""
+                  }`}
+                >
                   {/* Cutting Type Dropdown */}
                   {resolvedProduct.cuttingTypes && resolvedProduct.cuttingTypes.length > 0 && (
                     <div>
@@ -501,31 +544,30 @@ export function ProductDetailClient({ product, coupon }: Props) {
                       </Select>
                     </div>
                   )}
+                  {/* Fish Size Dropdown */}
+                  {resolvedProduct.sizes && resolvedProduct.sizes.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-foreground">
+                        Fish / Pack Size
+                      </label>
+                      <Select
+                        value={selectedSize}
+                        onValueChange={setSelectedSize}
+                      >
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {normalizedPricing.map((sizePricing) => (
+                            <SelectItem key={sizePricing.size} value={sizePricing.size}>
+                              {sizePricing.size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
-
-                {/* Fish Size Dropdown */}
-                {resolvedProduct.sizes && resolvedProduct.sizes.length > 0 && (
-                  <div className="mt-4">
-                    <label className="text-sm font-medium text-foreground">
-                      Fish / Pack Size
-                    </label>
-                    <Select
-                      value={selectedSize}
-                      onValueChange={setSelectedSize}
-                    >
-                      <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {normalizedPricing.map((sizePricing) => (
-                          <SelectItem key={sizePricing.size} value={sizePricing.size}>
-                            {sizePricing.size}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
 
                 {/* Weight Loss Info Banner */}
                 {resolvedProduct.processingWeightLoss && (
@@ -648,6 +690,88 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 </div>
               </div>
             </div>
+
+            {/* Catalog-authored detail content. Every field is optional, so each
+                block hides itself rather than rendering an empty label. */}
+            {hasProductDetails && (
+              <div className="mt-8 border-t border-border pt-8">
+                {resolvedProduct.highlightDescription && (
+                  <div className="mb-6">
+                    <h2 className="font-serif text-lg font-bold text-primary">
+                      What makes it great?
+                    </h2>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {resolvedProduct.highlightDescription}
+                    </p>
+                  </div>
+                )}
+
+                {productSpecs.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="font-serif text-lg font-bold text-primary">
+                      Product Details
+                    </h2>
+                    <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                      {productSpecs.map((spec) => (
+                        <div
+                          key={spec.label}
+                          className="flex items-start justify-between gap-4 border-b border-border/50 pb-2"
+                        >
+                          <dt className="text-sm text-muted-foreground">{spec.label}</dt>
+                          <dd className="text-right text-sm font-medium text-foreground">
+                            {spec.value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )}
+
+                {nutritionFacts.length > 0 && (
+                  <div className="mb-6">
+                    <h2 className="font-serif text-lg font-bold text-primary">
+                      Nutrition{" "}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        (per 100g)
+                      </span>
+                    </h2>
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      {nutritionFacts.map((fact) => (
+                        <div
+                          key={fact.label}
+                          className="rounded-lg border border-border bg-muted/40 p-3 text-center"
+                        >
+                          <p className="text-lg font-bold text-foreground">{fact.value}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {fact.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {cookingTips.length > 0 && (
+                  <div>
+                    <h2 className="flex items-center gap-2 font-serif text-lg font-bold text-primary">
+                      <ChefHat className="h-4 w-4" />
+                      Cooking Tips
+                    </h2>
+                    <ul className="mt-3 space-y-2">
+                      {cookingTips.map((tip) => (
+                        <li
+                          key={tip}
+                          className="flex items-start gap-2 text-sm text-muted-foreground"
+                        >
+                          <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-accent" />
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -1,13 +1,6 @@
-export const QUEUE_NAMES = {
-  OTP_QUEUE: "otp_queue",
-} as const;
+import { QUEUE_NAMES } from "@repo/libs/queues";
 
-/**
- * Queue options
- */
-export const QUEUE_OPTIONS = {
-  durable: true,
-} as const;
+export { QUEUE_NAMES };
 
 /**
  * Consumer options

@@ -10,7 +10,7 @@ import {
   getOrderById,
   cancelOrder,
 } from "../controllers/order/user.controller.js";
-import { getSellerStats, getAdminStats } from "../controllers/order/stats.controller.js";
+import { getSellerStats, getAdminStats, getAdminSellerOrders } from "../controllers/order/stats.controller.js";
 import { getAdminOrderList, getAdminOrderDetail, updateAdminOrderStatus, getAdminOrderPincodes } from "../controllers/order/admin.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff } from "@repo/middlewares";
 import { perUserRateLimit } from "../middlewares/perUserRateLimit.js";
@@ -48,8 +48,7 @@ router.get(
   "/admin-orders/:sellerId",
   isAuthenticated,
   allowRoles("admin"),
-  // @ts-ignore
-  require("../controllers/order/stats.controller.js").getAdminSellerOrders,
+  getAdminSellerOrders,
 );
 
 // ── Admin Order Management ─────────────────────────────────────────────────

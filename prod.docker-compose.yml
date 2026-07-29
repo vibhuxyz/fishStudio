@@ -12,6 +12,7 @@ services:
       - product-service
       - order-service
       - notification-service
+      - payment-service
     networks:
       - fish-studio-net
 
@@ -62,6 +63,14 @@ services:
     env_file: .env.prod
     depends_on:
       - rabbitmq-service
+    networks:
+      - fish-studio-net
+
+  payment-service:
+    container_name: payment-service
+    image: 10xdevian134/payment-service:prod
+    restart: always
+    env_file: .env.prod
     networks:
       - fish-studio-net
 

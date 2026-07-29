@@ -68,8 +68,7 @@ const getEtherealTransporter = async (): Promise<nodemailer.Transporter> => {
 };
 
 const TEMPLATES_DIR =
-  process.env.EMAIL_TEMPLATES_DIR ||
-  path.resolve(__dirname, "../../../apps/auth-service/src/utils/email-templates");
+  process.env.EMAIL_TEMPLATES_DIR || path.resolve(__dirname, "templates");
 
 const renderEmailTemplate = async (
   templateName: string,

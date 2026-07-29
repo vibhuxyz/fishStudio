@@ -1,7 +1,8 @@
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import cron from "node-cron";
 
-cron.schedule("0 * * * *", async () => {
+// Exported so main.ts can stop it on graceful shutdown.
+export const productCleanupTask = cron.schedule("0 * * * *", async () => {
   try {
     const now = new Date();
 
@@ -12,6 +13,6 @@ cron.schedule("0 * * * *", async () => {
       },
     });
   } catch (error) {
-    (console.log("(Cron Job) Error during deleting product"), error);
+    console.log("(Cron Job) Error during deleting product", error);
   }
 });

@@ -1,8 +1,11 @@
-import { consumeQueue, connectRabbitMQ } from "@repo/libs";
+import { consumeQueue, connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { logger } from "@repo/libs/logger";
+import { QUEUE_NAMES } from "../config/queues.js";
 import { SocketManager } from "../socket.js";
+import { isValidOrderEvent } from "../types/orderEvent.js";
 
 export const orderWorker = async () => {
-  const queueName = "ORDER_EVENTS";
+  const queueName = QUEUE_NAMES.ORDER_EVENTS;
 
   await consumeQueue(queueName, async (msg) => {
     if (!msg) return;
@@ -11,7 +14,11 @@ export const orderWorker = async () => {
 
     try {
       const content = JSON.parse(msg.content.toString());
-      console.log(`📦 Received order event: ${content.type} for store ${content.storeId}`);
+      if (!isValidOrderEvent(content)) {
+        throw new Error(`Invalid order event structure: ${JSON.stringify(content)}`);
+      }
+      const storeIdForLog = "storeId" in content ? content.storeId : undefined;
+      logger.info(`📦 Received order event: ${content.type} for store ${storeIdForLog}`);
 
       const socketManager = SocketManager.getInstance();
       if (socketManager) {
@@ -56,10 +63,12 @@ export const orderWorker = async () => {
 
       channel.ack(msg);
     } catch (error) {
-      console.error("❌ Error processing order event:", error);
-      channel.ack(msg);
+      logger.error("❌ Error processing order event:", error);
+      // No dead-letter queue configured — requeue=false drops the message
+      // rather than looping a malformed/unhandleable event forever.
+      channel.nack(msg, false, false);
     }
   });
 
-  console.log(`📥 Order Worker listening on: ${queueName}`);
+  logger.info(`📥 Order Worker listening on: ${queueName}`);
 };

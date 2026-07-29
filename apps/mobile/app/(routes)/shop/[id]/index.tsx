@@ -192,7 +192,7 @@ export default function ShopDetailsScreen() {
               className={`flex-1 py-4 rounded-2xl ${
                 isFollowing
                   ? "bg-gray-100 border border-gray-200"
-                  : "bg-blue-600 shadow-lg"
+                  : "bg-primary shadow-lg"
               }`}
               activeOpacity={0.8}
             >
@@ -248,7 +248,7 @@ export default function ShopDetailsScreen() {
               <View className="flex-row items-center">
                 <Ionicons name="globe-outline" size={18} color="#6B7280" />
                 <TouchableOpacity className="ml-3">
-                  <Text className="text-blue-600 font-poppins-medium underline">
+                  <Text className="text-primary font-poppins-medium underline">
                     {shop.website}
                   </Text>
                 </TouchableOpacity>
@@ -299,7 +299,7 @@ export default function ShopDetailsScreen() {
             >
               <Text
                 className={`text-center font-poppins-semibold ${
-                  activeTab === tab ? "text-blue-600" : "text-gray-600"
+                  activeTab === tab ? "text-primary" : "text-gray-600"
                 }`}
               >
                 {tab}
@@ -345,11 +345,11 @@ export default function ShopDetailsScreen() {
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
             <Text className="text-lg font-poppins-bold text-gray-900">
-              ${item.sale_price}
+              ₹{item.sale_price}
             </Text>
             {item.regular_price && (
               <Text className="text-sm text-gray-400 line-through ml-2 font-poppins-medium">
-                ${item.regular_price}
+                ₹{item.regular_price}
               </Text>
             )}
           </View>
@@ -491,7 +491,7 @@ export default function ShopDetailsScreen() {
           translucent
         />
         <View className="flex-1 justify-center items-center">
-          <View className="w-16 h-16 bg-blue-600 rounded-full items-center justify-center">
+          <View className="w-16 h-16 bg-primary rounded-full items-center justify-center">
             <Ionicons name="storefront" size={32} color="white" />
           </View>
           <Text className="text-gray-600 font-poppins-medium mt-4">

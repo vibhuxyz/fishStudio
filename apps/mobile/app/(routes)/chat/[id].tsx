@@ -54,7 +54,7 @@ export default function ChatDetails() {
   const queryClient = useQueryClient();
   const scrollViewRef = useRef<ScrollView>(null);
   const messageInputRef = useRef<TextInput>(null);
-  const { ws } = useWebSocket();
+  const { ws, subscribe } = useWebSocket();
   const { setSelectedConversationId } = useConversation();
 
   const [messageText, setMessageText] = useState("");
@@ -105,13 +105,11 @@ export default function ChatDetails() {
     }
   }, [conversationId, setSelectedConversationId]);
 
-  // Websocket message handling
+  // Websocket message handling — subscribes to the shared connection from
+  // WebSocketProvider instead of assigning ws.onmessage directly, since that
+  // would clobber the provider's own handler (unread counts, order updates).
   useEffect(() => {
-    if (!ws) return;
-
-    ws.onmessage = (event: any) => {
-      const data = JSON.parse(event.data);
-
+    return subscribe((data: any) => {
       if (data.type === "NEW_MESSAGE") {
         const newMsg = data?.payload;
 
@@ -153,8 +151,8 @@ export default function ChatDetails() {
           )
         );
       }
-    };
-  }, [ws, conversationId, queryClient]);
+    });
+  }, [subscribe, conversationId, queryClient]);
 
   useEffect(() => {
     if (messages.length > 0) {

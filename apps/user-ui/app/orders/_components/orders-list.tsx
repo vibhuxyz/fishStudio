@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Package, Clock, CheckCircle2, Truck, XCircle, ChevronRight, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { Order } from "@/lib/orders-api";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   PENDING:   { label: "Pending",   color: "text-amber-600 bg-amber-50 border-amber-200",   icon: <Clock className="h-3.5 w-3.5" /> },
@@ -14,7 +15,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   REJECTED:  { label: "Rejected",  color: "text-destructive bg-destructive/10 border-destructive/30", icon: <XCircle className="h-3.5 w-3.5" /> },
 };
 
-export function OrdersList({ orders, isLoading }: { orders: any[]; isLoading?: boolean }) {
+export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?: boolean }) {
   if (orders.length === 0 && !isLoading) {
     return (
       <div className="py-20 text-center">
@@ -30,7 +31,7 @@ export function OrdersList({ orders, isLoading }: { orders: any[]; isLoading?: b
 
   return (
     <div className="space-y-3">
-      {orders.map((order: any) => {
+      {orders.map((order) => {
         const orderStatus = (order.status || "PENDING").toUpperCase();
         const statusCfg = STATUS_CONFIG[orderStatus] ?? STATUS_CONFIG.PENDING;
         const primaryItem = order.items?.[0];

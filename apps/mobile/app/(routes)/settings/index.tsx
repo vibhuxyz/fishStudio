@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -14,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useUserStore } from "@/lib/user-store";
+import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 
 interface SettingItem {
@@ -32,16 +35,12 @@ interface SettingsData {
   notifications: boolean;
   email_notifications: boolean;
   dark_mode: boolean;
-  language: string;
-  currency: string;
 }
 
 const DEFAULT_SETTINGS: SettingsData = {
   notifications: true,
   email_notifications: true,
   dark_mode: false,
-  language: "English (US)",
-  currency: "USD ($)",
 };
 
 export default function Settings() {
@@ -103,25 +102,9 @@ export default function Settings() {
     );
   };
 
-  const openAppStore = async () => {
-    try {
-      // For iOS App Store
-      await Linking.openURL("https://apps.apple.com/app/your-app-id");
-    } catch (error) {
-      try {
-        // For Google Play Store
-        await Linking.openURL(
-          "https://play.google.com/store/apps/details?id=your.app.id"
-        );
-      } catch (error) {
-        toast.error("Could not open app store");
-      }
-    }
-  };
-
   const openPrivacyPolicy = async () => {
     try {
-      await Linking.openURL("https://yourwebsite.com/privacy-policy");
+      await Linking.openURL("https://fishstudio.app/privacy");
     } catch (error) {
       toast.error("Could not open Privacy Policy");
     }
@@ -129,7 +112,7 @@ export default function Settings() {
 
   const openTermsConditions = async () => {
     try {
-      await Linking.openURL("https://yourwebsite.com/terms-conditions");
+      await Linking.openURL("https://fishstudio.app/terms");
     } catch (error) {
       toast.error("Could not open Terms & Conditions");
     }
@@ -138,16 +121,16 @@ export default function Settings() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await axiosInstance.delete("/auth/api/delete-user");
 
-      // Clear all local data
       await AsyncStorage.clear();
+      await useUserStore.getState().clearUser();
+      await SecureStore.deleteItemAsync("access_token");
+      await SecureStore.deleteItemAsync("refresh_token");
 
       toast.success("Account deleted successfully");
       setShowDeleteModal(false);
 
-      // Navigate to login screen
       router.replace("/(routes)/login");
     } catch (error) {
       console.error("Error deleting account:", error);
@@ -205,16 +188,6 @@ export default function Settings() {
       iconBg: "#FEF3C7",
       type: "navigation",
       onPress: () => router.push("/(routes)/data-usage"),
-    },
-    {
-      id: "rate_app",
-      title: "Rate App",
-      subtitle: "Rate us on App Store",
-      icon: "star-outline",
-      iconColor: "#F59E0B",
-      iconBg: "#FEF3C7",
-      type: "action",
-      onPress: openAppStore,
     },
     {
       id: "privacy_policy",

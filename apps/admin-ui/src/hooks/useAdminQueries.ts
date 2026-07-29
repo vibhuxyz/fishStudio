@@ -169,6 +169,20 @@ export const createAdminSubCategory = async (category: string, name: string) => 
   );
 };
 
+export const deleteAdminCategory = async (name: string) => {
+  await axiosInstance.delete("/product/api/delete-category", {
+    data: { name },
+    ...isProtected,
+  });
+};
+
+export const deleteAdminSubCategory = async (category: string, name: string) => {
+  await axiosInstance.delete("/product/api/delete-subcategory", {
+    data: { category, name },
+    ...isProtected,
+  });
+};
+
 export const fetchAdminSellers = async (): Promise<AdminSellerSummary[]> => {
   const response = await axiosInstance.get("/auth/api/admin/sellers", isProtected);
   return Array.isArray(response.data.sellers) ? response.data.sellers : [];

@@ -9,6 +9,8 @@ import { BASE_DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD, GST_RATE, PACKAGING_CHAR
 import axiosInstance from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
 import { toast } from "@/utils/toast";
+import { rankCoupons } from "@repo/pricing";
+import { createOrderSchema } from "@repo/zod-schema";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -23,10 +25,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import RazorpayCheckout from "react-native-razorpay";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type PaymentMethod = "upi" | "card" | "cod";
+// Mirrors createOrderSchema's paymentMethod enum in @repo/zod-schema — the
+// server only recognizes COD/ONLINE/RAZORPAY, not the upi/card split.
+type PaymentMethod = "RAZORPAY" | "COD";
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function CheckoutScreen() {
@@ -49,7 +54,7 @@ export default function CheckoutScreen() {
   } = useCouponStore();
 
   const { selectedSlot, setSelectedSlot } = useDeliverySlotStore();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
   const [couponInput, setCouponInput] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -91,23 +96,31 @@ export default function CheckoutScreen() {
       .catch(() => {});
   }, [selectedLocation?.storeId, selectedAddress?.pincode]);
 
+  const baseDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
+
+  // Best saving first — same ranking the web cart uses, so an offer that leads
+  // the list on one surface leads it on the other.
+  const rankedCoupons = useMemo(
+    () => rankCoupons(availableCoupons, { subtotal, deliveryCharge: baseDelivery }),
+    [availableCoupons, subtotal, baseDelivery],
+  );
+
   // Auto-apply eligible coupon once
   useEffect(() => {
     if (appliedCoupons.length > 0 || autoApplied) return;
-    const eligible = availableCoupons.find(
-      (c) => c.autoApply && subtotal >= c.minOrderValue && !isCouponApplied(c.code),
-    );
+    const eligible = rankedCoupons.find(
+      (r) => r.eligible && r.coupon.autoApply && !isCouponApplied(r.coupon.code),
+    )?.coupon;
     if (eligible) {
       applyCoupon(eligible);
       setAutoApplied(true);
     }
-  }, [availableCoupons, subtotal, appliedCoupons.length, autoApplied]);
+  }, [rankedCoupons, appliedCoupons.length, autoApplied]);
 
   // ── Pricing ────────────────────────────────────────────────────────────────
   const isFreeDelivery = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && subtotal >= c.minOrderValue,
   );
-  const baseDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
   const deliveryCharge = isFreeDelivery ? 0 : baseDelivery;
   const packagingCharge = PACKAGING_CHARGE;
   const discount = Math.min(getTotalDiscount(subtotal), subtotal);
@@ -157,6 +170,79 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Order created with paymentMethod RAZORPAY is unpaid until verified.
+  // Release it if the customer backs out before Razorpay hands us a payment.
+  const cancelUnpaidOrder = (orderId: string) =>
+    axiosInstance
+      .put(`/order/api/cancel/${orderId}`)
+      .catch(() => {/* webhook / cleanup job will reconcile if this fails */});
+
+  const startRazorpayPayment = async (orderId: string) => {
+    let paymentAttempted = false;
+    try {
+      const { data: rzp } = await axiosInstance.post("/payment/api/create-razorpay-order", {
+        orderId,
+      });
+
+      let result;
+      try {
+        result = await RazorpayCheckout.open({
+          key: rzp.keyId, // public key_id, supplied by the backend
+          amount: rzp.amount, // in paise, computed server-side from the order
+          currency: rzp.currency,
+          order_id: rzp.razorpayOrderId,
+          name: "Fish Studio",
+          description: "Order payment",
+          prefill: {
+            name: selectedAddress?.name,
+            contact: selectedAddress?.phone || user?.phone,
+            email: user?.email,
+          },
+          theme: { color: "#5A2C96" },
+        });
+      } catch (checkoutError: any) {
+        // Closed or failed before Razorpay handed us a payment — nothing was
+        // captured, safe to release the reserved order.
+        cancelUnpaidOrder(orderId);
+        toast.error(checkoutError?.description || "Payment cancelled. Your order was not placed.");
+        return;
+      }
+
+      paymentAttempted = true;
+      const { data: verified } = await axiosInstance.post("/payment/api/verify", {
+        orderId,
+        razorpayOrderId: result.razorpay_order_id,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpaySignature: result.razorpay_signature,
+      });
+
+      if (!verified.success) {
+        toast.error("Payment could not be verified. Please contact support.");
+        return;
+      }
+
+      clearCart();
+      clearAllCoupons();
+      haptic.orderPlaced();
+      toast.success("Payment successful!", { haptic: false });
+      router.replace({
+        pathname: "/(routes)/order-confirmation/[id]",
+        params: { id: orderId },
+      });
+    } catch {
+      // Razorpay already handed us a payment by this point, so money has
+      // very likely moved even though verify() itself failed — don't cancel,
+      // the webhook / reconciliation sweep settles it instead.
+      if (paymentAttempted) {
+        toast.error("Payment verification failed. If money was deducted, it will be auto-confirmed shortly.");
+      } else {
+        toast.error("Could not start payment. Please try again.");
+      }
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
   // ── Place order ─────────────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -169,7 +255,7 @@ export default function CheckoutScreen() {
     }
     setIsPlacingOrder(true);
     try {
-      const { data } = await axiosInstance.post("/order/api/create", {
+      const orderPayload = {
         storeId: selectedLocation.storeId,
         items: cart.map((item) => ({
           productId: item.id,
@@ -204,13 +290,30 @@ export default function CheckoutScreen() {
         deliverySlot: selectedSlot,
         couponCode: appliedCoupons.length > 0 ? appliedCoupons.map((c) => c.code).join(",") : undefined,
         discountAmount: discount,
-      });
+      };
+
+      // Same schema the backend validates against (order-service's
+      // createOrder) — catches malformed requests before they hit the network.
+      const validation = createOrderSchema.safeParse(orderPayload);
+      if (!validation.success) {
+        toast.error(validation.error.errors[0]?.message || "Please check your order details");
+        return;
+      }
+
+      const { data } = await axiosInstance.post("/order/api/create", orderPayload);
+
+      if (paymentMethod === "RAZORPAY") {
+        // Online payment: keep the loading state until checkout resolves.
+        await startRazorpayPayment(data.orderId);
+        return;
+      }
+
       clearCart();
       clearAllCoupons();
       haptic.orderPlaced();
       toast.success("Order placed successfully!", { haptic: false });
       router.replace({
-        pathname: "/(routes)/order-confirmation/[id]" as any,
+        pathname: "/(routes)/order-confirmation/[id]",
         params: { id: data.orderId },
       });
     } catch (error: any) {
@@ -350,25 +453,17 @@ export default function CheckoutScreen() {
         <SectionTitle title="Payment Method" />
         <View style={{ paddingHorizontal: 16, gap: 0 }}>
           <PaymentOption
-            id="upi"
-            selected={paymentMethod === "upi"}
-            onPress={() => setPaymentMethod("upi")}
+            id="razorpay"
+            selected={paymentMethod === "RAZORPAY"}
+            onPress={() => setPaymentMethod("RAZORPAY")}
             icon={<MaterialCommunityIcons name="bank-transfer" size={22} color="#5A2C96" />}
-            label="UPI (GPay / PhonePe)"
-          />
-          <PaymentOption
-            id="card"
-            selected={paymentMethod === "card"}
-            onPress={() => setPaymentMethod("card")}
-            icon={<MaterialCommunityIcons name="credit-card-outline" size={22} color="#676968" />}
-            label="Credit / Debit Card"
-            subtitle="Visa, Mastercard, Amex"
-            rightChevron
+            label="Pay Online"
+            subtitle="UPI, Cards, Net Banking & Wallets via Razorpay"
           />
           <PaymentOption
             id="cod"
-            selected={paymentMethod === "cod"}
-            onPress={() => setPaymentMethod("cod")}
+            selected={paymentMethod === "COD"}
+            onPress={() => setPaymentMethod("COD")}
             icon={<MaterialCommunityIcons name="cash" size={22} color="#676968" />}
             label="Cash on Delivery"
             badge="AVAILABLE"
@@ -457,22 +552,41 @@ export default function CheckoutScreen() {
           })}
 
           {/* Available coupon chips (from backend) */}
-          {availableCoupons.length > 0 && appliedCoupons.length === 0 && (
+          {rankedCoupons.length > 0 && appliedCoupons.length === 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-              {availableCoupons.slice(0, 5).map((c) => (
+              {rankedCoupons.slice(0, 5).map(({ coupon, eligible, saving, amountToUnlock }, index) => (
                 <TouchableOpacity
-                  key={c.code}
-                  onPress={() => { setCouponInput(c.code); couponInputRef.current?.focus(); }}
+                  key={coupon.code}
+                  onPress={() => { setCouponInput(coupon.code); couponInputRef.current?.focus(); }}
                   style={{
                     borderWidth: 1.5,
-                    borderColor: "#5A2C96",
+                    borderColor: eligible ? "#5A2C96" : "#D8D8DC",
+                    backgroundColor: index === 0 && eligible ? "#F1ECF8" : "transparent",
                     borderRadius: 50,
                     paddingHorizontal: 14,
                     paddingVertical: 6,
                     marginRight: 8,
                   }}
                 >
-                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#5A2C96" }}>{c.code}</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter-SemiBold",
+                      fontSize: 12,
+                      color: eligible ? "#5A2C96" : "#898B8A",
+                    }}
+                  >
+                    {coupon.code}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter-Regular",
+                      fontSize: 10,
+                      color: eligible ? "#22C55E" : "#898B8A",
+                      marginTop: 1,
+                    }}
+                  >
+                    {eligible ? `Save ₹${saving}` : `₹${amountToUnlock} more`}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>

@@ -7,7 +7,6 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import { LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -15,6 +14,7 @@ import Toast from "react-native-toast-message";
 import "./globals.css";
 
 import AnimatedSplashScreen from "@/components/shared/animated-splash-screen";
+import { ErrorBoundary } from "@/components/shared/error-boundary";
 import Providers from "@/config/providers";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useCallback, useEffect, useState } from "react";
@@ -25,47 +25,38 @@ export default function RootLayout() {
   // LogBox.ignoreAllLogs(); // uncomment in production only
   
   const colorScheme = useColorScheme();
-  const [appReady, setAppReady] = useState(false);
-  const [showAnimatedSplash, setShowAnimatedSplash] = useState(false);
-  const [loaded] = useFonts({
+  const [splashVisible, setSplashVisible] = useState(true);
+  const [loaded, fontError] = useFonts({
     "Inter-Regular": require("../assets/fonts/Inter-Regular.otf"),
     "Inter-Medium": require("../assets/fonts/Inter-Medium.otf"),
     "Inter-SemiBold": require("../assets/fonts/Inter-SemiBold.otf"),
     "Inter-Bold": require("../assets/fonts/Inter-Bold.otf"),
+    "Poppins-Regular": require("../assets/fonts/Poppins-Regular.ttf"),
+    "Poppins-Medium": require("../assets/fonts/Poppins-Medium.ttf"),
+    "Poppins-SemiBold": require("../assets/fonts/Poppins-SemiBold.ttf"),
+    "Poppins-Bold": require("../assets/fonts/Poppins-Bold.ttf"),
   });
 
   useEffect(() => {
-    if (!loaded) {
-      return;
-    }
-
-    const prepare = async () => {
-      const hasSeenAnimatedSplash = await SecureStore.getItemAsync(
-        "has_seen_fishstudio_splash",
-      ).catch(() => null);
-      setShowAnimatedSplash(!hasSeenAnimatedSplash);
-      await SplashScreen.hideAsync();
-      setAppReady(true);
-    };
-
-    prepare();
-  }, [loaded]);
-
-  const handleSplashFinish = useCallback(() => {
-    SecureStore.setItemAsync("has_seen_fishstudio_splash", "1").catch(() => {});
-    setShowAnimatedSplash(false);
+    // Hand straight off to the animated splash — it renders over the app tree and
+    // holds its loading indicator until the fonts and first screen are ready.
+    SplashScreen.hideAsync().catch(() => {});
   }, []);
 
-  if (!appReady) {
-    return null;
-  }
+  useEffect(() => {
+    if (fontError) {
+      console.error("Failed to load bundled fonts:", fontError);
+    }
+  }, [fontError]);
+
+  const handleSplashFinish = useCallback(() => {
+    setSplashVisible(false);
+  }, []);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        {showAnimatedSplash ? (
-          <AnimatedSplashScreen onFinish={handleSplashFinish} />
-        ) : (
+        <ErrorBoundary>
           <Providers>
             <Stack
               screenOptions={{
@@ -80,6 +71,14 @@ export default function RootLayout() {
             <StatusBar style="auto" />
             <Toast />
           </Providers>
+        </ErrorBoundary>
+
+        {splashVisible && (
+          <AnimatedSplashScreen
+            // A font that fails to decode must not strand the app on the splash.
+            ready={loaded || !!fontError}
+            onFinish={handleSplashFinish}
+          />
         )}
       </GestureHandlerRootView>
     </ThemeProvider>

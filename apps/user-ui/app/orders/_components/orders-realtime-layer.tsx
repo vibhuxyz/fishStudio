@@ -2,13 +2,14 @@
 
 import React, { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { axiosInstance } from "@/lib/utils";
+import axiosInstance from "@/utils/axiosInstance";
 import { useWs } from "@/context/ws-context";
 import { useUserSession } from "@/hooks/useUserSession";
 import { OrdersList } from "./orders-list";
+import type { Order } from "@/lib/orders-api";
 
 interface OrdersRealtimeLayerProps {
-  initialOrders: any[];
+  initialOrders: Order[];
 }
 
 export function OrdersRealtimeLayer({ initialOrders }: OrdersRealtimeLayerProps) {
@@ -29,7 +30,7 @@ export function OrdersRealtimeLayer({ initialOrders }: OrdersRealtimeLayerProps)
     queryKey: ["user-orders"],
     queryFn: async () => {
       const { data } = await axiosInstance.get("/order/api/user-orders");
-      return data.orders as any[];
+      return data.orders as Order[];
     },
     initialData: initialOrders.length > 0 ? initialOrders : undefined,
     enabled: !!user,

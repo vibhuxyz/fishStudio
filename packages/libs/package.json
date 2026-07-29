@@ -4,17 +4,44 @@
   "private": true,
   "main": "./dist/main.js",
   "scripts": {
-    "build": "tsup src/main.ts --format esm --dts",
-    "dev": "tsup src/main.ts --format esm --dts --watch"
+    "build": "tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts --format esm --dts && mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/",
+    "dev": "mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/ ; tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts --format esm --dts --watch"
   },
   "exports": {
-    ".": {
-      "types": "./dist/main.d.ts",
-      "default": "./dist/main.js"
+    "./cloudinary": {
+      "types": "./dist/cloudinary/index.d.ts",
+      "default": "./dist/cloudinary/index.js"
+    },
+    "./rabbitmq": {
+      "types": "./dist/rabbitmq/index.d.ts",
+      "default": "./dist/rabbitmq/index.js"
+    },
+    "./queues": {
+      "types": "./dist/queues/index.d.ts",
+      "default": "./dist/queues/index.js"
+    },
+    "./redis": {
+      "types": "./dist/redis/index.d.ts",
+      "default": "./dist/redis/index.js"
+    },
+    "./sendMail": {
+      "types": "./dist/sendMail/index.d.ts",
+      "default": "./dist/sendMail/index.js"
+    },
+    "./sendOtp": {
+      "types": "./dist/sendOtp/index.d.ts",
+      "default": "./dist/sendOtp/index.js"
+    },
+    "./seo": {
+      "types": "./dist/seo/productSeo.d.ts",
+      "default": "./dist/seo/productSeo.js"
+    },
+    "./logger": {
+      "types": "./dist/utils/logger.d.ts",
+      "default": "./dist/utils/logger.js"
     }
   },
   "devDependencies": {
-    "@repo/env-config": "workspace:*",
     "@types/bun": "latest",
     "@repo/typescript-config": "workspace:*",
     "tsup": "^8.5.0"
@@ -34,6 +61,7 @@
     "imagekit": "^6.0.0",
     "ioredis": "^5.9.2",
     "nodemailer": "^7.0.13",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "@repo/env-config": "workspace:*"
   }
 }

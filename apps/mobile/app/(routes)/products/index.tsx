@@ -1,5 +1,7 @@
 import ProductCard from "@/components/cards/product.card";
 import ProductSkeleton from "@/components/skelton/product.skelton";
+import { useAddressStore } from "@/lib/address-store";
+import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +9,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
+  GestureResponderEvent,
   Modal,
   ScrollView,
   StatusBar,
@@ -17,11 +20,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const MAX_PRICE = 5000;
+
 interface FilterState {
   priceRange: [number, number];
-  categories: string[];
-  colors: string[];
-  sizes: string[];
+  category: string | null;
 }
 
 export default function ProductsScreen() {
@@ -30,13 +33,13 @@ export default function ProductsScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sliderWidth, setSliderWidth] = useState(0);
   const [filters, setFilters] = useState<FilterState>({
-    priceRange: [0, 1199],
-    categories: [],
-    colors: [],
-    sizes: [],
+    priceRange: [0, MAX_PRICE],
+    category: null,
   });
+  const { getSelectedAddress, selectedLocation } = useAddressStore();
+  const selectedAddress = getSelectedAddress();
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 20;
 
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
@@ -49,56 +52,57 @@ export default function ProductsScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const { data: categoriesData } = useQuery({
+    queryKey: ["storefront-categories"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/product/api/get-categories");
+      return res.data as { categories: string[] };
+    },
+    staleTime: 1000 * 60 * 10,
+  });
+  const categories = categoriesData?.categories ?? [];
+
+  const locationParams = selectedLocation?.storeId
+    ? { storeId: selectedLocation.storeId, pincode: selectedLocation.pincode, city: selectedLocation.city }
+    : selectedAddress?.pincode
+      ? { pincode: selectedAddress.pincode, city: selectedAddress.city }
+      : {};
+
   // Fetch products with filters
   const { data: productsData, isLoading } = useQuery({
     queryKey: [
       "products",
       currentPage,
       filters,
-      searchQuery,
       debouncedSearchQuery,
+      locationParams.storeId,
+      locationParams.pincode,
     ],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("limit", itemsPerPage.toString());
-
       if (debouncedSearchQuery.trim()) {
-        const searchResponse = await axiosInstance.get(
-          `/product/api/search-products?q=${encodeURIComponent(
-            debouncedSearchQuery.trim()
-          )}`
-        );
+        const searchResponse = await axiosInstance.get("/product/api/search", {
+          params: { q: debouncedSearchQuery.trim(), limit: itemsPerPage },
+        });
         return {
-          products: searchResponse.data.products || [],
+          products: searchResponse.data.hits || [],
           pagination: {
-            total: searchResponse.data.products?.length || 0,
+            total: searchResponse.data.estimatedTotalHits || 0,
             page: 1,
             totalPages: 1,
           },
         };
       }
 
-      if (filters.categories.length > 0) {
-        params.append("categories", filters.categories.join(","));
-      }
-
-      if (filters.colors.length > 0) {
-        params.append("colors", filters.colors.join(","));
-      }
-
-      if (filters.sizes.length > 0) {
-        params.append("sizes", filters.sizes.join(","));
-      }
-
-      params.append(
-        "priceRange",
-        `${filters.priceRange[0]},${filters.priceRange[1]}`
-      );
-
-      const response = await axiosInstance.get(
-        `/product/api/get-filtered-products?${params}`
-      );
+      const response = await axiosInstance.get("/product/api/get-all-products", {
+        params: {
+          page: currentPage,
+          limit: itemsPerPage,
+          category: filters.category || undefined,
+          minPrice: filters.priceRange[0],
+          maxPrice: filters.priceRange[1],
+          ...locationParams,
+        },
+      });
       return response.data;
     },
   });
@@ -117,12 +121,12 @@ export default function ProductsScreen() {
   };
 
   // Slider functions
-  const handleSliderPress = (event: any) => {
+  const handleSliderPress = (event: GestureResponderEvent) => {
     if (sliderWidth === 0) return;
 
     const { locationX } = event.nativeEvent;
     const percentage = locationX / sliderWidth;
-    const newValue = Math.round(percentage * 1199);
+    const newValue = Math.round(percentage * MAX_PRICE);
 
     // Determine which handle to move based on which side of the current range the tap is
     const currentMin = filters.priceRange[0];
@@ -136,7 +140,7 @@ export default function ProductsScreen() {
       updatePriceRange(clampedValue, currentMax);
     } else {
       // Move max handle
-      const clampedValue = Math.max(currentMin + 50, Math.min(newValue, 1199));
+      const clampedValue = Math.max(currentMin + 50, Math.min(newValue, MAX_PRICE));
       updatePriceRange(currentMin, clampedValue);
     }
   };
@@ -145,51 +149,23 @@ export default function ProductsScreen() {
     setSearchQuery(text);
   };
 
-  const categories = [
-    "Electronics",
-    "Fashion",
-    "Home & Kitchen",
-    "Sports & Fitness",
-  ];
-
-  const colors = [
-    { name: "Black", value: "black" },
-    { name: "Red", value: "red" },
-    { name: "Green", value: "green" },
-    { name: "Blue", value: "blue" },
-    { name: "Yellow", value: "yellow" },
-    { name: "Magenta", value: "magenta" },
-    { name: "Cyan", value: "cyan" },
-  ];
-
-  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-
-  const toggleFilter = (type: keyof FilterState, value: string) => {
-    setFilters((prev) => {
-      const currentArray = prev[type] as string[];
-      const newArray = currentArray.includes(value)
-        ? currentArray.filter((item) => item !== value)
-        : [...currentArray, value];
-
-      return {
-        ...prev,
-        [type]: newArray,
-      };
-    });
-    setCurrentPage(1); // Reset to first page when filters change
+  const toggleCategory = (category: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      category: prev.category === category ? null : category,
+    }));
+    setCurrentPage(1);
   };
 
   const clearAllFilters = () => {
     setFilters({
-      priceRange: [0, 1199],
-      categories: [],
-      colors: [],
-      sizes: [],
+      priceRange: [0, MAX_PRICE],
+      category: null,
     });
     setCurrentPage(1);
   };
 
-  const renderProduct = ({ item }: { item: any }) => (
+  const renderProduct = ({ item }: { item: Product }) => (
     <ProductCard product={item} />
   );
 
@@ -216,8 +192,8 @@ export default function ProductsScreen() {
               Price Range
             </Text>
             <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-gray-600">${filters.priceRange[0]}</Text>
-              <Text className="text-gray-600">${filters.priceRange[1]}</Text>
+              <Text className="text-gray-600">₹{filters.priceRange[0]}</Text>
+              <Text className="text-gray-600">₹{filters.priceRange[1]}</Text>
             </View>
 
             {/* Interactive Price Range Slider */}
@@ -229,11 +205,11 @@ export default function ProductsScreen() {
             >
               <View className="bg-gray-200 h-2 rounded-full">
                 <View
-                  className="bg-blue-600 h-2 rounded-full absolute"
+                  className="bg-primary h-2 rounded-full absolute"
                   style={{
-                    left: `${(filters.priceRange[0] / 1199) * 100}%`,
+                    left: `${(filters.priceRange[0] / MAX_PRICE) * 100}%`,
                     width: `${
-                      ((filters.priceRange[1] - filters.priceRange[0]) / 1199) *
+                      ((filters.priceRange[1] - filters.priceRange[0]) / MAX_PRICE) *
                       100
                     }%`,
                   }}
@@ -242,9 +218,9 @@ export default function ProductsScreen() {
 
               {/* Min Price Handle */}
               <TouchableOpacity
-                className="absolute w-6 h-6 bg-blue-600 rounded-full -top-2 items-center justify-center"
+                className="absolute w-6 h-6 bg-primary rounded-full -top-2 items-center justify-center"
                 style={{
-                  left: `${(filters.priceRange[0] / 1199) * 100}%`,
+                  left: `${(filters.priceRange[0] / MAX_PRICE) * 100}%`,
                   marginLeft: -12,
                 }}
                 onPress={() => {
@@ -257,13 +233,13 @@ export default function ProductsScreen() {
 
               {/* Max Price Handle */}
               <TouchableOpacity
-                className="absolute w-6 h-6 bg-blue-600 rounded-full -top-2 items-center justify-center"
+                className="absolute w-6 h-6 bg-primary rounded-full -top-2 items-center justify-center"
                 style={{
-                  left: `${(filters.priceRange[1] / 1199) * 100}%`,
+                  left: `${(filters.priceRange[1] / MAX_PRICE) * 100}%`,
                   marginLeft: -12,
                 }}
                 onPress={() => {
-                  const newMax = Math.min(1199, filters.priceRange[1] + 100);
+                  const newMax = Math.min(MAX_PRICE, filters.priceRange[1] + 100);
                   updatePriceRange(filters.priceRange[0], newMax);
                 }}
               >
@@ -281,17 +257,17 @@ export default function ProductsScreen() {
             {/* Quick Price Presets */}
             <View className="flex-row flex-wrap mt-4 gap-2">
               {[
-                { label: "Under $100", range: [0, 100] },
-                { label: "$100-$300", range: [100, 300] },
-                { label: "$300-$500", range: [300, 500] },
-                { label: "$500+", range: [500, 1199] },
+                { label: "Under ₹200", range: [0, 200] },
+                { label: "₹200-₹500", range: [200, 500] },
+                { label: "₹500-₹1000", range: [500, 1000] },
+                { label: "₹1000+", range: [1000, MAX_PRICE] },
               ].map((preset) => (
                 <TouchableOpacity
                   key={preset.label}
                   className={`px-3 py-2 rounded-full border ${
                     filters.priceRange[0] === preset.range[0] &&
                     filters.priceRange[1] === preset.range[1]
-                      ? "bg-blue-600 border-blue-600"
+                      ? "bg-primary border-primary"
                       : "border-gray-300"
                   }`}
                   onPress={() =>
@@ -316,22 +292,22 @@ export default function ProductsScreen() {
           {/* Categories */}
           <View className="mb-6">
             <Text className="text-lg font-poppins-semibold text-gray-900 mb-3">
-              Categories
+              Category
             </Text>
             {categories.map((category) => (
               <TouchableOpacity
                 key={category}
                 className="flex-row items-center py-2"
-                onPress={() => toggleFilter("categories", category)}
+                onPress={() => toggleCategory(category)}
               >
                 <View
                   className={`w-5 h-5 rounded border-2 mr-3 items-center justify-center ${
-                    filters.categories.includes(category)
-                      ? "bg-blue-600 border-blue-600"
+                    filters.category === category
+                      ? "bg-primary border-primary"
                       : "border-gray-300"
                   }`}
                 >
-                  {filters.categories.includes(category) && (
+                  {filters.category === category && (
                     <Ionicons name="checkmark" size={12} color="white" />
                   )}
                 </View>
@@ -340,69 +316,6 @@ export default function ProductsScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
-
-          {/* Colors */}
-          <View className="mb-6">
-            <Text className="text-lg font-poppins-semibold text-gray-900 mb-3">
-              Colors
-            </Text>
-            {colors.map((color) => (
-              <TouchableOpacity
-                key={color.value}
-                className="flex-row items-center py-2"
-                onPress={() => toggleFilter("colors", color.value)}
-              >
-                <View
-                  className={`w-5 h-5 rounded border-2 mr-3 items-center justify-center ${
-                    filters.colors.includes(color.value)
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {filters.colors.includes(color.value) && (
-                    <Ionicons name="checkmark" size={12} color="white" />
-                  )}
-                </View>
-                <View
-                  className="w-4 h-4 rounded-full mr-2"
-                  style={{ backgroundColor: color.value }}
-                />
-                <Text className="font-poppins-medium text-gray-700">
-                  {color.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Sizes */}
-          <View className="mb-6">
-            <Text className="text-lg font-poppins-semibold text-gray-900 mb-3">
-              Sizes
-            </Text>
-            <View className="flex-row flex-wrap">
-              {sizes.map((size) => (
-                <TouchableOpacity
-                  key={size}
-                  className={`px-4 py-2 rounded-full border mr-2 mb-2 ${
-                    filters.sizes.includes(size)
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-gray-300"
-                  }`}
-                  onPress={() => toggleFilter("sizes", size)}
-                >
-                  <Text
-                    className={`font-poppins-medium ${
-                      filters.sizes.includes(size)
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
-                  >
-                    {size}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
         </ScrollView>
 
@@ -417,7 +330,7 @@ export default function ProductsScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className="flex-1 py-3 bg-blue-600 rounded-xl"
+            className="flex-1 py-3 bg-primary rounded-xl"
             onPress={() => setShowFilters(false)}
           >
             <Text className="text-center font-poppins-semibold text-white">
@@ -460,7 +373,7 @@ export default function ProductsScreen() {
           <TouchableOpacity
             key={page}
             className={`w-10 h-10 rounded-full items-center justify-center mx-1 ${
-              page === currentPage ? "bg-blue-600" : "border border-gray-300"
+              page === currentPage ? "bg-primary" : "border border-gray-300"
             }`}
             onPress={() => setCurrentPage(page)}
           >
@@ -507,7 +420,7 @@ export default function ProductsScreen() {
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
           <Ionicons name="search" size={20} color="#6B7280" />
           <TextInput
-            placeholder="Search for products..."
+            placeholder="Search for fish, meat, and more..."
             value={searchQuery}
             onChangeText={handleSearchChange}
             className="flex-1 ml-3 font-poppins-medium text-gray-900"
