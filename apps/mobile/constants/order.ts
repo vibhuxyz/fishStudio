@@ -51,6 +51,9 @@ export interface Order {
     cityDeliveryTimes?: Record<string, number>;
     city?: string;
     pincode?: string;
+    // No delivery-partner/rider record exists — this is the store/seller's
+    // own number, the only real contact available once an order ships.
+    sellerPhone?: string | null;
   };
 }
 

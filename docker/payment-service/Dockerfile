@@ -9,18 +9,18 @@ WORKDIR /app
 COPY . .
 
 # Install dependencies
-# This creates node_modules at root AND inside apps/payment-service (where Express v5 lives)
+# This creates node_modules at root AND inside apps/auth-service (where Express v5 lives)
 RUN bun install --frozen-lockfile
 
 WORKDIR /app/packages/db-postgres
-# Dummy env for Postgres validation — prisma generate only needs a parseable URL, it never connects
-RUN echo 'POSTGRES_URL="postgresql://user:pass@localhost:5432/db"' > .env
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_oUHCPa3zQpW6@ep-wispy-hill-ao2txbj1.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"' > .env
 RUN bunx prisma generate
 
 
 WORKDIR /app/packages/db-mongo
 
-RUN echo 'MONGO_URL="mongodb://localhost:27017/db"' > .env
+RUN echo 'MONGO_URL="mongodb+srv://fishstudio:fishstudioxyz12@primarydb.zzfdeea.mongodb.net/fishStudio?authSource=admin"' > .env
 RUN bunx prisma generate
 
 
@@ -56,6 +56,6 @@ COPY --from=builder /app/apps/payment-service ./apps/payment-service
 # Node must run from inside the app folder so it finds the local node_modules (with Express v5) first
 WORKDIR /app/apps/payment-service
 
-EXPOSE 6007
+EXPOSE 6006
 
 CMD ["node", "dist/main.js"]

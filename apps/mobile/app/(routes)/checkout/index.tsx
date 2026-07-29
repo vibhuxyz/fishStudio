@@ -1,4 +1,5 @@
-import AddressModal from "@/components/shared/address-modal";
+import CouponSheet from "@/components/shared/coupon-sheet";
+import SlotSheet from "@/components/shared/slot-sheet";
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
@@ -17,11 +18,10 @@ import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
+  NativeModules,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -33,12 +33,98 @@ import { SafeAreaView } from "react-native-safe-area-context";
 // server only recognizes COD/ONLINE/RAZORPAY, not the upi/card split.
 type PaymentMethod = "RAZORPAY" | "COD";
 
+// Which rail Razorpay opens on (`prefill.method`). Picking one here saves the
+// shopper a tap inside the gateway sheet; the order is still placed as
+// RAZORPAY because the rail isn't something the order schema records.
+type OnlineRail = "upi" | "card" | "netbanking" | "wallet";
+
+const ONLINE_METHODS: {
+  id: OnlineRail;
+  label: string;
+  subtitle: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+}[] = [
+  { id: "upi", label: "UPI", subtitle: "GPay, PhonePe, Paytm & more", icon: "cellphone" },
+  { id: "card", label: "Credit / Debit Card", subtitle: "Visa, Mastercard, RuPay & Amex", icon: "credit-card-outline" },
+  { id: "netbanking", label: "Net Banking", subtitle: "All major banks supported", icon: "bank-outline" },
+  { id: "wallet", label: "Wallets", subtitle: "Paytm, Freecharge, Mobikwik & more", icon: "wallet-outline" },
+];
+
+// The UPI app itself is chosen inside Razorpay's intent sheet — standard
+// checkout hands the payment to whichever app the customer taps there. These
+// are shown so the rail is recognisable, not as separate destinations.
+const UPI_APPS = ["Google Pay", "PhonePe", "Paytm", "BHIM", "Amazon Pay"];
+
+// Razorpay bank codes for `prefill.bank`.
+const NETBANKING_BANKS = [
+  { code: "SBIN", label: "SBI" },
+  { code: "HDFC", label: "HDFC Bank" },
+  { code: "ICIC", label: "ICICI Bank" },
+  { code: "UTIB", label: "Axis Bank" },
+  { code: "KKBK", label: "Kotak" },
+];
+
+// Razorpay wallet codes for `prefill.wallet`.
+const WALLETS = [
+  { code: "paytm", label: "Paytm" },
+  { code: "freecharge", label: "Freecharge" },
+  { code: "mobikwik", label: "Mobikwik" },
+];
+
+// Every shape a stalled online payment can land in. Only the genuinely
+// retryable ones are represented here — cases where the order itself is dead
+// (cancelled, already paid, its payment record is gone, gateway unavailable)
+// are resolved immediately wherever they're detected instead of being stored,
+// so anything sitting in this state is always safe to hand back to "Retry
+// Payment" rather than a button that fails the same way forever.
+type PaymentIssueCode = "NETWORK" | "SERVER_ERROR" | "PAYMENT_CANCELLED" | "PAYMENT_START_FAILED";
+
+interface PaymentIssue {
+  orderId: string;
+  code: PaymentIssueCode;
+}
+
+const PAYMENT_ISSUE_MESSAGES: Record<PaymentIssueCode, string> = {
+  NETWORK: "Connection lost. Your order is still waiting for payment.",
+  SERVER_ERROR: "We're having trouble processing your payment. Please try again.",
+  PAYMENT_CANCELLED: "Payment cancelled. Complete payment to confirm your order.",
+  // Deliberately doesn't say "cancelled" — RazorpayCheckout.open() rejects
+  // for a mix of reasons (bad options, TLS, an incompatible plugin, etc.),
+  // and calling every one of them "cancelled" was itself the bug: it told
+  // the customer something untrue about what happened.
+  PAYMENT_START_FAILED: "Payment could not be completed. Your order is still waiting for payment.",
+};
+
+// RazorpayCheckout.open() rejects with { code, description } from the native
+// SDK (react-native-razorpay's RazorpayModule.onPaymentError). `code` is an
+// integer whose meaning isn't verifiable from this repo (it comes from the
+// compiled native Razorpay SDK, not anything checked into source), so it's
+// logged for diagnosis rather than trusted for classification. `description`
+// is the one field Razorpay reliably populates with human text, and for a
+// user-dismissed checkout that text reliably mentions "cancel" — that's the
+// only case worth naming as such; everything else is an honest "could not
+// complete", not a guess dressed up as "cancelled".
+const isUserCancellation = (error: any): boolean =>
+  typeof error?.description === "string" && error.description.toLowerCase().includes("cancel");
+
+// Backend codes (payment-service's createPaymentOrder) that mean this exact
+// order can never be paid — no retry will ever succeed against it.
+const DEAD_ORDER_CODES = new Set(["ORDER_CANCELLED", "PAYMENT_RECORD_MISSING", "ORDER_STATE_CHANGED"]);
+
+// react-native-razorpay ships real native Android/iOS code (see its
+// android/.../RazorpayModule.java) — Expo Go's precompiled binary only
+// includes Expo's own SDK modules, so RNRazorpayCheckout is never registered
+// there and RazorpayCheckout.open() throws "Cannot read property 'open' of
+// null" the instant it's called. That reads exactly like a payment failure
+// (and used to get misclassified as "cancelled"), but no amount of retrying
+// fixes it — it needs a custom dev-client build, not a different tap.
+const isRazorpayAvailable = () => !!NativeModules.RNRazorpayCheckout;
+
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function CheckoutScreen() {
   const { user } = useUser();
   const { cart, clearCart } = useStore();
-  const { addresses, selectedLocation, setSelectedLocation, getSelectedAddress } =
-    useAddressStore();
+  const { selectedLocation, setSelectedLocation, getSelectedAddress } = useAddressStore();
   const {
     appliedCoupons,
     availableCoupons,
@@ -51,17 +137,30 @@ export default function CheckoutScreen() {
     getDiscountForCoupon,
     getTotalDiscount,
     fetchAvailableCoupons,
+    validateCouponCode,
   } = useCouponStore();
 
-  const { selectedSlot, setSelectedSlot } = useDeliverySlotStore();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
-  const [couponInput, setCouponInput] = useState("");
-  const [couponLoading, setCouponLoading] = useState(false);
+  const { selectedSlot, instantFee } = useDeliverySlotStore();
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [onlineRail, setOnlineRail] = useState<OnlineRail | null>(null);
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [showAddressModal, setShowAddressModal] = useState(false);
-  const couponInputRef = useRef<TextInput>(null);
+  // Short status shown on the CTA while isPlacingOrder is true — the request
+  // is a single round trip per step, but naming the step makes the wait read
+  // as progress instead of a frozen button.
+  const [placingStage, setPlacingStage] = useState<string | null>(null);
+  const [couponSheetOpen, setCouponSheetOpen] = useState(false);
+  const [slotSheetOpen, setSlotSheetOpen] = useState(false);
+
+  // A payment that didn't complete this round but is still safe to retry
+  // against the same order. See PaymentIssueCode for what "safe" excludes.
+  const [paymentIssue, setPaymentIssue] = useState<PaymentIssue | null>(null);
+  const paymentIssueRef = useRef<PaymentIssue | null>(null);
 
   const selectedAddress = getSelectedAddress();
+  const slot = SLOT_OPTIONS.find((s) => s.key === selectedSlot);
+  const razorpayAvailable = isRazorpayAvailable();
 
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0),
@@ -96,6 +195,20 @@ export default function CheckoutScreen() {
       .catch(() => {});
   }, [selectedLocation?.storeId, selectedAddress?.pincode]);
 
+  // Leaving with an unpaid order would hold its stock reservation until the
+  // sweeper runs — release it as soon as the customer walks away.
+  useEffect(
+    () => () => {
+      if (paymentIssueRef.current) cancelUnpaidOrder(paymentIssueRef.current.orderId);
+    },
+    [],
+  );
+
+  const trackPaymentIssue = (issue: PaymentIssue | null) => {
+    paymentIssueRef.current = issue;
+    setPaymentIssue(issue);
+  };
+
   const baseDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
 
   // Best saving first — same ranking the web cart uses, so an offer that leads
@@ -105,122 +218,198 @@ export default function CheckoutScreen() {
     [availableCoupons, subtotal, baseDelivery],
   );
 
-  // Auto-apply eligible coupon once
+  // Auto-apply the best eligible coupon — but only once the backend confirms
+  // it's actually usable. minOrderValue is the only thing rankedCoupons checks
+  // locally; isFirstOrder, per-user usage limits and seller scope live only
+  // in validate-coupon, so an offer that looks eligible from the cached
+  // store-offers list can still be one the server won't honor.
   useEffect(() => {
-    if (appliedCoupons.length > 0 || autoApplied) return;
-    const eligible = rankedCoupons.find(
+    if (appliedCoupons.length > 0 || autoApplied || !selectedLocation?.storeId) return;
+    const candidate = rankedCoupons.find(
       (r) => r.eligible && r.coupon.autoApply && !isCouponApplied(r.coupon.code),
     )?.coupon;
-    if (eligible) {
-      applyCoupon(eligible);
+    if (!candidate) return; // try again once something makes a coupon eligible
+
+    let cancelled = false;
+    validateCouponCode(candidate.code, subtotal, selectedLocation.storeId).then(({ coupon }) => {
+      if (cancelled) return;
+      if (coupon) {
+        applyCoupon(coupon);
+        const saved = getDiscountForCoupon(coupon, subtotal);
+        toast.success(
+          saved > 0 ? `Applied ${coupon.code}. You saved ₹${saved}.` : `Applied ${coupon.code} — free delivery.`,
+          { haptic: false },
+        );
+      }
       setAutoApplied(true);
-    }
-  }, [rankedCoupons, appliedCoupons.length, autoApplied]);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rankedCoupons, appliedCoupons.length, autoApplied, selectedLocation?.storeId, subtotal]);
+
+  // A quantity change in the cart can drop the subtotal below an already
+  // applied coupon's minimum — getDiscountForCoupon would then silently
+  // clamp its saving to 0 while the UI still claimed it was applied. Reset
+  // autoApplied too, so the effect above immediately looks for a valid
+  // replacement instead of leaving the order coupon-less for the rest of the
+  // session.
+  useEffect(() => {
+    const applied = appliedCoupons[0];
+    if (!applied || subtotal >= applied.minOrderValue) return;
+    removeCoupon(applied.code);
+    setAutoApplied(false);
+    toast.info(`'${applied.code}' removed — order no longer meets its ₹${applied.minOrderValue} minimum`);
+  }, [subtotal]);
 
   // ── Pricing ────────────────────────────────────────────────────────────────
   const isFreeDelivery = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && subtotal >= c.minOrderValue,
   );
   const deliveryCharge = isFreeDelivery ? 0 : baseDelivery;
+  const slotExtraCharge = selectedSlot === "instant" ? instantFee : 0;
   const packagingCharge = PACKAGING_CHARGE;
   const discount = Math.min(getTotalDiscount(subtotal), subtotal);
   const gstAmount = Math.round(subtotal * GST_RATE);
-  const grandTotal = Math.max(0, subtotal - discount + deliveryCharge + packagingCharge + gstAmount);
+  const grandTotal = Math.max(
+    0,
+    subtotal - discount + deliveryCharge + slotExtraCharge + packagingCharge + gstAmount,
+  );
 
-  // ── Apply coupon handler ────────────────────────────────────────────────────
-  const handleApplyCoupon = async () => {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    if (isCouponApplied(code)) {
-      toast.error("Coupon already applied");
-      return;
-    }
-    // First check if it's in available list
-    const found = availableCoupons.find((c) => c.code.toUpperCase() === code);
-    if (found) {
-      if (subtotal < found.minOrderValue) {
-        toast.error(`Minimum order ₹${found.minOrderValue} required for this coupon`);
-        return;
-      }
-      applyCoupon(found);
-      setCouponInput("");
-      toast.success(`Coupon ${found.code} applied!`);
-      return;
-    }
-    // Validate from server
-    setCouponLoading(true);
-    try {
-      const { data } = await axiosInstance.post("/product/api/validate-coupon", {
-        code,
-        storeId: selectedLocation?.storeId,
-        userId: user?.id,
-        orderTotal: subtotal,
-      });
-      if (data.valid && data.coupon) {
-        applyCoupon(data.coupon);
-        setCouponInput("");
-        toast.success(`Coupon ${data.coupon.code} applied!`);
-      } else {
-        toast.error(data.message || "Invalid coupon code");
-      }
-    } catch {
-      toast.error("Coupon not found or expired");
-    } finally {
-      setCouponLoading(false);
-    }
-  };
+  // The coupon store now holds at most one entry.
+  const appliedCoupon = appliedCoupons[0] ?? null;
+  const appliedCouponSaving = appliedCoupon ? getDiscountForCoupon(appliedCoupon, subtotal) : 0;
 
   // Order created with paymentMethod RAZORPAY is unpaid until verified.
   // Release it if the customer backs out before Razorpay hands us a payment.
+  // order-service refuses this while a checkout is still within its settle
+  // grace window (a webhook may confirm it any moment), so this can
+  // legitimately no-op — callers that tell the user "cancelled" check the
+  // return value rather than assuming success.
   const cancelUnpaidOrder = (orderId: string) =>
     axiosInstance
       .put(`/order/api/cancel/${orderId}`)
-      .catch(() => {/* webhook / cleanup job will reconcile if this fails */});
+      .then(() => true)
+      .catch(() => false);
+
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // RazorpayCheckout.open() can reject even though the payment went through —
+  // a UPI intent hand-off backgrounds the app, and the native success
+  // callback isn't always reliable coming back from that. A webhook may have
+  // already settled the order server-side, so ask before assuming failure;
+  // guessing wrong here is what let a paid order get cancelled out from under
+  // its own capture webhook (order-service then has to flag it for a manual
+  // refund instead of just confirming it — see cancelOrder's settle guard).
+  const fetchOrderPaymentStatus = async (orderId: string): Promise<string | null> => {
+    try {
+      const { data } = await axiosInstance.get(`/order/api/get-order/${orderId}`);
+      return data?.order?.paymentStatus ?? null;
+    } catch {
+      return null;
+    }
+  };
 
   const startRazorpayPayment = async (orderId: string) => {
     let paymentAttempted = false;
     try {
+      setPlacingStage("Opening payment…");
       const { data: rzp } = await axiosInstance.post("/payment/api/create-razorpay-order", {
         orderId,
       });
 
+      const razorpayOptions = {
+        key: rzp.keyId, // public key_id, supplied by the backend
+        amount: rzp.amount, // in paise, computed server-side from the order
+        currency: rzp.currency,
+        order_id: rzp.razorpayOrderId,
+        name: "Fish Studio",
+        description: "Order payment",
+        prefill: {
+          name: selectedAddress?.name,
+          contact: selectedAddress?.phone || user?.phone,
+          email: user?.email,
+          ...(onlineRail ? { method: onlineRail } : {}),
+          ...(onlineRail === "netbanking" && selectedBank ? { bank: selectedBank } : {}),
+          ...(onlineRail === "wallet" && selectedWallet ? { wallet: selectedWallet } : {}),
+        },
+        theme: { color: "#5A2C96" },
+      };
+
       let result;
       try {
-        result = await RazorpayCheckout.open({
-          key: rzp.keyId, // public key_id, supplied by the backend
-          amount: rzp.amount, // in paise, computed server-side from the order
-          currency: rzp.currency,
-          order_id: rzp.razorpayOrderId,
-          name: "Fish Studio",
-          description: "Order payment",
-          prefill: {
-            name: selectedAddress?.name,
-            contact: selectedAddress?.phone || user?.phone,
-            email: user?.email,
-          },
-          theme: { color: "#5A2C96" },
-        });
+        console.log("[Checkout] Opening Razorpay", { orderId, razorpayOrderId: rzp.razorpayOrderId, method: onlineRail });
+        result = await RazorpayCheckout.open(razorpayOptions);
+        console.log("[Checkout] Razorpay success", result);
       } catch (checkoutError: any) {
-        // Closed or failed before Razorpay handed us a payment — nothing was
-        // captured, safe to release the reserved order.
-        cancelUnpaidOrder(orderId);
-        toast.error(checkoutError?.description || "Payment cancelled. Your order was not placed.");
+        // Log the raw SDK error in full — code/description come from the
+        // compiled native Razorpay SDK and aren't something this repo can
+        // verify the meaning of ahead of time, so this is the only way to
+        // see what actually happened here in production.
+        console.log("[Checkout] Razorpay error", {
+          code: checkoutError?.code,
+          description: checkoutError?.description,
+          raw: checkoutError,
+        });
+
+        // Don't take the rejection at face value — check twice, a few
+        // seconds apart, for the webhook to have already settled this order
+        // before telling the customer nothing was captured.
+        setPlacingStage("Confirming payment status…");
+        let status = await fetchOrderPaymentStatus(orderId);
+        if (status !== "COMPLETED") {
+          await wait(3000);
+          status = await fetchOrderPaymentStatus(orderId);
+        }
+        console.log("[Checkout] Order payment status after Razorpay error", { orderId, status });
+
+        if (status === "COMPLETED") {
+          trackPaymentIssue(null);
+          clearCart();
+          clearAllCoupons();
+          haptic.orderPlaced();
+          toast.success("Payment successful!", { haptic: false });
+          router.replace({
+            pathname: "/(routes)/order-confirmation/[id]",
+            params: { id: orderId },
+          });
+          return;
+        }
+
+        // Still not confirmed — nothing was captured, as far as we can tell.
+        // Only call this "cancelled" when Razorpay's own description says so;
+        // every other rejection (bad options, TLS, an incompatible plugin,
+        // a network drop mid-checkout) used to get the same "cancelled" label,
+        // which told the customer something that may not have been true. The
+        // order stays reserved either way so "Retry Payment" can reuse it —
+        // it's only released when the customer leaves the screen, and
+        // order-service still holds that release if a payment turns out to
+        // be in flight after all.
+        const code: PaymentIssueCode = isUserCancellation(checkoutError)
+          ? "PAYMENT_CANCELLED"
+          : "PAYMENT_START_FAILED";
+        trackPaymentIssue({ orderId, code });
+        toast.error(checkoutError?.description || PAYMENT_ISSUE_MESSAGES[code]);
         return;
       }
 
       paymentAttempted = true;
+      setPlacingStage("Verifying payment…");
       const { data: verified } = await axiosInstance.post("/payment/api/verify", {
         orderId,
         razorpayOrderId: result.razorpay_order_id,
         razorpayPaymentId: result.razorpay_payment_id,
         razorpaySignature: result.razorpay_signature,
       });
+      console.log("[Checkout] Verify response", verified);
 
       if (!verified.success) {
         toast.error("Payment could not be verified. Please contact support.");
         return;
       }
 
+      setPlacingStage("Confirming order…");
+      trackPaymentIssue(null);
       clearCart();
       clearAllCoupons();
       haptic.orderPlaced();
@@ -229,34 +418,133 @@ export default function CheckoutScreen() {
         pathname: "/(routes)/order-confirmation/[id]",
         params: { id: orderId },
       });
-    } catch {
+    } catch (error: any) {
+      console.log("[Checkout] Payment flow error", {
+        paymentAttempted,
+        status: error?.response?.status,
+        code: error?.response?.data?.details?.code,
+        message: error?.response?.data?.message || error?.message,
+      });
+
       // Razorpay already handed us a payment by this point, so money has
       // very likely moved even though verify() itself failed — don't cancel,
       // the webhook / reconciliation sweep settles it instead.
       if (paymentAttempted) {
+        trackPaymentIssue(null);
         toast.error("Payment verification failed. If money was deducted, it will be auto-confirmed shortly.");
       } else {
-        toast.error("Could not start payment. Please try again.");
+        // This is the create-razorpay-order call failing. payment-service now
+        // tags known cases with a `code` (see DEAD_ORDER_CODES) instead of a
+        // message the client would have to parse — a code in that set means
+        // this exact order object can never be paid, and retrying it just
+        // fails the same way forever with Razorpay never opening (reads as a
+        // dead button). Drop the order so the next tap on Pay builds a fresh
+        // one instead of retrying something structurally unpayable.
+        const backendCode = error?.response?.data?.details?.code as string | undefined;
+        const backendMessage = error?.response?.data?.message as string | undefined;
+        const status = error?.response?.status;
+
+        if (backendCode === "ORDER_PAID") {
+          // A previous attempt already settled this order (e.g. two retries
+          // raced) — that's success, not a dead end.
+          trackPaymentIssue(null);
+          clearCart();
+          clearAllCoupons();
+          haptic.orderPlaced();
+          toast.success("Payment already completed!", { haptic: false });
+          router.replace({
+            pathname: "/(routes)/order-confirmation/[id]",
+            params: { id: orderId },
+          });
+        } else if (backendCode === "PAYMENT_GATEWAY_UNAVAILABLE") {
+          trackPaymentIssue(null);
+          toast.error(backendMessage || "Online payments aren't available right now. Please use Cash on Delivery.");
+        } else if (backendCode ? DEAD_ORDER_CODES.has(backendCode) : typeof status === "number" && status < 500) {
+          // Known dead codes, or an unrecognized 4xx — either way this order
+          // won't become payable by tapping the same button again.
+          trackPaymentIssue(null);
+          toast.error(backendMessage || "This order can no longer be paid. Please place a new order.");
+        } else {
+          trackPaymentIssue({ orderId, code: typeof status === "number" ? "SERVER_ERROR" : "NETWORK" });
+          toast.error("Could not start payment. Please check your connection and try again.");
+        }
       }
     } finally {
       setIsPlacingOrder(false);
+      setPlacingStage(null);
     }
   };
 
   // ── Place order ─────────────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
-      toast.error("Please select a delivery address");
+      toast.error("Please select a delivery address in your cart");
       return;
     }
-    if (!selectedLocation?.storeId) {
-      toast.error("Please set your delivery location");
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
       return;
     }
+
     setIsPlacingOrder(true);
+    setPlacingStage("Validating your order…");
+
+    // storeId is usually resolved by the time the button is tapped, but the
+    // lookup runs in the background off the address's pincode — give it one
+    // more chance here instead of failing a checkout the customer is clearly
+    // ready to complete.
+    let storeId = selectedLocation?.storeId;
+    if (!storeId && selectedAddress.pincode) {
+      try {
+        const { data } = await axiosInstance.get(
+          `/auth/api/check-pincode?pincode=${selectedAddress.pincode}`,
+        );
+        if (data.success && data.store?.id) {
+          storeId = data.store.id;
+          setSelectedLocation({
+            storeId: data.store.id,
+            storeName: data.store.name,
+            pincode: selectedAddress.pincode,
+            city: selectedAddress.city || data.store.city || "",
+            deliveryTimeMinutes: data.store.cityDeliveryTimes?.[selectedAddress.city],
+            isOpen: data.store.isOpen,
+            openingHours: data.store.openingHours,
+          });
+        }
+      } catch {
+        // fall through — the missing-storeId check below reports it
+      }
+    }
+    if (!storeId) {
+      toast.error("Please set your delivery location");
+      setIsPlacingOrder(false);
+      setPlacingStage(null);
+      return;
+    }
+
+    // A previous attempt already reserved stock for this cart — pay for that
+    // order rather than creating a second one. Switching to COD can't reuse it
+    // (the order is bound to a gateway payment), so release it and start over.
+    if (paymentIssue) {
+      if (paymentMethod === "RAZORPAY") {
+        await startRazorpayPayment(paymentIssue.orderId);
+        return;
+      }
+      const released = await cancelUnpaidOrder(paymentIssue.orderId);
+      if (!released) {
+        // A payment may still be in flight on that order — creating a fresh
+        // COD order now would reserve the same stock twice.
+        toast.error("Still confirming your previous payment attempt. Please try again in a few minutes.");
+        setIsPlacingOrder(false);
+        setPlacingStage(null);
+        return;
+      }
+      trackPaymentIssue(null);
+    }
+
     try {
       const orderPayload = {
-        storeId: selectedLocation.storeId,
+        storeId,
         items: cart.map((item) => ({
           productId: item.id,
           quantity: item.quantity || 1,
@@ -280,15 +568,17 @@ export default function CheckoutScreen() {
           packagingCharge,
           gstAmount,
           discount,
-          discountBreakdown: appliedCoupons.map((c) => ({
-            code: c.code,
-            amount: getDiscountForCoupon(c, subtotal),
-          })),
+          discountBreakdown: appliedCoupon
+            ? [{ code: appliedCoupon.code, amount: appliedCouponSaving }]
+            : [],
         },
         totalAmount: grandTotal,
         paymentMethod,
         deliverySlot: selectedSlot,
-        couponCode: appliedCoupons.length > 0 ? appliedCoupons.map((c) => c.code).join(",") : undefined,
+        // Order-service's couponCode is a single exact-match lookup — sending
+        // more than one code here (the old join(",")) never matches a real
+        // discountCode and createOrder rejects the whole order.
+        couponCode: appliedCoupon?.code,
         discountAmount: discount,
       };
 
@@ -300,6 +590,7 @@ export default function CheckoutScreen() {
         return;
       }
 
+      setPlacingStage("Reserving your items…");
       const { data } = await axiosInstance.post("/order/api/create", orderPayload);
 
       if (paymentMethod === "RAZORPAY") {
@@ -320,7 +611,26 @@ export default function CheckoutScreen() {
       toast.error(error.response?.data?.message || "Failed to place order. Please try again.");
     } finally {
       setIsPlacingOrder(false);
+      setPlacingStage(null);
     }
+  };
+
+  const handleAbandonOrder = async () => {
+    if (!paymentIssue) return;
+    // order-service can refuse this while it's still within the settle
+    // grace window — don't tell the customer it's cancelled unless it is.
+    const cancelled = await cancelUnpaidOrder(paymentIssue.orderId);
+    if (cancelled) {
+      trackPaymentIssue(null);
+      toast.info("Order cancelled. Your cart is still here.");
+    } else {
+      toast.info("Still confirming your payment — try cancelling again in a few minutes.");
+    }
+  };
+
+  const selectOnlineRail = (rail: OnlineRail) => {
+    setPaymentMethod("RAZORPAY");
+    setOnlineRail(rail);
   };
 
   // ── Guard: not logged in ────────────────────────────────────────────────────
@@ -364,317 +674,313 @@ export default function CheckoutScreen() {
     );
   }
 
+  // Address is picked in the cart — checkout can't recover from it being gone.
+  if (!selectedAddress) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
+        <PageHeader />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+          <Ionicons name="location-outline" size={56} color="#A1A1AA" />
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#1A1C1C", marginTop: 20, marginBottom: 8 }}>
+            No delivery address
+          </Text>
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#676968", textAlign: "center" }}>
+            Choose where this order should go from your cart.
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.replace("/(tabs)/cart")}
+            style={{ backgroundColor: "#5A2C96", width: "100%", paddingVertical: 16, borderRadius: 50, alignItems: "center", marginTop: 20 }}
+          >
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#FFFFFF" }}>Back to Cart</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // storeId resolves asynchronously from the address pincode (see the effect
+  // above) — gating on it here made the button look stuck disabled for that
+  // window even with address, slot and payment all chosen. It's still
+  // required to submit, just checked at that point instead.
+  const canPlaceOrder = !isPlacingOrder && !!selectedAddress && !!selectedSlot && !!paymentMethod;
+
+  // COD isn't a payment happening now, so it keeps the neutral "Place Order";
+  // every online rail is a real charge, so the CTA says what it does.
+  const ctaLabel = !paymentMethod
+    ? "Select a payment method"
+    : paymentIssue && paymentMethod === "RAZORPAY"
+      ? "Retry Payment"
+      : paymentMethod === "COD"
+        ? "Place Order"
+        : `Pay ₹${grandTotal.toFixed(0)}`;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
       <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
       <PageHeader />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ── Delivery Address ─────────────────────────────────────── */}
-        <SectionTitle title="Delivery Address" right={
-          <TouchableOpacity onPress={() => setShowAddressModal(true)}>
-            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#5A2C96" }}>Add New</Text>
-          </TouchableOpacity>
-        } />
-
-        <View style={{ paddingHorizontal: 16, gap: 10 }}>
-          {addresses && addresses.length > 0 ? (
-            addresses.map((addr: any, i: number) => {
-              const isSelected =
-                selectedAddress?.id === addr.id ||
-                (i === 0 && !selectedAddress);
-              return (
-                <AddressCard
-                  key={addr.id || i}
-                  address={addr}
-                  isSelected={isSelected}
-                  isDefault={i === 0}
-                  onPress={() => {/* address selection handled by store */}}
-                />
-              );
-            })
-          ) : (
-            <TouchableOpacity
-              onPress={() => setShowAddressModal(true)}
-              style={{
-                borderWidth: 1.5,
-                borderColor: "#E2E2E2",
-                borderRadius: 16,
-                padding: 16,
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#5A2C96" }}>
-                + Add delivery address
+        {/* ── Delivery slot ────────────────────────────────────────── */}
+        <SectionTitle title="Delivery" />
+        <View style={{ paddingHorizontal: 16 }}>
+          <TouchableOpacity
+            onPress={() => setSlotSheetOpen(true)}
+            activeOpacity={0.8}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1.5,
+              borderColor: "#E2E2E2",
+              borderRadius: 16,
+              padding: 16,
+            }}
+          >
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3EEFB", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+              <Ionicons name="time-outline" size={20} color="#5A2C96" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C" }}>
+                {slot ? `${slot.name} · ${slot.time}` : "Select a slot"}
               </Text>
-            </TouchableOpacity>
-          )}
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 2 }}>
+                Delivering to {selectedAddress.label} · {selectedAddress.city}
+                {slotExtraCharge > 0 ? ` · +₹${slotExtraCharge} fee` : ""}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: "#5A2C96" }}>Change</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* ── Delivery Slot ────────────────────────────────────────── */}
-        <SectionTitle title="Delivery Slot" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
-          {SLOT_OPTIONS.map((slot) => {
-            const selected = selectedSlot === slot.key;
-            return (
-              <TouchableOpacity
-                key={slot.key}
-                onPress={() => setSelectedSlot(slot.key)}
-                activeOpacity={0.8}
-                style={{
-                  width: 110,
-                  paddingVertical: 14,
-                  paddingHorizontal: 12,
-                  borderRadius: 16,
-                  borderWidth: selected ? 2 : 1.5,
-                  borderColor: selected ? "#5A2C96" : "#E2E2E2",
-                  backgroundColor: "#FFFFFF",
-                  alignItems: "flex-start",
-                }}
-              >
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#898B8A", letterSpacing: 0.5, marginBottom: 4 }}>
-                  {slot.day}
-                </Text>
-                <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C", lineHeight: 20 }}>
-                  {slot.time}
-                </Text>
-                {slot.badge && (
-                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#5A2C96", marginTop: 4 }}>
-                    {slot.badge}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
 
         {/* ── Payment Method ───────────────────────────────────────── */}
         <SectionTitle title="Payment Method" />
-        <View style={{ paddingHorizontal: 16, gap: 0 }}>
+        <View style={{ paddingHorizontal: 16 }}>
+          {!razorpayAvailable && (
+            <View
+              style={{
+                backgroundColor: "#FFF7ED",
+                borderWidth: 1,
+                borderColor: "#FDBA74",
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#9A3412" }}>
+                Online payment needs a custom dev-client build — it is not available in Expo Go. Use Cash on Delivery for now.
+              </Text>
+            </View>
+          )}
+          {ONLINE_METHODS.map((method) => {
+            const active = paymentMethod === "RAZORPAY" && onlineRail === method.id;
+            return (
+              <View key={method.id}>
+                <PaymentOption
+                  selected={active}
+                  onPress={() => selectOnlineRail(method.id)}
+                  icon={<MaterialCommunityIcons name={method.icon} size={22} color="#5A2C96" />}
+                  label={method.label}
+                  subtitle={method.subtitle}
+                  disabled={!razorpayAvailable}
+                />
+                {active && method.id === "upi" && (
+                  <RailDetail note="Pick your UPI app in the secure Razorpay window — it opens the app to approve the payment.">
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {UPI_APPS.map((app) => (
+                        <View
+                          key={app}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#E2E2E2",
+                            borderRadius: 50,
+                            paddingHorizontal: 12,
+                            paddingVertical: 6,
+                            backgroundColor: "#FFFFFF",
+                          }}
+                        >
+                          <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#676968" }}>
+                            {app}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </RailDetail>
+                )}
+                {active && method.id === "card" && (
+                  <RailDetail note="Card number, expiry and CVV are entered on Razorpay's PCI-compliant screen — they never touch this app." />
+                )}
+                {active && method.id === "netbanking" && (
+                  <RailDetail note="Pick your bank to land straight on its login page.">
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {NETBANKING_BANKS.map((bank) => {
+                        const chosen = selectedBank === bank.code;
+                        return (
+                          <TouchableOpacity
+                            key={bank.code}
+                            onPress={() => setSelectedBank(chosen ? null : bank.code)}
+                            activeOpacity={0.8}
+                            style={{
+                              borderWidth: 1.5,
+                              borderColor: chosen ? "#5A2C96" : "#E2E2E2",
+                              backgroundColor: chosen ? "#F1ECF8" : "#FFFFFF",
+                              borderRadius: 50,
+                              paddingHorizontal: 14,
+                              paddingVertical: 7,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Inter-SemiBold",
+                                fontSize: 12,
+                                color: chosen ? "#5A2C96" : "#676968",
+                              }}
+                            >
+                              {bank.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </RailDetail>
+                )}
+                {active && method.id === "wallet" && (
+                  <RailDetail note="Pick a wallet to skip the selection step inside Razorpay.">
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {WALLETS.map((wallet) => {
+                        const chosen = selectedWallet === wallet.code;
+                        return (
+                          <TouchableOpacity
+                            key={wallet.code}
+                            onPress={() => setSelectedWallet(chosen ? null : wallet.code)}
+                            activeOpacity={0.8}
+                            style={{
+                              borderWidth: 1.5,
+                              borderColor: chosen ? "#5A2C96" : "#E2E2E2",
+                              backgroundColor: chosen ? "#F1ECF8" : "#FFFFFF",
+                              borderRadius: 50,
+                              paddingHorizontal: 14,
+                              paddingVertical: 7,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontFamily: "Inter-SemiBold",
+                                fontSize: 12,
+                                color: chosen ? "#5A2C96" : "#676968",
+                              }}
+                            >
+                              {wallet.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </RailDetail>
+                )}
+              </View>
+            );
+          })}
           <PaymentOption
-            id="razorpay"
-            selected={paymentMethod === "RAZORPAY"}
-            onPress={() => setPaymentMethod("RAZORPAY")}
-            icon={<MaterialCommunityIcons name="bank-transfer" size={22} color="#5A2C96" />}
-            label="Pay Online"
-            subtitle="UPI, Cards, Net Banking & Wallets via Razorpay"
-          />
-          <PaymentOption
-            id="cod"
             selected={paymentMethod === "COD"}
-            onPress={() => setPaymentMethod("COD")}
+            onPress={() => {
+              setPaymentMethod("COD");
+              setOnlineRail(null);
+            }}
             icon={<MaterialCommunityIcons name="cash" size={22} color="#676968" />}
             label="Cash on Delivery"
             badge="AVAILABLE"
           />
         </View>
 
-        {/* ── Apply Coupon ─────────────────────────────────────────── */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
-          <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#898B8A", letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>
-            Apply Coupon
-          </Text>
-
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <View style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#EFEFEF",
-              borderRadius: 12,
-              paddingHorizontal: 12,
-            }}>
-              <MaterialCommunityIcons name="ticket-percent-outline" size={18} color="#898B8A" />
-              <TextInput
-                ref={couponInputRef}
-                value={couponInput}
-                onChangeText={(t) => setCouponInput(t.toUpperCase())}
-                placeholder="Enter coupon code"
-                placeholderTextColor="#A1A1AA"
-                autoCapitalize="characters"
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  paddingHorizontal: 10,
-                  fontFamily: "Inter-SemiBold",
-                  fontSize: 14,
-                  color: "#1A1C1C",
-                }}
-              />
-            </View>
-            <TouchableOpacity
-              onPress={handleApplyCoupon}
-              disabled={couponLoading || !couponInput.trim()}
-              style={{
-                backgroundColor: "#E2E2E2",
-                paddingHorizontal: 20,
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {couponLoading ? (
-                <ActivityIndicator size="small" color="#5A2C96" />
-              ) : (
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }}>Apply</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Applied coupon success banners */}
-          {appliedCoupons.map((coupon) => {
-            const saved = getDiscountForCoupon(coupon, subtotal);
-            return (
-              <View
-                key={coupon.code}
-                style={{
-                  marginTop: 10,
-                  backgroundColor: "rgba(90, 44, 150,0.1)",
-                  borderRadius: 12,
-                  paddingHorizontal: 14,
-                  paddingVertical: 12,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
-              >
-                <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#5A2C96", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                  <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                </View>
-                <Text style={{ flex: 1, fontFamily: "Inter-SemiBold", fontSize: 13, color: "#300861" }}>
-                  Coupon '{coupon.code}' applied!{saved > 0 ? ` You saved ₹${saved.toFixed(2)}` : " Free delivery!"}
-                </Text>
-                <TouchableOpacity onPress={() => removeCoupon?.(coupon.code)}>
-                  <Ionicons name="close-circle" size={18} color="#5A2C96" />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-
-          {/* Available coupon chips (from backend) */}
-          {rankedCoupons.length > 0 && appliedCoupons.length === 0 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-              {rankedCoupons.slice(0, 5).map(({ coupon, eligible, saving, amountToUnlock }, index) => (
-                <TouchableOpacity
-                  key={coupon.code}
-                  onPress={() => { setCouponInput(coupon.code); couponInputRef.current?.focus(); }}
-                  style={{
-                    borderWidth: 1.5,
-                    borderColor: eligible ? "#5A2C96" : "#D8D8DC",
-                    backgroundColor: index === 0 && eligible ? "#F1ECF8" : "transparent",
-                    borderRadius: 50,
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                    marginRight: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter-SemiBold",
-                      fontSize: 12,
-                      color: eligible ? "#5A2C96" : "#898B8A",
-                    }}
-                  >
-                    {coupon.code}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Inter-Regular",
-                      fontSize: 10,
-                      color: eligible ? "#22C55E" : "#898B8A",
-                      marginTop: 1,
-                    }}
-                  >
-                    {eligible ? `Save ₹${saving}` : `₹${amountToUnlock} more`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* ── Order Summary ────────────────────────────────────────── */}
-        <SectionTitle title="Order Summary" />
+        {/* ── Coupon ───────────────────────────────────────────────── */}
+        <SectionTitle title={appliedCoupon ? "Applied Coupon" : "Coupons"} />
         <View style={{ paddingHorizontal: 16 }}>
-          {/* Cart items */}
-          {cart.map((item, idx) => (
-            <View
-              key={`${item.id}-${idx}`}
+          {appliedCoupon ? (
+            <TouchableOpacity
+              onPress={() => setCouponSheetOpen(true)}
+              activeOpacity={0.8}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                marginBottom: 14,
+                backgroundColor: "rgba(90, 44, 150,0.1)",
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
               }}
             >
-              <Image
-                source={{ uri: item.image || "https://via.placeholder.com/56" }}
-                style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "#E2E2E2" }}
-                resizeMode="cover"
-              />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }} numberOfLines={1}>
-                  {item.title}
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#5A2C96", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                <MaterialCommunityIcons name="ticket-percent-outline" size={16} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#300861" }}>
+                  {appliedCoupon.code}
                 </Text>
-                <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 2 }}>
-                  Qty: {item.quantity || 1}
+                <Text style={{ fontFamily: "Inter-Medium", fontSize: 12, color: "#5A2C96", marginTop: 1 }}>
+                  {appliedCouponSaving > 0 ? `Saved ₹${appliedCouponSaving}` : "Free delivery"}
                 </Text>
               </View>
-              <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C" }}>
-                ₹{(item.price * (item.quantity || 1)).toFixed(2)}
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: "#5A2C96" }}>
+                Change
               </Text>
-            </View>
-          ))}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => setCouponSheetOpen(true)}
+              activeOpacity={0.8}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FFFFFF",
+                borderWidth: 1.5,
+                borderColor: "#E2E2E2",
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+              }}
+            >
+              <MaterialCommunityIcons name="ticket-percent-outline" size={20} color="#5A2C96" />
+              <Text style={{ flex: 1, fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C", marginLeft: 10 }}>
+                View all coupons
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#A1A1AA" />
+            </TouchableOpacity>
+          )}
+        </View>
 
-          {/* Divider */}
-          <View style={{ height: 1, backgroundColor: "#EFEFEF", marginVertical: 8 }} />
-
-          {/* Bill rows */}
-          <BillRow label="Item Total (MRP)" value={`₹${subtotal.toFixed(2)}`} />
-          {discount > 0 && <BillRow label="Product Discount" value={`-₹${discount.toFixed(2)}`} valueColor="#22C55E" />}
+        {/* ── Bill Summary ─────────────────────────────────────────── */}
+        {/* Items were already reviewed in the cart — checkout only needs the
+            numbers, not another scroll of images and names. */}
+        <SectionTitle title="Bill Summary" />
+        <View style={{ paddingHorizontal: 16 }}>
+          <BillRow label={`Items (${cart.length})`} value={`₹${subtotal.toFixed(2)}`} />
+          {discount > 0 && appliedCoupon && (
+            <BillRow
+              label={`Coupon (${appliedCoupon.code})`}
+              value={`-₹${discount.toFixed(2)}`}
+              valueColor="#22C55E"
+            />
+          )}
           <BillRow
             label="Delivery Fee"
             value={deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}.00`}
-            strikeValue={deliveryCharge === 0 ? `₹${baseDelivery}.00` : undefined}
+            strikeValue={deliveryCharge === 0 && baseDelivery > 0 ? `₹${baseDelivery}.00` : undefined}
             valueColor={deliveryCharge === 0 ? "#22C55E" : undefined}
           />
+          {slotExtraCharge > 0 && (
+            <BillRow label="Instant delivery" value={`₹${slotExtraCharge}.00`} />
+          )}
           <BillRow label="Packaging Charges" value={`₹${packagingCharge}.00`} />
           <BillRow label="Taxes (incl. GST)" value={`₹${gstAmount}.00`} />
 
           {/* Total */}
           <View style={{ height: 1, backgroundColor: "#EFEFEF", marginVertical: 12 }} />
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>Total Amount</Text>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#5A2C96" }}>
               ₹{grandTotal.toFixed(2)}
             </Text>
           </View>
-
-          {/* Place Order button */}
-          <TouchableOpacity
-            onPress={handlePlaceOrder}
-            disabled={isPlacingOrder || !selectedAddress || !selectedLocation?.storeId}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={["#0DB3D9", "#5A2C96"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                borderRadius: 50,
-                paddingVertical: 18,
-                alignItems: "center",
-                opacity: isPlacingOrder || !selectedAddress || !selectedLocation?.storeId ? 0.5 : 1,
-              }}
-            >
-              {isPlacingOrder ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={{ fontFamily: "Inter-Bold", fontSize: 17, color: "#FFFFFF", letterSpacing: 0.3 }}>
-                  Place Order
-                </Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
 
           {/* Footer note */}
           <Text style={{
@@ -684,7 +990,7 @@ export default function CheckoutScreen() {
             textAlign: "center",
             textTransform: "uppercase",
             letterSpacing: 0.5,
-            marginTop: 12,
+            marginTop: 16,
             lineHeight: 14,
           }}>
             By placing an order, you agree to our{"\n"}Terms of Service and Freshness Guarantee.
@@ -692,10 +998,70 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      <AddressModal
-        visible={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        savedAddressesOnly
+      {/* ── Sticky pay bar ───────────────────────────────────────────── */}
+      <View style={{ backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: "#EFEFEF", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 }}>
+        {paymentIssue && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+            <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+            <Text style={{ flex: 1, fontFamily: "Inter-Medium", fontSize: 12, color: "#DC2626", marginLeft: 6 }}>
+              {PAYMENT_ISSUE_MESSAGES[paymentIssue.code]}
+            </Text>
+            <TouchableOpacity onPress={handleAbandonOrder} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#676968" }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ marginRight: 14 }}>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>
+              ₹{grandTotal.toFixed(0)}
+            </Text>
+            <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: "#898B8A" }}>Total</Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={handlePlaceOrder}
+            disabled={!canPlaceOrder}
+            activeOpacity={0.85}
+            style={{ flex: 1 }}
+          >
+            <LinearGradient
+              colors={["#0DB3D9", "#5A2C96"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                borderRadius: 50,
+                paddingVertical: 16,
+                alignItems: "center",
+                opacity: canPlaceOrder ? 1 : 0.5,
+              }}
+            >
+              {isPlacingOrder ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <ActivityIndicator color="#FFFFFF" />
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#FFFFFF" }}>
+                    {placingStage || "Processing…"}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#FFFFFF", letterSpacing: 0.3 }}>
+                  {ctaLabel}
+                </Text>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <SlotSheet visible={slotSheetOpen} onClose={() => setSlotSheetOpen(false)} />
+
+      <CouponSheet
+        visible={couponSheetOpen}
+        onClose={() => setCouponSheetOpen(false)}
+        subtotal={subtotal}
+        deliveryCharge={baseDelivery}
+        storeId={selectedLocation?.storeId}
       />
     </SafeAreaView>
   );
@@ -725,53 +1091,48 @@ function SectionTitle({ title, right }: { title: string; right?: React.ReactNode
   );
 }
 
-function AddressCard({ address, isSelected, isDefault, onPress }: any) {
-  const isHome = (address.label || "").toLowerCase() === "home";
+/** Expanded body under a selected online rail. */
+function RailDetail({ note, children }: { note: string; children?: React.ReactNode }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
+    <View
       style={{
-        borderWidth: isSelected ? 2 : 1.5,
-        borderColor: isSelected ? "#5A2C96" : "#E2E2E2",
-        borderRadius: 16,
-        padding: 16,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#F6F4FA",
+        borderRadius: 14,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 12,
+        gap: 10,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F3F3", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
-          <Ionicons name={isHome ? "home-outline" : "briefcase-outline"} size={18} color="#676968" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C", marginRight: 8 }}>
-              {address.label || address.name || "Address"} {isHome ? "(Primary)" : ""}
-            </Text>
-            {isDefault && (
-              <View style={{ backgroundColor: "#EFEFEF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#676968", letterSpacing: 0.5 }}>DEFAULT</Text>
-              </View>
-            )}
-          </View>
-          <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#676968", lineHeight: 18 }}>
-            {address.street}{address.area ? `, ${address.area}` : ""}{address.city ? `, ${address.city}` : ""}
-          </Text>
-          {address.phone && (
-            <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#1A1C1C", marginTop: 4 }}>
-              +91 {address.phone}
-            </Text>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
+      <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#676968", lineHeight: 17 }}>
+        {note}
+      </Text>
+      {children}
+    </View>
   );
 }
 
-function PaymentOption({ id, selected, onPress, icon, label, subtitle, rightChevron, badge }: any) {
+function PaymentOption({
+  selected,
+  onPress,
+  icon,
+  label,
+  subtitle,
+  badge,
+  disabled,
+}: {
+  selected: boolean;
+  onPress: () => void;
+  icon: React.ReactNode;
+  label: string;
+  subtitle?: string;
+  badge?: string;
+  disabled?: boolean;
+}) {
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={disabled}
       activeOpacity={0.7}
       style={{
         flexDirection: "row",
@@ -780,6 +1141,7 @@ function PaymentOption({ id, selected, onPress, icon, label, subtitle, rightChev
         paddingHorizontal: 4,
         borderBottomWidth: 1,
         borderBottomColor: "#F3F3F3",
+        opacity: disabled ? 0.45 : 1,
       }}
     >
       {/* Radio */}
@@ -805,9 +1167,6 @@ function PaymentOption({ id, selected, onPress, icon, label, subtitle, rightChev
 
       {badge && (
         <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: "#A1A1AA", letterSpacing: 0.5 }}>{badge}</Text>
-      )}
-      {rightChevron && (
-        <Ionicons name="chevron-forward" size={16} color="#A1A1AA" />
       )}
     </TouchableOpacity>
   );

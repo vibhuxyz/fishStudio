@@ -179,12 +179,17 @@ export const useCouponStore = create<CouponState>()(
         }
       },
 
+      // Only one coupon at a time: order-service's couponCode is a single
+      // string looked up by exact discountCode match, so a joined "A,B" from
+      // two applied coupons never matches anything and createOrder rejects
+      // the whole order with "Coupon is not valid for this order". Applying a
+      // second coupon replaces the first rather than stacking.
       applyCoupon: (coupon) => {
         set((state) => {
-          if (state.appliedCoupons.some((c) => c.code === coupon.code)) {
+          if (state.appliedCoupons.length === 1 && state.appliedCoupons[0].code === coupon.code) {
             return state;
           }
-          return { appliedCoupons: [...state.appliedCoupons, coupon] };
+          return { appliedCoupons: [coupon] };
         });
       },
 
@@ -192,8 +197,7 @@ export const useCouponStore = create<CouponState>()(
         set((state) => ({
           appliedCoupons: state.appliedCoupons.filter((c) => c.code !== code),
           autoApplied:
-            state.autoApplied &&
-            state.appliedCoupons.find((c) => c.code === code)?.autoApply
+            state.autoApplied && state.appliedCoupons.some((c) => c.code === code && c.autoApply)
               ? false
               : state.autoApplied,
         }));

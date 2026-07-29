@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket } from "lucide-react";
+import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket, Smartphone, Landmark, Wallet } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
 import { useModals } from "@/components/providers/modal-provider";
@@ -13,6 +13,18 @@ import { toast } from "sonner";
 import { useCartStore } from "@/lib/cart-store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+
+// Which rail Razorpay opens on (`prefill.method`). Picking one here saves the
+// shopper a tap inside the gateway sheet; the order is still placed as
+// RAZORPAY because the rail isn't something the order schema records.
+const ONLINE_METHODS = [
+  { id: "upi", label: "UPI", hint: "GPay, PhonePe, Paytm & more", Icon: Smartphone },
+  { id: "card", label: "Credit / Debit Card", hint: "Visa, Mastercard, RuPay & Amex", Icon: CreditCard },
+  { id: "netbanking", label: "Net Banking", hint: "All major banks supported", Icon: Landmark },
+  { id: "wallet", label: "Wallets", hint: "Paytm, Freecharge, Mobikwik & more", Icon: Wallet },
+] as const;
+
+type OnlineMethod = (typeof ONLINE_METHODS)[number]["id"];
 
 export function CheckoutClient() {
   const router = useRouter();
@@ -45,6 +57,7 @@ export function CheckoutClient() {
 
   const [selectedSlot, setSelectedSlot] = useState<string>("morning");
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "RAZORPAY">("COD");
+  const [onlineMethod, setOnlineMethod] = useState<OnlineMethod>("upi");
   const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
 
   // Sync cart data to get latest delivery slots and fees
@@ -196,6 +209,7 @@ export function CheckoutClient() {
         name: selectedAddress?.name,
         contact: selectedAddress?.phone,
         email: user?.email,
+        method: onlineMethod,
       },
       theme: { color: "#0ea5e9" },
       handler: async (response: any) => {
@@ -568,22 +582,30 @@ export function CheckoutClient() {
               <h2 className="text-xl font-bold">Payment Method</h2>
             </div>
             <div className="space-y-3">
-              {/* Pay Online */}
-              <div
-                onClick={() => setPaymentMethod("RAZORPAY")}
-                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
-                  paymentMethod === "RAZORPAY" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-6 w-6 text-primary" />
-                  <div>
-                    <p className="font-bold text-sm">Pay Online</p>
-                    <p className="text-xs text-muted-foreground">UPI, Cards, Net Banking & Wallets via Razorpay</p>
+              {ONLINE_METHODS.map(({ id, label, hint, Icon }) => {
+                const active = paymentMethod === "RAZORPAY" && onlineMethod === id;
+                return (
+                  <div
+                    key={id}
+                    onClick={() => {
+                      setPaymentMethod("RAZORPAY");
+                      setOnlineMethod(id);
+                    }}
+                    className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                      active ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-bold text-sm">{label}</p>
+                        <p className="text-xs text-muted-foreground">{hint}</p>
+                      </div>
+                    </div>
+                    {active && <CheckCircle2 className="h-5 w-5 text-primary" />}
                   </div>
-                </div>
-                {paymentMethod === "RAZORPAY" && <CheckCircle2 className="h-5 w-5 text-primary" />}
-              </div>
+                );
+              })}
 
               {/* Pay on Delivery */}
               <div

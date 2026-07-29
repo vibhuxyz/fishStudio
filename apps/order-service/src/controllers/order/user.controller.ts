@@ -801,7 +801,13 @@ export const getOrderById = async (
     }
 
     const [store, products] = await Promise.all([
-      prismaMongo.stores.findUnique({ where: { id: order.storeId } }),
+      // No delivery-partner/rider record exists in this system — the seller's
+      // own number is the only real, dialable contact for "out for delivery"
+      // orders, so it rides along here instead of the mobile app fabricating one.
+      prismaMongo.stores.findUnique({
+        where: { id: order.storeId },
+        include: { seller: { select: { phone_number: true } } },
+      }),
       prismaMongo.products.findMany({
         where: { id: { in: order.orderItems.map((oi) => oi.productId) } },
         include: { images: true },
@@ -812,7 +818,7 @@ export const getOrderById = async (
 
     const orderData = {
       ...order,
-      store,
+      store: store ? { ...store, sellerPhone: store.seller?.phone_number ?? null, seller: undefined } : store,
       items: order.orderItems.map((oi) => ({
         ...oi,
         product: productMap.get(oi.productId),
@@ -863,13 +869,13 @@ export const cancelOrder = async (
     // paymentStatus still reads PENDING. Cancelling here would restore stock
     // against a paid order. payment-service reconciles these within minutes,
     // so hold the cancel until the outcome is known.
+    // gatewayOrderId is bound on payment.service's createPaymentOrder — it
+    // used to live under metadata.razorpayOrderId (see the schema note on
+    // Payment.gatewayOrderId) but the check here was never moved when that
+    // field became its own column, so this has been matching nothing and the
+    // grace window below never actually held a cancel back.
     const unsettledCheckout = order.payments.find(
-      (p) =>
-        p.status === "PENDING" &&
-        p.metadata !== null &&
-        typeof p.metadata === "object" &&
-        !Array.isArray(p.metadata) &&
-        typeof (p.metadata as Record<string, unknown>).razorpayOrderId === "string",
+      (p) => p.status === "PENDING" && typeof p.gatewayOrderId === "string",
     );
     if (unsettledCheckout) {
       const ageMs = Date.now() - unsettledCheckout.updatedAt.getTime();

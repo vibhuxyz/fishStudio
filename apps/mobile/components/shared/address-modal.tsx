@@ -4,6 +4,7 @@ import {
   type SelectedLocation,
 } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
+import { detectCurrentPlace } from "@/utils/location";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,8 @@ interface AddressModalProps {
   onClose: () => void;
   savedAddressesOnly?: boolean;
   onSelect?: (location: SelectedLocation) => void;
+  /** "sheet" keeps the cart on screen behind a bottom sheet. */
+  presentation?: "page" | "sheet";
 }
 
 interface StoreInfo {
@@ -48,6 +51,7 @@ export default function AddressModal({
   onClose,
   savedAddressesOnly = false,
   onSelect,
+  presentation = "page",
 }: AddressModalProps) {
   const queryClient = useQueryClient();
   const {
@@ -66,6 +70,7 @@ export default function AddressModal({
   const [pincodeError, setPincodeError] = useState("");
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [serviceablePincodes, setServiceablePincodes] = useState<string[]>([]);
+  const [detecting, setDetecting] = useState(false);
 
   // Reset on open
   useEffect(() => {
@@ -120,6 +125,31 @@ export default function AddressModal({
     } finally {
       setPincodeLoading(false);
     }
+  };
+
+  // ── Detect location, then run the same serviceability check as a typed pin ─
+  const handleDetectLocation = async () => {
+    setDetecting(true);
+    setPincodeError("");
+    const result = await detectCurrentPlace();
+    setDetecting(false);
+
+    if (!result.ok) {
+      setPincodeError(
+        result.reason === "permission-denied"
+          ? "Location permission denied. Please enter your pincode."
+          : "Couldn't detect your location. Please enter your pincode.",
+      );
+      return;
+    }
+
+    if (result.place.pincode.length !== 6) {
+      setPincodeError("Couldn't read a pincode from your location. Please enter it.");
+      return;
+    }
+
+    setPincode(result.place.pincode);
+    handleCheckPincode(result.place.pincode);
   };
 
   // ── Select a city from pincode results — close modal immediately ───────────
@@ -443,11 +473,8 @@ export default function AddressModal({
         {/* Detect / Search buttons */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <TouchableOpacity
-            onPress={() =>
-              toast.info(
-                "Location detection not available. Please enter pincode.",
-              )
-            }
+            onPress={handleDetectLocation}
+            disabled={detecting}
             style={{
               flex: 1,
               flexDirection: "row",
@@ -458,10 +485,15 @@ export default function AddressModal({
               borderRadius: 12,
               paddingVertical: 14,
               paddingHorizontal: 12,
+              opacity: detecting ? 0.7 : 1,
             }}
             activeOpacity={0.85}
           >
-            <Ionicons name="navigate-outline" size={16} color="#fff" />
+            {detecting ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Ionicons name="navigate-outline" size={16} color="#fff" />
+            )}
             <Text
               style={{
                 fontFamily: "Inter-Bold",
@@ -469,7 +501,7 @@ export default function AddressModal({
                 color: "#fff",
               }}
             >
-              Detect my location
+              {detecting ? "Detecting…" : "Detect my location"}
             </Text>
           </TouchableOpacity>
 
@@ -845,14 +877,8 @@ export default function AddressModal({
   );
 
   // ── MAIN RENDER ───────────────────────────────────────────────────────────
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+  const body = (
+    <>
         {/* Header */}
         <View
           style={{
@@ -914,7 +940,43 @@ export default function AddressModal({
         {/* Content */}
         {view === "pincode" && renderPincodeView()}
         {view === "list" && renderListView()}
-      </SafeAreaView>
+    </>
+  );
+
+  if (presentation === "sheet") {
+    return (
+      <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+          activeOpacity={1}
+          onPress={onClose}
+        >
+          {/* Taps inside the sheet must not fall through to the dismiss layer */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              backgroundColor: "#fff",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: "88%",
+              paddingBottom: 12,
+            }}
+          >
+            {body}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>{body}</SafeAreaView>
     </Modal>
   );
 }

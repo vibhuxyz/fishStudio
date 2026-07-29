@@ -11,6 +11,12 @@ declare module "react-native-razorpay" {
       name?: string;
       contact?: string;
       email?: string;
+      /** Rail the checkout sheet opens on. */
+      method?: "upi" | "card" | "netbanking" | "wallet" | "emi";
+      /** Razorpay bank code, e.g. "HDFC" — only read when method is netbanking. */
+      bank?: string;
+      /** Razorpay wallet code, e.g. "freecharge" — only read when method is wallet. */
+      wallet?: string;
     };
     theme?: { color?: string };
   }

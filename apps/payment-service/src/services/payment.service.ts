@@ -25,13 +25,18 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
     },
   });
 
-  if (!order) throw new NotFoundError("Order not found");
-  if (order.userId !== userId) throw new ForbiddenError("Access denied");
+  // `code` lets clients branch on what went wrong without parsing `message`
+  // strings — in particular, to tell "this exact order can never be paid,
+  // build a new one" apart from "try this same order again".
+  if (!order) throw new AppError("Order not found", 404, true, { code: "ORDER_NOT_FOUND" });
+  if (order.userId !== userId) {
+    throw new AppError("Access denied", 403, true, { code: "FORBIDDEN" });
+  }
   if (order.status === "CANCELLED" || order.status === "REJECTED") {
-    throw new ValidationError("Cannot pay for a cancelled or rejected order");
+    throw new ValidationError("Cannot pay for a cancelled or rejected order", { code: "ORDER_CANCELLED" });
   }
   if (order.paymentStatus === "COMPLETED") {
-    throw new ValidationError("Order is already paid");
+    throw new ValidationError("Order is already paid", { code: "ORDER_PAID" });
   }
 
   const amountInPaise = toPaise(order.totalAmount);
@@ -46,7 +51,9 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
   if (!pendingPayment) {
     // Order creation always writes a PENDING payment row; without one the
     // verify step has nothing to bind against, so refuse early.
-    throw new ValidationError("Order has no pending payment to pay against");
+    throw new ValidationError("Order has no pending payment to pay against", {
+      code: "PAYMENT_RECORD_MISSING",
+    });
   }
 
   const existingGatewayOrderId = pendingPayment.gatewayOrderId;
@@ -55,6 +62,8 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
       throw new AppError(
         "Online payments are not configured on this environment. Please use Pay on Delivery.",
         503,
+        true,
+        { code: "PAYMENT_GATEWAY_UNAVAILABLE" },
       );
     }
     return {
@@ -80,7 +89,9 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
     // The payment row changed state between our read and this write (e.g. a
     // webhook captured it). Without a persisted binding, verify would reject
     // this gateway order — fail loudly rather than hand out a dead checkout.
-    throw new ValidationError("Order is no longer payable, please refresh");
+    throw new ValidationError("Order is no longer payable, please refresh", {
+      code: "ORDER_STATE_CHANGED",
+    });
   }
 
   writeAuditLog("PAYMENT", orderId, "PAYMENT_INITIATED", userId, "USER", {

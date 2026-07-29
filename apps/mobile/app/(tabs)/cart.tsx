@@ -1,9 +1,13 @@
+import AddressModal from "@/components/shared/address-modal";
+import CouponSheet from "@/components/shared/coupon-sheet";
+import SlotSheet from "@/components/shared/slot-sheet";
+import { useAddress } from "@/hooks/useAddress";
 import useUser from "@/hooks/useUser";
 import { CartItem, useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
-import { SLOT_OPTIONS, formatSlotLabel } from "@/constants/delivery-slots";
+import { SCHEDULED_SLOTS, formatSlotLabel } from "@/constants/delivery-slots";
 import {
   BASE_DELIVERY_CHARGE,
   FREE_DELIVERY_THRESHOLD,
@@ -12,51 +16,40 @@ import {
 } from "@/constants/pricing";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
+import { bestCoupon } from "@repo/pricing";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
-  Modal,
   Platform,
   ScrollView,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type Offer = {
-  code: string;
-  description: string;
-  discountType: "percent" | "flat" | "free_delivery";
-  discountValue: number;
-  minOrderValue: number;
-  badge?: string;
-  isEvent?: boolean;
-};
-
 export default function CartScreen() {
   const { cart, removeFromCart, updateQuantity, checkAndIncrement } = useStore();
   const { user } = useUser();
-  const { selectedLocation, getSelectedAddress, addresses } = useAddressStore();
-  const { selectedSlot, setSelectedSlot } = useDeliverySlotStore();
+  const { selectedLocation, getSelectedAddress, addresses, selectAddress } = useAddressStore();
+  const { fetchAddresses } = useAddress();
+  const { selectedSlot, instantFee, setSlotAvailability } = useDeliverySlotStore();
   const {
     appliedCoupons,
-    applyCoupon,
-    isCouponApplied,
+    availableCoupons,
+    removeCoupon,
     getDiscountForCoupon,
     getTotalDiscount,
-    validateCouponCode,
+    fetchAvailableCoupons,
   } = useCouponStore();
 
-  const [couponCode, setCouponCode] = useState("");
-  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [couponSheetOpen, setCouponSheetOpen] = useState(false);
+  const [addressSheetOpen, setAddressSheetOpen] = useState(false);
   const [slotModalOpen, setSlotModalOpen] = useState(false);
-  const [availableOffers, setAvailableOffers] = useState<Offer[]>([]);
   const [incrementingKey, setIncrementingKey] = useState<string | null>(null);
   const [deliveryInfo, setDeliveryInfo] = useState<{
     isStoreOpen: boolean;
@@ -66,6 +59,24 @@ export default function CartScreen() {
   }>({ isStoreOpen: true, cartDeliveryTime: null, storeName: null, openingHours: null });
 
   const selectedAddress = getSelectedAddress();
+
+  // Saved addresses aren't persisted between launches, so the cart pulls them
+  // back before deciding whether to show the address card or "Add Address".
+  useEffect(() => {
+    if (!user) return;
+    fetchAddresses().catch(() => {
+      toast.error("Couldn't load your saved addresses");
+    });
+  }, [user?.id]);
+
+  // Nothing selected on a fresh install, or the persisted id points at an
+  // address that has since been deleted — fall back to the default one so
+  // checkout has somewhere to deliver without an extra tap.
+  useEffect(() => {
+    if (selectedAddress || addresses.length === 0) return;
+    const fallback = addresses.find((a) => a.isDefault) || addresses[0];
+    selectAddress(fallback.id);
+  }, [selectedAddress?.id, addresses.length]);
 
   // Auto-resolve storeId from selected address pincode
   useEffect(() => {
@@ -118,45 +129,20 @@ export default function CartScreen() {
             storeName: data.storeName || data.store?.name || null,
             openingHours: data.openingHours || data.store?.opening_hours || null,
           });
+          // Checkout renders the slot picker but never calls validate-cart, so
+          // this is the only place instant availability enters the app.
+          setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
         }
       })
       .catch(() => {});
   }, [cart.length, selectedLocation?.storeId, selectedLocation?.pincode]);
 
-  // Fetch available offers for this store
+  // Offers for this store — the same list checkout shows, kept in the coupon store
   useEffect(() => {
     const storeId = selectedLocation?.storeId || cart[0]?.shopId;
     if (!storeId) return;
-    axiosInstance
-      .get(`/product/api/public/store-offers/${storeId}`)
-      .then(({ data }) => {
-        if (!data.success) return;
-        const now = new Date();
-        const offers: Offer[] = [];
-        if (Array.isArray(data.discountCodes)) {
-          for (const dc of data.discountCodes) {
-            if (!dc.isActive) continue;
-            if (dc.expiresAt && new Date(dc.expiresAt) <= now) continue;
-            if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) continue;
-            const dtype =
-              dc.discountType === "percentage"
-                ? "percent"
-                : dc.discountType === "free_delivery"
-                  ? "free_delivery"
-                  : ("flat" as const);
-            offers.push({
-              code: dc.discountCode,
-              description: dc.public_name || dc.discountCode,
-              discountType: dtype,
-              discountValue: Number(dc.discountValue),
-              minOrderValue: Number(dc.minOrderValue ?? 0),
-            });
-          }
-        }
-        setAvailableOffers(offers);
-      })
-      .catch(() => {});
-  }, [selectedLocation?.storeId, cart[0]?.shopId]);
+    fetchAvailableCoupons(storeId, user?.id);
+  }, [selectedLocation?.storeId, cart[0]?.shopId, user?.id]);
 
   const itemsTotal = cart.reduce(
     (sum, item) => sum + item.price * (item.quantity || 1),
@@ -175,9 +161,32 @@ export default function CartScreen() {
   const deliveryCharge = isFreeDeliveryCoupon ? 0 : baseDeliveryCharge;
   const gstAmount = Math.round(itemsTotal * GST_RATE);
   const amountToFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - itemsTotal);
+  const slotExtraCharge = selectedSlot === "instant" ? instantFee : 0;
   const grandTotal = Math.max(
     0,
-    itemsTotal + deliveryCharge + PACKAGING_CHARGE + gstAmount - discountAmount,
+    itemsTotal + deliveryCharge + slotExtraCharge + PACKAGING_CHARGE + gstAmount - discountAmount,
+  );
+
+  // A quantity change can drop the cart below an already-applied coupon's
+  // minimum — getDiscountForCoupon would then silently clamp its saving to 0
+  // while the card still claimed it was applied.
+  useEffect(() => {
+    const applied = appliedCoupons[0];
+    if (!applied || itemsTotal >= applied.minOrderValue) return;
+    removeCoupon(applied.code);
+    toast.info(`'${applied.code}' removed — order no longer meets its ₹${applied.minOrderValue} minimum`);
+  }, [itemsTotal]);
+
+  // Best unapplied offer, to tease in the collapsed coupon card
+  const topOffer = useMemo(
+    () =>
+      appliedCoupons.length > 0
+        ? null
+        : bestCoupon(availableCoupons, {
+            subtotal: itemsTotal,
+            deliveryCharge: baseDeliveryCharge,
+          }),
+    [appliedCoupons.length, availableCoupons, itemsTotal, baseDeliveryCharge],
   );
 
   const rowKeyFor = (p: CartItem) =>
@@ -198,55 +207,17 @@ export default function CartScreen() {
     }
   };
 
-  const applyCouponCode = async (code: string) => {
-    if (!code.trim()) return;
-    try {
-      const storeId = selectedLocation?.storeId || cart[0]?.shopId;
-      if (!storeId) {
-        toast.error("Select delivery location first");
-        return;
-      }
-      const normalizedCode = code.trim().toUpperCase();
-      if (isCouponApplied(normalizedCode)) {
-        toast.info("Coupon already applied");
-        setCouponCode("");
-        return;
-      }
-
-      const { coupon, error } = await validateCouponCode(
-        normalizedCode,
-        itemsTotal,
-        storeId,
-      );
-      if (!coupon) {
-        toast.error(error || "Invalid coupon code");
-        return;
-      }
-      applyCoupon(coupon);
-      const nextDiscount = getDiscountForCoupon(coupon, itemsTotal);
-      setCouponCode("");
-      setCouponModalOpen(false);
-      toast.success(
-        coupon.discountType === "free_delivery"
-          ? `${coupon.code} will unlock free delivery`
-          : `Coupon applied! Saving ₹${nextDiscount}`,
-      );
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || "Invalid coupon code");
-    }
-  };
-
   const handleCheckout = () => {
+    if (!user) {
+      router.push("/(routes)/login");
+      return;
+    }
+    if (!selectedAddress) {
+      setAddressSheetOpen(true);
+      return;
+    }
     router.push("/(routes)/checkout");
   };
-
-  const ctaLabel = !user
-    ? "Proceed to Checkout"
-    : addresses.length === 0 || !selectedAddress
-      ? "Add Address"
-      : !deliveryInfo.isStoreOpen
-        ? "Schedule Order"
-        : "Proceed to Checkout";
 
   // ── Empty state ───────────────────────────────────────────────────────────
   if (cart.length === 0) {
@@ -516,6 +487,80 @@ export default function CartScreen() {
           );
         })}
 
+        {/* ── Coupons ───────────────────────────────────────────────── */}
+        <View className="bg-white rounded-2xl border border-gray-100 px-4 py-4 mb-3">
+          <Text
+            style={{
+              fontFamily: "Inter-Bold",
+              fontWeight: Platform.OS === "android" ? "700" : "normal",
+            }}
+            className="text-base text-gray-900 mb-3"
+          >
+            Coupons
+          </Text>
+
+          {appliedCoupons.map((coupon) => {
+            const saved = getDiscountForCoupon(coupon, itemsTotal);
+            return (
+              <View
+                key={coupon.code}
+                className="flex-row items-center rounded-2xl px-3.5 py-3 mb-2"
+                style={{ backgroundColor: "#F3EEFB", borderWidth: 1, borderColor: "#E5D9F7" }}
+              >
+                <View className="w-9 h-9 rounded-xl bg-primary items-center justify-center mr-3">
+                  <MaterialCommunityIcons name="tag-outline" size={18} color="#fff" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-poppins-bold text-gray-900">{coupon.code}</Text>
+                  <Text className="text-xs text-green-600 font-poppins-semibold mt-0.5">
+                    Applied ✓ {saved > 0 ? `Saved ₹${saved}` : "Free delivery"}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {topOffer && (
+            <View
+              className="flex-row items-center rounded-2xl px-3.5 py-3 mb-2"
+              style={{ borderWidth: 1, borderColor: "#E5E7EB" }}
+            >
+              <View
+                className="w-9 h-9 rounded-xl items-center justify-center mr-3"
+                style={{ backgroundColor: "#F3EEFB" }}
+              >
+                <MaterialCommunityIcons name="tag-outline" size={18} color="#5A2C96" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-poppins-bold text-gray-900">
+                  {topOffer.coupon.code}
+                </Text>
+                <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
+                  {topOffer.coupon.discountType === "free_delivery"
+                    ? "Free delivery on this order"
+                    : `Save ₹${topOffer.saving} on this order`}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {appliedCoupons.length === 0 && !topOffer && (
+            <Text className="text-xs text-gray-400 font-poppins-medium mb-2">
+              {availableCoupons.length > 0
+                ? "Add more items to unlock the offers on this store"
+                : "No offers available right now"}
+            </Text>
+          )}
+
+          <TouchableOpacity
+            className="flex-row items-center justify-between pt-1"
+            onPress={() => setCouponSheetOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Text className="text-primary font-poppins-semibold text-sm">View All Coupons</Text>
+            <Ionicons name="chevron-forward" size={16} color="#5A2C96" />
+          </TouchableOpacity>
+        </View>
         {/* ── Delivery slot ─────────────────────────────────────────── */}
         <TouchableOpacity
           className="bg-white rounded-2xl border border-gray-100 flex-row items-center justify-between px-4 py-3.5 mb-3"
@@ -534,303 +579,94 @@ export default function CartScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── Coupon ────────────────────────────────────────────────── */}
-        <TouchableOpacity
-          className="rounded-2xl flex-row items-center px-4 py-3.5 mb-3"
-          style={{ backgroundColor: "#F3EEFB", borderWidth: 1, borderColor: "#E5D9F7" }}
-          onPress={() => setCouponModalOpen(true)}
-          activeOpacity={0.8}
-        >
-          <View className="w-9 h-9 rounded-xl bg-primary items-center justify-center mr-3">
-            <MaterialCommunityIcons name="tag-outline" size={18} color="#fff" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-sm font-poppins-semibold text-gray-900">
-              {appliedCoupons.length > 0 ? `"${appliedCoupons[0].code}" applied` : "Apply Coupon"}
-            </Text>
-            <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-              {discountAmount > 0
-                ? `You're saving ₹${discountAmount} on this order`
-                : "Save more on your order"}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color="#5A2C96" />
-        </TouchableOpacity>
-
-        {/* ── Price summary ─────────────────────────────────────────── */}
-        <View className="bg-white rounded-2xl border border-gray-100 px-4 py-4 mb-3">
-          <Text
-            style={{
-              fontFamily: "Inter-Bold",
-              fontWeight: Platform.OS === "android" ? "700" : "normal",
-            }}
-            className="text-base text-gray-900 mb-3"
-          >
-            Price Summary
-          </Text>
-
-          <BillRow icon="cube-outline" label={`Item Total (${cart.length} items)`} value={`₹${itemsTotal.toFixed(0)}`} />
-          <BillRow
-            icon="bicycle-outline"
-            label="Delivery Charge"
-            value={deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}
-            strikeValue={deliveryCharge === 0 && baseDeliveryCharge > 0 ? `₹${baseDeliveryCharge}` : undefined}
-            green={deliveryCharge === 0}
-            info
-          />
-          <BillRow icon="cube-outline" label="Packaging Charge" value={`₹${PACKAGING_CHARGE}`} info />
-          <BillRow icon="receipt-outline" label="Taxes (incl. GST)" value={`₹${gstAmount}`} info />
-          {discountAmount > 0 && (
-            <BillRow icon="pricetag-outline" label="Coupon discount" value={`−₹${discountAmount}`} green />
-          )}
-
-          {/* Wallet / Reward points — not live yet */}
-          <View className="flex-row items-center justify-between mb-2.5 opacity-50">
-            <View className="flex-row items-center gap-1">
-              <Ionicons name="wallet-outline" size={14} color="#9CA3AF" />
-              <Text className="text-sm text-gray-500 font-poppins-medium ml-1">Wallet</Text>
-            </View>
-            <Text className="text-xs text-gray-400 font-poppins-semibold">Coming soon</Text>
-          </View>
-          <View className="flex-row items-center justify-between mb-1 opacity-50">
-            <View className="flex-row items-center gap-1">
-              <Ionicons name="star-outline" size={14} color="#9CA3AF" />
-              <Text className="text-sm text-gray-500 font-poppins-medium ml-1">Reward Points</Text>
-            </View>
-            <Text className="text-xs text-gray-400 font-poppins-semibold">Coming soon</Text>
-          </View>
-
-          <View className="border-t border-gray-100 mt-2 pt-3 flex-row justify-between">
-            <Text
-              style={{
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-              className="text-base text-gray-900"
-            >
-              To Pay
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-              className="text-base text-primary"
-            >
-              ₹{grandTotal.toFixed(0)}
-            </Text>
-          </View>
-        </View>
       </ScrollView>
 
       {/* ── Sticky bottom bar ─────────────────────────────────────────────── */}
-      <View className="bg-white border-t border-gray-100 px-3 py-3 flex-row items-center" style={{ gap: 12 }}>
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center border border-primary rounded-2xl py-3.5"
-          onPress={() => router.push("/(tabs)")}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="cube-outline" size={16} color="#5A2C96" style={{ marginRight: 6 }} />
-          <Text className="text-primary font-poppins-semibold text-sm">Add More Items</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 flex-row items-center justify-center bg-primary rounded-2xl py-3.5"
-          onPress={handleCheckout}
-          activeOpacity={0.9}
-        >
-          <Text className="text-white font-poppins-semibold text-sm mr-1.5">{ctaLabel}</Text>
-          <Ionicons name="arrow-forward" size={16} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Delivery slot modal ─────────────────────────────────────────── */}
-      <Modal visible={slotModalOpen} transparent animationType="fade" onRequestClose={() => setSlotModalOpen(false)}>
-        <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
-          activeOpacity={1}
-          onPress={() => setSlotModalOpen(false)}
-        >
-          <View className="bg-white rounded-t-3xl px-5 pt-5 pb-8">
-            <Text className="text-lg font-poppins-semibold text-gray-900 mb-4">
-              Choose delivery slot
-            </Text>
-            {SLOT_OPTIONS.map((slot) => {
-              const selected = slot.key === selectedSlot;
-              return (
-                <TouchableOpacity
-                  key={slot.key}
-                  onPress={() => {
-                    setSelectedSlot(slot.key);
-                    setSlotModalOpen(false);
-                  }}
-                  className={`flex-row items-center justify-between border rounded-2xl px-4 py-3.5 mb-3 ${
-                    selected ? "border-primary bg-primary/5" : "border-gray-200"
-                  }`}
-                  activeOpacity={0.8}
-                >
-                  <View>
-                    <Text className="text-sm font-poppins-semibold text-gray-900">
-                      {slot.day === "TODAY" ? "Today" : "Tomorrow"} · {slot.time}
-                    </Text>
-                    {slot.badge && (
-                      <Text className="text-emerald-600 text-xs font-poppins-semibold mt-0.5">
-                        {slot.badge}
-                      </Text>
-                    )}
-                  </View>
-                  {selected ? (
-                    <Ionicons name="checkmark-circle" size={22} color="#5A2C96" />
-                  ) : (
-                    <View className="w-5 h-5 rounded-full border-2 border-gray-300" />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ── Coupon modal ─────────────────────────────────────────────────── */}
-      <Modal visible={couponModalOpen} transparent animationType="fade" onRequestClose={() => setCouponModalOpen(false)}>
-        <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
-          activeOpacity={1}
-          onPress={() => setCouponModalOpen(false)}
-        >
-          <View className="bg-white rounded-t-3xl px-5 pt-5 pb-8" style={{ maxHeight: "80%" }}>
-            <Text className="text-lg font-poppins-semibold text-gray-900 mb-4">Apply Coupon</Text>
-
-            <View className="flex-row items-center border border-gray-200 rounded-xl px-4 py-2 mb-2">
-              <MaterialCommunityIcons name="tag-outline" size={18} color="#5A2C96" />
-              <TextInput
-                className="flex-1 ml-3 text-sm font-poppins-medium text-gray-700"
-                placeholder="Enter coupon code"
-                placeholderTextColor="#9CA3AF"
-                value={couponCode}
-                onChangeText={setCouponCode}
-                autoCapitalize="characters"
-              />
-              <TouchableOpacity onPress={() => applyCouponCode(couponCode)} disabled={!couponCode.trim()}>
-                <Text
-                  className={`text-sm font-poppins-semibold ${
-                    couponCode.trim() ? "text-primary" : "text-gray-400"
-                  }`}
-                >
-                  Apply
-                </Text>
-              </TouchableOpacity>
+      <View className="bg-white border-t border-gray-100 px-3 pt-3 pb-4">
+        {/* Address strip — the cart is where delivery is confirmed, checkout
+            only shows what it's charging for. */}
+        {selectedAddress ? (
+          <TouchableOpacity
+            className="flex-row items-center pb-3 mb-3 border-b border-gray-100"
+            onPress={() => setAddressSheetOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={selectedAddress.label === "Work" ? "briefcase-outline" : "home-outline"}
+              size={18}
+              color="#5A2C96"
+            />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Delivering to {selectedAddress.label}
+              </Text>
+              <Text className="text-xs text-gray-900 font-poppins-semibold" numberOfLines={1}>
+                {selectedAddress.street}
+                {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
+                {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
+              </Text>
             </View>
-
-            {appliedCoupons.length > 0 && (
-              <View className="mb-3">
-                {appliedCoupons.map((coupon) => (
-                  <Text key={coupon.code} className="text-green-600 text-xs font-poppins-medium">
-                    "{coupon.code}" applied
-                    {coupon.discountType !== "free_delivery"
-                      ? ` — saving ₹${getDiscountForCoupon(coupon, itemsTotal)}`
-                      : " — free delivery"}
-                  </Text>
-                ))}
-              </View>
-            )}
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {availableOffers.length === 0 ? (
-                <Text className="text-xs text-gray-400 font-poppins-medium py-2">
-                  No offers available right now.
-                </Text>
-              ) : (
-                availableOffers.map((o) => {
-                  const meetsMin = itemsTotal >= o.minOrderValue;
-                  const applied = isCouponApplied(o.code);
-                  const shortfall = Math.max(0, o.minOrderValue - itemsTotal);
-                  return (
-                    <View
-                      key={o.code}
-                      className="border border-gray-200 rounded-xl px-3.5 py-3 mb-2 flex-row items-start"
-                    >
-                      <View className="flex-1 pr-3">
-                        <Text className="text-[15px] font-poppins-bold text-primary tracking-wider">
-                          {o.code}
-                        </Text>
-                        <Text className="text-xs text-gray-600 font-poppins-medium mt-0.5">
-                          {o.description}
-                        </Text>
-                        {!meetsMin && (
-                          <Text className="text-xs text-red-500 font-poppins-medium mt-1">
-                            Add ₹{shortfall} more to unlock
-                          </Text>
-                        )}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => applyCouponCode(o.code)}
-                        disabled={!meetsMin || applied}
-                        className={`px-4 py-1.5 rounded-full border ${
-                          applied
-                            ? "border-green-500 bg-green-50"
-                            : meetsMin
-                              ? "border-primary"
-                              : "border-gray-300"
-                        }`}
-                      >
-                        <Text
-                          className={`text-sm font-poppins-semibold ${
-                            applied
-                              ? "text-green-600"
-                              : meetsMin
-                                ? "text-primary"
-                                : "text-gray-400"
-                          }`}
-                        >
-                          {applied ? "Applied" : "Apply"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })
-              )}
-            </ScrollView>
+            <Text className="text-primary font-poppins-semibold text-xs">Change</Text>
+          </TouchableOpacity>
+        ) : (
+          <View className="flex-row items-center pb-3 mb-3 border-b border-gray-100">
+            <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-xs text-gray-900 font-poppins-semibold">
+                No delivery address
+              </Text>
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Add one to place your order
+              </Text>
+            </View>
           </View>
-        </TouchableOpacity>
-      </Modal>
-    </SafeAreaView>
-  );
-}
-
-function BillRow({
-  icon,
-  label,
-  value,
-  strikeValue,
-  info = false,
-  green = false,
-}: {
-  icon?: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  strikeValue?: string;
-  info?: boolean;
-  green?: boolean;
-}) {
-  return (
-    <View className="flex-row justify-between items-center mb-2.5">
-      <View className="flex-row items-center gap-1">
-        {icon && <Ionicons name={icon} size={14} color="#9CA3AF" style={{ marginRight: 4 }} />}
-        <Text className="text-sm text-gray-600 font-poppins-medium">{label}</Text>
-        {info && <Ionicons name="information-circle-outline" size={13} color="#9CA3AF" />}
-      </View>
-      <View className="flex-row items-center">
-        {strikeValue && (
-          <Text className="text-xs text-gray-400 line-through font-poppins-medium mr-1.5">
-            {strikeValue}
-          </Text>
         )}
-        <Text
-          className={`text-sm font-poppins-medium ${green ? "text-green-600" : "text-gray-900"}`}
-        >
-          {value}
-        </Text>
+
+        <View className="flex-row items-center">
+          <View className="mr-3">
+            <Text
+              style={{
+                fontFamily: "Inter-Bold",
+                fontWeight: Platform.OS === "android" ? "700" : "normal",
+              }}
+              className="text-lg text-gray-900"
+            >
+              ₹{grandTotal.toFixed(0)}
+            </Text>
+            <Text className="text-[10px] text-gray-400 font-poppins-medium">Total</Text>
+          </View>
+          <TouchableOpacity
+            className="flex-1 flex-row items-center justify-center bg-primary rounded-2xl py-3.5"
+            onPress={handleCheckout}
+            activeOpacity={0.9}
+          >
+            <Text className="text-white font-poppins-semibold text-sm mr-1.5">
+              {selectedAddress ? "Proceed to Checkout" : "Add Address"}
+            </Text>
+            <Ionicons name="arrow-forward" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+
+      <SlotSheet visible={slotModalOpen} onClose={() => setSlotModalOpen(false)} />
+
+      {/* ── Coupon sheet ─────────────────────────────────────────────────── */}
+      <CouponSheet
+        visible={couponSheetOpen}
+        onClose={() => setCouponSheetOpen(false)}
+        subtotal={itemsTotal}
+        deliveryCharge={baseDeliveryCharge}
+        storeId={selectedLocation?.storeId || cart[0]?.shopId}
+      />
+
+      {/* ── Address sheet ────────────────────────────────────────────────── */}
+      <AddressModal
+        visible={addressSheetOpen}
+        onClose={() => setAddressSheetOpen(false)}
+        presentation="sheet"
+        savedAddressesOnly
+      />
+
+    </SafeAreaView>
   );
 }

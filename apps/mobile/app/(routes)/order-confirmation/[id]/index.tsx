@@ -1,4 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
@@ -6,7 +8,7 @@ import {
   Animated,
   Easing,
   Image,
-  Platform,
+  Linking,
   ScrollView,
   Share,
   StatusBar,
@@ -15,37 +17,34 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { OrderTracker, getDeliveryEtaMinutes } from "@/components/order-tracker";
-import { STATUS_CONFIG } from "@/constants/order";
+import { StatusTimeline } from "@/components/order-tracker/StatusTimeline";
+import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
 import { useAddressStore } from "@/lib/address-store";
-import { LiveOrderBadge } from "@/components/live-order-badge";
-import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
+import { toast } from "@/utils/toast";
+import { colors, gradients } from "@/constants/theme";
+import { useLiveOrder } from "@/hooks/useLiveOrder";
+
+const PRIMARY = colors.primary;
+const SUPPORT_WHATSAPP_URL = "https://wa.me/919999999999";
 
 const SLOT_LABEL: Record<string, string> = {
-  instant: "⚡ Instant (30–45 mins)",
-  morning: "🌅 Morning (6 AM – 10 AM)",
-  evening: "🌆 Evening (5 PM – 9 PM)",
+  instant: "Instant (30–45 mins)",
+  morning: "Morning (6 AM – 10 AM)",
+  evening: "Evening (5 PM – 9 PM)",
 };
 
 export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedLocation } = useAddressStore();
-
-  const {
-    order,
-    isLoading,
-    isFetching,
-    isRealtimeConnected,
-    lastLiveUpdateAt,
-  } = useLiveOrder(id);
+  const { order, isLoading } = useLiveOrder(id);
 
   if (isLoading || !order) {
     return (
-      <SafeAreaView className="flex-1 pt-12 bg-gray-50">
-        <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#5A2C96" />
-          <Text className="text-gray-500 font-poppins-medium mt-4">
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.secondaryBg} />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="large" color={PRIMARY} />
+          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.textMuted, marginTop: 16 }}>
             Loading your order…
           </Text>
         </View>
@@ -53,14 +52,25 @@ export default function OrderConfirmationScreen() {
     );
   }
 
-  const shortId = String(order.id).slice(-6).toUpperCase();
-  const statusCfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
-  const slotLabel = SLOT_LABEL[order.deliverySlot] || "Standard Delivery";
+  const shortId = `FS${String(order.id).replace(/[^0-9A-Za-z]/g, "").slice(-10).toUpperCase()}`;
+  const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
   const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
+  const itemCount = order.items?.length ?? 0;
+  const totalWeightKg = (order.items || []).reduce((sum: number, item: any) => {
+    const grams = item.selectedOptions?.weightGrams;
+    return grams ? sum + (grams * item.quantity) / 1000 : sum;
+  }, 0);
+  const itemTotal = billDetails?.itemTotal ?? order.totalAmount;
+  const deliveryCharge = billDetails?.deliveryCharge ?? order.deliveryCharge ?? 0;
+  const discount = billDetails?.discount ?? order.discountAmount ?? 0;
 
-  // Share Order — native share sheet with a deep link to the order.
+  const handleCopyOrderId = async () => {
+    await Clipboard.setStringAsync(shortId);
+    toast.success("Order ID copied");
+  };
+
   const handleShareOrder = async () => {
     try {
       await Share.share({
@@ -71,15 +81,12 @@ export default function OrderConfirmationScreen() {
     }
   };
 
-  // Download Invoice — no PDF lib on mobile, so we share a formatted invoice
-  // summary through the native sheet (user can save it / send to print).
-  const handleDownloadInvoice = async () => {
+  // No PDF library on mobile — the native share sheet doubles as "view/save invoice".
+  const handleViewInvoice = async () => {
     const lines = (order.items || [])
       .map(
         (item: any) =>
-          `• ${item.product?.title || "Product"} ×${item.quantity}  ₹${(
-            item.price * item.quantity
-          ).toFixed(0)}`,
+          `• ${item.product?.title || "Product"} ×${item.quantity}  ₹${(item.price * item.quantity).toFixed(0)}`,
       )
       .join("\n");
     const invoice =
@@ -87,6 +94,9 @@ export default function OrderConfirmationScreen() {
       `${createdAt.toLocaleString("en-IN")}\n\n` +
       `Deliver to:\n${order.deliveryName}\n${order.deliveryAddress}\n${order.deliveryCity} – ${order.deliveryPincode}\n\n` +
       `Items:\n${lines}\n\n` +
+      `Item Total: ₹${itemTotal.toFixed(0)}\n` +
+      (deliveryCharge > 0 ? `Delivery: ₹${deliveryCharge.toFixed(0)}\n` : "Delivery: FREE\n") +
+      (discount > 0 ? `Discount: −₹${discount.toFixed(0)}\n` : "") +
       `Total Paid: ₹${order.totalAmount}\n` +
       `Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod}\n\n` +
       `Thank you for shopping with Fish Studio.`;
@@ -98,420 +108,475 @@ export default function OrderConfirmationScreen() {
   };
 
   return (
-    <SafeAreaView edges={["bottom"]} className="flex-1 pt-12 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY} />
 
-      <View className="bg-white px-4 py-3 flex-row items-center justify-between border-b border-gray-100">
-        <TouchableOpacity
-          onPress={() => router.replace("/(tabs)")}
-          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* ── Purple hero ─────────────────────────────────────────────── */}
+        <LinearGradient
+          colors={gradients.purple}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            paddingTop: 12,
+            paddingBottom: 56,
+            paddingHorizontal: 20,
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+            overflow: "hidden",
+          }}
         >
-          <Ionicons name="chevron-back" size={20} color="#1F2937" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => router.push("/(routes)/my-orders")}
-          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
-        >
-          <Ionicons name="bag-handle-outline" size={18} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Success header (animated) */}
-        <View className="items-center mt-4 mb-6">
-          <AnimatedSuccessCheck />
-          <Text
-            className="mt-4 text-emerald-500 uppercase tracking-widest text-[28px] italic"
-            style={{
-              fontFamily: "Inter-Bold",
-              fontWeight: Platform.OS === "android" ? "700" : "normal",
-            }}
-          >
-            Order Confirmed!
-          </Text>
-          <Text className="text-gray-600 font-poppins-medium text-sm text-center mt-1.5 px-4">
-            Your order{" "}
-            <Text
-              className="text-gray-900"
-              style={{
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-            >
-              #{shortId}
-            </Text>{" "}
-            has been placed successfully.
-          </Text>
-
-          {/* Delivery time highlight */}
-          <View
-            className="flex-row items-center mt-3 px-3.5 py-1.5 rounded-full"
-            style={{ backgroundColor: "#EDE9FE" }}
-          >
-            <Ionicons name="time-outline" size={15} color="#5A2C96" />
-            <Text
-              className="ml-1.5 text-xs"
-              style={{
-                color: "#5A2C96",
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-            >
-              {deliveryMinutes ? `Arriving in ~${deliveryMinutes} mins` : slotLabel}
-            </Text>
-          </View>
-        </View>
-
-        {/* Live order tracker */}
-        <View className="mb-3">
-          <LiveOrderBadge
-            connected={isRealtimeConnected}
-            isFetching={isFetching}
-            lastLiveUpdateAt={lastLiveUpdateAt}
-          />
-          <OrderTracker
-            status={order.status}
-            updatedAt={order.updatedAt}
-            deliverySlot={order.deliverySlot}
-            deliveryMinutes={deliveryMinutes}
-            storeName={order.store?.name}
-          />
-        </View>
-
-        {/* Order meta card */}
-        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
-          <MetaRow
-            icon={<Ionicons name="calendar-outline" size={18} color="#5A2C96" />}
-            label="ORDER PLACED"
-            value={`${createdAt.toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })} at ${createdAt.toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}`}
-          />
-          <MetaRow
-            icon={<Ionicons name="location-outline" size={18} color="#5A2C96" />}
-            label="DELIVERING TO"
-            value={`${order.deliveryName}\n${order.deliveryAddress}\n${order.deliveryCity} – ${order.deliveryPincode}`}
-            multiline
-          />
-          <MetaRow
-            icon={<Ionicons name="car-outline" size={18} color="#5A2C96" />}
-            label="DELIVERY SLOT"
-            value={slotLabel}
-          />
-          <MetaRow
-            icon={<MaterialCommunityIcons name="credit-card-outline" size={18} color="#5A2C96" />}
-            label="PAYMENT"
-            value={
-              order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod
-            }
-          />
-
-          <View className="flex-row items-start mt-2">
-            <View className="w-10 items-center mt-0.5">
-              <Ionicons name={statusCfg.icon as any} size={18} color={statusCfg.text} />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[10px] font-poppins-bold text-gray-400 tracking-widest">
-                ORDER STATUS
-              </Text>
-              <View
-                className="self-start mt-1 px-2.5 py-0.5 rounded-full"
-                style={{ backgroundColor: statusCfg.bg }}
-              >
-                <Text
-                  className="text-xs font-poppins-bold"
-                  style={{ color: statusCfg.text }}
-                >
-                  {getOrderStatusLabel(order.status)}
+          <SafeAreaView edges={["top"]}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 26, color: colors.white, lineHeight: 32 }}>
+                  Order Placed{"\n"}Successfully! 🎉
                 </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Order items card */}
-        <View className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
-          <Text className="text-[10px] font-poppins-bold text-gray-400 tracking-widest mb-3">
-            ORDER ITEMS
-          </Text>
-          {(order.items || []).map((item: any, idx: number) => {
-            const weightGrams = item.selectedOptions?.weightGrams as number | undefined;
-            const weightLabel = weightGrams
-              ? weightGrams >= 1000
-                ? `${(weightGrams / 1000).toFixed(2)} kg`
-                : `${weightGrams} gm`
-              : null;
-            const cutting = item.selectedOptions?.cuttingType;
-            const piece = item.selectedOptions?.pieceSize;
-            const optionsLine = [cutting, piece].filter(Boolean).join(" · ");
-
-            return (
-              <View
-                key={item.id || idx}
-                className={`flex-row items-center ${idx > 0 ? "border-t border-gray-100 pt-3 mt-3" : ""}`}
-              >
-                {item.product?.images?.[0]?.url && (
-                  <Image
-                    source={{ uri: item.product.images[0].url }}
-                    className="w-12 h-12 rounded-xl bg-gray-100"
-                    resizeMode="cover"
-                  />
-                )}
-                <View className="flex-1 ml-3">
-                  <Text
-                    className="text-sm text-gray-900 font-poppins-bold"
-                    numberOfLines={1}
-                  >
-                    {item.product?.title || "Product"}
-                  </Text>
-                  {optionsLine ? (
-                    <Text className="text-xs text-gray-500 font-poppins-medium mt-0.5">
-                      {optionsLine}
-                    </Text>
-                  ) : null}
-                  <Text className="text-xs text-gray-600 font-poppins-medium mt-0.5">
-                    {weightLabel || `Qty: ${item.quantity}`}
-                  </Text>
-                </View>
-                <Text
-                  className="text-sm text-gray-900"
+                <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 10, lineHeight: 19 }}>
+                  Thank you for choosing FishStudio.{"\n"}We will deliver fresh to your doorstep.
+                </Text>
+                <View
                   style={{
-                    fontFamily: "Inter-Bold",
-                    fontWeight: Platform.OS === "android" ? "700" : "normal",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    alignSelf: "flex-start",
+                    backgroundColor: "rgba(255,255,255,0.15)",
+                    borderRadius: 50,
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    marginTop: 14,
                   }}
                 >
-                  ₹{(item.price * item.quantity).toFixed(0)}
+                  <Ionicons name="shield-checkmark-outline" size={13} color={colors.white} />
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: colors.white, marginLeft: 6 }}>
+                    100% Safe & Hygienic Delivery
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+                  style={{
+                    width: 40, height: 40, borderRadius: 20,
+                    borderWidth: 1, borderColor: "rgba(255,255,255,0.4)",
+                    alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="headset-outline" size={18} color={colors.white} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleShareOrder}
+                  style={{
+                    width: 40, height: 40, borderRadius: 20,
+                    borderWidth: 1, borderColor: "rgba(255,255,255,0.4)",
+                    alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="share-social-outline" size={17} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ alignItems: "center", marginTop: 8 }}>
+              <ConfettiCheck />
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+
+        <View style={{ paddingHorizontal: 16, marginTop: -32 }}>
+          {/* ── Order ID / Estimated delivery ──────────────────────────── */}
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 3,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: "Inter-Medium", fontSize: 11, color: colors.textMuted }}>Order ID</Text>
+              <TouchableOpacity onPress={handleCopyOrderId} style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary }}>{shortId}</Text>
+                <Ionicons name="copy-outline" size={14} color={colors.textMuted} style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 4 }}>
+                {createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} •{" "}
+                {createdAt.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
+              </Text>
+            </View>
+            <View style={{ backgroundColor: colors.primarySurface, borderRadius: 14, padding: 10, maxWidth: 150 }}>
+              <View
+                style={{
+                  alignSelf: "flex-start",
+                  backgroundColor: "rgba(90,44,150,0.12)",
+                  borderRadius: 50,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  marginBottom: 4,
+                }}
+              >
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 9, color: PRIMARY }}>
+                  Estimated Delivery
                 </Text>
               </View>
-            );
-          })}
-
-          <View className="border-t border-gray-100 mt-4 pt-3">
-            <View className="flex-row items-center justify-between mb-1.5">
-              <Text className="text-xs text-gray-500 font-poppins-medium">Items Total</Text>
-              <Text className="text-xs text-gray-700 font-poppins-medium">
-                ₹{billDetails?.itemTotal ?? 0}
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 12, color: colors.textPrimary }}>
+                {order.deliverySlot ? slotLabel : `Today, in ~${deliveryMinutes} mins`}
               </Text>
-            </View>
-            <View className="flex-row items-center justify-between pt-2 border-t border-gray-100">
-              <Text
-                className="text-primary uppercase italic"
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontWeight: Platform.OS === "android" ? "700" : "normal",
-                }}
-              >
-                TOTAL PAID
-              </Text>
-              <Text
-                className="text-2xl text-primary"
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontWeight: Platform.OS === "android" ? "700" : "normal",
-                }}
-              >
-                ₹{order.totalAmount}
-              </Text>
+              {order.deliveryCity ? (
+                <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: colors.textMuted, marginTop: 1 }}>
+                  {order.deliveryCity}
+                </Text>
+              ) : null}
             </View>
           </View>
-        </View>
 
-        {/* Actions */}
-        <View className="mt-4 gap-3">
-          <TouchableOpacity
-            onPress={() => router.replace("/(tabs)")}
-            className="py-4 rounded-full flex-row items-center justify-center"
-            style={{ backgroundColor: "#10B981" }}
-            activeOpacity={0.85}
+          {/* ── Order status timeline ───────────────────────────────────── */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
           >
-            <Text
-              className="text-white text-base mr-2"
-              style={{
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-            >
-              Continue Shopping
-            </Text>
-            <Ionicons name="arrow-forward" size={18} color="#fff" />
-          </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary }}>Order Status</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.offerGreen, marginRight: 6 }} />
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: colors.offerGreen }}>
+                  {order.status === "CANCELLED" || order.status === "REJECTED" ? "Cancelled" : "Confirmed"}
+                </Text>
+              </View>
+            </View>
+            <StatusTimeline status={order.status} createdAt={order.createdAt} updatedAt={order.updatedAt} />
+          </View>
 
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: "/(routes)/order-details/[id]", params: { id: order.id } })}
-            className="py-4 rounded-full flex-row items-center justify-center"
-            style={{ backgroundColor: "#5A2C96" }}
-            activeOpacity={0.85}
+          {/* ── Order items ─────────────────────────────────────────────── */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
           >
-            <Ionicons name="navigate-outline" size={18} color="#fff" />
-            <Text
-              className="text-white text-base ml-2"
-              style={{
-                fontFamily: "Inter-Bold",
-                fontWeight: Platform.OS === "android" ? "700" : "normal",
-              }}
-            >
-              Track Order
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary }}>
+                Order Items ({itemCount} Item{itemCount !== 1 ? "s" : ""}
+                {totalWeightKg > 0 ? ` • ${totalWeightKg.toFixed(1)} kg` : ""})
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: "/(routes)/order-details/[id]", params: { id: order.id } })}
+                style={{ flexDirection: "row", alignItems: "center" }}
+              >
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: PRIMARY }}>View Details</Text>
+                <Ionicons name="chevron-forward" size={14} color={PRIMARY} />
+              </TouchableOpacity>
+            </View>
+
+            {(order.items || []).map((item: any, idx: number) => {
+              const weightGrams = item.selectedOptions?.weightGrams as number | undefined;
+              const weightLabel = weightGrams
+                ? weightGrams >= 1000
+                  ? `${(weightGrams / 1000).toFixed(2)} kg`
+                  : `${weightGrams} g`
+                : null;
+              const optionsLine = [item.selectedOptions?.cuttingType, item.selectedOptions?.pieceSize]
+                .filter(Boolean)
+                .join(" • ");
+
+              return (
+                <View
+                  key={item.id || idx}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: idx > 0 ? 14 : 0,
+                    paddingTop: idx > 0 ? 14 : 0,
+                    borderTopWidth: idx > 0 ? 1 : 0,
+                    borderTopColor: "#F3F4F6",
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.product?.images?.[0]?.url || "https://via.placeholder.com/56" }}
+                    style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "#F3F4F6" }}
+                    resizeMode="cover"
+                  />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: colors.textPrimary }} numberOfLines={1}>
+                      {item.product?.title || "Product"}
+                    </Text>
+                    <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                      {weightLabel ? `${weightLabel}${optionsLine ? ` • ${optionsLine}` : ""}` : `Qty ${item.quantity}`}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.textPrimary }}>
+                    ₹{(item.price * item.quantity).toFixed(0)}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* ── Delivery details ────────────────────────────────────────── */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
+          >
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary, marginBottom: 14 }}>
+              Delivery Details
             </Text>
-          </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <View style={{ flex: 1, flexDirection: "row" }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+                  <Ionicons name="location-outline" size={16} color={PRIMARY} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }} numberOfLines={1}>
+                    {order.deliveryName || "Home"}
+                  </Text>
+                  <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 2, lineHeight: 16 }}>
+                    {order.deliveryAddress}
+                    {order.deliveryCity ? `, ${order.deliveryCity}` : ""}
+                    {order.deliveryPincode ? ` - ${order.deliveryPincode}` : ""}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flex: 1, flexDirection: "row" }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginRight: 8 }}>
+                  <Ionicons name="time-outline" size={16} color={PRIMARY} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }}>Delivery Slot</Text>
+                  <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
+                    {slotLabel}
+                  </Text>
+                </View>
+              </View>
+            </View>
 
-          {/* Secondary row */}
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              onPress={handleDownloadInvoice}
-              className="flex-1 py-3.5 rounded-full border border-gray-200 flex-row items-center justify-center"
-              activeOpacity={0.85}
-            >
-              <Ionicons name="download-outline" size={17} color="#1F2937" />
-              <Text
-                className="text-gray-900 text-sm ml-1.5"
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontWeight: Platform.OS === "android" ? "700" : "normal",
-                }}
-              >
-                Invoice
-              </Text>
-            </TouchableOpacity>
+            {order.deliveryPhone ? (
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+                <Ionicons name="call-outline" size={15} color={colors.textMuted} />
+                <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: colors.textMuted, marginLeft: 8 }}>
+                  {order.deliveryName} • {order.deliveryPhone}
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
-            <TouchableOpacity
-              onPress={handleShareOrder}
-              className="flex-1 py-3.5 rounded-full border border-gray-200 flex-row items-center justify-center"
-              activeOpacity={0.85}
-            >
-              <Ionicons name="share-social-outline" size={17} color="#1F2937" />
-              <Text
-                className="text-gray-900 text-sm ml-1.5"
-                style={{
-                  fontFamily: "Inter-Bold",
-                  fontWeight: Platform.OS === "android" ? "700" : "normal",
-                }}
-              >
-                Share
+          {/* ── Payment summary ─────────────────────────────────────────── */}
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary }}>Payment Summary</Text>
+              <TouchableOpacity onPress={handleViewInvoice} style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: PRIMARY, marginRight: 4 }}>
+                  View Invoice
+                </Text>
+                <Ionicons name="download-outline" size={13} color={PRIMARY} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row" }}>
+              <SummaryStat label="Item Total" value={`₹${itemTotal.toFixed(0)}`} />
+              <SummaryStat
+                label="Delivery"
+                value={deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(0)}` : "FREE"}
+                valueColor={deliveryCharge > 0 ? undefined : colors.offerGreen}
+              />
+              {discount > 0 ? (
+                <SummaryStat label="Discount" value={`−₹${discount.toFixed(0)}`} valueColor={colors.offerGreen} />
+              ) : (
+                <SummaryStat
+                  label="Payment"
+                  value={order.paymentMethod === "COD" ? "COD" : order.paymentMethod || "Paid"}
+                />
+              )}
+              <View style={{ backgroundColor: colors.primarySurface, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8, alignItems: "center" }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: PRIMARY }}>Paid Amount</Text>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: PRIMARY, marginTop: 2 }}>
+                  ₹{order.totalAmount}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ── Support banner ──────────────────────────────────────────── */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: colors.primarySurface,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+            }}
+          >
+            <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: PRIMARY, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+              <MaterialCommunityIcons name="shopping-outline" size={22} color={colors.white} />
+            </View>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }}>
+                We care for your satisfaction!
               </Text>
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 2, lineHeight: 15 }}>
+                If you face any issue with your order, please contact our support team.
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+              style={{ borderWidth: 1.5, borderColor: PRIMARY, borderRadius: 50, paddingHorizontal: 14, paddingVertical: 8 }}
+            >
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: PRIMARY }}>Contact Support</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            onPress={() => router.push("/(routes)/my-orders")}
-            className="py-3 flex-row items-center justify-center"
-            activeOpacity={0.7}
-          >
-            <Ionicons name="bag-handle-outline" size={16} color="#6B7280" />
-            <Text className="text-gray-500 text-sm ml-1.5 font-poppins-medium">
-              View My Orders
-            </Text>
-          </TouchableOpacity>
+          {/* ── Actions ──────────────────────────────────────────────────── */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+            <TouchableOpacity
+              onPress={() => router.replace("/(tabs)")}
+              activeOpacity={0.85}
+              style={{ flex: 1, borderWidth: 1.5, borderColor: PRIMARY, borderRadius: 50, paddingVertical: 15, alignItems: "center" }}
+            >
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: PRIMARY }}>Continue Shopping</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: "/(routes)/order-details/[id]", params: { id: order.id } })}
+              activeOpacity={0.85}
+              style={{ flex: 1, backgroundColor: PRIMARY, borderRadius: 50, paddingVertical: 15, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+            >
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: colors.white, marginRight: 6 }}>
+                Track My Order
+              </Text>
+              <Ionicons name="arrow-forward" size={15} color={colors.white} />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Animated success badge: the green circle springs in, the check scales up,
-// and a soft ring pulses outward on a loop. Uses RN's built-in Animated so it
-// needs no extra native module.
-function AnimatedSuccessCheck() {
+function SummaryStat({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: colors.textMuted }}>{label}</Text>
+      <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: valueColor || colors.textPrimary, marginTop: 2 }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+// White circle with an animated purple checkmark and a scatter of confetti
+// bits — the celebratory beat the mockup opens with.
+const CONFETTI = [
+  { top: 6, left: 18, color: "#FDE68A", size: 8, rotate: "15deg" },
+  { top: 40, left: 4, color: "#F472B6", size: 7, rotate: "-10deg" },
+  { top: 10, right: 14, color: "#67E8F9", size: 6, rotate: "30deg" },
+  { top: 60, right: 22, color: "#FCA5A5", size: 8, rotate: "-20deg" },
+  { top: 90, left: 10, color: "#FDBA74", size: 6, rotate: "10deg" },
+  { top: 100, right: 6, color: "#FDE68A", size: 7, rotate: "-15deg" },
+];
+
+function ConfettiCheck() {
   const circleScale = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
   const ring = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.spring(circleScale, {
-        toValue: 1,
-        friction: 5,
-        tension: 120,
-        useNativeDriver: true,
-      }),
-      Animated.spring(checkScale, {
-        toValue: 1,
-        friction: 4,
-        tension: 140,
-        useNativeDriver: true,
-      }),
+      Animated.spring(circleScale, { toValue: 1, friction: 5, tension: 120, useNativeDriver: true }),
+      Animated.spring(checkScale, { toValue: 1, friction: 4, tension: 140, useNativeDriver: true }),
     ]).start();
 
     const loop = Animated.loop(
-      Animated.timing(ring, {
-        toValue: 1,
-        duration: 1500,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
+      Animated.timing(ring, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: true }),
     );
     loop.start();
     return () => loop.stop();
   }, [circleScale, checkScale, ring]);
 
-  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.8] });
-  const ringOpacity = ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] });
+  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.6] });
+  const ringOpacity = ring.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0] });
 
   return (
-    <View className="w-24 h-24 items-center justify-center">
+    <View style={{ width: 130, height: 130, alignItems: "center", justifyContent: "center" }}>
+      {CONFETTI.map((c, i) => (
+        <View
+          key={i}
+          style={{
+            position: "absolute",
+            top: c.top,
+            left: c.left,
+            right: c.right,
+            width: c.size,
+            height: c.size,
+            borderRadius: c.size / 3,
+            backgroundColor: c.color,
+            transform: [{ rotate: c.rotate }],
+          }}
+        />
+      ))}
       <Animated.View
         style={{
           position: "absolute",
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: "#10B981",
+          width: 92,
+          height: 92,
+          borderRadius: 46,
+          backgroundColor: colors.white,
           opacity: ringOpacity,
           transform: [{ scale: ringScale }],
         }}
       />
       <Animated.View
         style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: "#10B981",
+          width: 92,
+          height: 92,
+          borderRadius: 46,
+          backgroundColor: colors.white,
           alignItems: "center",
           justifyContent: "center",
           transform: [{ scale: circleScale }],
         }}
       >
         <Animated.View style={{ transform: [{ scale: checkScale }] }}>
-          <Ionicons name="checkmark-sharp" size={46} color="#fff" />
+          <Ionicons name="checkmark-sharp" size={48} color={PRIMARY} />
         </Animated.View>
       </Animated.View>
-    </View>
-  );
-}
-
-function MetaRow({
-  icon,
-  label,
-  value,
-  multiline = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  multiline?: boolean;
-}) {
-  return (
-    <View className="flex-row items-start mb-4">
-      <View className="w-10 items-center mt-0.5">{icon}</View>
-      <View className="flex-1">
-        <Text className="text-[10px] font-poppins-bold text-gray-400 tracking-widest">
-          {label}
-        </Text>
-        <Text
-          className="text-sm text-gray-900 font-poppins-bold mt-0.5 leading-5"
-          numberOfLines={multiline ? 4 : 1}
-        >
-          {value}
-        </Text>
-      </View>
     </View>
   );
 }
