@@ -12,6 +12,21 @@ COPY . .
 # This creates node_modules at root AND inside apps/auth-service (where Express v5 lives)
 RUN bun install --frozen-lockfile
 
+WORKDIR /app/packages/db-postgres
+# Dummy env for Postgres validation
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_oUHCPa3zQpW6@ep-wispy-hill-ao2txbj1.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"' > .env
+RUN bunx prisma generate
+
+
+WORKDIR /app/packages/db-mongo
+
+RUN echo 'MONGO_URL="mongodb+srv://fishstudio:fishstudioxyz12@primarydb.zzfdeea.mongodb.net/fishStudio?authSource=admin"' > .env
+RUN bunx prisma generate
+
+
+# Switch back to root to continue the build
+WORKDIR /app
+
 # Build the specific service
 RUN bunx turbo run build --filter=@repo/worker-service...
 
