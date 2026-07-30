@@ -3,7 +3,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import useUser from "@/hooks/useUser";
 import React, { useState } from "react";
 import {
@@ -25,12 +25,15 @@ const STATUS_FILTERS = [
   { key: "ACCEPTED",  label: "Preparing" },
   { key: "SHIPPED",   label: "On the Way" },
   { key: "DELIVERED", label: "Delivered" },
+  { key: "CANCELLED", label: "Cancelled" },
 ];
 
 export default function MyOrders() {
   const { user } = useUser();
   const queryClient = useQueryClient();
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  // Profile's quick-filter row links here with an initial status already picked.
+  const { status: initialStatus } = useLocalSearchParams<{ status?: string }>();
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus || "all");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading } = useQuery({

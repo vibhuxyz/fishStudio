@@ -16,6 +16,7 @@ import React, { useEffect, useState } from "react";
 type Step = "identifier" | "otp" | "name" | "success";
 
 const PHONE_REGEX = /^[6-9]\d{9}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // auth-service issues a 4-digit code (crypto.randomInt(1000, 10000)) and the
 // shared zod schema enforces the same length.
 const OTP_LENGTH = 4;
@@ -34,6 +35,8 @@ export default function LoginScreen() {
   const [timer, setTimer] = useState(RESEND_SECONDS);
 
   const isPhone = PHONE_REGEX.test(identifier.trim());
+  const isEmail = EMAIL_REGEX.test(identifier.trim());
+  const isValid = isPhone || isEmail;
 
   useEffect(() => {
     if (step !== "otp" || timer <= 0) return;
@@ -139,7 +142,7 @@ export default function LoginScreen() {
   if (step === "otp") {
     return (
       <OtpStep
-        phone={identifier.trim()}
+        identifier={identifier.trim()}
         otp={otp}
         onChange={setOtp}
         onComplete={(code) => verifyOtpMutation.mutate({ code })}
@@ -176,7 +179,7 @@ export default function LoginScreen() {
     <PhoneStep
       identifier={identifier}
       onChangeIdentifier={setIdentifier}
-      isValidPhone={isPhone}
+      isValid={isValid}
       isLoading={isLoading}
       onSubmit={() => sendOtpMutation.mutate()}
       onSkip={handleSkip}

@@ -31,7 +31,7 @@ const formatPhone = (phone: string) =>
   phone.length === 10 ? `+91 ${phone.slice(0, 5)} ${phone.slice(5)}` : `+91 ${phone}`;
 
 type OtpStepProps = {
-  phone: string;
+  identifier: string;
   otp: string[];
   onChange: (next: string[]) => void;
   onComplete: (code: string) => void;
@@ -42,7 +42,7 @@ type OtpStepProps = {
 };
 
 export function OtpStep({
-  phone,
+  identifier,
   otp,
   onChange,
   onComplete,
@@ -52,6 +52,7 @@ export function OtpStep({
   onChangeNumber,
 }: OtpStepProps) {
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const isEmail = identifier.includes("@");
 
   const handleDigit = (value: string, index: number) => {
     const digits = value.replace(/\D/g, "");
@@ -105,7 +106,7 @@ export function OtpStep({
             />
           </Pressable>
           <Pressable onPress={onChangeNumber} hitSlop={14}>
-            <Text style={styles.changeNumber}>Change Number</Text>
+            <Text style={styles.changeNumber}>{isEmail ? "Change Email" : "Change Number"}</Text>
           </Pressable>
         </View>
 
@@ -121,11 +122,11 @@ export function OtpStep({
             style={styles.lockup}
           />
 
-          <Text style={styles.title}>Verify your mobile number</Text>
+          <Text style={styles.title}>{isEmail ? "Verify your email" : "Verify your mobile number"}</Text>
           <Text style={styles.subtitle}>
             We have sent a {otp.length} digit OTP to
           </Text>
-          <Text style={styles.phone}>{formatPhone(phone)}</Text>
+          <Text style={styles.phone}>{isEmail ? identifier : formatPhone(identifier)}</Text>
 
           <View style={styles.otpRow}>
             {otp.map((digit, index) => (

@@ -31,6 +31,7 @@ export interface SelectedLocation {
   deliveryTimeMinutes?: number;
   isOpen?: boolean;
   openingHours?: string;
+  closingHours?: string;
 }
 
 interface AddressStore {

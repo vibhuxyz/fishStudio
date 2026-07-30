@@ -35,6 +35,7 @@ async function prefetchCoupon(couponCode: string) {
       minOrderValue: true,
       adminId: true,
       sellerId: true,
+      restrictedToUserId: true,
       _count: { select: { usages: true } },
     },
   });
@@ -45,6 +46,7 @@ function computeCouponDiscount(
   sellerId: string | null,
   itemTotal: number,
   couponCode: string,
+  userId: string,
 ): { discountAmount: number; freeDelivery: boolean } {
   // Fix #22: don't distinguish "wrong scope" / "maxed out" / "expired" —
   // each distinct error leaks info about a valid code. The minOrderValue
@@ -52,6 +54,12 @@ function computeCouponDiscount(
   const isAdminCoupon = coupon.adminId !== null;
   const isSellerCoupon = coupon.sellerId !== null && coupon.sellerId === sellerId;
   if (!isAdminCoupon && !isSellerCoupon) {
+    throw new ValidationError("Coupon is not valid for this order");
+  }
+  // Referral rewards (and any other personally-issued coupon) only redeem
+  // for the one account they were generated for — otherwise a reward code
+  // glimpsed anywhere is spendable by whoever finds it.
+  if (coupon.restrictedToUserId && coupon.restrictedToUserId !== userId) {
     throw new ValidationError("Coupon is not valid for this order");
   }
   if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
@@ -71,6 +79,117 @@ function computeCouponDiscount(
   }
 
   return { discountAmount, freeDelivery: coupon.discountType === "free_delivery" };
+}
+
+/* ─── Event-promo helpers ────────────────────────────────────────────────
+   Flash Sale / seasonal Discount / Free Delivery banners are seller_events,
+   not discount_codes — there's no redeemable code behind them in the DB.
+   The client references one by id instead of a code; this mirrors
+   prefetchCoupon/computeCouponDiscount against that model instead. ────── */
+async function prefetchEvent(eventId: string, sellerId: string | null) {
+  if (!sellerId) return null;
+  const now = new Date();
+  return prismaMongo.seller_events.findFirst({
+    where: {
+      id: eventId,
+      sellerId,
+      isActive: true,
+      startTime: { lte: now },
+      endTime: { gte: now },
+    },
+    select: { id: true, title: true, type: true, discount: true, minOrder: true },
+  });
+}
+
+function computeEventDiscount(
+  event: NonNullable<Awaited<ReturnType<typeof prefetchEvent>>>,
+  itemTotal: number,
+): { discountAmount: number; freeDelivery: boolean } {
+  const minOrder = event.minOrder ?? 0;
+  if (itemTotal < minOrder) {
+    throw new ValidationError(`Minimum order of ₹${minOrder} required for this offer`);
+  }
+  if (event.type === "FREE_DELIVERY") {
+    return { discountAmount: 0, freeDelivery: true };
+  }
+  // DISCOUNT and FLASH_SALE are both a straight percentage off the item total.
+  const discountAmount = event.discount ? Math.round((itemTotal * event.discount) / 100) : 0;
+  return { discountAmount, freeDelivery: false };
+}
+
+// A display-only label so the order row's existing couponCode column still
+// shows something recognizable on the confirmation/invoice screens — events
+// have no real code, so this mirrors the slug the client already shows for
+// the same event (title.toUpperCase().replace(/\s+/g, "")).
+const eventDisplayCode = (title: string) => title.toUpperCase().replace(/\s+/g, "");
+
+/* ─── Referral reward ─────────────────────────────────────────────────────
+   A friend's referral code doesn't touch this order's own price — it only
+   decides whether the *referrer* earns a ₹100 coupon once this, the
+   referee's genuine first order, goes through. Runs after the order
+   response is already sent; any failure here must never surface to the
+   customer placing the order. */
+const REWARD_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const generateRewardCode = () => {
+  let suffix = "";
+  for (let i = 0; i < 8; i++) {
+    suffix += REWARD_CODE_CHARS[Math.floor(Math.random() * REWARD_CODE_CHARS.length)];
+  }
+  return `REF${suffix}`;
+};
+
+async function grantReferralReward(
+  referralCode: string,
+  refereeUserId: string,
+  refereeOrderId: string,
+  sellerId: string | null,
+) {
+  if (!sellerId) return;
+
+  const referrer = await prismaMongo.users.findFirst({
+    where: { referralCode: referralCode.toUpperCase() },
+    select: { id: true },
+  });
+  if (!referrer || referrer.id === refereeUserId) return; // unknown code, or self-referral
+
+  // Reward only a genuine first order — otherwise the same two accounts
+  // could trade referral codes back and forth for repeat ₹100 coupons.
+  // "Before this one" because the order row already exists by the time this
+  // runs (created inside the transaction above).
+  const priorOrderCount = await prismaPostgres.order.count({
+    where: { userId: refereeUserId, id: { not: refereeOrderId } },
+  });
+  if (priorOrderCount > 0) return;
+
+  // Dedupe: this referee has already triggered a reward once, regardless of
+  // which order it was on.
+  const alreadyRewarded = await prismaPostgres.auditLog.findFirst({
+    where: { entityType: "REFERRAL", entityId: refereeUserId },
+    select: { id: true },
+  });
+  if (alreadyRewarded) return;
+
+  const rewardCode = generateRewardCode();
+  await prismaMongo.discount_codes.create({
+    data: {
+      public_name: "Referral reward — ₹100 off",
+      discountType: "fixed",
+      discountValue: 100,
+      minOrderValue: 0,
+      discountCode: rewardCode,
+      maxUses: 1,
+      maxUsesPerUser: 1,
+      isActive: true,
+      sellerId,
+      restrictedToUserId: referrer.id,
+    },
+  });
+
+  writeAuditLog("REFERRAL", refereeUserId, "REFERRAL_REWARDED", referrer.id, "SYSTEM", {
+    referrerId: referrer.id,
+    refereeOrderId,
+    rewardCode,
+  });
 }
 
 /* ─── Instant delivery window check ─────────────────────────────────────── */
@@ -114,21 +233,31 @@ function computeOrderTotals(params: {
   deliverySlot: string;
   instantDeliveryFee: number | null;
   sellerId: string | null;
+  userId: string;
   couponCode: string | null | undefined;
   couponRaw: NonNullable<Awaited<ReturnType<typeof prefetchCoupon>>> | null;
+  eventId?: string | null;
+  eventRaw?: NonNullable<Awaited<ReturnType<typeof prefetchEvent>>> | null;
 }) {
-  const { itemTotal, deliverySlot, instantDeliveryFee, sellerId, couponCode, couponRaw } = params;
+  const { itemTotal, deliverySlot, instantDeliveryFee, sellerId, userId, couponCode, couponRaw, eventId, eventRaw } = params;
 
   let couponId: string | null = null;
+  let eventDiscountCode: string | null = null;
   let couponDiscount = 0;
   let freeDelivery = false;
 
   if (couponCode) {
     if (!couponRaw) throw new ValidationError("Coupon is not valid for this order");
-    const couponDiscountResult = computeCouponDiscount(couponRaw, sellerId, itemTotal, couponCode);
+    const couponDiscountResult = computeCouponDiscount(couponRaw, sellerId, itemTotal, couponCode, userId);
     couponId = couponRaw.id;
     couponDiscount = couponDiscountResult.discountAmount;
     freeDelivery = couponDiscountResult.freeDelivery;
+  } else if (eventId) {
+    if (!eventRaw) throw new ValidationError("This offer is no longer available");
+    const eventDiscountResult = computeEventDiscount(eventRaw, itemTotal);
+    eventDiscountCode = eventDisplayCode(eventRaw.title);
+    couponDiscount = eventDiscountResult.discountAmount;
+    freeDelivery = eventDiscountResult.freeDelivery;
   }
 
   // The one place the bill is calculated. /quote and /create both land here, so
@@ -143,6 +272,7 @@ function computeOrderTotals(params: {
 
   return {
     couponId,
+    eventDiscountCode,
     // Post-coupon, matching what billDetails has always persisted — a
     // free-delivery coupon zeroes it so the stored bill still adds up.
     baseDeliveryCharge: summary.deliveryCharge,
@@ -344,6 +474,8 @@ export const createOrder = async (
       deliveryDetails,
       paymentMethod,
       couponCode,
+      eventId,
+      referralCode,
       deliverySlot,
       totalAmount: clientTotalAmount,
     } = validate(createOrderSchema, req.body);
@@ -374,6 +506,11 @@ export const createOrder = async (
 
     if (!store) return next(new ValidationError("Store not found"));
 
+    // Needs store.sellerId, so it can't join the Promise.all above. couponCode
+    // takes precedence — a client only ever sends one or the other, but this
+    // is the tie-break if it somehow sends both.
+    const eventRaw = eventId && !couponCode ? await prefetchEvent(eventId, store.sellerId) : null;
+
     /* ── 2. Validate products + compute itemTotal ────────────────────────── */
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
     let itemTotal = 0;
@@ -395,6 +532,7 @@ export const createOrder = async (
     /* ── 4. Compute delivery + coupon totals ──────────────────────────────── */
     const {
       couponId,
+      eventDiscountCode,
       totalDelivery,
       totalDiscount,
       totalAmount,
@@ -405,8 +543,11 @@ export const createOrder = async (
       deliverySlot,
       instantDeliveryFee: store.instant_delivery_fee,
       sellerId: store.sellerId,
+      userId,
       couponCode,
       couponRaw,
+      eventId,
+      eventRaw,
     });
 
     // The client-submitted totalAmount is never trusted for the actual charge
@@ -474,7 +615,11 @@ export const createOrder = async (
             storeId,
             totalAmount,
             discountAmount: totalDiscount,
-            couponCode: couponCode ?? null,
+            // Events have no real code — eventDiscountCode is the same
+            // display slug the client already showed for it, so the
+            // confirmation/invoice screens don't need to know the
+            // difference between a real coupon and an event promo.
+            couponCode: couponCode ?? eventDiscountCode ?? null,
             deliveryName: deliveryDetails.name,
             deliveryPhone: deliveryDetails.phone,
             deliveryAddress: deliveryDetails.address,
@@ -487,6 +632,7 @@ export const createOrder = async (
               slotExtraCharge,
               discount: totalDiscount,
               totalAmount,
+              ...(eventId && eventDiscountCode ? { eventId } : {}),
             },
             deliverySlot: deliverySlot ?? "evening",
             paymentMethod: paymentMethod ?? "COD",
@@ -603,6 +749,16 @@ export const createOrder = async (
       items: decrementedItems,
     });
 
+    /* ── Referral reward (fire-and-forget) ───────────────────────────────
+       A referral is never allowed to affect the referee's own order — it's
+       purely a trigger for the *referrer's* reward, so any failure here is
+       swallowed rather than surfaced. */
+    if (referralCode) {
+      grantReferralReward(referralCode, userId, order.id, store.sellerId).catch((err) =>
+        logger.error("[createOrder] referral reward failed", { err, referralCode, orderId: order.id }),
+      );
+    }
+
     /* ── 9. Background: Mongo coupon counter + notifications ────────────── */
     // The customer's confirmation already went into the outbox inside the
     // transaction. What follows is seller-facing dashboard fan-out: useful,
@@ -696,6 +852,32 @@ export const createOrder = async (
       } catch (err) {
         logger.error("[createOrder] Notification error", { err });
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ─── Get user order stats (profile page summary) ───────────────────────── */
+export const getUserOrderStats = async (
+  req: any,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const [totalOrders, discountAgg] = await Promise.all([
+      prismaPostgres.order.count({ where: { userId } }),
+      prismaPostgres.order.aggregate({
+        where: { userId },
+        _sum: { discountAmount: true },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      totalOrders,
+      totalSavings: discountAgg._sum.discountAmount ?? 0,
     });
   } catch (error) {
     next(error);
@@ -810,11 +992,18 @@ export const getOrderById = async (
       }),
       prismaMongo.products.findMany({
         where: { id: { in: order.orderItems.map((oi) => oi.productId) } },
-        include: { images: true },
+        include: { images: true, catalogProduct: { include: { images: true } } },
       }),
     ]);
 
-    const productMap = new Map(products.map((p) => [p.id, p]));
+    // Store variants often carry no images of their own — the catalog root
+    // product is where they actually live, same precedence as storefront listings.
+    const productMap = new Map(
+      products.map((p) => [
+        p.id,
+        { ...p, images: p.catalogProduct?.images?.length ? p.catalogProduct.images : p.images },
+      ]),
+    );
 
     const orderData = {
       ...order,

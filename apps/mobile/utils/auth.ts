@@ -1,5 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 import { router } from "expo-router";
+import { useStore } from "@/store";
+import { useAddressStore } from "@/lib/address-store";
+import { useCouponStore } from "@/lib/coupon-store";
+import { resetDeviceId } from "@/lib/device";
+import { queryClient } from "@/config/providers";
 
 export const clearStoredAuth = async () => {
   await Promise.all([
@@ -7,6 +12,22 @@ export const clearStoredAuth = async () => {
     SecureStore.deleteItemAsync("refresh_token").catch(() => {}),
     SecureStore.deleteItemAsync("user").catch(() => {}),
   ]);
+
+  // Cart, wishlist, coupons and saved addresses are all per-account — left
+  // alone, they'd carry over to whoever logs into this device next.
+  useStore.setState({ cart: [], wishlist: [] });
+  useCouponStore.getState().clearAllCoupons();
+  useAddressStore.getState().clearStore();
+
+  // The device id ties "recently viewed" / "for you" to a guest identity that
+  // mergeActivity() folds into whoever logs in next — rotate it so that fold
+  // doesn't hand this account's browsing history to the next person in.
+  await resetDeviceId();
+
+  // Drop every cached query (addresses, recently-viewed, order stats, ...) so
+  // the next account doesn't render this one's data before its own requests
+  // land — query keys here aren't user-scoped, so the cache can't tell accounts apart.
+  queryClient.clear();
 };
 
 /**

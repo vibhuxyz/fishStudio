@@ -141,6 +141,7 @@ exports.Prisma.UsersScalarFieldEnum = {
   following: 'following',
   addresses: 'addresses',
   avatarId: 'avatarId',
+  referralCode: 'referralCode',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -160,6 +161,7 @@ exports.Prisma.Discount_codesScalarFieldEnum = {
   isFirstOrder: 'isFirstOrder',
   sellerId: 'sellerId',
   adminId: 'adminId',
+  restrictedToUserId: 'restrictedToUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

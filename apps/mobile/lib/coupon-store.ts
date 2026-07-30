@@ -12,6 +12,8 @@ export type Coupon = {
   autoApply?: boolean;
   badge?: string;
   isEvent?: boolean;
+
+  eventId?: string;
   expiresAt?: string | null;
   maxUses?: number | null;
   usedCount?: number;
@@ -106,6 +108,7 @@ export const useCouponStore = create<CouponState>()(
                   badge: "Event",
                   autoApply: true,
                   isEvent: true,
+                  eventId: ev.id,
                 });
               } else if (ev.type === "DISCOUNT" && ev.discount) {
                 coupons.push({
@@ -117,6 +120,7 @@ export const useCouponStore = create<CouponState>()(
                   badge: "Event",
                   autoApply: true,
                   isEvent: true,
+                  eventId: ev.id,
                 });
               } else if (ev.type === "FLASH_SALE" && ev.discount) {
                 coupons.push({
@@ -127,6 +131,7 @@ export const useCouponStore = create<CouponState>()(
                   minOrderValue: ev.minOrder ?? 0,
                   badge: "Flash Sale",
                   isEvent: true,
+                  eventId: ev.id,
                 });
               }
             }

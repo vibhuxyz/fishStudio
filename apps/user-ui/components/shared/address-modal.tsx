@@ -111,6 +111,7 @@ export function AddressModal({
           deliveryTimeMinutes: data.store.cityDeliveryTimes?.[city],
           isOpen: data.store.isOpen,
           opening_hours: data.store.opening_hours,
+          closing_hours: data.store.closing_hours,
         });
         // Refetch store queries now that we have the full store data
         queryClient.invalidateQueries({ queryKey: ["store"] });
@@ -238,6 +239,7 @@ export function AddressModal({
       deliveryTimeMinutes: deliveryMins,
       isOpen: (storeInfo as any).isOpen,
       opening_hours: (storeInfo as any).opening_hours,
+      closing_hours: (storeInfo as any).closing_hours,
     };
     setSelectedLocation(location);
     queryClient.invalidateQueries({ queryKey: ["store"] });
@@ -263,6 +265,7 @@ export function AddressModal({
         deliveryTimeMinutes: deliveryMins,
         isOpen: (storeInfo as any).isOpen,
         opening_hours: (storeInfo as any).opening_hours,
+        closing_hours: (storeInfo as any).closing_hours,
       });
     }
     setForm((f) => ({

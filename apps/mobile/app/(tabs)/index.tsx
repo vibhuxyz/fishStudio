@@ -10,13 +10,12 @@ import TrustStrip from "@/components/home/trust-strip";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { fetchForYou, fetchRecentlyViewed } from "@/actions/activity";
 import { useAddressStore } from "@/lib/address-store";
-import { useUIStore } from "@/store/ui-store";
 import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -37,8 +36,6 @@ interface ProductListingPage {
 
 export default function Index() {
   const { selectedLocation, locationVersion } = useAddressStore();
-  const { setTabBarHidden } = useUIStore();
-  const lastScrollY = useRef(0);
 
   const locationParams = selectedLocation?.storeId
     ? { storeId: selectedLocation.storeId, pincode: selectedLocation.pincode, city: selectedLocation.city }
@@ -108,13 +105,8 @@ export default function Index() {
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
-    const currentY = contentOffset.y;
-    const diff = currentY - lastScrollY.current;
-    if (diff > 8 && currentY > 60) setTabBarHidden(true);
-    else if (diff < -8) setTabBarHidden(false);
-    lastScrollY.current = currentY;
     // Infinite scroll: trigger when within 300px of bottom
-    const distanceFromBottom = contentSize.height - layoutMeasurement.height - currentY;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
     if (distanceFromBottom < 300 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }

@@ -115,11 +115,20 @@ export const removeAccessToken = async (): Promise<void> => {
   }
 };
 
+// clearStoredAuth (utils/auth.ts) also needs the cart/coupon/address stores,
+// which pull in this file for their own API calls — importing it here would
+// make a require cycle, so the root layout registers it instead.
+let onForceLogout: (() => void) | null = null;
+export const registerForceLogoutHandler = (fn: () => void) => {
+  onForceLogout = fn;
+};
+
 const handleLogout = () => {
   // Clear all auth data
   SecureStore.deleteItemAsync("access_token").catch(() => {});
   SecureStore.deleteItemAsync("refresh_token").catch(() => {});
   useUserStore.getState().clearUser().catch(() => {});
+  onForceLogout?.();
   // Redirect to login
   router.replace("/(routes)/login");
 };

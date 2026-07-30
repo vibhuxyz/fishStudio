@@ -166,7 +166,9 @@ export default function ProductsScreen() {
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
-    <ProductCard product={item} />
+    <View style={{ width: "48.5%", marginBottom: 16 }}>
+      <ProductCard product={item} cardWidth="100%" noRightMargin />
+    </View>
   );
 
   const renderFilterModal = () => (
@@ -437,7 +439,7 @@ export default function ProductsScreen() {
         <View className="flex-1 bg-gray-50">
           <View className="flex-row flex-wrap justify-between px-4 py-4">
             {[0, 1, 2, 3, 4, 5].map((item) => (
-              <ProductSkeleton width={190} key={item} />
+              <ProductSkeleton key={item} />
             ))}
           </View>
         </View>
@@ -450,7 +452,6 @@ export default function ProductsScreen() {
           numColumns={2}
           columnWrapperStyle={{
             justifyContent: "space-between",
-            marginBottom: 16,
           }}
           contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}

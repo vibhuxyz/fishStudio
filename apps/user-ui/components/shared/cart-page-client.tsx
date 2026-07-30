@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
 import { useCartCheckoutSummary, TIP_OPTIONS } from "@/hooks/useCartCheckoutSummary";
-import { cn } from "@/lib/utils";
+import { cn, formatStoreHour } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -118,7 +118,11 @@ export function CartPageClient() {
               <p className="font-semibold text-foreground">
                 {deliveryMetadata.isStoreOpen
                   ? `Delivery in ${deliveryMetadata.cartDeliveryTime || selectedLocation?.deliveryTimeMinutes || 30} minutes`
-                  : `Scheduled order available • Opens at ${deliveryMetadata.openingHours || "9 AM"}`}
+                  : `Scheduled order available • ${
+                      formatStoreHour(deliveryMetadata.openingHours) && formatStoreHour(deliveryMetadata.closingHours)
+                        ? `Open ${formatStoreHour(deliveryMetadata.openingHours)} - ${formatStoreHour(deliveryMetadata.closingHours)}`
+                        : `Opens at ${formatStoreHour(deliveryMetadata.openingHours) || "9 AM"}`
+                    }`}
               </p>
               <p className="text-xs text-muted-foreground">
                 {deliveryMetadata.isStoreOpen

@@ -43,7 +43,8 @@ interface StoreInfo {
   availableCities: string[];
   cityDeliveryTimes?: Record<string, number>;
   isOpen?: boolean;
-  openingHours?: string;
+  opening_hours?: string;
+  closing_hours?: string;
 }
 
 export default function AddressModal({
@@ -163,7 +164,8 @@ export default function AddressModal({
       city,
       deliveryTimeMinutes: deliveryMins,
       isOpen: storeInfo.isOpen,
-      openingHours: storeInfo.openingHours,
+      openingHours: storeInfo.opening_hours,
+      closingHours: storeInfo.closing_hours,
     };
     setSelectedLocation(location);
     queryClient.invalidateQueries({ queryKey: ["store"] });
@@ -185,7 +187,8 @@ export default function AddressModal({
         city,
         deliveryTimeMinutes: deliveryMins,
         isOpen: storeInfo.isOpen,
-        openingHours: storeInfo.openingHours,
+        openingHours: storeInfo.opening_hours,
+        closingHours: storeInfo.closing_hours,
       });
     }
     onClose();
@@ -234,7 +237,8 @@ export default function AddressModal({
           city,
           deliveryTimeMinutes: data.store.cityDeliveryTimes?.[city],
           isOpen: data.store.isOpen,
-          openingHours: data.store.openingHours,
+          openingHours: data.store.opening_hours,
+          closingHours: data.store.closing_hours,
         });
         queryClient.invalidateQueries({ queryKey: ["store"] });
       }

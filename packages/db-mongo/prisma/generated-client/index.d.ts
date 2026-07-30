@@ -4621,6 +4621,7 @@ export namespace Prisma {
     email: string | null
     name: string | null
     avatarId: string | null
+    referralCode: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4631,6 +4632,7 @@ export namespace Prisma {
     email: string | null
     name: string | null
     avatarId: string | null
+    referralCode: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4643,6 +4645,7 @@ export namespace Prisma {
     following: number
     addresses: number
     avatarId: number
+    referralCode: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4655,6 +4658,7 @@ export namespace Prisma {
     email?: true
     name?: true
     avatarId?: true
+    referralCode?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4665,6 +4669,7 @@ export namespace Prisma {
     email?: true
     name?: true
     avatarId?: true
+    referralCode?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4677,6 +4682,7 @@ export namespace Prisma {
     following?: true
     addresses?: true
     avatarId?: true
+    referralCode?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4762,6 +4768,7 @@ export namespace Prisma {
     following: string[]
     addresses: JsonValue[]
     avatarId: string | null
+    referralCode: string | null
     createdAt: Date
     updatedAt: Date
     _count: UsersCountAggregateOutputType | null
@@ -4791,6 +4798,7 @@ export namespace Prisma {
     following?: boolean
     addresses?: boolean
     avatarId?: boolean
+    referralCode?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     avatar?: boolean | users$avatarArgs<ExtArgs>
@@ -4808,6 +4816,7 @@ export namespace Prisma {
     following?: boolean
     addresses?: boolean
     avatarId?: boolean
+    referralCode?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -4834,6 +4843,7 @@ export namespace Prisma {
       following: string[]
       addresses: Prisma.JsonValue[]
       avatarId: string | null
+      referralCode: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["users"]>
@@ -5238,6 +5248,7 @@ export namespace Prisma {
     readonly following: FieldRef<"users", 'String[]'>
     readonly addresses: FieldRef<"users", 'Json[]'>
     readonly avatarId: FieldRef<"users", 'String'>
+    readonly referralCode: FieldRef<"users", 'String'>
     readonly createdAt: FieldRef<"users", 'DateTime'>
     readonly updatedAt: FieldRef<"users", 'DateTime'>
   }
@@ -5678,6 +5689,7 @@ export namespace Prisma {
     isFirstOrder: boolean | null
     sellerId: string | null
     adminId: string | null
+    restrictedToUserId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5697,6 +5709,7 @@ export namespace Prisma {
     isFirstOrder: boolean | null
     sellerId: string | null
     adminId: string | null
+    restrictedToUserId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5716,6 +5729,7 @@ export namespace Prisma {
     isFirstOrder: number
     sellerId: number
     adminId: number
+    restrictedToUserId: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -5753,6 +5767,7 @@ export namespace Prisma {
     isFirstOrder?: true
     sellerId?: true
     adminId?: true
+    restrictedToUserId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5772,6 +5787,7 @@ export namespace Prisma {
     isFirstOrder?: true
     sellerId?: true
     adminId?: true
+    restrictedToUserId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5791,6 +5807,7 @@ export namespace Prisma {
     isFirstOrder?: true
     sellerId?: true
     adminId?: true
+    restrictedToUserId?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5897,6 +5914,7 @@ export namespace Prisma {
     isFirstOrder: boolean
     sellerId: string | null
     adminId: string | null
+    restrictedToUserId: string | null
     createdAt: Date
     updatedAt: Date
     _count: Discount_codesCountAggregateOutputType | null
@@ -5935,6 +5953,7 @@ export namespace Prisma {
     isFirstOrder?: boolean
     sellerId?: boolean
     adminId?: boolean
+    restrictedToUserId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     seller?: boolean | discount_codes$sellerArgs<ExtArgs>
@@ -5959,6 +5978,7 @@ export namespace Prisma {
     isFirstOrder?: boolean
     sellerId?: boolean
     adminId?: boolean
+    restrictedToUserId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -5992,6 +6012,7 @@ export namespace Prisma {
       isFirstOrder: boolean
       sellerId: string | null
       adminId: string | null
+      restrictedToUserId: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["discount_codes"]>
@@ -6403,6 +6424,7 @@ export namespace Prisma {
     readonly isFirstOrder: FieldRef<"discount_codes", 'Boolean'>
     readonly sellerId: FieldRef<"discount_codes", 'String'>
     readonly adminId: FieldRef<"discount_codes", 'String'>
+    readonly restrictedToUserId: FieldRef<"discount_codes", 'String'>
     readonly createdAt: FieldRef<"discount_codes", 'DateTime'>
     readonly updatedAt: FieldRef<"discount_codes", 'DateTime'>
   }
@@ -20213,6 +20235,7 @@ export namespace Prisma {
     following: 'following',
     addresses: 'addresses',
     avatarId: 'avatarId',
+    referralCode: 'referralCode',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -20235,6 +20258,7 @@ export namespace Prisma {
     isFirstOrder: 'isFirstOrder',
     sellerId: 'sellerId',
     adminId: 'adminId',
+    restrictedToUserId: 'restrictedToUserId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -20763,6 +20787,7 @@ export namespace Prisma {
     following?: StringNullableListFilter<"users">
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableFilter<"users"> | string | null
+    referralCode?: StringNullableFilter<"users"> | string | null
     createdAt?: DateTimeFilter<"users"> | Date | string
     updatedAt?: DateTimeFilter<"users"> | Date | string
     avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
@@ -20778,6 +20803,7 @@ export namespace Prisma {
     following?: SortOrder
     addresses?: SortOrder
     avatarId?: SortOrder
+    referralCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     avatar?: imagesOrderByWithRelationInput
@@ -20787,6 +20813,7 @@ export namespace Prisma {
 
   export type usersWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    referralCode?: string
     AND?: usersWhereInput | usersWhereInput[]
     OR?: usersWhereInput[]
     NOT?: usersWhereInput | usersWhereInput[]
@@ -20801,7 +20828,7 @@ export namespace Prisma {
     avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
     favorites?: FavoritesListRelationFilter
     reviews?: ReviewsListRelationFilter
-  }, "id">
+  }, "id" | "referralCode">
 
   export type usersOrderByWithAggregationInput = {
     id?: SortOrder
@@ -20811,6 +20838,7 @@ export namespace Prisma {
     following?: SortOrder
     addresses?: SortOrder
     avatarId?: SortOrder
+    referralCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: usersCountOrderByAggregateInput
@@ -20829,6 +20857,7 @@ export namespace Prisma {
     following?: StringNullableListFilter<"users">
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableWithAggregatesFilter<"users"> | string | null
+    referralCode?: StringNullableWithAggregatesFilter<"users"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"users"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"users"> | Date | string
   }
@@ -20851,6 +20880,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFilter<"discount_codes"> | boolean
     sellerId?: StringNullableFilter<"discount_codes"> | string | null
     adminId?: StringNullableFilter<"discount_codes"> | string | null
+    restrictedToUserId?: StringNullableFilter<"discount_codes"> | string | null
     createdAt?: DateTimeFilter<"discount_codes"> | Date | string
     updatedAt?: DateTimeFilter<"discount_codes"> | Date | string
     seller?: XOR<SellersNullableRelationFilter, sellersWhereInput> | null
@@ -20873,6 +20903,7 @@ export namespace Prisma {
     isFirstOrder?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
+    restrictedToUserId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     seller?: sellersOrderByWithRelationInput
@@ -20898,6 +20929,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFilter<"discount_codes"> | boolean
     sellerId?: StringNullableFilter<"discount_codes"> | string | null
     adminId?: StringNullableFilter<"discount_codes"> | string | null
+    restrictedToUserId?: StringNullableFilter<"discount_codes"> | string | null
     createdAt?: DateTimeFilter<"discount_codes"> | Date | string
     updatedAt?: DateTimeFilter<"discount_codes"> | Date | string
     seller?: XOR<SellersNullableRelationFilter, sellersWhereInput> | null
@@ -20920,6 +20952,7 @@ export namespace Prisma {
     isFirstOrder?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
+    restrictedToUserId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: discount_codesCountOrderByAggregateInput
@@ -20947,6 +20980,7 @@ export namespace Prisma {
     isFirstOrder?: BoolWithAggregatesFilter<"discount_codes"> | boolean
     sellerId?: StringNullableWithAggregatesFilter<"discount_codes"> | string | null
     adminId?: StringNullableWithAggregatesFilter<"discount_codes"> | string | null
+    restrictedToUserId?: StringNullableWithAggregatesFilter<"discount_codes"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"discount_codes"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"discount_codes"> | Date | string
   }
@@ -22310,6 +22344,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -22325,6 +22360,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -22337,6 +22373,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -22351,6 +22388,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -22365,6 +22403,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -22375,6 +22414,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22386,6 +22426,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22403,6 +22444,7 @@ export namespace Prisma {
     usedCount?: number
     isActive?: boolean
     isFirstOrder?: boolean
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     seller?: sellersCreateNestedOneWithoutCouponsInput
@@ -22425,6 +22467,7 @@ export namespace Prisma {
     isFirstOrder?: boolean
     sellerId?: string | null
     adminId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     usages?: coupon_usagesUncheckedCreateNestedManyWithoutCouponInput
@@ -22442,6 +22485,7 @@ export namespace Prisma {
     usedCount?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seller?: sellersUpdateOneWithoutCouponsNestedInput
@@ -22463,6 +22507,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usages?: coupon_usagesUncheckedUpdateManyWithoutCouponNestedInput
@@ -22483,6 +22528,7 @@ export namespace Prisma {
     isFirstOrder?: boolean
     sellerId?: string | null
     adminId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -22499,6 +22545,7 @@ export namespace Prisma {
     usedCount?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22517,6 +22564,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24139,6 +24187,7 @@ export namespace Prisma {
     following?: SortOrder
     addresses?: SortOrder
     avatarId?: SortOrder
+    referralCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24149,6 +24198,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     avatarId?: SortOrder
+    referralCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24159,6 +24209,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     avatarId?: SortOrder
+    referralCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24249,6 +24300,7 @@ export namespace Prisma {
     isFirstOrder?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
+    restrictedToUserId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24276,6 +24328,7 @@ export namespace Prisma {
     isFirstOrder?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
+    restrictedToUserId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24295,6 +24348,7 @@ export namespace Prisma {
     isFirstOrder?: SortOrder
     sellerId?: SortOrder
     adminId?: SortOrder
+    restrictedToUserId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -26835,6 +26889,7 @@ export namespace Prisma {
     usedCount?: number
     isActive?: boolean
     isFirstOrder?: boolean
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     seller?: sellersCreateNestedOneWithoutCouponsInput
@@ -26855,6 +26910,7 @@ export namespace Prisma {
     isActive?: boolean
     isFirstOrder?: boolean
     sellerId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     usages?: coupon_usagesUncheckedCreateNestedManyWithoutCouponInput
@@ -27010,6 +27066,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFilter<"discount_codes"> | boolean
     sellerId?: StringNullableFilter<"discount_codes"> | string | null
     adminId?: StringNullableFilter<"discount_codes"> | string | null
+    restrictedToUserId?: StringNullableFilter<"discount_codes"> | string | null
     createdAt?: DateTimeFilter<"discount_codes"> | Date | string
     updatedAt?: DateTimeFilter<"discount_codes"> | Date | string
   }
@@ -27159,6 +27216,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesCreateNestedManyWithoutUserInput
@@ -27172,6 +27230,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -27372,6 +27431,7 @@ export namespace Prisma {
     following?: StringNullableListFilter<"users">
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableFilter<"users"> | string | null
+    referralCode?: StringNullableFilter<"users"> | string | null
     createdAt?: DateTimeFilter<"users"> | Date | string
     updatedAt?: DateTimeFilter<"users"> | Date | string
   }
@@ -27780,6 +27840,7 @@ export namespace Prisma {
     usedCount?: number
     isActive?: boolean
     isFirstOrder?: boolean
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     seller?: sellersCreateNestedOneWithoutCouponsInput
@@ -27801,6 +27862,7 @@ export namespace Prisma {
     isFirstOrder?: boolean
     sellerId?: string | null
     adminId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -27833,6 +27895,7 @@ export namespace Prisma {
     usedCount?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seller?: sellersUpdateOneWithoutCouponsNestedInput
@@ -27853,6 +27916,7 @@ export namespace Prisma {
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -27999,6 +28063,7 @@ export namespace Prisma {
     usedCount?: number
     isActive?: boolean
     isFirstOrder?: boolean
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     admin?: adminsCreateNestedOneWithoutCouponsInput
@@ -28019,6 +28084,7 @@ export namespace Prisma {
     isActive?: boolean
     isFirstOrder?: boolean
     adminId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     usages?: coupon_usagesUncheckedCreateNestedManyWithoutCouponInput
@@ -28557,6 +28623,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -28571,6 +28638,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     reviews?: reviewsUncheckedCreateNestedManyWithoutUserInput
@@ -28699,6 +28767,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -28712,6 +28781,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reviews?: reviewsUncheckedUpdateManyWithoutUserNestedInput
@@ -28829,6 +28899,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -28843,6 +28914,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -28971,6 +29043,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -28984,6 +29057,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -30000,6 +30074,7 @@ export namespace Prisma {
     isActive?: boolean
     isFirstOrder?: boolean
     sellerId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30170,6 +30245,7 @@ export namespace Prisma {
     usedCount?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seller?: sellersUpdateOneWithoutCouponsNestedInput
@@ -30189,6 +30265,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usages?: coupon_usagesUncheckedUpdateManyWithoutCouponNestedInput
@@ -30207,6 +30284,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -30266,6 +30344,7 @@ export namespace Prisma {
     name: string
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
+    referralCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30297,6 +30376,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUpdateManyWithoutUserNestedInput
@@ -30309,6 +30389,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -30321,6 +30402,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
+    referralCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -30515,6 +30597,7 @@ export namespace Prisma {
     isActive?: boolean
     isFirstOrder?: boolean
     adminId?: string | null
+    restrictedToUserId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30628,6 +30711,7 @@ export namespace Prisma {
     usedCount?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     admin?: adminsUpdateOneWithoutCouponsNestedInput
@@ -30647,6 +30731,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usages?: coupon_usagesUncheckedUpdateManyWithoutCouponNestedInput
@@ -30665,6 +30750,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     isFirstOrder?: BoolFieldUpdateOperationsInput | boolean
     adminId?: NullableStringFieldUpdateOperationsInput | string | null
+    restrictedToUserId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -28,3 +28,11 @@ export async function getDeviceId(): Promise<string> {
     return cached;
   }
 }
+
+// Without this, the same device id follows whoever logs in next on this
+// device, and mergeActivity() would fold the previous account's guest
+// browsing history into the new one.
+export async function resetDeviceId(): Promise<void> {
+  cached = null;
+  await SecureStore.deleteItemAsync(DEVICE_ID_KEY).catch(() => {});
+}

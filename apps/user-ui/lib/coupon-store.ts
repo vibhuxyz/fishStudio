@@ -11,6 +11,10 @@ export type Coupon = {
   autoApply?: boolean;
   badge?: string;
   isEvent?: boolean;
+  // Real seller_events id — events have no discountCode row in the DB, so
+  // order-service needs this (not `code`, which is just a display slug we
+  // made up from the title) to look the offer up and apply its discount.
+  eventId?: string;
   expiresAt?: string | null;
   maxUses?: number | null;
   usedCount?: number;
@@ -106,6 +110,7 @@ export const useCouponStore = create<CouponState>()(
                   badge: "Event",
                   autoApply: true,
                   isEvent: true,
+                  eventId: ev.id,
                 });
               } else if (ev.type === "DISCOUNT" && ev.discount) {
                 coupons.push({
@@ -117,6 +122,7 @@ export const useCouponStore = create<CouponState>()(
                   badge: "Event",
                   autoApply: true,
                   isEvent: true,
+                  eventId: ev.id,
                 });
               } else if (ev.type === "FLASH_SALE" && ev.discount) {
                 coupons.push({
@@ -127,6 +133,7 @@ export const useCouponStore = create<CouponState>()(
                   minOrderValue: ev.minOrder ?? 0,
                   badge: "Flash Sale",
                   isEvent: true,
+                  eventId: ev.id,
                 });
               }
             }
@@ -192,11 +199,17 @@ export const useCouponStore = create<CouponState>()(
       },
 
       /* ── Apply / remove ────────────────────────────────────────────────── */
+      // Only one coupon at a time: order-service's couponCode is a single
+      // string looked up by exact discountCode match, so a joined "A,B" from
+      // two applied coupons never matches anything and createOrder rejects
+      // the whole order with "Coupon is not valid for this order". Applying a
+      // second coupon replaces the first rather than stacking.
       applyCoupon: (coupon) => {
         set((state) => {
-          if (state.appliedCoupons.some((c) => c.code === coupon.code))
+          if (state.appliedCoupons.length === 1 && state.appliedCoupons[0].code === coupon.code) {
             return state;
-          return { appliedCoupons: [...state.appliedCoupons, coupon] };
+          }
+          return { appliedCoupons: [coupon] };
         });
       },
 
@@ -205,7 +218,7 @@ export const useCouponStore = create<CouponState>()(
           appliedCoupons: state.appliedCoupons.filter((c) => c.code !== code),
           autoApplied:
             state.autoApplied &&
-            state.appliedCoupons.find((c) => c.code === code)?.autoApply
+            state.appliedCoupons.some((c) => c.code === code && c.autoApply)
               ? false
               : state.autoApplied,
         }));

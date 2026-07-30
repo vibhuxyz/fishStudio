@@ -95,7 +95,8 @@ export default function CartScreen() {
             city: selectedAddress.city || data.store.city || "",
             deliveryTimeMinutes: data.store.cityDeliveryTimes?.[selectedAddress.city],
             isOpen: data.store.isOpen,
-            openingHours: data.store.openingHours,
+            openingHours: data.store.opening_hours,
+            closingHours: data.store.closing_hours,
           });
         }
       })

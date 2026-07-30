@@ -3,8 +3,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -40,7 +43,7 @@ const FEATURES = [
 type PhoneStepProps = {
   identifier: string;
   onChangeIdentifier: (value: string) => void;
-  isValidPhone: boolean;
+  isValid: boolean;
   isLoading: boolean;
   onSubmit: () => void;
   onSkip: () => void;
@@ -49,7 +52,7 @@ type PhoneStepProps = {
 export function PhoneStep({
   identifier,
   onChangeIdentifier,
-  isValidPhone,
+  isValid,
   isLoading,
   onSubmit,
   onSkip,
@@ -57,7 +60,11 @@ export function PhoneStep({
   const phoneRef = useRef<TextInput>(null);
   const [termsAccepted, setTermsAccepted] = useState(true);
 
-  const canContinue = isValidPhone && termsAccepted && !isLoading;
+  // Digits-only (and not yet an email) means treat the field as a phone
+  // number — shows the +91 prefix and switches the keyboard/length limit.
+  const isPhoneInput = /^\d+$/.test(identifier.trim()) && !identifier.includes("@");
+
+  const canContinue = isValid && termsAccepted && !isLoading;
 
   // Placeholder affordances — the comp shows them, the backend has no provider
   // wired up yet. Same "coming soon" treatment the old Google button used.
@@ -67,7 +74,7 @@ export function PhoneStep({
   };
 
   const handleContinue = () => {
-    if (!isValidPhone || isLoading) return;
+    if (!isValid || isLoading) return;
     if (!termsAccepted) {
       toast.error("Please accept the Terms & Conditions to continue.");
       return;
@@ -108,9 +115,19 @@ export function PhoneStep({
           </Pressable>
         </View>
 
-        {/* One viewport, no scrolling — the gaps between these five groups take
-            up whatever slack the device height leaves. */}
-        <View style={styles.content}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.flex}
+        >
+        {/* No scrolling when the keyboard is closed — the gaps between these
+            five groups take up whatever slack the device height leaves. Once
+            the keyboard opens there's rarely enough room left, so this also
+            scrolls instead of letting the keyboard cover the CTA. */}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <BrandLockup
             markSize={vs(authScreen.markSize)}
             wordmarkWidth={vs(authScreen.wordmarkWidth)}
@@ -125,36 +142,40 @@ export function PhoneStep({
           </View>
 
           <View>
-            <Text style={styles.fieldLabel}>Mobile Number</Text>
+            <Text style={styles.fieldLabel}>Mobile Number or Email</Text>
             <View style={styles.inputRow}>
-              <Pressable
-                onPress={notYetAvailable("More country codes")}
-                style={styles.countryButton}
-              >
-                <Text style={styles.countryText}>+91</Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={authScreen.chevronSize}
-                  color={colors.inkSoft}
-                />
-              </Pressable>
-              <View style={styles.inputDivider} />
+              {isPhoneInput && (
+                <>
+                  <Pressable
+                    onPress={notYetAvailable("More country codes")}
+                    style={styles.countryButton}
+                  >
+                    <Text style={styles.countryText}>+91</Text>
+                    <Ionicons
+                      name="chevron-down"
+                      size={authScreen.chevronSize}
+                      color={colors.inkSoft}
+                    />
+                  </Pressable>
+                  <View style={styles.inputDivider} />
+                </>
+              )}
               <TextInput
                 ref={phoneRef}
                 style={styles.input}
-                placeholder="Enter your mobile number"
+                placeholder="Enter mobile number or email"
                 placeholderTextColor={colors.textPlaceholder}
                 value={identifier}
                 onChangeText={onChangeIdentifier}
-                keyboardType="phone-pad"
+                keyboardType={isPhoneInput ? "phone-pad" : "email-address"}
                 autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="done"
                 onSubmitEditing={handleContinue}
-                maxLength={10}
+                maxLength={isPhoneInput ? 10 : undefined}
               />
               <Ionicons
-                name="call"
+                name={isPhoneInput ? "call" : "mail-outline"}
                 size={authScreen.fieldIconSize}
                 color={colors.brandMark}
               />
@@ -234,7 +255,7 @@ export function PhoneStep({
               </React.Fragment>
             ))}
           </View>
-        </View>
+        </ScrollView>
 
         <CurvedFooter>
           <Pressable
@@ -286,6 +307,7 @@ export function PhoneStep({
             />
           </Pressable>
         </CurvedFooter>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
@@ -332,7 +354,7 @@ const styles = StyleSheet.create({
     fontSize: authScreen.bodySize,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: spacing[6] + 2,
     paddingTop: vs(spacing[1]),
     paddingBottom: vs(spacing[1]),

@@ -83,6 +83,11 @@ model users {
   favorites favorites[]
   reviews   reviews[]
 
+  // Lazily generated on first read (getUser) rather than at signup, so
+  // existing accounts pick one up the first time they need it instead of
+  // needing a backfill.
+  referralCode String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -115,10 +120,15 @@ model discount_codes {
   admin    admins?         @relation(fields: [adminId], references: [id])
   usages   coupon_usages[]
 
+  // Set only on system-generated referral rewards — restricts redemption to
+  // the one user it was issued to, instead of every customer of the store.
+  restrictedToUserId String? @db.ObjectId
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([sellerId])
+  @@index([restrictedToUserId])
 }
 
 model coupon_usages {

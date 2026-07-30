@@ -12,17 +12,17 @@ COPY . .
 # This creates node_modules at root AND inside apps/auth-service (where Express v5 lives)
 RUN bun install --frozen-lockfile
 
+# Switch to the database package directory
 WORKDIR /app/packages/db-postgres
 # Dummy env for Postgres validation
-RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_oUHCPa3zQpW6@ep-wispy-hill-ao2txbj1.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"' > .env
+RUN echo 'POSTGRES_URL="postgresql://neondb_owner:npg_0LSmuGOPyjg9@ep-square-violet-ak8f7sdn-pooler.c-3.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"' > .env
 RUN bunx prisma generate
 
 
 WORKDIR /app/packages/db-mongo
 
-RUN echo 'MONGO_URL="mongodb+srv://fishstudio:fishstudioxyz12@primarydb.zzfdeea.mongodb.net/fishStudio?authSource=admin"' > .env
+RUN echo 'MONGO_URL="mongodb+srv://vik6026717961:mysecrectpassword@vibhugupta.ujo8ng9.mongodb.net/fishStudio?retryWrites=true&w=majority&appName=vibhuGupta"' > .env
 RUN bunx prisma generate
-
 
 # Switch back to root to continue the build
 WORKDIR /app
@@ -49,10 +49,7 @@ COPY --from=builder /app/node_modules ./node_modules
 # 2. Copy Shared Packages (Crucial! Workspace symlinks point here)
 COPY --from=builder /app/packages ./packages
 
-# 3. Copy shared email templates expected by @repo/libs/sendMail
-COPY --from=builder /app/apps/auth-service/src/utils/email-templates ./apps/auth-service/src/utils/email-templates
-
-# 4. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
+# 3. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
 COPY --from=builder /app/apps/notification-service ./apps/notification-service
 
 # --- RUN FROM THE APP DIRECTORY ---

@@ -54,6 +54,39 @@ export const getProductReviews = async (
   }
 };
 
+// GET /get-my-reviews — the logged-in user's own reviews across every
+// product, newest first, with the reviewed product's title/image attached.
+export const getMyReviews = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
+
+    const [reviews, total] = await Promise.all([
+      prisma.reviews.findMany({
+        where: { userId },
+        include: { product: { select: { id: true, title: true, images: { take: 1 } } } },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.reviews.count({ where: { userId } }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      reviews,
+      pagination: { page, limit, total, hasMore: page * limit < total },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 // POST /create-review — one review per user per product; resubmitting
 // updates the existing review (matches the reviews.userId+productId unique index).
 export const createReview = async (

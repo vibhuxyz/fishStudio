@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket, Smartphone, Landmark, Wallet } from "lucide-react";
+import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket, Smartphone, Landmark, Wallet, Gift } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
 import { useModals } from "@/components/providers/modal-provider";
@@ -43,6 +43,8 @@ export function CheckoutClient() {
     clearAllCoupons,
     fetchAvailableCoupons,
   } = useCouponStore();
+  // The store now holds at most one applied coupon (real or event-derived).
+  const appliedCoupon = appliedCoupons[0] ?? null;
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [deliveryMetadata, setDeliveryMetadata] = useState<{
@@ -58,6 +60,10 @@ export function CheckoutClient() {
   const [selectedSlot, setSelectedSlot] = useState<string>("morning");
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "RAZORPAY">("COD");
   const [onlineMethod, setOnlineMethod] = useState<OnlineMethod>("upi");
+  // Only rewards the referrer, and only on the referee's genuine first
+  // order — order-service silently no-ops it otherwise, so there's no
+  // separate "invalid code" state to show here.
+  const [referralCodeInput, setReferralCodeInput] = useState("");
   const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
 
   // Sync cart data to get latest delivery slots and fees
@@ -310,7 +316,14 @@ export function CheckoutClient() {
         totalAmount: grandTotal,
         paymentMethod,
         deliverySlot: selectedSlot,
-        couponCode: appliedCoupons.length > 0 ? appliedCoupons.map((c) => c.code).join(",") : undefined,
+        // Order-service's couponCode is a single exact-match lookup against
+        // discount_codes — the old join(",") never matched a real
+        // discountCode even for two real coupons, and event-derived offers
+        // (Flash Sale / seasonal Discount / Free Delivery banners) aren't
+        // discount_codes rows at all, so they go through eventId instead.
+        couponCode: appliedCoupon && !appliedCoupon.isEvent ? appliedCoupon.code : undefined,
+        eventId: appliedCoupon?.isEvent ? appliedCoupon.eventId : undefined,
+        referralCode: referralCodeInput.trim() || undefined,
         discountAmount: discount,
       };
 
@@ -477,6 +490,27 @@ export function CheckoutClient() {
               </div>
             </section>
           )}
+
+          {/* Referral code — only affects the referrer's own account, never
+              this order's price, so there's nothing to validate inline. */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Gift className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-xl font-bold">Referral Code</h2>
+            </div>
+            <input
+              type="text"
+              value={referralCodeInput}
+              onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+              placeholder="Friend's referral code (optional)"
+              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium tracking-wide placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              New customers only — applying one does not change your total.
+            </p>
+          </section>
 
           {/* 2. Delivery Slot */}
           <section className="space-y-4">

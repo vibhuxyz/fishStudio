@@ -125,6 +125,7 @@ interface CartState {
     isServiceable: boolean;
     nearbyHint: string | null;
     openingHours: string | null;
+    closingHours: string | null;
   };
 }
 
@@ -174,6 +175,7 @@ export const useCartStore = create<CartState>()(
         isServiceable: true,
         nearbyHint: null,
         openingHours: null,
+        closingHours: null,
       },
 
       addItem: (product, quantity, cuttingType, pieceSize, size, priceBreakdown) => {
@@ -401,6 +403,7 @@ export const useCartStore = create<CartState>()(
         isServiceable: true,
         nearbyHint: null,
         openingHours: null,
+        closingHours: null,
       },
     });
   },
@@ -469,6 +472,7 @@ export const useCartStore = create<CartState>()(
             isServiceable: data.isServiceable !== false,
             nearbyHint: data.nearbyHint || null,
             openingHours: data.openingHours || data.store?.opening_hours || null,
+            closingHours: data.closingHours || data.store?.closing_hours || null,
           },
           items: state.items.map((item) => {
             const fresh = validatedItems.find((p: any) => p.productId === item.product.id);

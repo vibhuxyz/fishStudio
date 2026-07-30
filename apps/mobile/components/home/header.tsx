@@ -1,7 +1,7 @@
 import AddressModal from "@/components/shared/address-modal";
+import { colors } from "@/constants/theme";
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
-import { useStore } from "@/store";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -9,9 +9,18 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 
+// Store hours come from the DB as 24h "HH:mm" strings (e.g. "09:00") — drop
+// ":00" minutes to match the "6 AM" style already used for delivery slots.
+const formatHour = (time?: string) => {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return m ? `${hour12}:${String(m).padStart(2, "0")} ${period}` : `${hour12} ${period}`;
+};
+
 export default function Header() {
   const { selectedLocation, getSelectedAddress } = useAddressStore();
-  const { cart } = useStore();
   const { user } = useUser();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
@@ -87,14 +96,25 @@ export default function Header() {
             </Text>
             <Ionicons name="chevron-down" size={12} color="#676968" style={{ marginLeft: 1 }} />
           </View>
-          <View className="flex-row items-center" style={{ marginTop: 2 }}>
-            <Ionicons name="time-outline" size={11} color="#898B8A" />
-            <Text style={{ fontFamily: "Inter-Medium", fontSize: 10, color: "#676968", marginLeft: 3 }}>
-              {selectedLocation?.deliveryTimeMinutes
-                ? `${selectedLocation.deliveryTimeMinutes}-${selectedLocation.deliveryTimeMinutes + 15} mins delivery`
-                : "30-45 mins delivery"}
-            </Text>
-          </View>
+          {selectedLocation?.isOpen === false ? (
+            <View className="flex-row items-center" style={{ marginTop: 2 }}>
+              <Ionicons name="calendar-outline" size={11} color={colors.primary} />
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: colors.primary, marginLeft: 3 }}>
+                {formatHour(selectedLocation.openingHours) && formatHour(selectedLocation.closingHours)
+                  ? `Scheduled · ${formatHour(selectedLocation.openingHours)} - ${formatHour(selectedLocation.closingHours)}`
+                  : "Store closed · Scheduled delivery only"}
+              </Text>
+            </View>
+          ) : (
+            <View className="flex-row items-center" style={{ marginTop: 2 }}>
+              <Ionicons name="flash" size={11} color={colors.primary} />
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: colors.primary, marginLeft: 3 }}>
+                {selectedLocation?.deliveryTimeMinutes
+                  ? `Instant · ${selectedLocation.deliveryTimeMinutes} min`
+                  : "30-45 mins delivery"}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         {/* Notifications */}
@@ -139,14 +159,9 @@ export default function Header() {
           </View>
         </TouchableOpacity>
 
-        {/* Cart icon */}
+        {/* Profile icon — cart moved to the floating "View cart" bar */}
         <TouchableOpacity
-          onPress={() => {
-            const cartCount = cart.reduce((s, i) => s + (i.quantity || 1), 0);
-            cartCount > 0
-              ? router.push("/(tabs)/cart")
-              : router.push("/(routes)/login");
-          }}
+          onPress={() => router.push(user ? "/(tabs)/profile" : "/(routes)/login")}
           activeOpacity={0.8}
           style={{ marginLeft: 8 }}
         >
@@ -160,29 +175,7 @@ export default function Header() {
               justifyContent: "center",
             }}
           >
-            <Ionicons name="cart-outline" size={20} color="#1A1C1C" />
-            {cart.length > 0 && (
-              <View
-                style={{
-                  position: "absolute",
-                  top: -2,
-                  right: -2,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  paddingHorizontal: 3,
-                  backgroundColor: "#5A2C96",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1.5,
-                  borderColor: "#FFFFFF",
-                }}
-              >
-                <Text style={{ fontFamily: "Inter-Bold", fontSize: 9, color: "#FFFFFF" }}>
-                  {cart.reduce((s, i) => s + (i.quantity || 1), 0)}
-                </Text>
-              </View>
-            )}
+            <Ionicons name="person-outline" size={20} color="#1A1C1C" />
           </View>
         </TouchableOpacity>
       </View>

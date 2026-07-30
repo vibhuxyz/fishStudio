@@ -22,6 +22,7 @@ import {
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -152,6 +153,10 @@ export default function CheckoutScreen() {
   const [placingStage, setPlacingStage] = useState<string | null>(null);
   const [couponSheetOpen, setCouponSheetOpen] = useState(false);
   const [slotSheetOpen, setSlotSheetOpen] = useState(false);
+  // Only rewards the referrer, and only on the referee's genuine first
+  // order — order-service silently no-ops it otherwise, so there's no
+  // separate "invalid code" state to show here.
+  const [referralCodeInput, setReferralCodeInput] = useState("");
 
   // A payment that didn't complete this round but is still safe to retry
   // against the same order. See PaymentIssueCode for what "safe" excludes.
@@ -229,6 +234,22 @@ export default function CheckoutScreen() {
       (r) => r.eligible && r.coupon.autoApply && !isCouponApplied(r.coupon.code),
     )?.coupon;
     if (!candidate) return; // try again once something makes a coupon eligible
+
+    // Event-derived offers (Flash Sale / seasonal Discount / Free Delivery
+    // banners) have no discount_codes row behind them — validate-coupon can
+    // never find one and would always report it invalid. They were just
+    // fetched fresh from store-offers, and order-service re-validates the
+    // eventId for real at order creation, so there's nothing to check here.
+    if (candidate.isEvent) {
+      applyCoupon(candidate);
+      const saved = getDiscountForCoupon(candidate, subtotal);
+      toast.success(
+        saved > 0 ? `Applied ${candidate.code}. You saved ₹${saved}.` : `Applied ${candidate.code} — free delivery.`,
+        { haptic: false },
+      );
+      setAutoApplied(true);
+      return;
+    }
 
     let cancelled = false;
     validateCouponCode(candidate.code, subtotal, selectedLocation.storeId).then(({ coupon }) => {
@@ -575,10 +596,17 @@ export default function CheckoutScreen() {
         totalAmount: grandTotal,
         paymentMethod,
         deliverySlot: selectedSlot,
-        // Order-service's couponCode is a single exact-match lookup — sending
-        // more than one code here (the old join(",")) never matches a real
-        // discountCode and createOrder rejects the whole order.
-        couponCode: appliedCoupon?.code,
+        // Order-service's couponCode is a single exact-match lookup against
+        // discount_codes — sending more than one code here (the old
+        // join(",")) never matches a real discountCode and createOrder
+        // rejects the whole order. Event-derived offers (Flash Sale /
+        // seasonal Discount / Free Delivery banners) aren't discount_codes
+        // rows at all — they go through eventId instead, or the same
+        // "invalid coupon" rejection happens for a different reason (no
+        // discountCode ever existed for the fabricated event label).
+        couponCode: appliedCoupon && !appliedCoupon.isEvent ? appliedCoupon.code : undefined,
+        eventId: appliedCoupon?.isEvent ? appliedCoupon.eventId : undefined,
+        referralCode: referralCodeInput.trim() || undefined,
         discountAmount: discount,
       };
 
@@ -946,6 +974,34 @@ export default function CheckoutScreen() {
               <Ionicons name="chevron-forward" size={16} color="#A1A1AA" />
             </TouchableOpacity>
           )}
+        </View>
+
+        {/* ── Referral code ────────────────────────────────────────── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1.5,
+              borderColor: "#E2E2E2",
+              borderRadius: 16,
+              paddingHorizontal: 16,
+            }}
+          >
+            <MaterialCommunityIcons name="account-heart-outline" size={20} color="#5A2C96" />
+            <TextInput
+              value={referralCodeInput}
+              onChangeText={(t) => setReferralCodeInput(t.toUpperCase())}
+              placeholder="Friend's referral code (optional)"
+              placeholderTextColor="#A1A1AA"
+              autoCapitalize="characters"
+              style={{ flex: 1, marginLeft: 10, paddingVertical: 14, fontFamily: "Inter-SemiBold", fontSize: 13, color: "#1A1C1C" }}
+            />
+          </View>
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#898B8A", marginTop: 6, marginLeft: 4 }}>
+            New customers only — applying one does not change your total.
+          </Text>
         </View>
 
         {/* ── Bill Summary ─────────────────────────────────────────── */}

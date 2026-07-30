@@ -75,6 +75,7 @@ import { getProductStock } from "../controllers/product/stock.controller.js";
 import {
   createReview,
   deleteReview,
+  getMyReviews,
   getProductReviews,
 } from "../controllers/product/review.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller } from "@repo/middlewares";
@@ -300,6 +301,7 @@ router.post("/merge-activity", mergeActivity);
 router.post("/validate-cart", validateCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
 router.get("/get-product-reviews/:productId", getProductReviews);
+router.get("/get-my-reviews", isAuthenticated, getMyReviews);
 router.post("/create-review", isAuthenticated, createReview);
 router.delete("/delete-review/:reviewId", isAuthenticated, deleteReview);
 router.get("/public/store-offers/:storeId", getStorePublicOffers);

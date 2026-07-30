@@ -1,4 +1,4 @@
-import FloatingTabBar from "@/components/shared/floating-tab-bar";
+import FloatingCartBar from "@/components/shared/floating-cart-bar";
 import { Tabs } from "expo-router";
 import React from "react";
 import { View } from "react-native";
@@ -9,7 +9,9 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          // Hide the native tab bar — FloatingTabBar replaces it
+          // No floating pill nav anymore — Home is reached via in-app
+          // navigation/back buttons, Profile lives in the header, Cart via
+          // the floating cart bar below. Native tab bar stays hidden to match.
           tabBarStyle: { display: "none" },
         }}
       >
@@ -18,8 +20,7 @@ export default function TabLayout() {
         <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       </Tabs>
 
-      {/* Custom floating pill tab bar — auto-hides on scroll */}
-      <FloatingTabBar />
+      <FloatingCartBar />
     </View>
   );
 }

@@ -28,6 +28,7 @@ import { useModals } from "@/components/providers/modal-provider";
 import { UserProfileDropdown } from "@/components/shared/user-profile-dropdown";
 import NotificationBell from "./notification-bell";
 import { useAddressStore } from "@/lib/address-store";
+import { formatStoreHour } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
 import { useAnnouncement } from "@/components/providers/announcement-provider";
@@ -430,6 +431,14 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     return () => clearInterval(id);
   }, []);
 
+  const scheduleWindow = (open?: string | null, close?: string | null) => {
+    const openLabel = formatStoreHour(open);
+    const closeLabel = formatStoreHour(close);
+    return openLabel && closeLabel
+      ? `Open ${openLabel} - ${closeLabel}`
+      : `Opens at ${openLabel || "9 AM"}`;
+  };
+
   const deliveryLabel: { primary: string; secondary: string | null } = (() => {
     if (!hydrated) return { primary: "...", secondary: null };
 
@@ -442,7 +451,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     if (deliveryMetadata.isStoreOpen === false) {
       return {
         primary: "Scheduled delivery available",
-        secondary: `Opens at ${deliveryMetadata.openingHours || "9 AM"}`,
+        secondary: scheduleWindow(deliveryMetadata.openingHours, deliveryMetadata.closingHours),
       };
     }
 
@@ -458,7 +467,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       if (selectedLocation.isOpen === false) {
         return {
           primary: "Scheduled delivery available",
-          secondary: `Opens at ${selectedLocation.opening_hours || "9 AM"}`,
+          secondary: scheduleWindow(selectedLocation.opening_hours, selectedLocation.closing_hours),
         };
       }
       if (selectedLocation.deliveryTimeMinutes) {

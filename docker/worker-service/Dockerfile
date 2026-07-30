@@ -35,10 +35,7 @@ COPY --from=builder /app/node_modules ./node_modules
 # 2. Copy Shared Packages (Crucial! Workspace symlinks point here)
 COPY --from=builder /app/packages ./packages
 
-# 3. Copy shared email templates expected by @repo/libs/sendMail
-COPY --from=builder /app/apps/auth-service/src/utils/email-templates ./apps/auth-service/src/utils/email-templates
-
-# 4. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
+# 3. Copy the specific App (Contains dist, package.json, and LOCAL node_modules)
 COPY --from=builder /app/apps/worker-service ./apps/worker-service
 
 # --- RUN FROM THE APP DIRECTORY ---

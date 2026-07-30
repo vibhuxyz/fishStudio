@@ -487,11 +487,14 @@ export const getStorePublicOffers = async (
       }),
     ]);
 
-    // Filter: inactive, expired, or globally exhausted coupons are never shown
+    // Filter: inactive, expired, or globally exhausted coupons are never shown.
+    // Personally-issued coupons (referral rewards, etc.) are also hidden from
+    // everyone except the account they were generated for.
     let validCodes = discountCodes.filter((dc) => {
       if (!dc.isActive) return false;
       if (dc.expiresAt && new Date(dc.expiresAt) <= now) return false;
       if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) return false;
+      if (dc.restrictedToUserId && dc.restrictedToUserId !== userId) return false;
       return true;
     });
 

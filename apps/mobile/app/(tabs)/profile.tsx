@@ -1,12 +1,14 @@
 import useUser from "@/hooks/useUser";
-import { useStore } from "@/store";
+import { useAddressStore } from "@/lib/address-store";
+import { fetchRecentlyViewed } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
+import { clearStoredAuth } from "@/utils/auth";
 import { toast } from "@/utils/toast";
+import { colors } from "@/constants/theme";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
@@ -15,21 +17,33 @@ import {
   Linking,
   Modal,
   ScrollView,
+  Share,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CouponSheet from "@/components/shared/coupon-sheet";
+import SectionCarousel from "@/components/home/section-carousel";
 
-// ─── Colors from theme ────────────────────────────────────────────────────────
-const PRIMARY = "#5A2C96";
-const PRIMARY_DARK = "#300861";
-const SCREEN_BG = "#F4F4F4";
+const PRIMARY = colors.primary;
+const SUPPORT_WHATSAPP_URL = "https://wa.me/919999999999";
+
+// The six stages a customer actually cares about tracking — mirrors
+// STATUS_CONFIG's states but with the profile mockup's own short labels.
+const ORDER_QUICK_FILTERS: { key: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: "all", label: "All Orders", icon: "cube-outline" },
+  { key: "PENDING", label: "Confirmed", icon: "checkmark-circle-outline" },
+  { key: "ACCEPTED", label: "Packed", icon: "cube-outline" },
+  { key: "SHIPPED", label: "Out for Delivery", icon: "bicycle-outline" },
+  { key: "DELIVERED", label: "Delivered", icon: "home-outline" },
+  { key: "CANCELLED", label: "Cancelled", icon: "close-outline" },
+];
 
 export default function Profile() {
   const { user: cachedUser, updateUserData, clearUserData } = useUser();
-  const { wishlist } = useStore();
+  const { selectedLocation } = useAddressStore();
 
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -39,6 +53,7 @@ export default function Profile() {
   const [isUploading, setIsUploading] = useState(false);
   const [appliedFeatures, setAppliedFeatures] = useState<string[]>([]);
   const [isApplyingAI, setIsApplyingAI] = useState(false);
+  const [couponSheetOpen, setCouponSheetOpen] = useState(false);
 
   const { data: userData, isLoading: userLoading, refetch: refetchUser } = useQuery({
     queryKey: ["logged-in-user"],
@@ -50,9 +65,45 @@ export default function Profile() {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: orderStats } = useQuery({
+    queryKey: ["user-order-stats"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/order/api/user-order-stats");
+      return res.data as { totalOrders: number; totalSavings: number };
+    },
+    enabled: !!cachedUser,
+    staleTime: 1000 * 60,
+  });
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["notifications-unread-count"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/admin/api/get-user-notifications");
+      const notifications = res.data?.notifications ?? [];
+      return notifications.filter((n: { status: string }) => n.status === "Unread").length;
+    },
+    enabled: !!cachedUser,
+    staleTime: 1000 * 60,
+  });
+
+  const { data: recentlyViewed = [] } = useQuery({
+    queryKey: ["recently-viewed", selectedLocation?.storeId, selectedLocation?.pincode],
+    queryFn: () =>
+      fetchRecentlyViewed({
+        storeId: selectedLocation?.storeId,
+        pincode: selectedLocation?.pincode,
+        city: selectedLocation?.city,
+      }),
+    enabled: !!cachedUser,
+    staleTime: 1000 * 60 * 2,
+  });
+
   const user = userData || cachedUser;
-  const addresses: any[] = user?.addresses || [];
-  const joinYear = user?.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear();
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
+    : "—";
+  const totalSavings = orderStats?.totalSavings ?? 0;
+  const totalOrders = orderStats?.totalOrders ?? 0;
 
   // ── Photo upload ──────────────────────────────────────────────────────────
   const pickImage = async () => {
@@ -141,29 +192,47 @@ export default function Profile() {
   const logOutHandler = async () => {
     try { await axiosInstance.post("/auth/api/logout-user"); } catch {}
     await clearUserData();
-    await SecureStore.deleteItemAsync("access_token");
-    await SecureStore.deleteItemAsync("refresh_token");
+    await clearStoredAuth();
     router.replace("/(routes)/login");
+  };
+
+  const handleShareReferral = async () => {
+    if (!user?.referralCode) return;
+    try {
+      await Share.share({
+        message: `Join me on FishStudio for fresh fish & meat delivered fast! Use my code ${user.referralCode} when you sign up — https://fishstudio.app`,
+      });
+    } catch {
+      // user dismissed the sheet — ignore
+    }
+  };
+
+  const handleOffersPress = () => {
+    if (!selectedLocation?.storeId) {
+      toast.info("Set your delivery location first to see store offers");
+      return;
+    }
+    setCouponSheetOpen(true);
   };
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!cachedUser) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: SCREEN_BG }}>
-        <PageHeader />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
+        <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: "#EDE9FE", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
             <Ionicons name="person-outline" size={38} color={PRIMARY} />
           </View>
-          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: "#1A1C1C", marginBottom: 8 }}>Not logged in</Text>
-          <Text style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#898B8A", textAlign: "center", marginBottom: 24 }}>
+          <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: colors.textPrimary, marginBottom: 8 }}>Not logged in</Text>
+          <Text style={{ fontFamily: "Inter-Regular", fontSize: 14, color: colors.textMuted, textAlign: "center", marginBottom: 24 }}>
             Login to view your profile, orders and more
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/(routes)/login")}
             style={{ backgroundColor: PRIMARY, width: "100%", paddingVertical: 16, borderRadius: 50, alignItems: "center" }}
           >
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#FFFFFF" }}>Login / Sign Up</Text>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: colors.white }}>Login / Sign Up</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -171,240 +240,268 @@ export default function Profile() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: SCREEN_BG }}>
-      <StatusBar barStyle="dark-content" backgroundColor={SCREEN_BG} />
-      <PageHeader />
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY} />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
-
-        {/* ── Profile Card ─────────────────────────────────────────────── */}
-        <Card style={{ alignItems: "center", paddingVertical: 28 }}>
-          {userLoading ? (
-            <ActivityIndicator color={PRIMARY} style={{ paddingVertical: 32 }} />
-          ) : (
-            <>
-              {/* Avatar */}
-              <View style={{ position: "relative", marginBottom: 14 }}>
-                <Image
-                  source={{
-                    uri: user?.avatar?.url ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=6627F2&color=fff&size=200`,
-                  }}
-                  style={{ width: 100, height: 100, borderRadius: 50 }}
-                  resizeMode="cover"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPhotoModal(true)}
-                  style={{
-                    position: "absolute", bottom: 0, right: 0,
-                    width: 30, height: 30, borderRadius: 15,
-                    backgroundColor: PRIMARY,
-                    alignItems: "center", justifyContent: "center",
-                    borderWidth: 2, borderColor: "#FFFFFF",
-                  }}
-                >
-                  <Ionicons name="pencil" size={13} color="#FFFFFF" />
-                </TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        {/* ── Purple header ─────────────────────────────────────────────── */}
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ paddingHorizontal: 20, paddingBottom: 40, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+        >
+          <SafeAreaView edges={["top"]}>
+            <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", paddingTop: 4 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 12 }}>
+                {userLoading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <>
+                    <View style={{ position: "relative", marginRight: 14 }}>
+                      <Image
+                        source={{
+                          uri: user?.avatar?.url ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=FFFFFF&color=5A2C96&size=200`,
+                        }}
+                        style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" }}
+                        resizeMode="cover"
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowPhotoModal(true)}
+                        style={{
+                          position: "absolute", bottom: -2, right: -2,
+                          width: 22, height: 22, borderRadius: 11,
+                          backgroundColor: colors.white,
+                          alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons name="pencil" size={11} color={PRIMARY} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: colors.white }} numberOfLines={1}>
+                        {user?.name || "User"}
+                      </Text>
+                      {/* API responses use phone_number (raw Mongo field); the
+                          cached local user object normalizes it to phone —
+                          fall back across both so it doesn't blink out
+                          between the two sources. */}
+                      {(user?.phone_number || user?.phone) ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                          <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "rgba(255,255,255,0.8)" }}>
+                            {user.phone_number || user.phone}
+                          </Text>
+                          <Ionicons name="checkmark-circle" size={13} color="#4ADE80" style={{ marginLeft: 6 }} />
+                        </View>
+                      ) : null}
+                    </View>
+                  </>
+                )}
               </View>
 
-              <Text style={{ fontFamily: "Inter-Bold", fontSize: 22, color: "#1A1C1C", marginBottom: 4 }}>
-                {user?.name || "User"}
-              </Text>
-              <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A", marginBottom: 14 }}>
-                FishStudio Member since {joinYear}
-              </Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity onPress={() => router.push("/(routes)/notifications")} style={{ padding: 2 }}>
+                  <View>
+                    <Ionicons name="notifications-outline" size={22} color={colors.white} />
+                    {unreadCount > 0 && (
+                      <View style={{ position: "absolute", top: -1, right: -1, width: 8, height: 8, borderRadius: 4, backgroundColor: "#F87171" }} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/(routes)/settings")} style={{ padding: 2 }}>
+                  <Ionicons name="settings-outline" size={22} color={colors.white} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
 
-              {/* Premium badge */}
-              <LinearGradient
-                colors={["#0DB3D9", "#5A2C96"]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={{ borderRadius: 50, paddingHorizontal: 20, paddingVertical: 8 }}
-              >
-                <Text style={{ fontFamily: "Inter-Bold", fontSize: 11, color: "#FFFFFF", letterSpacing: 1.5, textTransform: "uppercase" }}>
-                  Premium Account
-                </Text>
-              </LinearGradient>
-            </>
-          )}
-        </Card>
+        <View style={{ paddingHorizontal: 16, marginTop: -24 }}>
+          {/* ── Savings banner + stats ──────────────────────────────────── */}
+          <View style={{ backgroundColor: colors.white, borderRadius: 20, padding: 16, shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                <MaterialCommunityIcons name="sale-outline" size={16} color={PRIMARY} />
+              </View>
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary, flex: 1 }}>
+                {totalSavings > 0 ? "You are saving more with FishStudio!" : "Apply offers at checkout to start saving!"}
+              </Text>
+            </View>
 
-        {/* ── Quick Actions ────────────────────────────────────────────── */}
-        <Card>
-          <MenuRow
-            icon={<MaterialCommunityIcons name="receipt-outline" size={20} color="#676968" />}
-            label="Order History"
-            onPress={() => router.push("/(routes)/my-orders")}
-          />
-          <View style={{ height: 1, backgroundColor: "#F3F3F3" }} />
-          <MenuRow
-            icon={<Ionicons name="heart-outline" size={20} color="#676968" />}
-            label="Saved Selections"
-            onPress={() => router.push("/(routes)/products")}
-          />
-          <View style={{ height: 1, backgroundColor: "#F3F3F3" }} />
+            <View style={{ flexDirection: "row", marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#F3F4F6" }}>
+              <StatItem icon="pricetag-outline" iconColor={colors.offerGreen} label="Total Savings" value={`₹${totalSavings}`} />
+              <StatItem icon="bag-handle-outline" iconColor={PRIMARY} label="Orders" value={String(totalOrders)} />
+              <StatItem icon="calendar-outline" iconColor="#2563EB" label="Member Since" value={memberSince} />
+            </View>
+          </View>
+
+          {/* ── My Orders quick-nav ─────────────────────────────────────── */}
+          <View style={{ backgroundColor: colors.white, borderRadius: 20, padding: 16, marginTop: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: colors.textPrimary }}>My Orders</Text>
+              <TouchableOpacity onPress={() => router.push("/(routes)/my-orders")} style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: PRIMARY }}>View All Orders</Text>
+                <Ionicons name="chevron-forward" size={14} color={PRIMARY} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              {ORDER_QUICK_FILTERS.map((f) => {
+                const active = f.key === "all";
+                return (
+                  <TouchableOpacity
+                    key={f.key}
+                    onPress={() => router.push({ pathname: "/(routes)/my-orders", params: { status: f.key } })}
+                    style={{ width: "33.33%", alignItems: "center", marginBottom: 12 }}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={{
+                        width: 44, height: 44, borderRadius: 14,
+                        backgroundColor: active ? PRIMARY : colors.secondaryBg,
+                        alignItems: "center", justifyContent: "center", marginBottom: 6,
+                      }}
+                    >
+                      <Ionicons name={f.icon} size={19} color={active ? colors.white : "#6B7280"} />
+                    </View>
+                    <Text style={{ fontFamily: "Inter-Medium", fontSize: 10.5, color: colors.textMuted, textAlign: "center" }} numberOfLines={1}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* ── Refer & Earn ─────────────────────────────────────────────── */}
+          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primarySurface, borderRadius: 20, padding: 16, marginTop: 12 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: PRIMARY, alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+              <MaterialCommunityIcons name="gift-outline" size={22} color={colors.white} />
+            </View>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.textPrimary }}>Refer & Earn</Text>
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 11.5, color: colors.textMuted, marginTop: 2, lineHeight: 15 }}>
+                {user?.referralCode
+                  ? `Share code ${user.referralCode} — you earn ₹100 when a friend places their first order.`
+                  : "Invite your friends and earn rewards on every referral!"}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleShareReferral}
+              disabled={!user?.referralCode}
+              style={{ backgroundColor: PRIMARY, borderRadius: 50, paddingHorizontal: 16, paddingVertical: 10, opacity: user?.referralCode ? 1 : 0.5 }}
+            >
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: colors.white }}>Refer Now</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Menu grid ────────────────────────────────────────────────── */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 12, marginHorizontal: -6 }}>
+            <MenuGridItem
+              icon="location-outline" iconBg="#EDE9FE" iconColor={PRIMARY}
+              label="My Addresses" sub="Manage your saved addresses"
+              onPress={() => router.push("/(routes)/shipping")}
+            />
+            <MenuGridItem
+              icon="card-outline" iconBg="#DBEAFE" iconColor="#2563EB"
+              label="Payment Methods" sub="Cards, UPI & Wallets"
+              onPress={() => toast.info("No cards saved — pay via UPI, card, or net banking at checkout")}
+            />
+            <MenuGridItem
+              icon="heart-outline" iconBg="#FCE7F3" iconColor="#DB2777"
+              label="Saved Selections" sub="Your wishlist"
+              onPress={() => router.push("/(tabs)/wishlist")}
+            />
+            <MenuGridItem
+              icon="pricetags-outline" iconBg="#FEE2E2" iconColor="#DC2626"
+              label="Offers & Coupons" sub="View all offers & coupons"
+              onPress={handleOffersPress}
+            />
+            <MenuGridItem
+              icon="star-outline" iconBg="#DBEAFE" iconColor="#2563EB"
+              label="My Reviews" sub="Reviews for your orders"
+              onPress={() => router.push("/(routes)/my-reviews")}
+            />
+            <MenuGridItem
+              icon="headset-outline" iconBg="#D1FAE5" iconColor={colors.success}
+              label="Help & Support" sub="FAQs, chat & more"
+              onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+            />
+            <MenuGridItem
+              icon="notifications-outline" iconBg="#FEF3C7" iconColor="#D97706"
+              label="Notifications" sub="Order & offers updates"
+              onPress={() => router.push("/(routes)/notifications")}
+            />
+            <MenuGridItem
+              icon="information-circle-outline" iconBg="#EDE9FE" iconColor={PRIMARY}
+              label="About FishStudio" sub="Learn more about us"
+              onPress={() => router.push("/(routes)/about")}
+            />
+          </View>
+
+          {/* ── Logout ───────────────────────────────────────────────────── */}
           <TouchableOpacity
             onPress={logOutHandler}
             activeOpacity={0.7}
-            style={{ flexDirection: "row", alignItems: "center", paddingVertical: 16, paddingHorizontal: 4 }}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.white, borderRadius: 16, paddingVertical: 15, marginTop: 12 }}
           >
-            <View style={{ width: 28, alignItems: "center", marginRight: 14 }}>
-              <Ionicons name="log-out-outline" size={20} color={PRIMARY} />
-            </View>
-            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: PRIMARY }}>Logout</Text>
+            <Ionicons name="log-out-outline" size={18} color={PRIMARY} style={{ marginRight: 8 }} />
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: PRIMARY }}>Logout</Text>
           </TouchableOpacity>
-        </Card>
 
-        {/* ── Contact Details ──────────────────────────────────────────── */}
-        <Card>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>Contact Details</Text>
-            <TouchableOpacity onPress={() => router.push("/(routes)/settings")}>
-              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: "#A1A1AA", letterSpacing: 0.5 }}>EDIT</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={{ marginBottom: 14 }}>
-            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#A1A1AA", letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>
-              Email Address
-            </Text>
-            <Text style={{ fontFamily: "Inter-Medium", fontSize: 15, color: "#1A1C1C" }}>
-              {user?.email || "—"}
-            </Text>
-          </View>
-          <View>
-            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: "#A1A1AA", letterSpacing: 1, textTransform: "uppercase", marginBottom: 3 }}>
-              Phone Number
-            </Text>
-            <Text style={{ fontFamily: "Inter-Medium", fontSize: 15, color: "#1A1C1C" }}>
-              {user?.phone ? `+91 ${user.phone}` : "—"}
-            </Text>
-          </View>
-        </Card>
-
-        {/* ── Payment ──────────────────────────────────────────────────── */}
-        <Card>
-          <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C", marginBottom: 12 }}>Payment</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F7F7F7", borderRadius: 12, padding: 14 }}>
-            <Ionicons name="shield-checkmark-outline" size={20} color="#898B8A" style={{ marginRight: 10 }} />
-            <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A", flex: 1 }}>
-              No cards are saved. Pay securely via UPI, card, or net banking at checkout.
-            </Text>
-          </View>
-        </Card>
-
-        {/* ── Saved Addresses ──────────────────────────────────────────── */}
-        <View style={{ marginTop: 20 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 22, color: "#1A1C1C" }}>Saved Addresses</Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(routes)/shipping")}
-              style={{ backgroundColor: PRIMARY, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 50 }}
-            >
-              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: "#FFFFFF" }}>Add New</Text>
-            </TouchableOpacity>
-          </View>
-
-          {addresses.length === 0 ? (
-            <Card>
-              <Text style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#898B8A", textAlign: "center", paddingVertical: 8 }}>
-                No saved addresses yet.
-              </Text>
-            </Card>
-          ) : (
-            addresses.map((addr: any, i: number) => (
-              <View
-                key={addr.id || i}
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: 16,
-                  marginBottom: 12,
-                  flexDirection: "row",
-                  overflow: "hidden",
-                  shadowColor: "#000",
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 2 },
-                  elevation: 2,
-                }}
-              >
-                {/* Left accent bar */}
-                <View style={{ width: 4, backgroundColor: i === 0 ? PRIMARY : "#E2E2E2" }} />
-
-                <View style={{ flex: 1, padding: 16 }}>
-                  <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-                    <View>
-                      {/* Badge */}
-                      <View style={{
-                        alignSelf: "flex-start",
-                        paddingHorizontal: 10, paddingVertical: 4,
-                        borderRadius: 50,
-                        backgroundColor: i === 0 ? "#EDE9FE" : "#F3F3F3",
-                        marginBottom: 8,
-                      }}>
-                        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: i === 0 ? PRIMARY : "#898B8A" }}>
-                          {i === 0 ? "Primary" : "Secondary"}
-                        </Text>
-                      </View>
-                      <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C", marginBottom: 4 }}>
-                        {addr.label || addr.name || "Address"}
-                      </Text>
-                      <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A" }}>
-                        {addr.street}{addr.area ? `, ${addr.area}` : ""}{addr.city ? `, ${addr.city}` : ""}
-                      </Text>
-                    </View>
-                    <TouchableOpacity style={{ padding: 4 }}>
-                      <Ionicons name="ellipsis-vertical" size={18} color="#A1A1AA" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+          {/* ── Recently Viewed ──────────────────────────────────────────── */}
+          {recentlyViewed.length > 0 && (
+            <View style={{ marginTop: 20, marginHorizontal: -16 }}>
+              <View style={{ paddingHorizontal: 16 }}>
+                <SectionCarousel title="Recently Viewed" products={recentlyViewed} />
               </View>
-            ))
-          )}
-        </View>
-
-        {/* ── Party Order CTA ──────────────────────────────────────────── */}
-        <View style={{ marginTop: 8, borderRadius: 24, overflow: "hidden" }}>
-          <LinearGradient
-            colors={["#5B21F0", "#5A2C96"]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ padding: 24, position: "relative", overflow: "hidden" }}
-          >
-            {/* Watermark fish icon */}
-            <View style={{ position: "absolute", right: -10, bottom: -10, opacity: 0.12 }}>
-              <MaterialCommunityIcons name="fish" size={140} color="#FFFFFF" />
             </View>
+          )}
 
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 22, color: "#FFFFFF", marginBottom: 10, lineHeight: 28 }}>
-              Have a party order?
-            </Text>
-            <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20, lineHeight: 20 }}>
-              Bulk orders of fresh fish and meat for weddings, parties, and events — chat with us for custom cuts, quantities, and delivery scheduling.
-            </Text>
-            <TouchableOpacity
-              onPress={() => Linking.openURL("https://wa.me/919999999999")}
-              activeOpacity={0.85}
-              style={{
-                alignSelf: "flex-start",
-                backgroundColor: "#FFFFFF",
-                paddingHorizontal: 28,
-                paddingVertical: 13,
-                borderRadius: 50,
-              }}
+          {/* ── Party Order CTA ──────────────────────────────────────────── */}
+          <View style={{ marginTop: 4, borderRadius: 24, overflow: "hidden" }}>
+            <LinearGradient
+              colors={["#5B21F0", PRIMARY]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={{ padding: 24, position: "relative", overflow: "hidden" }}
             >
-              <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: "#1A1C1C", letterSpacing: 1, textTransform: "uppercase" }}>
-                Chat With Us
-              </Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
+              <View style={{ position: "absolute", right: -10, bottom: -10, opacity: 0.12 }}>
+                <MaterialCommunityIcons name="fish" size={140} color={colors.white} />
+              </View>
 
-        <View style={{ height: 20 }} />
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 22, color: colors.white, marginBottom: 10, lineHeight: 28 }}>
+                Have a party order?
+              </Text>
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20, lineHeight: 20 }}>
+                Bulk orders of fresh fish and meat for weddings, parties, and events — chat with us for custom cuts, quantities, and delivery scheduling.
+              </Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+                activeOpacity={0.85}
+                style={{ alignSelf: "flex-start", backgroundColor: colors.white, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 50 }}
+              >
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: colors.textPrimary, letterSpacing: 1, textTransform: "uppercase" }}>
+                  Chat With Us
+                </Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </View>
       </ScrollView>
+
+      <CouponSheet
+        visible={couponSheetOpen}
+        onClose={() => setCouponSheetOpen(false)}
+        subtotal={0}
+        deliveryCharge={0}
+        storeId={selectedLocation?.storeId}
+      />
 
       {/* ── Photo Modal ─────────────────────────────────────────────────────── */}
       <Modal visible={showPhotoModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F3F3" }}>
-            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>Change Photo</Text>
+            <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: colors.textPrimary }}>Change Photo</Text>
             <TouchableOpacity onPress={() => { setShowPhotoModal(false); setSelectedImage(null); setOriginalImageUrl(null); setUploadedImageUrl(null); setAppliedFeatures([]); }}>
               <Ionicons name="close" size={24} color="#676968" />
             </TouchableOpacity>
@@ -421,8 +518,8 @@ export default function Profile() {
                     <Ionicons name="camera" size={24} color="#1D4ED8" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#1A1C1C" }}>Take Photo</Text>
-                    <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A" }}>Use camera</Text>
+                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: colors.textPrimary }}>Take Photo</Text>
+                    <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted }}>Use camera</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color="#A1A1AA" />
                 </TouchableOpacity>
@@ -434,8 +531,8 @@ export default function Profile() {
                     <Ionicons name="images" size={24} color="#15803D" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#1A1C1C" }}>Choose from Library</Text>
-                    <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A" }}>From gallery</Text>
+                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: colors.textPrimary }}>Choose from Library</Text>
+                    <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted }}>From gallery</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color="#A1A1AA" />
                 </TouchableOpacity>
@@ -450,7 +547,7 @@ export default function Profile() {
                   ) : (
                     <Image source={{ uri: uploadedImageUrl || selectedImage }} style={{ width: 120, height: 120, borderRadius: 60 }} resizeMode="cover" />
                   )}
-                  <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#898B8A", marginTop: 8 }}>Preview</Text>
+                  <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, marginTop: 8 }}>Preview</Text>
                 </View>
 
                 {!uploadedImageUrl ? (
@@ -459,13 +556,13 @@ export default function Profile() {
                     disabled={isUploading}
                     style={{ backgroundColor: PRIMARY, paddingVertical: 16, borderRadius: 50, alignItems: "center" }}
                   >
-                    <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#FFFFFF" }}>
+                    <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.white }}>
                       {isUploading ? "Uploading..." : "Upload Photo"}
                     </Text>
                   </TouchableOpacity>
                 ) : (
                   <View style={{ gap: 12 }}>
-                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }}>Enhance with AI (optional)</Text>
+                    <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: colors.textPrimary }}>Enhance with AI (optional)</Text>
                     {[
                       { key: "bg-remove", label: "Remove Background", icon: "cut", color: PRIMARY, bg: "#EDE9FE" },
                       { key: "relight", label: "Relight", icon: "sunny", color: "#D97706", bg: "#FEF3C7" },
@@ -480,7 +577,7 @@ export default function Profile() {
                         <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: f.bg, alignItems: "center", justifyContent: "center", marginRight: 14 }}>
                           <Ionicons name={f.icon as any} size={20} color={f.color} />
                         </View>
-                        <Text style={{ flex: 1, fontFamily: "Inter-SemiBold", fontSize: 14, color: "#1A1C1C" }}>{f.label}</Text>
+                        <Text style={{ flex: 1, fontFamily: "Inter-SemiBold", fontSize: 14, color: colors.textPrimary }}>{f.label}</Text>
                         {appliedFeatures.includes(f.key) && <Ionicons name="checkmark-circle" size={20} color={PRIMARY} />}
                       </TouchableOpacity>
                     ))}
@@ -499,7 +596,7 @@ export default function Profile() {
                       onPress={saveFinalImage}
                       style={{ flex: 1, paddingVertical: 14, backgroundColor: PRIMARY, borderRadius: 50, alignItems: "center" }}
                     >
-                      <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#FFFFFF" }}>Save Photo</Text>
+                      <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.white }}>Save Photo</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -514,48 +611,54 @@ export default function Profile() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function PageHeader() {
+function StatItem({
+  icon,
+  iconColor,
+  label,
+  value,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  label: string;
+  value: string;
+}) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-      <Ionicons name="location-outline" size={18} color={PRIMARY} style={{ marginRight: 6 }} />
-      <Text style={{ fontFamily: "Inter-Bold", fontSize: 20, color: PRIMARY_DARK, flex: 1, lineHeight: 26, letterSpacing: -0.3 }}>
-        {"MEAT. FISH.\nREPEAT"}
-      </Text>
-      <TouchableOpacity onPress={() => router.push("/(routes)/products")} style={{ padding: 4 }}>
-        <Ionicons name="search-outline" size={22} color="#1A1C1C" />
+    <View style={{ flex: 1, alignItems: "center" }}>
+      <Ionicons name={icon} size={18} color={iconColor} />
+      <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.textPrimary, marginTop: 6 }}>{value}</Text>
+      <Text style={{ fontFamily: "Inter-Regular", fontSize: 10.5, color: colors.textMuted, marginTop: 1 }}>{label}</Text>
+    </View>
+  );
+}
+
+function MenuGridItem({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  sub,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  sub: string;
+  onPress: () => void;
+}) {
+  return (
+    <View style={{ width: "50%", padding: 6 }}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        style={{ backgroundColor: colors.white, borderRadius: 16, padding: 14 }}
+      >
+        <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: iconBg, alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+          <Ionicons name={icon} size={17} color={iconColor} />
+        </View>
+        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }} numberOfLines={1}>{label}</Text>
+        <Text style={{ fontFamily: "Inter-Regular", fontSize: 10.5, color: colors.textMuted, marginTop: 2 }} numberOfLines={1}>{sub}</Text>
       </TouchableOpacity>
     </View>
-  );
-}
-
-function Card({ children, style }: { children: React.ReactNode; style?: any }) {
-  return (
-    <View style={[{
-      backgroundColor: "#FFFFFF",
-      borderRadius: 20,
-      padding: 20,
-      marginTop: 16,
-      shadowColor: "#000",
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 2,
-    }, style]}>
-      {children}
-    </View>
-  );
-}
-
-function MenuRow({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 16, paddingHorizontal: 4 }}
-    >
-      <View style={{ width: 28, alignItems: "center", marginRight: 14 }}>{icon}</View>
-      <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 15, color: "#1A1C1C", flex: 1 }}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
-    </TouchableOpacity>
   );
 }

@@ -197,6 +197,15 @@ export const validateCoupon = async (
         .json({ success: false, message: "Invalid or expired coupon code" });
     }
 
+    // Personally-issued coupons (referral rewards, etc.) only redeem for the
+    // account they were generated for — same generic message as "not found"
+    // so a code glimpsed elsewhere doesn't confirm it exists to anyone else.
+    if (coupon.restrictedToUserId && coupon.restrictedToUserId !== userId) {
+      return res
+        .status(200)
+        .json({ success: false, message: "Invalid or expired coupon code" });
+    }
+
     // ── First-order check (industry-standard: lifetime once per user per store) ──
     // Must be logged in to use first-order coupons
     if (coupon.isFirstOrder) {

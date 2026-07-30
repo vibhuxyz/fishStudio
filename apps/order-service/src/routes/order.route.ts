@@ -7,6 +7,7 @@ import {
 import {
   createOrder,
   getUserOrders,
+  getUserOrderStats,
   getOrderById,
   cancelOrder,
 } from "../controllers/order/user.controller.js";
@@ -29,6 +30,7 @@ const orderCreationLimit = perUserRateLimit({
 // ── User Orders ─────────────────────────────────────────────────────────────
 router.post("/create", isAuthenticated, allowRoles("user"), orderCreationLimit, createOrder);
 router.get("/user-orders", isAuthenticated, allowRoles("user"), getUserOrders);
+router.get("/user-order-stats", isAuthenticated, allowRoles("user"), getUserOrderStats);
 // getOrderById enforces role-based ownership inside the controller.
 router.get("/get-order/:orderId", isAuthenticated, allowRoles("user", "seller", "staff", "admin"), getOrderById);
 // User can cancel their own order only while it's still PENDING

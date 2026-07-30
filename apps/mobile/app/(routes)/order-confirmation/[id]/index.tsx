@@ -16,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusTimeline } from "@/components/order-tracker/StatusTimeline";
 import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
 import { useAddressStore } from "@/lib/address-store";
@@ -37,6 +37,7 @@ export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedLocation } = useAddressStore();
   const { order, isLoading } = useLiveOrder(id);
+  const insets = useSafeAreaInsets();
 
   if (isLoading || !order) {
     return (
@@ -118,7 +119,7 @@ export default function OrderConfirmationScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
-            paddingTop: 12,
+            paddingTop: insets.top + 12,
             paddingBottom: 56,
             paddingHorizontal: 20,
             borderBottomLeftRadius: 32,
@@ -126,7 +127,7 @@ export default function OrderConfirmationScreen() {
             overflow: "hidden",
           }}
         >
-          <SafeAreaView edges={["top"]}>
+          <View>
             <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text style={{ fontFamily: "Inter-Bold", fontSize: 26, color: colors.white, lineHeight: 32 }}>
@@ -181,7 +182,7 @@ export default function OrderConfirmationScreen() {
             <View style={{ alignItems: "center", marginTop: 8 }}>
               <ConfettiCheck />
             </View>
-          </SafeAreaView>
+          </View>
         </LinearGradient>
 
         <View style={{ paddingHorizontal: 16, marginTop: -32 }}>
@@ -321,8 +322,22 @@ export default function OrderConfirmationScreen() {
                       {item.product?.title || "Product"}
                     </Text>
                     <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-                      {weightLabel ? `${weightLabel}${optionsLine ? ` • ${optionsLine}` : ""}` : `Qty ${item.quantity}`}
+                      {weightLabel || `Qty ${item.quantity}`}
                     </Text>
+                    {optionsLine ? (
+                      <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: colors.textMuted, marginTop: 1 }}>
+                        {optionsLine}
+                      </Text>
+                    ) : null}
+                    {item.selectedOptions?.cuttingCharge != null && item.selectedOptions.cuttingCharge > 0 && (
+                      <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#D97706", marginTop: 1 }}>
+                        ₹{item.selectedOptions.baseRatePerKg}/kg + ₹{item.selectedOptions.cuttingCharge} cut
+                        {item.selectedOptions.sizeMultiplier && item.selectedOptions.sizeMultiplier !== 1
+                          ? ` ×${item.selectedOptions.sizeMultiplier}`
+                          : ""}
+                        {" = "}₹{item.selectedOptions.effectiveRatePerKg}/kg
+                      </Text>
+                    )}
                   </View>
                   <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.textPrimary }}>
                     ₹{(item.price * item.quantity).toFixed(0)}

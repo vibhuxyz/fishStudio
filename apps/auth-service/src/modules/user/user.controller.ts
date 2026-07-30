@@ -275,16 +275,45 @@ export const refreshToken = async (
   }
 };
 
+// Excludes 0/O/1/I — easy to misread when a customer reads a code aloud or
+// retypes it from a screenshot.
+const REFERRAL_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const generateReferralCode = () => {
+  let suffix = "";
+  for (let i = 0; i < 6; i++) {
+    suffix += REFERRAL_CODE_CHARS[Math.floor(Math.random() * REFERRAL_CODE_CHARS.length)];
+  }
+  return `FS${suffix}`;
+};
+
 export const getUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id;
-    const user = await prisma.users.findUnique({
+    let user = await prisma.users.findUnique({
       where: { id: userId },
       include: { avatar: true },
     });
 
     if (!user) {
       return next(new NotFoundError("User not found"));
+    }
+
+    // Lazily generated on first read rather than at signup, so accounts
+    // created before this existed pick one up the next time they load their
+    // profile instead of needing a backfill migration.
+    if (!user.referralCode) {
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          user = await prisma.users.update({
+            where: { id: userId },
+            data: { referralCode: generateReferralCode() },
+            include: { avatar: true },
+          });
+          break;
+        } catch (err) {
+          if (attempt === 4) throw err; // exhausted retries on unique clashes
+        }
+      }
     }
 
     res.status(200).json({

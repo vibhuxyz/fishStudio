@@ -17,14 +17,24 @@ import AnimatedSplashScreen from "@/components/shared/animated-splash-screen";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import Providers from "@/config/providers";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { clearStoredAuth } from "@/utils/auth";
+import { registerForceLogoutHandler } from "@/utils/axiosInstance";
 import { useCallback, useEffect, useState } from "react";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   // LogBox.ignoreAllLogs(); // uncomment in production only
-  
+
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // A refresh-token failure forces the user back to login the same way an
+    // explicit logout does, so it needs the same per-account data clear.
+    registerForceLogoutHandler(() => {
+      clearStoredAuth();
+    });
+  }, []);
   const [splashVisible, setSplashVisible] = useState(true);
   const [loaded, fontError] = useFonts({
     "Inter-Regular": require("../assets/fonts/Inter-Regular.otf"),

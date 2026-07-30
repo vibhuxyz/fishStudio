@@ -37,6 +37,15 @@ export const createOrderSchema = z.object({
   totalAmount: z.number().nonnegative(),
   discountAmount: z.number().nonnegative().optional().default(0),
   couponCode: z.string().optional(),
+  // Seller-event promos (Flash Sale / seasonal Discount / Free Delivery
+  // banners) aren't discount_codes rows — they're seller_events, referenced
+  // by id rather than a redeemable code. Mutually exclusive with couponCode;
+  // the server prefers couponCode if a client somehow sends both.
+  eventId: z.string().optional(),
+  // A friend's referral code, entered on a genuine first order — doesn't
+  // affect this order's own price, just whether the referrer earns a reward
+  // coupon after it's placed (see createOrder's referral side-effect).
+  referralCode: z.string().optional(),
   deliverySlot: z.enum(["instant", "morning", "evening"]).default("evening"),
 });
 
