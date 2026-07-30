@@ -119,10 +119,24 @@ export default function OrderDetailsScreen() {
     );
   }
 
-  const upperStatus = (order.status || "PENDING").toUpperCase();
+  const rawStatus = (order.status || "PENDING").toUpperCase();
+  // A RAZORPAY order still sitting PENDING never got a completed payment —
+  // the seller never saw it, so it reads as cancelled rather than "in progress".
+  // COD is exempt: PENDING there just means payment is due on delivery.
+  const isUnpaidOnline =
+    order.paymentMethod === "RAZORPAY" &&
+    rawStatus === "PENDING" &&
+    order.paymentStatus !== "COMPLETED";
+  const upperStatus = isUnpaidOnline ? "CANCELLED" : rawStatus;
   const isShipped = upperStatus === "SHIPPED";
   const isTerminal = upperStatus === "DELIVERED" || upperStatus === "CANCELLED" || upperStatus === "REJECTED";
-  const hero = HERO_CONTENT[upperStatus] ?? HERO_CONTENT.PENDING;
+  const hero = isUnpaidOnline
+    ? {
+        ...HERO_CONTENT.CANCELLED,
+        subtitle:
+          "Payment wasn't completed for this order. Any amount deducted will be refunded within 3–5 business days.",
+      }
+    : HERO_CONTENT[upperStatus] ?? HERO_CONTENT.PENDING;
   const shortId = `FS${String(order.id).replace(/[^0-9A-Za-z]/g, "").slice(-10).toUpperCase()}`;
   const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
@@ -255,7 +269,7 @@ export default function OrderDetailsScreen() {
             </Text>
             <View style={{ paddingHorizontal: 10, paddingVertical: 3, borderRadius: 50, backgroundColor: colors.secondaryBg }}>
               <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: colors.textMuted }}>
-                {getOrderStatusLabel(order.status)}
+                {getOrderStatusLabel(upperStatus)}
               </Text>
             </View>
           </View>

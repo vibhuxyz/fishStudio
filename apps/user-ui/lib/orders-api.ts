@@ -37,6 +37,7 @@ export interface Order {
   totalAmount: number;
   billDetails?: Record<string, number> | null;
   paymentMethod: string;
+  paymentStatus: string;
   deliverySlot?: string;
   deliveryName?: string;
   deliveryPhone?: string;

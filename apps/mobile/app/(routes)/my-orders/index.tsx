@@ -19,6 +19,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// A RAZORPAY order still sitting PENDING never got a completed payment — the
+// seller never saw it, so it reads as cancelled rather than "in progress".
+// COD is exempt: PENDING there just means payment is due on delivery.
+function getDisplayStatus(order: Order): string {
+  const isUnpaidOnline =
+    order.paymentMethod === "RAZORPAY" &&
+    order.status === "PENDING" &&
+    order.paymentStatus !== "COMPLETED";
+  return isUnpaidOnline ? "CANCELLED" : order.status;
+}
+
 const STATUS_FILTERS = [
   { key: "all",       label: "All" },
   { key: "PENDING",   label: "Placed" },
@@ -109,7 +120,7 @@ export default function MyOrders() {
   const filteredOrders =
     selectedStatus === "all"
       ? orders
-      : orders.filter((o) => o.status === selectedStatus);
+      : orders.filter((o) => getDisplayStatus(o) === selectedStatus);
 
   const renderOrderCard = (order: Order) => {
     const cfg = STATUS_CONFIG[order.status] ?? {
@@ -247,11 +258,13 @@ export default function MyOrders() {
 
   // ── Compact row card (matching web list layout) ─────────────────────
   const renderOrderRow = (order: Order) => {
-    const cfg = STATUS_CONFIG[order.status] ?? {
+    const displayStatus = getDisplayStatus(order);
+    const isUnpaidOnline = displayStatus !== order.status;
+    const cfg = STATUS_CONFIG[displayStatus] ?? {
       bg: "#F3F4F6",
       text: "#6B7280",
       icon: "help-circle-outline",
-      label: order.status,
+      label: displayStatus,
     };
     const orderNumber = `#${order.id.slice(-6).toUpperCase()}`;
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
@@ -311,6 +324,11 @@ export default function MyOrders() {
             <Text className="text-xs text-gray-400 font-poppins-medium mt-0.5">
               {orderDate}
             </Text>
+            {isUnpaidOnline && (
+              <Text className="text-[10px] text-red-500 font-poppins-medium mt-1">
+                Payment incomplete · refund in 3–5 days if charged
+              </Text>
+            )}
           </View>
           <View className="items-end ml-2">
             <View

@@ -108,6 +108,13 @@ export default function OrderDetailsPage({
   }
 
   const orderNumber = `#${String(order.id).slice(-6).toUpperCase()}`;
+  const orderStatus = (order.status || "PENDING").toUpperCase();
+  // Same rule as the orders list: an unpaid RAZORPAY order never reached the
+  // seller, so it reads as cancelled rather than an in-progress order.
+  const isUnpaidOnline =
+    order.paymentMethod === "RAZORPAY" &&
+    orderStatus === "PENDING" &&
+    order.paymentStatus !== "COMPLETED";
   const slotLabel = SLOT_LABELS[order.deliverySlot ?? ""] ?? "Standard Delivery";
   const deliveryEtaMinutes = getDeliveryEtaMinutes(
     order,
@@ -153,7 +160,12 @@ export default function OrderDetailsPage({
       <div className="space-y-4">
         {/* ── Animated tracker ── */}
         <OrderTracker
-          status={order.status}
+          status={isUnpaidOnline ? "CANCELLED" : order.status}
+          cancelNote={
+            isUnpaidOnline
+              ? "Payment wasn't completed for this order. Any amount deducted will be refunded within 3–5 business days."
+              : undefined
+          }
           updatedAt={order.updatedAt}
           deliverySlot={order.deliverySlot}
           deliveryMinutes={deliveryEtaMinutes}

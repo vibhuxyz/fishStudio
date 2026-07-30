@@ -143,12 +143,14 @@ export function OrderTracker({
   deliverySlot,
   deliveryMinutes,
   storeName,
+  cancelNote,
 }: {
   status: string;
   updatedAt?: string;
   deliverySlot?: string;
   deliveryMinutes?: number | null;
   storeName?: string;
+  cancelNote?: string;
 }) {
   const upper = (status || "PENDING").toUpperCase() as StepKey | "CANCELLED" | "REJECTED";
   const isCancelled = upper === "CANCELLED" || upper === "REJECTED";
@@ -216,9 +218,10 @@ export function OrderTracker({
               Order {upper === "CANCELLED" ? "Cancelled" : "Rejected"}
             </p>
             <p className="text-sm text-rose-400 font-medium mt-0.5">
-              {upper === "CANCELLED"
-                ? "This order was cancelled."
-                : "This order was rejected by the store."}
+              {cancelNote ??
+                (upper === "CANCELLED"
+                  ? "This order was cancelled."
+                  : "This order was rejected by the store.")}
             </p>
           </div>
         </div>

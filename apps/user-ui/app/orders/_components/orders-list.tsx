@@ -33,7 +33,15 @@ export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?:
     <div className="space-y-3">
       {orders.map((order) => {
         const orderStatus = (order.status || "PENDING").toUpperCase();
-        const statusCfg = STATUS_CONFIG[orderStatus] ?? STATUS_CONFIG.PENDING;
+        // A RAZORPAY order still sitting PENDING never got a completed payment —
+        // the seller never saw it, so it reads as cancelled rather than "in progress".
+        // COD is exempt: PENDING there just means payment is due on delivery.
+        const isUnpaidOnline =
+          order.paymentMethod === "RAZORPAY" &&
+          orderStatus === "PENDING" &&
+          order.paymentStatus !== "COMPLETED";
+        const displayStatus = isUnpaidOnline ? "CANCELLED" : orderStatus;
+        const statusCfg = STATUS_CONFIG[displayStatus] ?? STATUS_CONFIG.PENDING;
         const primaryItem = order.items?.[0];
         const itemCount = order.items?.length ?? 0;
 
@@ -91,6 +99,11 @@ export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?:
                   {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""}
                 </p>
               </div>
+              {isUnpaidOnline && (
+                <p className="mt-1.5 text-[11px] font-medium text-destructive">
+                  Payment wasn't completed. Any amount deducted will be refunded in 3–5 business days.
+                </p>
+              )}
             </div>
 
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
