@@ -69,7 +69,9 @@ export function CheckoutClient() {
   // Sync cart data to get latest delivery slots and fees
   const { syncItems } = useCartStore();
   useEffect(() => {
-    if (items.length > 0) {
+    if (items.length === 0) return;
+
+    const refreshDelivery = () => {
       syncItems().then((res) => {
         if (res) {
           setDeliveryMetadata({
@@ -89,7 +91,15 @@ export function CheckoutClient() {
           }
         }
       });
-    }
+    };
+
+    // A cart doesn't change size while someone fills in address/payment
+    // details, so a mount-only fetch goes stale — e.g. instant delivery
+    // stays "available" here even after the store's closing time passes
+    // while checkout sits open. Re-check on a timer, same as the header.
+    refreshDelivery();
+    const id = setInterval(refreshDelivery, 60_000);
+    return () => clearInterval(id);
   }, [items.length]);
 
 

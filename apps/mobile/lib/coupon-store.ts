@@ -208,7 +208,12 @@ export const useCouponStore = create<CouponState>()(
         }));
       },
 
-      clearAllCoupons: () => set({ appliedCoupons: [], autoApplied: false }),
+      // Clears availableCoupons too — it's the field that's actually
+      // persisted, so leaving it would carry one account's fetched offers
+      // (including personalized/restricted ones) into the next login on a
+      // shared device.
+      clearAllCoupons: () =>
+        set({ appliedCoupons: [], autoApplied: false, availableCoupons: [] }),
       setAutoApplied: (val) => set({ autoApplied: val }),
       isCouponApplied: (code) => get().appliedCoupons.some((c) => c.code === code),
 

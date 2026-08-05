@@ -3,6 +3,7 @@ import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { trackProductView } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { computePerKgSalePrice, resolvePerKgPricing, resolveProductSizePricing } from "@/utils/pricing";
 import { ProductBadges } from "@/components/home/badge";
 import { Ionicons } from "@expo/vector-icons";
@@ -231,24 +232,14 @@ export default function ProductDetailScreen() {
         : `${activeWeightGrams} gm`
       : selected.size;
 
-  // Related products — use get-all-products with category filter
-  const { data: relatedProducts, isLoading: relatedLoading } = useQuery({
-    queryKey: ["related-products", product?.category, id],
-    queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-all-products", {
-        params: {
-          category: product.category,
-          limit: 8,
-          page: 1,
-          ...(locationParams
-            ? Object.fromEntries(new URLSearchParams(locationParams))
-            : {}),
-        },
-      });
-      return (res.data.products || []).filter((p: any) => p.id !== product.id);
-    },
-    enabled: !!product?.category,
-  });
+  // Related products — get-product already computes up to 4 of these
+  // server-side (storefront.controller.ts), so reuse that instead of firing
+  // a second get-all-products round trip for the same category.
+  const relatedProducts = useMemo(
+    () => (product?.relatedProducts ?? []).filter((p: any) => p.id !== product?.id),
+    [product],
+  );
+  const relatedLoading = productLoading;
 
   // Reviews — real per-product reviews (average rating, list, write-a-review)
   const queryClient = useQueryClient();
@@ -368,7 +359,11 @@ export default function ProductDetailScreen() {
       <View className="mb-4">
         <View className="relative">
           <Image
-            source={mainUri ? { uri: mainUri } : require("@/assets/images/icon.png")}
+            source={
+              mainUri
+                ? { uri: cloudinaryThumbnail(mainUri, 800) }
+                : require("@/assets/images/icon.png")
+            }
             style={{ width, height: width * 0.85 }}
             resizeMode="cover"
           />
@@ -1043,7 +1038,7 @@ export default function ProductDetailScreen() {
                 <View className="rounded-xl overflow-hidden border border-gray-200 bg-muted items-center justify-center" style={{ width: 60, height: 60 }}>
                   {itemImage ? (
                     <Image
-                      source={{ uri: itemImage }}
+                      source={{ uri: cloudinaryThumbnail(itemImage, 120) }}
                       style={{ width: 60, height: 60 }}
                       resizeMode="cover"
                     />
@@ -1156,7 +1151,7 @@ export default function ProductDetailScreen() {
                   <View className="relative">
                     {itemImage ? (
                       <Image
-                        source={{ uri: itemImage }}
+                        source={{ uri: cloudinaryThumbnail(itemImage, 360) }}
                         style={{ width: 180, height: 160 }}
                         resizeMode="cover"
                       />

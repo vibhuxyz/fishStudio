@@ -435,7 +435,7 @@ export async function fetchAnnouncementBanners(params?: {
 
 export async function fetchStorefrontCategories(): Promise<StorefrontCategories> {
   const response = await fetch(
-    getStorefrontUrl("/product/api/get-categories"),
+    getStorefrontUrl("/product/api/get-categories?activeOnly=true"),
     {
       next: { revalidate: 600 },
     },

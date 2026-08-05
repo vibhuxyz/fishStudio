@@ -33,6 +33,13 @@ export type AdminProduct = {
   deletedAt?: string | null;
   ratings?: number | null;
   starting_date?: string | null;
+  storeId?: string | null;
+  adminId?: string | null;
+  store?: {
+    id: string;
+    name: string;
+    sellerId?: string;
+  } | null;
   images: Array<{
     url?: string | null;
     file_url?: string | null;
@@ -46,6 +53,8 @@ export type AdminProduct = {
   nutritionProtein?: string | null;
   nutritionOmega3?: string | null;
   nutritionCalories?: string | null;
+  cuttingTypes?: string[];
+  pieceSizes?: string[];
 };
 
 export type DiscountCode = {
@@ -65,6 +74,10 @@ export type CategoriesResponse = {
   categories: string[];
   subCategories: Record<string, string[]>;
   categoryImages: Record<string, string>;
+  // Keyed by category name. A category absent from this map is active.
+  categoryStatus: Record<string, boolean>;
+  // Keyed by "<category>::<subCategory>". Absent means active.
+  subCategoryStatus: Record<string, boolean>;
 };
 
 export type AdminSellerSummary = {
@@ -332,6 +345,8 @@ export type UpdateProductPayload = {
   nutritionProtein?: string;
   nutritionOmega3?: string;
   nutritionCalories?: string;
+  cuttingTypes?: Array<{ value: string }>;
+  pieceSizes?: Array<{ value: string }>;
 };
 
 export type AdminBanner = {

@@ -21,6 +21,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CategoryMenu } from "./category-menu";
 import { useCart, useCartStore } from "@/lib/cart-store";
@@ -33,6 +34,7 @@ import { usePathname } from "next/navigation";
 import { useInstantSearch, SearchHit } from "@/hooks/useSearch";
 import { useAnnouncement } from "@/components/providers/announcement-provider";
 import { BAR_HEIGHT } from "@/utils/constants";
+import axiosInstance from "@/utils/axiosInstance";
 
 const AddressModal = dynamic(
   () =>
@@ -420,6 +422,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
   );
   const { deliveryMetadata, syncItems } = useCartStore();
   const locationVersion = useAddressStore((s) => s.locationVersion);
+  const updateStoreStatus = useAddressStore((s) => s.updateStoreStatus);
 
   // Sync on location change and every 60 s so open/closed status stays fresh
   useEffect(() => {
@@ -430,6 +433,33 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
     const id = setInterval(() => { syncItems(); }, 60_000);
     return () => clearInterval(id);
   }, []);
+
+  // syncItems() above only runs when the cart has items, so an empty-cart
+  // visitor's selectedLocation.isOpen would otherwise sit exactly as it was
+  // when the address was picked — still "open" hours after the store
+  // actually closed. Re-check independently of cart state.
+  useQuery({
+    queryKey: ["store-status", selectedLocation?.pincode],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/auth/api/check-pincode?pincode=${selectedLocation!.pincode}`,
+      );
+      const store = res.data?.store;
+      if (store) {
+        updateStoreStatus({
+          isOpen: store.isOpen,
+          deliveryTimeMinutes: selectedLocation?.city
+            ? store.cityDeliveryTimes?.[selectedLocation.city]
+            : undefined,
+          opening_hours: store.opening_hours,
+          closing_hours: store.closing_hours,
+        });
+      }
+      return store;
+    },
+    enabled: !!selectedLocation?.pincode,
+    refetchInterval: 1000 * 60 * 2,
+  });
 
   const scheduleWindow = (open?: string | null, close?: string | null) => {
     const openLabel = formatStoreHour(open);

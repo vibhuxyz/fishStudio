@@ -40,6 +40,12 @@ interface AddressState {
   selectAddress: (id: string) => void;
   getSelectedAddress: () => Address | null;
   setSelectedLocation: (location: SelectedLocation | null) => void;
+  updateStoreStatus: (status: {
+    isOpen?: boolean;
+    deliveryTimeMinutes?: number;
+    opening_hours?: string;
+    closing_hours?: string;
+  }) => void;
   setAddresses: (addresses: Address[]) => void;
   clearAddresses: () => void;
 }
@@ -57,6 +63,16 @@ export const useAddressStore = create<AddressState>()(
           selectedLocation: location,
           locationVersion: state.locationVersion + 1,
         })),
+
+      // Refreshes just the open/closed + ETA fields on a periodic re-check —
+      // deliberately doesn't touch locationVersion, since that's the cache
+      // key for product/storefront queries and would force them to refetch
+      // on every re-check instead of only on an actual address change.
+      updateStoreStatus: (status) => {
+        const current = get().selectedLocation;
+        if (!current) return;
+        set({ selectedLocation: { ...current, ...status } });
+      },
 
       setAddresses: (addresses: Address[]) =>
         set((state) => {

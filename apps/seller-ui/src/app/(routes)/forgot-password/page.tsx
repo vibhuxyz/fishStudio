@@ -91,7 +91,7 @@ const ForgotPassword = () => {
         <p className="text-slate-500 text-sm font-medium italic">
           {step === "email"
             ? "Enter your email to receive a one-time code"
-            : `Enter the 6-digit code sent to ${email}`}
+            : `Enter the 4-digit code sent to ${email}`}
         </p>
       </div>
 
@@ -166,17 +166,17 @@ const ForgotPassword = () => {
           >
             <div className="space-y-2">
               <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">
-                6-Digit OTP
+                4-Digit OTP
               </label>
               <input
                 type="text"
                 inputMode="numeric"
-                maxLength={6}
-                placeholder="••••••"
+                maxLength={4}
+                placeholder="••••"
                 className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-600 text-white font-medium tracking-[0.4em] text-center text-xl"
                 {...resetForm.register("otp", {
                   required: "OTP is required",
-                  pattern: { value: /^\d{6}$/, message: "Enter the 6-digit code" },
+                  pattern: { value: /^\d{4}$/, message: "Enter the 4-digit code" },
                 })}
               />
               {resetForm.formState.errors.otp && (

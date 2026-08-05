@@ -88,6 +88,12 @@ model users {
   // needing a backfill.
   referralCode String? @unique
 
+  // The *other* person's code, captured at signup — distinct from
+  // referralCode above, which is this user's own shareable code. Lets
+  // createOrder grant the referrer's reward on this user's first order even
+  // if they don't also re-type it in the checkout referral field.
+  referredByCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -223,6 +229,11 @@ model stores {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // resolvePreferredStore (storefront.utils.ts) filters on these on nearly
+  // every uncached storefront/homepage/activity request.
+  @@index([pincode])
+  @@index([city])
 }
 
 //////////////////////////////////////////////////////
@@ -266,10 +277,15 @@ model reviews {
 //////////////////////////////////////////////////////
 
 model site_config {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  categories     String[]
-  subCategories  Json
-  categoryImages Json     @default("{}")
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories        String[]
+  subCategories     Json
+  categoryImages    Json     @default("{}")
+  // Keyed by category name -> isActive. Absent entries are treated as active
+  // (existing categories predate this field).
+  categoryStatus    Json     @default("{}")
+  // Keyed by "<category>::<subCategory>" -> isActive, same absent-is-active rule.
+  subCategoryStatus Json     @default("{}")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -352,6 +368,13 @@ model products {
   @@index([category, status])                 // category browse
   @@index([status, isDeleted])                // admin product listing
   @@index([totalSold])                        // homepage bestseller sort
+
+  // getStoreProducts (storefront.controller.ts) filters catalogWhere on
+  // adminId+isDeleted and sorts by these — without a matching compound
+  // index Mongo can only use adminId/isDeleted as a filter and falls back to
+  // an in-memory sort over the whole filtered set on every cache miss.
+  @@index([adminId, isDeleted, totalSold, createdAt]) // homepage sort (isHomepage: true)
+  @@index([adminId, isDeleted, createdAt])            // default listing sort
 }
 
 model banners {

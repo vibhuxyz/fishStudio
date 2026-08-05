@@ -142,6 +142,7 @@ exports.Prisma.UsersScalarFieldEnum = {
   addresses: 'addresses',
   avatarId: 'avatarId',
   referralCode: 'referralCode',
+  referredByCode: 'referredByCode',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -243,6 +244,8 @@ exports.Prisma.Site_configScalarFieldEnum = {
   categories: 'categories',
   subCategories: 'subCategories',
   categoryImages: 'categoryImages',
+  categoryStatus: 'categoryStatus',
+  subCategoryStatus: 'subCategoryStatus',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

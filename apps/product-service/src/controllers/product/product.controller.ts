@@ -389,7 +389,17 @@ export const getOwnedProducts = async (
       Math.max(1, parseInt(req.query.limit as string) || 20),
     );
     const skip = (page - 1) * limit;
-    const filter = getOwnedProductFilter(req);
+
+    // Admins default to their catalog (template) products. Passing
+    // scope=store switches to the actual store listings sellers sell from —
+    // optionally narrowed to one store — so admin oversight isn't limited to
+    // the zero-price/zero-stock catalog roots.
+    const scope = req.query.scope as string | undefined;
+    const storeId = req.query.storeId as string | undefined;
+    const filter =
+      req.role === "admin" && scope === "store"
+        ? { storeId: storeId || { not: null }, isDeleted: false }
+        : getOwnedProductFilter(req);
 
     const [products, total] = await Promise.all([
       prisma.products.findMany({

@@ -20,11 +20,38 @@ const formatHour = (time?: string) => {
 };
 
 export default function Header() {
-  const { selectedLocation, getSelectedAddress } = useAddressStore();
+  const { selectedLocation, getSelectedAddress, updateStoreStatus } = useAddressStore();
   const { user } = useUser();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const selectedAddress = getSelectedAddress();
+
+  // isOpen/deliveryTimeMinutes are cached in selectedLocation and only get
+  // refreshed when the address is manually reselected in AddressModal — a
+  // store that opens or closes while the app sits idle would otherwise show
+  // a stale schedule here indefinitely, so re-check every couple minutes.
+  useQuery({
+    queryKey: ["store-status", selectedLocation?.pincode],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
+        `/auth/api/check-pincode?pincode=${selectedLocation!.pincode}`,
+      );
+      const store = res.data?.store;
+      if (store) {
+        updateStoreStatus({
+          isOpen: store.isOpen,
+          deliveryTimeMinutes: selectedLocation?.city
+            ? store.cityDeliveryTimes?.[selectedLocation.city]
+            : undefined,
+          openingHours: store.opening_hours,
+          closingHours: store.closing_hours,
+        });
+      }
+      return store;
+    },
+    enabled: !!selectedLocation?.pincode,
+    refetchInterval: 1000 * 60 * 2,
+  });
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notifications-unread-count"],

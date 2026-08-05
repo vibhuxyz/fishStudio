@@ -51,7 +51,7 @@ export default function CategoryScreen() {
   const { data: categoriesData } = useQuery({
     queryKey: ["storefront-categories"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-categories");
+      const res = await axiosInstance.get("/product/api/get-categories?activeOnly=true");
       return res.data as {
         categories: string[];
         subCategories: Record<string, string[]>;

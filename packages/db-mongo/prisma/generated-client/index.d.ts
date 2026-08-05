@@ -4622,6 +4622,7 @@ export namespace Prisma {
     name: string | null
     avatarId: string | null
     referralCode: string | null
+    referredByCode: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4633,6 +4634,7 @@ export namespace Prisma {
     name: string | null
     avatarId: string | null
     referralCode: string | null
+    referredByCode: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4646,6 +4648,7 @@ export namespace Prisma {
     addresses: number
     avatarId: number
     referralCode: number
+    referredByCode: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4659,6 +4662,7 @@ export namespace Prisma {
     name?: true
     avatarId?: true
     referralCode?: true
+    referredByCode?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4670,6 +4674,7 @@ export namespace Prisma {
     name?: true
     avatarId?: true
     referralCode?: true
+    referredByCode?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4683,6 +4688,7 @@ export namespace Prisma {
     addresses?: true
     avatarId?: true
     referralCode?: true
+    referredByCode?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4769,6 +4775,7 @@ export namespace Prisma {
     addresses: JsonValue[]
     avatarId: string | null
     referralCode: string | null
+    referredByCode: string | null
     createdAt: Date
     updatedAt: Date
     _count: UsersCountAggregateOutputType | null
@@ -4799,6 +4806,7 @@ export namespace Prisma {
     addresses?: boolean
     avatarId?: boolean
     referralCode?: boolean
+    referredByCode?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     avatar?: boolean | users$avatarArgs<ExtArgs>
@@ -4817,6 +4825,7 @@ export namespace Prisma {
     addresses?: boolean
     avatarId?: boolean
     referralCode?: boolean
+    referredByCode?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -4844,6 +4853,7 @@ export namespace Prisma {
       addresses: Prisma.JsonValue[]
       avatarId: string | null
       referralCode: string | null
+      referredByCode: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["users"]>
@@ -5249,6 +5259,7 @@ export namespace Prisma {
     readonly addresses: FieldRef<"users", 'Json[]'>
     readonly avatarId: FieldRef<"users", 'String'>
     readonly referralCode: FieldRef<"users", 'String'>
+    readonly referredByCode: FieldRef<"users", 'String'>
     readonly createdAt: FieldRef<"users", 'DateTime'>
     readonly updatedAt: FieldRef<"users", 'DateTime'>
   }
@@ -12911,6 +12922,8 @@ export namespace Prisma {
     categories: number
     subCategories: number
     categoryImages: number
+    categoryStatus: number
+    subCategoryStatus: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -12934,6 +12947,8 @@ export namespace Prisma {
     categories?: true
     subCategories?: true
     categoryImages?: true
+    categoryStatus?: true
+    subCategoryStatus?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -13016,6 +13031,8 @@ export namespace Prisma {
     categories: string[]
     subCategories: JsonValue
     categoryImages: JsonValue
+    categoryStatus: JsonValue
+    subCategoryStatus: JsonValue
     createdAt: Date
     updatedAt: Date
     _count: Site_configCountAggregateOutputType | null
@@ -13042,6 +13059,8 @@ export namespace Prisma {
     categories?: boolean
     subCategories?: boolean
     categoryImages?: boolean
+    categoryStatus?: boolean
+    subCategoryStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["site_config"]>
@@ -13052,6 +13071,8 @@ export namespace Prisma {
     categories?: boolean
     subCategories?: boolean
     categoryImages?: boolean
+    categoryStatus?: boolean
+    subCategoryStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -13065,6 +13086,8 @@ export namespace Prisma {
       categories: string[]
       subCategories: Prisma.JsonValue
       categoryImages: Prisma.JsonValue
+      categoryStatus: Prisma.JsonValue
+      subCategoryStatus: Prisma.JsonValue
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["site_config"]>
@@ -13463,6 +13486,8 @@ export namespace Prisma {
     readonly categories: FieldRef<"site_config", 'String[]'>
     readonly subCategories: FieldRef<"site_config", 'Json'>
     readonly categoryImages: FieldRef<"site_config", 'Json'>
+    readonly categoryStatus: FieldRef<"site_config", 'Json'>
+    readonly subCategoryStatus: FieldRef<"site_config", 'Json'>
     readonly createdAt: FieldRef<"site_config", 'DateTime'>
     readonly updatedAt: FieldRef<"site_config", 'DateTime'>
   }
@@ -20236,6 +20261,7 @@ export namespace Prisma {
     addresses: 'addresses',
     avatarId: 'avatarId',
     referralCode: 'referralCode',
+    referredByCode: 'referredByCode',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -20361,6 +20387,8 @@ export namespace Prisma {
     categories: 'categories',
     subCategories: 'subCategories',
     categoryImages: 'categoryImages',
+    categoryStatus: 'categoryStatus',
+    subCategoryStatus: 'subCategoryStatus',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -20788,6 +20816,7 @@ export namespace Prisma {
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableFilter<"users"> | string | null
     referralCode?: StringNullableFilter<"users"> | string | null
+    referredByCode?: StringNullableFilter<"users"> | string | null
     createdAt?: DateTimeFilter<"users"> | Date | string
     updatedAt?: DateTimeFilter<"users"> | Date | string
     avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
@@ -20804,6 +20833,7 @@ export namespace Prisma {
     addresses?: SortOrder
     avatarId?: SortOrder
     referralCode?: SortOrder
+    referredByCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     avatar?: imagesOrderByWithRelationInput
@@ -20823,6 +20853,7 @@ export namespace Prisma {
     following?: StringNullableListFilter<"users">
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableFilter<"users"> | string | null
+    referredByCode?: StringNullableFilter<"users"> | string | null
     createdAt?: DateTimeFilter<"users"> | Date | string
     updatedAt?: DateTimeFilter<"users"> | Date | string
     avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
@@ -20839,6 +20870,7 @@ export namespace Prisma {
     addresses?: SortOrder
     avatarId?: SortOrder
     referralCode?: SortOrder
+    referredByCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: usersCountOrderByAggregateInput
@@ -20858,6 +20890,7 @@ export namespace Prisma {
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableWithAggregatesFilter<"users"> | string | null
     referralCode?: StringNullableWithAggregatesFilter<"users"> | string | null
+    referredByCode?: StringNullableWithAggregatesFilter<"users"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"users"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"users"> | Date | string
   }
@@ -21473,6 +21506,8 @@ export namespace Prisma {
     categories?: StringNullableListFilter<"site_config">
     subCategories?: JsonFilter<"site_config">
     categoryImages?: JsonFilter<"site_config">
+    categoryStatus?: JsonFilter<"site_config">
+    subCategoryStatus?: JsonFilter<"site_config">
     createdAt?: DateTimeFilter<"site_config"> | Date | string
     updatedAt?: DateTimeFilter<"site_config"> | Date | string
   }
@@ -21482,6 +21517,8 @@ export namespace Prisma {
     categories?: SortOrder
     subCategories?: SortOrder
     categoryImages?: SortOrder
+    categoryStatus?: SortOrder
+    subCategoryStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -21494,6 +21531,8 @@ export namespace Prisma {
     categories?: StringNullableListFilter<"site_config">
     subCategories?: JsonFilter<"site_config">
     categoryImages?: JsonFilter<"site_config">
+    categoryStatus?: JsonFilter<"site_config">
+    subCategoryStatus?: JsonFilter<"site_config">
     createdAt?: DateTimeFilter<"site_config"> | Date | string
     updatedAt?: DateTimeFilter<"site_config"> | Date | string
   }, "id">
@@ -21503,6 +21542,8 @@ export namespace Prisma {
     categories?: SortOrder
     subCategories?: SortOrder
     categoryImages?: SortOrder
+    categoryStatus?: SortOrder
+    subCategoryStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: site_configCountOrderByAggregateInput
@@ -21518,6 +21559,8 @@ export namespace Prisma {
     categories?: StringNullableListFilter<"site_config">
     subCategories?: JsonWithAggregatesFilter<"site_config">
     categoryImages?: JsonWithAggregatesFilter<"site_config">
+    categoryStatus?: JsonWithAggregatesFilter<"site_config">
+    subCategoryStatus?: JsonWithAggregatesFilter<"site_config">
     createdAt?: DateTimeWithAggregatesFilter<"site_config"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"site_config"> | Date | string
   }
@@ -22345,6 +22388,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -22361,6 +22405,7 @@ export namespace Prisma {
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -22374,6 +22419,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -22389,6 +22435,7 @@ export namespace Prisma {
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -22404,6 +22451,7 @@ export namespace Prisma {
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -22415,6 +22463,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -22427,6 +22476,7 @@ export namespace Prisma {
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23070,6 +23120,8 @@ export namespace Prisma {
     categories?: site_configCreatecategoriesInput | string[]
     subCategories: InputJsonValue
     categoryImages?: InputJsonValue
+    categoryStatus?: InputJsonValue
+    subCategoryStatus?: InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -23079,6 +23131,8 @@ export namespace Prisma {
     categories?: site_configCreatecategoriesInput | string[]
     subCategories: InputJsonValue
     categoryImages?: InputJsonValue
+    categoryStatus?: InputJsonValue
+    subCategoryStatus?: InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -23087,6 +23141,8 @@ export namespace Prisma {
     categories?: site_configUpdatecategoriesInput | string[]
     subCategories?: InputJsonValue | InputJsonValue
     categoryImages?: InputJsonValue | InputJsonValue
+    categoryStatus?: InputJsonValue | InputJsonValue
+    subCategoryStatus?: InputJsonValue | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23095,6 +23151,8 @@ export namespace Prisma {
     categories?: site_configUpdatecategoriesInput | string[]
     subCategories?: InputJsonValue | InputJsonValue
     categoryImages?: InputJsonValue | InputJsonValue
+    categoryStatus?: InputJsonValue | InputJsonValue
+    subCategoryStatus?: InputJsonValue | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23104,6 +23162,8 @@ export namespace Prisma {
     categories?: site_configCreatecategoriesInput | string[]
     subCategories: InputJsonValue
     categoryImages?: InputJsonValue
+    categoryStatus?: InputJsonValue
+    subCategoryStatus?: InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -23112,6 +23172,8 @@ export namespace Prisma {
     categories?: site_configUpdatecategoriesInput | string[]
     subCategories?: InputJsonValue | InputJsonValue
     categoryImages?: InputJsonValue | InputJsonValue
+    categoryStatus?: InputJsonValue | InputJsonValue
+    subCategoryStatus?: InputJsonValue | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -23120,6 +23182,8 @@ export namespace Prisma {
     categories?: site_configUpdatecategoriesInput | string[]
     subCategories?: InputJsonValue | InputJsonValue
     categoryImages?: InputJsonValue | InputJsonValue
+    categoryStatus?: InputJsonValue | InputJsonValue
+    subCategoryStatus?: InputJsonValue | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -24188,6 +24252,7 @@ export namespace Prisma {
     addresses?: SortOrder
     avatarId?: SortOrder
     referralCode?: SortOrder
+    referredByCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24199,6 +24264,7 @@ export namespace Prisma {
     name?: SortOrder
     avatarId?: SortOrder
     referralCode?: SortOrder
+    referredByCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24210,6 +24276,7 @@ export namespace Prisma {
     name?: SortOrder
     avatarId?: SortOrder
     referralCode?: SortOrder
+    referredByCode?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -24753,6 +24820,8 @@ export namespace Prisma {
     categories?: SortOrder
     subCategories?: SortOrder
     categoryImages?: SortOrder
+    categoryStatus?: SortOrder
+    subCategoryStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -27217,6 +27286,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesCreateNestedManyWithoutUserInput
@@ -27231,6 +27301,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -27432,6 +27503,7 @@ export namespace Prisma {
     addresses?: JsonNullableListFilter<"users">
     avatarId?: StringNullableFilter<"users"> | string | null
     referralCode?: StringNullableFilter<"users"> | string | null
+    referredByCode?: StringNullableFilter<"users"> | string | null
     createdAt?: DateTimeFilter<"users"> | Date | string
     updatedAt?: DateTimeFilter<"users"> | Date | string
   }
@@ -28624,6 +28696,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -28639,6 +28712,7 @@ export namespace Prisma {
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     reviews?: reviewsUncheckedCreateNestedManyWithoutUserInput
@@ -28768,6 +28842,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -28782,6 +28857,7 @@ export namespace Prisma {
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reviews?: reviewsUncheckedUpdateManyWithoutUserNestedInput
@@ -28900,6 +28976,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     avatar?: imagesCreateNestedOneWithoutUsersInput
@@ -28915,6 +28992,7 @@ export namespace Prisma {
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     avatarId?: string | null
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     favorites?: favoritesUncheckedCreateNestedManyWithoutUserInput
@@ -29044,6 +29122,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     avatar?: imagesUpdateOneWithoutUsersNestedInput
@@ -29058,6 +29137,7 @@ export namespace Prisma {
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     avatarId?: NullableStringFieldUpdateOperationsInput | string | null
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -30345,6 +30425,7 @@ export namespace Prisma {
     following?: usersCreatefollowingInput | string[]
     addresses?: usersCreateaddressesInput | InputJsonValue[]
     referralCode?: string | null
+    referredByCode?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -30377,6 +30458,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUpdateManyWithoutUserNestedInput
@@ -30390,6 +30472,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     favorites?: favoritesUncheckedUpdateManyWithoutUserNestedInput
@@ -30403,6 +30486,7 @@ export namespace Prisma {
     following?: usersUpdatefollowingInput | string[]
     addresses?: usersUpdateaddressesInput | InputJsonValue[]
     referralCode?: NullableStringFieldUpdateOperationsInput | string | null
+    referredByCode?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, UploadCloud, X, Loader2, Trash2 } from "lucide-react";
+import { Plus, UploadCloud, X, Loader2, Trash2, Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { Input, Button } from "@repo/ui";
@@ -12,6 +12,9 @@ import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-she
 import DeleteCategoryModal, {
   CategoryDeleteTarget,
 } from "@/shared/components/modals/delete.category.modal";
+import EditCategoryModal, {
+  CategoryEditTarget,
+} from "@/shared/components/modals/edit-category.modal";
 import {
   adminQueryKeys,
   createAdminCategory,
@@ -19,7 +22,11 @@ import {
   deleteAdminCategory,
   deleteAdminSubCategory,
   getCategoryConfigKey,
+  updateAdminCategory,
+  updateAdminSubCategory,
   useAdminCategories,
+  type UpdateCategoryPayload,
+  type UpdateSubCategoryPayload,
 } from "@/hooks/useAdminQueries";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
@@ -48,6 +55,8 @@ const CategoriesPage = () => {
   const categories = data?.categories || [];
   const subCategories = data?.subCategories || {};
   const categoryImages = data?.categoryImages || {};
+  const categoryStatus = data?.categoryStatus || {};
+  const subCategoryStatus = data?.subCategoryStatus || {};
 
   /* ── Image upload state ─────────────────────────── */
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -170,6 +179,32 @@ const CategoriesPage = () => {
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to delete");
+    },
+  });
+
+  const [editTarget, setEditTarget] = useState<CategoryEditTarget | null>(null);
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: (payload: UpdateCategoryPayload) => updateAdminCategory(payload),
+    onSuccess: () => {
+      toast.success("Category updated");
+      setEditTarget(null);
+      refreshCategories();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to update category");
+    },
+  });
+
+  const updateSubCategoryMutation = useMutation({
+    mutationFn: (payload: UpdateSubCategoryPayload) => updateAdminSubCategory(payload),
+    onSuccess: () => {
+      toast.success("Subcategory updated");
+      setEditTarget(null);
+      refreshCategories();
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to update subcategory");
     },
   });
 
@@ -396,6 +431,7 @@ const CategoriesPage = () => {
               <div className="space-y-5">
                 {categories.map((category) => {
                   const items = subCategories[getCategoryConfigKey(category)] || [];
+                  const isActive = categoryStatus[category] ?? true;
                   return (
                     <div
                       key={category}
@@ -413,11 +449,36 @@ const CategoriesPage = () => {
                           </div>
                         )}
                         <div className="flex flex-1 items-center justify-between">
-                          <h4 className="text-base font-semibold text-white">{category}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-base font-semibold text-white">{category}</h4>
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                                isActive
+                                  ? "bg-emerald-500/10 text-emerald-400"
+                                  : "bg-amber-500/10 text-amber-400"
+                              }`}
+                            >
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-3">
                             <span className="text-xs text-slate-400">
                               {items.length} subcategories
                             </span>
+                            <button
+                              type="button"
+                              title="Edit category"
+                              onClick={() =>
+                                setEditTarget({
+                                  category,
+                                  imageUrl: categoryImages[category],
+                                  isActive,
+                                })
+                              }
+                              className="rounded-md p-1.5 text-slate-400 transition hover:bg-blue-500/10 hover:text-blue-400"
+                            >
+                              <Pencil size={16} />
+                            </button>
                             <button
                               type="button"
                               title="Delete category"
@@ -433,24 +494,45 @@ const CategoriesPage = () => {
                         {items.length === 0 && (
                           <p className="text-sm text-slate-400">No subcategories added yet.</p>
                         )}
-                        {items.map((item) => (
-                          <span
-                            key={item}
-                            className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200"
-                          >
-                            {item}
-                            <button
-                              type="button"
-                              title="Delete subcategory"
-                              onClick={() =>
-                                setDeleteTarget({ category, subCategory: item })
-                              }
-                              className="text-slate-500 transition hover:text-red-400"
+                        {items.map((item) => {
+                          const subIsActive =
+                            subCategoryStatus[`${category}::${item}`] ?? true;
+                          return (
+                            <span
+                              key={item}
+                              className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-200"
                             >
-                              <X size={14} />
-                            </button>
-                          </span>
-                        ))}
+                              {!subIsActive && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" title="Inactive" />
+                              )}
+                              {item}
+                              <button
+                                type="button"
+                                title="Edit subcategory"
+                                onClick={() =>
+                                  setEditTarget({
+                                    category,
+                                    subCategory: item,
+                                    isActive: subIsActive,
+                                  })
+                                }
+                                className="text-slate-500 transition hover:text-blue-400"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                title="Delete subcategory"
+                                onClick={() =>
+                                  setDeleteTarget({ category, subCategory: item })
+                                }
+                                className="text-slate-500 transition hover:text-red-400"
+                              >
+                                <X size={14} />
+                              </button>
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -467,6 +549,16 @@ const CategoriesPage = () => {
           isLoading={deleteMutation.isPending}
           onClose={() => setDeleteTarget(null)}
           onConfirm={() => deleteMutation.mutate(deleteTarget)}
+        />
+      )}
+
+      {editTarget && (
+        <EditCategoryModal
+          target={editTarget}
+          isSaving={updateCategoryMutation.isPending || updateSubCategoryMutation.isPending}
+          onClose={() => setEditTarget(null)}
+          onSaveCategory={(values) => updateCategoryMutation.mutate(values)}
+          onSaveSubCategory={(values) => updateSubCategoryMutation.mutate(values)}
         />
       )}
     </DashboardPageShell>

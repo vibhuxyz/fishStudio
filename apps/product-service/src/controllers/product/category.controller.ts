@@ -7,8 +7,13 @@ import {
   categorySchema,
   deleteCategorySchema,
   subCategorySchema,
+  updateCategorySchema,
+  updateSubCategorySchema,
   validate,
 } from "@repo/zod-schema";
+
+const subCategoryStatusKey = (category: string, subCategory: string) =>
+  `${category}::${subCategory}`;
 
 const SITE_CONFIG_CACHE_KEY = "site_config:v1";
 const SITE_CONFIG_TTL = 600; // 10 minutes
@@ -31,16 +36,48 @@ const invalidateSiteConfigCache = () => {
   redis.del(SITE_CONFIG_CACHE_KEY).catch(() => {});
 };
 
+// Storefront callers pass ?activeOnly=true to hide inactive categories/subcategories;
+// admin tooling omits it so it can still see and re-enable them.
+const applyActiveOnlyFilter = (payload: {
+  success: boolean;
+  categories: string[];
+  subCategories: Record<string, string[]>;
+  categoryImages: Record<string, string>;
+  categoryStatus: Record<string, boolean>;
+  subCategoryStatus: Record<string, boolean>;
+}) => {
+  const activeCategories = payload.categories.filter(
+    (cat) => payload.categoryStatus[cat] ?? true,
+  );
+  const subCategories: Record<string, string[]> = {};
+  for (const cat of activeCategories) {
+    const key = getCategoryConfigKey(cat);
+    const subs = payload.subCategories[key] || [];
+    subCategories[key] = subs.filter(
+      (sub) => payload.subCategoryStatus[`${cat}::${sub}`] ?? true,
+    );
+  }
+  return {
+    ...payload,
+    categories: activeCategories,
+    subCategories,
+  };
+};
+
 export const getCategories = async (
-  _req: any,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
+    const activeOnly = req.query.activeOnly === "true";
+
     // Serve from Redis cache when available (10 min TTL)
     const cached = await getSiteConfigCached();
     if (cached) {
-      return res.status(200).json(cached);
+      return res
+        .status(200)
+        .json(activeOnly ? applyActiveOnlyFilter(cached) : cached);
     }
 
     const config = await prisma.site_config.findFirst();
@@ -50,6 +87,8 @@ export const getCategories = async (
         categories: [],
         subCategories: {},
         categoryImages: {},
+        categoryStatus: {},
+        subCategoryStatus: {},
       });
     }
     const subCategories =
@@ -59,6 +98,14 @@ export const getCategories = async (
     const categoryImages =
       config.categoryImages && typeof config.categoryImages === "object"
         ? (config.categoryImages as Record<string, string>)
+        : {};
+    const categoryStatus =
+      config.categoryStatus && typeof config.categoryStatus === "object"
+        ? (config.categoryStatus as Record<string, boolean>)
+        : {};
+    const subCategoryStatus =
+      config.subCategoryStatus && typeof config.subCategoryStatus === "object"
+        ? (config.subCategoryStatus as Record<string, boolean>)
         : {};
     const transformedSubCategories: Record<string, string[]> = {};
     if (Array.isArray(config.categories)) {
@@ -72,9 +119,13 @@ export const getCategories = async (
       categories: config.categories,
       subCategories: transformedSubCategories,
       categoryImages,
+      categoryStatus,
+      subCategoryStatus,
     };
     setSiteConfigCache(payload);
-    return res.status(200).json(payload);
+    return res
+      .status(200)
+      .json(activeOnly ? applyActiveOnlyFilter(payload) : payload);
   } catch (error) {
     return next(error);
   }
@@ -316,6 +367,221 @@ export const deleteSubCategory = async (
     return res.status(200).json({
       success: true,
       message: "Subcategory deleted successfully",
+      config: updatedConfig,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateCategory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { name, newName, imageUrl, isActive } = validate(
+      updateCategorySchema,
+      req.body,
+    );
+    const config = await prisma.site_config.findFirst();
+    if (!config) {
+      return next(new NotFoundError("Site config not found"));
+    }
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
+    const storedCategory = categories.find(
+      (category) => category.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (!storedCategory) {
+      return next(new NotFoundError("Category not found"));
+    }
+    const subCategories =
+      config.subCategories && typeof config.subCategories === "object"
+        ? { ...(config.subCategories as Record<string, string[]>) }
+        : {};
+    const categoryImages =
+      config.categoryImages && typeof config.categoryImages === "object"
+        ? { ...(config.categoryImages as Record<string, string>) }
+        : {};
+    const categoryStatus =
+      config.categoryStatus && typeof config.categoryStatus === "object"
+        ? { ...(config.categoryStatus as Record<string, boolean>) }
+        : {};
+    const subCategoryStatus =
+      config.subCategoryStatus && typeof config.subCategoryStatus === "object"
+        ? { ...(config.subCategoryStatus as Record<string, boolean>) }
+        : {};
+
+    let finalName = storedCategory;
+    const trimmedNewName = newName?.trim();
+    if (trimmedNewName && trimmedNewName.toLowerCase() !== storedCategory.toLowerCase()) {
+      if (
+        categories.some(
+          (category) =>
+            category.toLowerCase() === trimmedNewName.toLowerCase() &&
+            category !== storedCategory,
+        )
+      ) {
+        return next(new ValidationError("A category with that name already exists"));
+      }
+      finalName = trimmedNewName;
+
+      const categoryIndex = categories.indexOf(storedCategory);
+      categories[categoryIndex] = finalName;
+
+      subCategories[finalName] = subCategories[storedCategory] || [];
+      delete subCategories[storedCategory];
+
+      if (storedCategory in categoryImages) {
+        categoryImages[finalName] = categoryImages[storedCategory]!;
+        delete categoryImages[storedCategory];
+      }
+      if (storedCategory in categoryStatus) {
+        categoryStatus[finalName] = categoryStatus[storedCategory]!;
+        delete categoryStatus[storedCategory];
+      }
+      const oldPrefix = subCategoryStatusKey(storedCategory, "");
+      for (const key of Object.keys(subCategoryStatus)) {
+        if (key.startsWith(oldPrefix)) {
+          const subName = key.slice(oldPrefix.length);
+          subCategoryStatus[subCategoryStatusKey(finalName, subName)] =
+            subCategoryStatus[key]!;
+          delete subCategoryStatus[key];
+        }
+      }
+
+      // Products carry category as a plain string, not a reference — the
+      // rename has to cascade or every product using it becomes unreachable
+      // from category browse.
+      await prisma.products.updateMany({
+        where: { category: storedCategory },
+        data: { category: finalName },
+      });
+    }
+
+    if (typeof imageUrl === "string") {
+      if (imageUrl.trim()) {
+        categoryImages[finalName] = imageUrl.trim();
+      } else {
+        delete categoryImages[finalName];
+      }
+    }
+
+    if (typeof isActive === "boolean") {
+      categoryStatus[finalName] = isActive;
+    }
+
+    const updatedConfig = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        categories,
+        subCategories,
+        categoryImages,
+        categoryStatus,
+        subCategoryStatus,
+      },
+    });
+    invalidateSiteConfigCache();
+    return res.status(200).json({
+      success: true,
+      message: "Category updated successfully",
+      config: updatedConfig,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateSubCategory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { category, name, newName, isActive } = validate(
+      updateSubCategorySchema,
+      req.body,
+    );
+    const config = await prisma.site_config.findFirst();
+    if (!config) {
+      return next(new NotFoundError("Site config not found"));
+    }
+    const categories = Array.isArray(config.categories)
+      ? [...config.categories]
+      : [];
+    const storedCategory = categories.find(
+      (existingCategory) =>
+        existingCategory.toLowerCase() === category.trim().toLowerCase(),
+    );
+    if (!storedCategory) {
+      return next(new ValidationError("Selected category does not exist"));
+    }
+    const subCategories =
+      config.subCategories && typeof config.subCategories === "object"
+        ? { ...(config.subCategories as Record<string, string[]>) }
+        : {};
+    const categorySubCategories = [...(subCategories[storedCategory] || [])];
+    const storedSubCategory = categorySubCategories.find(
+      (sub) => sub.toLowerCase() === name.trim().toLowerCase(),
+    );
+    if (!storedSubCategory) {
+      return next(new NotFoundError("Subcategory not found"));
+    }
+    const subCategoryStatus =
+      config.subCategoryStatus && typeof config.subCategoryStatus === "object"
+        ? { ...(config.subCategoryStatus as Record<string, boolean>) }
+        : {};
+
+    let finalName = storedSubCategory;
+    const trimmedNewName = newName?.trim();
+    if (trimmedNewName && trimmedNewName.toLowerCase() !== storedSubCategory.toLowerCase()) {
+      if (
+        categorySubCategories.some(
+          (sub) =>
+            sub.toLowerCase() === trimmedNewName.toLowerCase() &&
+            sub !== storedSubCategory,
+        )
+      ) {
+        return next(
+          new ValidationError("A subcategory with that name already exists"),
+        );
+      }
+      finalName = trimmedNewName;
+
+      const subIndex = categorySubCategories.indexOf(storedSubCategory);
+      categorySubCategories[subIndex] = finalName;
+      subCategories[storedCategory] = categorySubCategories;
+
+      const oldKey = subCategoryStatusKey(storedCategory, storedSubCategory);
+      if (oldKey in subCategoryStatus) {
+        subCategoryStatus[subCategoryStatusKey(storedCategory, finalName)] =
+          subCategoryStatus[oldKey]!;
+        delete subCategoryStatus[oldKey];
+      }
+
+      await prisma.products.updateMany({
+        where: { category: storedCategory, subCategory: storedSubCategory },
+        data: { subCategory: finalName },
+      });
+    }
+
+    if (typeof isActive === "boolean") {
+      subCategoryStatus[subCategoryStatusKey(storedCategory, finalName)] = isActive;
+    }
+
+    const updatedConfig = await prisma.site_config.update({
+      where: { id: config.id },
+      data: {
+        subCategories,
+        subCategoryStatus,
+      },
+    });
+    invalidateSiteConfigCache();
+    return res.status(200).json({
+      success: true,
+      message: "Subcategory updated successfully",
       config: updatedConfig,
     });
   } catch (error) {

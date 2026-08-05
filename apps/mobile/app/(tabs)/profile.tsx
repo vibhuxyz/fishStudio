@@ -1,5 +1,6 @@
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
+import { useCouponStore } from "@/lib/coupon-store";
 import { fetchRecentlyViewed } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
 import { clearStoredAuth } from "@/utils/auth";
@@ -10,7 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -44,6 +45,7 @@ const ORDER_QUICK_FILTERS: { key: string; label: string; icon: keyof typeof Ioni
 export default function Profile() {
   const { user: cachedUser, updateUserData, clearUserData } = useUser();
   const { selectedLocation } = useAddressStore();
+  const { fetchAvailableCoupons } = useCouponStore();
 
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -206,6 +208,15 @@ export default function Profile() {
       // user dismissed the sheet — ignore
     }
   };
+
+  // Coupons aren't persisted between launches, so refetch them here too —
+  // cart/checkout already do this, but Offers can be opened without ever
+  // visiting either.
+  useEffect(() => {
+    if (selectedLocation?.storeId) {
+      fetchAvailableCoupons(selectedLocation.storeId, cachedUser?.id);
+    }
+  }, [selectedLocation?.storeId, cachedUser?.id, fetchAvailableCoupons]);
 
   const handleOffersPress = () => {
     if (!selectedLocation?.storeId) {

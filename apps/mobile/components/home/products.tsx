@@ -4,6 +4,7 @@ import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
 import type { Product } from "@/types/product";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -123,7 +124,7 @@ export default function ProductSection({
                 <Image
                   source={{
                     uri:
-                      product?.images?.[0]?.url ||
+                      cloudinaryThumbnail(product?.images?.[0]?.url, 300) ||
                       "https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&h=300&fit=crop",
                   }}
                   style={{ width: "100%", height: 130 }}

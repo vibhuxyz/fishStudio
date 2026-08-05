@@ -23,6 +23,7 @@ import {
   type AdminProduct,
   updateAdminProduct,
   useAdminProducts,
+  useAdminSellers,
 } from "@/hooks/useAdminQueries";
 import { frontendEnv } from "@/config/env";
 import axiosInstance from "@/utils/axiosInstance";
@@ -35,7 +36,21 @@ const ProductList = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
   const [reindexing, setReindexing] = useState(false);
+  const [productScope, setProductScope] = useState<"catalog" | "store">("catalog");
+  const [storeFilter, setStoreFilter] = useState("");
   const queryClient = useQueryClient();
+
+  const { data: sellers = [] } = useAdminSellers();
+  const stores = useMemo(() => {
+    const seen = new Set<string>();
+    return sellers
+      .map((seller) => seller.store)
+      .filter((store): store is NonNullable<typeof store> => {
+        if (!store || seen.has(store.id)) return false;
+        seen.add(store.id);
+        return true;
+      });
+  }, [sellers]);
 
   const handleReindex = async () => {
     setReindexing(true);
@@ -49,7 +64,10 @@ const ProductList = () => {
     }
   };
 
-  const { data: products = [], isLoading } = useAdminProducts();
+  const { data: products = [], isLoading } = useAdminProducts({
+    scope: productScope,
+    storeId: productScope === "store" ? storeFilter || undefined : undefined,
+  });
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminProduct,
@@ -133,6 +151,30 @@ const ProductList = () => {
         accessorKey: "category",
         header: "Category",
       },
+      ...(productScope === "store"
+        ? [
+            {
+              accessorKey: "store",
+              header: "Store",
+              cell: ({ row }: { row: { original: AdminProduct } }) => (
+                <span>{row.original.store?.name || "—"}</span>
+              ),
+            },
+            {
+              accessorKey: "status",
+              header: "Status",
+              cell: ({ row }: { row: { original: AdminProduct } }) => (
+                <span
+                  className={
+                    row.original.status === "Active" ? "text-green-400" : "text-gray-500"
+                  }
+                >
+                  {row.original.status || "Active"}
+                </span>
+              ),
+            },
+          ]
+        : []),
       {
         accessorKey: "rating",
         header: "Rating",
@@ -154,15 +196,6 @@ const ProductList = () => {
               <Eye size={18} />
             </Link>
             <button
-              className="text-purple-400 hover:text-purple-300 transition"
-              onClick={() => {
-                setSelectedProduct(row.original);
-                setShowEditModal(true);
-              }}
-            >
-              <Pencil size={18} />
-            </button>
-            <button
               className="text-green-400 hover:text-green-300 transition"
               onClick={() => {
                 setAnalyticsData(row.original);
@@ -171,28 +204,43 @@ const ProductList = () => {
             >
               <BarChart size={18} />
             </button>
-            <button
-              className={`transition cursor-pointer ${
-                row.original.isDeleted
-                  ? "text-emerald-400 hover:text-emerald-300"
-                  : "text-red-400 hover:text-red-300"
-              }`}
-              onClick={() => {
-                setSelectedProduct(row.original);
-                setShowDeleteModal(true);
-              }}
-            >
-              {row.original.isDeleted ? (
-                <RotateCcw size={18} />
-              ) : (
-                <Trash size={18} />
-              )}
-            </button>
+            {/* Store products are owned by the seller — this page's edit/delete
+                mutations only authorize against admin-owned catalog products. */}
+            {productScope === "catalog" && (
+              <>
+                <button
+                  className="text-purple-400 hover:text-purple-300 transition"
+                  onClick={() => {
+                    setSelectedProduct(row.original);
+                    setShowEditModal(true);
+                  }}
+                >
+                  <Pencil size={18} />
+                </button>
+                <button
+                  className={`transition cursor-pointer ${
+                    row.original.isDeleted
+                      ? "text-emerald-400 hover:text-emerald-300"
+                      : "text-red-400 hover:text-red-300"
+                  }`}
+                  onClick={() => {
+                    setSelectedProduct(row.original);
+                    setShowDeleteModal(true);
+                  }}
+                >
+                  {row.original.isDeleted ? (
+                    <RotateCcw size={18} />
+                  ) : (
+                    <Trash size={18} />
+                  )}
+                </button>
+              </>
+            )}
           </div>
         ),
       },
     ],
-    [],
+    [productScope],
   );
 
   const table = useReactTable({
@@ -235,6 +283,46 @@ const ProductList = () => {
         placeholder: "Search products...",
       }}
     >
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex bg-gray-900 rounded-lg p-1 gap-1">
+          <button
+            onClick={() => setProductScope("catalog")}
+            className={`px-3 py-1.5 rounded-md text-sm transition ${
+              productScope === "catalog"
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Catalog Products
+          </button>
+          <button
+            onClick={() => setProductScope("store")}
+            className={`px-3 py-1.5 rounded-md text-sm transition ${
+              productScope === "store"
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Store Products
+          </button>
+        </div>
+
+        {productScope === "store" && (
+          <select
+            value={storeFilter}
+            onChange={(event) => setStoreFilter(event.target.value)}
+            className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white"
+          >
+            <option value="">All Stores</option>
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">
         {isLoading ? (
           <p className="text-center text-white">Loading products...</p>

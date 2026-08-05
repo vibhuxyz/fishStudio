@@ -50,6 +50,7 @@ export type {
 export const adminQueryKeys = {
   account: ["admin", "account"] as const,
   products: ["admin", "products"] as const,
+  productsList: (params: Record<string, string>) => ["admin", "products", params] as const,
   orders: ["admin", "orders"] as const,
   discounts: ["admin", "discounts"] as const,
   categories: ["admin", "categories"] as const,
@@ -82,8 +83,21 @@ export const fetchAdminProfile = async (): Promise<AdminProfile | null> => {
   return response.data.admin ?? null;
 };
 
-export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
-  const response = await axiosInstance.get("/product/api/get-owned-products", isProtected);
+export interface AdminProductsParams {
+  scope?: "catalog" | "store";
+  storeId?: string;
+}
+
+export const fetchAdminProducts = async (
+  params: AdminProductsParams = {},
+): Promise<AdminProduct[]> => {
+  const query = new URLSearchParams();
+  if (params.scope) query.set("scope", params.scope);
+  if (params.storeId) query.set("storeId", params.storeId);
+  const response = await axiosInstance.get(
+    `/product/api/get-owned-products?${query.toString()}`,
+    isProtected,
+  );
   const products = Array.isArray(response.data.products) ? response.data.products : [];
   return products.filter((product: AdminProduct) => !product.starting_date);
 };
@@ -150,6 +164,14 @@ export const fetchCategories = async (): Promise<CategoriesResponse> => {
       response.data.categoryImages && typeof response.data.categoryImages === "object"
         ? response.data.categoryImages
         : {},
+    categoryStatus:
+      response.data.categoryStatus && typeof response.data.categoryStatus === "object"
+        ? response.data.categoryStatus
+        : {},
+    subCategoryStatus:
+      response.data.subCategoryStatus && typeof response.data.subCategoryStatus === "object"
+        ? response.data.subCategoryStatus
+        : {},
   };
 };
 
@@ -181,6 +203,28 @@ export const deleteAdminSubCategory = async (category: string, name: string) => 
     data: { category, name },
     ...isProtected,
   });
+};
+
+export type UpdateCategoryPayload = {
+  name: string;
+  newName?: string;
+  imageUrl?: string;
+  isActive?: boolean;
+};
+
+export const updateAdminCategory = async (payload: UpdateCategoryPayload) => {
+  await axiosInstance.put("/product/api/update-category", payload, isProtected);
+};
+
+export type UpdateSubCategoryPayload = {
+  category: string;
+  name: string;
+  newName?: string;
+  isActive?: boolean;
+};
+
+export const updateAdminSubCategory = async (payload: UpdateSubCategoryPayload) => {
+  await axiosInstance.put("/product/api/update-subcategory", payload, isProtected);
 };
 
 export const fetchAdminSellers = async (): Promise<AdminSellerSummary[]> => {
@@ -243,10 +287,10 @@ export const updateSellerApproval = async ({
   return response.data;
 };
 
-export const useAdminProducts = () =>
+export const useAdminProducts = (params: AdminProductsParams = {}) =>
   useQuery({
-    queryKey: adminQueryKeys.products,
-    queryFn: fetchAdminProducts,
+    queryKey: adminQueryKeys.productsList(params as Record<string, string>),
+    queryFn: () => fetchAdminProducts(params),
   });
 
 export const useAdminAccount = () =>

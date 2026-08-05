@@ -110,32 +110,41 @@ export default function CartScreen() {
     const city = selectedLocation?.city || selectedAddress?.city;
     if (!pincode) return;
 
-    const cartItems = cart.map((item) => ({
-      productId: item.id,
-      quantity: item.quantity || 1,
-    }));
+    const validateCart = () => {
+      const cartItems = cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity || 1,
+      }));
 
-    axiosInstance
-      .post("/product/api/validate-cart", {
-        cartItems,
-        pincode,
-        city,
-        storeId: selectedLocation?.storeId || undefined,
-      })
-      .then(({ data }) => {
-        if (data.success) {
-          setDeliveryInfo({
-            isStoreOpen: data.isStoreOpen !== false,
-            cartDeliveryTime: data.cartDeliveryTime || null,
-            storeName: data.storeName || data.store?.name || null,
-            openingHours: data.openingHours || data.store?.opening_hours || null,
-          });
-          // Checkout renders the slot picker but never calls validate-cart, so
-          // this is the only place instant availability enters the app.
-          setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
-        }
-      })
-      .catch(() => {});
+      axiosInstance
+        .post("/product/api/validate-cart", {
+          cartItems,
+          pincode,
+          city,
+          storeId: selectedLocation?.storeId || undefined,
+        })
+        .then(({ data }) => {
+          if (data.success) {
+            setDeliveryInfo({
+              isStoreOpen: data.isStoreOpen !== false,
+              cartDeliveryTime: data.cartDeliveryTime || null,
+              storeName: data.storeName || data.store?.name || null,
+              openingHours: data.openingHours || data.store?.opening_hours || null,
+            });
+            // Checkout also re-validates independently once it's open, but
+            // starts from whatever this set most recently.
+            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+          }
+        })
+        .catch(() => {});
+    };
+
+    // Cart contents don't change while someone lingers on this screen, so a
+    // one-shot validation goes stale — e.g. instant delivery stays "offered"
+    // here well past the store's closing time. Re-check on a timer.
+    validateCart();
+    const id = setInterval(validateCart, 60_000);
+    return () => clearInterval(id);
   }, [cart.length, selectedLocation?.storeId, selectedLocation?.pincode]);
 
   // Offers for this store — the same list checkout shows, kept in the coupon store

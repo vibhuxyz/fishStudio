@@ -88,19 +88,28 @@ const axiosInstance = axios.create({
 let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 
+// SecureStore reads cross the native bridge, so caching in memory saves that
+// round trip on every single outgoing request instead of just the first one.
+// undefined = not loaded yet (falls through to the SecureStore read below);
+// null = confirmed logged out.
+let cachedAccessToken: string | null | undefined;
+
 // Get stored access token
 const getAccessToken = async (): Promise<string | null> => {
+  if (cachedAccessToken !== undefined) return cachedAccessToken;
   try {
-    return await SecureStore.getItemAsync("access_token");
+    cachedAccessToken = await SecureStore.getItemAsync("access_token");
   } catch {
-    return null;
+    cachedAccessToken = null;
   }
+  return cachedAccessToken;
 };
 
 // Store access token
 export const storeAccessToken = async (token: string): Promise<void> => {
   try {
     await SecureStore.setItemAsync("access_token", token);
+    cachedAccessToken = token;
   } catch (error) {
     console.error("Error storing access token:", error);
   }
@@ -110,6 +119,7 @@ export const storeAccessToken = async (token: string): Promise<void> => {
 export const removeAccessToken = async (): Promise<void> => {
   try {
     await SecureStore.deleteItemAsync("access_token");
+    cachedAccessToken = null;
   } catch (error) {
     console.error("Error removing access token:", error);
   }
@@ -125,6 +135,7 @@ export const registerForceLogoutHandler = (fn: () => void) => {
 
 const handleLogout = () => {
   // Clear all auth data
+  cachedAccessToken = null;
   SecureStore.deleteItemAsync("access_token").catch(() => {});
   SecureStore.deleteItemAsync("refresh_token").catch(() => {});
   useUserStore.getState().clearUser().catch(() => {});

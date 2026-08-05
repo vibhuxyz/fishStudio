@@ -5,6 +5,7 @@ import { X, Trash2, Plus, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { CoustomCuttingType, CoustomPices } from "@repo/ui";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { MarketingBadgeSelector } from "@/shared/components/marketing-badge-selector";
@@ -22,6 +23,12 @@ type EditProductModalProps = {
   onSave: (values: UpdateProductPayload) => void;
 };
 
+// The shared CoustomCuttingType component hard-codes its field-array name to
+// "cuttingType" (singular) — remapped to the "cuttingTypes" payload key on submit.
+type EditProductFormValues = UpdateProductPayload & {
+  cuttingType?: Array<{ value: string }>;
+};
+
 const EditProductModal = ({
   product,
   isSaving,
@@ -31,26 +38,29 @@ const EditProductModal = ({
   const [images, setImages] = useState(product.images || []);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm<UpdateProductPayload>({
-    defaultValues: {
-      productId: product.id,
-      title: product.title,
-      slug: product.slug,
-      category: product.category,
-      subCategory: product.subCategory || "",
-      short_description: product.short_description || "",
-      tags: product.tags?.join(", ") || "",
-      origin: product.origin || "",
-      source: product.source || "",
-      shelfLife: product.shelfLife || "",
-      storageInstructions: product.storageInstructions || "",
-      cookingTips: product.cookingTips?.join("\n") || "",
-      highlightDescription: product.highlightDescription || "",
-      nutritionProtein: product.nutritionProtein || "",
-      nutritionOmega3: product.nutritionOmega3 || "",
-      nutritionCalories: product.nutritionCalories || "",
-    },
-  });
+  const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } =
+    useForm<EditProductFormValues>({
+      defaultValues: {
+        productId: product.id,
+        title: product.title,
+        slug: product.slug,
+        category: product.category,
+        subCategory: product.subCategory || "",
+        short_description: product.short_description || "",
+        tags: product.tags?.join(", ") || "",
+        origin: product.origin || "",
+        source: product.source || "",
+        shelfLife: product.shelfLife || "",
+        storageInstructions: product.storageInstructions || "",
+        cookingTips: product.cookingTips?.join("\n") || "",
+        highlightDescription: product.highlightDescription || "",
+        nutritionProtein: product.nutritionProtein || "",
+        nutritionOmega3: product.nutritionOmega3 || "",
+        nutritionCalories: product.nutritionCalories || "",
+        cuttingType: product.cuttingTypes?.map((value) => ({ value })) || [],
+        pieceSizes: product.pieceSizes?.map((value) => ({ value })) || [],
+      },
+    });
 
   useEffect(() => {
     reset({
@@ -70,6 +80,8 @@ const EditProductModal = ({
       nutritionProtein: product.nutritionProtein || "",
       nutritionOmega3: product.nutritionOmega3 || "",
       nutritionCalories: product.nutritionCalories || "",
+      cuttingType: product.cuttingTypes?.map((value) => ({ value })) || [],
+      pieceSizes: product.pieceSizes?.map((value) => ({ value })) || [],
     });
     setImages(product.images || []);
   }, [product, reset]);
@@ -157,7 +169,9 @@ const EditProductModal = ({
 
         <form
           className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
-          onSubmit={handleSubmit(onSave)}
+          onSubmit={handleSubmit(({ cuttingType, ...values }) =>
+            onSave({ ...values, cuttingTypes: cuttingType, images }),
+          )}
         >
           <input type="hidden" {...register("productId")} />
 
@@ -235,6 +249,14 @@ const EditProductModal = ({
             Seller pricing, stock, coupons, and availability are managed from
             the seller dashboard after a seller adds this catalog product to
             their shop.
+          </div>
+
+          <div>
+            <CoustomCuttingType control={control} errors={errors} />
+          </div>
+
+          <div>
+            <CoustomPices control={control} errors={errors} />
           </div>
 
           <div className="md:col-span-2 space-y-2">
@@ -398,7 +420,6 @@ const EditProductModal = ({
             <button
               type="submit"
               disabled={isSaving || isUploading}
-              onClick={handleSubmit((values) => onSave({ ...values, images }))}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-white transition disabled:opacity-60"
             >
               {isSaving ? "Saving..." : "Save Changes"}

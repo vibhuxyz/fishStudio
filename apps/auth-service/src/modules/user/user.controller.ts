@@ -89,7 +89,7 @@ export const verifyOtpAndLogin = async (
   next: NextFunction,
 ) => {
   try {
-    const { identifier, otp, name } = req.body;
+    const { identifier, otp, name, referralCode } = req.body;
 
     if (!identifier || !otp) {
       return next(new ValidationError("Identifier and OTP are required"));
@@ -121,11 +121,24 @@ export const verifyOtpAndLogin = async (
     // New user — name provided: create the account now
     if (!user && name) {
       await redis.del(`otp_verified:${key}`);
+
+      // Silently ignore a code that doesn't match anyone — a typo shouldn't
+      // block signup, and never leaking whether it's valid avoids leaking
+      // whether any given code belongs to a real account.
+      let referredByCode: string | undefined;
+      if (referralCode && typeof referralCode === "string") {
+        const referrer = await prisma.users.findFirst({
+          where: { referralCode: referralCode.trim().toUpperCase() },
+          select: { id: true },
+        });
+        if (referrer) referredByCode = referralCode.trim().toUpperCase();
+      }
+
       try {
         user = await prisma.users.create({
           data: isEmail
-            ? { email: key, name: name.trim() }
-            : { phone_number: key, name: name.trim() },
+            ? { email: key, name: name.trim(), referredByCode }
+            : { phone_number: key, name: name.trim(), referredByCode },
         });
       } catch (createError: any) {
         if (createError.code === "P2002") {

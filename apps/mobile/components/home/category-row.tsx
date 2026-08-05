@@ -27,7 +27,7 @@ export default function CategoryRow() {
   const { data } = useQuery({
     queryKey: ["storefront-categories"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-categories");
+      const res = await axiosInstance.get("/product/api/get-categories?activeOnly=true");
       return res.data as CategoriesResponse;
     },
     staleTime: 1000 * 60 * 10,

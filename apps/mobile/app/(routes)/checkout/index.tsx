@@ -5,7 +5,7 @@ import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
 import { useStore } from "@/store";
-import { SLOT_OPTIONS } from "@/constants/delivery-slots";
+import { SLOT_OPTIONS, SCHEDULED_SLOTS } from "@/constants/delivery-slots";
 import { BASE_DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD, GST_RATE, PACKAGING_CHARGE } from "@/constants/pricing";
 import axiosInstance from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
@@ -141,7 +141,7 @@ export default function CheckoutScreen() {
     validateCouponCode,
   } = useCouponStore();
 
-  const { selectedSlot, instantFee } = useDeliverySlotStore();
+  const { selectedSlot, instantFee, setSlotAvailability } = useDeliverySlotStore();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [onlineRail, setOnlineRail] = useState<OnlineRail | null>(null);
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
@@ -193,12 +193,48 @@ export default function CheckoutScreen() {
             city: selectedAddress.city || data.store.city || "",
             deliveryTimeMinutes: data.store.cityDeliveryTimes?.[selectedAddress.city],
             isOpen: data.store.isOpen,
-            openingHours: data.store.openingHours,
+            openingHours: data.store.opening_hours,
+            closingHours: data.store.closing_hours,
           });
         }
       })
       .catch(() => {});
   }, [selectedLocation?.storeId, selectedAddress?.pincode]);
+
+  // The slot sheet on this screen offers "instant" based on availableSlots,
+  // which was previously only kept fresh by the cart tab's own validate-cart
+  // effect — this screen shouldn't depend on another screen's timer for its
+  // own correctness, so re-check independently while checkout is open (e.g.
+  // a shopper who lingers here past the store's closing time).
+  useEffect(() => {
+    const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+    const city = selectedLocation?.city || selectedAddress?.city;
+    if (cart.length === 0 || !pincode) return;
+
+    const validateCart = () => {
+      const cartItems = cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity || 1,
+      }));
+      axiosInstance
+        .post("/product/api/validate-cart", {
+          cartItems,
+          pincode,
+          city,
+          storeId: selectedLocation?.storeId || undefined,
+        })
+        .then(({ data }) => {
+          if (data.success) {
+            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+          }
+        })
+        .catch(() => {});
+    };
+
+    validateCart();
+    const id = setInterval(validateCart, 60_000);
+    return () => clearInterval(id);
+  }, [cart.length, selectedLocation?.storeId, selectedLocation?.pincode, selectedAddress?.pincode]);
 
   // Leaving with an unpaid order would hold its stock reservation until the
   // sweeper runs — release it as soon as the customer walks away.
@@ -529,7 +565,8 @@ export default function CheckoutScreen() {
             city: selectedAddress.city || data.store.city || "",
             deliveryTimeMinutes: data.store.cityDeliveryTimes?.[selectedAddress.city],
             isOpen: data.store.isOpen,
-            openingHours: data.store.openingHours,
+            openingHours: data.store.opening_hours,
+            closingHours: data.store.closing_hours,
           });
         }
       } catch {

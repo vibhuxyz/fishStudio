@@ -1,3 +1,4 @@
+import ActiveOrderWidget from "@/components/home/active-order-widget";
 import BannerCarousel from "@/components/home/banner-carousel";
 import BestSellersCombos from "@/components/home/best-sellers-combos";
 import CategoryRow from "@/components/home/category-row";
@@ -119,6 +120,7 @@ export default function Index() {
       {/* Header is sticky above the scroll */}
       <View style={{ backgroundColor: "#FFFFFF" }}>
         <Header />
+        <ActiveOrderWidget />
       </View>
 
       <AddToCartModal

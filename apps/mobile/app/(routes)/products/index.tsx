@@ -55,7 +55,7 @@ export default function ProductsScreen() {
   const { data: categoriesData } = useQuery({
     queryKey: ["storefront-categories"],
     queryFn: async () => {
-      const res = await axiosInstance.get("/product/api/get-categories");
+      const res = await axiosInstance.get("/product/api/get-categories?activeOnly=true");
       return res.data as { categories: string[] };
     },
     staleTime: 1000 * 60 * 10,

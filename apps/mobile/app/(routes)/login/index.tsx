@@ -28,6 +28,7 @@ export default function LoginScreen() {
   const [step, setStep] = useState<Step>("identifier");
   const [identifier, setIdentifier] = useState("");
   const [fullName, setFullName] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
   const [otp, setOtp] = useState<string[]>(emptyOtp);
   // Kept so the name step can replay the code that already passed verification.
@@ -66,11 +67,20 @@ export default function LoginScreen() {
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: async ({ code, name }: { code: string; name?: string }) => {
+    mutationFn: async ({
+      code,
+      name,
+      referralCode,
+    }: {
+      code: string;
+      name?: string;
+      referralCode?: string;
+    }) => {
       const { data } = await axiosInstance.post("/auth/api/verify-otp", {
         identifier: identifier.trim(),
         otp: code,
         ...(name ? { name } : {}),
+        ...(referralCode ? { referralCode } : {}),
       });
       return data;
     },
@@ -159,11 +169,14 @@ export default function LoginScreen() {
       <NameStep
         fullName={fullName}
         onChangeFullName={setFullName}
+        referralCode={referralCode}
+        onChangeReferralCode={setReferralCode}
         isLoading={isLoading}
         onSubmit={() =>
           verifyOtpMutation.mutate({
             code: verifiedCode,
             name: fullName.trim(),
+            referralCode: referralCode.trim() || undefined,
           })
         }
         onBack={() => setStep("otp")}

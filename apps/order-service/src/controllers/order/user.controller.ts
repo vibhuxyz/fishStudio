@@ -752,10 +752,21 @@ export const createOrder = async (
     /* ── Referral reward (fire-and-forget) ───────────────────────────────
        A referral is never allowed to affect the referee's own order — it's
        purely a trigger for the *referrer's* reward, so any failure here is
-       swallowed rather than surfaced. */
-    if (referralCode) {
-      grantReferralReward(referralCode, userId, order.id, store.sellerId).catch((err) =>
-        logger.error("[createOrder] referral reward failed", { err, referralCode, orderId: order.id }),
+       swallowed rather than surfaced. Falls back to the code captured at
+       signup (users.referredByCode) when checkout didn't have one typed in —
+       grantReferralReward's own first-order + dedupe checks still gate it. */
+    let effectiveReferralCode: string | undefined = referralCode;
+    if (!effectiveReferralCode) {
+      const referredBy = await prismaMongo.users.findUnique({
+        where: { id: userId },
+        select: { referredByCode: true },
+      });
+      effectiveReferralCode = referredBy?.referredByCode ?? undefined;
+    }
+
+    if (effectiveReferralCode) {
+      grantReferralReward(effectiveReferralCode, userId, order.id, store.sellerId).catch((err) =>
+        logger.error("[createOrder] referral reward failed", { err, referralCode: effectiveReferralCode, orderId: order.id }),
       );
     }
 

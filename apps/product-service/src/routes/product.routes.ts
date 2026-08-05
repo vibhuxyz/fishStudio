@@ -36,6 +36,8 @@ import {
   deleteCategory,
   deleteSubCategory,
   getCategories,
+  updateCategory,
+  updateSubCategory,
 } from "../controllers/product/category.controller.js";
 import {
   createDiscountCodes,
@@ -173,6 +175,18 @@ router.delete(
   isAuthenticated,
   allowRoles("admin"),
   deleteSubCategory,
+);
+router.put(
+  "/update-category",
+  isAuthenticated,
+  allowRoles("admin"),
+  updateCategory,
+);
+router.put(
+  "/update-subcategory",
+  isAuthenticated,
+  allowRoles("admin"),
+  updateSubCategory,
 );
 
 router.post(

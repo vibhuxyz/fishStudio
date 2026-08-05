@@ -3,6 +3,8 @@ import {
   type Address,
   type SelectedLocation,
 } from "@/lib/address-store";
+import { useAddress } from "@/hooks/useAddress";
+import useUser from "@/hooks/useUser";
 import axiosInstance from "@/utils/axiosInstance";
 import { detectCurrentPlace } from "@/utils/location";
 import { Ionicons } from "@expo/vector-icons";
@@ -55,6 +57,8 @@ export default function AddressModal({
   presentation = "page",
 }: AddressModalProps) {
   const queryClient = useQueryClient();
+  const { user } = useUser();
+  const { fetchAddresses } = useAddress();
   const {
     addresses,
     selectedAddressId,
@@ -84,6 +88,15 @@ export default function AddressModal({
       setServiceablePincodes([]);
     }
   }, [visible]);
+
+  // Saved addresses aren't persisted between launches, so pull them back
+  // whenever the picker opens — same fetch cart.tsx already relies on.
+  useEffect(() => {
+    if (!visible || !user) return;
+    fetchAddresses().catch(() => {
+      toast.error("Couldn't load your saved addresses");
+    });
+  }, [visible, user?.id]);
 
   // ── Pincode check ──────────────────────────────────────────────────────────
   const handleCheckPincode = async (overridePincode?: string) => {

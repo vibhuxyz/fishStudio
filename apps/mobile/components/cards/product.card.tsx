@@ -4,6 +4,7 @@ import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useStore } from "@/store";
 import type { Product } from "@/types/product";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -100,7 +101,9 @@ export default function ProductCard({
     >
       <View>
         <Image
-          source={{ uri: product.images?.[0]?.url || FALLBACK_IMAGE }}
+          source={{
+            uri: cloudinaryThumbnail(product.images?.[0]?.url, 300) || FALLBACK_IMAGE,
+          }}
           style={[styles.image, isOutOfStock && styles.imageMuted]}
           resizeMode="cover"
         />

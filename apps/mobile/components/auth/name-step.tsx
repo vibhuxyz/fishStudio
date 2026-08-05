@@ -28,6 +28,8 @@ import { BrandLockup } from "./brand-lockup";
 type NameStepProps = {
   fullName: string;
   onChangeFullName: (value: string) => void;
+  referralCode: string;
+  onChangeReferralCode: (value: string) => void;
   isLoading: boolean;
   onSubmit: () => void;
   onBack: () => void;
@@ -36,6 +38,8 @@ type NameStepProps = {
 export function NameStep({
   fullName,
   onChangeFullName,
+  referralCode,
+  onChangeReferralCode,
   isLoading,
   onSubmit,
   onBack,
@@ -104,6 +108,25 @@ export function NameStep({
               value={fullName}
               onChangeText={onChangeFullName}
               autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+          </View>
+
+          <Text style={styles.fieldLabel}>Referral Code (optional)</Text>
+          <View style={styles.inputRow}>
+            <Ionicons
+              name="gift-outline"
+              size={authScreen.fieldIconSize}
+              color={colors.brandMark}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter a friend's referral code"
+              placeholderTextColor={colors.textPlaceholder}
+              value={referralCode}
+              onChangeText={(t) => onChangeReferralCode(t.toUpperCase())}
+              autoCapitalize="characters"
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
             />
