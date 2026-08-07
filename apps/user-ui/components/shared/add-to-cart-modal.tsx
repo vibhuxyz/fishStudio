@@ -22,7 +22,7 @@ import {
 import { addToCart, useCartStore } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
 import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
-import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/pricing";
+import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/shared/pricing";
 import { useModals } from "@/components/providers/modal-provider";
 import { toast } from "sonner";
 

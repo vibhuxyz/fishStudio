@@ -1,7 +1,10 @@
 import { sendEmail } from "@repo/libs/sendMail";
 import { sendPhoneOtp } from "@repo/libs/sendOtp";
 import { logger } from "@repo/libs/logger";
+import { ENV } from "@repo/env-config";
 import { OtpMessage } from "../types/otpMessage.js";
+
+const isProduction = ENV.NODE_ENV.toLowerCase() === "production";
 
 /**
  * Main handler for processing OTP messages.
@@ -28,6 +31,12 @@ export async function handleOtpMessage(data: OtpMessage): Promise<void> {
 
   // 2. Handle email OTP if phone wasn't attempted or failed
   if (email && template && !sent) {
+    // sendEmail only renders/delivers the template — it never sees the OTP
+    // as its own field, so it can't log it. In dev the code otherwise only
+    // shows up inside the Ethereal preview link, which is easy to miss.
+    if (!isProduction) {
+      console.log(`📧 [DEV] OTP for ${email}: ${otp}`);
+    }
     logger.info(`[OTP Worker] Attempting email OTP → ${email} (template: ${template})`);
     try {
       await sendEmail(email, "Verify your Account", template, { name, otp });

@@ -213,40 +213,50 @@ export default function ProductSection({
                   {product.unit || "Unit"} | Serves {product.serves || "2-4"}
                 </Text>
 
-                {/* Price row */}
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                {/* Price */}
+                <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
                   <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>
                     ₹{currentPrice}
                   </Text>
                   {product.sale_price && product.regular_price && (
-                    <>
-                      <Text
-                        style={{
-                          fontFamily: "Inter-Regular",
-                          fontSize: 11,
-                          color: "#A1A1AA",
-                          textDecorationLine: "line-through",
-                          marginLeft: 4,
-                        }}
-                      >
-                        ₹{product.regular_price}
-                      </Text>
-                      {discountPercentage > 0 && (
-                        <Text
-                          style={{
-                            fontFamily: "Inter-SemiBold",
-                            fontSize: 10,
-                            color: "#22C55E",
-                            marginLeft: 3,
-                          }}
-                        >
-                          {discountPercentage}% off
-                        </Text>
-                      )}
-                    </>
+                    <Text
+                      style={{
+                        fontFamily: "Inter-Regular",
+                        fontSize: 11,
+                        color: "#A1A1AA",
+                        textDecorationLine: "line-through",
+                        marginLeft: 4,
+                      }}
+                    >
+                      ₹{product.regular_price}
+                    </Text>
                   )}
+                </View>
 
-                  <View style={{ flex: 1 }} />
+                {/* Discount badge + Add — own row so a long "% off" string never
+                    crowds the fixed-width Add button out of the card */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginTop: 4,
+                  }}
+                >
+                  {discountPercentage > 0 ? (
+                    <Text
+                      style={{
+                        fontFamily: "Inter-SemiBold",
+                        fontSize: 10,
+                        color: "#22C55E",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {discountPercentage}% off
+                    </Text>
+                  ) : (
+                    <View />
+                  )}
 
                   {/* Add button */}
                   {!isOutOfStock && (

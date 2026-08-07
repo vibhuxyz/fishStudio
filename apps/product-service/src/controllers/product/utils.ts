@@ -210,19 +210,14 @@ export const normalizeSizePricing = (
             : parseWeightToGrams(size),
       };
     })
-    .filter((entry): entry is NormalizedSizePricing => Boolean(entry));
+    // A size the seller leaves at 0 weight/price means they don't stock it —
+    // drop it instead of resurrecting it with a fallback-priced entry.
+    .filter((entry): entry is NormalizedSizePricing => Boolean(entry))
+    .filter((entry) => entry.weightGrams > 0 && entry.salePrice > 0);
   if (normalized.length > 0) {
-    return allowedSizes.map((size) => {
-      const matching = normalized.find((entry) => entry.size === size);
-      return (
-        matching ?? {
-          size,
-          weightGrams: parseWeightToGrams(size),
-          salePrice: Number(fallbackSalePrice || 0),
-          regularPrice: Number(fallbackRegularPrice || fallbackSalePrice || 0),
-        }
-      );
-    });
+    return allowedSizes
+      .map((size) => normalized.find((entry) => entry.size === size))
+      .filter((entry): entry is NormalizedSizePricing => Boolean(entry));
   }
   return allowedSizes.map((size) => ({
     size,

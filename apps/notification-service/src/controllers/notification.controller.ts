@@ -13,8 +13,17 @@ export const getNotifications = async (req: AuthenticatedRequest, res: Response,
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const notifications = await getUserNotifications(userId);
-    res.status(200).json({ success: true, notifications });
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+    const limit = Number(req.query.limit) || undefined;
+
+    // `notifications` keeps its existing shape and position in the response;
+    // hasMore/nextCursor are new fields clients can start using when they add
+    // infinite scroll, and are harmless to the ones that ignore them.
+    const { notifications, hasMore, nextCursor } = await getUserNotifications(userId, {
+      cursor,
+      limit,
+    });
+    res.status(200).json({ success: true, notifications, hasMore, nextCursor });
   } catch (error) {
     next(error);
   }

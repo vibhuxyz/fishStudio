@@ -43,7 +43,8 @@
         {
           "locationWhenInUsePermission": "Fish Studio uses your location to prefill your delivery address and find the nearest store."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

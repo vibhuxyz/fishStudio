@@ -248,6 +248,7 @@ export default function ShippingAddressScreen() {
       <AddressModal
         visible={showModal}
         onClose={() => { setShowModal(false); loadAddresses(); }}
+        requireAddressForm
       />
     </SafeAreaView>
   );

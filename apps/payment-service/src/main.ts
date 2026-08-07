@@ -21,6 +21,7 @@ import { errorMiddleware } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
 import paymentRouter from "./routes/payment.routes.js";
 import { paymentReconciliationTask } from "./jobs/payment.reconciliation.job.js";
+import { paymentPrewarmConsumer } from "./consumers/payment-prewarm.consumer.js";
 
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_MAX = 200;
@@ -87,6 +88,13 @@ const server = app.listen(port, "0.0.0.0", () => {
   logger.info(`Payment service running on http://localhost:${port}`);
 });
 server.on("error", (err) => logger.error("[Payment Service] Server error", err));
+
+// Prewarming is an optimisation — if the broker is unreachable the interactive
+// path still creates gateway orders itself, so this must not stop the service
+// from serving payments.
+paymentPrewarmConsumer().catch((err) =>
+  logger.error("[Payment Service] Prewarm consumer failed to start", err),
+);
 
 const shutdown = () => {
   logger.info("Shutting down Payment Service...");

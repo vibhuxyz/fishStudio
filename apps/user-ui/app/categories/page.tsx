@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fish } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
-import { normalizeSlug } from "@repo/slug";
+import { normalizeSlug } from "@repo/shared/slug";
 
 export default function CategoriesPage() {
   const { data, isLoading } = useCategories();

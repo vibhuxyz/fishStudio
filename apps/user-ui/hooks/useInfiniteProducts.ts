@@ -50,11 +50,13 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
       ...storefrontKeys.productListing({ ...baseParams, page: 0 }),
       "infinite",
     ],
-    queryFn: ({ pageParam = 1 }) =>
-      fetchStorefrontProductListing({ ...baseParams, page: pageParam as number }),
-    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      fetchStorefrontProductListing({ ...baseParams, cursor: pageParam }),
+    initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.pagination?.hasMore ? lastPage.pagination.page + 1 : undefined,
+      lastPage.pagination?.hasMore
+        ? (lastPage.pagination.nextCursor ?? undefined)
+        : undefined,
     staleTime: 1000 * 60 * 5,
     enabled: options.enabled !== false,
   });

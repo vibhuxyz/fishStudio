@@ -15,7 +15,8 @@
     "dev": "tsup --watch",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:indexes": "tsx src/ensure-indexes.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",

@@ -32,6 +32,7 @@ import {
   XCircle,
   LayoutList,
   Boxes,
+  Bike,
 } from "lucide-react";
 import CollapsibleSidebarItem from "./collapsible-sidebar-item";
 
@@ -242,6 +243,17 @@ const SidebarBarWrapper = () => {
                     />
                   }
                 />
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/combos"}
+                  title="Combos"
+                  href="/dashboard/combos"
+                  icon={
+                    <PackageSearch
+                      size={22}
+                      color={getIconColor("/dashboard/combos")}
+                    />
+                  }
+                />
               </SidebarMenu>
             )}
 
@@ -268,6 +280,19 @@ const SidebarBarWrapper = () => {
                   />
                 }
               />
+              {hasPerm("rider") && (
+                <SidebarItem
+                  isActive={activeSidebar === "/dashboard/riders"}
+                  title="Riders"
+                  href="/dashboard/riders"
+                  icon={
+                    <Bike
+                      size={22}
+                      color={getIconColor("/dashboard/riders")}
+                    />
+                  }
+                />
+              )}
             </SidebarMenu>
 
             {hasPerm("event") && (

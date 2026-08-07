@@ -1,6 +1,7 @@
 import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { publishToQueue } from "@repo/libs/rabbitmq";
+import { formatOrderId } from "@repo/shared/order-id";
 
 /**
  * Cancel online-payment orders that were never paid.
@@ -62,11 +63,11 @@ export async function cancelStaleUnpaidOrders() {
       );
 
       try {
-        const shortId = order.id.slice(-6).toUpperCase();
+        const shortId = formatOrderId(order.id);
         await publishToQueue("NOTIFICATION_QUEUE", {
           userId: order.userId,
           title: "Order Cancelled",
-          message: `Your order #${shortId} was cancelled because payment was not completed. Reserved items have been released.`,
+          message: `Your order ${shortId} was cancelled because payment was not completed. Reserved items have been released.`,
           type: "INFO",
           category: "ORDER",
           metadata: { orderId: order.id },

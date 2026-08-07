@@ -32,6 +32,7 @@ import {
   logOutUser,
   updateUserProfile,
   updateAvatar,
+  updateNotificationPreferences,
   uploadAvatarImage,
   deleteUser,
   refreshToken,
@@ -69,6 +70,14 @@ import {
   updateStaffAccess,
   verifyStaff,
 } from "../modules/staff/staff.controller.js";
+import {
+  createRider,
+  getMyRiders,
+  updateRider,
+  updateRiderStatus,
+  toggleRiderActive,
+  deleteRider,
+} from "../modules/seller/rider.controller.js";
 
 const router: Router = express.Router();
 
@@ -80,6 +89,12 @@ router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 router.put("/update-user-profile", isAuthenticated, isUser, updateUserProfile);
 router.post("/upload-avatar-image", isAuthenticated, isUser, uploadAvatarImage);
 router.put("/update-avatar", isAuthenticated, isUser, updateAvatar);
+router.put(
+  "/update-notification-preferences",
+  isAuthenticated,
+  isUser,
+  updateNotificationPreferences,
+);
 router.delete("/delete-user", isAuthenticated, isUser, deleteUser);
 
 // user address routes
@@ -160,5 +175,26 @@ router.put(
   isSeller,
   updateStaffAccess,
 );
+
+// seller rider management routes — riders are plain seller-managed records
+// with no login of their own, so unlike order processing (isSellerOrStaff),
+// staff never reach the dashboard page that calls these (useRequireAuth
+// redirects staff sessions away from /dashboard/*), so gate isSeller only.
+router.get("/seller/riders", isAuthenticated, isSeller, getMyRiders);
+router.post("/seller/rider", isAuthenticated, isSeller, createRider);
+router.put("/seller/rider/:riderId", isAuthenticated, isSeller, updateRider);
+router.put(
+  "/seller/rider/:riderId/status",
+  isAuthenticated,
+  isSeller,
+  updateRiderStatus,
+);
+router.put(
+  "/seller/rider/:riderId/toggle-active",
+  isAuthenticated,
+  isSeller,
+  toggleRiderActive,
+);
+router.delete("/seller/rider/:riderId", isAuthenticated, isSeller, deleteRider);
 
 export default router;

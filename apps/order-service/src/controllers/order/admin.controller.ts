@@ -1,11 +1,12 @@
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, toMoney } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
 import { adminOrderListQuerySchema, updateAdminOrderStatusSchema, validate } from "@repo/zod-schema";
 import {
   restoreOrderStock,
   queueStalePaymentFix,
+  normalizeOrderIdFragment,
   ADMIN_ORDER_CUSTOMER_SELECT,
   ADMIN_ORDER_SELLER_SELECT,
 } from "./utils.js";
@@ -19,6 +20,7 @@ import {
      from       ISO date string — orders created after this date
      to         ISO date string — orders created before this date
      search     string  — matches against orderId, userId, storeId, deliveryPhone, deliveryPincode
+                          (leading "#"/"FS" display-prefixes are stripped before matching orderId)
      sellerId   string  — filter orders belonging to a specific seller's store
      paymentMethod  string  (COD | RAZORPAY)
      paymentStatus  string  (PENDING | COMPLETED | FAILED | REFUNDED)
@@ -85,7 +87,7 @@ export const getAdminOrderList = async (
       ...(search
         ? {
             OR: [
-              { id:              { contains: search, mode: "insensitive" } },
+              { id:              { contains: normalizeOrderIdFragment(search), mode: "insensitive" } },
               { userId:          { contains: search, mode: "insensitive" } },
               { storeId:         { contains: search, mode: "insensitive" } },
               { deliveryPhone:   { contains: search, mode: "insensitive" } },
@@ -161,11 +163,11 @@ export const getAdminOrderList = async (
                         : order.paymentStatus,
       paymentMethod:  order.paymentMethod,
       paymentRef:     order.paymentRef,
-      totalAmount:    order.totalAmount,
-      discountAmount: order.discountAmount,
+      totalAmount:    toMoney(order.totalAmount),
+      discountAmount: toMoney(order.discountAmount),
       couponCode:     order.couponCode,
       deliverySlot:   order.deliverySlot,
-      deliveryCharge: order.deliveryCharge,
+      deliveryCharge: toMoney(order.deliveryCharge),
       billDetails:    order.billDetails,
       rejectionReason:order.rejectionReason,
       createdAt:      order.createdAt,
@@ -195,13 +197,13 @@ export const getAdminOrderList = async (
         id:              oi.id,
         productId:       oi.productId,
         quantity:        oi.quantity,
-        price:           oi.price,
+        price:           toMoney(oi.price),
         selectedOptions: oi.selectedOptions,
         product:         productMap.get(oi.productId) ?? { id: oi.productId },
       })),
 
       // Payment records
-      payments: order.payments,
+      payments: order.payments.map((p) => ({ ...p, amount: toMoney(p.amount) })),
     }));
 
     return res.status(200).json({
@@ -271,7 +273,7 @@ export const getAdminOrderDetail = async (
     /* ── 3. Fetch Mongo data in parallel ─────────────────────────────────── */
     const productIds = order.orderItems.map((oi) => oi.productId);
 
-    const [customer, store, products] = await Promise.all([
+    const [customer, store, products, rider] = await Promise.all([
       prismaMongo.users.findUnique({
         where: { id: order.userId },
         select: ADMIN_ORDER_CUSTOMER_SELECT,
@@ -305,6 +307,12 @@ export const getAdminOrderDetail = async (
           images: { take: 1, select: { url: true } },
         },
       }),
+      order.riderId
+        ? prismaMongo.riders.findUnique({
+            where: { id: order.riderId },
+            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, status: true, avatar: true },
+          })
+        : null,
     ]);
 
     const productMap = new Map(products.map((p) => [p.id, p]));
@@ -319,15 +327,21 @@ export const getAdminOrderDetail = async (
         paymentStatus:   order.paymentStatus,
         paymentMethod:   order.paymentMethod,
         paymentRef:      order.paymentRef,
-        totalAmount:     order.totalAmount,
-        discountAmount:  order.discountAmount,
+        totalAmount:     toMoney(order.totalAmount),
+        discountAmount:  toMoney(order.discountAmount),
         couponCode:      order.couponCode,
         deliverySlot:    order.deliverySlot,
-        deliveryCharge:  order.deliveryCharge,
+        deliveryCharge:  toMoney(order.deliveryCharge),
         billDetails:     order.billDetails,
         rejectionReason: order.rejectionReason,
         createdAt:       order.createdAt,
         updatedAt:       order.updatedAt,
+
+        // Assigned rider, if any — riderStatus/assignedAt/assignedBy are the
+        // order's own audit trail; `rider` below is the live Mongo record.
+        riderStatus: order.riderStatus,
+        assignedAt:  order.assignedAt,
+        rider,
 
         // Delivery snapshot (what the user entered at checkout)
         delivery: {
@@ -381,8 +395,8 @@ export const getAdminOrderDetail = async (
           return {
             id:              oi.id,
             quantity:        oi.quantity,
-            unitPrice:       oi.price,
-            lineTotal:       oi.price * oi.quantity,
+            unitPrice:       toMoney(oi.price),
+            lineTotal:       toMoney(oi.price.mul(oi.quantity)),
             selectedOptions: oi.selectedOptions,
             product: product
               ? {
@@ -402,7 +416,7 @@ export const getAdminOrderDetail = async (
         // All payment attempts for this order
         payments: order.payments.map((p) => ({
           id:            p.id,
-          amount:        p.amount,
+          amount:        toMoney(p.amount),
           method:        p.method,
           status:        p.status,
           transactionId: p.transactionId,

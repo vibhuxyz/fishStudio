@@ -143,6 +143,8 @@ exports.Prisma.UsersScalarFieldEnum = {
   avatarId: 'avatarId',
   referralCode: 'referralCode',
   referredByCode: 'referredByCode',
+  expoPushToken: 'expoPushToken',
+  emailNotificationsEnabled: 'emailNotificationsEnabled',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -184,6 +186,7 @@ exports.Prisma.SellersScalarFieldEnum = {
   following: 'following',
   isApprovedByAdmin: 'isApprovedByAdmin',
   permissions: 'permissions',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -213,10 +216,43 @@ exports.Prisma.StoresScalarFieldEnum = {
   instant_delivery_fee: 'instant_delivery_fee',
   instant_delivery_window_start: 'instant_delivery_window_start',
   instant_delivery_window_end: 'instant_delivery_window_end',
+  gst_rate: 'gst_rate',
+  packaging_charge: 'packaging_charge',
+  base_delivery_charge: 'base_delivery_charge',
+  free_delivery_threshold: 'free_delivery_threshold',
   availableCities: 'availableCities',
   cityDeliveryTimes: 'cityDeliveryTimes',
+  areaPincodes: 'areaPincodes',
+  areaCities: 'areaCities',
+  servicePincodes: 'servicePincodes',
   state: 'state',
+  supportPhone: 'supportPhone',
+  whatsappNumber: 'whatsappNumber',
+  whatsappLink: 'whatsappLink',
+  whatsappMessageTemplate: 'whatsappMessageTemplate',
+  supportEmail: 'supportEmail',
+  supportHours: 'supportHours',
+  supportDescription: 'supportDescription',
+  faqLink: 'faqLink',
   sellerId: 'sellerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RidersScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  phone: 'phone',
+  email: 'email',
+  avatarId: 'avatarId',
+  vehicleType: 'vehicleType',
+  vehicleNumber: 'vehicleNumber',
+  deliveryZone: 'deliveryZone',
+  status: 'status',
+  activeDeliveryCount: 'activeDeliveryCount',
+  isActive: 'isActive',
+  notes: 'notes',
+  storeId: 'storeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -268,6 +304,8 @@ exports.Prisma.ProductsScalarFieldEnum = {
   basePricePerKg: 'basePricePerKg',
   basePricePerUnit: 'basePricePerUnit',
   pricingMethod: 'pricingMethod',
+  trackStockPerSize: 'trackStockPerSize',
+  sizeStock: 'sizeStock',
   processingWeightLoss: 'processingWeightLoss',
   stock: 'stock',
   sale_price: 'sale_price',
@@ -328,6 +366,20 @@ exports.Prisma.Seller_eventsScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CombosScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  description: 'description',
+  images: 'images',
+  items: 'items',
+  regularTotal: 'regularTotal',
+  comboPrice: 'comboPrice',
+  isActive: 'isActive',
+  storeId: 'storeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SignupAccessCodeScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -348,6 +400,7 @@ exports.Prisma.Abandoned_cartsScalarFieldEnum = {
   totalAmount: 'totalAmount',
   notifiedAt: 'notifiedAt',
   isConverted: 'isConverted',
+  notifyStage: 'notifyStage',
   lastUpdatedAt: 'lastUpdatedAt',
   createdAt: 'createdAt'
 };
@@ -376,7 +429,22 @@ exports.Prisma.QueryMode = {
 exports.ImageType = exports.$Enums.ImageType = {
   PRODUCT: 'PRODUCT',
   USER_AVATAR: 'USER_AVATAR',
-  STORE_AVATAR: 'STORE_AVATAR'
+  STORE_AVATAR: 'STORE_AVATAR',
+  RIDER_AVATAR: 'RIDER_AVATAR'
+};
+
+exports.RiderVehicleType = exports.$Enums.RiderVehicleType = {
+  BIKE: 'BIKE',
+  SCOOTER: 'SCOOTER',
+  BICYCLE: 'BICYCLE',
+  OTHER: 'OTHER'
+};
+
+exports.RiderStatus = exports.$Enums.RiderStatus = {
+  AVAILABLE: 'AVAILABLE',
+  DELIVERING: 'DELIVERING',
+  OFFLINE: 'OFFLINE',
+  ON_LEAVE: 'ON_LEAVE'
 };
 
 exports.productStatus = exports.$Enums.productStatus = {
@@ -399,12 +467,14 @@ exports.Prisma.ModelName = {
   sellers: 'sellers',
   staffs: 'staffs',
   stores: 'stores',
+  riders: 'riders',
   favorites: 'favorites',
   reviews: 'reviews',
   site_config: 'site_config',
   products: 'products',
   banners: 'banners',
   seller_events: 'seller_events',
+  combos: 'combos',
   SignupAccessCode: 'SignupAccessCode',
   abandoned_carts: 'abandoned_carts',
   product_views: 'product_views'

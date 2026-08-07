@@ -41,9 +41,36 @@ export const MOCK_STAFF = {
 
 export type OrderStatus = "New" | "Processing" | "Ready" | "Completed" | "Rejected";
 
+// The real backend status, kept alongside the collapsed 5-bucket `status`
+// above — several real statuses (READY_FOR_PICKUP, ASSIGNED_TO_RIDER,
+// SHIPPED) all map onto the single "Ready" bucket for kanban grouping, but
+// the rider-assignment UI needs to tell those apart.
+export type RawOrderStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "PREPARING"
+  | "READY_FOR_PICKUP"
+  | "ASSIGNED_TO_RIDER"
+  | "REJECTED"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface MockOrderRider {
+  id: string;
+  name: string;
+  phone: string;
+  vehicleType: string;
+  vehicleNumber: string;
+  avatar?: { url: string } | null;
+}
+
 export interface MockOrder {
   id: string;
   status: OrderStatus;
+  rawStatus?: RawOrderStatus;
+  riderId?: string | null;
+  rider?: MockOrderRider | null;
   total: number;
   createdAt: string;
   rejectionReason: string | null;

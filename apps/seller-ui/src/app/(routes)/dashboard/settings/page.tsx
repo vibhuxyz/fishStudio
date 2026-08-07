@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Store, MapPin, Save, Loader2, Clock, X, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Store, MapPin, Save, Loader2, Clock, X, ArrowRight, Headset } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
@@ -9,7 +9,16 @@ import useSeller from "@/hooks/useSeller";
 import { isProtected } from "@/utils/protected";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 
-type CityDelivery = { city: string; minutes: number };
+// "area" is the locality name (e.g. "Kavi Nagar"), "areaCity" is the real
+// city it sits in (e.g. "Ghaziabad") — a single pincode can span areas in
+// different cities from the store's own base city.
+type AreaDelivery = { area: string; areaCity: string; pincode: string; minutes: number };
+
+// A registered city+pincode combo, added once and then reused when adding
+// areas — keeps a seller from retyping (and mistyping) the same city name
+// for every locality that shares it.
+type CityPincode = { city: string; pincode: string };
+const cityPincodeKey = (cp: CityPincode) => `${cp.city}|||${cp.pincode}`;
 
 type FormData = {
   name: string;
@@ -23,6 +32,21 @@ type FormData = {
   instant_delivery_fee: number;
   instant_delivery_window_start: string;
   instant_delivery_window_end: string;
+  // Stored here as a percent (e.g. 5, not 0.05) for a readable input — converted
+  // to/from the fraction the backend's computeCartSummary expects at load/save.
+  gst_rate_percent: number;
+  packaging_charge: number;
+  base_delivery_charge: number;
+  free_delivery_threshold: number;
+  // Support / Contact — surfaced to customers on order-detail screens.
+  supportPhone: string;
+  whatsappNumber: string;
+  whatsappLink: string;
+  whatsappMessageTemplate: string;
+  supportEmail: string;
+  supportHours: string;
+  supportDescription: string;
+  faqLink: string;
 };
 
 type DiffRow = {
@@ -46,7 +70,9 @@ function fmtField(key: keyof FormData, val: string | number | boolean): string {
     return fmt24to12(String(val));
   }
   if (key === "is_instant_delivery_enabled") return val ? "Enabled" : "Disabled";
-  if (key === "instant_delivery_fee") return `₹${val}`;
+  if (key === "instant_delivery_fee" || key === "packaging_charge" ||
+      key === "base_delivery_charge" || key === "free_delivery_threshold") return `₹${val}`;
+  if (key === "gst_rate_percent") return `${val}%`;
   return String(val || "—");
 }
 
@@ -62,11 +88,23 @@ const FIELD_LABELS: Record<keyof FormData, string> = {
   instant_delivery_fee: "Instant Delivery Surcharge",
   instant_delivery_window_start: "Instant Window Start",
   instant_delivery_window_end: "Instant Window End",
+  gst_rate_percent: "GST Rate",
+  packaging_charge: "Packaging Charge",
+  base_delivery_charge: "Delivery Charge",
+  free_delivery_threshold: "Free Delivery Threshold",
+  supportPhone: "Support Phone",
+  whatsappNumber: "WhatsApp Number",
+  whatsappLink: "WhatsApp Link Override",
+  whatsappMessageTemplate: "WhatsApp Message Template",
+  supportEmail: "Support Email",
+  supportHours: "Support Working Hours",
+  supportDescription: "Support Description",
+  faqLink: "FAQ Link",
 };
 
-function citiesLabel(cities: CityDelivery[]): string {
+function citiesLabel(cities: AreaDelivery[]): string {
   if (!cities.length) return "—";
-  return cities.map((c) => `${c.city} (${c.minutes}m)`).join(", ");
+  return cities.map((c) => `${c.area}, ${c.areaCity} · ${c.pincode} (${c.minutes}m)`).join(", ");
 }
 
 // ── Confirmation modal ────────────────────────────────────────────────────────
@@ -83,7 +121,7 @@ function ConfirmModal({
   onCancel: () => void;
   isSaving: boolean;
 }) {
-  const rows = [...diff, ...(citiesDiff ? [{ field: "Serviceable Cities", ...citiesDiff }] : [])];
+  const rows = [...diff, ...(citiesDiff ? [{ field: "Serviceable Areas", ...citiesDiff }] : [])];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -167,15 +205,35 @@ export default function SettingsPage() {
     instant_delivery_fee: 20,
     instant_delivery_window_start: "11:00",
     instant_delivery_window_end: "19:00",
+    gst_rate_percent: 0,
+    packaging_charge: 0,
+    base_delivery_charge: 49,
+    free_delivery_threshold: 500,
+    supportPhone: "",
+    whatsappNumber: "",
+    whatsappLink: "",
+    whatsappMessageTemplate: "",
+    supportEmail: "",
+    supportHours: "",
+    supportDescription: "",
+    faqLink: "",
   });
 
-  const [cityDeliveries, setCityDeliveries] = useState<CityDelivery[]>([]);
+  const [cityDeliveries, setCityDeliveries] = useState<AreaDelivery[]>([]);
+
+  // Step 1 — register the city+pincode combos this store delivers to.
+  const [cityPincodes, setCityPincodes] = useState<CityPincode[]>([]);
+  const [newRegistryCity, setNewRegistryCity] = useState("");
+  const [newRegistryPincode, setNewRegistryPincode] = useState("");
+
+  // Step 2 — attach an area to one of the registered combos above.
   const [newCity, setNewCity] = useState("");
+  const [selectedCityPincode, setSelectedCityPincode] = useState("");
   const [newMinutes, setNewMinutes] = useState("");
 
   // Snapshots of the last-saved state (used for diff)
   const savedFormRef = useRef<FormData>(formData);
-  const savedCitiesRef = useRef<CityDelivery[]>([]);
+  const savedCitiesRef = useRef<AreaDelivery[]>([]);
 
   // Re-populate form whenever seller data changes (initial load + after save refetch)
   useEffect(() => {
@@ -194,36 +252,98 @@ export default function SettingsPage() {
       instant_delivery_fee: store.instant_delivery_fee ?? 20,
       instant_delivery_window_start: store.instant_delivery_window_start || "11:00",
       instant_delivery_window_end: store.instant_delivery_window_end || "19:00",
+      gst_rate_percent: Math.round(((store.gst_rate ?? 0) * 100) * 100) / 100,
+      packaging_charge: store.packaging_charge ?? 0,
+      base_delivery_charge: store.base_delivery_charge ?? 49,
+      free_delivery_threshold: store.free_delivery_threshold ?? 500,
+      supportPhone: store.supportPhone || "",
+      whatsappNumber: store.whatsappNumber || "",
+      whatsappLink: store.whatsappLink || "",
+      whatsappMessageTemplate: store.whatsappMessageTemplate || "",
+      supportEmail: store.supportEmail || "",
+      supportHours: store.supportHours || "",
+      supportDescription: store.supportDescription || "",
+      faqLink: store.faqLink || "",
     };
 
     const cityDT = store.cityDeliveryTimes as Record<string, number> | null;
-    let cities: CityDelivery[] = [];
+    const areaPincodes = (store.areaPincodes as Record<string, string> | null) ?? {};
+    const areaCities = (store.areaCities as Record<string, string> | null) ?? {};
+    let cities: AreaDelivery[] = [];
     if (cityDT) {
-      cities = Object.entries(cityDT).map(([city, minutes]) => ({ city, minutes: minutes as number }));
+      cities = Object.entries(cityDT).map(([area, minutes]) => ({
+        area,
+        minutes: minutes as number,
+        pincode: areaPincodes[area] || "",
+        areaCity: areaCities[area] || "",
+      }));
     } else if (store.availableCities?.length) {
-      cities = store.availableCities.map((c: string) => ({ city: c, minutes: 30 }));
+      cities = store.availableCities.map((a: string) => ({
+        area: a,
+        minutes: 30,
+        pincode: areaPincodes[a] || "",
+        areaCity: areaCities[a] || "",
+      }));
     }
+
+    // Seed the city+pincode registry from whatever combos are already in use,
+    // so previously-added areas' combos are immediately reusable.
+    const registrySeen = new Set<string>();
+    const registry: CityPincode[] = [];
+    cities.forEach(({ areaCity, pincode }) => {
+      if (!areaCity || !pincode) return;
+      const key = cityPincodeKey({ city: areaCity, pincode });
+      if (registrySeen.has(key)) return;
+      registrySeen.add(key);
+      registry.push({ city: areaCity, pincode });
+    });
 
     setFormData(loaded);
     setCityDeliveries(cities);
+    setCityPincodes(registry);
     savedFormRef.current = loaded;
     savedCitiesRef.current = cities;
   }, [seller]);
 
-  const handleAddCity = () => {
-    const city = newCity.trim().replace(/\s+/g, " ");
-    const mins = parseInt(newMinutes, 10);
+  // Step 1 — register a city+pincode combo, reused below when adding areas.
+  const handleAddCityPincode = () => {
+    const city = newRegistryCity.trim().replace(/\s+/g, " ");
+    const pincode = newRegistryPincode.trim();
     if (!city) { toast.error("Enter a city name"); return; }
-    if (!/^[a-zA-Z\s]+$/.test(city)) { toast.error("City name should only contain letters and spaces"); return; }
+    if (!/^[a-zA-Z\s]+$/.test(city)) { toast.error("City can only contain letters and spaces"); return; }
+    if (!/^\d{6}$/.test(pincode)) { toast.error("Enter a valid 6-digit pincode"); return; }
+    if (cityPincodes.some((cp) => cp.city.toLowerCase() === city.toLowerCase() && cp.pincode === pincode)) {
+      toast.error("This city and pincode is already added");
+      return;
+    }
+    setCityPincodes((prev) => [...prev, { city, pincode }]);
+    setNewRegistryCity("");
+    setNewRegistryPincode("");
+  };
+
+  const handleRemoveCityPincode = (cp: CityPincode) => {
+    setCityPincodes((prev) => prev.filter((c) => cityPincodeKey(c) !== cityPincodeKey(cp)));
+  };
+
+  // Step 2 — attach an area to one of the registered city+pincode combos.
+  const handleAddCity = () => {
+    const area = newCity.trim().replace(/\s+/g, " ");
+    const mins = parseInt(newMinutes, 10);
+    if (!area) { toast.error("Enter an area name"); return; }
+    // Sector/phase/block areas carry digits — "Sector 46", "Phase 3", "Block C-2".
+    if (!/^[a-zA-Z0-9\s-]+$/.test(area)) { toast.error("Area name can only contain letters, numbers, spaces and hyphens"); return; }
+    if (!selectedCityPincode) { toast.error("Select the city & pincode this area belongs to"); return; }
     if (isNaN(mins) || mins < 1 || mins > 300) { toast.error("Delivery time must be 1–300 minutes"); return; }
-    if (cityDeliveries.some((c) => c.city.toLowerCase() === city.toLowerCase())) { toast.error("City already added"); return; }
-    setCityDeliveries((prev) => [...prev, { city, minutes: mins }]);
+    if (cityDeliveries.some((c) => c.area.toLowerCase() === area.toLowerCase())) { toast.error("Area already added"); return; }
+    const [areaCity, pincode] = selectedCityPincode.split("|||");
+    setCityDeliveries((prev) => [...prev, { area, areaCity, pincode, minutes: mins }]);
     setNewCity("");
+    setSelectedCityPincode("");
     setNewMinutes("");
   };
 
-  const handleRemoveCity = (city: string) => {
-    setCityDeliveries((prev) => prev.filter((c) => c.city !== city));
+  const handleRemoveCity = (area: string) => {
+    setCityDeliveries((prev) => prev.filter((c) => c.area !== area));
   };
 
   // Build diff between current form and last saved snapshot
@@ -246,22 +366,32 @@ export default function SettingsPage() {
 
   const handleSaveClick = () => {
     if (!formData.name || !formData.pincode) { toast.error("Store name and pincode are required"); return; }
-    if (cityDeliveries.length === 0) { toast.error("Add at least one serviceable city with delivery time"); return; }
+    if (cityDeliveries.length === 0) { toast.error("Add at least one serviceable area with a pincode and delivery time"); return; }
     setShowModal(true);
   };
 
   const handleConfirm = async () => {
     const cityDeliveryTimesMap: Record<string, number> = {};
-    cityDeliveries.forEach(({ city, minutes }) => { cityDeliveryTimesMap[city] = minutes; });
+    const areaPincodesMap: Record<string, string> = {};
+    const areaCitiesMap: Record<string, string> = {};
+    cityDeliveries.forEach(({ area, minutes, pincode, areaCity }) => {
+      cityDeliveryTimesMap[area] = minutes;
+      areaPincodesMap[area] = pincode;
+      areaCitiesMap[area] = areaCity;
+    });
 
     setIsSaving(true);
     try {
+      const { gst_rate_percent, ...formDataRest } = formData;
       const { data } = await axiosInstance.post(
         "/auth/api/update-store",
         {
-          ...formData,
-          availableCities: cityDeliveries.map((c) => c.city),
+          ...formDataRest,
+          gst_rate: gst_rate_percent / 100,
+          availableCities: cityDeliveries.map((c) => c.area),
           cityDeliveryTimes: cityDeliveryTimesMap,
+          areaPincodes: areaPincodesMap,
+          areaCities: areaCitiesMap,
         },
         isProtected,
       );
@@ -376,6 +506,118 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Support & Contact */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+            <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
+              <Headset className="h-5 w-5 text-blue-400" />
+              <h2 className="text-lg font-semibold">Support & Contact</h2>
+            </div>
+            <p className="mb-5 -mt-2 text-xs text-gray-400">
+              Shown to customers on their order details screen so they can reach you directly.
+            </p>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Support Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.supportPhone}
+                  onChange={(e) => setFormData((f) => ({ ...f, supportPhone: e.target.value }))}
+                  placeholder="e.g. 9876543210"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">WhatsApp Number</label>
+                <input
+                  type="tel"
+                  value={formData.whatsappNumber}
+                  onChange={(e) => setFormData((f) => ({ ...f, whatsappNumber: e.target.value }))}
+                  placeholder="e.g. 9876543210"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">WhatsApp Chat Link (optional)</label>
+                <input
+                  type="text"
+                  value={formData.whatsappLink}
+                  onChange={(e) => setFormData((f) => ({ ...f, whatsappLink: e.target.value }))}
+                  placeholder="Leave blank to auto-generate from the WhatsApp number above"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">WhatsApp Message Template (optional)</label>
+                <textarea
+                  value={formData.whatsappMessageTemplate}
+                  onChange={(e) => setFormData((f) => ({ ...f, whatsappMessageTemplate: e.target.value }))}
+                  placeholder="Leave blank to use the default order-details template (pre-filled with order ID, items, address and bill breakdown)."
+                  rows={6}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none font-mono text-xs"
+                />
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Placeholders: <code>{"{{ORDER_ID}}"}</code> <code>{"{{ORDER_DATE}}"}</code>{" "}
+                  <code>{"{{ORDER_STATUS}}"}</code> <code>{"{{STORE_NAME}}"}</code>{" "}
+                  <code>{"{{CUSTOMER_NAME}}"}</code> <code>{"{{CUSTOMER_PHONE}}"}</code>{" "}
+                  <code>{"{{DELIVERY_ADDRESS}}"}</code> <code>{"{{SUBTOTAL}}"}</code>{" "}
+                  <code>{"{{DELIVERY_FEE}}"}</code> <code>{"{{DISCOUNT}}"}</code> <code>{"{{TAX}}"}</code>{" "}
+                  <code>{"{{ORDER_AMOUNT}}"}</code> <code>{"{{CUSTOMER_MESSAGE}}"}</code>. Repeat a block per
+                  item with <code>{"{{#ORDER_ITEMS}}...{{/ORDER_ITEMS}}"}</code>, using{" "}
+                  <code>{"{{PRODUCT_NAME}}"}</code> <code>{"{{QUANTITY}}"}</code> <code>{"{{UNIT_PRICE}}"}</code>{" "}
+                  <code>{"{{TOTAL_PRICE}}"}</code> inside it.
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Support Email (optional)</label>
+                <input
+                  type="email"
+                  value={formData.supportEmail}
+                  onChange={(e) => setFormData((f) => ({ ...f, supportEmail: e.target.value }))}
+                  placeholder="support@yourstore.com"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Support Working Hours</label>
+                <input
+                  type="text"
+                  value={formData.supportHours}
+                  onChange={(e) => setFormData((f) => ({ ...f, supportHours: e.target.value }))}
+                  placeholder="e.g. 9 AM – 9 PM, all days"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">Support Description</label>
+                <textarea
+                  value={formData.supportDescription}
+                  onChange={(e) => setFormData((f) => ({ ...f, supportDescription: e.target.value }))}
+                  placeholder="A short note shown alongside your support options"
+                  rows={2}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">FAQ Link (optional)</label>
+                <input
+                  type="text"
+                  value={formData.faqLink}
+                  onChange={(e) => setFormData((f) => ({ ...f, faqLink: e.target.value }))}
+                  placeholder="https://..."
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Delivery Configuration */}
           <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
             <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
@@ -436,6 +678,64 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Bill Settings */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+            <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
+              <Store className="h-5 w-5 text-blue-400" />
+              <h2 className="text-lg font-semibold">Bill Settings</h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">GST Rate (%)</label>
+                <input
+                  type="number"
+                  value={formData.gst_rate_percent}
+                  onChange={(e) => setFormData((f) => ({ ...f, gst_rate_percent: Number(e.target.value) }))}
+                  placeholder="e.g. 5"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-500 italic mt-1">Applied to the item subtotal on every order from this store.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Packaging Charge (₹)</label>
+                <input
+                  type="number"
+                  value={formData.packaging_charge}
+                  onChange={(e) => setFormData((f) => ({ ...f, packaging_charge: Number(e.target.value) }))}
+                  placeholder="e.g. 10"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-500 italic mt-1">Flat charge added to every order, regardless of size.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Delivery Charge (₹)</label>
+                <input
+                  type="number"
+                  value={formData.base_delivery_charge}
+                  onChange={(e) => setFormData((f) => ({ ...f, base_delivery_charge: Number(e.target.value) }))}
+                  placeholder="e.g. 49"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-500 italic mt-1">Charged below the free-delivery threshold.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-300">Free Delivery Threshold (₹)</label>
+                <input
+                  type="number"
+                  value={formData.free_delivery_threshold}
+                  onChange={(e) => setFormData((f) => ({ ...f, free_delivery_threshold: Number(e.target.value) }))}
+                  placeholder="e.g. 500"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                />
+                <p className="text-[10px] text-gray-500 italic mt-1">Orders at or above this subtotal get free delivery.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Service Area */}
           <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
             <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
@@ -444,33 +744,59 @@ export default function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-300">Base City</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))}
-                  placeholder="e.g. Muzaffarpur"
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
-                />
+              {/* Step 1 — register the city+pincode combos this store delivers to */}
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">Add a City & its Pincode</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newRegistryCity}
+                    onChange={(e) => setNewRegistryCity(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddCityPincode()}
+                    placeholder="City (e.g. Ghaziabad)"
+                    className="flex-1 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={newRegistryPincode}
+                    onChange={(e) => setNewRegistryPincode(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddCityPincode()}
+                    placeholder="Pincode (e.g. 201001)"
+                    maxLength={6}
+                    className="w-48 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCityPincode}
+                    className="flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </button>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {cityPincodes.map((cp) => (
+                    <div
+                      key={cityPincodeKey(cp)}
+                      className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300"
+                    >
+                      {cp.city} · {cp.pincode}
+                      <button
+                        onClick={() => handleRemoveCityPincode(cp)}
+                        className="text-gray-400 hover:text-red-400 transition"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-300">
-                  Main Pincode <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.pincode}
-                  onChange={(e) => setFormData((f) => ({ ...f, pincode: e.target.value }))}
-                  placeholder="e.g. 843111"
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
-
+              {/* Step 2 — attach an area to one of the registered combos above */}
               <div className="col-span-2 space-y-1">
                 <label className="text-sm font-medium text-gray-300">
-                  Add Serviceable City & Delivery Time
+                  Add Serviceable Area & Delivery Time
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -478,9 +804,24 @@ export default function SettingsPage() {
                     value={newCity}
                     onChange={(e) => setNewCity(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddCity()}
-                    placeholder="City name (e.g. Bathnaha)"
+                    placeholder="Area (e.g. Kavi Nagar)"
                     className="flex-1 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                   />
+                  <select
+                    value={selectedCityPincode}
+                    onChange={(e) => setSelectedCityPincode(e.target.value)}
+                    className="w-56 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none disabled:opacity-50"
+                    disabled={cityPincodes.length === 0}
+                  >
+                    <option value="">
+                      {cityPincodes.length === 0 ? "Add a city & pincode first" : "Select city & pincode"}
+                    </option>
+                    {cityPincodes.map((cp) => (
+                      <option key={cityPincodeKey(cp)} value={cityPincodeKey(cp)}>
+                        {cp.city} · {cp.pincode}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     value={newMinutes}
@@ -501,25 +842,30 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 <p className="text-xs text-gray-400">
-                  Set the average delivery time for each city in minutes.
+                  Each area must be pinned to a registered city & pincode — a single pincode
+                  can span several areas in different cities with different real delivery
+                  times (e.g. a Ghaziabad locality under a Noida store's pincode).
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {cityDeliveries.map(({ city, minutes }) => (
+              {cityDeliveries.map(({ area, areaCity, pincode, minutes }) => (
                 <div
-                  key={city}
+                  key={area}
                   className="flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-300"
                 >
                   <MapPin className="h-3.5 w-3.5" />
-                  {city}
+                  {area}
+                  <span className="text-blue-400/80 text-xs">
+                    · {areaCity || "no city"} · {pincode || "no pincode"}
+                  </span>
                   <span className="flex items-center gap-0.5 text-blue-400/80 text-xs">
                     <Clock className="h-3 w-3" />
                     {minutes}m
                   </span>
                   <button
-                    onClick={() => handleRemoveCity(city)}
+                    onClick={() => handleRemoveCity(area)}
                     className="ml-1 text-gray-400 hover:text-red-400 transition"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -527,7 +873,7 @@ export default function SettingsPage() {
                 </div>
               ))}
               {cityDeliveries.length === 0 && (
-                <p className="text-sm italic text-gray-500">No serviceable cities added yet.</p>
+                <p className="text-sm italic text-gray-500">No serviceable areas added yet.</p>
               )}
             </div>
           </div>

@@ -41,6 +41,11 @@ interface AddressModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   savedAddressesOnly?: boolean;
+  // When true, picking a nearby area continues straight into the full Add
+  // Address form (cart flows, where a complete address is actually needed
+  // to place the order). When false (default — the header's location
+  // switcher), picking a nearby area just sets the location and closes.
+  requireAddressForm?: boolean;
 }
 
 type ModalView = "list" | "pincode" | "add";
@@ -58,12 +63,16 @@ interface StoreInfo {
   state?: string;
   availableCities: string[];
   cityDeliveryTimes?: Record<string, number>;
+  // Map of area name -> its real city, e.g. {"Kavi Nagar": "Ghaziabad"} —
+  // an area's real city can differ from the store's own base `city` above.
+  areaCities?: Record<string, string>;
 }
 
 export function AddressModal({
   open,
   onOpenChange,
   savedAddressesOnly = false,
+  requireAddressForm = false,
 }: AddressModalProps) {
   const { addresses, selectedAddressId, selectAddress, addAddress, removeAddress, setAddresses } =
     useAddressStore();
@@ -88,6 +97,7 @@ export function AddressModal({
       storeName: "",
       pincode: address.pincode,
       city: address.city,
+      area: address.area,
     });
 
     // Invalidate queries to refresh store-specific data
@@ -103,12 +113,19 @@ export function AddressModal({
       const data = res.data;
       if (data.success && data.store) {
         const city = address.city || data.store.availableCities?.[0] || "";
+        // A pincode can span several localities with different real delivery
+        // times, so a matching area-level entry (e.g. "Sector 62") wins over
+        // the coarser city entry when the seller has configured one.
+        const deliveryTimeMinutes =
+          data.store.cityDeliveryTimes?.[address.area || ""] ??
+          data.store.cityDeliveryTimes?.[city];
         setSelectedLocation({
           storeId: data.store.id,
           storeName: data.store.name,
           pincode: address.pincode,
           city,
-          deliveryTimeMinutes: data.store.cityDeliveryTimes?.[city],
+          area: address.area,
+          deliveryTimeMinutes,
           isOpen: data.store.isOpen,
           opening_hours: data.store.opening_hours,
           closing_hours: data.store.closing_hours,
@@ -121,6 +138,11 @@ export function AddressModal({
     }
   };
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
+  // Areas actually pinned to the pincode just checked — a store's
+  // availableCities can span several pincodes (e.g. "Kavi Nagar" under a
+  // different pincode than "Sector 34"), so the full list would wrongly
+  // suggest areas that aren't reachable via this pincode.
+  const [matchedAreas, setMatchedAreas] = useState<string[]>([]);
   const [serviceableCities, setServiceableCities] = useState<string[]>([]);
   const [serviceablePincodes, setServiceablePincodes] = useState<string[]>([]);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
@@ -131,7 +153,9 @@ export function AddressModal({
 
   // All cities (primary + available), deduped
   const allCities = storeInfo
-    ? storeInfo.availableCities
+    ? matchedAreas.length > 0
+      ? matchedAreas
+      : storeInfo.availableCities
     : [];
 
   const filteredCities = locationSearchQuery.trim()
@@ -186,6 +210,7 @@ export function AddressModal({
     setPincode(cleaned);
     setPincodeError("");
     setStoreInfo(null);
+    setMatchedAreas([]);
     setServiceableCities([]);
     setServiceablePincodes([]);
     setLocationSearchQuery("");
@@ -199,6 +224,7 @@ export function AddressModal({
     setLoading(true);
     setPincodeError("");
     setStoreInfo(null);
+    setMatchedAreas([]);
     setServiceableCities([]);
     setServiceablePincodes([]);
 
@@ -208,6 +234,7 @@ export function AddressModal({
 
       if (data.success && data.store) {
         setStoreInfo(data.store);
+        setMatchedAreas(data.matchedAreas || []);
       } else {
         // Fetch serviceable areas for suggestion
         try {
@@ -230,12 +257,14 @@ export function AddressModal({
     if (!storeInfo) return;
     const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
 
-    // Save the selected location immediately so products/banners load
+    // Save the selected location immediately so products/banners load while
+    // the shopper fills in their exact address on the next screen.
     const location: SelectedLocation = {
       storeId: storeInfo.id,
       storeName: storeInfo.name,
       pincode,
       city,
+      area: city,
       deliveryTimeMinutes: deliveryMins,
       isOpen: (storeInfo as any).isOpen,
       opening_hours: (storeInfo as any).opening_hours,
@@ -245,23 +274,41 @@ export function AddressModal({
     queryClient.invalidateQueries({ queryKey: ["store"] });
     queryClient.invalidateQueries({ queryKey: ["storefront"] });
 
-    // Close modal immediately — products & banners update based on pincode
-    onOpenChange(false);
-    toast.success(`Delivering to ${city}`, {
-      description: deliveryMins ? `Estimated delivery in ~${deliveryMins} min` : undefined,
-    });
+    if (!requireAddressForm) {
+      // Header's location switcher — just switch where we're browsing from.
+      onOpenChange(false);
+      toast.success(`Delivering to ${city}`, {
+        description: deliveryMins ? `Estimated delivery in ~${deliveryMins} min` : undefined,
+      });
+      return;
+    }
+
+    // Cart flow — picking a nearby area is the start of adding an address,
+    // not the end, so continue straight into the address form with the area
+    // pre-filled. The form's City field uses the area's real city (e.g.
+    // "Ghaziabad"), not the store's own base city — they can differ under
+    // one pincode.
+    setForm((f) => ({
+      ...f,
+      area: city,
+      pincode,
+      city: storeInfo.areaCities?.[city] || storeInfo.city || "",
+      state: storeInfo.state || "",
+    }));
+    setView("add");
   };
 
   const handleEnterManually = () => {
     // Also set the location so products load while user fills the form
+    let area = "";
     if (storeInfo) {
-      const city = storeInfo.availableCities?.[0] || storeInfo.city || "";
-      const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
+      area = matchedAreas[0] || storeInfo.availableCities?.[0] || storeInfo.city || "";
+      const deliveryMins = storeInfo.cityDeliveryTimes?.[area];
       setSelectedLocation({
         storeId: storeInfo.id,
         storeName: storeInfo.name,
         pincode,
-        city,
+        city: area,
         deliveryTimeMinutes: deliveryMins,
         isOpen: (storeInfo as any).isOpen,
         opening_hours: (storeInfo as any).opening_hours,
@@ -271,7 +318,7 @@ export function AddressModal({
     setForm((f) => ({
       ...f,
       pincode,
-      city: storeInfo?.city || "",
+      city: storeInfo?.areaCities?.[area] || storeInfo?.city || "",
       state: storeInfo?.state || "",
     }));
     setView("add");
@@ -296,6 +343,25 @@ export function AddressModal({
       if (data.success) {
         setAddresses(data.addresses);
         toast.success("Address saved!");
+        // Re-resolve delivery time now that we know the precise area — a
+        // pincode can span several localities with different real times.
+        if (storeInfo) {
+          const city = storeInfo.availableCities?.[0] || storeInfo.city || "";
+          const deliveryTimeMinutes =
+            storeInfo.cityDeliveryTimes?.[form.area || ""] ??
+            storeInfo.cityDeliveryTimes?.[city];
+          setSelectedLocation({
+            storeId: storeInfo.id,
+            storeName: storeInfo.name,
+            pincode: form.pincode,
+            city,
+            area: form.area,
+            deliveryTimeMinutes,
+            isOpen: (storeInfo as any).isOpen,
+            opening_hours: (storeInfo as any).opening_hours,
+            closing_hours: (storeInfo as any).closing_hours,
+          });
+        }
         onOpenChange(false);
       }
     } catch (err: any) {
@@ -683,12 +749,38 @@ export function AddressModal({
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-foreground">Area</label>
-                        <Input
-                          placeholder="Marine Lines"
-                          value={form.area}
-                          onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
-                        />
+                        <label className="mb-1 block text-xs font-semibold text-foreground">Area{allCities.length > 0 ? " *" : ""}</label>
+                        {allCities.length > 0 ? (
+                          <Select
+                            value={form.area}
+                            onValueChange={(val) =>
+                              setForm((f) => ({
+                                ...f,
+                                area: val,
+                                // The area's real city (e.g. "Ghaziabad") can
+                                // differ from the store's own base city.
+                                city: storeInfo?.areaCities?.[val] || f.city,
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select Area" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allCities.map((area) => (
+                                <SelectItem key={area} value={area}>
+                                  {area}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            placeholder="Marine Lines"
+                            value={form.area}
+                            onChange={(e) => setForm((f) => ({ ...f, area: e.target.value }))}
+                          />
+                        )}
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-foreground">Pincode *</label>
@@ -703,21 +795,12 @@ export function AddressModal({
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-foreground">City *</label>
-                        <Select
+                        <Input
+                          placeholder="City"
                           value={form.city}
-                          onValueChange={(val) => setForm((f) => ({ ...f, city: val }))}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select City" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allCities.map((city) => (
-                              <SelectItem key={city} value={city}>
-                                {city}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          readOnly
+                          className="bg-muted"
+                        />
                       </div>
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-foreground">State</label>
@@ -783,15 +866,15 @@ function AddressCard({
         </div>
       </button>
       <div className="flex gap-2 px-4 pb-3">
-        {!isSelected && (
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
-            onClick={onRemove}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
+        {/* Deletable even while selected — a lone saved address is always
+            auto-selected, so hiding this here made it undeletable. */}
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+          onClick={onRemove}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

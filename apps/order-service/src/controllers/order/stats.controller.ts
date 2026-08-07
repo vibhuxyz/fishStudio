@@ -1,4 +1,4 @@
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, toMoney } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
@@ -30,11 +30,19 @@ async function hydrateOrders(orders: any[]) {
   const storeMap = new Map(stores.map(s => [s.id, s]));
   const productMap = new Map(products.map(p => [p.id, p]));
 
+  // Money arrives from Postgres as Decimal. computeStats sums these with `+`
+  // and `*`, which on a Decimal would concatenate strings instead of adding,
+  // so the conversion happens here — the single funnel both stats endpoints
+  // pass through — rather than being repeated at every arithmetic site.
   return orders.map(o => ({
     ...o,
+    totalAmount: toMoney(o.totalAmount),
+    discountAmount: toMoney(o.discountAmount),
+    deliveryCharge: toMoney(o.deliveryCharge),
     store: storeMap.get(o.storeId),
     orderItems: o.orderItems.map((oi: any) => ({
       ...oi,
+      price: toMoney(oi.price),
       product: productMap.get(oi.productId)
     }))
   }));

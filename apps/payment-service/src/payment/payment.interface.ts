@@ -40,11 +40,29 @@ export interface RefundParams {
 }
 
 /**
+ * How the customer actually paid (card/upi/netbanking/wallet), for display
+ * purposes only — never used for settlement decisions, which stay keyed on
+ * Payment.status and the gateway payment id.
+ */
+export interface PaymentInstrument {
+  /** Razorpay's own method string, e.g. "card" | "upi" | "netbanking" | "wallet". */
+  method: string;
+  /** Human-readable sub-detail: masked card + network, VPA, bank name, or wallet name. */
+  detail?: string;
+}
+
+/**
  * A webhook normalized to a gateway-agnostic shape, so the service layer never
  * has to know which provider sent it or how its payload is structured.
  */
 export type NormalizedWebhookEvent =
-  | { kind: "PAYMENT_CAPTURED"; orderId?: string; gatewayPaymentId: string; amountInPaise?: number }
+  | {
+      kind: "PAYMENT_CAPTURED";
+      orderId?: string;
+      gatewayPaymentId: string;
+      amountInPaise?: number;
+      instrument?: PaymentInstrument;
+    }
   | { kind: "PAYMENT_FAILED"; orderId?: string; gatewayPaymentId: string; reason?: string }
   | { kind: "REFUND"; orderId?: string; refundId: string; gatewayPaymentId?: string; amount?: number }
   | { kind: "REFUND_FAILED"; orderId?: string; refundId: string; gatewayPaymentId?: string }
@@ -74,6 +92,14 @@ export interface PaymentProvider {
 
   /** Turn a raw webhook body into a normalized, gateway-agnostic event. */
   parseWebhookEvent(rawBody: Buffer): NormalizedWebhookEvent;
+
+  /**
+   * Best-effort lookup of the payment instrument for a captured payment.
+   * Used right after the client-side verify callback, which carries no
+   * method info of its own. Returns null on any lookup failure — this must
+   * never block settlement.
+   */
+  fetchPaymentInstrument(gatewayPaymentId: string): Promise<PaymentInstrument | null>;
 
   /** Issue a refund against a captured payment. */
   refund(params: RefundParams): Promise<{ refundId: string }>;

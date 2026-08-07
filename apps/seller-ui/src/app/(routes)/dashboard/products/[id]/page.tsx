@@ -376,7 +376,8 @@ const SellerProductDetailsPage = () => {
                           Weight (gm)
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={entry.weightGrams ?? 0}
                           onChange={(event) => {
                             const nextRows = [...selectedSizePricing];
@@ -394,7 +395,8 @@ const SellerProductDetailsPage = () => {
                           Regular Price
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={entry.regularPrice ?? 0}
                           onChange={(event) => {
                             const nextRows = [...selectedSizePricing];
@@ -412,7 +414,8 @@ const SellerProductDetailsPage = () => {
                           Sale Price
                         </label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={entry.salePrice ?? 0}
                           onChange={(event) => {
                             const nextRows = [...selectedSizePricing];
@@ -474,9 +477,8 @@ const SellerProductDetailsPage = () => {
                       <div className="flex flex-1 items-center gap-2">
                         <span className="text-xs text-slate-400">+₹</span>
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           value={entry.salePrice}
                           onChange={(e) => {
                             const next = [...selectedCuttingTypePricing];
@@ -507,10 +509,8 @@ const SellerProductDetailsPage = () => {
                       <div className="flex flex-1 items-center gap-2">
                         <span className="text-xs text-slate-400">×</span>
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0.5"
-                          max="3"
+                          type="text"
+                          inputMode="decimal"
                           value={entry.salePrice}
                           onChange={(e) => {
                             const next = [...selectedPieceSizePricing];

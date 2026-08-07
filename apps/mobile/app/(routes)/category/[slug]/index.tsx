@@ -1,10 +1,13 @@
 import ProductCard from "@/components/cards/product.card";
 import Header from "@/components/home/header";
+import FloatingCartBar, { useFloatingCartBarSpace } from "@/components/shared/floating-cart-bar";
+import { spacing } from "@/constants/theme";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { useAddressStore } from "@/lib/address-store";
 import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
-import { normalizeSlug } from "@repo/slug";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
+import { normalizeSlug } from "@repo/shared/slug";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
@@ -40,13 +43,22 @@ const CATEGORY_BANNER_WIDTH = SCREEN_WIDTH - 32;
 const CATEGORY_BANNER_HEIGHT = CATEGORY_BANNER_WIDTH * (9 / 21);
 
 export default function CategoryScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, subCategory } = useLocalSearchParams<{ slug: string; subCategory?: string }>();
   const rawCategory = decodeURIComponent(slug ?? "");
   const { selectedLocation, getSelectedAddress, locationVersion } = useAddressStore();
-  const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null);
+  // Preselected when arriving from the "All Categories" screen's subcategory
+  // chips — still just the initial value, the chips below remain editable.
+  const [activeSubCategory, setActiveSubCategory] = useState<string | null>(
+    subCategory ? decodeURIComponent(subCategory) : null,
+  );
   const [currentBanner, setCurrentBanner] = useState(0);
   const bannerScrollRef = useRef<ScrollView>(null);
   const selectedAddress = getSelectedAddress();
+  // Reserve extra scroll space only while the floating "View cart" pill is
+  // actually showing, sized from its real measured footprint rather than a
+  // guessed constant — so the last product card's Add button never ends up
+  // underneath it.
+  const floatingCartSpace = useFloatingCartBarSpace();
 
   const { data: categoriesData } = useQuery({
     queryKey: ["storefront-categories"],
@@ -189,7 +201,9 @@ export default function CategoryScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{
+          paddingBottom: 32 + (floatingCartSpace > 0 ? floatingCartSpace + spacing[6] : 0),
+        }}
         showsVerticalScrollIndicator={false}
         initialNumToRender={6}
         maxToRenderPerBatch={8}
@@ -250,7 +264,7 @@ export default function CategoryScreen() {
                     {categoryBanners.map((banner: CategoryBanner) => (
                       <Image
                         key={banner.id}
-                        source={{ uri: banner.imageUrl }}
+                        source={{ uri: cloudinaryThumbnail(banner.imageUrl, Math.round(CATEGORY_BANNER_WIDTH * 2)) }}
                         style={{
                           width: CATEGORY_BANNER_WIDTH,
                           height: CATEGORY_BANNER_HEIGHT,
@@ -365,6 +379,7 @@ export default function CategoryScreen() {
           )
         }
       />
+      <FloatingCartBar />
     </SafeAreaView>
   );
 }

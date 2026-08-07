@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   ChevronRight,
@@ -21,6 +22,9 @@ import {
 } from "lucide-react";
 import { useAuth, logoutUser, deleteAccount } from "@/lib/auth-store";
 import { useModals } from "@/components/providers/modal-provider";
+import { useAddressStore } from "@/lib/address-store";
+import { fetchRecentlyViewed } from "@/lib/activity";
+import { ProductCarouselSection } from "@/components/sections/product-carousel-section";
 import { toast } from "sonner";
 
 type Row = { label: string; href: string; icon: React.ElementType };
@@ -67,6 +71,26 @@ export default function AccountPage() {
   const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const selectedLocation = useAddressStore((s) => s.selectedLocation);
+  const selectedAddress = useAddressStore((s) =>
+    s.addresses.find((a) => a.id === s.selectedAddressId),
+  );
+  const locationParams = {
+    storeId: selectedLocation?.storeId,
+    pincode: selectedLocation?.pincode || selectedAddress?.pincode,
+    city: selectedLocation?.city || selectedAddress?.city,
+  };
+
+  const { data: recentlyViewed = [] } = useQuery({
+    queryKey: [
+      "recently-viewed",
+      `${locationParams.storeId ?? ""}|${locationParams.pincode ?? ""}`,
+    ],
+    queryFn: () => fetchRecentlyViewed(locationParams),
+    enabled: isLoggedIn,
+    staleTime: 1000 * 60 * 2,
+  });
 
   if (!isLoggedIn || !user) {
     return (
@@ -191,6 +215,18 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+
+      {recentlyViewed.length > 0 && (
+        <div className="-mx-4 mt-2 md:-mx-6">
+          <ProductCarouselSection
+            title="Recently Viewed"
+            subtitle="Pick up where you left off"
+            products={recentlyViewed}
+            variant="compact"
+            viewAllHref="/search"
+          />
+        </div>
+      )}
 
       {/* Delete confirmation */}
       {confirmDelete && (

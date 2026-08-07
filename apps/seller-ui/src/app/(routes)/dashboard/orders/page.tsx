@@ -3,7 +3,6 @@ import React, { useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
 import { Search, Eye } from "lucide-react";
@@ -17,23 +16,32 @@ import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { SellerOrder } from "@repo/zod-schema";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
+import { formatOrderId } from "@repo/shared/order-id";
 
-const fetchOrders = async (page: number) => {
-  const res = await axiosInstance.get(`/order/api/get-seller-orders?page=${page}&limit=20`);
+// Strip leading "#" so searching "#3W5KYD" works the same as "3W5KYD"
+const cleanOrderIdSearch = (value: string) =>
+  value.startsWith("#") ? value.slice(1) : value;
+
+const fetchOrders = async (page: number, search: string) => {
+  const params = new URLSearchParams({ page: String(page), limit: "20" });
+  if (search) params.set("search", search);
+  const res = await axiosInstance.get(`/order/api/get-seller-orders?${params.toString()}`);
   return { orders: res.data.orders ?? [], pagination: res.data.pagination };
 };
 
 const OrdersTable = () => {
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const { seller } = useSeller();
   // Shared persistent WS connection — no new socket created per page.
   const { subscribe } = useWorkerWS();
 
+  const cleanSearch = cleanOrderIdSearch(search);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["seller-orders", page],
-    queryFn: () => fetchOrders(page),
+    queryKey: ["seller-orders", page, cleanSearch],
+    queryFn: () => fetchOrders(page, cleanSearch),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -57,7 +65,7 @@ const OrdersTable = () => {
         header: "Order ID",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-sm truncate">
-            #{row.original.id.slice(-6).toUpperCase()}
+            {formatOrderId(row.original.id)}
           </span>
         ),
       },
@@ -121,10 +129,6 @@ const OrdersTable = () => {
     data: orders,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: "includesString",
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
   });
 
   return (
@@ -141,8 +145,11 @@ const OrdersTable = () => {
           type="text"
           placeholder="Search orders..."
           className="w-full bg-transparent text-white outline-none"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </div>
 

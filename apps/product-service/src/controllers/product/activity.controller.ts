@@ -1,18 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { redis } from "@repo/libs/redis";
-import jwt from "jsonwebtoken";
-import { ENV } from "@repo/env-config";
 import { isCatalogRootProduct } from "./utils.js";
 import { computeBadges } from "./badges.js";
 import {
-  storefrontVariantInclude,
+  storefrontVariantSelect,
   buildStorefrontCacheKey,
   getCachedPayload,
   setCachedPayload,
   resolvePreferredStore,
   mergeCatalogWithVariant,
   pickBestVariantPerCatalog,
+  optionalUserId,
   StoreLocationInput,
 } from "./storefront.utils.js";
 
@@ -34,7 +33,7 @@ const buildMergedFromCatalogs = async (
           isDeleted: false,
           ...(preferredStore ? { storeId: preferredStore.id } : {}),
         },
-        include: storefrontVariantInclude,
+        select: storefrontVariantSelect,
       })
     : [];
 
@@ -262,25 +261,6 @@ export const getSectionProducts = async (
 
 const RECENT_VIEW_CAP = 20;
 const RECENT_VIEW_TTL = 60 * 60 * 24 * 60; // 60 days
-
-// Best-effort, non-throwing user id extraction. Unlike isAuthenticated this
-// never rejects the request — anonymous callers fall back to deviceId.
-const optionalUserId = (req: Request): string | null => {
-  try {
-    const bearer = (req.headers.authorization as string | undefined)?.split(
-      " ",
-    )[1];
-    const token = bearer || (req as any).cookies?.access_token;
-    if (!token) return null;
-    const decoded = jwt.verify(
-      token,
-      ENV.ACCESS_TOKEN_JWT_SECRET_KEY as string,
-    ) as { id?: string; role?: string };
-    return decoded?.id ?? null;
-  } catch {
-    return null;
-  }
-};
 
 const getActivityIdentity = (req: Request) => {
   const userId = optionalUserId(req);

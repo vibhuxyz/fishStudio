@@ -4,15 +4,18 @@ import { prismaPostgres } from "@repo/db-postgres";
 import { NotFoundError } from "@repo/error-handlers";
 import { isCatalogRootProduct, getRequiredParam } from "./utils.js";
 import { computeBadges } from "./badges.js";
+import { cached } from "@repo/libs/cache";
 import {
   parseStorefrontLimit,
   parseStorefrontPage,
   buildStorefrontCacheKey,
   getCachedPayload,
   setCachedPayload,
+  STOREFRONT_CACHE_TTL,
   resolvePreferredStore,
   mergeCatalogWithVariant,
   pickBestVariantPerCatalog,
+  storefrontVariantSelect,
 } from "./storefront.utils.js";
 
 interface StorefrontListingPayload {
@@ -25,6 +28,7 @@ interface StorefrontListingPayload {
     limit: number;
     total: number;
     hasMore: boolean;
+    nextCursor: string | null;
   };
 }
 
@@ -83,6 +87,13 @@ export const getStoreProducts = async (
       scope === "homepage" ? 24 : 20,
     );
     const skip = (page - 1) * limit;
+    // Cursor is the catalog product `id` of the last item returned on the previous
+    // page. When present it replaces skip-based paging so deep pages don't drift
+    // when items are inserted/removed ahead of them mid-scroll.
+    const cursor =
+      typeof req.query.cursor === "string" && req.query.cursor.trim()
+        ? req.query.cursor.trim()
+        : undefined;
     const isLocalRequest = Boolean(storeId || pincode || city);
 
     const normalizedCategory =
@@ -98,172 +109,184 @@ export const getStoreProducts = async (
       storeId, pincode, city,
       category: normalizedCategory,
       subCategory: normalizedSubCategory,
-      scope, page, limit,
+      scope, page, limit, cursor,
       sortBy: normalizedSortBy,
       onSale: filterOnSale || undefined,
       hasVariants: filterHasVariants || undefined,
       minPrice, maxPrice,
     });
-    const cached = await getCachedPayload<StorefrontListingPayload>(cacheKey);
-    if (cached) {
-      return res.status(200).json(cached);
-    }
+    // Wrapped in `cached` rather than a bare get/miss/set: this is the busiest
+    // query in the app, so when a hot key expires every concurrent request used
+    // to run this whole block against Mongo at once. Now one caller refreshes
+    // while the rest are served the previous value.
+    const payload = await cached<StorefrontListingPayload>(cacheKey, async () => {
+      // Resolve preferred store only on cache miss
+      const preferredStore = isLocalRequest
+        ? await resolvePreferredStore({
+            storeId: storeId ? String(storeId) : undefined,
+            pincode: pincode ? String(pincode) : undefined,
+            city: city ? String(city) : undefined,
+          })
+        : null;
 
-    // Resolve preferred store only on cache miss
-    const preferredStore = isLocalRequest
-      ? await resolvePreferredStore({
-          storeId: storeId ? String(storeId) : undefined,
-          pincode: pincode ? String(pincode) : undefined,
-          city: city ? String(city) : undefined,
-        })
-      : null;
+      const categoryFilter = normalizedCategory
+        ? { category: normalizedCategory }
+        : {};
+      const subCategoryFilter = normalizedSubCategory
+        ? { subCategory: normalizedSubCategory }
+        : {};
 
-    const categoryFilter = normalizedCategory
-      ? { category: normalizedCategory }
-      : {};
-    const subCategoryFilter = normalizedSubCategory
-      ? { subCategory: normalizedSubCategory }
-      : {};
+      // ── Step 1: Paginate catalog products in the DB ──────────────────────────
+      // Previously we loaded the ENTIRE catalog into memory and sliced at the
+      // end. Now DB does the sort + pagination. We fetch a window larger than
+      // `limit` so the in-memory in-stock priority sort has room to shuffle
+      // in-stock items ahead of OOS within the page. Tradeoff: if the category
+      // has extremely sparse in-stock products, later pages may still be needed
+      // — acceptable given the performance win from removing the full scan.
+      const isHomepage = typeof scope === "string" && scope === "homepage";
+      // Match original semantics (adminId set, not deleted). Catalog-root check
+       // (!storeId && !catalogProductId) stays in JS because Prisma/Mongo `null`
+       // filters don't match missing fields — older docs may have these absent.
+      const catalogWhere = {
+        adminId: { not: null },
+        isDeleted: false,
+        ...categoryFilter,
+        ...subCategoryFilter,
+      };
+      const catalogOrderBy = isHomepage
+        ? [{ totalSold: "desc" as const }, { createdAt: "desc" as const }]
+        : [{ createdAt: "desc" as const }];
 
-    // ── Step 1: Paginate catalog products in the DB ──────────────────────────
-    // Previously we loaded the ENTIRE catalog into memory and sliced at the
-    // end. Now DB does the sort + pagination. We fetch a window larger than
-    // `limit` so the in-memory in-stock priority sort has room to shuffle
-    // in-stock items ahead of OOS within the page. Tradeoff: if the category
-    // has extremely sparse in-stock products, later pages may still be needed
-    // — acceptable given the performance win from removing the full scan.
-    const isHomepage = typeof scope === "string" && scope === "homepage";
-    // Match original semantics (adminId set, not deleted). Catalog-root check
-     // (!storeId && !catalogProductId) stays in JS because Prisma/Mongo `null`
-     // filters don't match missing fields — older docs may have these absent.
-    const catalogWhere = {
-      adminId: { not: null },
-      isDeleted: false,
-      ...categoryFilter,
-      ...subCategoryFilter,
-    };
-    const catalogOrderBy = isHomepage
-      ? [{ totalSold: "desc" as const }, { createdAt: "desc" as const }]
-      : [{ createdAt: "desc" as const }];
+      // Oversample so the JS catalog-root filter + in-stock priority sort
+      // still return a full page even after dropping non-root entries.
+      const windowSize = Math.min(Math.max(limit * 3, 60), limit + 80);
 
-    // Oversample so the JS catalog-root filter + in-stock priority sort
-    // still return a full page even after dropping non-root entries.
-    const windowSize = Math.min(Math.max(limit * 3, 60), limit + 80);
+      const [total, catalogWindowRaw] = await Promise.all([
+        prisma.products.count({ where: catalogWhere }),
+        cursor
+          ? prisma.products.findMany({
+              where: catalogWhere,
+              include: { images: true },
+              orderBy: catalogOrderBy,
+              cursor: { id: cursor },
+              skip: 1, // exclude the cursor row itself
+              take: windowSize + 1, // +1 sentinel to detect a next window without a second query
+            })
+          : prisma.products.findMany({
+              where: catalogWhere,
+              include: { images: true },
+              orderBy: catalogOrderBy,
+              skip,
+              take: windowSize,
+            }),
+      ]);
+      // Peel off the sentinel row before processing — it only exists to tell us
+      // whether another window is available after this one.
+      const hasNextWindow = cursor ? catalogWindowRaw.length > windowSize : false;
+      const catalogWindow = cursor
+        ? catalogWindowRaw.slice(0, windowSize)
+        : catalogWindowRaw;
+      const catalogProducts = catalogWindow.filter(isCatalogRootProduct);
+      const catalogIds = catalogProducts.map((p: any) => p.id);
 
-    const [total, catalogWindow] = await Promise.all([
-      prisma.products.count({ where: catalogWhere }),
-      prisma.products.findMany({
-        where: catalogWhere,
-        include: { images: true },
-        orderBy: catalogOrderBy,
-        skip,
-        take: windowSize,
-      }),
-    ]);
-    const catalogProducts = catalogWindow.filter(isCatalogRootProduct);
-    const catalogIds = catalogProducts.map((p: any) => p.id);
-
-    // ── Step 2: Fetch best variant per catalog product (page-scoped) ─────────
-    const variants = catalogIds.length
-      ? await prisma.products.findMany({
-          where: {
-            catalogProductId: { in: catalogIds },
-            status: "Active",
-            isDeleted: false,
-            ...(preferredStore ? { storeId: preferredStore.id } : {}),
-          },
-          include: {
-            images: true,
-            store: {
-              select: {
-                id: true,
-                name: true,
-                pincode: true,
-                city: true,
-                seller: { include: { events: true } },
-              },
+      // ── Step 2: Fetch best variant per catalog product (page-scoped) ─────────
+      const variants = catalogIds.length
+        ? await prisma.products.findMany({
+            where: {
+              catalogProductId: { in: catalogIds },
+              status: "Active",
+              isDeleted: false,
+              ...(preferredStore ? { storeId: preferredStore.id } : {}),
             },
-            favorites: { take: 1, select: { id: true } },
-          },
-        })
-      : [];
+            select: { ...storefrontVariantSelect, favorites: { take: 1, select: { id: true } } },
+          })
+        : [];
 
-    // Pick the best variant per catalog product:
-    // prefer in-stock (stock > 0) first, then cheapest sale_price
-    const bestVariantMap = pickBestVariantPerCatalog(variants);
+      // Pick the best variant per catalog product:
+      // prefer in-stock (stock > 0) first, then cheapest sale_price
+      const bestVariantMap = pickBestVariantPerCatalog(variants);
 
-    // ── Step 3: Merge + in-stock priority sort within the page window ───────
-    const windowMerged = catalogProducts.map((catalog: any) =>
-      mergeCatalogWithVariant(
-        catalog,
-        bestVariantMap.get(catalog.id),
-        isLocalRequest ? preferredStore : null,
-      ),
-    );
-
-    windowMerged.sort((a: any, b: any) => {
-      const aIn = Boolean(a.inStock);
-      const bIn = Boolean(b.inStock);
-      if (aIn !== bIn) return aIn ? -1 : 1;
-      // secondary sort: user-chosen sortBy
-      const aPrice = (a.sale_price ?? a.regular_price ?? 0) as number;
-      const bPrice = (b.sale_price ?? b.regular_price ?? 0) as number;
-      if (normalizedSortBy === "price_asc") return aPrice - bPrice;
-      if (normalizedSortBy === "price_desc") return bPrice - aPrice;
-      if (normalizedSortBy === "popular" || isHomepage) return (b.totalSold ?? 0) - (a.totalSold ?? 0);
-      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-    });
-
-    // ── Post-merge filters (price / offer / variant) ──────────────────────────
-    let filtered = windowMerged as any[];
-    if (filterOnSale) {
-      filtered = filtered.filter((p) => p.sale_price != null && Number(p.sale_price) < Number(p.regular_price ?? p.sale_price + 1));
-    }
-    if (minPrice !== undefined && !Number.isNaN(minPrice)) {
-      filtered = filtered.filter((p) => (p.sale_price ?? p.regular_price ?? 0) >= minPrice);
-    }
-    if (maxPrice !== undefined && !Number.isNaN(maxPrice)) {
-      filtered = filtered.filter((p) => (p.sale_price ?? p.regular_price ?? 0) <= maxPrice);
-    }
-    if (filterHasVariants) {
-      filtered = filtered.filter((p) =>
-        (Array.isArray(p.sizePricing) && p.sizePricing.length > 0) ||
-        (Array.isArray(p.cuttingTypePricing) && p.cuttingTypePricing.length > 0) ||
-        (Array.isArray(p.pieceSizePricing) && p.pieceSizePricing.length > 0),
+      // ── Step 3: Merge + in-stock priority sort within the page window ───────
+      const windowMerged = catalogProducts.map((catalog: any) =>
+        mergeCatalogWithVariant(
+          catalog,
+          bestVariantMap.get(catalog.id),
+          isLocalRequest ? preferredStore : null,
+        ),
       );
-    }
-    const products = filtered.slice(0, limit);
-    const filteredTotal = filterOnSale || filterHasVariants || minPrice !== undefined || maxPrice !== undefined
-      ? filtered.length  // approximate post-filter count for filtered requests
-      : total;
 
-    // Ensure stock is 0 for OOS entries so the frontend renders them correctly
-    for (const p of products as any[]) {
-      if (!p.inStock) p.stock = 0;
-      p.badges = computeBadges(p);
-    }
+      windowMerged.sort((a: any, b: any) => {
+        const aIn = Boolean(a.inStock);
+        const bIn = Boolean(b.inStock);
+        if (aIn !== bIn) return aIn ? -1 : 1;
+        // secondary sort: user-chosen sortBy
+        const aPrice = (a.sale_price ?? a.regular_price ?? 0) as number;
+        const bPrice = (b.sale_price ?? b.regular_price ?? 0) as number;
+        if (normalizedSortBy === "price_asc") return aPrice - bPrice;
+        if (normalizedSortBy === "price_desc") return bPrice - aPrice;
+        if (normalizedSortBy === "popular" || isHomepage) return (b.totalSold ?? 0) - (a.totalSold ?? 0);
+        return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+      });
 
-    const payload: StorefrontListingPayload = {
-      success: true,
-      products: products as Record<string, unknown>[],
-      store: preferredStore
-        ? {
-            id: preferredStore.id,
-            name: preferredStore.name,
-            pincode: preferredStore.pincode,
-            city: preferredStore.city,
-          }
-        : null,
-      isServiceable: isLocalRequest ? Boolean(preferredStore) : true,
-      pagination: {
-        page,
-        limit,
-        total: filteredTotal,
-        hasMore: skip + products.length < filteredTotal,
-      },
-    };
+      // ── Post-merge filters (price / offer / variant) ──────────────────────────
+      let filtered = windowMerged as any[];
+      if (filterOnSale) {
+        filtered = filtered.filter((p) => p.sale_price != null && Number(p.sale_price) < Number(p.regular_price ?? p.sale_price + 1));
+      }
+      if (minPrice !== undefined && !Number.isNaN(minPrice)) {
+        filtered = filtered.filter((p) => (p.sale_price ?? p.regular_price ?? 0) >= minPrice);
+      }
+      if (maxPrice !== undefined && !Number.isNaN(maxPrice)) {
+        filtered = filtered.filter((p) => (p.sale_price ?? p.regular_price ?? 0) <= maxPrice);
+      }
+      if (filterHasVariants) {
+        filtered = filtered.filter((p) =>
+          (Array.isArray(p.sizePricing) && p.sizePricing.length > 0) ||
+          (Array.isArray(p.cuttingTypePricing) && p.cuttingTypePricing.length > 0) ||
+          (Array.isArray(p.pieceSizePricing) && p.pieceSizePricing.length > 0),
+        );
+      }
+      const products = filtered.slice(0, limit);
+      const filteredTotal = filterOnSale || filterHasVariants || minPrice !== undefined || maxPrice !== undefined
+        ? filtered.length  // approximate post-filter count for filtered requests
+        : total;
+      const hasMore = cursor
+        ? filtered.length > limit || hasNextWindow
+        : skip + products.length < filteredTotal;
+      const nextCursor =
+        hasMore && products.length > 0
+          ? ((products[products.length - 1] as any).catalogProductId as string)
+          : null;
 
-    setCachedPayload(cacheKey, payload);
+      // Ensure stock is 0 for OOS entries so the frontend renders them correctly
+      for (const p of products as any[]) {
+        if (!p.inStock) p.stock = 0;
+        p.badges = computeBadges(p);
+      }
+
+      const payload: StorefrontListingPayload = {
+        success: true,
+        products: products as Record<string, unknown>[],
+        store: preferredStore
+          ? {
+              id: preferredStore.id,
+              name: preferredStore.name,
+              pincode: preferredStore.pincode,
+              city: preferredStore.city,
+            }
+          : null,
+        isServiceable: isLocalRequest ? Boolean(preferredStore) : true,
+        pagination: {
+          page,
+          limit,
+          total: filteredTotal,
+          hasMore,
+          nextCursor,
+        },
+      };
+
+      return payload;
+    }, { ttlSeconds: STOREFRONT_CACHE_TTL });
 
     return res.status(200).json(payload);
   } catch (error) {
@@ -379,10 +402,7 @@ export const getStoreProductBySlug = async (
             isDeleted: false,
             ...(preferredStore ? { storeId: preferredStore.id } : {}),
           },
-          include: {
-            images: true,
-            store: { include: { seller: { include: { events: true } } } },
-          },
+          select: storefrontVariantSelect,
           orderBy: { sale_price: "asc" },
         })
       : [];

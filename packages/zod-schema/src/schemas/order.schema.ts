@@ -11,6 +11,17 @@ export const orderItemSchema = z.object({
   selectedOptions: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
 });
 
+// Pre-order price/availability preview — same item shape as orderItemSchema
+// minus `price`, since the quote is what computes price, not what receives it.
+export const cartQuoteItemSchema = orderItemSchema.omit({ price: true });
+
+export const cartQuoteSchema = z.object({
+  storeId: z.string().min(1, "Store ID is required"),
+  items: z.array(cartQuoteItemSchema).min(1, "At least one item is required"),
+  couponCode: z.string().optional(),
+  deliverySlot: z.enum(["instant", "morning", "evening"]).optional(),
+});
+
 export const deliveryDetailsSchema = z.object({
   name: z.string().min(1, "Name is required"),
   phone: z.string().min(10, "Phone must be at least 10 digits"),
@@ -23,6 +34,11 @@ export const billDetailsSchema = z.object({
   itemTotal: z.number().nonnegative(),
   deliveryCharge: z.number().nonnegative().default(0),
   extraCharge: z.number().nonnegative().optional().default(0),
+  // Seller-set (Store settings in seller-ui) — the client's numbers are
+  // display-only, order-service recomputes both from the store's own
+  // gst_rate/packaging_charge and never trusts what's submitted here.
+  packagingCharge: z.number().nonnegative().optional().default(0),
+  gstAmount: z.number().nonnegative().optional().default(0),
   discount: z.number().nonnegative().default(0),
   totalAmount: z.number().nonnegative().optional(),
   discountBreakdown: z.array(z.object({ code: z.string(), amount: z.number() })).optional(),
@@ -62,14 +78,41 @@ export const acceptOrRejectOrderSchema = z.object({
   path: ["rejectionReason"],
 });
 
+// Quick-pick reasons shown to a customer cancelling their own order — kept as
+// a fixed list (rather than free text) so cancellation reasons are usable for
+// analytics instead of a pile of one-off strings. "Other" pairs with `note`
+// for the rare case the list doesn't cover it.
+export const CUSTOMER_CANCEL_REASONS = [
+  "Ordered by mistake",
+  "Delivery taking too long",
+  "Wrong address",
+  "Changed my mind",
+  "Other",
+] as const;
+
+export const cancelOrderSchema = z.object({
+  reason: z.enum(CUSTOMER_CANCEL_REASONS).optional(),
+  note: z.string().max(500, "Note max 500 characters").optional(),
+});
+
+// ASSIGNED_TO_RIDER is deliberately excluded here — that status is only ever
+// set by the dedicated assign-rider endpoint, which guarantees riderId is
+// non-null whenever it appears. Letting this generic endpoint set it too
+// would allow an order to end up ASSIGNED_TO_RIDER with no rider attached.
 export const updateOrderStatusSchema = z.object({
-  status: z.enum(["SHIPPED", "DELIVERED", "CANCELLED"]),
+  status: z.enum(["PREPARING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED", "CANCELLED"]),
+  // Only meaningful when status is CANCELLED — the seller/staff cancelling an
+  // order that's already past ACCEPTED can optionally record why.
+  cancellationReason: z.string().max(500, "Reason max 500 characters").optional(),
 });
 
 // Admin can set any status, unlike the seller-facing updateOrderStatusSchema above.
 export const orderStatusValues = [
   "PENDING",
   "ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "ASSIGNED_TO_RIDER",
   "REJECTED",
   "SHIPPED",
   "DELIVERED",

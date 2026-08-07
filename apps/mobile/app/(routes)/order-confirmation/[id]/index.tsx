@@ -1,8 +1,9 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -19,13 +20,18 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusTimeline } from "@/components/order-tracker/StatusTimeline";
 import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
+import SupportMessageModal from "@/components/shared/support-message-modal";
 import { useAddressStore } from "@/lib/address-store";
 import { toast } from "@/utils/toast";
 import { colors, gradients } from "@/constants/theme";
-import { useLiveOrder } from "@/hooks/useLiveOrder";
+import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
+import { formatOrderId } from "@repo/shared/order-id";
+import { buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
 const PRIMARY = colors.primary;
-const SUPPORT_WHATSAPP_URL = "https://wa.me/919999999999";
+// Platform-level fallback — used only when the store hasn't configured its
+// own WhatsApp number yet (Store Support Configuration, seller-admin).
+const FALLBACK_SUPPORT_WHATSAPP = "919999999999";
 
 const SLOT_LABEL: Record<string, string> = {
   instant: "Instant (30–45 mins)",
@@ -38,6 +44,7 @@ export default function OrderConfirmationScreen() {
   const { selectedLocation } = useAddressStore();
   const { order, isLoading } = useLiveOrder(id);
   const insets = useSafeAreaInsets();
+  const [supportModalVisible, setSupportModalVisible] = useState(false);
 
   if (isLoading || !order) {
     return (
@@ -53,7 +60,7 @@ export default function OrderConfirmationScreen() {
     );
   }
 
-  const shortId = `FS${String(order.id).replace(/[^0-9A-Za-z]/g, "").slice(-10).toUpperCase()}`;
+  const shortId = formatOrderId(order.id);
   const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
@@ -66,6 +73,39 @@ export default function OrderConfirmationScreen() {
   const itemTotal = billDetails?.itemTotal ?? order.totalAmount;
   const deliveryCharge = billDetails?.deliveryCharge ?? order.deliveryCharge ?? 0;
   const discount = billDetails?.discount ?? order.discountAmount ?? 0;
+
+  // Built on demand (not eagerly) so the customer's own message — collected
+  // by SupportMessageModal — lands in {{CUSTOMER_MESSAGE}} instead of the
+  // generic default.
+  const buildSupportWhatsAppUrl = (customerMessage?: string) =>
+    buildWhatsAppUrl(
+      order.store?.whatsappNumber || FALLBACK_SUPPORT_WHATSAPP,
+      fillWhatsAppTemplate(order.store?.whatsappMessageTemplate, {
+        orderId: shortId,
+        orderDate: createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+        status: getOrderStatusLabel(order.status),
+        storeName: order.store?.name || "our store",
+        customerName: order.deliveryName,
+        customerPhone: order.deliveryPhone,
+        deliveryAddress: [order.deliveryAddress, order.deliveryCity, order.deliveryPincode].filter(Boolean).join(", "),
+        items: (order.items || []).map((item: any) => ({
+          name: item.product?.title || "Product",
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+        subtotal: itemTotal,
+        deliveryFee: deliveryCharge,
+        discount,
+        tax: billDetails?.gstAmount ?? 0,
+        totalAmount: order.total ?? order.totalAmount,
+        customerMessage,
+      }),
+      order.store?.whatsappLink,
+    );
+
+  const handleSendSupportMessage = (message: string) => {
+    Linking.openURL(buildSupportWhatsAppUrl(message));
+  };
 
   const handleCopyOrderId = async () => {
     await Clipboard.setStringAsync(shortId);
@@ -157,7 +197,7 @@ export default function OrderConfirmationScreen() {
 
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TouchableOpacity
-                  onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+                  onPress={() => setSupportModalVisible(true)}
                   style={{
                     width: 40, height: 40, borderRadius: 20,
                     borderWidth: 1, borderColor: "rgba(255,255,255,0.4)",
@@ -313,7 +353,7 @@ export default function OrderConfirmationScreen() {
                   }}
                 >
                   <Image
-                    source={{ uri: item.product?.images?.[0]?.url || "https://via.placeholder.com/56" }}
+                    source={{ uri: cloudinaryThumbnail(item.product?.images?.[0]?.url, 104) || "https://via.placeholder.com/56" }}
                     style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: "#F3F4F6" }}
                     resizeMode="cover"
                   />
@@ -472,7 +512,7 @@ export default function OrderConfirmationScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+              onPress={() => setSupportModalVisible(true)}
               style={{ borderWidth: 1.5, borderColor: PRIMARY, borderRadius: 50, paddingHorizontal: 14, paddingVertical: 8 }}
             >
               <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 11, color: PRIMARY }}>Contact Support</Text>
@@ -501,6 +541,12 @@ export default function OrderConfirmationScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <SupportMessageModal
+        visible={supportModalVisible}
+        onClose={() => setSupportModalVisible(false)}
+        onSend={handleSendSupportMessage}
+      />
     </SafeAreaView>
   );
 }

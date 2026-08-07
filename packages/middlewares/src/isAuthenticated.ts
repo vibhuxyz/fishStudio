@@ -160,6 +160,12 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       return res.status(401).json({ message: "Staff account is not active." });
     }
 
+    // Same guarantee for a seller deactivated by admin: an already-issued
+    // JWT (valid up to 24h) must not keep working after deactivation.
+    if (decoded.role === "seller" && account.isActive === false) {
+      return res.status(401).json({ message: "Seller account is not active." });
+    }
+
     req.role = decoded.role;
 
     // ── Write to cache ────────────────────────────────────────────────────
@@ -183,6 +189,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
             name: req.seller.name,
             email: req.seller.email,
             isApprovedByAdmin: req.seller.isApprovedByAdmin,
+            isActive: req.seller.isActive,
             store: slimStore,
           }
         : null;

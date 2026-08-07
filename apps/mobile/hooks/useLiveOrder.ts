@@ -11,6 +11,9 @@ const TERMINAL_STATUSES = new Set(["DELIVERED", "CANCELLED", "REJECTED"]);
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Order Placed",
   ACCEPTED: "Preparing",
+  PREPARING: "Preparing",
+  READY_FOR_PICKUP: "Ready for Pickup",
+  ASSIGNED_TO_RIDER: "Rider Assigned",
   SHIPPED: "On the Way",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",

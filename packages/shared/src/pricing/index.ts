@@ -184,3 +184,4 @@ export const computePerKgSalePrice = (pricing: PerKgPricing, weightGrams: number
 
 export * from "./cart-summary.js";
 export * from "./coupons.js";
+export * from "./combo-pricing.js";

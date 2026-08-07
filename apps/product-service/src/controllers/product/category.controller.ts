@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { redis } from "@repo/libs/redis";
+import { cached as cachedRead } from "@repo/libs/cache";
 import { AuthRequest, getCategoryConfigKey } from "./utils.js";
 import {
   categorySchema,
@@ -18,20 +19,9 @@ const subCategoryStatusKey = (category: string, subCategory: string) =>
 const SITE_CONFIG_CACHE_KEY = "site_config:v1";
 const SITE_CONFIG_TTL = 600; // 10 minutes
 
-const getSiteConfigCached = async () => {
-  try {
-    const cached = await redis.get(SITE_CONFIG_CACHE_KEY);
-    if (cached) return JSON.parse(cached);
-  } catch {}
-  return null;
-};
-
-const setSiteConfigCache = (data: unknown) => {
-  redis
-    .setex(SITE_CONFIG_CACHE_KEY, SITE_CONFIG_TTL, JSON.stringify(data))
-    .catch(() => {});
-};
-
+// Read and write of this key now go through `cachedRead` in getCategories,
+// which stores its own envelope format — a hand-rolled get/set here would
+// write a shape it can't read back.
 const invalidateSiteConfigCache = () => {
   redis.del(SITE_CONFIG_CACHE_KEY).catch(() => {});
 };
@@ -72,57 +62,55 @@ export const getCategories = async (
   try {
     const activeOnly = req.query.activeOnly === "true";
 
-    // Serve from Redis cache when available (10 min TTL)
-    const cached = await getSiteConfigCached();
-    if (cached) {
-      return res
-        .status(200)
-        .json(activeOnly ? applyActiveOnlyFilter(cached) : cached);
-    }
+    // Single-flight: the category list is read on nearly every page, so an
+    // expiry used to send every concurrent request to Mongo at once. activeOnly
+    // is applied after the cache, not inside it, so both variants share one
+    // cached document instead of doubling the keys.
+    const payload = await cachedRead(SITE_CONFIG_CACHE_KEY, async () => {
+      const config = await prisma.site_config.findFirst();
+      if (!config) {
+        return {
+          success: true as const,
+          categories: [],
+          subCategories: {},
+          categoryImages: {},
+          categoryStatus: {},
+          subCategoryStatus: {},
+        };
+      }
+      const subCategories =
+        config.subCategories && typeof config.subCategories === "object"
+          ? (config.subCategories as Record<string, string[]>)
+          : {};
+      const categoryImages =
+        config.categoryImages && typeof config.categoryImages === "object"
+          ? (config.categoryImages as Record<string, string>)
+          : {};
+      const categoryStatus =
+        config.categoryStatus && typeof config.categoryStatus === "object"
+          ? (config.categoryStatus as Record<string, boolean>)
+          : {};
+      const subCategoryStatus =
+        config.subCategoryStatus && typeof config.subCategoryStatus === "object"
+          ? (config.subCategoryStatus as Record<string, boolean>)
+          : {};
+      const transformedSubCategories: Record<string, string[]> = {};
+      if (Array.isArray(config.categories)) {
+        config.categories.forEach((cat) => {
+          const key = getCategoryConfigKey(cat);
+          transformedSubCategories[key] = subCategories[cat] || [];
+        });
+      }
+      return {
+        success: true as const,
+        categories: config.categories,
+        subCategories: transformedSubCategories,
+        categoryImages,
+        categoryStatus,
+        subCategoryStatus,
+      };
+    }, { ttlSeconds: SITE_CONFIG_TTL });
 
-    const config = await prisma.site_config.findFirst();
-    if (!config) {
-      return res.status(200).json({
-        success: true,
-        categories: [],
-        subCategories: {},
-        categoryImages: {},
-        categoryStatus: {},
-        subCategoryStatus: {},
-      });
-    }
-    const subCategories =
-      config.subCategories && typeof config.subCategories === "object"
-        ? (config.subCategories as Record<string, string[]>)
-        : {};
-    const categoryImages =
-      config.categoryImages && typeof config.categoryImages === "object"
-        ? (config.categoryImages as Record<string, string>)
-        : {};
-    const categoryStatus =
-      config.categoryStatus && typeof config.categoryStatus === "object"
-        ? (config.categoryStatus as Record<string, boolean>)
-        : {};
-    const subCategoryStatus =
-      config.subCategoryStatus && typeof config.subCategoryStatus === "object"
-        ? (config.subCategoryStatus as Record<string, boolean>)
-        : {};
-    const transformedSubCategories: Record<string, string[]> = {};
-    if (Array.isArray(config.categories)) {
-      config.categories.forEach((cat) => {
-        const key = getCategoryConfigKey(cat);
-        transformedSubCategories[key] = subCategories[cat] || [];
-      });
-    }
-    const payload = {
-      success: true,
-      categories: config.categories,
-      subCategories: transformedSubCategories,
-      categoryImages,
-      categoryStatus,
-      subCategoryStatus,
-    };
-    setSiteConfigCache(payload);
     return res
       .status(200)
       .json(activeOnly ? applyActiveOnlyFilter(payload) : payload);

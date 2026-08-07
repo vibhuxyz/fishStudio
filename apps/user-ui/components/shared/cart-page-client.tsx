@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   X,
   MapPin,
   Clock,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function CartPageClient() {
   const router = useRouter();
   const removeItem = useCartStore((s) => s.removeItem);
+  const removeComboGroup = useCartStore((s) => s.removeComboGroup);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const syncItems = useCartStore((s) => s.syncItems);
   const deliveryMetadata = useCartStore((s) => s.deliveryMetadata);
@@ -38,7 +40,8 @@ export function CartPageClient() {
     items,
     subtotal,
     deliveryCharge,
-    handlingCharge,
+    packagingCharge,
+    gstAmount,
     discount,
     tip,
     grandTotal,
@@ -70,6 +73,33 @@ export function CartPageClient() {
     setIsSyncing(true);
     syncItems().finally(() => setIsSyncing(false));
   }, []);
+
+  // Combo members can't be edited/removed individually — group them under
+  // their comboId so the cart renders one card per bundle instead of one
+  // row per product.
+  const cartEntries = useMemo(() => {
+    const entries: (
+      | { type: "single"; item: (typeof items)[number]; index: number }
+      | { type: "combo"; comboId: string; members: { item: (typeof items)[number]; index: number }[] }
+    )[] = [];
+    const seenCombos = new Set<string>();
+    items.forEach((item, index) => {
+      if (item.comboId) {
+        if (seenCombos.has(item.comboId)) return;
+        seenCombos.add(item.comboId);
+        entries.push({
+          type: "combo",
+          comboId: item.comboId,
+          members: items
+            .map((it, i) => ({ item: it, index: i }))
+            .filter(({ item: it }) => it.comboId === item.comboId),
+        });
+      } else {
+        entries.push({ type: "single", item, index });
+      }
+    });
+    return entries;
+  }, [items]);
 
   if (items.length === 0) {
     return (
@@ -134,9 +164,66 @@ export function CartPageClient() {
 
           <div className="mt-3 space-y-3">
             <AnimatePresence mode="popLayout">
-              {items.map((item, index) => {
+              {cartEntries.map((entry) => {
+                if (entry.type === "combo") {
+                  const comboTotal = entry.members.reduce((sum, m) => sum + m.item.totalPayable, 0);
+                  return (
+                    <motion.div
+                      key={`combo-${entry.comboId}`}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: 50 }}
+                      transition={{ duration: 0.2 }}
+                      className="rounded-xl border border-primary/20 p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 rounded-full bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+                          <Package className="h-3.5 w-3.5" />
+                          Combo Deal
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeComboGroup(entry.comboId)}
+                          className="text-xs font-medium text-destructive hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {entry.members.map(({ item, index }) => (
+                          <div key={`${item.product.id}-${index}`} className="flex items-center gap-3">
+                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg border border-border">
+                              <Image
+                                src={item.product.image || "/placeholder.svg"}
+                                alt={item.product.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold leading-tight text-foreground">{item.product.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.cuttingType.name} | {item.pieceSize.name}
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold text-muted-foreground">× {item.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between border-t border-border pt-2">
+                        <span className="text-xs text-muted-foreground">Combo price</span>
+                        <span className="text-sm font-bold text-foreground">₹{comboTotal.toFixed(0)}</span>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
+                const { item, index } = entry;
                 const isInvalid = item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0);
-                
+
                 return (
                   <motion.div
                     key={`${item.product.id}-${index}`}
@@ -365,13 +452,24 @@ export function CartPageClient() {
                 {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                Handling charge
-                <Info className="h-3.5 w-3.5" />
-              </span>
-              <span className="font-medium text-foreground">₹{handlingCharge}</span>
-            </div>
+            {packagingCharge > 0 && (
+              <div className="flex justify-between">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  Packaging charge
+                  <Info className="h-3.5 w-3.5" />
+                </span>
+                <span className="font-medium text-foreground">₹{packagingCharge}</span>
+              </div>
+            )}
+            {gstAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  GST
+                  <Info className="h-3.5 w-3.5" />
+                </span>
+                <span className="font-medium text-foreground">₹{gstAmount}</span>
+              </div>
+            )}
             {discount > 0 && (
               <div className="flex justify-between">
                 <span className="text-offer-green">Coupon discount ({appliedCoupons.map((c) => c.code).join(", ")})</span>
@@ -556,7 +654,7 @@ export function CartPageClient() {
         </div>
       </div>
 
-      <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} />
+      <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} requireAddressForm />
     </div>
   );
 }

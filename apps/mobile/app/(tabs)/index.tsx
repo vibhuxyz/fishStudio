@@ -1,8 +1,11 @@
-import ActiveOrderWidget from "@/components/home/active-order-widget";
+import ActiveOrderWidget, { useActiveOrderWidgetSpace } from "@/components/home/active-order-widget";
 import BannerCarousel from "@/components/home/banner-carousel";
-import BestSellersCombos from "@/components/home/best-sellers-combos";
+import BestSellersCombos, { LegacyCombosSection } from "@/components/home/best-sellers-combos";
 import CategoryRow from "@/components/home/category-row";
+import RealCombosSection from "@/components/home/real-combos-section";
 import AddToCartModal from "@/components/home/add-to-cart-modal";
+import FloatingCartBar, { useFloatingCartBarSpace } from "@/components/shared/floating-cart-bar";
+import { spacing } from "@/constants/theme";
 import { useComboBanner } from "@/components/home/combo-card";
 import Header from "@/components/home/header";
 import ProductSection from "@/components/home/products";
@@ -11,12 +14,13 @@ import TrustStrip from "@/components/home/trust-strip";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { fetchForYou, fetchRecentlyViewed } from "@/actions/activity";
 import { useAddressStore } from "@/lib/address-store";
+import { useScrollDirectionStore } from "@/store/scroll-direction-store";
 import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -32,7 +36,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ProductListingPage {
   products: Product[];
-  pagination?: { page: number; hasMore?: boolean };
+  pagination?: { page: number; hasMore?: boolean; nextCursor?: string | null };
 }
 
 export default function Index() {
@@ -52,15 +56,15 @@ export default function Index() {
     fetchNextPage,
   } = useInfiniteQuery({
     queryKey: ["products-infinite", locationParams.storeId, locationParams.pincode, locationVersion],
-    queryFn: async ({ pageParam = 1 }): Promise<ProductListingPage> => {
+    queryFn: async ({ pageParam }): Promise<ProductListingPage> => {
       const res = await axiosInstance.get("/product/api/get-all-products", {
-        params: { page: pageParam, limit: 20, ...locationParams },
+        params: { cursor: pageParam, limit: 20, ...locationParams },
       });
       return res.data;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.pagination?.hasMore ? (lastPage.pagination.page ?? 1) + 1 : undefined,
+      lastPage.pagination?.hasMore ? (lastPage.pagination.nextCursor ?? undefined) : undefined,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -100,9 +104,26 @@ export default function Index() {
   // Combo artwork is uploaded from admin as a "combo" banner.
   const { data: comboBanner = null } = useComboBanner();
   const [cartProduct, setCartProduct] = useState<Product | null>(null);
+  // Reserve extra scroll space only while the floating "View cart" pill is
+  // actually showing, sized from its real measured footprint rather than a
+  // guessed constant — so the last product card's Add button never ends up
+  // underneath it.
+  const floatingCartSpace = useFloatingCartBarSpace();
+  // ActiveOrderWidget stacks above the cart pill when both are showing, so
+  // its reserved space already covers the cart pill's — take whichever is
+  // taller rather than summing them.
+  const activeOrderSpace = useActiveOrderWidgetSpace();
+  const floatingSpace = Math.max(floatingCartSpace, activeOrderSpace);
 
   const openSection = (key: string) =>
     router.push({ pathname: "/(routes)/section/[key]", params: { key } });
+
+  // Drives ActiveOrderWidget's hide-on-scroll-down / reappear-on-scroll-up
+  // behaviour. A small threshold avoids flicker from tiny bounce deltas, and
+  // the widget always reappears near the top even if the last delta read as
+  // "down".
+  const lastScrollY = useRef(0);
+  const setScrollingDown = useScrollDirectionStore((s) => s.setScrollingDown);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
@@ -111,6 +132,15 @@ export default function Index() {
     if (distanceFromBottom < 300 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
+
+    const y = contentOffset.y;
+    const delta = y - lastScrollY.current;
+    if (y < 24) {
+      setScrollingDown(false);
+    } else if (Math.abs(delta) > 4) {
+      setScrollingDown(delta > 0);
+    }
+    lastScrollY.current = y;
   };
 
   return (
@@ -120,7 +150,6 @@ export default function Index() {
       {/* Header is sticky above the scroll */}
       <View style={{ backgroundColor: "#FFFFFF" }}>
         <Header />
-        <ActiveOrderWidget />
       </View>
 
       <AddToCartModal
@@ -134,6 +163,9 @@ export default function Index() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         style={{ backgroundColor: "#F4F4F4" }}
+        contentContainerStyle={{
+          paddingBottom: 100 + (floatingSpace > 0 ? floatingSpace + spacing[6] : 0),
+        }}
       >
         {/* Hero banner — the artwork carries its own headline and CTA */}
         <BannerCarousel />
@@ -153,13 +185,24 @@ export default function Index() {
           />
         )}
 
-        {/* Best Sellers sits beside the combo offer, per the comp */}
+        {/* Real combo bundles for the resolved store — the actual "Combos"
+            section. Falls back to the old tag-based combo tile when a store
+            hasn't created one yet, same as the web homepage. */}
+        <RealCombosSection
+          fallback={
+            <LegacyCombosSection
+              comboBanner={comboBanner}
+              comboProduct={combos?.products?.[0]}
+              onViewAllCombos={() => openSection("combos")}
+              onAddToCart={setCartProduct}
+            />
+          }
+        />
+
+        {/* Best Sellers rail */}
         <BestSellersCombos
           bestSellers={bestSellers?.products ?? []}
-          comboBanner={comboBanner}
-          comboProduct={combos?.products?.[0]}
           onViewAllBestSellers={() => openSection("best-sellers")}
-          onViewAllCombos={() => openSection("combos")}
           onAddToCart={setCartProduct}
         />
 
@@ -263,9 +306,11 @@ export default function Index() {
             <ActivityIndicator color="#5A2C96" size="small" />
           </View>
         )}
-
-        <View style={{ height: 100 }} />
       </ScrollView>
+
+      <FloatingCartBar />
+      {/* Mounted after FloatingCartBar so it stacks above it when both show */}
+      <ActiveOrderWidget />
     </SafeAreaView>
   );
 }

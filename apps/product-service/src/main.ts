@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
 import { ENV } from "@repo/env-config";
 import { initMeilisearchIndex } from "./lib/meilisearch.js";
+import { productSyncWorker } from "./workers/productSync.worker.js";
 
 const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6003;
 
@@ -45,6 +46,9 @@ app.use(errorMiddleware);
 const server = app.listen(port, "0.0.0.0", () => {
   console.log(`Product Service server is running on port ${port}`);
   initMeilisearchIndex();
+  productSyncWorker().catch((err) =>
+    console.error("❌ Failed to start product sync worker:", err),
+  );
 });
 
 server.on("error", (err) => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { use, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -14,15 +14,42 @@ import {
   Truck,
   Loader2,
   ShoppingBag,
+  Phone,
+  MessageCircle,
+  Bike,
+  XCircle,
 } from "lucide-react";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
 import { useUserSession } from "@/hooks/useUserSession";
 import { useWs } from "@/context/ws-context";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { OrderTracker } from "./_components/order-tracker";
 import { SLOT_LABELS, getDeliveryEtaMinutes } from "./_components/delivery-eta";
+import { SupportMessageModal } from "@/components/shared/support-message-modal";
 import type { Order } from "@/lib/orders-api";
+import { toast } from "sonner";
+import { formatOrderId } from "@repo/shared/order-id";
+import { buildTelUrl, buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
+import { CUSTOMER_CANCEL_REASONS } from "@repo/zod-schema";
+
+// Platform-level fallback — used only when the store hasn't configured its
+// own support numbers yet (Store Support Configuration, seller-admin).
+const FALLBACK_SUPPORT_WHATSAPP = "919999999999";
+const FALLBACK_SUPPORT_TEL = "+919999999999";
 
 export default function OrderDetailsPage({
   params,
@@ -34,6 +61,10 @@ export default function OrderDetailsPage({
   const queryClient = useQueryClient();
   const { user, isLoading: isSessionLoading } = useUserSession();
   const selectedLocation = useAddressStore((state) => state.selectedLocation);
+  const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [cancelNote, setCancelNote] = useState("");
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
@@ -42,6 +73,22 @@ export default function OrderDetailsPage({
       return data.order as Order;
     },
     enabled: !!orderId && !!user,
+  });
+
+  const { mutate: cancelOrder, isPending: isCancelling } = useMutation({
+    mutationFn: () =>
+      axiosInstance.put(`/order/api/cancel/${orderId}`, {
+        reason: cancelReason ?? undefined,
+        note: cancelReason === "Other" ? cancelNote.trim() : undefined,
+      }),
+    onSuccess: () => {
+      toast.success("Order cancelled successfully");
+      setCancelDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Could not cancel order");
+    },
   });
 
   // ── Real-time updates, via the app's single shared WS connection ──
@@ -98,7 +145,7 @@ export default function OrderDetailsPage({
         <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
         <h2 className="text-2xl font-bold">Order Not Found</h2>
         <p className="mt-2 text-muted-foreground">
-          We couldn't find order #{orderId.slice(-6).toUpperCase()}.
+          We couldn't find order {formatOrderId(orderId)}.
         </p>
         <Button className="mt-6" onClick={() => router.push("/orders")}>
           Back to My Orders
@@ -107,7 +154,7 @@ export default function OrderDetailsPage({
     );
   }
 
-  const orderNumber = `#${String(order.id).slice(-6).toUpperCase()}`;
+  const orderNumber = formatOrderId(order.id);
   const orderStatus = (order.status || "PENDING").toUpperCase();
   // Same rule as the orders list: an unpaid RAZORPAY order never reached the
   // seller, so it reads as cancelled rather than an in-progress order.
@@ -115,6 +162,14 @@ export default function OrderDetailsPage({
     order.paymentMethod === "RAZORPAY" &&
     orderStatus === "PENDING" &&
     order.paymentStatus !== "COMPLETED";
+  const isTerminal = orderStatus === "DELIVERED" || orderStatus === "CANCELLED" || orderStatus === "REJECTED";
+  // Self-cancel only before the store starts preparing — matches
+  // order-service's cancelOrder guard (PENDING or ACCEPTED).
+  const isCancellable = !isUnpaidOnline && (orderStatus === "PENDING" || orderStatus === "ACCEPTED");
+  // A completed RAZORPAY payment is the only case where money actually moved
+  // before cancellation — COD never charged anything, and an incomplete
+  // online payment is the separate isUnpaidOnline case above.
+  const wasPaidOnline = order.paymentMethod === "RAZORPAY" && order.paymentStatus === "COMPLETED";
   const slotLabel = SLOT_LABELS[order.deliverySlot ?? ""] ?? "Standard Delivery";
   const deliveryEtaMinutes = getDeliveryEtaMinutes(
     order,
@@ -126,6 +181,40 @@ export default function OrderDetailsPage({
       0
     ) ?? 0;
   const billDetails = order.billDetails as Record<string, number> | null;
+
+  const supportTelUrl = buildTelUrl(order.store?.supportPhone || FALLBACK_SUPPORT_TEL);
+  // Built on demand (not eagerly) so the customer's own message — collected
+  // by SupportMessageModal — lands in {{CUSTOMER_MESSAGE}} instead of the
+  // generic default.
+  const buildSupportWhatsAppUrl = (customerMessage?: string) =>
+    buildWhatsAppUrl(
+      order.store?.whatsappNumber || FALLBACK_SUPPORT_WHATSAPP,
+      fillWhatsAppTemplate(order.store?.whatsappMessageTemplate, {
+        orderId: orderNumber,
+        orderDate: new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }),
+        status: orderStatus,
+        storeName: order.store?.name || "our store",
+        customerName: order.deliveryName,
+        customerPhone: order.deliveryPhone,
+        deliveryAddress: [order.deliveryAddress, order.deliveryCity, order.deliveryPincode].filter(Boolean).join(", "),
+        items: (order.items || []).map((item) => ({
+          name: item.product?.title || "Product",
+          quantity: item.quantity,
+          unitPrice: item.price,
+        })),
+        subtotal: billDetails?.itemTotal ?? itemTotal,
+        deliveryFee: billDetails?.deliveryCharge ?? order.deliveryCharge ?? 0,
+        discount: billDetails?.discount ?? order.discountAmount ?? 0,
+        tax: billDetails?.gstAmount ?? 0,
+        totalAmount: order.totalAmount,
+        customerMessage,
+      }),
+      order.store?.whatsappLink,
+    );
+
+  const handleSendSupportMessage = (message: string) => {
+    window.open(buildSupportWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -164,7 +253,9 @@ export default function OrderDetailsPage({
           cancelNote={
             isUnpaidOnline
               ? "Payment wasn't completed for this order. Any amount deducted will be refunded within 3–5 business days."
-              : undefined
+              : orderStatus === "CANCELLED" && wasPaidOnline
+                ? "This order has been cancelled. Your payment will be refunded within 3–5 business days to your original payment method."
+                : undefined
           }
           updatedAt={order.updatedAt}
           deliverySlot={order.deliverySlot}
@@ -388,7 +479,238 @@ export default function OrderDetailsPage({
             </div>
           </div>
         )}
+
+        {/* ── Assigned rider ── */}
+        {order.rider && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-6 py-4">
+            <div className="flex items-center gap-3">
+              {order.rider.avatar?.url ? (
+                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
+                  <Image src={order.rider.avatar.url} alt={order.rider.name} fill className="object-cover" sizes="40px" />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bike className="h-4 w-4 text-primary" />
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Delivery Rider
+                </p>
+                <p className="mt-0.5 text-sm font-bold text-foreground">{order.rider.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {order.rider.vehicleType} · {order.rider.vehicleNumber}
+                </p>
+              </div>
+            </div>
+            <a
+              href={buildTelUrl(order.rider.phone)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-primary text-primary transition-colors hover:bg-primary/10"
+            >
+              <Phone className="h-4 w-4" />
+            </a>
+          </div>
+        )}
+
+        {/* ── Cancel order — disabled + explained once PREPARING starts ── */}
+        {!isTerminal && !isUnpaidOnline && (
+          <div className={isCancellable ? "" : "rounded-2xl border border-border bg-card"}>
+            <button
+              type="button"
+              disabled={!isCancellable}
+              onClick={() => setCancelDialogOpen(true)}
+              className={
+                isCancellable
+                  ? "flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 py-3.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100"
+                  : "flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold text-muted-foreground cursor-not-allowed"
+              }
+            >
+              <XCircle className="h-4 w-4" />
+              Cancel Order
+            </button>
+
+            {!isCancellable && (
+              <div className="border-t border-border px-6 py-4">
+                <p className="text-sm text-muted-foreground">
+                  Order is already being prepared.
+                  <br />
+                  Please contact store support for cancellation requests.
+                </p>
+                <div className="mt-3 flex gap-3">
+                  <a
+                    href={supportTelUrl}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-muted py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    <Phone className="h-4 w-4" />
+                    Call Support
+                  </a>
+                  <a
+                    href={buildSupportWhatsAppUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-full bg-muted py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    WhatsApp Support
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Cancellation details (once CANCELLED) ── */}
+        {orderStatus === "CANCELLED" && !isUnpaidOnline && order.cancelledBy && (
+          <div className="rounded-2xl border border-border bg-card px-6 py-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Cancellation Details
+            </p>
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cancelled By</span>
+                <span className="font-semibold text-foreground">
+                  {order.cancelledBy === "CUSTOMER" ? "You" : order.cancelledBy === "SYSTEM" ? "System" : "Store"}
+                </span>
+              </div>
+              {order.cancellationReason && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Reason</span>
+                  <span className="text-right font-semibold text-foreground">{order.cancellationReason}</span>
+                </div>
+              )}
+              {order.cancelledAt && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Time</span>
+                  <span className="font-semibold text-foreground">
+                    {new Date(order.cancelledAt).toLocaleString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              )}
+              {order.refundStatus && order.refundStatus !== "NONE" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Refund</span>
+                  <span
+                    className={
+                      order.refundStatus === "COMPLETED"
+                        ? "font-semibold text-emerald-600"
+                        : order.refundStatus === "FAILED"
+                          ? "font-semibold text-red-600"
+                          : "font-semibold text-primary"
+                    }
+                  >
+                    {order.refundStatus === "REQUESTED"
+                      ? "Requested"
+                      : order.refundStatus === "PROCESSING"
+                        ? "Processing"
+                        : order.refundStatus === "COMPLETED"
+                          ? "Completed"
+                          : "Failed"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Need help ── */}
+        <div className="rounded-2xl border border-border bg-card px-6 py-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Need Help?
+          </p>
+          <div className="mt-3 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setSupportModalOpen(true)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary/10 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Chat on WhatsApp
+            </button>
+            <a
+              href={supportTelUrl}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary/10 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+            >
+              <Phone className="h-4 w-4" />
+              Call Support
+            </a>
+          </div>
+        </div>
       </div>
+
+      <AlertDialog
+        open={cancelDialogOpen}
+        onOpenChange={(open) => {
+          setCancelDialogOpen(open);
+          if (!open) {
+            setCancelReason(null);
+            setCancelNote("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order?
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div>
+            <p className="mb-2 text-sm font-medium text-foreground">
+              Why are you cancelling? (optional)
+            </p>
+            <RadioGroup value={cancelReason ?? undefined} onValueChange={setCancelReason}>
+              {CUSTOMER_CANCEL_REASONS.map((reason) => (
+                <div key={reason} className="flex items-center gap-2">
+                  <RadioGroupItem value={reason} id={`cancel-reason-${reason}`} />
+                  <Label htmlFor={`cancel-reason-${reason}`} className="cursor-pointer font-normal">
+                    {reason}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+            {cancelReason === "Other" && (
+              <Textarea
+                value={cancelNote}
+                onChange={(e) => setCancelNote(e.target.value)}
+                placeholder="Tell us more…"
+                className="mt-3"
+                rows={3}
+                maxLength={500}
+              />
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCancelling}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isCancelling}
+              onClick={(e) => {
+                e.preventDefault();
+                cancelOrder();
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isCancelling ? "Cancelling…" : "Yes, Cancel Order"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <SupportMessageModal
+        open={supportModalOpen}
+        onOpenChange={setSupportModalOpen}
+        onSend={handleSendSupportMessage}
+      />
     </div>
   );
 }

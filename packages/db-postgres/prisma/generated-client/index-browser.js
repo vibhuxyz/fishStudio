@@ -141,7 +141,17 @@ exports.Prisma.OrderScalarFieldEnum = {
   paymentStatus: 'paymentStatus',
   paymentMethod: 'paymentMethod',
   paymentRef: 'paymentRef',
+  riderId: 'riderId',
+  riderStatus: 'riderStatus',
+  assignedAt: 'assignedAt',
+  assignedBy: 'assignedBy',
+  pickupStartedAt: 'pickupStartedAt',
+  deliveredAt: 'deliveredAt',
   rejectionReason: 'rejectionReason',
+  cancellationReason: 'cancellationReason',
+  cancelledBy: 'cancelledBy',
+  cancelledAt: 'cancelledAt',
+  refundStatus: 'refundStatus',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -221,7 +231,9 @@ exports.Prisma.OutboxEventScalarFieldEnum = {
   attempts: 'attempts',
   lastError: 'lastError',
   createdAt: 'createdAt',
-  publishedAt: 'publishedAt'
+  publishedAt: 'publishedAt',
+  lockedAt: 'lockedAt',
+  lockedBy: 'lockedBy'
 };
 
 exports.Prisma.StockReservationScalarFieldEnum = {
@@ -266,6 +278,9 @@ exports.Prisma.NullsOrder = {
 exports.OrderStatus = exports.$Enums.OrderStatus = {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
+  PREPARING: 'PREPARING',
+  READY_FOR_PICKUP: 'READY_FOR_PICKUP',
+  ASSIGNED_TO_RIDER: 'ASSIGNED_TO_RIDER',
   REJECTED: 'REJECTED',
   SHIPPED: 'SHIPPED',
   DELIVERED: 'DELIVERED',
@@ -278,6 +293,61 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   FAILED: 'FAILED',
   REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED'
+};
+
+exports.PaymentMethod = exports.$Enums.PaymentMethod = {
+  COD: 'COD',
+  RAZORPAY: 'RAZORPAY',
+  ONLINE: 'ONLINE'
+};
+
+exports.OrderRiderStatus = exports.$Enums.OrderRiderStatus = {
+  ASSIGNED: 'ASSIGNED',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED'
+};
+
+exports.CancelledBy = exports.$Enums.CancelledBy = {
+  CUSTOMER: 'CUSTOMER',
+  SELLER: 'SELLER',
+  STAFF: 'STAFF',
+  SYSTEM: 'SYSTEM'
+};
+
+exports.RefundStatus = exports.$Enums.RefundStatus = {
+  NONE: 'NONE',
+  REQUESTED: 'REQUESTED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+};
+
+exports.AuditEntityType = exports.$Enums.AuditEntityType = {
+  ORDER: 'ORDER',
+  PAYMENT: 'PAYMENT',
+  COUPON: 'COUPON',
+  STOCK: 'STOCK',
+  REFUND: 'REFUND',
+  REFERRAL: 'REFERRAL'
+};
+
+exports.ActorType = exports.$Enums.ActorType = {
+  USER: 'USER',
+  SELLER: 'SELLER',
+  ADMIN: 'ADMIN',
+  SYSTEM: 'SYSTEM'
+};
+
+exports.OutboxStatus = exports.$Enums.OutboxStatus = {
+  PENDING: 'PENDING',
+  PUBLISHED: 'PUBLISHED',
+  FAILED: 'FAILED'
+};
+
+exports.StockReservationStatus = exports.$Enums.StockReservationStatus = {
+  HELD: 'HELD',
+  CONSUMED: 'CONSUMED',
+  RELEASED: 'RELEASED'
 };
 
 exports.Prisma.ModelName = {

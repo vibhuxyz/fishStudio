@@ -25,6 +25,7 @@ import { useUserSession } from "@/hooks/useUserSession";
 import { useWs } from "@/context/ws-context";
 import { toast } from "sonner";
 import type { Order } from "@/lib/orders-api";
+import { formatOrderId } from "@repo/shared/order-id";
 
 interface OrderConfirmationDetailProps {
   initialOrder: Order | null;
@@ -152,7 +153,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
         </div>
         <h2 className="text-2xl font-bold text-foreground">Order Not Found</h2>
         <p className="mt-2 text-muted-foreground">
-          We couldn't find the order details for #{orderId.slice(-6).toUpperCase()}.
+          We couldn't find the order details for {formatOrderId(orderId)}.
           It might still be processing or the ID is incorrect.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
@@ -186,7 +187,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
 
   const billDetails = order.billDetails as Record<string, number> | null;
   const statusCfg = getStatusConfig(order.status);
-  const shortId = String(order.id).slice(-6).toUpperCase();
+  const shortId = formatOrderId(order.id);
 
   // Download Invoice — opens a print-ready invoice in a new window. Dependency
   // free: the user can print or "Save as PDF" from the browser dialog.
@@ -217,7 +218,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
       <h1>Fish Studio</h1>
       <div class="muted">Tax Invoice</div>
       <div class="box">
-        <strong>Invoice #${shortId}</strong><br/>
+        <strong>Invoice ${shortId}</strong><br/>
         Date: ${new Date(order.createdAt).toLocaleString("en-IN")}<br/>
         Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod || "—"}
       </div>
@@ -249,7 +250,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   // Share Order — native share where available, otherwise copy the link.
   const handleShareOrder = async () => {
     const url = `${window.location.origin}/orders/${order.id}`;
-    const text = `My Fish Studio order #${shortId} is confirmed! Track it here:`;
+    const text = `My Fish Studio order ${shortId} is confirmed! Track it here:`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "Fish Studio Order", text, url });
@@ -306,7 +307,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
           transition={{ delay: 0.4 }}
         >
           Your order{" "}
-          <span className="font-bold text-foreground">#{shortId}</span>{" "}
+          <span className="font-bold text-foreground">{shortId}</span>{" "}
           has been placed successfully.
         </motion.p>
         {/* Delivery time highlight */}

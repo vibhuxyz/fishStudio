@@ -59,6 +59,7 @@ const EditProductModal = ({
         nutritionCalories: product.nutritionCalories || "",
         cuttingType: product.cuttingTypes?.map((value) => ({ value })) || [],
         pieceSizes: product.pieceSizes?.map((value) => ({ value })) || [],
+        trackStockPerSize: product.trackStockPerSize || false,
       },
     });
 
@@ -82,6 +83,7 @@ const EditProductModal = ({
       nutritionCalories: product.nutritionCalories || "",
       cuttingType: product.cuttingTypes?.map((value) => ({ value })) || [],
       pieceSizes: product.pieceSizes?.map((value) => ({ value })) || [],
+      trackStockPerSize: product.trackStockPerSize || false,
     });
     setImages(product.images || []);
   }, [product, reset]);
@@ -250,6 +252,23 @@ const EditProductModal = ({
             the seller dashboard after a seller adds this catalog product to
             their shop.
           </div>
+
+          {product.sizes && product.sizes.length > 0 && (
+            <label className="md:col-span-2 flex items-start gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                {...register("trackStockPerSize")}
+                className="mt-0.5 h-4 w-4"
+              />
+              <span>
+                Sold by exact weight (track stock per size)
+                <span className="ml-2 block text-xs text-gray-500">
+                  Sellers will enter stock for each size separately — e.g.
+                  they may have 1kg on hand but not 1.1kg.
+                </span>
+              </span>
+            </label>
+          )}
 
           <div>
             <CoustomCuttingType control={control} errors={errors} />

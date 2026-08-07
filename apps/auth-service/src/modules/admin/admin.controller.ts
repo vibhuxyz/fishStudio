@@ -249,6 +249,11 @@ export const generateSellerSignupCode = async (
       return next(new ValidationError("Seller email is required"));
     }
 
+    const existingSeller = await prisma.sellers.findUnique({ where: { email } });
+    if (existingSeller) {
+      return next(new ValidationError("A seller account already exists with this email"));
+    }
+
     const existingCode = await prisma.signupAccessCode.findFirst({
       where: { email, role: "SELLER" },
     });

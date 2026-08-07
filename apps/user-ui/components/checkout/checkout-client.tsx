@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket, Smartphone, Landmark, Wallet, Gift } from "lucide-react";
 import { useCart } from "@/lib/cart-store";
@@ -51,13 +52,23 @@ export function CheckoutClient() {
     availableSlots: string[];
     instantFee: number;
     isStoreOpen: boolean;
+    gstRate: number;
+    packagingCharge: number;
+    baseDeliveryCharge: number;
+    freeDeliveryThreshold: number;
   }>({
     availableSlots: ["morning", "evening"],
     instantFee: 20,
     isStoreOpen: true,
+    gstRate: 0,
+    packagingCharge: 0,
+    baseDeliveryCharge: 49,
+    freeDeliveryThreshold: 500,
   });
 
-  const [selectedSlot, setSelectedSlot] = useState<string>("morning");
+  // Never defaulted — the shopper must actively pick a delivery slot every
+  // checkout instead of silently inheriting an auto-picked one.
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "RAZORPAY">("COD");
   const [onlineMethod, setOnlineMethod] = useState<OnlineMethod>("upi");
   // Only rewards the referrer, and only on the referee's genuine first
@@ -78,17 +89,18 @@ export function CheckoutClient() {
             availableSlots: res.availableSlots || ["morning", "evening"],
             instantFee: res.instantFee || 20,
             isStoreOpen: res.isStoreOpen !== false,
+            gstRate: res.gstRate ?? 0,
+            packagingCharge: res.packagingCharge ?? 0,
+            baseDeliveryCharge: res.baseDeliveryCharge ?? 49,
+            freeDeliveryThreshold: res.freeDeliveryThreshold ?? 500,
           });
 
-          // Auto-select best available slot
-          if (res.availableSlots?.includes("instant")) {
-            setSelectedSlot("instant");
-          } else {
-            // Default to evening if its daytime, otherwise morning
-            const hour = new Date().getHours();
-            const preferred = hour >= 7 && hour < 15 ? "evening" : "morning";
-            setSelectedSlot(res.availableSlots?.includes(preferred) ? preferred : (res.availableSlots?.[0] || "morning"));
-          }
+          // Don't auto-pick a slot — only clear one that's gone stale (e.g.
+          // instant closed while checkout sat open), forcing a fresh choice
+          // rather than silently swapping in a different slot underneath them.
+          setSelectedSlot((prev) =>
+            prev && !(res.availableSlots || []).includes(prev) ? null : prev
+          );
         }
       });
     };
@@ -153,12 +165,14 @@ export function CheckoutClient() {
   }
 
   const slotExtraCharge = selectedSlot === "instant" ? deliveryMetadata.instantFee : 0;
-  const baseDeliveryCharge = totalPrice > 500 ? 0 : 49;
+  const baseDeliveryCharge =
+    totalPrice >= deliveryMetadata.freeDeliveryThreshold ? 0 : deliveryMetadata.baseDeliveryCharge;
   const isFreeDelivery = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && totalPrice >= c.minOrderValue
   );
   const deliveryCharge = isFreeDelivery ? 0 : baseDeliveryCharge;
-
+  const packagingCharge = deliveryMetadata.packagingCharge;
+  const gstAmount = Math.round(totalPrice * deliveryMetadata.gstRate);
 
   const totalDeliveryCost = deliveryCharge + slotExtraCharge;
 
@@ -171,7 +185,7 @@ export function CheckoutClient() {
   }));
   
   const discount = Math.min(rawDiscount, totalPrice + totalDeliveryCost);
-  const grandTotal = Math.max(0, totalPrice + totalDeliveryCost - discount);
+  const grandTotal = Math.max(0, totalPrice + totalDeliveryCost + packagingCharge + gstAmount - discount);
 
   // Load the Razorpay Checkout SDK 
   const loadRazorpay = () =>
@@ -286,6 +300,10 @@ export function CheckoutClient() {
       toast.error("Please set your delivery location first (open cart → change location)");
       return;
     }
+    if (!selectedSlot) {
+      toast.error("Please choose a delivery slot");
+      return;
+    }
 
     setIsPlacingOrder(true);
     try {
@@ -299,6 +317,9 @@ export function CheckoutClient() {
             cuttingType: item.cuttingType.name,
             pieceSize: item.pieceSize.name,
             size: item.size,
+            // Tags this line as a combo bundle member so order-service
+            // reprices the whole group to the bundle price at checkout.
+            ...(item.comboId ? { comboId: item.comboId } : {}),
             ...(item.priceBreakdown ? {
               baseRatePerKg: item.priceBreakdown.baseRatePerKg,
               cuttingCharge: item.priceBreakdown.cuttingCharge,
@@ -320,6 +341,8 @@ export function CheckoutClient() {
           itemTotal: totalPrice,
           deliveryCharge,
           extraCharge: slotExtraCharge,
+          packagingCharge,
+          gstAmount,
           discount,
           discountBreakdown,
         },
@@ -380,10 +403,12 @@ export function CheckoutClient() {
                 {items.map((item, idx) => (
                   <div key={idx} className="flex items-center gap-4 p-4">
                     <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-border">
-                      <img
+                      <Image
                         src={item.product?.image || "/placeholder.svg"}
-                        alt={item.product?.name}
-                        className="h-full w-full object-cover"
+                        alt={item.product?.name || "Product"}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -680,11 +705,13 @@ export function CheckoutClient() {
                 deliveryCharge={deliveryCharge}
                 extraCharge={slotExtraCharge}
                 extraChargeLabel="Instant Delivery Fee"
+                packagingCharge={packagingCharge}
+                gstAmount={gstAmount}
                 discount={discount}
                 discountBreakdown={discountBreakdown}
                 onPlaceOrder={handlePlaceOrder}
                 isLoading={isPlacingOrder}
-                disabled={!selectedAddress || !selectedLocation?.storeId}
+                disabled={!selectedAddress || !selectedLocation?.storeId || !selectedSlot}
              />
 
              {/* Trusted Badges */}

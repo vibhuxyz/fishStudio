@@ -17,12 +17,10 @@ import {
 } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const COLUMN_GAP = spacing[4];
-const COLUMN_WIDTH = (SCREEN_WIDTH - spacing[4] * 2 - COLUMN_GAP) / 2;
-// One card fills the column and the rest scroll. The combo artwork beside it is
-// given the same height so the two columns line up at the bottom.
-const BEST_SELLER_CARD_WIDTH = COLUMN_WIDTH;
-const BLOCK_HEIGHT = compactCardHeight(COLUMN_WIDTH);
+const SECTION_GAP = spacing[5];
+const FULL_WIDTH = SCREEN_WIDTH - spacing[4] * 2;
+const BEST_SELLER_CARD_WIDTH = FULL_WIDTH / 2 - spacing[4] / 2;
+const BLOCK_HEIGHT = compactCardHeight(BEST_SELLER_CARD_WIDTH);
 
 type SectionHeadingProps = { title: string; onViewAll: () => void };
 
@@ -40,73 +38,83 @@ function SectionHeading({ title, onViewAll }: SectionHeadingProps) {
 
 type BestSellersCombosProps = {
   bestSellers: Product[];
+  onViewAllBestSellers: () => void;
+  onAddToCart: (product: Product) => void;
+};
+
+/** Best Sellers rail. */
+export default function BestSellersCombos({
+  bestSellers,
+  onViewAllBestSellers,
+  onAddToCart,
+}: BestSellersCombosProps) {
+  if (bestSellers.length === 0) return null;
+
+  return (
+    <View style={styles.stack}>
+      <View style={styles.section}>
+        <SectionHeading title="Best Sellers" onViewAll={onViewAllBestSellers} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ height: BLOCK_HEIGHT }}
+        >
+          {bestSellers.map((product, index) => (
+            <ProductCompactCard
+              key={product.id || index}
+              product={product}
+              cardWidth={BEST_SELLER_CARD_WIDTH}
+              noRightMargin={index === bestSellers.length - 1}
+              onAddToCart={onAddToCart}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+type LegacyCombosSectionProps = {
   comboBanner: Banner | null;
   comboProduct?: Product;
-  onViewAllBestSellers: () => void;
   onViewAllCombos: () => void;
   onAddToCart: (product: Product) => void;
 };
 
-/** The paired "Best Sellers | Combos" block — two half-width columns. */
-export default function BestSellersCombos({
-  bestSellers,
+// The old tag/banner-based "Combos" tile — a single card, either admin
+// artwork or the cheapest "combos"-tagged product. Rendered only as a
+// fallback when a store hasn't created a real combo bundle yet (see
+// RealCombosSection's `fallback` prop).
+export function LegacyCombosSection({
   comboBanner,
   comboProduct,
-  onViewAllBestSellers,
   onViewAllCombos,
   onAddToCart,
-}: BestSellersCombosProps) {
-  const hasCombo = Boolean(comboBanner || comboProduct);
-  if (bestSellers.length === 0 && !hasCombo) return null;
+}: LegacyCombosSectionProps) {
+  if (!comboBanner && !comboProduct) return null;
 
   return (
-    <View style={styles.row}>
-      {bestSellers.length > 0 && (
-        <View style={{ width: hasCombo ? COLUMN_WIDTH : SCREEN_WIDTH - spacing[4] * 2 }}>
-          <SectionHeading title="Best Sellers" onViewAll={onViewAllBestSellers} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ height: BLOCK_HEIGHT }}
-          >
-            {bestSellers.map((product, index) => (
-              <ProductCompactCard
-                key={product.id || index}
-                product={product}
-                cardWidth={BEST_SELLER_CARD_WIDTH}
-                noRightMargin={index === bestSellers.length - 1}
-                onAddToCart={onAddToCart}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {hasCombo && (
-        <View
-          style={{
-            width: bestSellers.length > 0 ? COLUMN_WIDTH : SCREEN_WIDTH - spacing[4] * 2,
-          }}
-        >
-          <SectionHeading title="Combos" onViewAll={onViewAllCombos} />
-          <ComboCard
-            banner={comboBanner}
-            fallbackProduct={comboProduct}
-            height={BLOCK_HEIGHT}
-            onAddToCart={onAddToCart}
-          />
-        </View>
-      )}
+    <View style={styles.stack}>
+      <View style={styles.section}>
+        <SectionHeading title="Combos" onViewAll={onViewAllCombos} />
+        <ComboCard
+          banner={comboBanner}
+          fallbackProduct={comboProduct}
+          height={BLOCK_HEIGHT}
+          onAddToCart={onAddToCart}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: COLUMN_GAP,
+  stack: {
     paddingHorizontal: spacing[4],
     marginBottom: spacing[5],
+  },
+  section: {
+    marginBottom: SECTION_GAP,
   },
   heading: {
     flexDirection: "row",

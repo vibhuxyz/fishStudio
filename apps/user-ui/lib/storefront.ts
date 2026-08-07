@@ -8,7 +8,7 @@ import {
   parseWeightToGrams,
   resolvePriceFromSizePricing,
   resolveSizePricing,
-} from "@repo/pricing";
+} from "@repo/shared/pricing";
 import { frontendEnv } from "@/lib/env";
 
 export interface StorefrontBanner {
@@ -45,6 +45,7 @@ export interface StorefrontPagination {
   limit: number;
   total: number;
   hasMore: boolean;
+  nextCursor: string | null;
 }
 
 export interface StorefrontProductListingParams {
@@ -54,6 +55,7 @@ export interface StorefrontProductListingParams {
   category?: string;
   subCategory?: string;
   page?: number;
+  cursor?: string;
   limit?: number;
   scope?: "homepage" | "listing" | "category";
   sortBy?: "price_asc" | "price_desc" | "popular" | "newest";
@@ -91,6 +93,7 @@ export const storefrontKeys = {
       params.pincode || "",
       params.city || "",
       params.page || 1,
+      params.cursor || "",
       params.limit || "",
       params.sortBy || "",
       params.onSale ?? "",
@@ -256,6 +259,7 @@ export async function fetchStorefrontProductListing(
   const page = Math.max(1, Math.floor(params.page ?? 1));
   const limit = Math.min(48, Math.max(1, Math.floor(params.limit ?? 20)));
   if (params.page) queryParams.append("page", String(page));
+  if (params.cursor) queryParams.append("cursor", params.cursor);
   if (params.limit) queryParams.append("limit", String(limit));
   if (params.scope) queryParams.append("scope", params.scope);
   if (params.sortBy) queryParams.append("sortBy", params.sortBy);
@@ -292,6 +296,7 @@ export async function fetchStorefrontProductListing(
       limit: data.pagination?.limit ?? params.limit ?? 20,
       total: data.pagination?.total ?? 0,
       hasMore: data.pagination?.hasMore ?? false,
+      nextCursor: data.pagination?.nextCursor ?? null,
     },
   };
 }

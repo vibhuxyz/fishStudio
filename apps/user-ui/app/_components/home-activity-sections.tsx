@@ -9,6 +9,7 @@ import {
   fetchRecentlyViewed,
   type HomeSection,
 } from "@/lib/activity";
+import { RealCombosSection } from "./real-combos-section";
 
 // Renders the home product rows in the exact Screen-4 order:
 //   Fresh Arrivals → Best Sellers → Combos → Recently Viewed
@@ -73,7 +74,9 @@ export function HomeActivitySections() {
     <>
       {renderSection("fresh-arrivals", "Fresh Arrivals", "Just in, freshly stocked")}
       {renderSection("best-sellers", "Best Sellers", "Customer favourites")}
-      {renderSection("combos", "Combos", "Bundled & better value")}
+      {/* Real combo bundles take this slot; if a store hasn't created one yet,
+          fall back to the older tag/category-based "Combos" row. */}
+      <RealCombosSection fallback={renderSection("combos", "Combos", "Bundled & better value")} />
 
       {recentlyViewed.length > 0 && (
         <ProductCarouselSection

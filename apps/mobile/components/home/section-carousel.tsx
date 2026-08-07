@@ -1,5 +1,7 @@
 import AddToCartModal from "@/components/home/add-to-cart-modal";
-import ProductCompactCard from "@/components/cards/product.compact.card";
+import ProductCompactCard, {
+  compactCardHeight,
+} from "@/components/cards/product.compact.card";
 import type { Product } from "@/types/product";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -9,6 +11,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // The comp fits roughly three cards per screen. The floor is set by the price
 // row — "₹1,299/kg" plus the add button stops fitting much below this.
 const CARD_WIDTH = Math.min(150, SCREEN_WIDTH * 0.34);
+// A horizontal ScrollView doesn't grow to fit its tallest child the way a
+// plain View does, so without this the price/add-button row at the bottom
+// of each card gets clipped — same fix best-sellers-combos.tsx already
+// applies to its own rail.
+const CARD_HEIGHT = compactCardHeight(CARD_WIDTH);
 
 interface SectionCarouselProps {
   title: string;
@@ -79,6 +86,7 @@ export default function SectionCarousel({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ height: CARD_HEIGHT }}
         contentContainerStyle={{ paddingHorizontal: 16 }}
       >
         {products.map((product, index: number) => (

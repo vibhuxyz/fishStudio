@@ -1,0 +1,41 @@
+{
+  "name": "@repo/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/pricing/index.js",
+  "exports": {
+    "./pricing": {
+      "types": "./dist/pricing/index.d.ts",
+      "default": "./dist/pricing/index.js"
+    },
+    "./slug": {
+      "types": "./dist/slug/index.d.ts",
+      "default": "./dist/slug/index.js"
+    },
+    "./order-id": {
+      "types": "./dist/order-id/index.d.ts",
+      "default": "./dist/order-id/index.js"
+    },
+    "./payment-id": {
+      "types": "./dist/payment-id/index.d.ts",
+      "default": "./dist/payment-id/index.js"
+    },
+    "./whatsapp": {
+      "types": "./dist/whatsapp/index.d.ts",
+      "default": "./dist/whatsapp/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@repo/typescript-config": "workspace:*",
+    "tsup": "^8.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

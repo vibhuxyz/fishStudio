@@ -1,7 +1,7 @@
 import { useCouponStore } from "@/lib/coupon-store";
 import { toast } from "@/utils/toast";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { rankCoupons } from "@repo/pricing";
+import { rankCoupons } from "@repo/shared/pricing";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,

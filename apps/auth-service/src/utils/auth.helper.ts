@@ -36,20 +36,30 @@ export const checkOtpRestrictions = async (
   identifier: string,
   next: NextFunction,
 ) => {
-  if (await redis.get(`otp_lock:${identifier}`)) {
+  // One round trip instead of three. All three restrictions are checked on
+  // every OTP request and none depends on the others, so fetching them
+  // sequentially paid the Redis latency three times before a single OTP could
+  // be sent. They are still evaluated in the same order, so the error a caller
+  // sees is unchanged.
+  const [otpLock, spamLock, cooldown] = await redis.mget(
+    `otp_lock:${identifier}`,
+    `otp_spam_lock:${identifier}`,
+    `otp_cooldown:${identifier}`,
+  );
+
+  if (otpLock) {
     throw new RateLimitError(
       "Account locked due to multiple failed attempts! Try again 30 minutes later.",
     );
   }
-  
 
-  if (await redis.get(`otp_spam_lock:${identifier}`)) {
+  if (spamLock) {
     throw new RateLimitError(
       "Too many OTP requests! Please try again after 30 minutes.",
     );
   }
 
-  if (await redis.get(`otp_cooldown:${identifier}`)) {
+  if (cooldown) {
     throw new RateLimitError(
       "OTP request cooldown active! Please wait before requesting another OTP.",
     );

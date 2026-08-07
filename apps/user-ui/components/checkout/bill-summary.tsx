@@ -12,6 +12,8 @@ interface BillSummaryProps {
   discountBreakdown?: { code: string; amount: number }[];
   extraCharge?: number;
   extraChargeLabel?: string;
+  packagingCharge?: number;
+  gstAmount?: number;
   onPlaceOrder: () => void;
   isLoading?: boolean;
   disabled?: boolean;
@@ -24,11 +26,13 @@ export function BillSummary({
   discountBreakdown,
   extraCharge = 0,
   extraChargeLabel = "Extra Charge",
+  packagingCharge = 0,
+  gstAmount = 0,
   onPlaceOrder,
   isLoading,
   disabled,
 }: BillSummaryProps) {
-  const totalPayable = itemTotal + deliveryCharge + extraCharge - discount;
+  const totalPayable = itemTotal + deliveryCharge + extraCharge + packagingCharge + gstAmount - discount;
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">
@@ -59,6 +63,20 @@ export function BillSummary({
             <span className="font-medium text-destructive">
               +₹{extraCharge.toFixed(2)}
             </span>
+          </div>
+        )}
+
+        {packagingCharge > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Packaging Charge</span>
+            <span className="font-medium text-foreground">₹{packagingCharge.toFixed(2)}</span>
+          </div>
+        )}
+
+        {gstAmount > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">GST</span>
+            <span className="font-medium text-foreground">₹{gstAmount.toFixed(2)}</span>
           </div>
         )}
 

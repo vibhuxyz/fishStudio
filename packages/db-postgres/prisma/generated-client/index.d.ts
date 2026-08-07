@@ -66,6 +66,9 @@ export namespace $Enums {
   export const OrderStatus: {
   PENDING: 'PENDING',
   ACCEPTED: 'ACCEPTED',
+  PREPARING: 'PREPARING',
+  READY_FOR_PICKUP: 'READY_FOR_PICKUP',
+  ASSIGNED_TO_RIDER: 'ASSIGNED_TO_RIDER',
   REJECTED: 'REJECTED',
   SHIPPED: 'SHIPPED',
   DELIVERED: 'DELIVERED',
@@ -85,6 +88,85 @@ export const PaymentStatus: {
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
+
+export const PaymentMethod: {
+  COD: 'COD',
+  RAZORPAY: 'RAZORPAY',
+  ONLINE: 'ONLINE'
+};
+
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+
+export const OrderRiderStatus: {
+  ASSIGNED: 'ASSIGNED',
+  OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY',
+  DELIVERED: 'DELIVERED'
+};
+
+export type OrderRiderStatus = (typeof OrderRiderStatus)[keyof typeof OrderRiderStatus]
+
+
+export const CancelledBy: {
+  CUSTOMER: 'CUSTOMER',
+  SELLER: 'SELLER',
+  STAFF: 'STAFF',
+  SYSTEM: 'SYSTEM'
+};
+
+export type CancelledBy = (typeof CancelledBy)[keyof typeof CancelledBy]
+
+
+export const RefundStatus: {
+  NONE: 'NONE',
+  REQUESTED: 'REQUESTED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED'
+};
+
+export type RefundStatus = (typeof RefundStatus)[keyof typeof RefundStatus]
+
+
+export const AuditEntityType: {
+  ORDER: 'ORDER',
+  PAYMENT: 'PAYMENT',
+  COUPON: 'COUPON',
+  STOCK: 'STOCK',
+  REFUND: 'REFUND',
+  REFERRAL: 'REFERRAL'
+};
+
+export type AuditEntityType = (typeof AuditEntityType)[keyof typeof AuditEntityType]
+
+
+export const ActorType: {
+  USER: 'USER',
+  SELLER: 'SELLER',
+  ADMIN: 'ADMIN',
+  SYSTEM: 'SYSTEM'
+};
+
+export type ActorType = (typeof ActorType)[keyof typeof ActorType]
+
+
+export const OutboxStatus: {
+  PENDING: 'PENDING',
+  PUBLISHED: 'PUBLISHED',
+  FAILED: 'FAILED'
+};
+
+export type OutboxStatus = (typeof OutboxStatus)[keyof typeof OutboxStatus]
+
+
+export const StockReservationStatus: {
+  HELD: 'HELD',
+  CONSUMED: 'CONSUMED',
+  RELEASED: 'RELEASED'
+};
+
+export type StockReservationStatus = (typeof StockReservationStatus)[keyof typeof StockReservationStatus]
+
 }
 
 export type OrderStatus = $Enums.OrderStatus
@@ -94,6 +176,38 @@ export const OrderStatus: typeof $Enums.OrderStatus
 export type PaymentStatus = $Enums.PaymentStatus
 
 export const PaymentStatus: typeof $Enums.PaymentStatus
+
+export type PaymentMethod = $Enums.PaymentMethod
+
+export const PaymentMethod: typeof $Enums.PaymentMethod
+
+export type OrderRiderStatus = $Enums.OrderRiderStatus
+
+export const OrderRiderStatus: typeof $Enums.OrderRiderStatus
+
+export type CancelledBy = $Enums.CancelledBy
+
+export const CancelledBy: typeof $Enums.CancelledBy
+
+export type RefundStatus = $Enums.RefundStatus
+
+export const RefundStatus: typeof $Enums.RefundStatus
+
+export type AuditEntityType = $Enums.AuditEntityType
+
+export const AuditEntityType: typeof $Enums.AuditEntityType
+
+export type ActorType = $Enums.ActorType
+
+export const ActorType: typeof $Enums.ActorType
+
+export type OutboxStatus = $Enums.OutboxStatus
+
+export const OutboxStatus: typeof $Enums.OutboxStatus
+
+export type StockReservationStatus = $Enums.StockReservationStatus
+
+export const StockReservationStatus: typeof $Enums.StockReservationStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1628,23 +1742,23 @@ export namespace Prisma {
   }
 
   export type OrderAvgAggregateOutputType = {
-    totalAmount: number | null
-    discountAmount: number | null
-    deliveryCharge: number | null
+    totalAmount: Decimal | null
+    discountAmount: Decimal | null
+    deliveryCharge: Decimal | null
   }
 
   export type OrderSumAggregateOutputType = {
-    totalAmount: number | null
-    discountAmount: number | null
-    deliveryCharge: number | null
+    totalAmount: Decimal | null
+    discountAmount: Decimal | null
+    deliveryCharge: Decimal | null
   }
 
   export type OrderMinAggregateOutputType = {
     id: string | null
     userId: string | null
     storeId: string | null
-    totalAmount: number | null
-    discountAmount: number | null
+    totalAmount: Decimal | null
+    discountAmount: Decimal | null
     couponCode: string | null
     deliverySlot: string | null
     deliveryName: string | null
@@ -1652,12 +1766,22 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
-    deliveryCharge: number | null
+    deliveryCharge: Decimal | null
     status: $Enums.OrderStatus | null
     paymentStatus: $Enums.PaymentStatus | null
-    paymentMethod: string | null
+    paymentMethod: $Enums.PaymentMethod | null
     paymentRef: string | null
+    riderId: string | null
+    riderStatus: $Enums.OrderRiderStatus | null
+    assignedAt: Date | null
+    assignedBy: string | null
+    pickupStartedAt: Date | null
+    deliveredAt: Date | null
     rejectionReason: string | null
+    cancellationReason: string | null
+    cancelledBy: $Enums.CancelledBy | null
+    cancelledAt: Date | null
+    refundStatus: $Enums.RefundStatus | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1666,8 +1790,8 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     storeId: string | null
-    totalAmount: number | null
-    discountAmount: number | null
+    totalAmount: Decimal | null
+    discountAmount: Decimal | null
     couponCode: string | null
     deliverySlot: string | null
     deliveryName: string | null
@@ -1675,12 +1799,22 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
-    deliveryCharge: number | null
+    deliveryCharge: Decimal | null
     status: $Enums.OrderStatus | null
     paymentStatus: $Enums.PaymentStatus | null
-    paymentMethod: string | null
+    paymentMethod: $Enums.PaymentMethod | null
     paymentRef: string | null
+    riderId: string | null
+    riderStatus: $Enums.OrderRiderStatus | null
+    assignedAt: Date | null
+    assignedBy: string | null
+    pickupStartedAt: Date | null
+    deliveredAt: Date | null
     rejectionReason: string | null
+    cancellationReason: string | null
+    cancelledBy: $Enums.CancelledBy | null
+    cancelledAt: Date | null
+    refundStatus: $Enums.RefundStatus | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1704,7 +1838,17 @@ export namespace Prisma {
     paymentStatus: number
     paymentMethod: number
     paymentRef: number
+    riderId: number
+    riderStatus: number
+    assignedAt: number
+    assignedBy: number
+    pickupStartedAt: number
+    deliveredAt: number
     rejectionReason: number
+    cancellationReason: number
+    cancelledBy: number
+    cancelledAt: number
+    refundStatus: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1741,7 +1885,17 @@ export namespace Prisma {
     paymentStatus?: true
     paymentMethod?: true
     paymentRef?: true
+    riderId?: true
+    riderStatus?: true
+    assignedAt?: true
+    assignedBy?: true
+    pickupStartedAt?: true
+    deliveredAt?: true
     rejectionReason?: true
+    cancellationReason?: true
+    cancelledBy?: true
+    cancelledAt?: true
+    refundStatus?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1764,7 +1918,17 @@ export namespace Prisma {
     paymentStatus?: true
     paymentMethod?: true
     paymentRef?: true
+    riderId?: true
+    riderStatus?: true
+    assignedAt?: true
+    assignedBy?: true
+    pickupStartedAt?: true
+    deliveredAt?: true
     rejectionReason?: true
+    cancellationReason?: true
+    cancelledBy?: true
+    cancelledAt?: true
+    refundStatus?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1788,7 +1952,17 @@ export namespace Prisma {
     paymentStatus?: true
     paymentMethod?: true
     paymentRef?: true
+    riderId?: true
+    riderStatus?: true
+    assignedAt?: true
+    assignedBy?: true
+    pickupStartedAt?: true
+    deliveredAt?: true
     rejectionReason?: true
+    cancellationReason?: true
+    cancelledBy?: true
+    cancelledAt?: true
+    refundStatus?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -1884,8 +2058,8 @@ export namespace Prisma {
     id: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount: number
+    totalAmount: Decimal
+    discountAmount: Decimal
     couponCode: string | null
     deliverySlot: string | null
     deliveryName: string | null
@@ -1893,13 +2067,23 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
-    deliveryCharge: number
+    deliveryCharge: Decimal
     billDetails: JsonValue | null
     status: $Enums.OrderStatus
     paymentStatus: $Enums.PaymentStatus
-    paymentMethod: string | null
+    paymentMethod: $Enums.PaymentMethod | null
     paymentRef: string | null
+    riderId: string | null
+    riderStatus: $Enums.OrderRiderStatus | null
+    assignedAt: Date | null
+    assignedBy: string | null
+    pickupStartedAt: Date | null
+    deliveredAt: Date | null
     rejectionReason: string | null
+    cancellationReason: string | null
+    cancelledBy: $Enums.CancelledBy | null
+    cancelledAt: Date | null
+    refundStatus: $Enums.RefundStatus
     createdAt: Date
     updatedAt: Date
     _count: OrderCountAggregateOutputType | null
@@ -1942,7 +2126,17 @@ export namespace Prisma {
     paymentStatus?: boolean
     paymentMethod?: boolean
     paymentRef?: boolean
+    riderId?: boolean
+    riderStatus?: boolean
+    assignedAt?: boolean
+    assignedBy?: boolean
+    pickupStartedAt?: boolean
+    deliveredAt?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
+    cancelledBy?: boolean
+    cancelledAt?: boolean
+    refundStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     orderItems?: boolean | Order$orderItemsArgs<ExtArgs>
@@ -1970,7 +2164,17 @@ export namespace Prisma {
     paymentStatus?: boolean
     paymentMethod?: boolean
     paymentRef?: boolean
+    riderId?: boolean
+    riderStatus?: boolean
+    assignedAt?: boolean
+    assignedBy?: boolean
+    pickupStartedAt?: boolean
+    deliveredAt?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
+    cancelledBy?: boolean
+    cancelledAt?: boolean
+    refundStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["order"]>
@@ -1994,7 +2198,17 @@ export namespace Prisma {
     paymentStatus?: boolean
     paymentMethod?: boolean
     paymentRef?: boolean
+    riderId?: boolean
+    riderStatus?: boolean
+    assignedAt?: boolean
+    assignedBy?: boolean
+    pickupStartedAt?: boolean
+    deliveredAt?: boolean
     rejectionReason?: boolean
+    cancellationReason?: boolean
+    cancelledBy?: boolean
+    cancelledAt?: boolean
+    refundStatus?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -2018,8 +2232,8 @@ export namespace Prisma {
       id: string
       userId: string
       storeId: string
-      totalAmount: number
-      discountAmount: number
+      totalAmount: Prisma.Decimal
+      discountAmount: Prisma.Decimal
       couponCode: string | null
       deliverySlot: string | null
       deliveryName: string | null
@@ -2027,13 +2241,23 @@ export namespace Prisma {
       deliveryAddress: string | null
       deliveryCity: string | null
       deliveryPincode: string | null
-      deliveryCharge: number
+      deliveryCharge: Prisma.Decimal
       billDetails: Prisma.JsonValue | null
       status: $Enums.OrderStatus
       paymentStatus: $Enums.PaymentStatus
-      paymentMethod: string | null
+      paymentMethod: $Enums.PaymentMethod | null
       paymentRef: string | null
+      riderId: string | null
+      riderStatus: $Enums.OrderRiderStatus | null
+      assignedAt: Date | null
+      assignedBy: string | null
+      pickupStartedAt: Date | null
+      deliveredAt: Date | null
       rejectionReason: string | null
+      cancellationReason: string | null
+      cancelledBy: $Enums.CancelledBy | null
+      cancelledAt: Date | null
+      refundStatus: $Enums.RefundStatus
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["order"]>
@@ -2435,8 +2659,8 @@ export namespace Prisma {
     readonly id: FieldRef<"Order", 'String'>
     readonly userId: FieldRef<"Order", 'String'>
     readonly storeId: FieldRef<"Order", 'String'>
-    readonly totalAmount: FieldRef<"Order", 'Float'>
-    readonly discountAmount: FieldRef<"Order", 'Float'>
+    readonly totalAmount: FieldRef<"Order", 'Decimal'>
+    readonly discountAmount: FieldRef<"Order", 'Decimal'>
     readonly couponCode: FieldRef<"Order", 'String'>
     readonly deliverySlot: FieldRef<"Order", 'String'>
     readonly deliveryName: FieldRef<"Order", 'String'>
@@ -2444,13 +2668,23 @@ export namespace Prisma {
     readonly deliveryAddress: FieldRef<"Order", 'String'>
     readonly deliveryCity: FieldRef<"Order", 'String'>
     readonly deliveryPincode: FieldRef<"Order", 'String'>
-    readonly deliveryCharge: FieldRef<"Order", 'Float'>
+    readonly deliveryCharge: FieldRef<"Order", 'Decimal'>
     readonly billDetails: FieldRef<"Order", 'Json'>
     readonly status: FieldRef<"Order", 'OrderStatus'>
     readonly paymentStatus: FieldRef<"Order", 'PaymentStatus'>
-    readonly paymentMethod: FieldRef<"Order", 'String'>
+    readonly paymentMethod: FieldRef<"Order", 'PaymentMethod'>
     readonly paymentRef: FieldRef<"Order", 'String'>
+    readonly riderId: FieldRef<"Order", 'String'>
+    readonly riderStatus: FieldRef<"Order", 'OrderRiderStatus'>
+    readonly assignedAt: FieldRef<"Order", 'DateTime'>
+    readonly assignedBy: FieldRef<"Order", 'String'>
+    readonly pickupStartedAt: FieldRef<"Order", 'DateTime'>
+    readonly deliveredAt: FieldRef<"Order", 'DateTime'>
     readonly rejectionReason: FieldRef<"Order", 'String'>
+    readonly cancellationReason: FieldRef<"Order", 'String'>
+    readonly cancelledBy: FieldRef<"Order", 'CancelledBy'>
+    readonly cancelledAt: FieldRef<"Order", 'DateTime'>
+    readonly refundStatus: FieldRef<"Order", 'RefundStatus'>
     readonly createdAt: FieldRef<"Order", 'DateTime'>
     readonly updatedAt: FieldRef<"Order", 'DateTime'>
   }
@@ -2855,12 +3089,12 @@ export namespace Prisma {
 
   export type OrderItemAvgAggregateOutputType = {
     quantity: number | null
-    price: number | null
+    price: Decimal | null
   }
 
   export type OrderItemSumAggregateOutputType = {
     quantity: number | null
-    price: number | null
+    price: Decimal | null
   }
 
   export type OrderItemMinAggregateOutputType = {
@@ -2868,7 +3102,7 @@ export namespace Prisma {
     orderId: string | null
     productId: string | null
     quantity: number | null
-    price: number | null
+    price: Decimal | null
   }
 
   export type OrderItemMaxAggregateOutputType = {
@@ -2876,7 +3110,7 @@ export namespace Prisma {
     orderId: string | null
     productId: string | null
     quantity: number | null
-    price: number | null
+    price: Decimal | null
   }
 
   export type OrderItemCountAggregateOutputType = {
@@ -3017,7 +3251,7 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal
     selectedOptions: JsonValue | null
     _count: OrderItemCountAggregateOutputType | null
     _avg: OrderItemAvgAggregateOutputType | null
@@ -3086,7 +3320,7 @@ export namespace Prisma {
       orderId: string
       productId: string
       quantity: number
-      price: number
+      price: Prisma.Decimal
       selectedOptions: Prisma.JsonValue | null
     }, ExtArgs["result"]["orderItem"]>
     composites: {}
@@ -3486,7 +3720,7 @@ export namespace Prisma {
     readonly orderId: FieldRef<"OrderItem", 'String'>
     readonly productId: FieldRef<"OrderItem", 'String'>
     readonly quantity: FieldRef<"OrderItem", 'Int'>
-    readonly price: FieldRef<"OrderItem", 'Float'>
+    readonly price: FieldRef<"OrderItem", 'Decimal'>
     readonly selectedOptions: FieldRef<"OrderItem", 'Json'>
   }
     
@@ -3833,19 +4067,19 @@ export namespace Prisma {
   }
 
   export type PaymentAvgAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type PaymentSumAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type PaymentMinAggregateOutputType = {
     id: string | null
     orderId: string | null
-    amount: number | null
+    amount: Decimal | null
     status: $Enums.PaymentStatus | null
-    method: string | null
+    method: $Enums.PaymentMethod | null
     transactionId: string | null
     gatewayOrderId: string | null
     createdAt: Date | null
@@ -3855,9 +4089,9 @@ export namespace Prisma {
   export type PaymentMaxAggregateOutputType = {
     id: string | null
     orderId: string | null
-    amount: number | null
+    amount: Decimal | null
     status: $Enums.PaymentStatus | null
-    method: string | null
+    method: $Enums.PaymentMethod | null
     transactionId: string | null
     gatewayOrderId: string | null
     createdAt: Date | null
@@ -4014,9 +4248,9 @@ export namespace Prisma {
   export type PaymentGroupByOutputType = {
     id: string
     orderId: string
-    amount: number
+    amount: Decimal
     status: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId: string | null
     gatewayOrderId: string | null
     metadata: JsonValue | null
@@ -4099,9 +4333,9 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       orderId: string
-      amount: number
+      amount: Prisma.Decimal
       status: $Enums.PaymentStatus
-      method: string
+      method: $Enums.PaymentMethod
       transactionId: string | null
       gatewayOrderId: string | null
       metadata: Prisma.JsonValue | null
@@ -4503,9 +4737,9 @@ export namespace Prisma {
   interface PaymentFieldRefs {
     readonly id: FieldRef<"Payment", 'String'>
     readonly orderId: FieldRef<"Payment", 'String'>
-    readonly amount: FieldRef<"Payment", 'Float'>
+    readonly amount: FieldRef<"Payment", 'Decimal'>
     readonly status: FieldRef<"Payment", 'PaymentStatus'>
-    readonly method: FieldRef<"Payment", 'String'>
+    readonly method: FieldRef<"Payment", 'PaymentMethod'>
     readonly transactionId: FieldRef<"Payment", 'String'>
     readonly gatewayOrderId: FieldRef<"Payment", 'String'>
     readonly metadata: FieldRef<"Payment", 'Json'>
@@ -6722,21 +6956,21 @@ export namespace Prisma {
 
   export type AuditLogMinAggregateOutputType = {
     id: string | null
-    entityType: string | null
+    entityType: $Enums.AuditEntityType | null
     entityId: string | null
     action: string | null
     actorId: string | null
-    actorType: string | null
+    actorType: $Enums.ActorType | null
     createdAt: Date | null
   }
 
   export type AuditLogMaxAggregateOutputType = {
     id: string | null
-    entityType: string | null
+    entityType: $Enums.AuditEntityType | null
     entityId: string | null
     action: string | null
     actorId: string | null
-    actorType: string | null
+    actorType: $Enums.ActorType | null
     createdAt: Date | null
   }
 
@@ -6859,11 +7093,11 @@ export namespace Prisma {
 
   export type AuditLogGroupByOutputType = {
     id: string
-    entityType: string
+    entityType: $Enums.AuditEntityType
     entityId: string
     action: string
     actorId: string | null
-    actorType: string | null
+    actorType: $Enums.ActorType | null
     metadata: JsonValue | null
     createdAt: Date
     _count: AuditLogCountAggregateOutputType | null
@@ -6924,11 +7158,11 @@ export namespace Prisma {
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
-      entityType: string
+      entityType: $Enums.AuditEntityType
       entityId: string
       action: string
       actorId: string | null
-      actorType: string | null
+      actorType: $Enums.ActorType | null
       metadata: Prisma.JsonValue | null
       createdAt: Date
     }, ExtArgs["result"]["auditLog"]>
@@ -7325,11 +7559,11 @@ export namespace Prisma {
    */ 
   interface AuditLogFieldRefs {
     readonly id: FieldRef<"AuditLog", 'String'>
-    readonly entityType: FieldRef<"AuditLog", 'String'>
+    readonly entityType: FieldRef<"AuditLog", 'AuditEntityType'>
     readonly entityId: FieldRef<"AuditLog", 'String'>
     readonly action: FieldRef<"AuditLog", 'String'>
     readonly actorId: FieldRef<"AuditLog", 'String'>
-    readonly actorType: FieldRef<"AuditLog", 'String'>
+    readonly actorType: FieldRef<"AuditLog", 'ActorType'>
     readonly metadata: FieldRef<"AuditLog", 'Json'>
     readonly createdAt: FieldRef<"AuditLog", 'DateTime'>
   }
@@ -8544,11 +8778,13 @@ export namespace Prisma {
     aggregateId: string | null
     eventType: string | null
     queue: string | null
-    status: string | null
+    status: $Enums.OutboxStatus | null
     attempts: number | null
     lastError: string | null
     createdAt: Date | null
     publishedAt: Date | null
+    lockedAt: Date | null
+    lockedBy: string | null
   }
 
   export type OutboxEventMaxAggregateOutputType = {
@@ -8557,11 +8793,13 @@ export namespace Prisma {
     aggregateId: string | null
     eventType: string | null
     queue: string | null
-    status: string | null
+    status: $Enums.OutboxStatus | null
     attempts: number | null
     lastError: string | null
     createdAt: Date | null
     publishedAt: Date | null
+    lockedAt: Date | null
+    lockedBy: string | null
   }
 
   export type OutboxEventCountAggregateOutputType = {
@@ -8576,6 +8814,8 @@ export namespace Prisma {
     lastError: number
     createdAt: number
     publishedAt: number
+    lockedAt: number
+    lockedBy: number
     _all: number
   }
 
@@ -8599,6 +8839,8 @@ export namespace Prisma {
     lastError?: true
     createdAt?: true
     publishedAt?: true
+    lockedAt?: true
+    lockedBy?: true
   }
 
   export type OutboxEventMaxAggregateInputType = {
@@ -8612,6 +8854,8 @@ export namespace Prisma {
     lastError?: true
     createdAt?: true
     publishedAt?: true
+    lockedAt?: true
+    lockedBy?: true
   }
 
   export type OutboxEventCountAggregateInputType = {
@@ -8626,6 +8870,8 @@ export namespace Prisma {
     lastError?: true
     createdAt?: true
     publishedAt?: true
+    lockedAt?: true
+    lockedBy?: true
     _all?: true
   }
 
@@ -8722,11 +8968,13 @@ export namespace Prisma {
     eventType: string
     queue: string
     payload: JsonValue
-    status: string
+    status: $Enums.OutboxStatus
     attempts: number
     lastError: string | null
     createdAt: Date
     publishedAt: Date | null
+    lockedAt: Date | null
+    lockedBy: string | null
     _count: OutboxEventCountAggregateOutputType | null
     _avg: OutboxEventAvgAggregateOutputType | null
     _sum: OutboxEventSumAggregateOutputType | null
@@ -8760,6 +9008,8 @@ export namespace Prisma {
     lastError?: boolean
     createdAt?: boolean
     publishedAt?: boolean
+    lockedAt?: boolean
+    lockedBy?: boolean
   }, ExtArgs["result"]["outboxEvent"]>
 
   export type OutboxEventSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -8774,6 +9024,8 @@ export namespace Prisma {
     lastError?: boolean
     createdAt?: boolean
     publishedAt?: boolean
+    lockedAt?: boolean
+    lockedBy?: boolean
   }, ExtArgs["result"]["outboxEvent"]>
 
   export type OutboxEventSelectScalar = {
@@ -8788,6 +9040,8 @@ export namespace Prisma {
     lastError?: boolean
     createdAt?: boolean
     publishedAt?: boolean
+    lockedAt?: boolean
+    lockedBy?: boolean
   }
 
 
@@ -8801,11 +9055,13 @@ export namespace Prisma {
       eventType: string
       queue: string
       payload: Prisma.JsonValue
-      status: string
+      status: $Enums.OutboxStatus
       attempts: number
       lastError: string | null
       createdAt: Date
       publishedAt: Date | null
+      lockedAt: Date | null
+      lockedBy: string | null
     }, ExtArgs["result"]["outboxEvent"]>
     composites: {}
   }
@@ -9205,11 +9461,13 @@ export namespace Prisma {
     readonly eventType: FieldRef<"OutboxEvent", 'String'>
     readonly queue: FieldRef<"OutboxEvent", 'String'>
     readonly payload: FieldRef<"OutboxEvent", 'Json'>
-    readonly status: FieldRef<"OutboxEvent", 'String'>
+    readonly status: FieldRef<"OutboxEvent", 'OutboxStatus'>
     readonly attempts: FieldRef<"OutboxEvent", 'Int'>
     readonly lastError: FieldRef<"OutboxEvent", 'String'>
     readonly createdAt: FieldRef<"OutboxEvent", 'DateTime'>
     readonly publishedAt: FieldRef<"OutboxEvent", 'DateTime'>
+    readonly lockedAt: FieldRef<"OutboxEvent", 'DateTime'>
+    readonly lockedBy: FieldRef<"OutboxEvent", 'String'>
   }
     
 
@@ -9512,7 +9770,7 @@ export namespace Prisma {
     id: string | null
     orderId: string | null
     userId: string | null
-    status: string | null
+    status: $Enums.StockReservationStatus | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9521,7 +9779,7 @@ export namespace Prisma {
     id: string | null
     orderId: string | null
     userId: string | null
-    status: string | null
+    status: $Enums.StockReservationStatus | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9644,7 +9902,7 @@ export namespace Prisma {
     orderId: string | null
     userId: string
     items: JsonValue
-    status: string
+    status: $Enums.StockReservationStatus
     createdAt: Date
     updatedAt: Date
     _count: StockReservationCountAggregateOutputType | null
@@ -9705,7 +9963,7 @@ export namespace Prisma {
       orderId: string | null
       userId: string
       items: Prisma.JsonValue
-      status: string
+      status: $Enums.StockReservationStatus
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["stockReservation"]>
@@ -10105,7 +10363,7 @@ export namespace Prisma {
     readonly orderId: FieldRef<"StockReservation", 'String'>
     readonly userId: FieldRef<"StockReservation", 'String'>
     readonly items: FieldRef<"StockReservation", 'Json'>
-    readonly status: FieldRef<"StockReservation", 'String'>
+    readonly status: FieldRef<"StockReservation", 'StockReservationStatus'>
     readonly createdAt: FieldRef<"StockReservation", 'DateTime'>
     readonly updatedAt: FieldRef<"StockReservation", 'DateTime'>
   }
@@ -10429,7 +10687,17 @@ export namespace Prisma {
     paymentStatus: 'paymentStatus',
     paymentMethod: 'paymentMethod',
     paymentRef: 'paymentRef',
+    riderId: 'riderId',
+    riderStatus: 'riderStatus',
+    assignedAt: 'assignedAt',
+    assignedBy: 'assignedBy',
+    pickupStartedAt: 'pickupStartedAt',
+    deliveredAt: 'deliveredAt',
     rejectionReason: 'rejectionReason',
+    cancellationReason: 'cancellationReason',
+    cancelledBy: 'cancelledBy',
+    cancelledAt: 'cancelledAt',
+    refundStatus: 'refundStatus',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -10530,7 +10798,9 @@ export namespace Prisma {
     attempts: 'attempts',
     lastError: 'lastError',
     createdAt: 'createdAt',
-    publishedAt: 'publishedAt'
+    publishedAt: 'publishedAt',
+    lockedAt: 'lockedAt',
+    lockedBy: 'lockedBy'
   };
 
   export type OutboxEventScalarFieldEnum = (typeof OutboxEventScalarFieldEnum)[keyof typeof OutboxEventScalarFieldEnum]
@@ -10617,16 +10887,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Float'
+   * Reference to a field of type 'Decimal'
    */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+  export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
     
 
 
   /**
-   * Reference to a field of type 'Float[]'
+   * Reference to a field of type 'Decimal[]'
    */
-  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+  export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
     
 
 
@@ -10666,6 +10936,34 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'PaymentMethod'
+   */
+  export type EnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod'>
+    
+
+
+  /**
+   * Reference to a field of type 'PaymentMethod[]'
+   */
+  export type ListEnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrderRiderStatus'
+   */
+  export type EnumOrderRiderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderRiderStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'OrderRiderStatus[]'
+   */
+  export type ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderRiderStatus[]'>
+    
+
+
+  /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -10676,6 +10974,34 @@ export namespace Prisma {
    * Reference to a field of type 'DateTime[]'
    */
   export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'CancelledBy'
+   */
+  export type EnumCancelledByFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CancelledBy'>
+    
+
+
+  /**
+   * Reference to a field of type 'CancelledBy[]'
+   */
+  export type ListEnumCancelledByFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CancelledBy[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'RefundStatus'
+   */
+  export type EnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'RefundStatus[]'
+   */
+  export type ListEnumRefundStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundStatus[]'>
     
 
 
@@ -10698,6 +11024,76 @@ export namespace Prisma {
    */
   export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
+
+
+  /**
+   * Reference to a field of type 'AuditEntityType'
+   */
+  export type EnumAuditEntityTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuditEntityType'>
+    
+
+
+  /**
+   * Reference to a field of type 'AuditEntityType[]'
+   */
+  export type ListEnumAuditEntityTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AuditEntityType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'ActorType'
+   */
+  export type EnumActorTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActorType'>
+    
+
+
+  /**
+   * Reference to a field of type 'ActorType[]'
+   */
+  export type ListEnumActorTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActorType[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'OutboxStatus'
+   */
+  export type EnumOutboxStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OutboxStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'OutboxStatus[]'
+   */
+  export type ListEnumOutboxStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OutboxStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'StockReservationStatus'
+   */
+  export type EnumStockReservationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StockReservationStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'StockReservationStatus[]'
+   */
+  export type ListEnumStockReservationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StockReservationStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
   /**
    * Deep Input Types
    */
@@ -10710,8 +11106,8 @@ export namespace Prisma {
     id?: StringFilter<"Order"> | string
     userId?: StringFilter<"Order"> | string
     storeId?: StringFilter<"Order"> | string
-    totalAmount?: FloatFilter<"Order"> | number
-    discountAmount?: FloatFilter<"Order"> | number
+    totalAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableFilter<"Order"> | string | null
     deliverySlot?: StringNullableFilter<"Order"> | string | null
     deliveryName?: StringNullableFilter<"Order"> | string | null
@@ -10719,13 +11115,23 @@ export namespace Prisma {
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
     deliveryCity?: StringNullableFilter<"Order"> | string | null
     deliveryPincode?: StringNullableFilter<"Order"> | string | null
-    deliveryCharge?: FloatFilter<"Order"> | number
+    deliveryCharge?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableFilter<"Order">
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFilter<"Order"> | $Enums.PaymentStatus
-    paymentMethod?: StringNullableFilter<"Order"> | string | null
+    paymentMethod?: EnumPaymentMethodNullableFilter<"Order"> | $Enums.PaymentMethod | null
     paymentRef?: StringNullableFilter<"Order"> | string | null
+    riderId?: StringNullableFilter<"Order"> | string | null
+    riderStatus?: EnumOrderRiderStatusNullableFilter<"Order"> | $Enums.OrderRiderStatus | null
+    assignedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    assignedBy?: StringNullableFilter<"Order"> | string | null
+    pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableFilter<"Order"> | string | null
+    cancellationReason?: StringNullableFilter<"Order"> | string | null
+    cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
+    cancelledAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    refundStatus?: EnumRefundStatusFilter<"Order"> | $Enums.RefundStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     orderItems?: OrderItemListRelationFilter
@@ -10752,7 +11158,17 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     paymentMethod?: SortOrderInput | SortOrder
     paymentRef?: SortOrderInput | SortOrder
+    riderId?: SortOrderInput | SortOrder
+    riderStatus?: SortOrderInput | SortOrder
+    assignedAt?: SortOrderInput | SortOrder
+    assignedBy?: SortOrderInput | SortOrder
+    pickupStartedAt?: SortOrderInput | SortOrder
+    deliveredAt?: SortOrderInput | SortOrder
     rejectionReason?: SortOrderInput | SortOrder
+    cancellationReason?: SortOrderInput | SortOrder
+    cancelledBy?: SortOrderInput | SortOrder
+    cancelledAt?: SortOrderInput | SortOrder
+    refundStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     orderItems?: OrderItemOrderByRelationAggregateInput
@@ -10767,8 +11183,8 @@ export namespace Prisma {
     NOT?: OrderWhereInput | OrderWhereInput[]
     userId?: StringFilter<"Order"> | string
     storeId?: StringFilter<"Order"> | string
-    totalAmount?: FloatFilter<"Order"> | number
-    discountAmount?: FloatFilter<"Order"> | number
+    totalAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableFilter<"Order"> | string | null
     deliverySlot?: StringNullableFilter<"Order"> | string | null
     deliveryName?: StringNullableFilter<"Order"> | string | null
@@ -10776,13 +11192,23 @@ export namespace Prisma {
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
     deliveryCity?: StringNullableFilter<"Order"> | string | null
     deliveryPincode?: StringNullableFilter<"Order"> | string | null
-    deliveryCharge?: FloatFilter<"Order"> | number
+    deliveryCharge?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableFilter<"Order">
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFilter<"Order"> | $Enums.PaymentStatus
-    paymentMethod?: StringNullableFilter<"Order"> | string | null
+    paymentMethod?: EnumPaymentMethodNullableFilter<"Order"> | $Enums.PaymentMethod | null
     paymentRef?: StringNullableFilter<"Order"> | string | null
+    riderId?: StringNullableFilter<"Order"> | string | null
+    riderStatus?: EnumOrderRiderStatusNullableFilter<"Order"> | $Enums.OrderRiderStatus | null
+    assignedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    assignedBy?: StringNullableFilter<"Order"> | string | null
+    pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableFilter<"Order"> | string | null
+    cancellationReason?: StringNullableFilter<"Order"> | string | null
+    cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
+    cancelledAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    refundStatus?: EnumRefundStatusFilter<"Order"> | $Enums.RefundStatus
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     orderItems?: OrderItemListRelationFilter
@@ -10809,7 +11235,17 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     paymentMethod?: SortOrderInput | SortOrder
     paymentRef?: SortOrderInput | SortOrder
+    riderId?: SortOrderInput | SortOrder
+    riderStatus?: SortOrderInput | SortOrder
+    assignedAt?: SortOrderInput | SortOrder
+    assignedBy?: SortOrderInput | SortOrder
+    pickupStartedAt?: SortOrderInput | SortOrder
+    deliveredAt?: SortOrderInput | SortOrder
     rejectionReason?: SortOrderInput | SortOrder
+    cancellationReason?: SortOrderInput | SortOrder
+    cancelledBy?: SortOrderInput | SortOrder
+    cancelledAt?: SortOrderInput | SortOrder
+    refundStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: OrderCountOrderByAggregateInput
@@ -10826,8 +11262,8 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Order"> | string
     userId?: StringWithAggregatesFilter<"Order"> | string
     storeId?: StringWithAggregatesFilter<"Order"> | string
-    totalAmount?: FloatWithAggregatesFilter<"Order"> | number
-    discountAmount?: FloatWithAggregatesFilter<"Order"> | number
+    totalAmount?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliverySlot?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryName?: StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -10835,13 +11271,23 @@ export namespace Prisma {
     deliveryAddress?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryCity?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryPincode?: StringNullableWithAggregatesFilter<"Order"> | string | null
-    deliveryCharge?: FloatWithAggregatesFilter<"Order"> | number
+    deliveryCharge?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableWithAggregatesFilter<"Order">
     status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusWithAggregatesFilter<"Order"> | $Enums.PaymentStatus
-    paymentMethod?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    paymentMethod?: EnumPaymentMethodNullableWithAggregatesFilter<"Order"> | $Enums.PaymentMethod | null
     paymentRef?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    riderId?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    riderStatus?: EnumOrderRiderStatusNullableWithAggregatesFilter<"Order"> | $Enums.OrderRiderStatus | null
+    assignedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    assignedBy?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    pickupStartedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    deliveredAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    cancellationReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    cancelledBy?: EnumCancelledByNullableWithAggregatesFilter<"Order"> | $Enums.CancelledBy | null
+    cancelledAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    refundStatus?: EnumRefundStatusWithAggregatesFilter<"Order"> | $Enums.RefundStatus
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
   }
@@ -10854,7 +11300,7 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
+    price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
     order?: XOR<OrderRelationFilter, OrderWhereInput>
   }
@@ -10877,7 +11323,7 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
+    price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
     order?: XOR<OrderRelationFilter, OrderWhereInput>
   }, "id">
@@ -10904,7 +11350,7 @@ export namespace Prisma {
     orderId?: StringWithAggregatesFilter<"OrderItem"> | string
     productId?: StringWithAggregatesFilter<"OrderItem"> | string
     quantity?: IntWithAggregatesFilter<"OrderItem"> | number
-    price?: FloatWithAggregatesFilter<"OrderItem"> | number
+    price?: DecimalWithAggregatesFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableWithAggregatesFilter<"OrderItem">
   }
 
@@ -10914,9 +11360,9 @@ export namespace Prisma {
     NOT?: PaymentWhereInput | PaymentWhereInput[]
     id?: StringFilter<"Payment"> | string
     orderId?: StringFilter<"Payment"> | string
-    amount?: FloatFilter<"Payment"> | number
+    amount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
-    method?: StringFilter<"Payment"> | string
+    method?: EnumPaymentMethodFilter<"Payment"> | $Enums.PaymentMethod
     transactionId?: StringNullableFilter<"Payment"> | string | null
     gatewayOrderId?: StringNullableFilter<"Payment"> | string | null
     metadata?: JsonNullableFilter<"Payment">
@@ -10947,9 +11393,9 @@ export namespace Prisma {
     OR?: PaymentWhereInput[]
     NOT?: PaymentWhereInput | PaymentWhereInput[]
     orderId?: StringFilter<"Payment"> | string
-    amount?: FloatFilter<"Payment"> | number
+    amount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
-    method?: StringFilter<"Payment"> | string
+    method?: EnumPaymentMethodFilter<"Payment"> | $Enums.PaymentMethod
     metadata?: JsonNullableFilter<"Payment">
     createdAt?: DateTimeFilter<"Payment"> | Date | string
     updatedAt?: DateTimeFilter<"Payment"> | Date | string
@@ -10980,9 +11426,9 @@ export namespace Prisma {
     NOT?: PaymentScalarWhereWithAggregatesInput | PaymentScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Payment"> | string
     orderId?: StringWithAggregatesFilter<"Payment"> | string
-    amount?: FloatWithAggregatesFilter<"Payment"> | number
+    amount?: DecimalWithAggregatesFilter<"Payment"> | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusWithAggregatesFilter<"Payment"> | $Enums.PaymentStatus
-    method?: StringWithAggregatesFilter<"Payment"> | string
+    method?: EnumPaymentMethodWithAggregatesFilter<"Payment"> | $Enums.PaymentMethod
     transactionId?: StringNullableWithAggregatesFilter<"Payment"> | string | null
     gatewayOrderId?: StringNullableWithAggregatesFilter<"Payment"> | string | null
     metadata?: JsonNullableWithAggregatesFilter<"Payment">
@@ -11127,11 +11573,11 @@ export namespace Prisma {
     OR?: AuditLogWhereInput[]
     NOT?: AuditLogWhereInput | AuditLogWhereInput[]
     id?: StringFilter<"AuditLog"> | string
-    entityType?: StringFilter<"AuditLog"> | string
+    entityType?: EnumAuditEntityTypeFilter<"AuditLog"> | $Enums.AuditEntityType
     entityId?: StringFilter<"AuditLog"> | string
     action?: StringFilter<"AuditLog"> | string
     actorId?: StringNullableFilter<"AuditLog"> | string | null
-    actorType?: StringNullableFilter<"AuditLog"> | string | null
+    actorType?: EnumActorTypeNullableFilter<"AuditLog"> | $Enums.ActorType | null
     metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
   }
@@ -11152,11 +11598,11 @@ export namespace Prisma {
     AND?: AuditLogWhereInput | AuditLogWhereInput[]
     OR?: AuditLogWhereInput[]
     NOT?: AuditLogWhereInput | AuditLogWhereInput[]
-    entityType?: StringFilter<"AuditLog"> | string
+    entityType?: EnumAuditEntityTypeFilter<"AuditLog"> | $Enums.AuditEntityType
     entityId?: StringFilter<"AuditLog"> | string
     action?: StringFilter<"AuditLog"> | string
     actorId?: StringNullableFilter<"AuditLog"> | string | null
-    actorType?: StringNullableFilter<"AuditLog"> | string | null
+    actorType?: EnumActorTypeNullableFilter<"AuditLog"> | $Enums.ActorType | null
     metadata?: JsonNullableFilter<"AuditLog">
     createdAt?: DateTimeFilter<"AuditLog"> | Date | string
   }, "id">
@@ -11180,11 +11626,11 @@ export namespace Prisma {
     OR?: AuditLogScalarWhereWithAggregatesInput[]
     NOT?: AuditLogScalarWhereWithAggregatesInput | AuditLogScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"AuditLog"> | string
-    entityType?: StringWithAggregatesFilter<"AuditLog"> | string
+    entityType?: EnumAuditEntityTypeWithAggregatesFilter<"AuditLog"> | $Enums.AuditEntityType
     entityId?: StringWithAggregatesFilter<"AuditLog"> | string
     action?: StringWithAggregatesFilter<"AuditLog"> | string
     actorId?: StringNullableWithAggregatesFilter<"AuditLog"> | string | null
-    actorType?: StringNullableWithAggregatesFilter<"AuditLog"> | string | null
+    actorType?: EnumActorTypeNullableWithAggregatesFilter<"AuditLog"> | $Enums.ActorType | null
     metadata?: JsonNullableWithAggregatesFilter<"AuditLog">
     createdAt?: DateTimeWithAggregatesFilter<"AuditLog"> | Date | string
   }
@@ -11262,11 +11708,13 @@ export namespace Prisma {
     eventType?: StringFilter<"OutboxEvent"> | string
     queue?: StringFilter<"OutboxEvent"> | string
     payload?: JsonFilter<"OutboxEvent">
-    status?: StringFilter<"OutboxEvent"> | string
+    status?: EnumOutboxStatusFilter<"OutboxEvent"> | $Enums.OutboxStatus
     attempts?: IntFilter<"OutboxEvent"> | number
     lastError?: StringNullableFilter<"OutboxEvent"> | string | null
     createdAt?: DateTimeFilter<"OutboxEvent"> | Date | string
     publishedAt?: DateTimeNullableFilter<"OutboxEvent"> | Date | string | null
+    lockedAt?: DateTimeNullableFilter<"OutboxEvent"> | Date | string | null
+    lockedBy?: StringNullableFilter<"OutboxEvent"> | string | null
   }
 
   export type OutboxEventOrderByWithRelationInput = {
@@ -11281,6 +11729,8 @@ export namespace Prisma {
     lastError?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     publishedAt?: SortOrderInput | SortOrder
+    lockedAt?: SortOrderInput | SortOrder
+    lockedBy?: SortOrderInput | SortOrder
   }
 
   export type OutboxEventWhereUniqueInput = Prisma.AtLeast<{
@@ -11293,11 +11743,13 @@ export namespace Prisma {
     eventType?: StringFilter<"OutboxEvent"> | string
     queue?: StringFilter<"OutboxEvent"> | string
     payload?: JsonFilter<"OutboxEvent">
-    status?: StringFilter<"OutboxEvent"> | string
+    status?: EnumOutboxStatusFilter<"OutboxEvent"> | $Enums.OutboxStatus
     attempts?: IntFilter<"OutboxEvent"> | number
     lastError?: StringNullableFilter<"OutboxEvent"> | string | null
     createdAt?: DateTimeFilter<"OutboxEvent"> | Date | string
     publishedAt?: DateTimeNullableFilter<"OutboxEvent"> | Date | string | null
+    lockedAt?: DateTimeNullableFilter<"OutboxEvent"> | Date | string | null
+    lockedBy?: StringNullableFilter<"OutboxEvent"> | string | null
   }, "id">
 
   export type OutboxEventOrderByWithAggregationInput = {
@@ -11312,6 +11764,8 @@ export namespace Prisma {
     lastError?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     publishedAt?: SortOrderInput | SortOrder
+    lockedAt?: SortOrderInput | SortOrder
+    lockedBy?: SortOrderInput | SortOrder
     _count?: OutboxEventCountOrderByAggregateInput
     _avg?: OutboxEventAvgOrderByAggregateInput
     _max?: OutboxEventMaxOrderByAggregateInput
@@ -11329,11 +11783,13 @@ export namespace Prisma {
     eventType?: StringWithAggregatesFilter<"OutboxEvent"> | string
     queue?: StringWithAggregatesFilter<"OutboxEvent"> | string
     payload?: JsonWithAggregatesFilter<"OutboxEvent">
-    status?: StringWithAggregatesFilter<"OutboxEvent"> | string
+    status?: EnumOutboxStatusWithAggregatesFilter<"OutboxEvent"> | $Enums.OutboxStatus
     attempts?: IntWithAggregatesFilter<"OutboxEvent"> | number
     lastError?: StringNullableWithAggregatesFilter<"OutboxEvent"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"OutboxEvent"> | Date | string
     publishedAt?: DateTimeNullableWithAggregatesFilter<"OutboxEvent"> | Date | string | null
+    lockedAt?: DateTimeNullableWithAggregatesFilter<"OutboxEvent"> | Date | string | null
+    lockedBy?: StringNullableWithAggregatesFilter<"OutboxEvent"> | string | null
   }
 
   export type StockReservationWhereInput = {
@@ -11344,7 +11800,7 @@ export namespace Prisma {
     orderId?: StringNullableFilter<"StockReservation"> | string | null
     userId?: StringFilter<"StockReservation"> | string
     items?: JsonFilter<"StockReservation">
-    status?: StringFilter<"StockReservation"> | string
+    status?: EnumStockReservationStatusFilter<"StockReservation"> | $Enums.StockReservationStatus
     createdAt?: DateTimeFilter<"StockReservation"> | Date | string
     updatedAt?: DateTimeFilter<"StockReservation"> | Date | string
   }
@@ -11367,7 +11823,7 @@ export namespace Prisma {
     orderId?: StringNullableFilter<"StockReservation"> | string | null
     userId?: StringFilter<"StockReservation"> | string
     items?: JsonFilter<"StockReservation">
-    status?: StringFilter<"StockReservation"> | string
+    status?: EnumStockReservationStatusFilter<"StockReservation"> | $Enums.StockReservationStatus
     createdAt?: DateTimeFilter<"StockReservation"> | Date | string
     updatedAt?: DateTimeFilter<"StockReservation"> | Date | string
   }, "id">
@@ -11393,7 +11849,7 @@ export namespace Prisma {
     orderId?: StringNullableWithAggregatesFilter<"StockReservation"> | string | null
     userId?: StringWithAggregatesFilter<"StockReservation"> | string
     items?: JsonWithAggregatesFilter<"StockReservation">
-    status?: StringWithAggregatesFilter<"StockReservation"> | string
+    status?: EnumStockReservationStatusWithAggregatesFilter<"StockReservation"> | $Enums.StockReservationStatus
     createdAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
   }
@@ -11402,8 +11858,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -11411,13 +11867,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -11429,8 +11895,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -11438,13 +11904,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -11456,8 +11932,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11465,13 +11941,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -11483,8 +11969,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11492,13 +11978,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -11510,8 +12006,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -11519,13 +12015,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -11534,8 +12040,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11543,13 +12049,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11558,8 +12074,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11567,13 +12083,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -11582,7 +12108,7 @@ export namespace Prisma {
     id?: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
     order: OrderCreateNestedOneWithoutOrderItemsInput
   }
@@ -11592,7 +12118,7 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -11600,7 +12126,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
     order?: OrderUpdateOneRequiredWithoutOrderItemsNestedInput
   }
@@ -11610,7 +12136,7 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -11619,7 +12145,7 @@ export namespace Prisma {
     orderId: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -11627,7 +12153,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -11636,15 +12162,15 @@ export namespace Prisma {
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type PaymentCreateInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11656,9 +12182,9 @@ export namespace Prisma {
   export type PaymentUncheckedCreateInput = {
     id?: string
     orderId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11668,9 +12194,9 @@ export namespace Prisma {
 
   export type PaymentUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11682,9 +12208,9 @@ export namespace Prisma {
   export type PaymentUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11695,9 +12221,9 @@ export namespace Prisma {
   export type PaymentCreateManyInput = {
     id?: string
     orderId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11707,9 +12233,9 @@ export namespace Prisma {
 
   export type PaymentUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11720,9 +12246,9 @@ export namespace Prisma {
   export type PaymentUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -11878,77 +12404,77 @@ export namespace Prisma {
 
   export type AuditLogCreateInput = {
     id?: string
-    entityType: string
+    entityType: $Enums.AuditEntityType
     entityId: string
     action: string
     actorId?: string | null
-    actorType?: string | null
+    actorType?: $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
   export type AuditLogUncheckedCreateInput = {
     id?: string
-    entityType: string
+    entityType: $Enums.AuditEntityType
     entityId: string
     action: string
     actorId?: string | null
-    actorType?: string | null
+    actorType?: $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
   export type AuditLogUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    entityType?: StringFieldUpdateOperationsInput | string
+    entityType?: EnumAuditEntityTypeFieldUpdateOperationsInput | $Enums.AuditEntityType
     entityId?: StringFieldUpdateOperationsInput | string
     action?: StringFieldUpdateOperationsInput | string
     actorId?: NullableStringFieldUpdateOperationsInput | string | null
-    actorType?: NullableStringFieldUpdateOperationsInput | string | null
+    actorType?: NullableEnumActorTypeFieldUpdateOperationsInput | $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AuditLogUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    entityType?: StringFieldUpdateOperationsInput | string
+    entityType?: EnumAuditEntityTypeFieldUpdateOperationsInput | $Enums.AuditEntityType
     entityId?: StringFieldUpdateOperationsInput | string
     action?: StringFieldUpdateOperationsInput | string
     actorId?: NullableStringFieldUpdateOperationsInput | string | null
-    actorType?: NullableStringFieldUpdateOperationsInput | string | null
+    actorType?: NullableEnumActorTypeFieldUpdateOperationsInput | $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AuditLogCreateManyInput = {
     id?: string
-    entityType: string
+    entityType: $Enums.AuditEntityType
     entityId: string
     action: string
     actorId?: string | null
-    actorType?: string | null
+    actorType?: $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
   }
 
   export type AuditLogUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    entityType?: StringFieldUpdateOperationsInput | string
+    entityType?: EnumAuditEntityTypeFieldUpdateOperationsInput | $Enums.AuditEntityType
     entityId?: StringFieldUpdateOperationsInput | string
     action?: StringFieldUpdateOperationsInput | string
     actorId?: NullableStringFieldUpdateOperationsInput | string | null
-    actorType?: NullableStringFieldUpdateOperationsInput | string | null
+    actorType?: NullableEnumActorTypeFieldUpdateOperationsInput | $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AuditLogUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
-    entityType?: StringFieldUpdateOperationsInput | string
+    entityType?: EnumAuditEntityTypeFieldUpdateOperationsInput | $Enums.AuditEntityType
     entityId?: StringFieldUpdateOperationsInput | string
     action?: StringFieldUpdateOperationsInput | string
     actorId?: NullableStringFieldUpdateOperationsInput | string | null
-    actorType?: NullableStringFieldUpdateOperationsInput | string | null
+    actorType?: NullableEnumActorTypeFieldUpdateOperationsInput | $Enums.ActorType | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12030,11 +12556,13 @@ export namespace Prisma {
     eventType: string
     queue: string
     payload: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.OutboxStatus
     attempts?: number
     lastError?: string | null
     createdAt?: Date | string
     publishedAt?: Date | string | null
+    lockedAt?: Date | string | null
+    lockedBy?: string | null
   }
 
   export type OutboxEventUncheckedCreateInput = {
@@ -12044,11 +12572,13 @@ export namespace Prisma {
     eventType: string
     queue: string
     payload: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.OutboxStatus
     attempts?: number
     lastError?: string | null
     createdAt?: Date | string
     publishedAt?: Date | string | null
+    lockedAt?: Date | string | null
+    lockedBy?: string | null
   }
 
   export type OutboxEventUpdateInput = {
@@ -12058,11 +12588,13 @@ export namespace Prisma {
     eventType?: StringFieldUpdateOperationsInput | string
     queue?: StringFieldUpdateOperationsInput | string
     payload?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumOutboxStatusFieldUpdateOperationsInput | $Enums.OutboxStatus
     attempts?: IntFieldUpdateOperationsInput | number
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OutboxEventUncheckedUpdateInput = {
@@ -12072,11 +12604,13 @@ export namespace Prisma {
     eventType?: StringFieldUpdateOperationsInput | string
     queue?: StringFieldUpdateOperationsInput | string
     payload?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumOutboxStatusFieldUpdateOperationsInput | $Enums.OutboxStatus
     attempts?: IntFieldUpdateOperationsInput | number
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OutboxEventCreateManyInput = {
@@ -12086,11 +12620,13 @@ export namespace Prisma {
     eventType: string
     queue: string
     payload: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.OutboxStatus
     attempts?: number
     lastError?: string | null
     createdAt?: Date | string
     publishedAt?: Date | string | null
+    lockedAt?: Date | string | null
+    lockedBy?: string | null
   }
 
   export type OutboxEventUpdateManyMutationInput = {
@@ -12100,11 +12636,13 @@ export namespace Prisma {
     eventType?: StringFieldUpdateOperationsInput | string
     queue?: StringFieldUpdateOperationsInput | string
     payload?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumOutboxStatusFieldUpdateOperationsInput | $Enums.OutboxStatus
     attempts?: IntFieldUpdateOperationsInput | number
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type OutboxEventUncheckedUpdateManyInput = {
@@ -12114,11 +12652,13 @@ export namespace Prisma {
     eventType?: StringFieldUpdateOperationsInput | string
     queue?: StringFieldUpdateOperationsInput | string
     payload?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumOutboxStatusFieldUpdateOperationsInput | $Enums.OutboxStatus
     attempts?: IntFieldUpdateOperationsInput | number
     lastError?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     publishedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lockedBy?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StockReservationCreateInput = {
@@ -12126,7 +12666,7 @@ export namespace Prisma {
     orderId?: string | null
     userId: string
     items: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.StockReservationStatus
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12136,7 +12676,7 @@ export namespace Prisma {
     orderId?: string | null
     userId: string
     items: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.StockReservationStatus
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12146,7 +12686,7 @@ export namespace Prisma {
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     items?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumStockReservationStatusFieldUpdateOperationsInput | $Enums.StockReservationStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12156,7 +12696,7 @@ export namespace Prisma {
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     items?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumStockReservationStatusFieldUpdateOperationsInput | $Enums.StockReservationStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12166,7 +12706,7 @@ export namespace Prisma {
     orderId?: string | null
     userId: string
     items: JsonNullValueInput | InputJsonValue
-    status?: string
+    status?: $Enums.StockReservationStatus
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12176,7 +12716,7 @@ export namespace Prisma {
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     items?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumStockReservationStatusFieldUpdateOperationsInput | $Enums.StockReservationStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12186,7 +12726,7 @@ export namespace Prisma {
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     userId?: StringFieldUpdateOperationsInput | string
     items?: JsonNullValueInput | InputJsonValue
-    status?: StringFieldUpdateOperationsInput | string
+    status?: EnumStockReservationStatusFieldUpdateOperationsInput | $Enums.StockReservationStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12206,15 +12746,15 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type FloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
+  export type DecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
   export type StringNullableFilter<$PrismaModel = never> = {
@@ -12266,6 +12806,45 @@ export namespace Prisma {
     in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
+  }
+
+  export type EnumPaymentMethodNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaymentMethodNullableFilter<$PrismaModel> | $Enums.PaymentMethod | null
+  }
+
+  export type EnumOrderRiderStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderRiderStatus | EnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type EnumCancelledByNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.CancelledBy | EnumCancelledByFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCancelledByNullableFilter<$PrismaModel> | $Enums.CancelledBy | null
+  }
+
+  export type EnumRefundStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusFilter<$PrismaModel> | $Enums.RefundStatus
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -12333,7 +12912,17 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     paymentMethod?: SortOrder
     paymentRef?: SortOrder
+    riderId?: SortOrder
+    riderStatus?: SortOrder
+    assignedAt?: SortOrder
+    assignedBy?: SortOrder
+    pickupStartedAt?: SortOrder
+    deliveredAt?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
+    cancelledBy?: SortOrder
+    cancelledAt?: SortOrder
+    refundStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -12362,7 +12951,17 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     paymentMethod?: SortOrder
     paymentRef?: SortOrder
+    riderId?: SortOrder
+    riderStatus?: SortOrder
+    assignedAt?: SortOrder
+    assignedBy?: SortOrder
+    pickupStartedAt?: SortOrder
+    deliveredAt?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
+    cancelledBy?: SortOrder
+    cancelledAt?: SortOrder
+    refundStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -12385,7 +12984,17 @@ export namespace Prisma {
     paymentStatus?: SortOrder
     paymentMethod?: SortOrder
     paymentRef?: SortOrder
+    riderId?: SortOrder
+    riderStatus?: SortOrder
+    assignedAt?: SortOrder
+    assignedBy?: SortOrder
+    pickupStartedAt?: SortOrder
+    deliveredAt?: SortOrder
     rejectionReason?: SortOrder
+    cancellationReason?: SortOrder
+    cancelledBy?: SortOrder
+    cancelledAt?: SortOrder
+    refundStatus?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -12414,20 +13023,20 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
-  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
     _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -12491,6 +13100,60 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
+  }
+
+  export type EnumPaymentMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaymentMethodNullableWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodNullableFilter<$PrismaModel>
+  }
+
+  export type EnumOrderRiderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderRiderStatus | EnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumOrderRiderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type EnumCancelledByNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CancelledBy | EnumCancelledByFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCancelledByNullableWithAggregatesFilter<$PrismaModel> | $Enums.CancelledBy | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumCancelledByNullableFilter<$PrismaModel>
+    _max?: NestedEnumCancelledByNullableFilter<$PrismaModel>
+  }
+
+  export type EnumRefundStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel> | $Enums.RefundStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRefundStatusFilter<$PrismaModel>
+    _max?: NestedEnumRefundStatusFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -12574,6 +13237,13 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
+  export type EnumPaymentMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodFilter<$PrismaModel> | $Enums.PaymentMethod
+  }
+
   export type PaymentCountOrderByAggregateInput = {
     id?: SortOrder
     orderId?: SortOrder
@@ -12617,6 +13287,16 @@ export namespace Prisma {
 
   export type PaymentSumOrderByAggregateInput = {
     amount?: SortOrder
+  }
+
+  export type EnumPaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodFilter<$PrismaModel>
   }
 
   export type CouponUsageCountOrderByAggregateInput = {
@@ -12693,6 +13373,20 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
+  export type EnumAuditEntityTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AuditEntityType | EnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAuditEntityTypeFilter<$PrismaModel> | $Enums.AuditEntityType
+  }
+
+  export type EnumActorTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ActorType | EnumActorTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumActorTypeNullableFilter<$PrismaModel> | $Enums.ActorType | null
+  }
+
   export type AuditLogCountOrderByAggregateInput = {
     id?: SortOrder
     entityType?: SortOrder
@@ -12723,6 +13417,26 @@ export namespace Prisma {
     actorType?: SortOrder
     createdAt?: SortOrder
   }
+
+  export type EnumAuditEntityTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AuditEntityType | EnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAuditEntityTypeWithAggregatesFilter<$PrismaModel> | $Enums.AuditEntityType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAuditEntityTypeFilter<$PrismaModel>
+    _max?: NestedEnumAuditEntityTypeFilter<$PrismaModel>
+  }
+
+  export type EnumActorTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ActorType | EnumActorTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumActorTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ActorType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumActorTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumActorTypeNullableFilter<$PrismaModel>
+  }
   export type JsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonFilterBase<$PrismaModel>>, 'path'>>,
@@ -12744,17 +13458,6 @@ export namespace Prisma {
     gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
-
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type WebhookEventProviderEventIdCompoundUniqueInput = {
@@ -12815,18 +13518,11 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  export type EnumOutboxStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.OutboxStatus | EnumOutboxStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOutboxStatusFilter<$PrismaModel> | $Enums.OutboxStatus
   }
 
   export type OutboxEventCountOrderByAggregateInput = {
@@ -12841,6 +13537,8 @@ export namespace Prisma {
     lastError?: SortOrder
     createdAt?: SortOrder
     publishedAt?: SortOrder
+    lockedAt?: SortOrder
+    lockedBy?: SortOrder
   }
 
   export type OutboxEventAvgOrderByAggregateInput = {
@@ -12858,6 +13556,8 @@ export namespace Prisma {
     lastError?: SortOrder
     createdAt?: SortOrder
     publishedAt?: SortOrder
+    lockedAt?: SortOrder
+    lockedBy?: SortOrder
   }
 
   export type OutboxEventMinOrderByAggregateInput = {
@@ -12871,10 +13571,29 @@ export namespace Prisma {
     lastError?: SortOrder
     createdAt?: SortOrder
     publishedAt?: SortOrder
+    lockedAt?: SortOrder
+    lockedBy?: SortOrder
   }
 
   export type OutboxEventSumOrderByAggregateInput = {
     attempts?: SortOrder
+  }
+
+  export type EnumOutboxStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OutboxStatus | EnumOutboxStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOutboxStatusWithAggregatesFilter<$PrismaModel> | $Enums.OutboxStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOutboxStatusFilter<$PrismaModel>
+    _max?: NestedEnumOutboxStatusFilter<$PrismaModel>
+  }
+
+  export type EnumStockReservationStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.StockReservationStatus | EnumStockReservationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumStockReservationStatusFilter<$PrismaModel> | $Enums.StockReservationStatus
   }
 
   export type StockReservationCountOrderByAggregateInput = {
@@ -12903,6 +13622,16 @@ export namespace Prisma {
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type EnumStockReservationStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StockReservationStatus | EnumStockReservationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumStockReservationStatusWithAggregatesFilter<$PrismaModel> | $Enums.StockReservationStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStockReservationStatusFilter<$PrismaModel>
+    _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
   }
 
   export type OrderItemCreateNestedManyWithoutOrderInput = {
@@ -12951,12 +13680,12 @@ export namespace Prisma {
     set?: string
   }
 
-  export type FloatFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
+  export type DecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type NullableStringFieldUpdateOperationsInput = {
@@ -12969,6 +13698,26 @@ export namespace Prisma {
 
   export type EnumPaymentStatusFieldUpdateOperationsInput = {
     set?: $Enums.PaymentStatus
+  }
+
+  export type NullableEnumPaymentMethodFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentMethod | null
+  }
+
+  export type NullableEnumOrderRiderStatusFieldUpdateOperationsInput = {
+    set?: $Enums.OrderRiderStatus | null
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
+  export type NullableEnumCancelledByFieldUpdateOperationsInput = {
+    set?: $Enums.CancelledBy | null
+  }
+
+  export type EnumRefundStatusFieldUpdateOperationsInput = {
+    set?: $Enums.RefundStatus
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -13087,6 +13836,10 @@ export namespace Prisma {
     connect?: OrderWhereUniqueInput
   }
 
+  export type EnumPaymentMethodFieldUpdateOperationsInput = {
+    set?: $Enums.PaymentMethod
+  }
+
   export type OrderUpdateOneRequiredWithoutPaymentsNestedInput = {
     create?: XOR<OrderCreateWithoutPaymentsInput, OrderUncheckedCreateWithoutPaymentsInput>
     connectOrCreate?: OrderCreateOrConnectWithoutPaymentsInput
@@ -13113,8 +13866,20 @@ export namespace Prisma {
     set?: boolean
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
+  export type EnumAuditEntityTypeFieldUpdateOperationsInput = {
+    set?: $Enums.AuditEntityType
+  }
+
+  export type NullableEnumActorTypeFieldUpdateOperationsInput = {
+    set?: $Enums.ActorType | null
+  }
+
+  export type EnumOutboxStatusFieldUpdateOperationsInput = {
+    set?: $Enums.OutboxStatus
+  }
+
+  export type EnumStockReservationStatusFieldUpdateOperationsInput = {
+    set?: $Enums.StockReservationStatus
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -13131,15 +13896,15 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
+  export type NestedDecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -13168,6 +13933,45 @@ export namespace Prisma {
     in?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.PaymentStatus[] | ListEnumPaymentStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
+  }
+
+  export type NestedEnumPaymentMethodNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaymentMethodNullableFilter<$PrismaModel> | $Enums.PaymentMethod | null
+  }
+
+  export type NestedEnumOrderRiderStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderRiderStatus | EnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedEnumCancelledByNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.CancelledBy | EnumCancelledByFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCancelledByNullableFilter<$PrismaModel> | $Enums.CancelledBy | null
+  }
+
+  export type NestedEnumRefundStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusFilter<$PrismaModel> | $Enums.RefundStatus
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -13209,20 +14013,20 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+  export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
     _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -13295,6 +14099,60 @@ export namespace Prisma {
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumPaymentMethodNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumPaymentMethodNullableWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodNullableFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumOrderRiderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OrderRiderStatus | EnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumOrderRiderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCancelledByNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CancelledBy | EnumCancelledByFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCancelledByNullableWithAggregatesFilter<$PrismaModel> | $Enums.CancelledBy | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumCancelledByNullableFilter<$PrismaModel>
+    _max?: NestedEnumCancelledByNullableFilter<$PrismaModel>
+  }
+
+  export type NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RefundStatus | EnumRefundStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RefundStatus[] | ListEnumRefundStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumRefundStatusWithAggregatesFilter<$PrismaModel> | $Enums.RefundStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRefundStatusFilter<$PrismaModel>
+    _max?: NestedEnumRefundStatusFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -13325,6 +14183,34 @@ export namespace Prisma {
     _max?: NestedIntFilter<$PrismaModel>
   }
 
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedEnumPaymentMethodFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodFilter<$PrismaModel> | $Enums.PaymentMethod
+  }
+
+  export type NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.PaymentMethod | EnumPaymentMethodFieldRefInput<$PrismaModel>
+    in?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    notIn?: $Enums.PaymentMethod[] | ListEnumPaymentMethodFieldRefInput<$PrismaModel>
+    not?: NestedEnumPaymentMethodWithAggregatesFilter<$PrismaModel> | $Enums.PaymentMethod
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumPaymentMethodFilter<$PrismaModel>
+    _max?: NestedEnumPaymentMethodFilter<$PrismaModel>
+  }
+
   export type NestedBoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolFilter<$PrismaModel> | boolean
@@ -13338,15 +14224,38 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  export type NestedEnumAuditEntityTypeFilter<$PrismaModel = never> = {
+    equals?: $Enums.AuditEntityType | EnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAuditEntityTypeFilter<$PrismaModel> | $Enums.AuditEntityType
+  }
+
+  export type NestedEnumActorTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.ActorType | EnumActorTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumActorTypeNullableFilter<$PrismaModel> | $Enums.ActorType | null
+  }
+
+  export type NestedEnumAuditEntityTypeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.AuditEntityType | EnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    in?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    notIn?: $Enums.AuditEntityType[] | ListEnumAuditEntityTypeFieldRefInput<$PrismaModel>
+    not?: NestedEnumAuditEntityTypeWithAggregatesFilter<$PrismaModel> | $Enums.AuditEntityType
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumAuditEntityTypeFilter<$PrismaModel>
+    _max?: NestedEnumAuditEntityTypeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumActorTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.ActorType | EnumActorTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.ActorType[] | ListEnumActorTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumActorTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.ActorType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumActorTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumActorTypeNullableFilter<$PrismaModel>
   }
   export type NestedJsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -13371,25 +14280,45 @@ export namespace Prisma {
     not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  export type NestedEnumOutboxStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.OutboxStatus | EnumOutboxStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOutboxStatusFilter<$PrismaModel> | $Enums.OutboxStatus
+  }
+
+  export type NestedEnumOutboxStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.OutboxStatus | EnumOutboxStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.OutboxStatus[] | ListEnumOutboxStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumOutboxStatusWithAggregatesFilter<$PrismaModel> | $Enums.OutboxStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumOutboxStatusFilter<$PrismaModel>
+    _max?: NestedEnumOutboxStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumStockReservationStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.StockReservationStatus | EnumStockReservationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumStockReservationStatusFilter<$PrismaModel> | $Enums.StockReservationStatus
+  }
+
+  export type NestedEnumStockReservationStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StockReservationStatus | EnumStockReservationStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StockReservationStatus[] | ListEnumStockReservationStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumStockReservationStatusWithAggregatesFilter<$PrismaModel> | $Enums.StockReservationStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStockReservationStatusFilter<$PrismaModel>
+    _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
   }
 
   export type OrderItemCreateWithoutOrderInput = {
     id?: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -13397,7 +14326,7 @@ export namespace Prisma {
     id?: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -13413,9 +14342,9 @@ export namespace Prisma {
 
   export type PaymentCreateWithoutOrderInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -13425,9 +14354,9 @@ export namespace Prisma {
 
   export type PaymentUncheckedCreateWithoutOrderInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -13493,7 +14422,7 @@ export namespace Prisma {
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
     quantity?: IntFilter<"OrderItem"> | number
-    price?: FloatFilter<"OrderItem"> | number
+    price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
   }
 
@@ -13519,9 +14448,9 @@ export namespace Prisma {
     NOT?: PaymentScalarWhereInput | PaymentScalarWhereInput[]
     id?: StringFilter<"Payment"> | string
     orderId?: StringFilter<"Payment"> | string
-    amount?: FloatFilter<"Payment"> | number
+    amount?: DecimalFilter<"Payment"> | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFilter<"Payment"> | $Enums.PaymentStatus
-    method?: StringFilter<"Payment"> | string
+    method?: EnumPaymentMethodFilter<"Payment"> | $Enums.PaymentMethod
     transactionId?: StringNullableFilter<"Payment"> | string | null
     gatewayOrderId?: StringNullableFilter<"Payment"> | string | null
     metadata?: JsonNullableFilter<"Payment">
@@ -13560,8 +14489,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13569,13 +14498,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     payments?: PaymentCreateNestedManyWithoutOrderInput
@@ -13586,8 +14525,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13595,13 +14534,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     payments?: PaymentUncheckedCreateNestedManyWithoutOrderInput
@@ -13628,8 +14577,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13637,13 +14586,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUpdateManyWithoutOrderNestedInput
@@ -13654,8 +14613,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13663,13 +14622,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUncheckedUpdateManyWithoutOrderNestedInput
@@ -13680,8 +14649,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13689,13 +14658,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -13706,8 +14685,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13715,13 +14694,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -13748,8 +14737,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13757,13 +14746,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -13774,8 +14773,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13783,13 +14782,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -13800,8 +14809,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13809,13 +14818,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -13826,8 +14845,8 @@ export namespace Prisma {
     id?: string
     userId: string
     storeId: string
-    totalAmount: number
-    discountAmount?: number
+    totalAmount: Decimal | DecimalJsLike | number | string
+    discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
     deliveryName?: string | null
@@ -13835,13 +14854,23 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
-    deliveryCharge?: number
+    deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
     paymentStatus?: $Enums.PaymentStatus
-    paymentMethod?: string | null
+    paymentMethod?: $Enums.PaymentMethod | null
     paymentRef?: string | null
+    riderId?: string | null
+    riderStatus?: $Enums.OrderRiderStatus | null
+    assignedAt?: Date | string | null
+    assignedBy?: string | null
+    pickupStartedAt?: Date | string | null
+    deliveredAt?: Date | string | null
     rejectionReason?: string | null
+    cancellationReason?: string | null
+    cancelledBy?: $Enums.CancelledBy | null
+    cancelledAt?: Date | string | null
+    refundStatus?: $Enums.RefundStatus
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -13868,8 +14897,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13877,13 +14906,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -13894,8 +14933,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
-    totalAmount?: FloatFieldUpdateOperationsInput | number
-    discountAmount?: FloatFieldUpdateOperationsInput | number
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -13903,13 +14942,23 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
-    deliveryCharge?: FloatFieldUpdateOperationsInput | number
+    deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    paymentMethod?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentMethod?: NullableEnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod | null
     paymentRef?: NullableStringFieldUpdateOperationsInput | string | null
+    riderId?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumOrderRiderStatusFieldUpdateOperationsInput | $Enums.OrderRiderStatus | null
+    assignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
+    pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -13920,15 +14969,15 @@ export namespace Prisma {
     id?: string
     productId: string
     quantity: number
-    price: number
+    price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type PaymentCreateManyOrderInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     status?: $Enums.PaymentStatus
-    method: string
+    method: $Enums.PaymentMethod
     transactionId?: string | null
     gatewayOrderId?: string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -13947,7 +14996,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -13955,7 +15004,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
@@ -13963,15 +15012,15 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
-    price?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type PaymentUpdateWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -13981,9 +15030,9 @@ export namespace Prisma {
 
   export type PaymentUncheckedUpdateWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue
@@ -13993,9 +15042,9 @@ export namespace Prisma {
 
   export type PaymentUncheckedUpdateManyWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     status?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
-    method?: StringFieldUpdateOperationsInput | string
+    method?: EnumPaymentMethodFieldUpdateOperationsInput | $Enums.PaymentMethod
     transactionId?: NullableStringFieldUpdateOperationsInput | string | null
     gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     metadata?: NullableJsonNullValueInput | InputJsonValue

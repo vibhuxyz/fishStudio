@@ -1,4 +1,5 @@
 import express, { Router, Response, NextFunction } from "express";
+import { BANNER_CACHE, CATEGORY_CACHE } from "../middleware/cache-control.js";
 import {
   searchProducts,
   searchSuggestions,
@@ -80,6 +81,16 @@ import {
   getMyReviews,
   getProductReviews,
 } from "../controllers/product/review.controller.js";
+import {
+  createCombo,
+  updateCombo,
+  deleteCombo,
+  toggleComboStatus,
+  getSellerCombos,
+  getComboById,
+  getStoreCombos,
+  getHomeCombos,
+} from "../controllers/product/combo.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller } from "@repo/middlewares";
 
 const router: Router = express.Router();
@@ -149,7 +160,7 @@ router.delete(
   deleteSellerEvent,
 );
 
-router.get("/get-categories", getCategories);
+router.get("/get-categories", CATEGORY_CACHE, getCategories);
 
 router.post(
   "/create-category",
@@ -273,8 +284,8 @@ router.post(
   allowRoles("admin"),
   reviewBanner,
 );
-router.get("/get-banners", getActiveBanners);
-router.get("/get-announcement-banners", getAnnouncementBanners);
+router.get("/get-banners", BANNER_CACHE, getActiveBanners);
+router.get("/get-announcement-banners", BANNER_CACHE, getAnnouncementBanners);
 
 router.post(
   "/create-product",
@@ -374,5 +385,44 @@ router.put(
   allowAdminOrApprovedSeller,
   restoreProduct,
 );
+
+// ── Combos ────────────────────────────────────────────────────────────────
+router.post(
+  "/create-combo",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  isApprovedSeller,
+  createCombo,
+);
+router.put(
+  "/update-combo/:comboId",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  isApprovedSeller,
+  updateCombo,
+);
+router.delete(
+  "/delete-combo/:comboId",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  isApprovedSeller,
+  deleteCombo,
+);
+router.patch(
+  "/toggle-combo/:comboId",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  isApprovedSeller,
+  toggleComboStatus,
+);
+router.get(
+  "/get-seller-combos",
+  isAuthenticated,
+  allowRoles("seller", "staff"),
+  getSellerCombos,
+);
+router.get("/get-combo/:comboId", getComboById);
+router.get("/get-store-combos/:storeId", getStoreCombos);
+router.get("/get-combos", getHomeCombos);
 
 export default router;

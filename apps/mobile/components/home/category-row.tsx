@@ -1,5 +1,6 @@
 import axiosInstance from "@/utils/axiosInstance";
-import { normalizeSlug } from "@repo/slug";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
+import { normalizeSlug } from "@repo/shared/slug";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -70,7 +71,7 @@ export default function CategoryRow() {
               >
                 {image ? (
                   <Image
-                    source={{ uri: image }}
+                    source={{ uri: cloudinaryThumbnail(image, 120) }}
                     style={{ width: "100%", height: "100%" }}
                     resizeMode="cover"
                   />
@@ -102,7 +103,7 @@ export default function CategoryRow() {
       <TouchableOpacity
         activeOpacity={0.7}
         style={{ alignItems: "center", width: 64, marginRight: 16 }}
-        onPress={() => router.push("/(routes)/products")}
+        onPress={() => router.push("/(routes)/categories")}
       >
         <View
           style={{

@@ -48,6 +48,7 @@ export const verifySellerSchema = z.object({
 export const updateSellerApprovalSchema = z.object({
   isApprovedByAdmin: z.boolean().optional(),
   permissions: z.array(z.string()).optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const forgetPasswordSchema = z.object({
@@ -64,4 +65,9 @@ export const sellerResetPasswordSchema = z.object({
   email: z.string().email("Invalid email format"),
   otp: z.string().length(4, "OTP must be 4 digits"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const updateNotificationPreferencesSchema = z.object({
+  expoPushToken: z.string().min(1).optional(),
+  emailNotificationsEnabled: z.boolean().optional(),
 });

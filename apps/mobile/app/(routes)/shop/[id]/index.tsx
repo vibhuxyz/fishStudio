@@ -1,5 +1,6 @@
 import useUser from "@/hooks/useUser";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
@@ -112,7 +113,7 @@ export default function ShopDetailsScreen() {
         <Image
           source={{
             uri:
-              shop?.coverBanner ||
+              cloudinaryThumbnail(shop?.coverBanner, 800) ||
               "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=300&fit=crop&crop=center",
           }}
           className="w-full h-64 bg-gray-100"
@@ -139,7 +140,7 @@ export default function ShopDetailsScreen() {
               <Image
                 source={{
                   uri:
-                    shop?.avatar ||
+                    cloudinaryThumbnail(shop?.avatar, 160) ||
                     "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop&crop=center",
                 }}
                 className="w-20 h-20 rounded-full border-4 border-white shadow-lg"
@@ -328,7 +329,7 @@ export default function ShopDetailsScreen() {
         <Image
           source={{
             uri:
-              item.images[0]?.url ||
+              cloudinaryThumbnail(item.images[0]?.url, 320) ||
               "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop&crop=center",
           }}
           className="w-full h-40 bg-gray-100"

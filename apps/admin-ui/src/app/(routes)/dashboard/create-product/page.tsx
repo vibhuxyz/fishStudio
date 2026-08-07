@@ -37,6 +37,7 @@ type ProductFormValues = {
   short_description?: string;
   tags?: string;
   sizes?: unknown;
+  trackStockPerSize?: boolean;
   cuttingType?: unknown;
   pieceSizes?: unknown;
   processingWeightLoss?: string;
@@ -192,6 +193,20 @@ const Page = () => {
     const categoryKey = getCategoryConfigKey(selectedCategory);
     return subCategoriesData[categoryKey] || [];
   }, [selectedCategory, subCategoriesData]);
+
+  const watchedSizes = watch("sizes");
+  const hasSizesEntered = useMemo(
+    () =>
+      Array.isArray(watchedSizes) &&
+      watchedSizes.some((entry: unknown) => {
+        const value =
+          entry && typeof entry === "object" && "value" in entry
+            ? (entry as { value: unknown }).value
+            : entry;
+        return typeof value === "string" && value.trim().length > 0;
+      }),
+    [watchedSizes],
+  );
 
   const onSubmit = async (data: ProductFormValues) => {
     try {
@@ -551,6 +566,23 @@ const Page = () => {
               <div className="mt-2">
                 <CustomSizes control={control} errors={errors} />
               </div>
+
+              {hasSizesEntered && (
+                <label className="mt-2 flex items-start gap-2 text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    {...register("trackStockPerSize")}
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <span>
+                    Sold by exact weight (track stock per size)
+                    <span className="ml-2 block text-xs text-gray-500">
+                      Sellers will enter stock for each size separately — e.g.
+                      they may have 1kg on hand but not 1.1kg.
+                    </span>
+                  </span>
+                </label>
+              )}
 
               {/* Coustom Pices*/}
               <div className="mt-2">

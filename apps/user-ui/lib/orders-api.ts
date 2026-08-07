@@ -25,6 +25,19 @@ export interface OrderStore {
   city?: string;
   pincode?: string;
   cityDeliveryTimes?: Record<string, number>;
+  supportPhone?: string | null;
+  whatsappNumber?: string | null;
+  whatsappLink?: string | null;
+  whatsappMessageTemplate?: string | null;
+}
+
+export interface OrderRider {
+  id: string;
+  name: string;
+  phone: string;
+  vehicleType: string;
+  vehicleNumber: string;
+  avatar?: { url: string } | null;
 }
 
 export interface Order {
@@ -34,6 +47,7 @@ export interface Order {
   updatedAt?: string;
   items: OrderItem[];
   store?: OrderStore | null;
+  rider?: OrderRider | null;
   totalAmount: number;
   billDetails?: Record<string, number> | null;
   paymentMethod: string;
@@ -47,4 +61,8 @@ export interface Order {
   deliveryCharge?: number;
   discountAmount?: number;
   couponCode?: string;
+  cancellationReason?: string | null;
+  cancelledBy?: "CUSTOMER" | "SELLER" | "STAFF" | "SYSTEM" | null;
+  cancelledAt?: string | null;
+  refundStatus?: "NONE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
 }

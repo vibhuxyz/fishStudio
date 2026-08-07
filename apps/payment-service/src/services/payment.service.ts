@@ -1,4 +1,4 @@
-import { prismaPostgres, writeAuditLog } from "@repo/db-postgres";
+import { prismaPostgres, writeAuditLog, toMoney, Prisma } from "@repo/db-postgres";
 import { ENV } from "@repo/env-config";
 import { AppError, ValidationError, NotFoundError, ForbiddenError } from "@repo/error-handlers";
 import { logger } from "@repo/libs/logger";
@@ -9,7 +9,17 @@ import type { GatewayOrder, NormalizedWebhookEvent } from "../payment/payment.in
 const gateway = getPaymentProvider("RAZORPAY");
 
 const CURRENCY = "INR";
-const toPaise = (amount: number) => Math.round(amount * 100);
+
+/**
+ * Rupees -> integer paise, the unit Razorpay actually settles in.
+ *
+ * Takes the Decimal straight off the order rather than a number: `449.35 * 100`
+ * in binary floating point is 44934.999999999996, and the old
+ * `Math.round(amount * 100)` was one representation away from charging a
+ * customer a paisa less than the amount-mismatch check below expects. Decimal
+ * multiplication is exact, so the captured and expected values agree.
+ */
+const toPaise = (amount: Prisma.Decimal) => amount.mul(100).toNumber();
 
 /* ── Create a gateway order for a payable internal order ─────────────────── */
 export async function createPaymentOrder(userId: string, orderId: string): Promise<GatewayOrder> {
@@ -74,8 +84,33 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
     };
   }
 
-  const gwOrder = await gateway.createOrder({
+  return createAndBindGatewayOrder({
     orderId: order.id,
+    userId,
+    amountInPaise,
+    totalAmount: order.totalAmount,
+    actorType: "USER",
+  });
+}
+
+/**
+ * Creates a gateway order and binds it to the order's PENDING payment row.
+ *
+ * Shared by the interactive path above and the prewarm below so the two can't
+ * drift — binding is the step that makes a gateway order verifiable, and a
+ * gateway order created without one is money the webhook can never match back.
+ */
+async function createAndBindGatewayOrder(params: {
+  orderId: string;
+  userId: string;
+  amountInPaise: number;
+  totalAmount: Prisma.Decimal;
+  actorType: "USER" | "SYSTEM";
+}): Promise<GatewayOrder> {
+  const { orderId, userId, amountInPaise, totalAmount, actorType } = params;
+
+  const gwOrder = await gateway.createOrder({
+    orderId,
     userId,
     amountInPaise,
     currency: CURRENCY,
@@ -94,12 +129,68 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
     });
   }
 
-  writeAuditLog("PAYMENT", orderId, "PAYMENT_INITIATED", userId, "USER", {
-    razorpayOrderId: gwOrder.gatewayOrderId,
-    amount: order.totalAmount,
-  });
+  writeAuditLog(
+    "PAYMENT",
+    orderId,
+    "PAYMENT_INITIATED",
+    actorType === "SYSTEM" ? null : userId,
+    actorType,
+    {
+      razorpayOrderId: gwOrder.gatewayOrderId,
+      amount: toMoney(totalAmount),
+      ...(actorType === "SYSTEM" ? { source: "prewarm" } : {}),
+    },
+  );
 
   return gwOrder;
+}
+
+/**
+ * Creates the gateway order ahead of the customer tapping Pay.
+ *
+ * Without this, tapping Pay blocks on a Razorpay round trip (hundreds of ms of
+ * external HTTP) before the payment sheet can open. Running it right after
+ * checkout commits moves that cost off the interactive path — createPaymentOrder
+ * then finds the binding already present and returns without calling out.
+ *
+ * Best-effort by design: every failure mode here is recoverable by the
+ * interactive path doing the work itself, so nothing is retried or surfaced.
+ */
+export async function prewarmGatewayOrder(orderId: string): Promise<void> {
+  if (!ENV.RAZORPAY_KEY_ID) return;
+
+  const order = await prismaPostgres.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      userId: true,
+      totalAmount: true,
+      status: true,
+      paymentStatus: true,
+      paymentMethod: true,
+    },
+  });
+
+  // COD orders never open a payment sheet, so prewarming one would create a
+  // gateway order nobody will ever pay.
+  if (!order || order.paymentMethod === "COD") return;
+  if (order.status === "CANCELLED" || order.status === "REJECTED") return;
+  if (order.paymentStatus !== "PENDING") return;
+
+  const pendingPayment = await prismaPostgres.payment.findFirst({
+    where: { orderId, status: "PENDING" },
+    select: { gatewayOrderId: true },
+  });
+  // Already bound (or no payment row to bind to) — nothing to warm.
+  if (!pendingPayment || pendingPayment.gatewayOrderId) return;
+
+  await createAndBindGatewayOrder({
+    orderId: order.id,
+    userId: order.userId,
+    amountInPaise: toPaise(order.totalAmount),
+    totalAmount: order.totalAmount,
+    actorType: "SYSTEM",
+  });
 }
 
 /* ── Verify the checkout callback signature and settle the order ─────────── */
@@ -151,6 +242,13 @@ export async function verifyPayment(
     throw new ValidationError("Payment verification failed: payment does not belong to this order");
   }
 
+  // Best-effort: the checkout callback carries no info on how the customer
+  // actually paid, so look it up for display (order-tracking / order-detail
+  // screens). Must never block verification — a lookup failure just means
+  // the instrument shows up blank until the webhook (which does carry it)
+  // lands.
+  const instrument = await gateway.fetchPaymentInstrument(razorpayPaymentId).catch(() => null);
+
   // Mark order and payment as completed atomically. The signature itself is
   // deliberately not persisted — it's a known-plaintext HMAC pair with no
   // downstream reader.
@@ -164,7 +262,11 @@ export async function verifyPayment(
       data: {
         status: "COMPLETED",
         transactionId: razorpayPaymentId,
-        metadata: { razorpayOrderId, razorpayPaymentId },
+        metadata: {
+          razorpayOrderId,
+          razorpayPaymentId,
+          ...(instrument ? { method: instrument.method, instrumentDetail: instrument.detail ?? null } : {}),
+        },
       },
     }),
   ]);
@@ -279,6 +381,10 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
       return;
     }
 
+    const instrumentFields = evt.instrument
+      ? { method: evt.instrument.method, instrumentDetail: evt.instrument.detail ?? null }
+      : {};
+
     if (order && order.paymentStatus !== "COMPLETED") {
       await prismaPostgres.$transaction([
         prismaPostgres.order.update({
@@ -290,7 +396,7 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
           data: {
             status: "COMPLETED",
             transactionId: evt.gatewayPaymentId,
-            metadata: { razorpayPaymentId: evt.gatewayPaymentId, source: "webhook" },
+            metadata: { razorpayPaymentId: evt.gatewayPaymentId, source: "webhook", ...instrumentFields },
           },
         }),
       ]);
@@ -298,6 +404,17 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
         razorpayPaymentId: evt.gatewayPaymentId,
         source: "webhook",
         event: evt.kind,
+      });
+    } else if (order && evt.instrument) {
+      // The client-side verify callback already settled this order (it beat
+      // the webhook here) but can't carry instrument info — this webhook is
+      // the only place that data ever arrives, so patch it onto the payment
+      // row without touching order/payment status.
+      await prismaPostgres.payment.updateMany({
+        where: { orderId, transactionId: evt.gatewayPaymentId },
+        data: {
+          metadata: { razorpayPaymentId: evt.gatewayPaymentId, source: "webhook", ...instrumentFields },
+        },
       });
     }
   } else if (evt.kind === "PAYMENT_FAILED" && evt.orderId) {
@@ -339,7 +456,7 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
     const [orderRes, paymentRes] = await prismaPostgres.$transaction([
       prismaPostgres.order.updateMany({
         where: { id: orderId, paymentStatus: { not: "REFUNDED" } },
-        data: { paymentStatus: "REFUNDED" },
+        data: { paymentStatus: "REFUNDED", refundStatus: "COMPLETED" },
       }),
       // Covers both paths: REFUND_PENDING for an API-initiated refund now
       // confirmed, COMPLETED for one issued directly in the Razorpay dashboard.
@@ -366,7 +483,7 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
     const [orderRes] = await prismaPostgres.$transaction([
       prismaPostgres.order.updateMany({
         where: { id: orderId, paymentStatus: "REFUND_PENDING" },
-        data: { paymentStatus: "COMPLETED" },
+        data: { paymentStatus: "COMPLETED", refundStatus: "FAILED" },
       }),
       prismaPostgres.payment.updateMany({
         where: { orderId, status: "REFUND_PENDING" },
@@ -489,7 +606,9 @@ export async function listPaymentsNeedingAttention(limit: number) {
     where: { id: { in: orderIds } },
     select: { id: true, status: true, paymentStatus: true, totalAmount: true, userId: true },
   });
-  const orderById = new Map(orders.map((o) => [o.id, o]));
+  const orderById = new Map(
+    orders.map((o) => [o.id, { ...o, totalAmount: toMoney(o.totalAmount) }]),
+  );
 
   return entries.map((entry) => ({
     id: entry.id,
@@ -501,11 +620,12 @@ export async function listPaymentsNeedingAttention(limit: number) {
   }));
 }
 
-/* ── Full refund via the gateway (admin, or seller on their own store) ───── */
+/* ── Full refund via the gateway (admin, seller on their own store, or the
+   system itself auto-refunding a customer's self-cancel) ─────────────────── */
 export async function initiateRefund(params: {
   input: InitiateRefundInput;
   actorId: string | null;
-  actorRole: "admin" | "seller";
+  actorRole: "admin" | "seller" | "system";
   sellerStoreId?: string;
 }): Promise<{ refundId: string }> {
   const { orderId, reason } = params.input;
@@ -519,7 +639,9 @@ export async function initiateRefund(params: {
 
   // Sellers can only refund orders that belong to their own store. Reported
   // as NotFound rather than Forbidden so order ids can't be enumerated.
-  // Admins bypass this ownership check.
+  // Admins and the system actor (order-service auto-refunding a customer
+  // cancel — it already verified order ownership before publishing the
+  // event) bypass this ownership check.
   if (params.actorRole === "seller") {
     if (!params.sellerStoreId || order.storeId !== params.sellerStoreId) {
       throw new NotFoundError("Order not found");
@@ -544,7 +666,7 @@ export async function initiateRefund(params: {
   // done. The losing claimant (and any repeat call) sees count 0.
   const claim = await prismaPostgres.order.updateMany({
     where: { id: orderId, paymentStatus: "COMPLETED" },
-    data: { paymentStatus: "REFUND_PENDING" },
+    data: { paymentStatus: "REFUND_PENDING", refundStatus: "PROCESSING" },
   });
   if (claim.count === 0) {
     throw new ValidationError("Order has already been refunded or is not in a refundable state");
@@ -564,7 +686,7 @@ export async function initiateRefund(params: {
     await prismaPostgres.order
       .updateMany({
         where: { id: orderId, paymentStatus: "REFUND_PENDING" },
-        data: { paymentStatus: "COMPLETED" },
+        data: { paymentStatus: "COMPLETED", refundStatus: "FAILED" },
       })
       .catch((releaseErr) =>
         logger.error(`[Refund] Failed to release refund claim for order ${orderId}`, releaseErr),
@@ -588,9 +710,11 @@ export async function initiateRefund(params: {
     },
   });
 
-  writeAuditLog("REFUND", orderId, "REFUND_INITIATED", params.actorId, params.actorRole.toUpperCase(), {
+  const actorType =
+    params.actorRole === "admin" ? "ADMIN" : params.actorRole === "seller" ? "SELLER" : "SYSTEM";
+  writeAuditLog("REFUND", orderId, "REFUND_INITIATED", params.actorId, actorType, {
     refundId: refund.refundId,
-    amount: order.totalAmount,
+    amount: toMoney(order.totalAmount),
     razorpayPaymentId: completedPayment.transactionId,
     reason: reason ?? "Refund requested",
   });

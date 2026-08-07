@@ -2,6 +2,10 @@ import cron, { ScheduledTask } from "node-cron";
 import * as cleanupJobs from "./jobs/cleanup.jobs.js";
 import { checkAbandonedCarts } from "./jobs/abandoned-cart.job.js";
 import { cancelStaleUnpaidOrders } from "./jobs/stale-orders.job.js";
+import {
+  pruneSettledEvents,
+  pruneSettledStockReservations,
+} from "./jobs/outbox-retention.job.js";
 
 export class CronManager {
   private static instance: CronManager;
@@ -47,6 +51,16 @@ export class CronManager {
     this.schedule("*/10 * * * *", async () => {
       console.log("[CRON] Cancelling stale unpaid orders...");
       await cancelStaleUnpaidOrders();
+    });
+
+    // 4. Retention for the append-only reliability tables (daily, 03:15).
+    // Off-peak because the first run has a whole backlog to work through.
+    this.schedule("15 3 * * *", async () => {
+      console.log("[CRON] Pruning settled outbox/webhook/reservation rows...");
+      await Promise.allSettled([
+        pruneSettledEvents(),
+        pruneSettledStockReservations(),
+      ]);
     });
 
     console.log(`Registered ${this.jobs.length} cron job(s).`);

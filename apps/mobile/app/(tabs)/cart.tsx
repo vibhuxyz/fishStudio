@@ -6,17 +6,12 @@ import useUser from "@/hooks/useUser";
 import { CartItem, useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
 import { SCHEDULED_SLOTS, formatSlotLabel } from "@/constants/delivery-slots";
-import {
-  BASE_DELIVERY_CHARGE,
-  FREE_DELIVERY_THRESHOLD,
-  GST_RATE,
-  PACKAGING_CHARGE,
-} from "@/constants/pricing";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
-import { bestCoupon } from "@repo/pricing";
+import { bestCoupon } from "@repo/shared/pricing";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo, useState, useEffect } from "react";
@@ -33,11 +28,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CartScreen() {
-  const { cart, removeFromCart, updateQuantity, checkAndIncrement } = useStore();
+  const { cart, removeFromCart, removeComboGroup, updateQuantity, checkAndIncrement } = useStore();
   const { user } = useUser();
   const { selectedLocation, getSelectedAddress, addresses, selectAddress } = useAddressStore();
   const { fetchAddresses } = useAddress();
-  const { selectedSlot, instantFee, setSlotAvailability } = useDeliverySlotStore();
+  const {
+    selectedSlot, instantFee, setSlotAvailability,
+    gstRate, packagingCharge, baseDeliveryCharge: sellerDeliveryCharge, freeDeliveryThreshold,
+    setBillConfig,
+  } = useDeliverySlotStore();
   const {
     appliedCoupons,
     availableCoupons,
@@ -114,6 +113,7 @@ export default function CartScreen() {
       const cartItems = cart.map((item) => ({
         productId: item.id,
         quantity: item.quantity || 1,
+        size: item.selectedSize || undefined,
       }));
 
       axiosInstance
@@ -134,6 +134,12 @@ export default function CartScreen() {
             // Checkout also re-validates independently once it's open, but
             // starts from whatever this set most recently.
             setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+            setBillConfig({
+              gstRate: data.gstRate ?? 0,
+              packagingCharge: data.packagingCharge ?? 0,
+              baseDeliveryCharge: data.baseDeliveryCharge ?? 49,
+              freeDeliveryThreshold: data.freeDeliveryThreshold ?? 500,
+            });
           }
         })
         .catch(() => {});
@@ -167,14 +173,14 @@ export default function CartScreen() {
   const isFreeDeliveryCoupon = appliedCoupons.some(
     (c) => c.discountType === "free_delivery" && itemsTotal >= c.minOrderValue,
   );
-  const baseDeliveryCharge = itemsTotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
+  const baseDeliveryCharge = itemsTotal >= freeDeliveryThreshold ? 0 : sellerDeliveryCharge;
   const deliveryCharge = isFreeDeliveryCoupon ? 0 : baseDeliveryCharge;
-  const gstAmount = Math.round(itemsTotal * GST_RATE);
-  const amountToFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - itemsTotal);
+  const gstAmount = Math.round(itemsTotal * gstRate);
+  const amountToFreeDelivery = Math.max(0, freeDeliveryThreshold - itemsTotal);
   const slotExtraCharge = selectedSlot === "instant" ? instantFee : 0;
   const grandTotal = Math.max(
     0,
-    itemsTotal + deliveryCharge + slotExtraCharge + PACKAGING_CHARGE + gstAmount - discountAmount,
+    itemsTotal + deliveryCharge + slotExtraCharge + packagingCharge + gstAmount - discountAmount,
   );
 
   // A quantity change can drop the cart below an already-applied coupon's
@@ -216,6 +222,31 @@ export default function CartScreen() {
       toast.error(result.message);
     }
   };
+
+  // Combo members can't be edited/removed individually — group them under
+  // their comboId so the cart renders one card per bundle instead of one
+  // row per product.
+  const cartEntries = useMemo(() => {
+    const entries: (
+      | { type: "single"; product: CartItem }
+      | { type: "combo"; comboId: string; members: CartItem[] }
+    )[] = [];
+    const seenCombos = new Set<string>();
+    cart.forEach((product) => {
+      if (product.comboId) {
+        if (seenCombos.has(product.comboId)) return;
+        seenCombos.add(product.comboId);
+        entries.push({
+          type: "combo",
+          comboId: product.comboId,
+          members: cart.filter((p) => p.comboId === product.comboId),
+        });
+      } else {
+        entries.push({ type: "single", product });
+      }
+    });
+    return entries;
+  }, [cart]);
 
   const handleCheckout = () => {
     if (!user) {
@@ -313,14 +344,14 @@ export default function CartScreen() {
               </Text>
             </View>
             <Text className="text-gray-500 font-poppins-semibold text-[11px]">
-              ₹{Math.min(itemsTotal, FREE_DELIVERY_THRESHOLD)} / ₹{FREE_DELIVERY_THRESHOLD}
+              ₹{Math.min(itemsTotal, freeDeliveryThreshold)} / ₹{freeDeliveryThreshold}
             </Text>
           </View>
           <View className="h-1.5 bg-white rounded-full overflow-hidden">
             <View
               className="h-1.5 bg-primary rounded-full"
               style={{
-                width: `${Math.min(100, (itemsTotal / FREE_DELIVERY_THRESHOLD) * 100)}%`,
+                width: `${Math.min(100, (itemsTotal / freeDeliveryThreshold) * 100)}%`,
               }}
             />
           </View>
@@ -357,7 +388,82 @@ export default function CartScreen() {
         </View>
 
         {/* ── Product list ──────────────────────────────────────────── */}
-        {cart.map((product) => {
+        {cartEntries.map((entry) => {
+          if (entry.type === "combo") {
+            const comboTotal = entry.members.reduce(
+              (sum, m) => sum + m.price * (m.quantity ?? 1),
+              0,
+            );
+            return (
+              <View
+                key={`combo-${entry.comboId}`}
+                className="bg-white rounded-2xl border border-primary/20 mb-3 px-3 py-3"
+              >
+                <View className="flex-row items-center justify-between mb-2">
+                  <View className="flex-row items-center bg-primary/5 px-2.5 py-1 rounded-full">
+                    <Ionicons name="gift-outline" size={13} color="#5A2C96" />
+                    <Text className="text-primary font-poppins-semibold text-[11px] ml-1">
+                      Combo Deal
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      removeComboGroup(entry.comboId, user, selectedAddress, "Mobile App")
+                    }
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="trash-outline" size={17} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
+
+                {entry.members.map((member) => {
+                  const optionsLine = [member.cuttingType, member.pieceSize]
+                    .filter(Boolean)
+                    .join(" • ");
+                  return (
+                    <View key={rowKeyFor(member)} className="flex-row items-center mb-2 last:mb-0">
+                      <Image
+                        source={{
+                          uri:
+                            cloudinaryThumbnail(member.image, 96) ||
+                            "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120",
+                        }}
+                        className="w-12 h-12 rounded-lg bg-gray-100 mr-3"
+                        resizeMode="cover"
+                      />
+                      <View className="flex-1">
+                        <Text
+                          className="text-xs font-poppins-semibold text-gray-900"
+                          numberOfLines={1}
+                        >
+                          {member.title}
+                        </Text>
+                        {optionsLine ? (
+                          <Text className="text-[11px] text-gray-400 font-poppins-medium mt-0.5" numberOfLines={1}>
+                            {optionsLine}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Text className="text-xs font-poppins-semibold text-gray-700">
+                        × {member.quantity ?? 1}
+                      </Text>
+                    </View>
+                  );
+                })}
+
+                <View className="flex-row items-center justify-between mt-1 pt-2 border-t border-gray-100">
+                  <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                    Combo price
+                  </Text>
+                  <Text className="text-sm font-poppins-bold text-gray-900">
+                    ₹{comboTotal}
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+
+          const { product } = entry;
           const atStockLimit =
             product.stock !== undefined && (product.quantity ?? 1) >= product.stock;
           const rowKey = rowKeyFor(product);
@@ -391,7 +497,7 @@ export default function CartScreen() {
                 <Image
                   source={{
                     uri:
-                      product.image ||
+                      cloudinaryThumbnail(product.image, 128) ||
                       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120",
                   }}
                   className="w-16 h-16 rounded-xl bg-gray-100 mr-3"
@@ -675,6 +781,7 @@ export default function CartScreen() {
         onClose={() => setAddressSheetOpen(false)}
         presentation="sheet"
         savedAddressesOnly
+        requireAddressForm
       />
 
     </SafeAreaView>

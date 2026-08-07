@@ -1,5 +1,5 @@
 import { fetchStorefrontProductListing, fetchStorefrontCategories } from "@/lib/storefront";
-import { normalizeSlug } from "@repo/slug";
+import { normalizeSlug } from "@repo/shared/slug";
 import { CategoryShell } from "./category-shell";
 
 interface CategoryDataStreamProps {

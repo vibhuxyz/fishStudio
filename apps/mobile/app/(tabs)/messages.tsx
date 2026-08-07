@@ -1,4 +1,5 @@
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
@@ -165,7 +166,7 @@ export default function Messages() {
               >
                 <View className="relative">
                   <Image
-                    source={{ uri: conversation.seller.avatar }}
+                    source={{ uri: cloudinaryThumbnail(conversation.seller.avatar, 96) }}
                     className="w-12 h-12 rounded-full"
                     resizeMode="cover"
                   />

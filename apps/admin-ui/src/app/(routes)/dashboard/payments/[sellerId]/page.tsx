@@ -30,6 +30,8 @@ import {
   type SellerOrder,
   type StatsPeriod,
 } from "@/hooks/useAdminQueries";
+import { formatOrderId } from "@repo/shared/order-id";
+import { formatPaymentRef } from "@repo/shared/payment-id";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
   { label: "Week", value: "week" },
@@ -96,7 +98,7 @@ function OrderDetailModal({ order, onClose }: { order: SellerOrder; onClose: () 
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 sticky top-0 bg-[#0f1117] z-10">
           <div>
             <p className="text-white font-bold text-base">
-              Order #{order.id.slice(-6).toUpperCase()}
+              Order {formatOrderId(order.id)}
             </p>
             <p className="text-gray-500 text-xs mt-0.5">
               {date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -212,22 +214,34 @@ function OrderDetailModal({ order, onClose }: { order: SellerOrder; onClose: () 
                     <span>Item Total</span>
                     <span>{formatINR(billDetails.itemTotal ?? 0)}</span>
                   </div>
-                  {billDetails.deliveryFee > 0 && (
+                  {billDetails.deliveryCharge > 0 && (
                     <div className="flex justify-between text-gray-300">
                       <span>Delivery Fee</span>
-                      <span>{formatINR(billDetails.deliveryFee)}</span>
+                      <span>{formatINR(billDetails.deliveryCharge)}</span>
+                    </div>
+                  )}
+                  {billDetails.slotExtraCharge > 0 && (
+                    <div className="flex justify-between text-gray-300">
+                      <span>Instant Delivery Surcharge</span>
+                      <span>{formatINR(billDetails.slotExtraCharge)}</span>
+                    </div>
+                  )}
+                  {billDetails.packagingCharge > 0 && (
+                    <div className="flex justify-between text-gray-300">
+                      <span>Packaging Charge</span>
+                      <span>{formatINR(billDetails.packagingCharge)}</span>
+                    </div>
+                  )}
+                  {billDetails.gstAmount > 0 && (
+                    <div className="flex justify-between text-gray-300">
+                      <span>GST</span>
+                      <span>{formatINR(billDetails.gstAmount)}</span>
                     </div>
                   )}
                   {billDetails.discount > 0 && (
-                    <div className="flex justify-between text-emerald-400">
+                    <div className="flex justify-between text-amber-400">
                       <span>Discount</span>
                       <span>- {formatINR(billDetails.discount)}</span>
-                    </div>
-                  )}
-                  {billDetails.couponDiscount > 0 && (
-                    <div className="flex justify-between text-amber-400">
-                      <span>Coupon Discount</span>
-                      <span>- {formatINR(billDetails.couponDiscount)}</span>
                     </div>
                   )}
                 </>
@@ -465,7 +479,7 @@ const SellerPaymentDetail = () => {
                     <tr key={order.id} className="border-b border-gray-800/60 hover:bg-gray-800/30 transition">
                       <td className="py-3 pl-2">
                         <span className="text-white font-mono text-xs">
-                          #{order.id.slice(-6).toUpperCase()}
+                          {formatOrderId(order.id)}
                         </span>
                       </td>
                       <td className="py-3">
@@ -496,7 +510,7 @@ const SellerPaymentDetail = () => {
                             </p>
                             {!isCOD && (order as any).paymentRef && (
                               <p className="text-sky-400/70 text-[9px] font-mono">
-                                #{(order as any).paymentRef}
+                                {formatPaymentRef((order as any).paymentRef)}
                               </p>
                             )}
                           </div>

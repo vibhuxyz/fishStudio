@@ -49,7 +49,14 @@ export const slugValidator = async (
       .substring(0, 50);
     let uniqueSlug = slug;
     let counter = 1;
-    while (await prisma.products.findUnique({ where: { slug: uniqueSlug } })) {
+    // Existence check only — without a projection this pulled every field of a
+    // full product document on each pass of the loop.
+    while (
+      await prisma.products.findUnique({
+        where: { slug: uniqueSlug },
+        select: { id: true },
+      })
+    ) {
       uniqueSlug = `${slug}-${counter}`;
       counter++;
     }
@@ -105,6 +112,7 @@ export const createProduct = async (
       title,
       short_description,
       sizes,
+      trackStockPerSize,
       cuttingTypes,
       pieceSizes,
       processingWeightLoss,
@@ -126,7 +134,10 @@ export const createProduct = async (
 
     const cash_on_delivery = req.body.cash_on_delivery;
 
-    const slugChecking = await prisma.products.findUnique({ where: { slug } });
+    const slugChecking = await prisma.products.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
     if (slugChecking) {
       return next(
         new ValidationError(
@@ -156,6 +167,7 @@ export const createProduct = async (
         category,
         subCategory,
         sizes: normalizedSizes,
+        trackStockPerSize: normalizedSizes.length > 0 ? Boolean(trackStockPerSize) : false,
         sizePricing: null,
         pieceSizes: normalizedPieceSizes,
         cuttingTypes: normalizedCuttingTypes,
@@ -283,6 +295,7 @@ export const addCatalogProductToStore = async (
       sale_price,
       sizePricing,
       stock,
+      sizeStock,
       cash_on_delivery,
       discountCodes,
       short_description,
@@ -320,6 +333,30 @@ export const addCatalogProductToStore = async (
       };
     }
 
+    // Whole-fish style products: stock is entered per size rather than as
+    // one shared pool, so the flat `stock` field becomes the sum of those
+    // buckets — every existing "in stock"/sort-by-stock read keeps working.
+    const trackStockPerSize = Boolean(catalogProduct.trackStockPerSize);
+    let normalizedSizeStock: Array<{ size: string; qty: number }> | undefined;
+    let resolvedStock = Number(stock ?? 0);
+
+    if (trackStockPerSize && hasSizes) {
+      const stockedSizes = new Set(normalizedSizePricing.map((entry) => entry.size));
+      const submittedQtyBySize = new Map(
+        (sizeStock ?? []).map((entry) => [entry.size, entry.qty]),
+      );
+      normalizedSizeStock = [...stockedSizes].map((size) => ({
+        size,
+        qty: Math.max(0, Math.floor(Number(submittedQtyBySize.get(size)) || 0)),
+      }));
+      if (normalizedSizeStock.every((entry) => entry.qty <= 0)) {
+        return next(
+          new ValidationError("Add stock for at least one size."),
+        );
+      }
+      resolvedStock = normalizedSizeStock.reduce((sum, entry) => sum + entry.qty, 0);
+    }
+
     const storeProduct = await prisma.products.create({
       data: {
         title: catalogProduct.title,
@@ -339,9 +376,13 @@ export const addCatalogProductToStore = async (
             : Array.isArray(tags)
               ? tags
               : catalogProduct.tags,
-        sizes: catalogProduct.sizes,
+        sizes: hasSizes
+          ? normalizedSizePricing.map((entry) => entry.size)
+          : catalogProduct.sizes,
         sizePricing:
           normalizedSizePricing.length > 0 ? normalizedSizePricing : undefined,
+        trackStockPerSize,
+        sizeStock: normalizedSizeStock,
         cuttingTypes: catalogProduct.cuttingTypes,
         pieceSizes: catalogProduct.pieceSizes,
         processingWeightLoss:
@@ -349,7 +390,7 @@ export const addCatalogProductToStore = async (
           processingWeightLoss.trim()
             ? processingWeightLoss
             : catalogProduct.processingWeightLoss,
-        stock: Number(stock ?? 0),
+        stock: resolvedStock,
         sale_price: displayPrices.salePrice,
         regular_price: displayPrices.regularPrice,
         cashOnDelivery:
@@ -556,6 +597,7 @@ export const updateProduct = async (
       pieceSizePricing,
       slug,
       sizes,
+      trackStockPerSize,
       pieceSizes,
       cuttingTypes,
       discountCodes,
@@ -579,6 +621,7 @@ export const updateProduct = async (
     if (slug) {
       const slugChecking = await prisma.products.findFirst({
         where: { slug, NOT: { id: productId } },
+        select: { id: true },
       });
       if (slugChecking) {
         if (req.role === "seller" && req.seller?.store?.id) {
@@ -644,6 +687,8 @@ export const updateProduct = async (
     const normalizedCuttingTypes = normalizeDynamicValues(cuttingTypes);
 
     if (typeof sizes !== "undefined") updateData.sizes = normalizedSizes;
+    if (req.role === "admin" && typeof trackStockPerSize !== "undefined")
+      updateData.trackStockPerSize = Boolean(trackStockPerSize);
     if (typeof pieceSizes !== "undefined")
       updateData.pieceSizes = normalizedPieceSizes;
     if (typeof cuttingTypes !== "undefined")

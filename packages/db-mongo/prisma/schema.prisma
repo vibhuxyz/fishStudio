@@ -17,6 +17,21 @@ enum ImageType {
   PRODUCT
   USER_AVATAR
   STORE_AVATAR
+  RIDER_AVATAR
+}
+
+enum RiderVehicleType {
+  BIKE
+  SCOOTER
+  BICYCLE
+  OTHER
+}
+
+enum RiderStatus {
+  AVAILABLE
+  DELIVERING
+  OFFLINE
+  ON_LEAVE
 }
 
 enum productStatus {
@@ -60,6 +75,7 @@ model images {
   createdAt DateTime @default(now())
   users     users[]
   stores    stores[]
+  riders    riders[]
 
   @@unique([productId, file_id])
   @@index([productId])
@@ -86,7 +102,7 @@ model users {
   // Lazily generated on first read (getUser) rather than at signup, so
   // existing accounts pick one up the first time they need it instead of
   // needing a backfill.
-  referralCode String? @unique
+  referralCode String?
 
   // The *other* person's code, captured at signup — distinct from
   // referralCode above, which is this user's own shareable code. Lets
@@ -94,12 +110,18 @@ model users {
   // if they don't also re-type it in the checkout referral field.
   referredByCode String?
 
+  // Set from the notification-permissions onboarding screen. Null means the
+  // user was never asked (older accounts, or they dismissed the prompt).
+  expoPushToken              String?
+  emailNotificationsEnabled  Boolean?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Uniqueness for non-null values is enforced via sparse indexes created directly
-  // in MongoDB: db.users.createIndex({email:1},{unique:true,sparse:true})
-  //             db.users.createIndex({phone_number:1},{unique:true,sparse:true})
+  // Uniqueness for non-null email / phone_number / referralCode is enforced by
+  // sparse unique indexes, which Prisma cannot express. They are declared in
+  // src/ensure-indexes.ts and applied by `pnpm --filter @repo/db-mongo
+  // db:indexes` — not by db push.
   @@index([email])
   @@index([phone_number])
 }
@@ -168,11 +190,15 @@ model sellers {
 
   isApprovedByAdmin Boolean @default(false)
   permissions       Json?
+  // Admin kill-switch: deactivating a seller blocks their login/dashboard and
+  // cascades their store's products to NonActive (see updateSellerApproval).
+  isActive          Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([isApprovedByAdmin, createdAt]) // hourly cleanup query
+  @@index([isActive])
 }
 
 //////////////////////////////////////////////////////
@@ -218,14 +244,47 @@ model stores {
   instant_delivery_window_start String  @default("11:00")
   instant_delivery_window_end   String  @default("19:00")
 
-  availableCities   String[] // Cities served by this store
-  cityDeliveryTimes Json? // Map of city name -> delivery minutes e.g. {"Bathnaha": 20, "motipur": 10}
-  state             String? // State of the store location
+  // Bill Settings — packaging/GST/delivery are seller-configured per store so
+  // the amount quoted pre-checkout and the amount order-service charges can
+  // never disagree; see computeCartSummary in packages/shared/src/pricing.
+  gst_rate                 Float @default(0)
+  packaging_charge         Float @default(0)
+  base_delivery_charge     Float @default(49)
+  free_delivery_threshold  Float @default(500)
+
+  availableCities   String[] // Areas/localities served by this store, e.g. ["Sector 20", "Tugal Pur"]
+  cityDeliveryTimes Json? // Map of area name -> delivery minutes e.g. {"Sector 20": 40, "Tugal Pur": 13}
+  // A single pincode (e.g. 201301) can span several localities with very
+  // different real delivery times, so each area is pinned to the pincode it
+  // actually falls under — this is what lets checkPincode/resolvePreferredStore
+  // match a customer's raw pincode even though delivery time is looked up by area.
+  areaPincodes    Json? // Map of area name -> pincode e.g. {"Sector 20": "201301", "Tugal Pur": "201306"}
+  // A pincode's areas can sit in different actual cities (e.g. "Kavi Nagar"
+  // under 201001 is Ghaziabad, not the store's own base city) — without this,
+  // the address form always showed the store's single base city regardless
+  // of which area/pincode the customer actually picked.
+  areaCities      Json? // Map of area name -> its real city e.g. {"Kavi Nagar": "Ghaziabad", "Sector 20": "Noida"}
+  servicePincodes String[] @default([]) // Distinct pincodes derived from areaPincodes, used for fast "does this store serve X" lookups
+  state           String? // State of the store location
+
+  // Support / Contact Configuration — surfaced to customers on order-detail
+  // screens (Call Support / Chat on WhatsApp). All optional: a store with
+  // none of these set falls back to platform-level defaults on the client.
+  supportPhone            String?
+  whatsappNumber          String?
+  whatsappLink            String? // optional full wa.me override; if unset, built from whatsappNumber
+  whatsappMessageTemplate String? // optional override of the default order-details template
+  supportEmail            String?
+  supportHours            String? // free text, e.g. "9 AM – 9 PM, all days"
+  supportDescription      String?
+  faqLink                 String?
 
   sellerId String  @unique @db.ObjectId
   seller   sellers @relation(fields: [sellerId], references: [id])
 
   products products[]
+  combos   combos[]
+  riders   riders[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -234,6 +293,45 @@ model stores {
   // every uncached storefront/homepage/activity request.
   @@index([pincode])
   @@index([city])
+  @@index([servicePincodes])
+}
+
+// Plain seller-managed delivery-rider records — riders have no login/auth of
+// their own (that's a separate future app); the seller/staff create, edit,
+// and assign them entirely from the seller-admin panel.
+model riders {
+  id    String  @id @default(auto()) @map("_id") @db.ObjectId
+  name  String
+  phone String
+  email String?
+
+  avatarId String? @db.ObjectId
+  avatar   images? @relation(fields: [avatarId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  vehicleType   RiderVehicleType
+  vehicleNumber String
+  deliveryZone  String?
+
+  status              RiderStatus @default(AVAILABLE)
+  // Single-active-delivery-per-rider is the assumed business rule: the
+  // assignment eligibility query only ever returns AVAILABLE riders, so this
+  // count should only ever be 0 or 1 in practice today — kept as an Int
+  // rather than a Boolean so a future multi-delivery relaxation doesn't need
+  // a schema change.
+  activeDeliveryCount Int         @default(0)
+  isActive            Boolean     @default(true)
+  notes               String?
+
+  storeId String @db.ObjectId
+  store   stores @relation(fields: [storeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Both the full roster view and the "eligible for assignment" query
+  // (storeId + status=AVAILABLE + isActive=true) filter on these together.
+  @@index([storeId, status])
+  @@index([storeId, isActive])
 }
 
 //////////////////////////////////////////////////////
@@ -321,6 +419,19 @@ model products {
   basePricePerUnit Float?
   pricingMethod    String?  // "per_kg", "per_piece", "fixed"
 
+  // Whole-fish style products: admin flags the catalog product as sold by
+  // exact weight, so stock is tracked per size instead of one shared pool.
+  // trackStockPerSize is set on the catalog root; sizeStock is populated on
+  // the seller's store variant once they add it.
+  //
+  // sizeStock is an array of { size, qty }, NOT a { [size]: qty } map: size
+  // labels like "1.1 kg" contain literal dots, which Mongo would read as
+  // nested-path separators in a dot-notation update. As an array the size is
+  // only ever compared, never used as a path segment, which is what lets
+  // decrementStockItem do an atomic $inc via arrayFilters.
+  trackStockPerSize Boolean @default(false)
+  sizeStock         Json?
+
   processingWeightLoss String?
   stock                Int
   sale_price           Float
@@ -359,15 +470,17 @@ model products {
   catalogProduct   products?  @relation("catalog_variants", fields: [catalogProductId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   storeVariants    products[] @relation("catalog_variants")
 
-  @@index([catalogProductId])
-  @@index([storeId])
-  @@index([adminId])
+  // Mongo can serve a query from any prefix of a compound index, so the
+  // standalone [storeId], [adminId] and [catalogProductId] indexes that used
+  // to sit here were fully covered by the compounds below. On a collection
+  // written on every stock decrement, each redundant index is pure write cost.
+  // [totalSold] alone went too — bestseller sort is always scoped by
+  // adminId+isDeleted and is served by the compound further down.
   @@index([storeId, status, isDeleted])       // storefront store-product queries
   @@index([adminId, isDeleted, status])        // catalog root product queries
   @@index([catalogProductId, status, isDeleted]) // variant lookup by catalog ID
   @@index([category, status])                 // category browse
   @@index([status, isDeleted])                // admin product listing
-  @@index([totalSold])                        // homepage bestseller sort
 
   // getStoreProducts (storefront.controller.ts) filters catalogWhere on
   // adminId+isDeleted and sorts by these — without a matching compound
@@ -422,8 +535,50 @@ model seller_events {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  @@index([sellerId, startTime])
+  // Equality-Sort-Range: sellerId and isActive are equality matches and must
+  // precede the startTime/endTime range, otherwise isActive is only evaluated
+  // after the index scan has already fetched the documents. This serves the
+  // active-event lookup on the storefront, which runs on every uncached
+  // request.
+  //
+  // The seller dashboard list (event.controller.ts) filters sellerId alone and
+  // sorts by startTime, so isActive sitting in the middle costs it an
+  // index-ordered sort. That's deliberate: a single seller has tens of events,
+  // so Mongo sorts them in memory for nothing, and a second index to avoid it
+  // would be paid for on every write.
+  @@index([sellerId, isActive, startTime])
   @@map("seller_events")
+}
+
+// A combo is a fixed bundle of existing products sold together at one
+// bundle price. Each item pins a productId + quantity; cuttingType/pieceSize
+// are optional per item — when set, that component is fixed to that variant,
+// when left null the shopper picks it themselves at add-to-cart time (same
+// options the underlying product itself offers).
+model combos {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  images      String[] // Cloudinary URLs
+
+  items Json // ComboItem[]: [{ productId, quantity, cuttingType?, pieceSize? }]
+
+  // regularTotal is a snapshot of the components' combined regular price at
+  // creation/update time — used only to show the struck-through "you save"
+  // comparison; comboPrice is what the customer is actually ever charged.
+  regularTotal Float
+  comboPrice   Float
+  isActive     Boolean @default(true)
+
+  storeId String @db.ObjectId
+  store   stores @relation(fields: [storeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // [isActive] alone was two-valued and never selective; combos are always
+  // looked up within a store.
+  @@index([storeId, isActive])
 }
 
 // SIGNUP ACCESS
@@ -460,11 +615,18 @@ model abandoned_carts {
   notifiedAt  DateTime?
   isConverted Boolean  @default(false)
 
+  // Index into the reminder schedule in checkAbandonedCarts (1h, 3h, 1d, 3d,
+  // 1w) — how many of those have already fired since lastUpdatedAt. Reset to
+  // 0 whenever the cart's items actually change, so a fresh edit restarts
+  // the whole sequence instead of picking up mid-way through the old one.
+  notifyStage Int @default(0)
+
   lastUpdatedAt DateTime @default(now()) @updatedAt
   createdAt     DateTime @default(now())
 
-  @@index([userId])
-  @@index([isConverted, notifiedAt, lastUpdatedAt])
+  // One open cart per user — validateCart upserts on every cart change.
+  @@unique([userId])
+  @@index([isConverted, notifyStage, lastUpdatedAt])
   @@map("abandoned_carts")
 }
 
@@ -487,8 +649,8 @@ model product_views {
   createdAt DateTime @default(now())
 
   // TTL: documents auto-expire ~90 days after creation. Prisma cannot express
-  // a Mongo TTL index, so create it directly in MongoDB once:
-  //   db.product_views.createIndex({ createdAt: 1 }, { expireAfterSeconds: 7776000 })
+  // a Mongo TTL index, so it is declared in src/ensure-indexes.ts and applied
+  // by `pnpm --filter @repo/db-mongo db:indexes`.
   @@index([userId, createdAt])
   @@index([deviceId, createdAt])
   @@index([catalogProductId])

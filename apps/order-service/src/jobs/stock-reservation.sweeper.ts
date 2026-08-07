@@ -1,8 +1,8 @@
 import cron from "node-cron";
 import { prismaPostgres } from "@repo/db-postgres";
-import { prismaMongo } from "@repo/db-mongo";
 import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
+import { restoreStockItem } from "../controllers/order/utils.js";
 
 /**
  * Releases stock reservations that never became orders.
@@ -21,7 +21,7 @@ const BATCH_SIZE = 100;
 const LOCK_KEY = "order:reservation-sweep:lock";
 const LOCK_TTL_SECONDS = 4 * 60;
 
-type ReservedItem = { productId: string; quantity: number };
+type ReservedItem = { productId: string; quantity: number; size?: string };
 
 async function sweepOnce(): Promise<number> {
   const stale = await prismaPostgres.stockReservation.findMany({
@@ -29,7 +29,12 @@ async function sweepOnce(): Promise<number> {
     take: BATCH_SIZE,
   });
 
-  let released = 0;
+  // Collected and written in one updateMany after the loop instead of a
+  // round trip per reservation. Safe to defer: a crash before the write just
+  // leaves rows HELD and the next pass restores them again — the same
+  // over-credit-beats-leak trade-off the partial-restore branch below already
+  // takes.
+  const releasedIds: string[] = [];
 
   for (const reservation of stale) {
     const items = reservation.items as unknown as ReservedItem[];
@@ -37,12 +42,7 @@ async function sweepOnce(): Promise<number> {
       // Restore each item independently — one missing product (deleted since)
       // must not strand the rest of the reservation.
       const results = await Promise.allSettled(
-        items.map((item) =>
-          prismaMongo.products.update({
-            where: { id: item.productId },
-            data: { stock: { increment: item.quantity }, totalSold: { decrement: item.quantity } },
-          }),
-        ),
+        items.map((item) => restoreStockItem(item.productId, item.quantity, item.size)),
       );
 
       const failed = results.filter((r) => r.status === "rejected");
@@ -58,11 +58,7 @@ async function sweepOnce(): Promise<number> {
         continue;
       }
 
-      await prismaPostgres.stockReservation.update({
-        where: { id: reservation.id },
-        data: { status: "RELEASED" },
-      });
-      released++;
+      releasedIds.push(reservation.id);
 
       logger.warn("[ReservationSweep] Released stock from an order that never committed", {
         reservationId: reservation.id,
@@ -77,7 +73,14 @@ async function sweepOnce(): Promise<number> {
     }
   }
 
-  return released;
+  if (releasedIds.length > 0) {
+    await prismaPostgres.stockReservation.updateMany({
+      where: { id: { in: releasedIds } },
+      data: { status: "RELEASED" },
+    });
+  }
+
+  return releasedIds.length;
 }
 
 // Exported so main.ts can stop it on graceful shutdown.

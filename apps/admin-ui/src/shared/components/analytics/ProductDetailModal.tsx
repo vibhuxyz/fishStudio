@@ -2,6 +2,7 @@ import React from "react";
 import { X, ShoppingCart, CheckCircle2, XCircle, Users, IndianRupee, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { DetailedProductRow } from "@/hooks/useAdminQueries";
+import { formatOrderId } from "@repo/shared/order-id";
 
 interface ProductDetailModalProps {
   product: DetailedProductRow;
@@ -110,7 +111,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                   product.orderIds.slice(0, 5).map((oid, i) => (
                     <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-800/20 transition cursor-default">
                       <div>
-                        <p className="text-xs font-bold text-gray-200">Order #{oid.slice(-6).toUpperCase()}</p>
+                        <p className="text-xs font-bold text-gray-200">Order {formatOrderId(oid)}</p>
                         <p className="text-[10px] text-gray-500">24 Mar 2024 • 04:20 PM</p>
                       </div>
                       <span className="px-2 py-1 rounded bg-emerald-900/20 text-emerald-500 text-[10px] font-bold border border-emerald-900/30">COMPLETED</span>

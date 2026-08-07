@@ -5,9 +5,10 @@ import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   ScrollView,
   StatusBar,
@@ -94,12 +95,12 @@ function FormField({
 export default function AddAddressScreen() {
   const { user } = useUser();
   const { addNewAddress, addresses } = useAddress();
-  const params = useLocalSearchParams<{ pincode?: string; city?: string; state?: string }>();
+  const params = useLocalSearchParams<{ pincode?: string; city?: string; state?: string; area?: string }>();
 
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [flatBuilding, setFlatBuilding] = useState("");
-  const [areaStreet, setAreaStreet] = useState("");
+  const [areaStreet, setAreaStreet] = useState(params.area || "");
   const [city, setCity] = useState(params.city || "");
   const [state, setState] = useState(params.state || "");
   const [pincode, setPincode] = useState(params.pincode || "");
@@ -111,6 +112,41 @@ export default function AddAddressScreen() {
   const [locating, setLocating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // Areas actually pinned to the current pincode, and each area's real city
+  // (e.g. "Kavi Nagar" under 201001 is Ghaziabad, not the store's own base
+  // city) — lets Area be picked from a list instead of free text, with City
+  // auto-filled from the pick instead of being independently editable.
+  const [areaOptions, setAreaOptions] = useState<string[]>([]);
+  const [areaCitiesMap, setAreaCitiesMap] = useState<Record<string, string>>({});
+  const [showAreaPicker, setShowAreaPicker] = useState(false);
+
+  useEffect(() => {
+    if (pincode.trim().length !== 6) {
+      setAreaOptions([]);
+      setAreaCitiesMap({});
+      return;
+    }
+    let cancelled = false;
+    axiosInstance
+      .get(`/auth/api/check-pincode?pincode=${pincode.trim()}`)
+      .then(({ data }) => {
+        if (cancelled || !data.success || !data.store) return;
+        const matched: string[] =
+          data.matchedAreas?.length ? data.matchedAreas : data.store.availableCities || [];
+        setAreaOptions(matched);
+        setAreaCitiesMap(data.store.areaCities || {});
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAreaOptions([]);
+          setAreaCitiesMap({});
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pincode]);
 
   const handleUseLocation = async () => {
     setLocating(true);
@@ -146,13 +182,17 @@ export default function AddAddressScreen() {
       toast.success("Location detected");
 
       // Best-effort serviceability lookup — non-blocking, just refines city.
+      // A pincode can span areas in different cities than the store's own
+      // base city, so prefer the matched area's real city when available.
       if (detectedPincode.length === 6) {
         try {
           const { data } = await axiosInstance.get(
             `/auth/api/check-pincode?pincode=${detectedPincode}`,
           );
-          if (data.success && data.store?.city) {
-            setCity(data.store.city);
+          const matchedArea: string | undefined = data.matchedAreas?.[0];
+          const areaCity = matchedArea && data.store?.areaCities?.[matchedArea];
+          if (data.success && (areaCity || data.store?.city)) {
+            setCity(areaCity || data.store.city);
           }
         } catch {
           // Non-fatal — keep the geocoded value.
@@ -362,21 +402,35 @@ export default function AddAddressScreen() {
             onChangeText={setFlatBuilding}
             placeholder="e.g. A-1201, 12th Floor, Golf Course Road"
           />
-          <FormField
-            icon="map-outline"
-            label="Area, Street, Sector, Landmark"
-            value={areaStreet}
-            onChangeText={setAreaStreet}
-            placeholder="e.g. Sector 57, Near Rapid Metro Station"
-          />
+          {areaOptions.length > 0 ? (
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowAreaPicker(true)}>
+              <View pointerEvents="none">
+                <FormField
+                  icon="map-outline"
+                  label="Area, Street, Sector, Landmark"
+                  value={areaStreet}
+                  placeholder="Select your area"
+                  editable={false}
+                />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <FormField
+              icon="map-outline"
+              label="Area, Street, Sector, Landmark"
+              value={areaStreet}
+              onChangeText={setAreaStreet}
+              placeholder="e.g. Sector 57, Near Rapid Metro Station"
+            />
+          )}
           <View style={{ flexDirection: "row", gap: 10 }}>
             <View style={{ flex: 1 }}>
               <FormField
                 icon="business-outline"
                 label="City"
                 value={city}
-                onChangeText={setCity}
                 placeholder="e.g. Gurgaon"
+                editable={false}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -597,6 +651,79 @@ export default function AddAddressScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Area picker — areas can span different real cities under one
+          pincode, so picking here also fills City from the match. */}
+      <Modal
+        visible={showAreaPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowAreaPicker(false)}
+      >
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
+          activeOpacity={1}
+          onPress={() => setShowAreaPicker(false)}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              maxHeight: "60%",
+              paddingBottom: 24,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F1F5F9",
+              }}
+            >
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>
+                Select Area
+              </Text>
+              <TouchableOpacity onPress={() => setShowAreaPicker(false)}>
+                <Ionicons name="close" size={22} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              {areaOptions.map((area) => (
+                <TouchableOpacity
+                  key={area}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setAreaStreet(area);
+                    setCity(areaCitiesMap[area] || city);
+                    setShowAreaPicker(false);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingHorizontal: 20,
+                    paddingVertical: 14,
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#F8FAFC",
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: "#1A1C1C" }}>
+                    {area}
+                  </Text>
+                  {areaStreet === area && (
+                    <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

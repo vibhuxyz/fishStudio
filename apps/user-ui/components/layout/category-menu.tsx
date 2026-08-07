@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/hooks/useCategories";
 import { getCategoryConfigKey } from "@/lib/storefront";
-import { normalizeSlug } from "@repo/slug";
+import { normalizeSlug } from "@repo/shared/slug";
 
 // Per-category accent colours (bg gradient + icon colour)
 const categoryTheme: Record<string, { gradient: string; iconBg: string; badge: string }> = {

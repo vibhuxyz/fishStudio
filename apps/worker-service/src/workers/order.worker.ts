@@ -43,6 +43,14 @@ export const orderWorker = async () => {
             socketManager.broadcastToSeller(content.sellerId, "ORDER_STATUS_UPDATE", payload);
           }
         }
+        if (content.type === "ORDER_CANCELLED") {
+          // No dedicated consumer yet (analytics/loyalty/CRM would hook in
+          // here) — logged so the event's delivery is at least observable.
+          logger.info(`🚫 Order cancelled: ${content.orderId} by ${content.cancelledBy}`, {
+            reason: content.reason ?? null,
+            refundRequested: content.refundRequested,
+          });
+        }
         if (content.type === "BANNER_REVIEWED") {
           if (content.sellerId) {
             socketManager.broadcastToSeller(content.sellerId, "BANNER_REVIEWED", {

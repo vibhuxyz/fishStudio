@@ -30,7 +30,7 @@
     "@repo/error-handlers": "workspace:*",
     "@repo/libs": "workspace:*",
     "@repo/middlewares": "workspace:*",
-    "@repo/pricing": "workspace:*",
+    "@repo/shared": "workspace:*",
     "@repo/zod-schema": "workspace:*",
     "@types/body-parser": "^1.19.6",
     "@types/compression": "^1.8.1",

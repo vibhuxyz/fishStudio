@@ -13,6 +13,7 @@ import {
   Info,
   BadgePercent,
   ChefHat,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/select";
 
 import { ProductCarousel } from "@/components/shared/product-carousel";
+import { AddToCartModal } from "@/components/shared/add-to-cart-modal";
 import { useModals } from "@/components/providers/modal-provider";
 import { addToCart } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
@@ -31,7 +33,7 @@ import {
   fetchStorefrontProductBySlug,
   resolveProductSizePricing,
 } from "@/lib/storefront";
-import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/pricing";
+import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/shared/pricing";
 import { useAddressStore } from "@/lib/address-store";
 import { useAuth } from "@/lib/auth-store";
 import { trackProductView } from "@/lib/activity";
@@ -43,9 +45,10 @@ const BLUR_DATA =
 interface Props {
   product: Product;
   coupon?: any;
+  relatedProducts?: Product[];
 }
 
-export function ProductDetailClient({ product, coupon }: Props) {
+export function ProductDetailClient({ product, coupon, relatedProducts = [] }: Props) {
   const modals = useModals();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const { user } = useAuth();
@@ -53,6 +56,27 @@ export function ProductDetailClient({ product, coupon }: Props) {
   const [resolvedCoupon, setResolvedCoupon] = useState(coupon);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Lets the shopper drop items out of "Frequently Bought Together" before
+  // adding the rest — ids here are excluded from the bundle total and cart add.
+  const [removedBundleIds, setRemovedBundleIds] = useState<Set<string>>(new Set());
+
+  // The main product already has its own variant selector on this page, so
+  // it's added directly. The other bundle items don't — queue them through
+  // the same picker modal used everywhere else on the site, one at a time.
+  const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
+  const [bundleQueue, setBundleQueue] = useState<Product[]>([]);
+
+  const handleQuickAddOpenChange = (open: boolean) => {
+    if (open) return;
+    if (bundleQueue.length > 0) {
+      const [next, ...rest] = bundleQueue;
+      setBundleQueue(rest);
+      setQuickAddProduct(next);
+    } else {
+      setQuickAddProduct(null);
+    }
+  };
 
   // Initialize state with the first available option from the backend data
   const [selectedCutting, setSelectedCutting] = useState(
@@ -186,6 +210,7 @@ export function ProductDetailClient({ product, coupon }: Props) {
     setSelectedCutting(resolvedProduct.cuttingTypes?.[0] || "");
     setSelectedPieceSize(resolvedProduct.pieceSizes?.[0] || "");
     setSelectedSize(resolvedProduct.weight || resolvedProduct.sizes?.[0] || "");
+    setRemovedBundleIds(new Set());
   }, [resolvedProduct]);
 
   // Derived per-kg pricing factors — rate display is weight-independent, only total changes
@@ -230,7 +255,7 @@ export function ProductDetailClient({ product, coupon }: Props) {
     : selected.size;
 
 
-  const handleAddToCart = (shouldOpenCart = false) => {
+  const handleAddToCart = (shouldOpenCart = false, silent = false) => {
     const customizedProduct = {
       ...product,
       ...resolvedProduct,
@@ -264,8 +289,42 @@ export function ProductDetailClient({ product, coupon }: Props) {
     );
     if (shouldOpenCart) {
       modals.openCart();
-    } else {
+    } else if (!silent) {
       toast.success(`${resolvedProduct.name} added to cart`);
+    }
+  };
+
+  // "Frequently Bought Together" — the main product plus its top two related
+  // items. These don't have a variant picker on this page, so they're added
+  // at their default cutting type / piece size / size.
+  const bundleItems = relatedProducts.slice(0, 2);
+  const bundleAllItems = bundleItems.length > 0 ? [resolvedProduct, ...bundleItems] : [];
+  const bundleSelectedItems = bundleAllItems.filter((item) => !removedBundleIds.has(item.id));
+  const bundleTotal = bundleSelectedItems.reduce((sum, item) => sum + item.price, 0);
+
+  const toggleBundleItem = (id: string) => {
+    setRemovedBundleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleAddBundleToCart = () => {
+    if (!removedBundleIds.has(resolvedProduct.id)) {
+      handleAddToCart(false, true);
+    }
+    const selectedBundleItems = bundleItems.filter(
+      (item) => !removedBundleIds.has(item.id),
+    );
+    const [first, ...rest] = selectedBundleItems;
+    if (first) {
+      setBundleQueue(rest);
+      setQuickAddProduct(first);
     }
   };
 
@@ -772,9 +831,95 @@ export function ProductDetailClient({ product, coupon }: Props) {
                 )}
               </div>
             )}
+
+            {/* Frequently Bought Together */}
+            {bundleAllItems.length > 0 && (
+              <div className="mt-8 border-t border-border pt-8">
+                <h2 className="font-serif text-lg font-bold text-primary">
+                  Frequently Bought Together
+                </h2>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  {bundleAllItems.map((item, index) => {
+                    const isRemoved = removedBundleIds.has(item.id);
+                    return (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="relative">
+                            <div
+                              className={`h-16 w-16 overflow-hidden rounded-xl border border-border bg-muted transition-opacity ${
+                                isRemoved ? "opacity-40" : ""
+                              }`}
+                            >
+                              <Image
+                                src={item.image || item.images?.[0] || "/placeholder.svg"}
+                                alt={item.name}
+                                width={64}
+                                height={64}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleBundleItem(item.id)}
+                              className={`absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+                                isRemoved
+                                  ? "border-green-600 bg-green-600 text-white"
+                                  : "border-border bg-card text-muted-foreground hover:border-destructive/40 hover:text-destructive"
+                              }`}
+                            >
+                              {isRemoved ? (
+                                <Plus className="h-3 w-3" />
+                              ) : (
+                                <X className="h-3 w-3" />
+                              )}
+                              <span className="sr-only">
+                                {isRemoved ? `Add ${item.name} back` : `Remove ${item.name}`}
+                              </span>
+                            </button>
+                          </div>
+                          <p
+                            className={`mt-1.5 text-xs font-semibold ${
+                              isRemoved ? "text-muted-foreground line-through" : "text-foreground"
+                            }`}
+                          >
+                            Rs. {item.price}
+                          </p>
+                        </div>
+                        {index < bundleAllItems.length - 1 && (
+                          <Plus className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between rounded-xl bg-primary/5 px-4 py-3">
+                  <p className="text-sm text-muted-foreground">
+                    Total:{" "}
+                    <span className="font-bold text-foreground">
+                      Rs. {bundleTotal.toFixed(2)}
+                    </span>
+                  </p>
+                  <Button
+                    size="sm"
+                    disabled={bundleSelectedItems.length === 0}
+                    onClick={handleAddBundleToCart}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Add all {bundleSelectedItems.length} to cart
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      <AddToCartModal
+        product={quickAddProduct}
+        open={!!quickAddProduct}
+        onOpenChange={handleQuickAddOpenChange}
+      />
     </div>
   );
 }

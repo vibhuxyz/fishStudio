@@ -28,17 +28,36 @@ export const createStore = async (
       instant_delivery_fee,
       instant_delivery_window_start,
       instant_delivery_window_end,
+      gst_rate,
+      packaging_charge,
+      base_delivery_charge,
+      free_delivery_threshold,
       city,
       pincode,
       state,
       availableCities,
       cityDeliveryTimes,
+      areaPincodes,
+      areaCities,
     } = validate(storeSchema, req.body);
 
     const existing = await prisma.stores.findFirst({ where: { sellerId } });
     if (existing) {
       return next(new ValidationError("A store already exists for this seller"));
     }
+
+    // Every serviceable area must carry the pincode it falls under and the
+    // real city it sits in — a pincode can span areas in different cities
+    // (e.g. a Noida store's 201001 pincode covers a Ghaziabad locality).
+    const missingPincode = availableCities.find((area) => !areaPincodes?.[area]);
+    if (missingPincode) {
+      return next(new ValidationError(`"${missingPincode}" is missing a pincode`));
+    }
+    const missingCity = availableCities.find((area) => !areaCities?.[area]);
+    if (missingCity) {
+      return next(new ValidationError(`"${missingCity}" is missing a city`));
+    }
+    const servicePincodes = Array.from(new Set(Object.values(areaPincodes ?? {})));
 
     const storeData: Parameters<typeof prisma.stores.create>[0]["data"] = {
       name,
@@ -52,7 +71,14 @@ export const createStore = async (
       instant_delivery_fee,
       instant_delivery_window_start,
       instant_delivery_window_end,
+      gst_rate,
+      packaging_charge,
+      base_delivery_charge,
+      free_delivery_threshold,
       availableCities,
+      areaPincodes,
+      areaCities,
+      servicePincodes,
       sellerId,
       ...(state !== undefined && { state }),
       ...(cityDeliveryTimes !== undefined && { cityDeliveryTimes: cityDeliveryTimes }),
@@ -107,6 +133,23 @@ export const updateStore = async (
       return next(new ValidationError("Store not found for this seller"));
     }
 
+    const availableCities = validatedData.availableCities || store.availableCities;
+    const areaPincodes = validatedData.areaPincodes ?? (store.areaPincodes as Record<string, string> | null) ?? {};
+    const areaCities = validatedData.areaCities ?? (store.areaCities as Record<string, string> | null) ?? {};
+    if (validatedData.availableCities || validatedData.areaPincodes) {
+      const missingPincode = availableCities.find((area) => !areaPincodes[area]);
+      if (missingPincode) {
+        return next(new ValidationError(`"${missingPincode}" is missing a pincode`));
+      }
+    }
+    if (validatedData.availableCities || validatedData.areaCities) {
+      const missingCity = availableCities.find((area) => !areaCities[area]);
+      if (missingCity) {
+        return next(new ValidationError(`"${missingCity}" is missing a city`));
+      }
+    }
+    const servicePincodes = Array.from(new Set(Object.values(areaPincodes)));
+
     const updatedStore = await prisma.stores.update({
       where: { id: store.id },
       data: {
@@ -118,7 +161,10 @@ export const updateStore = async (
         closing_hours: validatedData.closing_hours || store.closing_hours,
         city: validatedData.city || store.city,
         pincode: validatedData.pincode || store.pincode,
-        availableCities: validatedData.availableCities || store.availableCities,
+        availableCities,
+        areaPincodes,
+        areaCities,
+        servicePincodes,
       },
     });
 
@@ -147,6 +193,7 @@ export const getServiceableAreas = async (
         city: true,
         availableCities: true,
         pincode: true,
+        servicePincodes: true,
       },
     });
 
@@ -157,6 +204,7 @@ export const getServiceableAreas = async (
       citySet.add(store.city);
       store.availableCities.forEach((c) => citySet.add(c));
       pincodeSet.add(store.pincode);
+      store.servicePincodes.forEach((p) => pincodeSet.add(p));
     }
 
     return res.status(200).json({
@@ -185,6 +233,7 @@ export const checkPincode = async (
         OR: [
           { pincode: String(pincode) },
           { availableCities: { has: String(pincode) } },
+          { servicePincodes: { has: String(pincode) } },
         ],
       },
           select: {
@@ -196,6 +245,8 @@ export const checkPincode = async (
           closing_hours: true,
           availableCities: true,
           cityDeliveryTimes: true,
+          areaPincodes: true,
+          areaCities: true,
         },
       });
 
@@ -218,12 +269,21 @@ export const checkPincode = async (
       const closeTotal = toMins(store.closing_hours || "23:00");
       const isOpen = nowTotal >= openTotal && nowTotal <= closeTotal;
 
+      // A pincode can contain several areas, each with its own delivery
+      // time — surface which ones so the client can prompt for area
+      // selection instead of guessing a single time for the whole pincode.
+      const areaPincodes = (store.areaPincodes as Record<string, string> | null) ?? {};
+      const matchedAreas = Object.entries(areaPincodes)
+        .filter(([, p]) => p === String(pincode))
+        .map(([area]) => area);
+
       res.status(200).json({
         success: true,
         store: {
           ...store,
           isOpen,
         },
+        matchedAreas,
       });
   } catch (error) {
     next(error);

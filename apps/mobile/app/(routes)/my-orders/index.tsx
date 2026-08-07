@@ -1,5 +1,6 @@
 import { Order, STATUS_CONFIG } from "@/constants/order";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +9,6 @@ import useUser from "@/hooks/useUser";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Platform,
   ScrollView,
@@ -18,6 +18,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatOrderId } from "@repo/shared/order-id";
+import CancelOrderModal from "@/components/shared/cancel-order-modal";
 
 // A RAZORPAY order still sitting PENDING never got a completed payment — the
 // seller never saw it, so it reads as cancelled rather than "in progress".
@@ -46,6 +48,7 @@ export default function MyOrders() {
   const { status: initialStatus } = useLocalSearchParams<{ status?: string }>();
   const [selectedStatus, setSelectedStatus] = useState(initialStatus || "all");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(null);
 
   const { data: ordersData, isLoading } = useQuery({
     queryKey: ["user-orders"],
@@ -61,11 +64,12 @@ export default function MyOrders() {
 
   // Cancel mutation — calls PUT /order/api/cancel/:orderId
   const { mutate: cancelOrder } = useMutation({
-    mutationFn: (orderId: string) =>
-      axiosInstance.put(`/order/api/cancel/${orderId}`),
-    onMutate: (orderId) => setCancellingId(orderId),
+    mutationFn: ({ orderId, reason, note }: { orderId: string; reason?: string; note?: string }) =>
+      axiosInstance.put(`/order/api/cancel/${orderId}`, { reason, note }),
+    onMutate: ({ orderId }) => setCancellingId(orderId),
     onSuccess: () => {
       toast.success("Order cancelled successfully");
+      setCancelModalOrderId(null);
       queryClient.invalidateQueries({ queryKey: ["user-orders"] });
     },
     onError: (err: any) => {
@@ -106,16 +110,6 @@ export default function MyOrders() {
     );
   }
 
-  const confirmCancel = (orderId: string) => {
-    Alert.alert(
-      "Cancel Order",
-      "Are you sure you want to cancel this order? Stock will be released.",
-      [
-        { text: "No, Keep it", style: "cancel" },
-        { text: "Yes, Cancel", style: "destructive", onPress: () => cancelOrder(orderId) },
-      ]
-    );
-  };
 
   const filteredOrders =
     selectedStatus === "all"
@@ -126,7 +120,7 @@ export default function MyOrders() {
     const cfg = STATUS_CONFIG[order.status] ?? {
       bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: order.status,
     };
-    const orderNumber = `#${order.id.slice(-6).toUpperCase()}`;
+    const orderNumber = formatOrderId(order.id);
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
       day: "2-digit", month: "short", year: "numeric",
     });
@@ -189,7 +183,7 @@ export default function MyOrders() {
             <View key={item.id ?? idx} className="flex-row items-center">
               <Image
                 source={{
-                  uri: item.product?.images?.[0]?.url ||
+                  uri: cloudinaryThumbnail(item.product?.images?.[0]?.url, 112) ||
                     "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100",
                 }}
                 className="w-14 h-14 rounded-xl bg-gray-100"
@@ -235,7 +229,7 @@ export default function MyOrders() {
             {isPending && (
               <TouchableOpacity
                 disabled={isCancelling}
-                onPress={() => confirmCancel(order.id)}
+                onPress={() => setCancelModalOrderId(order.id)}
                 className={`flex-1 py-3 rounded-xl flex-row items-center justify-center border border-red-200 ${
                   isCancelling ? "bg-red-50 opacity-60" : "bg-red-50"
                 }`}
@@ -266,7 +260,7 @@ export default function MyOrders() {
       icon: "help-circle-outline",
       label: displayStatus,
     };
-    const orderNumber = `#${order.id.slice(-6).toUpperCase()}`;
+    const orderNumber = formatOrderId(order.id);
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -275,10 +269,15 @@ export default function MyOrders() {
     const amount = order.totalAmount ?? order.total ?? 0;
     const firstItem = order.items?.[0];
     const image =
-      firstItem?.product?.images?.[0]?.url ||
+      cloudinaryThumbnail(firstItem?.product?.images?.[0]?.url, 112) ||
       "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120";
     const title = firstItem?.product?.title || `Order ${orderNumber}`;
     const itemCount = order.items?.length ?? 0;
+    // Self-cancel only before the store starts preparing — matches
+    // order-service's cancelOrder guard (PENDING or ACCEPTED).
+    const isCancellable = order.status === "PENDING" || order.status === "ACCEPTED";
+    const isTerminal = order.status === "DELIVERED" || order.status === "CANCELLED" || order.status === "REJECTED";
+    const isCancelling = cancellingId === order.id;
 
     return (
       <TouchableOpacity
@@ -329,6 +328,11 @@ export default function MyOrders() {
                 Payment incomplete · refund in 3–5 days if charged
               </Text>
             )}
+            {!isUnpaidOnline && order.status === "CANCELLED" && order.cancellationReason && (
+              <Text className="text-[10px] text-gray-400 font-poppins-medium mt-1" numberOfLines={1}>
+                Cancelled by {order.cancelledBy === "CUSTOMER" ? "you" : "store"} · {order.cancellationReason}
+              </Text>
+            )}
           </View>
           <View className="items-end ml-2">
             <View
@@ -351,6 +355,44 @@ export default function MyOrders() {
             />
           </View>
         </View>
+
+        {!isTerminal && (
+          <View className="px-3.5 pb-3.5">
+            <TouchableOpacity
+              disabled={isCancelling || !isCancellable}
+              onPress={() => setCancelModalOrderId(order.id)}
+              className={`py-2.5 rounded-xl flex-row items-center justify-center border ${
+                isCancellable
+                  ? `border-red-200 ${isCancelling ? "bg-red-50 opacity-60" : "bg-red-50"}`
+                  : "border-gray-200 bg-gray-50"
+              }`}
+            >
+              {isCancelling ? (
+                <ActivityIndicator size="small" color="#DC2626" />
+              ) : (
+                <>
+                  <Ionicons
+                    name="close-circle-outline"
+                    size={16}
+                    color={isCancellable ? "#DC2626" : "#9CA3AF"}
+                  />
+                  <Text
+                    className={`font-poppins-semibold ml-2 text-sm ${
+                      isCancellable ? "text-red-600" : "text-gray-400"
+                    }`}
+                  >
+                    Cancel Order
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+            {!isCancellable && (
+              <Text className="text-[11px] text-gray-400 font-poppins-medium mt-1.5 text-center">
+                Order is already being prepared. Contact support to request a cancellation.
+              </Text>
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -437,6 +479,15 @@ export default function MyOrders() {
           )}
         </View>
       </ScrollView>
+
+      <CancelOrderModal
+        visible={!!cancelModalOrderId}
+        onClose={() => setCancelModalOrderId(null)}
+        isSubmitting={cancellingId === cancelModalOrderId}
+        onConfirm={(reason, note) => {
+          if (cancelModalOrderId) cancelOrder({ orderId: cancelModalOrderId, reason, note });
+        }}
+      />
     </SafeAreaView>
   );
 }

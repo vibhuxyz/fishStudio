@@ -58,7 +58,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
     items,
     subtotal,
     deliveryCharge,
-    handlingCharge,
+    packagingCharge,
+    gstAmount,
     tip,
     grandTotal,
     appliedCoupons,
@@ -503,12 +504,22 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           {deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}`}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          Handling charge <Info className="h-3 w-3" />
-                        </span>
-                        <span className="text-foreground">₹{handlingCharge}</span>
-                      </div>
+                      {packagingCharge > 0 && (
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            Packaging charge <Info className="h-3 w-3" />
+                          </span>
+                          <span className="text-foreground">₹{packagingCharge}</span>
+                        </div>
+                      )}
+                      {gstAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            GST <Info className="h-3 w-3" />
+                          </span>
+                          <span className="text-foreground">₹{gstAmount}</span>
+                        </div>
+                      )}
                       {appliedCoupons.map((coupon) => {
                         const amount = getDiscountForCoupon(coupon, subtotal);
                         if (amount <= 0 && coupon.discountType !== "free_delivery") return null;
@@ -725,7 +736,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
             )}
           </motion.div>
 
-          <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} savedAddressesOnly />
+          <AddressModal open={showAddressModal} onOpenChange={setShowAddressModal} savedAddressesOnly requireAddressForm />
         </>
       )}
     </AnimatePresence>

@@ -274,14 +274,16 @@ export const updateSellerApproval = async ({
   sellerId,
   isApprovedByAdmin,
   permissions,
+  isActive,
 }: {
   sellerId: string;
   isApprovedByAdmin: boolean;
   permissions: string[];
+  isActive?: boolean;
 }) => {
   const response = await axiosInstance.put(
     `/auth/api/admin/sellers/${sellerId}/approval`,
-    { isApprovedByAdmin, permissions },
+    { isApprovedByAdmin, permissions, ...(isActive !== undefined && { isActive }) },
     isProtected
   );
   return response.data;
@@ -438,6 +440,31 @@ export interface AdminOrderItem {
   };
 }
 
+/** One attempt against an order — COD orders get a single COD row, Razorpay
+ *  orders can have several (retries). `metadata.method`/`instrumentDetail`
+ *  carry the sub-instrument (card/upi/netbanking/wallet) Razorpay reports —
+ *  `method` on the row itself is only ever "COD" | "RAZORPAY". */
+export interface AdminOrderPayment {
+  id: string;
+  amount: number;
+  method: string;
+  status: string;
+  transactionId?: string | null;
+  metadata?: { method?: string; instrumentDetail?: string | null; [key: string]: any } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminOrderRider {
+  id: string;
+  name: string;
+  phone: string;
+  vehicleType: string;
+  vehicleNumber: string;
+  status: string;
+  avatar?: { url: string } | null;
+}
+
 export interface AdminOrder {
   id: string;
   status: string;
@@ -453,12 +480,15 @@ export interface AdminOrder {
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  riderStatus?: string | null;
+  assignedAt?: string | null;
+  rider?: AdminOrderRider | null;
   delivery: { name?: string; phone?: string; address?: string; city?: string; pincode?: string };
   customer: AdminOrderCustomer;
   store: AdminOrderStore;
   seller: AdminOrderSeller;
   items: AdminOrderItem[];
-  payments?: any[];
+  payments?: AdminOrderPayment[];
   auditTrail?: any[];
 }
 

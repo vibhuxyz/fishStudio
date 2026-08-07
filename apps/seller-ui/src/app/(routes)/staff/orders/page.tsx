@@ -1,6 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   CheckCircle,
   XCircle,
@@ -24,6 +25,7 @@ import {
   Bell,
   Wifi,
   WifiOff,
+  Truck,
 } from "lucide-react";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import { MockOrder, OrderStatus, MOCK_ORDERS } from "@/shared/mocks/staffMockData";
@@ -34,6 +36,7 @@ import { toast } from "sonner";
 import { frontendEnv } from "@/config/env";
 import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
+import { formatOrderId } from "@repo/shared/order-id";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -239,7 +242,7 @@ function RejectModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <XCircle size={18} className="text-red-400" />
-            <h3 className="text-white font-semibold text-base">Reject Order #{order.id.slice(-6).toUpperCase()}</h3>
+            <h3 className="text-white font-semibold text-base">Reject Order {formatOrderId(order.id)}</h3>
           </div>
           <button
             type="button"
@@ -296,6 +299,117 @@ function RejectModal({
   );
 }
 
+// ─── Rider avatar ────────────────────────────────────────────────────────────
+
+function RiderAvatar({ rider, size = 40 }: { rider: { name: string; avatar?: { url: string } | null }; size?: number }) {
+  if (rider.avatar?.url) {
+    return (
+      <Image
+        src={rider.avatar.url}
+        alt={rider.name}
+        width={size}
+        height={size}
+        className="rounded-full object-cover flex-shrink-0"
+      />
+    );
+  }
+  return (
+    <div
+      style={{ width: size, height: size }}
+      className="rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center flex-shrink-0"
+    >
+      <Truck size={size * 0.45} className="text-indigo-400" />
+    </div>
+  );
+}
+
+// ─── Assign Rider Modal ──────────────────────────────────────────────────────
+
+function AssignRiderModal({
+  order,
+  orderRequestConfig,
+  isAssigning,
+  onAssign,
+  onClose,
+}: {
+  order: MockOrder;
+  orderRequestConfig: Record<string, unknown>;
+  isAssigning: boolean;
+  onAssign: (riderId: string) => void;
+  onClose: () => void;
+}) {
+  const { data: riders = [], isLoading } = useQuery({
+    queryKey: ["eligible-riders", order.id],
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/order/api/eligible-riders/${order.id}`, orderRequestConfig);
+      return res.data?.riders ?? [];
+    },
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+      <div className="bg-[#0f1117] border border-gray-700/60 rounded-2xl w-full max-w-md shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <Truck size={18} className="text-indigo-400" />
+            <h3 className="text-white font-semibold text-base">Assign a Rider</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isAssigning}
+            className="text-gray-500 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-4 space-y-2 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-10 text-gray-500">
+              <Loader2 size={18} className="animate-spin" />
+            </div>
+          ) : riders.length === 0 ? (
+            <p className="text-gray-400 text-sm text-center py-10">
+              No riders are available right now. Add or free up a rider from the Riders page first.
+            </p>
+          ) : (
+            riders.map((rider: any) => (
+              <div
+                key={rider.id}
+                className="flex items-center justify-between rounded-xl border border-gray-800 bg-[#1a1f2e] px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <RiderAvatar rider={rider} size={36} />
+                  <div className="text-sm text-gray-200">
+                    <p className="font-semibold text-white">{rider.name}</p>
+                    <p className="text-emerald-400 text-xs mt-0.5">Available</p>
+                    <p className="text-gray-500 text-xs mt-0.5">
+                      Current Deliveries: {rider.activeDeliveryCount} · Phone: {rider.phone}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => onAssign(rider.id)}
+                  disabled={isAssigning}
+                  isLoading={isAssigning}
+                  loaderLabel="Assigning..."
+                  variant="indigo"
+                  glow={false}
+                  fullWidth={false}
+                  className="!h-9 !px-4 !text-[10px] !rounded-lg"
+                >
+                  Assign
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Order Detail Modal ──────────────────────────────────────────────────────
 
 const MOCK_SELLER_DETAILS = {
@@ -345,7 +459,7 @@ function OrderDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-900 sticky top-0 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
           <div>
-            <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order #{order.id.slice(-6).toUpperCase()}</h2>
+            <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order {formatOrderId(order.id)}</h2>
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
               Placed on {new Date(order.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
@@ -528,7 +642,9 @@ export function OrderCard({
   onAccept,
   onReject,
   onMarkReady,
+  onMarkShipped,
   onMarkCompleted,
+  onAssignRider,
   onViewDetails,
   pendingAction,
 }: {
@@ -536,7 +652,9 @@ export function OrderCard({
   onAccept: (o: MockOrder) => void;
   onReject: (o: MockOrder) => void;
   onMarkReady: (id: string) => void;
+  onMarkShipped: (id: string) => void;
   onMarkCompleted: (id: string) => void;
+  onAssignRider: (o: MockOrder) => void;
   onViewDetails: (o: MockOrder) => void;
   pendingAction?: string | null;
 }) {
@@ -565,7 +683,7 @@ export function OrderCard({
       <div className="flex items-end justify-between mb-5">
         <div>
           <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest mb-0.5">Order Token</p>
-          <p className="text-white font-mono text-sm font-bold tracking-tight">#{order.id.slice(-6).toUpperCase()}</p>
+          <p className="text-white font-mono text-sm font-bold tracking-tight">{formatOrderId(order.id)}</p>
         </div>
         <div className="text-right">
           <p className="text-white font-black text-xl italic tracking-tighter">{formatINR(order.total)}</p>
@@ -667,7 +785,64 @@ export function OrderCard({
           </Button>
         )}
 
-        {order.status === "Ready" && (
+        {order.status === "Ready" && order.rawStatus === "READY_FOR_PICKUP" && (
+          <Button
+            onClick={() => onAssignRider(order)}
+            disabled={isBusy}
+            isLoading={pendingAction === "assigning-rider"}
+            loaderLabel="Assigning..."
+            variant="indigo"
+            className="w-full !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
+          >
+            <Truck size={14} className="mr-1.5" />
+            Assign Rider
+          </Button>
+        )}
+
+        {order.status === "Ready" && order.rawStatus === "ASSIGNED_TO_RIDER" && (
+          <div className="space-y-2.5">
+            <div className="bg-indigo-500/5 border border-indigo-500/10 rounded-xl px-3 py-2.5 flex items-center gap-3">
+              {order.rider && <RiderAvatar rider={order.rider} size={32} />}
+              <div>
+                <p className="text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Rider Assigned</p>
+                <p className="text-white text-xs font-bold">{order.rider?.name ?? "Rider"}</p>
+                {order.rider?.phone && (
+                  <p className="text-slate-500 text-[10px] font-bold">{order.rider.phone}</p>
+                )}
+              </div>
+            </div>
+            <Button
+              onClick={() => onMarkShipped(order.id)}
+              disabled={isBusy}
+              isLoading={pendingAction === "marking-shipped"}
+              loaderLabel="Updating..."
+              variant="amber"
+              className="w-full !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
+            >
+              <Package size={14} className="mr-1.5" />
+              Mark Picked Up
+            </Button>
+          </div>
+        )}
+
+        {order.status === "Ready" && order.rawStatus === "SHIPPED" && (
+          <Button
+            onClick={() => onMarkCompleted(order.id)}
+            disabled={isBusy}
+            isLoading={pendingAction === "marking-completed"}
+            loaderLabel="Terminating Session..."
+            variant="emerald"
+            className="w-full !h-11 !rounded-xl !text-[10px] !font-black !uppercase !tracking-widest"
+          >
+            <CheckCircle size={14} className="mr-1.5" />
+            Complete Cycle
+          </Button>
+        )}
+
+        {/* Legacy real-time orders fetched before this client refreshed won't
+            carry rawStatus yet — fall back to the old direct-complete button
+            rather than showing nothing. */}
+        {order.status === "Ready" && !order.rawStatus && (
           <Button
             onClick={() => onMarkCompleted(order.id)}
             disabled={isBusy}
@@ -702,7 +877,9 @@ function StatusColumn({
   onAccept,
   onReject,
   onMarkReady,
+  onMarkShipped,
   onMarkCompleted,
+  onAssignRider,
   onViewDetails,
   pendingActions,
 }: {
@@ -711,7 +888,9 @@ function StatusColumn({
   onAccept: (o: MockOrder) => void;
   onReject: (o: MockOrder) => void;
   onMarkReady: (id: string) => void;
+  onMarkShipped: (id: string) => void;
   onMarkCompleted: (id: string) => void;
+  onAssignRider: (o: MockOrder) => void;
   onViewDetails: (o: MockOrder) => void;
   pendingActions: Record<string, string | null>;
 }) {
@@ -750,7 +929,9 @@ function StatusColumn({
               onAccept={onAccept}
               onReject={onReject}
               onMarkReady={onMarkReady}
+              onMarkShipped={onMarkShipped}
               onMarkCompleted={onMarkCompleted}
+              onAssignRider={onAssignRider}
               onViewDetails={onViewDetails}
               pendingAction={pendingActions[o.id] ?? null}
             />
@@ -922,7 +1103,7 @@ const StaffOrdersPage = () => {
             setDetailTarget(newOrder); 
 
             toast.info("New Order Received!", {
-              description: `Order #${(raw.id || "").slice(-6).toUpperCase()} is waiting for review.`,
+              description: `Order ${raw.id ? formatOrderId(raw.id) : ""} is waiting for review.`,
               icon: <Bell className="h-4 w-4 text-blue-500" />,
               duration: 8000,
               position: "top-center",
@@ -969,11 +1150,14 @@ const StaffOrdersPage = () => {
         .filter((o: any) => !linkedStoreId || !o.storeId || o.storeId === linkedStoreId)
         .map((o: any): MockOrder => ({
         id: o.id,
-        status: o.status === "ACCEPTED"  ? "Processing"
+        status: o.status === "ACCEPTED" || o.status === "PREPARING" ? "Processing"
                : o.status === "REJECTED"  ? "Rejected"
-               : o.status === "SHIPPED"   ? "Ready"
+               : o.status === "READY_FOR_PICKUP" || o.status === "ASSIGNED_TO_RIDER" || o.status === "SHIPPED" ? "Ready"
                : o.status === "DELIVERED" ? "Completed"
                : "New",
+        rawStatus: o.status,
+        riderId: o.riderId ?? null,
+        rider: o.rider ?? null,
         createdAt: o.createdAt,
         total: o.totalAmount ?? 0,
         user: {
@@ -1014,6 +1198,7 @@ const StaffOrdersPage = () => {
   const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);
   const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
   const [detailTarget, setDetailTarget] = useState<MockOrder | null>(null);
+  const [assignRiderTarget, setAssignRiderTarget] = useState<MockOrder | null>(null);
   const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
   const [optimisticOrders, setOptimisticOrders] = useState<Record<string, Partial<MockOrder>>>({});
   const [pendingActions, setPendingActions] = useState<Record<string, string | null>>({});
@@ -1110,7 +1295,32 @@ const StaffOrdersPage = () => {
     }
   });
 
+  // Marks the order packed and ready for pickup — this is what actually makes
+  // it eligible for rider assignment (assign-rider requires
+  // status === "READY_FOR_PICKUP"). Previously this sent "SHIPPED" directly,
+  // which skipped rider assignment entirely.
   const markReadyMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return axiosInstance.put(
+        `/order/api/update-status/${orderId}`,
+        { status: "READY_FOR_PICKUP" },
+        orderRequestConfig,
+      );
+    },
+    onSuccess: (_, orderId) => {
+      syncOrderInCache(orderId, { status: "Ready", rawStatus: "READY_FOR_PICKUP" });
+      clearOrderUiState(orderId);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+    },
+    onError: (_error, orderId) => {
+      clearOrderUiState(orderId);
+      toast.error("Failed to mark order as ready");
+    }
+  });
+
+  // Rider has physically picked up the order — moves it to SHIPPED ("out for
+  // delivery"). Only reachable once a rider is assigned.
+  const markShippedMutation = useMutation({
     mutationFn: async (orderId: string) => {
       return axiosInstance.put(
         `/order/api/update-status/${orderId}`,
@@ -1119,13 +1329,13 @@ const StaffOrdersPage = () => {
       );
     },
     onSuccess: (_, orderId) => {
-      syncOrderInCache(orderId, { status: "Ready" });
+      syncOrderInCache(orderId, { status: "Ready", rawStatus: "SHIPPED" });
       clearOrderUiState(orderId);
       queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
     },
     onError: (_error, orderId) => {
       clearOrderUiState(orderId);
-      toast.error("Failed to mark order as ready");
+      toast.error("Failed to mark order as shipped");
     }
   });
 
@@ -1138,13 +1348,37 @@ const StaffOrdersPage = () => {
       );
     },
     onSuccess: (_, orderId) => {
-      syncOrderInCache(orderId, { status: "Completed" });
+      syncOrderInCache(orderId, { status: "Completed", rawStatus: "DELIVERED" });
       clearOrderUiState(orderId);
       queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
     },
     onError: (_error, orderId) => {
       clearOrderUiState(orderId);
       toast.error("Failed to mark order as completed");
+    }
+  });
+
+  const assignRiderMutation = useMutation({
+    mutationFn: async ({ orderId, riderId }: { orderId: string; riderId: string }) => {
+      return axiosInstance.put(
+        `/order/api/assign-rider/${orderId}`,
+        { riderId },
+        orderRequestConfig,
+      );
+    },
+    onSuccess: (res, { orderId }) => {
+      syncOrderInCache(orderId, {
+        status: "Ready",
+        rawStatus: "ASSIGNED_TO_RIDER",
+        riderId: res.data?.rider?.id ?? null,
+        rider: res.data?.rider ?? null,
+      });
+      clearOrderUiState(orderId);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+      toast.success("Rider assigned");
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to assign rider");
     }
   });
 
@@ -1168,14 +1402,25 @@ const StaffOrdersPage = () => {
 
   const handleMarkReady = (orderId: string) => {
     setPendingAction(orderId, "marking-ready");
-    applyOptimisticOrder(orderId, { status: "Ready" });
+    applyOptimisticOrder(orderId, { status: "Ready", rawStatus: "READY_FOR_PICKUP" });
     markReadyMutation.mutate(orderId);
+  };
+
+  const handleMarkShipped = (orderId: string) => {
+    setPendingAction(orderId, "marking-shipped");
+    applyOptimisticOrder(orderId, { rawStatus: "SHIPPED" });
+    markShippedMutation.mutate(orderId);
   };
 
   const handleMarkCompleted = (orderId: string) => {
     setPendingAction(orderId, "marking-completed");
     applyOptimisticOrder(orderId, { status: "Completed" });
     markCompletedMutation.mutate(orderId);
+  };
+
+  const handleAssignRider = (orderId: string, riderId: string) => {
+    setPendingAction(orderId, "assigning-rider");
+    assignRiderMutation.mutate({ orderId, riderId });
   };
 
   const filteredOrders =
@@ -1338,7 +1583,9 @@ const StaffOrdersPage = () => {
               onAccept={setAcceptTarget}
               onReject={setRejectTarget}
               onMarkReady={handleMarkReady}
+              onMarkShipped={handleMarkShipped}
               onMarkCompleted={handleMarkCompleted}
+              onAssignRider={setAssignRiderTarget}
               onViewDetails={setDetailTarget}
               pendingActions={pendingActions}
             />
@@ -1359,7 +1606,9 @@ const StaffOrdersPage = () => {
                 onAccept={setAcceptTarget}
                 onReject={setRejectTarget}
                 onMarkReady={handleMarkReady}
+                onMarkShipped={handleMarkShipped}
                 onMarkCompleted={handleMarkCompleted}
+                onAssignRider={setAssignRiderTarget}
                 onViewDetails={setDetailTarget}
                 pendingAction={pendingActions[o.id] ?? null}
               />
@@ -1390,6 +1639,18 @@ const StaffOrdersPage = () => {
           order={detailTarget}
           staff={staff}
           onClose={() => setDetailTarget(null)}
+        />
+      )}
+      {assignRiderTarget && (
+        <AssignRiderModal
+          order={assignRiderTarget}
+          orderRequestConfig={orderRequestConfig}
+          isAssigning={assignRiderMutation.isPending}
+          onAssign={(riderId) => {
+            handleAssignRider(assignRiderTarget.id, riderId);
+            setAssignRiderTarget(null);
+          }}
+          onClose={() => setAssignRiderTarget(null)}
         />
       )}
     </div>

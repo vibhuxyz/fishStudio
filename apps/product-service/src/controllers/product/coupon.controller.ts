@@ -78,19 +78,20 @@ export const getDiscountCodes = async (
   next: NextFunction,
 ) => {
   try {
+    // usedCount (not the `_count.usages` relation — nothing writes to that
+    // Mongo collection, so it always reads 0) is what actually reflects
+    // redemptions; see prefetchCoupon in order-service for the same note.
     const discount_codes =
       req.role === "admin"
         ? await prisma.discount_codes.findMany({
             orderBy: { createdAt: "desc" },
             include: {
               seller: { select: { id: true, name: true, email: true } },
-              _count: { select: { usages: true } },
             },
           })
         : await prisma.discount_codes.findMany({
             where: getSellerDiscountOwnerData(req),
             orderBy: { createdAt: "desc" },
-            include: { _count: { select: { usages: true } } },
           });
 
     res.status(200).json({ success: true, discount_codes });
@@ -188,7 +189,6 @@ export const validateCoupon = async (
           },
         ],
       },
-      include: { _count: { select: { usages: true } } },
     });
 
     if (!coupon) {
@@ -240,12 +240,19 @@ export const validateCoupon = async (
       }
     }
 
-    // Total usage limit
-    if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
-      return res.status(200).json({
-        success: false,
-        message: "This coupon has reached its usage limit",
+    // Total usage limit — redemptions are recorded in Postgres CouponUsage,
+    // not the Mongo `coupon_usages` relation (nothing writes to that one), so
+    // that's the source of truth for how many times this coupon has been used.
+    if (coupon.maxUses !== null) {
+      const globalUsageCount = await prismaPostgres.couponUsage.count({
+        where: { couponId: coupon.id },
       });
+      if (globalUsageCount >= coupon.maxUses) {
+        return res.status(200).json({
+          success: false,
+          message: "This coupon has reached its usage limit",
+        });
+      }
     }
 
     // Per-user limit (also covers first-order coupons — maxUsesPerUser is forced to 1)

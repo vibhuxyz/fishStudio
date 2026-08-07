@@ -1,28 +1,97 @@
 # FishStudio — Premium Meat & Fish E-Commerce Platform
 
-A production-grade, full-stack e-commerce platform built as a **Turborepo monorepo** with microservices architecture. Designed for the Indian meat & fish market with instant delivery UX, real-time order tracking, multi-role dashboards, and sub-second perceived load times.
+A full-stack, multi-vendor e-commerce platform for the Indian meat & fish market,
+built as a **Turborepo monorepo** with a microservices architecture: instant-delivery
+UX, real-time order tracking, and three role-specific dashboards.
+
+---
+
+## Executive Summary
+
+**The problem.** Fresh fish and meat is a perishable, weight-variable, hyper-local
+category. Stock is measured in kilos that change as a fish is cut, a "1.1 kg rohu"
+is a different SKU from a "1.4 kg rohu", and a store can only serve a handful of
+pincodes. Generic e-commerce platforms model none of this: they assume fixed SKUs,
+unlimited catalog reach, and stock that doesn't evaporate at the end of the day.
+
+**Who it's for.**
+
+| Role | What they do |
+|---|---|
+| **Customers** | Browse by locality, order with a delivery slot (instant / morning / evening), track the order live |
+| **Sellers** | Run one store: pricing, per-size stock, combos, flash sales, staff sub-accounts |
+| **Admins** | Own the master catalog, approve sellers, review banners, monitor orders and payments across every store |
+
+**The core differentiator** is the **catalog + variant** model. Admin owns one
+canonical product record (name, images, nutrition, cooking tips, slug); each seller
+attaches a lightweight variant carrying only their own price, stock and cutting
+options. Customers therefore see one clean product page per fish rather than nine
+near-duplicate listings, search deduplicates to the cheapest nearby variant, and
+slugs can't collide across stores.
+
+**Why this architecture.** Three constraints drove the shape of the system:
+
+1. **The catalog and the ledger want different databases.** Product documents are
+   deeply nested and change shape often (size pricing, cutting types, per-size stock)
+   — a natural fit for MongoDB. Orders and payments need transactions, exact decimal
+   money, and constraints — that's PostgreSQL. The system uses both, and the
+   interesting engineering is in the seam between them (see
+   [Checkout Consistency](#checkout-consistency)).
+2. **Overselling is unacceptable and un-undoable.** You cannot un-sell the last fish.
+   Stock is decremented with atomic conditional updates *before* the order commits,
+   with a reservation record and sweeper covering the crash window.
+3. **Perceived speed is the product.** For a 30-minute delivery promise, a 2-second
+   page load reads as broken. Hence streaming SSR, intent prefetching, aggressive
+   caching with stampede protection, and pre-created payment orders.
+
+**Honest scope.** This is a portfolio-scale system built to production *patterns* —
+transactional outbox, idempotent webhooks, serializable retries, partial indexes. It
+has **no automated tests and no metrics or tracing stack**; see
+[Testing](#testing) and [Observability](#observability) for exactly what exists and
+what doesn't.
 
 ---
 
 ## Table of Contents
 
+**Start here** → [Executive Summary](#executive-summary) · [Key Tradeoffs](#key-tradeoffs) · [Checkout Consistency](#checkout-consistency)
+
+**Orientation**
 1. [What This App Does](#what-this-app-does)
 2. [How the App Works (Architecture)](#how-the-app-works)
 3. [Tech Stack](#tech-stack)
 4. [Project Structure](#project-structure)
-5. [All API Routes](#all-api-routes)
-6. [Frontend Routes](#frontend-routes)
-7. [Database Schema](#database-schema)
-8. [Authentication & Authorization](#authentication--authorization)
+
+**Design & decisions**
+
+5. [Key Tradeoffs](#key-tradeoffs)
+6. [Database Schema](#database-schema)
+7. [Authentication & Authorization](#authentication--authorization)
+8. [Checkout Consistency](#checkout-consistency) — *sequence diagrams*
 9. [Performance: Where & How](#performance-where--how)
+
+**Subsystems**
+
 10. [Real-Time: WebSockets](#real-time-websockets)
 11. [Search: Meilisearch](#search-meilisearch)
 12. [Message Queue: RabbitMQ](#message-queue-rabbitmq)
 13. [Image Handling](#image-handling)
 14. [Email / SMS / Push Notifications](#email--sms--push-notifications)
-15. [Docker & Deployment](#docker--deployment)
-16. [Environment Variables](#environment-variables)
-17. [Getting Started (Local Dev)](#getting-started-local-dev)
+
+**Running it in production**
+
+15. [Testing](#testing)
+16. [Observability](#observability)
+17. [Failure Handling](#failure-handling)
+18. [Capacity Targets & Limits](#capacity-targets--limits)
+19. [Docker & Deployment](#docker--deployment)
+20. [Getting Started (Local Dev)](#getting-started-local-dev)
+
+**Appendices**
+
+- [A — All API Routes](#appendix-a--all-api-routes)
+- [B — Frontend Routes](#appendix-b--frontend-routes)
+- [C — Environment Variables](#appendix-c--environment-variables)
 
 ---
 
@@ -39,7 +108,7 @@ Key capabilities:
 - Catalog + store-variant product model (admin creates master catalog, sellers create their own pricing/stock variants)
 - Real-time order status updates via WebSocket
 - Meilisearch-powered product search with typo-tolerance and Redis caching
-- Stripe + COD payment support
+- Razorpay + COD payment support, with webhook reconciliation and admin/seller refunds
 - India-specific: 6-digit pincode serviceability checks, city/delivery-time configuration per store
 - Seller-controlled events (flash sales, free delivery, bulk discounts)
 - Staff sub-accounts with granular access under a seller
@@ -48,26 +117,65 @@ Key capabilities:
 
 ## How the App Works
 
-### Request Flow
+### System map
 
-```
-Browser / Mobile
-      │
-      ▼
-API Gateway (port 8080)          ← Single entry point, HTTP proxy
-      │
-      ├─── /auth/*   ──────────▶  Auth Service    (port 6001)  MongoDB
-      ├─── /product/* ─────────▶  Product Service (port 6003)  MongoDB + Meilisearch + Redis
-      ├─── /order/*  ──────────▶  Order Service   (port 6004)  PostgreSQL
-      ├─── /notification/* ────▶  Notification Service (6005)  PostgreSQL
-      └─── WebSocket upgrade ──▶  Worker Service  (port 6006)  (pure WS, no HTTP)
+```mermaid
+flowchart TB
+    subgraph clients[" "]
+        direction LR
+        WEB([user-ui<br/>Next.js]):::c
+        SELL([seller-ui]):::c
+        ADM([admin-ui]):::c
+        MOB([mobile<br/>Expo]):::c
+    end
 
-                Order/OTP events published via RabbitMQ
-                         │
-                         ▼
-                   Worker Service
-                   (consumes queues, broadcasts to WebSocket clients)
+    GW["**API Gateway** · 8080<br/>proxy · rate limit · CORS · HSTS"]:::gw
+    clients --> GW
+
+    GW --> AUTH["auth-service · 6001"]:::svc
+    GW --> PROD["product-service · 6003"]:::svc
+    GW --> ORD["order-service · 6004"]:::svc
+    GW --> NOTI["notification-service · 6005"]:::svc
+    GW --> PAY["payment-service · 6007"]:::svc
+    GW -.->|WS upgrade| WORK["worker-service · 6006"]:::svc
+
+    RZP{{Razorpay}}:::ext -->|webhook<br/>raw body, no rate limit| PAY
+
+    AUTH --> MONGO[(MongoDB)]:::db
+    PROD --> MONGO
+    PROD --> MEILI[(Meilisearch)]:::db
+    ORD --> MONGO
+    ORD --> PG[(PostgreSQL)]:::db
+    NOTI --> PG
+    PAY --> PG
+    PAY --> RZP
+
+    AUTH & PROD & ORD --> REDIS[(Redis)]:::db
+    ORD & PAY --> MQ{{RabbitMQ}}:::ext
+    MQ --> WORK
+    WORK --> PG
+    WORK -.->|live updates| clients
+
+    classDef c fill:#e8f0fe,stroke:#4a6
+    classDef gw fill:#fff3cd,stroke:#c93
+    classDef svc fill:#f5f5f5,stroke:#888
+    classDef db fill:#d8f5d8,stroke:#4a4
+    classDef ext fill:#fde8e8,stroke:#c66
 ```
+
+| Service | Port | Owns | Stores |
+|---|---|---|---|
+| api-gateway | 8080 | Single entry point, WS upgrade forwarding | — |
+| auth-service | 6001 | Users, sellers, staff, stores, serviceability | Mongo, Redis |
+| product-service | 6003 | Catalog, variants, search, banners, coupons, combos | Mongo, Meili, Redis |
+| order-service | 6004 | Checkout, stock reservation, order lifecycle, stats | Postgres + Mongo |
+| notification-service | 6005 | In-app notification feed | Postgres |
+| worker-service | 6006 | WebSocket rooms, queue consumers, outbox relay | Postgres |
+| payment-service | 6007 | Razorpay orders, webhooks, refunds, reconciliation | Postgres |
+
+> Razorpay webhooks hit `/payment/api/webhook`, which **bypasses the JSON body parser
+> and the rate limiter** — the raw body is needed for signature verification, and
+> throttling a gateway retry would strand a real payment.
 
 ### Monorepo Structure
 
@@ -79,9 +187,11 @@ fishStudio/
 │   ├── api-gateway/          # Express HTTP proxy (port 8080)
 │   ├── auth-service/         # Authentication, users, sellers, staff (port 6001)
 │   ├── product-service/      # Catalog, search, banners, coupons (port 6003)
-│   ├── order-service/        # Orders, payments, stats (port 6004)
+│   ├── order-service/        # Orders, checkout, stats (port 6004)
 │   ├── notification-service/ # In-app notifications (port 6005)
-│   ├── worker-service/       # WebSocket server + RabbitMQ consumers (port 6006)
+│   ├── worker-service/       # WebSocket server + RabbitMQ consumers + outbox relay (port 6006)
+│   ├── payment-service/      # Razorpay orders, webhooks, refunds (port 6007)
+│   ├── mobile/               # Expo / React Native app
 │   ├── user-ui/              # Next.js 16 consumer storefront (port 3000)
 │   ├── seller-ui/            # Next.js 16 seller dashboard (port 3002)
 │   └── admin-ui/             # Next.js 16 admin panel (port 3001)
@@ -93,7 +203,8 @@ fishStudio/
     ├── error-handlers/       # Custom error classes + Express middleware
     ├── eslint-config/        # Shared ESLint rules
     ├── jobs/                 # CronManager for scheduled tasks
-    ├── libs/                 # Redis, RabbitMQ, Cloudinary, OTP, Meilisearch clients
+    ├── libs/                 # Redis, RabbitMQ, Cloudinary, OTP, Meilisearch, cache helpers
+    ├── pricing/              # Single cart-total formula shared by web, mobile and server
     ├── middlewares/          # JWT auth + role-based access middleware
     ├── typescript-config/    # Shared tsconfig bases
     ├── ui/                   # Shared Shadcn UI components
@@ -146,10 +257,12 @@ fishStudio/
 
 | Store | Technology | Purpose |
 |---|---|---|
-| MongoDB | Prisma ODM | Users, sellers, staff, stores, products catalog, images, banners, events, coupons |
-| PostgreSQL | Prisma ORM | Orders, order items, payments, coupon usages, notifications |
+| MongoDB | Prisma ODM | Users, sellers, staff, stores, products catalog, images, banners, events, coupons, combos |
+| PostgreSQL | Prisma ORM | Orders, order items, payments, coupon usages, notifications, audit log, outbox, stock reservations |
 
 Hybrid read/write: product catalog lives in MongoDB (flexible schema), transactional order data lives in PostgreSQL (ACID guarantees).
+
+Because the two cannot share a transaction, checkout uses a **stock reservation record** plus a **transactional outbox** to stay consistent across them — see [Checkout Consistency](#checkout-consistency).
 
 ### Infrastructure
 
@@ -159,7 +272,7 @@ Hybrid read/write: product catalog lives in MongoDB (flexible schema), transacti
 | Search | Meilisearch 0.47 — full-text, typo-tolerant product search |
 | Message Queue | RabbitMQ 3 — async OTP delivery, order event broadcasting |
 | CDN / Images | Cloudinary |
-| Payments | Stripe |
+| Payments | Razorpay (orders, signature verification, webhooks, refunds) |
 | Email | Nodemailer (SMTP) or Brevo API |
 | SMS | Fast2SMS API |
 | Push Notifications | Expo Server SDK 3.11 |
@@ -184,7 +297,10 @@ Owns all identity: user OTP login, seller/admin registration, staff sub-accounts
 Product catalog management, store variant creation, Meilisearch indexing, Redis-cached search, category/subcategory config, coupon management, seller banner uploads + admin review, seller flash-sale events, image uploads to Cloudinary. Runs an hourly cron to hard-delete soft-deleted products past their grace period.
 
 #### `apps/order-service`
-Creates orders, validates cart contents and pincode serviceability, processes payments, lets sellers accept/reject/update order status, provides stats and analytics for sellers and admins.
+Creates orders, validates cart contents and pincode serviceability, reserves stock, lets sellers accept/reject/update order status, provides stats and analytics for sellers and admins. Owns the checkout transaction and the stock-reservation sweeper.
+
+#### `apps/payment-service`
+Everything that touches the payment gateway: creating Razorpay orders and binding them to a payment row, verifying the checkout signature, handling webhooks (capture, failure, refund), issuing refunds for admins and sellers, and a reconciliation job that resolves payments left PENDING. Consumes `PAYMENT_EVENTS` to create the gateway order ahead of the customer tapping Pay.
 
 #### `apps/notification-service`
 Stores in-app notifications in PostgreSQL, exposes endpoints to fetch and mark as read. Consumes events from RabbitMQ to create notification records.
@@ -194,317 +310,209 @@ Runs a raw WebSocket server (no Socket.io). Consumes RabbitMQ queues and broadca
 
 ---
 
-## All API Routes
+## Key Tradeoffs
 
-All routes are accessed via the API Gateway at `http://localhost:8080`.
+Every choice buys something and costs something. The **cost** column is the honest part.
 
-### Gateway Routes
+| Decision | Bought | Cost |
+|---|---|---|
+| **Two databases**<br/>Mongo catalog + Postgres ledger | Nested product docs that change shape freely; real transactions and exact money where it matters | No cross-DB transaction — the reservation, outbox and sweeper exist *only* because of this. No FK integrity on `userId`/`storeId`/`productId`. Every order list needs a second hop to Mongo |
+| **Raw `ws`**<br/>not Socket.IO | Tiny client bundle, no protocol overhead, for one-directional server→client JSON | No auto-reconnect, no transport fallback; rooms and heartbeat are hand-maintained. Blocked upgrades mean no updates, not degraded ones |
+| **Meilisearch**<br/>not DB search | Typo tolerance ("rohu"/"rohru"/"roho"), custom ranking, single-digit ms | A second copy that can drift, a sync worker, another service to run. New products aren't instantly searchable |
+| **Catalog + variant**<br/>not independent products | One clean page per fish, no slug collisions, dedup search, content authored once | Every read is two queries + an in-memory merge. That merge is untyped, so a dropped projection field fails at runtime. Sellers can't diverge from catalog copy |
+| **Serializable**<br/>on checkout | "Two people can't spend the last coupon use" without hand-rolled locking | Conflicts abort transactions, so the retry loop is **mandatory**; every extra query inside the txn measurably raises the conflict rate |
+| **Decimal + number boundary** | Exact storage and SQL sums, without decimal.js in the RN bundle | A boundary that must be respected — forget `toMoney()` and the field silently serializes as a string |
 
-```
-GET  /gateway-health            → Health check
-
-Proxy rules:
-  /auth/*          → auth-service:6001/api/*
-  /product/*       → product-service:6003/api/*
-  /order/*         → order-service:6004/api/*
-  /notification/*  → notification-service:6005/api/*
-  WS upgrade       → worker-service:6006
-```
-
----
-
-### Auth Service — 29 Routes
-
-#### User (OTP-based, no password)
-```
-POST  /auth/send-otp                        Send OTP to phone/email
-POST  /auth/verify-otp                      Verify OTP, issue JWT session
-GET   /auth/logged-in-user                  Get current user session         [user]
-POST  /auth/logout-user                     Logout + clear cookies           [user]
-POST  /auth/refresh-token                   Refresh access token
-GET   /auth/check-pincode                   Check delivery serviceability    [public]
-GET   /auth/serviceable-areas               List all serviceable pincodes    [public]
-POST  /auth/add-address                     Save delivery address            [user]
-DELETE /auth/delete-address/:addressId      Remove saved address             [user]
-```
-
-#### Seller
-```
-POST  /auth/verify-seller-code              Verify admin-issued signup code
-POST  /auth/seller-registration             Register seller account
-POST  /auth/verify-seller                   Verify seller OTP
-POST  /auth/login-seller                    Login seller
-POST  /auth/create-store                    Create seller store profile
-GET   /auth/logged-in-seller                Get current seller session       [seller]
-POST  /auth/update-store                    Update store details             [seller]
-POST  /auth/logout-seller                   Logout seller/staff              [seller|staff]
-```
-
-#### Staff (sub-accounts under a seller)
-```
-POST  /auth/staff-registration              Register staff account
-POST  /auth/verify-staff                    Verify staff OTP
-GET   /auth/logged-in-staff                 Get current staff session        [staff]
-POST  /auth/logout-staff                    Logout staff                     [staff]
-GET   /auth/seller/staffs                   List seller's staff              [seller]
-GET   /auth/seller/staff/search             Search staff by email            [seller]
-PUT   /auth/seller/staff/access             Update staff permissions         [seller]
-```
-
-#### Admin
-```
-POST  /auth/admin-registration              Register admin account
-POST  /auth/verify-admin                    Verify admin OTP
-POST  /auth/login-admin                     Login admin
-GET   /auth/logged-in-admin                 Get current admin session        [admin]
-POST  /auth/logout-admin                    Logout admin                     [admin]
-POST  /auth/admin/verifycode                Verify admin signup code         [public]
-POST  /auth/admin/generate-seller-code      Generate seller signup code      [admin]
-GET   /auth/admin/seller-codes              List issued seller codes         [admin]
-GET   /auth/admin/sellers                   List all sellers                 [admin]
-GET   /auth/admin/sellers/:sellerId         Get seller details               [admin]
-PUT   /auth/admin/sellers/:sellerId/approval Approve/reject seller           [admin]
-```
-
----
-
-### Product Service — 38 Routes
-
-#### Products
-```
-POST  /product/create-product                Create catalog product           [admin]
-PUT   /product/update-product/:productId     Update product                  [admin|seller|staff]
-PUT   /product/update-product-stock/:id      Update stock                    [admin|seller|staff]
-DELETE /product/delete-product/:productId    Soft-delete product             [admin|seller]
-PUT   /product/restore-product/:productId    Restore soft-deleted product    [admin|seller]
-POST  /product/slug-validator                Validate product slug uniqueness
-GET   /product/get-owned-products            Get seller's own products       [admin|seller|staff]
-GET   /product/get-owned-product/:productId  Get single owned product        [admin|seller|staff]
-```
-
-#### Catalog (Seller adds catalog products to their store)
-```
-GET   /product/get-catalog-products          Browse admin catalog            [seller]
-POST  /product/add-catalog-product-to-store/:id  Create store variant       [seller]
-```
-
-#### Public Product Listing
-```
-GET   /product/get-all-products              Paginated store product list    [public]
-GET   /product/get-product/:slug             Product detail by slug          [public]
-GET   /product/public/store-offers/:storeId  Flash sale offers for store     [public]
-POST  /product/validate-cart                 Validate cart contents          [public]
-```
-
-#### Search
-```
-GET   /product/search                        Full-text search (Meilisearch + Redis cache)  [public]
-GET   /product/search/suggestions            Autocomplete suggestions (cached 5 min)       [public]
-POST  /product/admin/reindex-search          Full Meilisearch reindex                      [admin]
-```
-
-#### Categories
-```
-GET   /product/get-categories                List all categories             [public]
-POST  /product/create-category               Create category                 [admin]
-POST  /product/create-subcategory            Create subcategory              [admin]
-```
-
-#### Coupons / Discount Codes
-```
-POST  /product/create-discount-code          Create coupon                   [seller]
-GET   /product/get-discount-codes            List coupons                    [admin|seller]
-DELETE /product/delete-discount-code/:id     Delete coupon                   [admin|seller]
-PATCH /product/toggle-discount-code/:id      Enable/disable coupon           [admin|seller]
-POST  /product/validate-coupon               Validate coupon at checkout     [public]
-```
-
-#### Seller Events (Flash Sales, Free Delivery, etc.)
-```
-POST  /product/create-event                  Create sale event               [seller]
-GET   /product/get-seller-events             List own events                 [seller]
-PUT   /product/update-event/:eventId         Update event                    [seller]
-DELETE /product/delete-event/:eventId        Delete event                    [seller]
-```
-
-#### Banners
-```
-POST  /product/upload-banner                 Upload banner image             [admin|seller]
-GET   /product/get-seller-banners            List seller's banners           [seller]
-PUT   /product/update-banner/:bannerId       Update banner                   [seller]
-DELETE /product/delete-banner/:bannerId      Delete banner                   [admin|seller]
-GET   /product/get-admin-banners             All banners for admin           [admin]
-GET   /product/get-all-category-banners      Category banners                [admin]
-GET   /product/get-pending-banners           Banners pending review          [admin]
-POST  /product/review-banner                 Approve/reject banner           [admin]
-GET   /product/get-banners                   Active banners for storefront   [public]
-GET   /product/get-announcement-banners      Announcement bar banners        [public]
-```
-
-#### Images
-```
-POST  /product/upload-product-image          Upload to Cloudinary            [admin|seller|staff]
-POST  /product/admin/upload-cloudinary-image Upload arbitrary image          [admin]
-POST  /product/admin/delete-cloudinary-image Delete from Cloudinary          [admin]
-```
-
----
-
-### Order Service — 11 Routes
-
-```
-POST  /order/create                          Place new order                 [user]
-GET   /order/user-orders                     Get own order history           [user]
-GET   /order/get-order/:orderId              Get order detail                [user]
-
-GET   /order/get-seller-orders               Seller order list               [seller|staff]
-GET   /order/get-order-details/:orderId      Order detail for seller         [seller|staff]
-PUT   /order/accept-reject/:orderId          Accept or reject order          [seller|staff]
-PUT   /order/update-status/:orderId          Update fulfillment status       [seller|staff]
-
-GET   /order/seller-stats                    Seller revenue/order stats      [seller|staff]
-GET   /order/admin-stats                     Platform-wide stats             [admin]
-GET   /order/admin-stats/:sellerId           Per-seller stats                [admin]
-GET   /order/admin-orders/:sellerId          Orders for a specific seller    [admin]
-```
-
----
-
-### Notification Service — 3 Routes
-
-```
-GET   /notification/                         Get all notifications           [authenticated]
-PATCH /notification/:id/read                 Mark single notification read   [authenticated]
-PATCH /notification/read-all                 Mark all notifications read     [authenticated]
-```
-
----
-
-### WebSocket (Worker Service)
-
-Connect at `ws://localhost:6006` with query params to join rooms:
-
-```
-ws://localhost:6006?userId=<id>     → User order update room
-ws://localhost:6006?storeId=<id>    → Seller store room (new orders)
-ws://localhost:6006?sellerId=<id>   → Seller event room (banner reviews)
-ws://localhost:6006?staffId=<id>    → Staff access room
-ws://localhost:6006?adminId=<id>    → Admin alerts room
-```
-
-**Server → Client message types:**
-- `NEW_ORDER` — New order received (seller/store room)
-- `ORDER_STATUS_UPDATE` — Order status changed (user room)
-- `BANNER_REVIEWED` — Banner approved/rejected (seller room)
-- `STOCK_UPDATE` — Product went out of stock (broadcast to all)
-
----
-
-## Frontend Routes
-
-### User UI (`apps/user-ui`, port 3000)
-
-```
-/                              Home — streamed bestsellers + hero banners
-/product/[slug]                Product detail — SSR + streaming variants
-/category/[slug]               Category browse — server slug resolver + filter sidebar
-/search                        Search results — Meilisearch streaming
-/cart                          Cart — client-side Zustand state
-/checkout                      Checkout — payment + address selection
-/orders                        Order history — SSR + WebSocket live updates
-/order-confirmation/[orderId]  Order success page
-/addresses                     Saved delivery addresses
-```
-
-### Seller UI (`apps/seller-ui`, port 3002)
-
-```
-/login                         Seller login
-/signup                        Seller registration (requires access code)
-/pending-approval              Waiting for admin approval
-/edit-profile                  Update seller profile
-/success                       Post-registration success
-
-/dashboard                     Overview stats
-/dashboard/all-products        Product list (active/inactive tabs)
-/dashboard/create-product      Create product from catalog
-/dashboard/products/[id]       Product detail/edit
-/dashboard/all-events          Flash sale events
-/dashboard/create-event        Create new event
-/dashboard/banners             Banner management
-/dashboard/discount-codes      Coupon codes
-/dashboard/orders              Order list
-/dashboard/inventory           Stock management
-/dashboard/analytics           Sales charts + geographical map
-/dashboard/payments            Payment history
-/dashboard/settings            Store settings (custom domain, withdraw method)
-/dashboard/staff-management    Staff accounts management
-/dashboard/notifications       In-app notifications
-/dashboard/inbox               Messaging
-
-/staff                         Staff landing
-/staff/orders                  Staff order queue
-/staff/orders/completed        Completed orders view
-/staff/orders/rejected         Rejected orders view
-/staff/orders/[id]             Order detail for staff
-/staff/inventory               Inventory view for staff
-```
-
-### Admin UI (`apps/admin-ui`, port 3001)
-
-```
-/login                         Admin login
-/signup                        Admin registration
-
-/dashboard                     Overview
-/dashboard/sellers             All sellers list
-/dashboard/sellers/[id]        Seller detail + approval control
-/dashboard/all-products        Global product catalog
-/dashboard/create-product      Add catalog product
-/dashboard/categories          Category management
-/dashboard/banners             All banners
-/dashboard/banner-review       Pending banner reviews
-/dashboard/orders              All orders
-/dashboard/payments/[sellerId] Seller payments
-/dashboard/payments            Platform payments
-/dashboard/discount-codes      All discount codes
-/dashboard/analytics           Platform analytics
-/dashboard/notifications       System notifications
-```
+> **Would I choose two databases again?** At this scale, probably not. One Postgres with
+> `jsonb` for the flexible product fields would be simpler and faster, and would delete
+> most of the consistency machinery above. The split is defensible, but it was chosen
+> earlier than the data justified.
 
 ---
 
 ## Database Schema
 
-### MongoDB (packages/db-mongo) — Identity & Catalog
+Two databases, split by what the data *needs* rather than what it *is*: flexible
+nested documents in Mongo, transactions and exact money in Postgres.
 
-**users** — Phone/email, name, avatar, address book, following list
-**sellers** — Email, password (Argon2), profile, banners, events, coupons, staff list, store ref, `isApprovedByAdmin`
-**staffs** — Email, password, isActive, parent sellerId
-**stores** — Name, bio, avatar, address, city, pincode, opening/closing hours, `availableCities[]`, `cityDeliveryTimes{}`, instant-delivery config
-**admins** — Email, password, product/coupon/banner ownership
+### MongoDB — identity & catalog
 
-**products** — Title, slug, `isCatalog`, category, subCategory, images, tags, sizes, `sizePricing{}`, `cuttingTypePricing{}`, `pieceSizePricing{}`, stock, sale_price, regular_price, totalSold, ratings, status, `isDeleted`, `deletedAt`, storeId, adminId, `catalogProductId` (for variants)
-**images** — Cloudinary file_id + URL, type (`PRODUCT | USER_AVATAR | STORE_AVATAR`), productId
+```mermaid
+erDiagram
+    admins   ||--o{ products : "owns catalog"
+    sellers  ||--|| stores : has
+    sellers  ||--o{ staffs : employs
+    sellers  ||--o{ seller_events : runs
+    sellers  ||--o{ discount_codes : issues
+    stores   ||--o{ products : "stocks variants"
+    stores   ||--o{ combos : offers
+    products ||--o{ products : "catalog -> variant"
+    products ||--o{ images : has
+    products ||--o{ reviews : has
+    users    ||--o{ favorites : saves
+    users    ||--o{ reviews : writes
+    users    ||--o{ product_views : generates
+    users    ||--o{ abandoned_carts : leaves
+```
 
-**discount_codes** — Code, type (PERCENTAGE/FIXED), value, minOrder, maxUses, `maxUsesPerUser`, expiresAt, isActive, `isFirstOrder`, sellerId/adminId
-**coupon_usages** — couponId, userId, orderId, usedAt
-**favorites** — userId + productId junction
+| Collection | Carries |
+|---|---|
+| **users** | phone/email, name, avatar, address book, `referralCode` / `referredByCode` |
+| **sellers** | credentials (Argon2), `isApprovedByAdmin`, `isActive` kill-switch, permissions |
+| **staffs** | sub-accounts under a seller |
+| **stores** | address, pincode, hours, `servicePincodes[]`, `areaPincodes{}`, `areaCities{}`, instant-delivery config |
+| **admins** | owns the master catalog, coupons, banners |
+| **products** | *both* catalog roots and store variants — `catalogProductId` links them; pricing maps, `trackStockPerSize` + `sizeStock[]`, `totalSold`, soft-delete |
+| **images** | Cloudinary `file_id` + URL, typed PRODUCT / USER_AVATAR / STORE_AVATAR |
+| **discount_codes** | type, value, `maxUses`, `maxUsesPerUser`, `isFirstOrder`, `restrictedToUserId` |
+| **combos** | fixed bundle at one price; each item pins productId + qty + optional variant |
+| **banners** / **seller_events** | merchandising and flash sales, with approval status |
+| **site_config** | categories, subcategories, per-category active flags |
+| **abandoned_carts** / **product_views** | reminder job input; recently-viewed + recommendations (90-day TTL) |
 
-**banners** — imageUrl, type (ANNOUNCEMENT/CATEGORY/HERO), status (PENDING/APPROVED/REJECTED), category, sellerId/adminId
-**seller_events** — Title, type (FREE_DELIVERY/DISCOUNT/FLASH_SALE), minOrder, discount %, start/end time, isActive
-**site_config** — Categories list, subcategories map, category images map
-**SignupAccessCode** — email, role, code, expiresAt (single-use admin-issued codes)
+> `sizeStock` is an **array of `{size, qty}`, not a map** — size labels like `"1.1 kg"`
+> contain dots, which Mongo would read as nested-path separators. As an array the size
+> is only ever compared, never used as a path segment, which is what allows an atomic
+> `$inc` via `arrayFilters`.
+
+### PostgreSQL — orders, money, reliability
+
+```mermaid
+erDiagram
+    Order ||--o{ OrderItem : contains
+    Order ||--o{ Payment : "attempts"
+    Order ||--o{ CouponUsage : redeems
+
+    Order {
+        decimal totalAmount "numeric(12,2)"
+        decimal discountAmount
+        decimal deliveryCharge
+        enum status "PENDING->DELIVERED"
+        enum paymentStatus
+        enum paymentMethod
+    }
+    OrderItem {
+        decimal price "numeric(12,2)"
+        json selectedOptions
+    }
+    Payment {
+        decimal amount "numeric(12,2)"
+        string gatewayOrderId "unique"
+        string transactionId "unique"
+    }
+```
+
+Standalone reliability tables — no FK to `Order`, because they must survive
+independently of it:
+
+| Table | Purpose | Pruned |
+|---|---|---|
+| **AuditLog** | Append-only financial trail (`entityType`, `action`, `actorType`, metadata) | Never |
+| **WebhookEvent** | Every gateway webhook, deduped on `(provider, eventId)`; `processedAt` null = received, not yet applied | 30 d |
+| **OutboxEvent** | Written in the same txn as the state change; drained to RabbitMQ; `lockedAt`/`lockedBy` claim | 30 d |
+| **StockReservation** | Records a Mongo decrement so a crash can't leak stock | 30 d |
+| **Notification** | In-app feed, cursor-paginated | — |
+
+#### Money is `Decimal`, never `Float`
+
+```mermaid
+flowchart LR
+    DB[("numeric(12,2)")] -->|Prisma| DEC["Prisma.Decimal"]
+    DEC -->|toMoney| NUM["number"]
+    NUM -->|JSON| API([API response])
+    CART["@repo/pricing<br/>cart formula · number"] -->|toDecimal| DB
+
+    style DEC fill:#fff3cd,stroke:#c93
+    style NUM fill:#d8f5d8,stroke:#4a4
+```
+
+**Decimal at rest and in SQL, plain `number` at the edges.** `toMoney()` / `toDecimal()`
+(`packages/db-postgres/src/money.ts`) are the only sanctioned crossings.
+
+| 1000 × ₹0.07 | Result |
+|---|---|
+| `double precision` | `69.99999999999966` |
+| `numeric(12,2)` | `70.00` |
+
+Float totals drift against Razorpay, which settles in integer paise. Two traps: a raw
+`Prisma.Decimal` JSON-encodes as a **string** (silent contract break), and the shared
+cart formula stays `number` so decimal.js never reaches the React Native bundle.
+
+#### Index strategy
+
+| Rule | Why |
+|---|---|
+| No standalone index already covered by a compound | Both engines use the **leftmost prefix**; the extra index is pure write cost |
+| Sweeper tables use **partial** indexes | Small hot set inside a forever-growing table — index stays proportional to the backlog, not to all history |
+| Partial indexes live in raw SQL | Prisma has no syntax for them; intentionally absent from `schema.prisma` |
+| Retention job daily 03:15 | Settled rows > 30 days deleted; `AuditLog` exempt |
+
+#### Indexes Prisma can't express
+
+Sparse-unique and TTL indexes have no Prisma syntax, so they live in
+`packages/db-mongo/src/ensure-indexes.ts` and are applied with:
+
+```bash
+pnpm --filter @repo/db-mongo db:indexes
+```
+
+This covers the sparse uniques on `users.email`, `users.phone_number`,
+`users.referralCode` and `signup_access_codes(email, role)`, plus the 90-day TTL on
+`product_views`. It is idempotent, and reports a conflict rather than silently
+altering an index whose options changed. **Run it on deploy** — `prisma db push`
+does not create these.
 
 ---
 
 ### PostgreSQL (packages/db-postgres) — Transactional Data
 
-**Order** — userId, storeId, totalAmount, discountAmount, couponCode, deliverySlot, delivery address snapshot, status (`PENDING → ACCEPTED → SHIPPED → DELIVERED | REJECTED | CANCELLED`), paymentStatus, paymentMethod, rejectionReason
+**Order** — userId, storeId, totalAmount, discountAmount, deliveryCharge, couponCode, deliverySlot, delivery address snapshot, billDetails, status (`PENDING → ACCEPTED → SHIPPED → DELIVERED | REJECTED | CANCELLED`), paymentStatus, paymentMethod, paymentRef, rejectionReason
 **OrderItem** — orderId, productId, quantity, price, selectedOptions (size, cutting type, pieces)
-**Payment** — orderId, amount, status, method, transactionId, metadata
+**Payment** — orderId, amount, status, method, transactionId, gatewayOrderId, metadata
 **CouponUsage** — couponId, userId, orderId
 **Notification** — userId, title, message, type, category, isRead, metadata
+
+Reliability tables (see [Checkout Consistency](#checkout-consistency)):
+
+**AuditLog** — Append-only financial trail: entityType, entityId, action, actorId, actorType, metadata
+**WebhookEvent** — Durable record of every gateway webhook, deduped on `(provider, eventId)`; `processedAt` null means received but not yet applied
+**OutboxEvent** — Events written inside the same transaction as the state change they describe, drained to RabbitMQ by the relay
+**StockReservation** — Records a Mongo stock decrement so a crash mid-checkout can't leak stock
+
+#### Money is `Decimal`, never `Float`
+
+All money columns (`Order.totalAmount`, `discountAmount`, `deliveryCharge`,
+`OrderItem.price`, `Payment.amount`) are `numeric(12,2)`.
+
+Binary floating point cannot represent values like `20.35` exactly. Summing a
+thousand rows of `0.07` gives `69.99999999999966` as a float and exactly `70.00`
+as numeric — so float totals drift against Razorpay, which settles in integer
+paise, and `sum(items) + delivery − discount` stops equalling `totalAmount`.
+
+The convention is **Decimal at rest and in SQL, plain `number` at the edges**:
+
+- `toMoney()` / `toDecimal()` in `packages/db-postgres/src/money.ts` are the only
+  sanctioned crossing points.
+- Every API response converts before serializing — a raw `Prisma.Decimal` would
+  JSON-encode as a *string* and silently change the response contract.
+- The shared cart formula in `packages/pricing` stays `number`, so decimal.js never
+  reaches the React Native bundle.
+
+#### Index strategy
+
+Postgres and Mongo both serve a query from any **leftmost prefix** of a compound
+index, so standalone indexes already covered by a compound were removed rather
+than kept "just in case" — each one is pure write cost.
+
+Sweeper tables use **partial indexes** (`packages/db-postgres/prisma/migrations/…_money_decimal_enums_and_indexes`).
+`OutboxEvent`, `StockReservation`, `WebhookEvent` and the unread-notification badge
+all have a small hot working set inside a table that grows forever, so the index
+covers only the rows the query can actually match and stays proportional to the
+backlog instead of to all history. Prisma has no syntax for these, so they live in
+raw SQL in the migration and are intentionally absent from `schema.prisma`.
+
+Retention: `pruneSettledEvents` / `pruneSettledStockReservations` (daily, 03:15)
+delete settled rows older than 30 days. `AuditLog` is never pruned.
 
 ---
 
@@ -523,113 +531,316 @@ Each role gets its own cookie and secret:
 
 All cookies are **HTTP-only** (no JS access). Separate refresh token cookies extend sessions without requiring re-login.
 
-### Token Verification Flow (per request)
+### Token verification (every request)
 
+```mermaid
+flowchart TD
+    T[extract token from<br/>role-specific cookie] --> BP{bypass flag set?}
+    BP -->|yes| DB
+    BP -->|no| R{Redis hit?<br/>role:userId}
+    R -->|yes| ATT[attach to req.user /<br/>req.seller / req.staff / req.admin]
+    R -->|no| V[verify JWT signature]
+    V --> DB[(fetch account<br/>+ store relation)]
+    DB --> W[write Redis · TTL 5 min<br/>clear bypass flag] --> ATT
+
+    style ATT fill:#d8f5d8,stroke:#4a4
+    style R fill:#e8f0fe,stroke:#4a6
 ```
-1. Extract token from role-appropriate cookie
-2. Check Redis cache (key: role:userId, TTL: 5 min)
-   → Cache hit? Return immediately (skip DB)
-   → Cache bypass flag set? Skip cache, hit DB
-3. Verify JWT signature
-4. Fetch account from DB (with store relation for sellers)
-5. Write to Redis, clear bypass flag
-6. Attach to req.user / req.seller / req.staff / req.admin
+
+The **bypass flag** is set when a seller is approved or staff access changes — it
+forces exactly one fresh DB read, then re-caches. Without it, a revoked seller would
+keep working for up to 5 minutes.
+
+| Guard | Allows |
+|---|---|
+| `isAuthenticated` | any valid JWT |
+| `isAdmin` / `isSeller` / `isStaff` / `isUser` | exact role |
+| `isSellerOrStaff` | seller as self, or staff with seller context |
+| `allowRoles(...roles)` | explicit list |
+
+### OTP login
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Customer
+    participant A as auth-service
+    participant R as Redis
+    participant Q as RabbitMQ
+    participant M as MongoDB
+
+    U->>A: POST /send-otp
+    A->>R: mget lock · spam-lock · cooldown
+    Note over A,R: one round trip, not three
+    alt any restriction set
+        A-->>U: 429 rate limited
+    else
+        A->>R: SETEX otp:<id> (TTL)
+        A->>Q: OTP_QUEUE
+        Q-->>U: SMS (Fast2SMS) or email
+    end
+
+    U->>A: POST /verify-otp
+    A->>R: GET otp + attempts
+    alt mismatch
+        A->>R: incr attempts; lock 30 min after 3
+        A-->>U: 400 invalid
+    else match
+        A->>R: DEL otp key
+        A->>M: upsert user
+        A-->>U: HTTP-only JWT cookies
+    end
 ```
 
-### Role-Based Access
+OTPs live **only** in Redis — a Redis outage blocks customer login entirely. See
+[Failure Handling](#failure-handling). Comparison is timing-safe.
 
-- `isAuthenticated` — Any valid JWT
-- `isAdmin` / `isSeller` / `isStaff` / `isUser` — Exact role match
-- `isSellerOrStaff` — Seller acting as self or staff with seller context
-- `allowRoles(...roles)` — Array of permitted roles
+**Seller signup** is gated differently: an admin issues a single-use
+`SignupAccessCode` with an expiry, auto-cleaned by cron.
 
-### OTP Login (Users)
+---
 
-1. `POST /auth/send-otp` → Generates 6-digit OTP, stores in Redis with TTL, sends via Fast2SMS or email
-2. `POST /auth/verify-otp` → Match against Redis, delete OTP key, upsert user in DB, issue JWT cookies
+## Checkout Consistency
 
-### Seller Signup Code Flow
+Stock lives in MongoDB and orders live in PostgreSQL, so a checkout spans two
+databases that cannot share a transaction. Four mechanisms cover the gaps.
 
-Admin issues a code → stored in MongoDB `SignupAccessCode` with expiry → seller verifies code before registration → code is single-use and auto-cleaned by cron
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Customer
+    participant O as order-service
+    participant M as MongoDB<br/>(stock)
+    participant P as PostgreSQL<br/>(orders)
+    participant Q as RabbitMQ
+
+    C->>O: POST /create-order
+    O->>P: INSERT StockReservation (HELD)
+    Note over O,P: Written FIRST so a crash in the<br/>next step is still recoverable
+
+    par Atomic conditional decrements (parallel)
+        O->>M: $inc stock where stock >= qty
+    end
+    alt any decrement returns false
+        O->>M: restore the ones that succeeded
+        O->>P: reservation -> RELEASED
+        O-->>C: 400 "just went out of stock"
+    else outcome of any decrement unknown
+        Note over O,P: reservation deliberately left HELD<br/>-> sweeper reconciles it
+        O-->>C: 503 try again
+    end
+
+    rect rgb(240, 245, 255)
+    Note over O,P: Serializable transaction (retried on 40001)
+    O->>P: re-check coupon caps
+    O->>P: INSERT Order + OrderItems + Payment
+    O->>P: reservation -> CONSUMED
+    O->>P: INSERT OutboxEvent
+    end
+
+    O-->>C: 201 order created
+    O->>Q: PAYMENT_PREWARM (fire-and-forget)
+
+    Note over P,Q: relay drains the outbox separately
+    P->>Q: ORDER_CREATED (at-least-once)
+```
+
+Every step before the transaction is idempotent-safe on replay; everything inside it
+rolls back together. The reservation row is what makes the gap between the two
+databases recoverable.
+
+### Stock reservation
+
+Stock is decremented in Mongo **before** the Postgres order is created — the reverse
+would let us sell stock we never held. That leaves a window where a crash loses the
+only record of the decrement, so a `StockReservation` row is written first and marked
+`CONSUMED` inside the order transaction. A sweeper (every 5 minutes, Redis-locked)
+restores anything left `HELD` past a 15-minute grace period.
+
+Decrements run in parallel and each is a single-document conditional update
+(`$inc` guarded by `stock >= quantity`), so overselling is impossible even under
+concurrent checkouts. If any decrement's outcome is *unknown* — a rejected promise
+may still have been applied by Mongo — the reservation is deliberately left `HELD`
+for the sweeper rather than released, since releasing it would strand a decrement
+that did land.
+
+### Serializable transaction with retry
+
+The order transaction runs at `Serializable` isolation, which is what stops two
+people spending the last use of a coupon. Serializable does not avoid conflicts —
+it *reports* them, aborting one transaction. Without a retry that abort reaches the
+customer as a failed checkout, so `runSerializable`
+(`packages/db-postgres/src/transaction.ts`) retries `P2034` / SQLSTATE `40001` up to
+three times with exponential backoff and **full jitter**, so two transactions that
+just collided don't retry in lockstep. Business errors thrown by the callback are
+never retried.
+
+Retrying only the Postgres side is safe: the Mongo decrement and the reservation row
+happen before it and survive replay untouched.
+
+### Transactional outbox
+
+Publishing to RabbitMQ after a Postgres commit is a dual write — if the process dies
+in between, the message is gone and nothing knows. Instead the event is written as a
+row in the *same* transaction as the state change, and the relay in worker-service
+publishes it afterwards.
+
+The relay claims rows with `FOR UPDATE SKIP LOCKED` and a `lockedAt`/`lockedBy`
+lease, so two worker instances take disjoint batches instead of double-publishing.
+Delivery is **at-least-once** — consumers must be idempotent.
+
+### Webhook durability
+
+Gateway webhooks are persisted to `WebhookEvent` before being applied, deduped on
+`(provider, eventId)`. Dedupe keys off `processedAt` rather than mere row existence,
+so an attempt that failed doesn't block the gateway's retry. Dedupe used to live only
+in Redis on a TTL — a cache, not an audit trail, where a replay after eviction would
+re-apply the payment.
+
+### Payment path
+
+Two independent routes can settle an order: the customer returning from the Razorpay
+modal, and the webhook. Both converge on the same state, and either can arrive first.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Customer
+    participant PS as payment-service
+    participant RZP as Razorpay
+    participant P as PostgreSQL
+
+    Note over PS,P: Prewarmed in the background at order creation
+    PS->>RZP: create gateway order
+    PS->>P: bind gatewayOrderId to PENDING Payment
+
+    C->>PS: POST /create-payment-order
+    PS->>P: read bound gatewayOrderId
+    PS-->>C: returns instantly (no Razorpay call)
+
+    C->>RZP: pays in the modal
+
+    par Customer returns
+        C->>PS: POST /verify {order_id, payment_id, signature}
+        PS->>PS: HMAC compare (timing-safe)
+        PS->>P: order -> COMPLETED, audit PAYMENT_VERIFIED
+    and Webhook arrives
+        RZP->>PS: POST /api/webhook (raw body)
+        PS->>PS: verify X-Razorpay-Signature
+        PS->>P: INSERT WebhookEvent (processedAt = null)
+        alt already processed
+            PS-->>RZP: 200 (no-op)
+        else
+            PS->>P: amount check, then settle
+            PS->>P: processedAt = now()
+        end
+        PS-->>RZP: 200 quickly (non-2xx triggers retry)
+    end
+
+    Note over PS,P: Reconciliation job sweeps any Payment<br/>left PENDING past the grace window
+```
+
+The amount is compared in **integer paise** derived from a `Decimal`, not a float —
+`449.35 * 100` in binary floating point is `44934.999999999996`, which is one
+representation away from failing its own equality check.
 
 ---
 
 ## Performance: Where & How
 
-This is the most important architectural decision in the project. Every technique below exists to make the storefront feel like a native mobile app.
+Every technique exists to make a 30-minute delivery promise *feel* like one. Grouped
+by where the latency actually goes.
 
-### 1. Shell + Stream Architecture (User UI)
+```mermaid
+flowchart LR
+    U([user]) --> N["**Network**<br/>gzip · ETag/304<br/>Cache-Control"]
+    N --> R["**Render**<br/>streaming SSR<br/>intent prefetch"]
+    R --> C["**Cache**<br/>single-flight<br/>early refresh"]
+    C --> D["**Data**<br/>projections<br/>batched reads"]
+    D --> W["**Write**<br/>parallel decrements<br/>outbox · prewarm"]
 
-Instead of waiting for all data before rendering, pages are split into:
-- **Shell**: Static HTML (header, skeleton) renders immediately via SSR
-- **Suspense islands**: Each data section (`<Suspense fallback={<Skeleton/>}>`) streams in independently as its server promise resolves
+    style N fill:#e8f0fe,stroke:#4a6
+    style R fill:#e8f0fe,stroke:#4a6
+    style C fill:#d8f5d8,stroke:#4a4
+    style D fill:#d8f5d8,stroke:#4a4
+    style W fill:#fff3cd,stroke:#c93
+```
 
-Result: First Contentful Paint is instant (skeleton), Largest Contentful Paint is as fast as the slowest required data — not blocked by unrelated data.
+| # | Technique | Mechanism | Wins |
+|---|---|---|---|
+| 1 | **Streaming SSR** | Static shell renders immediately; each `<Suspense>` island streams as its promise resolves | FCP instant; LCP unblocked by unrelated data |
+| 2 | **Intent prefetch** | `router.prefetch()` on `ProductCard` hover — 200-400 ms of human hover-to-click | Navigation feels 0 ms |
+| 3 | **Redis caching** | Search 3 min · suggestions 5 min · auth tokens 5 min; `SCAN`-based invalidation on product writes | Skips Mongo on the hot path |
+| 4 | **Meilisearch** | Typo tolerance, custom ranking, Mongo regex fallback | Sub-10 ms queries |
+| 5 | **Circuit breaker** | Opens after 5 failures, 30 s cooldown, HALF_OPEN probe | Fails fast instead of cascading |
+| 6 | **Retry + backoff** | `min(initial × 2^n, max)` on transient errors | Absorbs network blips |
+| 7 | **Persistent WS** | One connection held across route changes via React context | No reconnect per page |
+| 8 | **Catalog + variant** | One canonical record, thin per-seller variants (diagram below) | One listing per fish; dedup search |
+| 9 | **Single-flight cache** | Two-expiry envelope; stale served while one lock-winner refreshes (diagram below) | 50 concurrent misses → **1** query |
+| 10 | **Projections** | `select` not `include` — 17 fields instead of 42 per variant row | Also stopped fetching seller password hashes |
+| 11 | **ETag + Cache-Control** | Express emits weak ETags; `publicCache()` adds `max-age` + `stale-while-revalidate` on 2xx only | 304s, then no request at all |
+| 12 | **Compression** | Every service runs `compression()`; gateway deliberately doesn't — it streams the gzipped body through | 41,901 → 1,183 bytes |
+| 13 | **Batched I/O** | One query per table + in-memory map; `updateMany` per batch; `mget` for OTP flags; concurrent uploads | Kills N+1 |
+| 14 | **Prewarmed payments** | Gateway order created in background at checkout, before Pay is tapped | Removes a Razorpay round trip from the tap |
+| 15 | **Turbopack** | `next dev --turbo` | Sub-100 ms HMR |
+| 16 | **Soft delete** | `isDeleted` + hourly hard-delete cron | Fast writes, undo window |
 
-Files: `apps/user-ui/app/orders/page.tsx`, `apps/user-ui/app/category/[slug]/page.tsx`
+### Catalog + variant merge
 
-### 2. Intent-Based Prefetching
+```mermaid
+flowchart LR
+    subgraph admin["Admin — authored once"]
+        CAT["catalog product<br/>title, images, nutrition,<br/>cooking tips, slug"]
+    end
+    subgraph sellers["Sellers — thin variants"]
+        V1["variant · Store A<br/>price, stock, cuts"]
+        V2["variant · Store B<br/>price, stock, cuts"]
+        V3["variant · Store C<br/>price, stock, cuts"]
+    end
+    CAT --> V1 & V2 & V3
 
-When a user hovers a `ProductCard`, the component calls `router.prefetch(href)` and optionally warms the API cache before the click happens. Human hover-to-click latency is 200–400ms — enough time to pre-fetch the destination page.
+    V1 & V2 & V3 --> PICK{"pick best variant<br/>in-stock first,<br/>then cheapest"}
+    CAT --> MERGE
+    PICK --> MERGE["merge → one product card"]
+    MERGE --> OUT["customer sees<br/>ONE listing per fish"]
 
-Result: Navigation feels instantaneous (0ms perceived delay).
+    style OUT fill:#d8f5d8,stroke:#4a4
+```
 
-Files: `apps/user-ui/components/shared/product-card.tsx`
+Descriptive content comes from the catalog root; price, stock and availability from
+the chosen variant — which is why the variant query is a narrow `select`. Pulling
+nutrition and cooking tips per variant fetches the same text once per store, then
+throws all but one copy away.
 
-### 3. Redis Search Caching
+### Single-flight cache
 
-- Search results cached for 3 minutes: `search:{query}:{category}:{sort}`
-- Autocomplete suggestions cached for 5 minutes: `suggest:{query}`
-- Auth tokens cached for 5 minutes (skips MongoDB on every request)
-- Cache bypass flags set when seller approvals or staff access changes (forces fresh DB read once, then re-caches)
-- Stale keys invalidated via Redis `SCAN` stream on product updates
+```mermaid
+flowchart TD
+    A[read key] --> B{envelope found?}
+    B -->|no| C{win refresh lock?}
+    C -->|yes| D[compute + store] --> E[return fresh]
+    C -->|no| F[poll briefly for<br/>the leader's result]
+    F -->|arrived| E
+    F -->|timed out| G[compute inline<br/>rather than fail]
+    B -->|yes| H{past soft expiry?}
+    H -->|no| I[return cached]
+    H -->|yes| J{win refresh lock?}
+    J -->|no| I
+    J -->|yes| K[return stale NOW] -.->|background| D
 
-Files: `packages/libs/src/redis/index.ts`, `apps/product-service/src/controllers/search.controller.ts`
+    style I fill:#d8f5d8,stroke:#4a4
+    style K fill:#d8f5d8,stroke:#4a4
+    style E fill:#fff3cd,stroke:#c93
+```
 
-### 4. Meilisearch for Search
+Green returns without touching the database. The only caller that pays for the query
+is the lock winner — and past the soft expiry even *it* doesn't wait, because the
+refresh runs behind an already-sent response.
 
-MongoDB text search is too slow for real-time autocomplete. Meilisearch provides:
-- Typo tolerance (1 typo at 4 chars, 2 typos at 8 chars)
-- Sub-10ms query latency
-- Filtered search by category, availability, price range, store
-- Custom ranking: priority → words match → typo → proximity → ratings
-
-When Meilisearch is unavailable, the system automatically falls back to a MongoDB regex search.
-
-Files: `apps/product-service/src/lib/meilisearch.ts`, `apps/product-service/src/controllers/search.controller.ts`
-
-### 5. Circuit Breaker Pattern
-
-Wraps calls to downstream services. After 5 consecutive failures the circuit opens and calls fail fast for 30 seconds (HALF_OPEN state for recovery probe) instead of waiting for timeouts. Prevents cascading failures across services.
-
-Files: `packages/libs/src/utils/circuit-breaker.ts`
-
-### 6. Retry with Exponential Backoff
-
-Transient errors (network blips, temporary DB unavailability) are retried automatically with exponential delay: `min(initialDelay × 2^attempt, maxDelay)`.
-
-Files: `packages/libs/src/utils/retry.ts`
-
-### 7. Persistent WebSocket Islands
-
-The WebSocket connection to the worker service is established once and kept alive across Next.js route navigations (via React context). No reconnect overhead per page visit.
-
-Files: `apps/user-ui/context/ws-context.tsx`, `apps/seller-ui/src/context/worker-ws-context.tsx`
-
-### 8. Catalog + Variant Product Model
-
-The product catalog is owned by admin. Sellers create lightweight variants (pricing, stock, cutting options) referencing the catalog record. This means:
-- Search indexes both catalog and variant documents but deduplicates by `catalogId` (returns cheapest variant)
-- Product slugs are canonical (on catalog), preventing slug conflicts across stores
-- Meilisearch document priority: catalog = 1, variant = 2 (catalog shown first in general search)
-
-### 9. Turbopack HMR
-
-All three Next.js apps use Turbopack (`next dev --turbo`) for sub-100ms hot module replacement during development.
-
-### 10. Soft Delete + Cron Cleanup
-
-Products are never immediately hard-deleted. Soft delete sets `isDeleted=true` and `deletedAt`. An hourly cron (`apps/product-service/src/jobs/product.cron.jobs.ts`) permanently removes records past their grace period — keeping writes fast and allowing undo.
+| Measured | Result |
+|---|---|
+| 50 concurrent cold misses | **1** compute, all callers same value |
+| Soft-expired read | ~50 ms vs 120 ms for the query |
 
 ---
 
@@ -657,304 +868,33 @@ Every 30 seconds the server sends a `ping`. If a client doesn't respond with `po
 
 ### RabbitMQ → WebSocket Pipeline
 
+There are deliberately **two** paths onto the queue, with different guarantees.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant O as order-service
+    participant P as PostgreSQL
+    participant R as outbox relay<br/>(worker-service)
+    participant Q as RabbitMQ
+    participant W as WebSocket rooms
+    actor S as Seller dashboard
+
+    rect rgb(240, 248, 240)
+    Note over O,Q: Durable path — must not be lost
+    O->>P: INSERT OutboxEvent (same txn as the order)
+    loop every 2s
+        R->>P: claim PENDING rows<br/>FOR UPDATE SKIP LOCKED
+        R->>Q: publish
+        R->>P: mark batch PUBLISHED (one updateMany)
+    end
+    end
+
+    rect rgb(250, 245, 240)
+    Note over O,Q: Best-effort path — dashboard refetches anyway
+    O->>Q: publishToQueue(ORDER_EVENTS) after the response
+    end
+
+    Q->>W: consumer receives {type: ORDER_PLACED, storeId}
+    W->>S: broadcastToStore(storeId, "NEW_ORDER")
 ```
-Order Service (HTTP handler)
-  → publishes {type: "ORDER_PLACED", storeId, order} to ORDER_EVENTS queue
-
-Worker Service (RabbitMQ consumer)
-  → receives message
-  → calls socketManager.broadcastToStore(storeId, "NEW_ORDER", order)
-  → seller's browser gets event
-```
-
----
-
-## Search: Meilisearch
-
-### Index Document Structure
-
-```typescript
-{
-  id:             "catalog_abc" | "variant_xyz",
-  title:          string,
-  slug:           string,        // canonical (from catalog root)
-  category:       string,
-  subCategory:    string,
-  tags:           string[],
-  short_description: string,
-  sale_price:     number,
-  regular_price:  number,
-  imageUrl:       string,        // variant → catalog → placeholder fallback
-  isDeleted:      boolean,
-  status:         "active" | "NonActive",
-  ratings:        number,
-  storeId:        string | null,
-  catalogId:      string | null,
-  isCatalog:      boolean,
-  isStoreVariant: boolean,
-  priority:       1 | 2,         // catalog=1 ranks higher
-  searchBoost:    10 | 5,
-  available:      boolean,       // stock > 0
-  updatedAt:      string,        // ISO timestamp
-}
-```
-
-### Search Pipeline
-
-```
-GET /product/search?q=hilsa&category=Sea+Fish&sort=price_asc
-
-1. Build Redis cache key
-2. Check Redis → hit: return cached JSON
-3. Miss: query Meilisearch (filter: isDeleted=false, status=active)
-4. Meilisearch error → fallback: MongoDB regex on title/tags/category
-5. Deduplicate results by catalogId (keep cheapest variant per catalog)
-6. Cache result for 3 minutes
-7. Return
-```
-
-### Re-indexing
-
-- On product create/update/delete → `reindexCatalogVariants(catalogId)` fires async (non-blocking)
-- Admin can trigger full reindex: `POST /product/admin/reindex-search`
-- Each index operation: clear stale docs by ID prefix → bulk add new docs
-
----
-
-## Message Queue: RabbitMQ
-
-All queues are durable (survive broker restarts). Messages are persistent.
-
-| Queue | Publisher | Consumer | Purpose |
-|---|---|---|---|
-| `OTP_QUEUE` | Auth Service | Worker (otpWorker) | Async OTP delivery via SMS/Email |
-| `ORDER_EVENTS` | Order Service | Worker (orderWorker) | Broadcast order events to WebSocket clients |
-
-### OTP Flow
-
-```
-Auth Service → publish {type, phone, email, otp} → OTP_QUEUE
-Worker Service → consume → send SMS via Fast2SMS OR email via SMTP/Brevo
-On failure: nack (no requeue on fatal error, requeue on transient error)
-```
-
-### Order Event Flow
-
-```
-Order Service → publish {type, orderId, storeId, userId, order} → ORDER_EVENTS
-Worker Service → consume → route by type:
-  ORDER_PLACED         → broadcastToStore(storeId, "NEW_ORDER", ...)
-  ORDER_STATUS_UPDATE  → broadcastToUser(userId, "ORDER_STATUS_UPDATE", ...)
-  BANNER_REVIEWED      → broadcastToSeller(sellerId, "BANNER_REVIEWED", ...)
-  STOCK_UPDATE         → broadcastAll("STOCK_UPDATE", ...)
-```
-
----
-
-## Image Handling
-
-- Images are uploaded as base64 strings in JSON body (20MB limit)
-- Backend decodes and uploads to **Cloudinary** using the Node.js SDK
-- Cloudinary returns a `public_id` (file_id) and `secure_url`
-- Both are stored in the `images` collection in MongoDB
-- All product image URLs are Cloudinary CDN URLs (globally cached, auto-optimized)
-- Image types: `PRODUCT`, `USER_AVATAR`, `STORE_AVATAR`
-- Admin can delete images from Cloudinary directly via `POST /product/admin/delete-cloudinary-image`
-
----
-
-## Email / SMS / Push Notifications
-
-### Email Templates (EJS)
-
-All emails are rendered from EJS templates in `apps/auth-service/src/utils/email-templates/`:
-
-| Template | Trigger |
-|---|---|
-| `user-activation-mail.ejs` | New user signup |
-| `user-otp-mail.ejs` | OTP for user login |
-| `seller-activation.ejs` | Seller account activation |
-| `seller-access-code.ejs` | Admin issues seller signup code |
-| `forget-password-seller-mail.ejs` | Seller password reset |
-| `forget-password-user-mail.ejs` | User password reset |
-| `admin-activation.ejs` | Admin account activation |
-| `order-delivery-template.ejs` | Order dispatched |
-| `notification-template.ejs` | General notification |
-| `order-confirmation.ejs` | Order confirmed (order-service) |
-
-### SMS
-
-Fast2SMS API for India (phone OTPs). Configured via `FAST2SMS_API_KEY`.
-
-### Push Notifications
-
-Expo Server SDK sends push notifications to mobile apps. Configured per notification type.
-
-### In-App Notifications
-
-Stored in PostgreSQL `Notification` table. Fetched on dashboard load. Real-time delivery via WebSocket when seller/admin is connected.
-
----
-
-## Docker & Deployment
-
-### Local Docker Compose
-
-```yaml
-Services:        api-gateway, auth-service, product-service,
-                 order-service, notification-service, worker-service,
-                 rabbitmq-service (5672 + 15672 management UI),
-                 meilisearch (7700, data volume: ./meili_data)
-
-Network:         fish-studio-net (bridge)
-All services:    restart: always
-Image prefix:    10xdevian134/<service>:prod
-```
-
-### Dockerfiles
-
-Each service has a multi-stage Dockerfile under `docker/<service>/Dockerfile`:
-1. **builder** stage — installs deps, runs `tsup` build
-2. **runtime** stage — copies `dist/`, prunes dev dependencies, runs `node dist/main.js`
-
-### GitHub Actions CI/CD
-
-Workflow in `.github/workflows/deploy.yml`:
-
-```
-1. build-and-push:
-   - docker build each service
-   - tag as 10xdevian134/<service>:prod
-   - push to Docker Hub
-
-2. deploy-to-droplet:
-   - SSH into Droplet (secrets.DROPLET_IP)
-   - cd /home/apps/fish-studio
-   - docker compose pull
-   - docker compose up -d
-   - docker image prune -f
-```
-
-### Next.js Frontends
-
-Deployed separately (Vercel or self-hosted). Not included in the Docker Compose stack.
-
----
-
-## Environment Variables
-
-Copy `env.examples` and fill in values. The `packages/env-config` package validates and exports all variables with TypeScript types.
-
-```bash
-# Ports
-API_GATEWAY_PORT=8080
-AUTH_SERVICE_PORT=6001
-PRODUCT_SERVICE_PORT=6003
-ORDER_SERVICE_PORT=6004
-NOTIFICATION_SERVICE_PORT=6005
-WORKER_SERVICE_PORT=6006
-
-# JWT
-ACCESS_TOKEN_JWT_SECRET_KEY=...
-REFRESH_TOKEN_JWT_SECRET_KEY=...
-JWT_SECRET=...
-
-# Databases
-MONGO_URL=mongodb+srv://...
-POSTGRES_URL=postgresql://...
-REDIS_DATABASE_URL=redis://...
-
-# RabbitMQ
-RABBITMQ_PROTOCOL=amqp
-RABBITMQ_HOST_NAME=localhost
-RABBITMQ_USER_NAME=guest
-RABBITMQ_PASSWORD=guest
-RABBITMQ_PORT=5672
-
-# Search
-MEILISEARCH_HOST=http://localhost:7700
-MEILISEARCH_API_KEY=...
-
-# Email / SMS
-SMTP_HOST=...
-SMTP_PORT=...
-SMTP_USER=...
-SMTP_PASS=...
-BREVO_API_KEY=...
-FAST2SMS_API_KEY=...
-
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
-CLOUDINARY_FOLDER=fishstudio
-
-# Payments
-STRIPE_SECRET_KEY=...
-
-# Frontend URLs (for CORS)
-USER_UI_URL=http://localhost:3000
-ADMIN_UI_URL=http://localhost:3001
-SELLER_UI_URL=http://localhost:3002
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002
-
-# App
-ORG_NAME=FishStudio
-ORG_SUPPORT_EMAIL=support@fishstudio.com
-NODE_ENV=development
-```
-
----
-
-## Getting Started (Local Dev)
-
-### Prerequisites
-
-- Bun 1.3.10+
-- Node.js 18+
-- Docker + Docker Compose (for RabbitMQ, Meilisearch, Redis, MongoDB, PostgreSQL)
-
-### Steps
-
-```bash
-# 1. Clone the repo
-git clone <repo-url>
-cd fishStudio
-
-# 2. Install all dependencies
-bun install
-
-# 3. Copy and fill environment variables
-cp env.examples .env
-# Fill in MONGO_URL, POSTGRES_URL, REDIS_DATABASE_URL, etc.
-
-# 4. Start infrastructure services
-docker compose up rabbitmq-service meilisearch -d
-
-# 5. Generate Prisma clients
-bun run --filter "@repo/db-mongo" build
-bun run --filter "@repo/db-postgres" build
-
-# 6. Start all apps in development mode
-bun run dev
-# Turborepo runs all apps concurrently
-
-# 7. Access the apps
-# User storefront:   http://localhost:3000
-# Admin panel:       http://localhost:3001
-# Seller dashboard:  http://localhost:3002
-# API Gateway:       http://localhost:8080
-# RabbitMQ UI:       http://localhost:15672  (guest/guest)
-# Meilisearch:       http://localhost:7700
-```
-
-### Build for Production
-
-```bash
-bun run build          # Builds all packages then all apps in dependency order
-```
-
----
-
-> For detailed notes on performance optimizations and architecture decisions, see [optimize.md](./optimize.md).
-> For known bugs and workarounds, see [BUG.MD](./BUG.MD).

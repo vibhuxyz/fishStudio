@@ -49,3 +49,9 @@ export type OtpMessageInput = z.infer<typeof schemas.otpMessageSchema>;
 export type CreateRazorpayOrderInput = z.infer<typeof schemas.createRazorpayOrderSchema>;
 export type VerifyPaymentInput = z.infer<typeof schemas.verifyPaymentSchema>;
 export type InitiateRefundInput = z.infer<typeof schemas.initiateRefundSchema>;
+
+export type CreateRiderInput = z.infer<typeof schemas.createRiderSchema>;
+export type UpdateRiderInput = z.infer<typeof schemas.updateRiderSchema>;
+export type UpdateRiderStatusInput = z.infer<typeof schemas.updateRiderStatusSchema>;
+export type ToggleRiderActiveInput = z.infer<typeof schemas.toggleRiderActiveSchema>;
+export type AssignRiderInput = z.infer<typeof schemas.assignRiderSchema>;

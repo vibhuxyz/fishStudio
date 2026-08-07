@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Eye,
   ChevronLeft,
@@ -14,19 +15,27 @@ import {
   Truck,
   XCircle,
   Package,
+  PackageCheck,
+  Bike,
 } from "lucide-react";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import {
   useAdminOrderList,
   useAdminOrderPincodes,
+  useAdminOrderDetail,
   type AdminOrderListParams,
   type AdminOrder,
+  type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
+import { formatOrderId } from "@repo/shared/order-id";
 
 /* ── Status badge helper ────────────────────────────────────────────────── */
 const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
   PENDING:   { label: "Pending",   className: "bg-amber-500/20 text-amber-400 border border-amber-500/30",    icon: <Clock size={11} /> },
   ACCEPTED:  { label: "Accepted",  className: "bg-blue-500/20 text-blue-400 border border-blue-500/30",       icon: <CheckCircle2 size={11} /> },
+  PREPARING: { label: "Preparing", className: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",       icon: <Package size={11} /> },
+  READY_FOR_PICKUP:  { label: "Ready for Pickup", className: "bg-teal-500/20 text-teal-400 border border-teal-500/30", icon: <PackageCheck size={11} /> },
+  ASSIGNED_TO_RIDER: { label: "Rider Assigned",   className: "bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30", icon: <Bike size={11} /> },
   SHIPPED:   { label: "Shipped",   className: "bg-purple-500/20 text-purple-400 border border-purple-500/30", icon: <Truck size={11} /> },
   DELIVERED: { label: "Delivered", className: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30", icon: <Package size={11} /> },
   REJECTED:  { label: "Rejected",  className: "bg-rose-500/20 text-rose-400 border border-rose-500/30",       icon: <XCircle size={11} /> },
@@ -55,7 +64,7 @@ function PayBadge({ status }: { status: string }) {
 }
 
 /* ── Filter bar ─────────────────────────────────────────────────────────── */
-const ORDER_STATUSES = ["PENDING","ACCEPTED","SHIPPED","DELIVERED","REJECTED","CANCELLED"];
+const ORDER_STATUSES = ["PENDING","ACCEPTED","PREPARING","READY_FOR_PICKUP","ASSIGNED_TO_RIDER","SHIPPED","DELIVERED","REJECTED","CANCELLED"];
 const PAY_STATUSES   = ["PENDING","COMPLETED","FAILED","REFUNDED"];
 const PAY_METHODS    = ["COD","RAZORPAY"];
 
@@ -307,7 +316,7 @@ export default function OrderTrackingPage() {
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-800/50 transition group">
                   <td className="px-4 py-3 font-mono text-xs text-blue-400">
-                    #{order.id.slice(-8).toUpperCase()}
+                    {formatOrderId(order.id)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-white truncate max-w-[120px]">
@@ -397,8 +406,27 @@ export default function OrderTrackingPage() {
   );
 }
 
+/** Razorpay's own sub-instrument (card/upi/netbanking/wallet), read off the
+ *  payment's metadata — `payment.method` itself is only ever "COD" | "RAZORPAY". */
+function instrumentLabel(payment: AdminOrderPayment): string | null {
+  const method = payment.metadata?.method;
+  if (!method) return null;
+  const detail = payment.metadata?.instrumentDetail;
+  const label = method.toUpperCase();
+  return detail ? `${label} · ${detail}` : label;
+}
+
 /* ── Inline detail drawer ───────────────────────────────────────────────── */
-function OrderDetailDrawer({ order, onClose }: { order: AdminOrder; onClose: () => void }) {
+function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder; onClose: () => void }) {
+  // The list row the drawer was opened from is missing item images/lineTotal
+  // and full payment metadata — fetch the real detail endpoint and render
+  // that once it lands, falling back to the list row so the drawer isn't
+  // empty while it loads.
+  const { data: detail } = useAdminOrderDetail(initialOrder.id);
+  const order = detail ?? initialOrder;
+  const primaryPayment = order.payments?.find((p) => p.status === "COMPLETED") ?? order.payments?.[0];
+  const primaryInstrument = primaryPayment ? instrumentLabel(primaryPayment) : null;
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
@@ -409,7 +437,7 @@ function OrderDetailDrawer({ order, onClose }: { order: AdminOrder; onClose: () 
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-white">Order #{order.id.slice(-8).toUpperCase()}</h3>
+            <h3 className="text-lg font-bold text-white">Order {formatOrderId(order.id)}</h3>
             <p className="text-xs text-gray-400 mt-0.5">
               {new Date(order.createdAt).toLocaleString("en-IN")}
             </p>
@@ -424,7 +452,10 @@ function OrderDetailDrawer({ order, onClose }: { order: AdminOrder; onClose: () 
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={order.status} />
             <PayBadge status={order.paymentStatus} />
-            <span className="text-xs text-gray-500">{order.paymentMethod}</span>
+            <span className="text-xs text-gray-500">
+              {order.paymentMethod}
+              {primaryInstrument && ` · ${primaryInstrument}`}
+            </span>
             {order.deliverySlot && (
               <span className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded-full capitalize">
                 {order.deliverySlot}
@@ -459,6 +490,48 @@ function OrderDetailDrawer({ order, onClose }: { order: AdminOrder; onClose: () 
             <Row label="City"    value={order.store?.city} />
             <Row label="Pincode" value={order.store?.pincode} />
           </Section>
+
+          {/* Assigned Rider */}
+          {order.rider && (
+            <Section title="Assigned Rider">
+              <div className="flex items-center gap-3 mb-3">
+                {order.rider.avatar?.url ? (
+                  <Image src={order.rider.avatar.url} alt={order.rider.name} width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center">
+                    <span className="text-fuchsia-400 text-sm font-bold">{order.rider.name?.[0]?.toUpperCase() ?? "R"}</span>
+                  </div>
+                )}
+                <p className="text-white font-semibold">{order.rider.name}</p>
+              </div>
+              <Row label="Phone"   value={order.rider.phone} />
+              <Row label="Vehicle" value={`${order.rider.vehicleType} · ${order.rider.vehicleNumber}`} />
+              <Row label="Assigned At" value={order.assignedAt ? new Date(order.assignedAt).toLocaleString("en-IN") : undefined} />
+            </Section>
+          )}
+
+          {/* Payment */}
+          {order.payments && order.payments.length > 0 && (
+            <Section title={`Payment${order.payments.length > 1 ? "s" : ""} (${order.payments.length})`}>
+              <div className="space-y-3">
+                {order.payments.map((payment) => (
+                  <div key={payment.id} className="bg-gray-900 rounded-lg p-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">
+                        {payment.method}
+                        {instrumentLabel(payment) && (
+                          <span className="text-gray-400 font-normal"> · {instrumentLabel(payment)}</span>
+                        )}
+                      </span>
+                      <PayBadge status={payment.status} />
+                    </div>
+                    <Row label="Amount" value={`₹${payment.amount.toFixed(0)}`} />
+                    {payment.transactionId && <Row label="Transaction ID" value={payment.transactionId} />}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* Items */}
           <Section title={`Items (${order.items?.length ?? 0})`}>

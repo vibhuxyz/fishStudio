@@ -1,8 +1,16 @@
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, toMoney } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Response } from "express";
-import { invalidateSellerStatsCache, restoreOrderStock } from "./utils.js";
+import {
+  invalidateSellerStatsCache,
+  restoreOrderStock,
+  orderMoneyFields,
+  orderItemMoneyFields,
+  normalizeOrderIdFragment,
+  releaseRiderIfNoOtherDeliveries,
+} from "./utils.js";
+import { formatOrderId } from "@repo/shared/order-id";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
@@ -23,10 +31,24 @@ export const getSellerOrders = async (
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
+    const search = (req.query.search as string) || undefined;
+
+    const where: any = {
+      storeId,
+      ...(search
+        ? {
+            OR: [
+              { id:            { contains: normalizeOrderIdFragment(search), mode: "insensitive" } },
+              { deliveryPhone: { contains: search, mode: "insensitive" } },
+              { deliveryPincode: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
 
     const [orders, total] = await Promise.all([
       prismaPostgres.order.findMany({
-        where: { storeId },
+        where,
         skip,
         take: limit,
         include: {
@@ -34,14 +56,15 @@ export const getSellerOrders = async (
         },
         orderBy: { createdAt: "desc" },
       }),
-      prismaPostgres.order.count({ where: { storeId } }),
+      prismaPostgres.order.count({ where }),
     ]);
 
-    // Hydrate orders with Users and Products from Mongo
+    // Hydrate orders with Users, Products, and any assigned Riders from Mongo
     const userIds = [...new Set(orders.map(o => o.userId))];
     const productIds = [...new Set(orders.flatMap(o => o.orderItems.map(oi => oi.productId)))];
+    const riderIds = [...new Set(orders.map(o => o.riderId).filter((id): id is string => Boolean(id)))];
 
-    const [users, products] = await Promise.all([
+    const [users, products, riders] = await Promise.all([
       prismaMongo.users.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true, phone_number: true, email: true },
@@ -56,19 +79,29 @@ export const getSellerOrders = async (
           images: { select: { url: true }, take: 1 },
         },
       }),
+      riderIds.length
+        ? prismaMongo.riders.findMany({
+            where: { id: { in: riderIds } },
+            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, status: true, avatar: true },
+          })
+        : [],
     ]);
 
     const userMap = new Map(users.map(u => [u.id, u]));
     const productMap = new Map(products.map(p => [p.id, p]));
+    const riderMap = new Map(riders.map(r => [r.id, r]));
 
     const mappedOrders = orders.map((o: any) => ({
       ...o,
+      ...orderMoneyFields(o),
       user: userMap.get(o.userId),
+      rider: o.riderId ? riderMap.get(o.riderId) ?? null : null,
       items: o.orderItems.map((oi: any) => ({
         ...oi,
+        ...orderItemMoneyFields(oi),
         product: productMap.get(oi.productId),
       })),
-      total: o.totalAmount,
+      total: toMoney(o.totalAmount),
     }));
 
     res.status(200).json({
@@ -132,13 +165,13 @@ export const acceptOrRejectOrder = async (
 
     /* ── Notify User ── */
     try {
-      const shortId = orderId.slice(-6).toUpperCase();
+      const shortId = formatOrderId(orderId);
       await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
         userId: existingOrder.userId,
         title: action === "accept" ? "Order Accepted" : "Order Rejected",
         message: action === "accept"
-          ? `Your order #${shortId} has been accepted by the store.`
-          : `Your order #${shortId} was rejected. Reason: ${rejectionReason || "Order rejected by seller"}`,
+          ? `Your order ${shortId} has been accepted by the store.`
+          : `Your order ${shortId} was rejected. Reason: ${rejectionReason || "Order rejected by seller"}`,
         type: action === "accept" ? "SUCCESS" : "ERROR",
         category: "ORDER",
         metadata: { orderId },
@@ -174,7 +207,7 @@ export const updateOrderStatus = async (
 ) => {
   try {
     const { orderId } = req.params;
-    const { status } = validate(updateOrderStatusSchema, req.body);
+    const { status, cancellationReason } = validate(updateOrderStatusSchema, req.body);
     const storeId = req.seller?.store?.id;
 
     const existing = await prismaPostgres.order.findUnique({
@@ -186,34 +219,92 @@ export const updateOrderStatus = async (
       return next(new ValidationError("You can only manage orders for your own store"));
     }
 
+    const refundNeeded =
+      status === "CANCELLED" &&
+      existing.paymentMethod === "RAZORPAY" &&
+      existing.paymentStatus === "COMPLETED";
+
+    // Rider assignment is opt-in — a store that never uses it can go
+    // straight READY_FOR_PICKUP -> SHIPPED -> DELIVERED with no rider
+    // attached, so these fields only get set when existing.riderId is present.
     const updated = await prismaPostgres.order.update({
       where: { id: orderId },
       data: {
         status,
         updatedAt: new Date(),
+        ...(status === "CANCELLED"
+          ? {
+              cancelledBy: req.role === "staff" ? "STAFF" : "SELLER",
+              cancelledAt: new Date(),
+              ...(cancellationReason?.trim() ? { cancellationReason: cancellationReason.trim() } : {}),
+              ...(refundNeeded ? { refundStatus: "REQUESTED" } : {}),
+            }
+          : {}),
         ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" } : {}),
+        ...(status === "SHIPPED" && existing.riderId
+          ? { riderStatus: "OUT_FOR_DELIVERY", pickupStartedAt: new Date() }
+          : {}),
+        ...(status === "DELIVERED"
+          ? { deliveredAt: new Date(), ...(existing.riderId ? { riderStatus: "DELIVERED" } : {}) }
+          : {}),
       },
     });
 
     // Restore stock when seller manually cancels an order
     if (status === "CANCELLED") {
       restoreOrderStock(existing.orderItems, "updateOrderStatus");
+
+      // A customer who paid online but is only cancellable this late through
+      // support gets refunded the same way self-cancel does — order-service
+      // has already confirmed this order belongs to the requesting seller's
+      // store above, so payment-service processes it as a "system" actor.
+      if (refundNeeded) {
+        publishToQueue(QUEUE_NAMES.PAYMENT_EVENTS, {
+          type: "REFUND_REQUESTED",
+          orderId,
+          userId: existing.userId,
+          reason: cancellationReason?.trim() || "Order cancelled by store after preparation started",
+        }).catch((err) => logger.error("Failed to queue refund for seller-cancelled order", { orderId, err }));
+      }
+
+      publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
+        type: "ORDER_CANCELLED",
+        orderId,
+        storeId: existing.storeId,
+        userId: existing.userId,
+        cancelledBy: req.role === "staff" ? "STAFF" : "SELLER",
+        reason: cancellationReason?.trim() || null,
+        refundRequested: refundNeeded,
+      }).catch((err) => logger.error("Failed to publish ORDER_CANCELLED event", { orderId, err }));
+    }
+
+    // A rider attached to this order is done once it's DELIVERED or
+    // CANCELLED — release their claim so they're eligible for assignment again.
+    if ((status === "DELIVERED" || status === "CANCELLED") && existing.riderId) {
+      releaseRiderIfNoOtherDeliveries(existing.riderId).catch((err) =>
+        logger.error("Failed to release rider after order completion", { orderId, riderId: existing.riderId, err }),
+      );
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
 
     /* ── Notify User ── */
     try {
-      const shortId = orderId.slice(-6).toUpperCase();
+      const shortId = formatOrderId(orderId);
       let title = "Order Update";
-      let message = `Your order #${shortId} status has been updated to ${status}.`;
+      let message = `Your order ${shortId} status has been updated to ${status}.`;
 
       if (status === "SHIPPED") {
         title = "Order Shipped";
-        message = `Good news! Your order #${shortId} has been shipped.`;
+        message = `Good news! Your order ${shortId} has been shipped.`;
       } else if (status === "DELIVERED") {
         title = "Order Delivered";
-        message = `Your order #${shortId} has been delivered. Enjoy!`;
+        message = `Your order ${shortId} has been delivered. Enjoy!`;
+      } else if (status === "CANCELLED") {
+        title = "Order Cancelled";
+        message = refundNeeded
+          ? "Your order has been cancelled successfully.\nYour refund has been initiated.\nRefund Status: Processing"
+          : "Your order has been cancelled successfully.";
       }
 
       const channels: ("IN_APP" | "EMAIL" | "SMS")[] = ["IN_APP"];
@@ -250,7 +341,7 @@ export const updateOrderStatus = async (
 
           orderMetadata = {
             ...orderMetadata,
-            totalAmount: orderWithItems.totalAmount,
+            totalAmount: toMoney(orderWithItems.totalAmount),
             deliveryName: orderWithItems.deliveryName,
             deliveryAddress: orderWithItems.deliveryAddress,
             deliveryCity: orderWithItems.deliveryCity,
@@ -259,7 +350,7 @@ export const updateOrderStatus = async (
             items: orderWithItems.orderItems.map(oi => ({
               name: productMap.get(oi.productId) || "Product",
               quantity: oi.quantity,
-              price: oi.price
+              price: toMoney(oi.price)
             }))
           };
         }

@@ -1,5 +1,6 @@
 import { useAddressStore } from "@/lib/address-store";
 import { CartItem, useStore } from "@/store";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import useUser from "@/hooks/useUser";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -111,7 +112,7 @@ export default function Wishlist() {
                   >
                     <Image
                       source={{
-                        uri: product.image ||
+                        uri: cloudinaryThumbnail(product.image, 160) ||
                           "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=300&fit=crop&crop=center"
                       }}
                       className="w-full h-full"

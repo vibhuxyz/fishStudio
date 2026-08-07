@@ -12,7 +12,7 @@ import {
   resolvePriceFromSizePricing,
   resolveSizePricing,
   type ProductSizePricing,
-} from "@repo/pricing";
+} from "@repo/shared/pricing";
 
 export {
   computePerKgSalePrice,
@@ -21,7 +21,7 @@ export {
   resolvePerKgPricing,
   type ProductSizePricing,
 };
-export type { PerKgPricing } from "@repo/pricing";
+export type { PerKgPricing } from "@repo/shared/pricing";
 
 /**
  * Resolve the sizePricing entry for a selected size, with fallbacks.

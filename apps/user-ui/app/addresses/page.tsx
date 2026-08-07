@@ -189,15 +189,15 @@ export default function AddressesPage() {
                   ) : (
                     <span className="text-xs text-muted-foreground italic">Primary delivery address</span>
                   )}
-                  {!isSelected && (
-                    <button
-                      type="button"
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => handleDelete(address.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+                  {/* Deletable even while selected — a lone saved address is
+                      always auto-selected, so hiding this here made it undeletable. */}
+                  <button
+                    type="button"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDelete(address.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             );
@@ -205,7 +205,7 @@ export default function AddressesPage() {
         </div>
       )}
 
-      <AddressModal open={showModal} onOpenChange={setShowModal} />
+      <AddressModal open={showModal} onOpenChange={setShowModal} requireAddressForm />
     </div>
   );
 }

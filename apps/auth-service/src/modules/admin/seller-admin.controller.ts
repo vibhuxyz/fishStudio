@@ -8,6 +8,7 @@ import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
 
 import { runBestEffort } from "../../utils/runBestEffort.js";
+import { bumpRefreshFamily } from "../../utils/tokenRevocation.js";
 
 export const getAllSellersForAdmin = async (
   req: Request,
@@ -121,20 +122,41 @@ export const updateSellerApproval = async (
 ) => {
   try {
     const sellerId = req.params.sellerId as string;
-    const { isApprovedByAdmin, permissions } = validate(updateSellerApprovalSchema, req.body);
+    const { isApprovedByAdmin, permissions, isActive } = validate(
+      updateSellerApprovalSchema,
+      req.body,
+    );
 
     if (!sellerId) return next(new ValidationError("Seller id is required"));
 
     const seller = await prisma.sellers.findUnique({ where: { id: sellerId } });
     if (!seller) return next(new ValidationError("Seller not found"));
 
+    const isBeingDeactivated = isActive === false && seller.isActive !== false;
+    const isBeingReactivated = isActive === true && seller.isActive === false;
+
     const updatedSeller = await prisma.sellers.update({
       where: { id: sellerId },
       data: {
         isApprovedByAdmin: isApprovedByAdmin !== undefined ? isApprovedByAdmin : seller.isApprovedByAdmin,
         permissions: permissions !== undefined ? permissions : seller.permissions,
+        isActive: isActive !== undefined ? isActive : seller.isActive,
       },
     });
+
+    const store = await prisma.stores.findFirst({ where: { sellerId } });
+
+    // Deactivating a seller cascades to their catalog: every product they
+    // sell is hidden from the storefront by flipping it to NonActive, the
+    // same field sellers use to hide a product themselves. Reactivating
+    // restores all of them — a seller who wants a specific product to stay
+    // hidden after reactivation can turn it back off individually.
+    if (store && (isBeingDeactivated || isBeingReactivated)) {
+      await prisma.products.updateMany({
+        where: { storeId: store.id, isDeleted: false },
+        data: { status: isBeingDeactivated ? "NonActive" : "Active" },
+      });
+    }
 
     /* ── Notify Seller ── */
     await runBestEffort("Failed to notify seller of approval/permission update", async () => {
@@ -146,6 +168,24 @@ export const updateSellerApproval = async (
           type: "SUCCESS",
           category: "SYSTEM",
           channels: ["IN_APP", "EMAIL", "SMS"],
+        });
+      } else if (isBeingDeactivated) {
+        await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: sellerId,
+          title: "Account Deactivated",
+          message: "Your seller account has been deactivated by the admin. Your store and products are no longer visible to customers.",
+          type: "ERROR",
+          category: "SYSTEM",
+          channels: ["IN_APP", "EMAIL"],
+        });
+      } else if (isBeingReactivated) {
+        await publishToQueue("NOTIFICATION_QUEUE", {
+          userId: sellerId,
+          title: "Account Reactivated",
+          message: "Your seller account has been reactivated by the admin. You can log in and manage your store again.",
+          type: "SUCCESS",
+          category: "SYSTEM",
+          channels: ["IN_APP", "EMAIL"],
         });
       } else if (permissions !== undefined) {
         await publishToQueue("NOTIFICATION_QUEUE", {
@@ -163,11 +203,9 @@ export const updateSellerApproval = async (
     await runBestEffort("Failed to publish seller event", async () => {
       // Always bust the Redis auth cache when anything changes so the seller's
       // next API fetch bypasses the 5-minute cache and gets fresh data.
-      if (isApprovedByAdmin !== undefined || permissions !== undefined) {
+      if (isApprovedByAdmin !== undefined || permissions !== undefined || isActive !== undefined) {
         await redis.set(`cache:bypass:seller:${sellerId}`, "1", "EX", 60);
       }
-
-      const store = await prisma.stores.findFirst({ where: { sellerId } });
 
       if (isApprovedByAdmin === true && seller.isApprovedByAdmin !== true) {
         // First-time approval → redirect seller from pending-approval to dashboard
@@ -189,6 +227,23 @@ export const updateSellerApproval = async (
         }
       }
     });
+
+    if (isBeingDeactivated) {
+      // Fix #24-style follow-through: kick out any session already in
+      // flight, not just future logins — mirrors staff access revocation.
+      await runBestEffort("Failed to revoke seller sessions on deactivation", async () => {
+        await bumpRefreshFamily("seller", sellerId);
+      });
+    }
+
+    if (store && (isBeingDeactivated || isBeingReactivated)) {
+      await runBestEffort("Failed to sync search index after seller status change", async () => {
+        await publishToQueue(QUEUE_NAMES.PRODUCT_SYNC_EVENTS, {
+          type: "SELLER_STATUS_CHANGED",
+          storeId: store.id,
+        });
+      });
+    }
 
     return res.status(200).json({
       success: true,

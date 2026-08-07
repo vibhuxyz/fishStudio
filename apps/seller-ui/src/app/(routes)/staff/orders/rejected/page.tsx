@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import Link from "next/link";
+import { formatOrderId } from "@repo/shared/order-id";
 
 const RejectedOrdersPage = () => {
   const router = useRouter();
@@ -117,7 +118,7 @@ const RejectedOrdersPage = () => {
               <Link href={`/staff/orders/${order.id}`}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-white font-semibold">Order #{order.id.slice(-6).toUpperCase()}</p>
+                    <p className="text-white font-semibold">Order {formatOrderId(order.id)}</p>
                     <p className="text-gray-500 text-xs">{new Date(order.createdAt).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-1">

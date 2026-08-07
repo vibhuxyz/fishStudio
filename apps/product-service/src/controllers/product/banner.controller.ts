@@ -80,28 +80,33 @@ export const uploadBanner = async (
       return res.status(201).json({ success: true, data: newBanner });
     }
 
-    const createdBanners = [];
-    for (const img of imageList) {
-      let imageUrl = "";
-      let fileId = "";
+    // Uploads and inserts both run per image, and both used to run one after
+    // the other — a five-banner upload paid five Cloudinary round trips end to
+    // end before the first insert. They are independent, so both stages are
+    // now concurrent.
+    const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
+    const cloudFolder = effectiveBannerType === "announcement"
+      ? `${baseFolder}/announcement`
+      : category
+        ? `${baseFolder}/category/${category}/images`
+        : `${baseFolder}/homepage`;
 
-      if (typeof img === "object" && img !== null) {
-        imageUrl = (img as any).url || (img as any).file_url || "";
-        fileId = (img as any).file_id || (img as any).fileId || "";
-      }
+    const resolved = await Promise.all(
+      imageList.map(async (img) => {
+        let imageUrl = "";
+        let fileId = "";
 
-      if (!imageUrl || !fileId) {
+        if (typeof img === "object" && img !== null) {
+          imageUrl = (img as any).url || (img as any).file_url || "";
+          fileId = (img as any).file_id || (img as any).fileId || "";
+        }
+
+        if (imageUrl && fileId) return { imageUrl, fileId };
+
         // If it's a string or an object missing info, try uploading to Cloudinary
         const uploadTarget = typeof img === "string" ? img : (imageUrl || "");
-        if (!uploadTarget) continue;
+        if (!uploadTarget) return null;
 
-        const baseFolder = `${ENV.CLOUDINARY_FOLDER || "fishStudio-app"}/banners`;
-        const cloudFolder = effectiveBannerType === "announcement"
-          ? `${baseFolder}/announcement`
-          : category
-            ? `${baseFolder}/category/${category}/images`
-            : `${baseFolder}/homepage`;
-            
         const response = await cloudinary.uploader.upload(uploadTarget as string, {
           folder: cloudFolder,
           resource_type: "auto",
@@ -109,27 +114,33 @@ export const uploadBanner = async (
           fetch_format: "auto",
           transformation: [{ width: 1600, crop: "limit" }],
         });
-        imageUrl = response.secure_url;
-        fileId = response.public_id;
-      }
+        return { imageUrl: response.secure_url, fileId: response.public_id };
+      }),
+    );
 
-      const newBanner = await prisma.banners.create({
-        data: {
-          imageUrl: imageUrl,
-          fileId: fileId,
-          category: category || null,
-          seller: sellerId ? { connect: { id: sellerId } } : undefined,
-          admin: adminId ? { connect: { id: adminId } } : undefined,
-          status: adminId ? "APPROVED" : "PENDING",
-          isActive: adminId ? true : false,
-          bannerType: effectiveBannerType,
-          title: title || null,
-          subtitle: subtitle || null,
-          price: price || null,
-        },
-      });
-      createdBanners.push(newBanner);
-    }
+    // createMany would collapse these into one write, but it returns only a
+    // count and the response hands back the created records themselves.
+    const createdBanners = await Promise.all(
+      resolved
+        .filter((entry): entry is { imageUrl: string; fileId: string } => entry !== null)
+        .map((entry) =>
+          prisma.banners.create({
+            data: {
+              imageUrl: entry.imageUrl,
+              fileId: entry.fileId,
+              category: category || null,
+              seller: sellerId ? { connect: { id: sellerId } } : undefined,
+              admin: adminId ? { connect: { id: adminId } } : undefined,
+              status: adminId ? "APPROVED" : "PENDING",
+              isActive: adminId ? true : false,
+              bannerType: effectiveBannerType,
+              title: title || null,
+              subtitle: subtitle || null,
+              price: price || null,
+            },
+          }),
+        ),
+    );
     // Publish to ADMIN_EVENTS queue for real-time dashboard updates
     try {
       if (sellerId) {

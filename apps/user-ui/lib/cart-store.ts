@@ -36,9 +36,12 @@ function scheduleSaveCart(
   }, 5_000); // 5-second debounce
 }
 
-/** Stable signature for a cart line so the same product+options dedupes. */
+/** Stable signature for a cart line so the same product+options dedupes.
+ *  Combo-linked lines never dedupe with a standalone purchase of the same
+ *  product+options — they're priced (and must checkout) as part of the
+ *  bundle, not merged into an unrelated line. */
 function cartItemSignature(i: CartItem): string {
-  return [i.product?.id, i.cuttingType?.id, i.pieceSize?.id, i.size].join("|");
+  return [i.product?.id, i.cuttingType?.id, i.pieceSize?.id, i.size, i.comboId ?? ""].join("|");
 }
 
 /** Merge server-restored items into local items, deduping by signature. */
@@ -84,7 +87,7 @@ export type PriceBreakdown = {
   effectiveRatePerKg?: number;
 };
 
-type CartItem = {
+export type CartItem = {
   product: Product;
   quantity: number;
   cuttingType: CuttingType;
@@ -92,6 +95,10 @@ type CartItem = {
   size: string;
   totalPayable: number;
   priceBreakdown?: PriceBreakdown;
+  // Set when this line came from a combo bundle — checkout tags the order
+  // item with it so order-service reprices the whole group to the bundle
+  // price instead of charging this line's own catalog price.
+  comboId?: string;
 };
 
 interface CartState {
@@ -105,7 +112,20 @@ interface CartState {
     size: string,
     priceBreakdown?: PriceBreakdown,
   ) => void;
+  /** Adds a combo bundle member at its bundle-prorated unit price rather
+   *  than the product's own catalog price. */
+  addComboItem: (
+    comboId: string,
+    product: Product,
+    quantity: number,
+    cuttingType: CuttingType | string,
+    pieceSize: PieceSize | string,
+    unitPrice: number,
+  ) => void;
   removeItem: (index: number) => void;
+  /** Removes every line belonging to a combo bundle in one shot — combo
+   *  members can't be removed individually, only as a whole group. */
+  removeComboGroup: (comboId: string) => void;
   updateQuantity: (index: number, quantity: number) => void;
   /** Async + click: fetches live stock, updates the item's stock, then increments if still available. */
   checkAndIncrement: (index: number, step?: number) => Promise<{ ok: boolean; message?: string }>;
@@ -126,6 +146,13 @@ interface CartState {
     nearbyHint: string | null;
     openingHours: string | null;
     closingHours: string | null;
+    // Seller-set bill config (Store settings in seller-ui) — defaults here
+    // match order-service's DEFAULT_CART_PRICING fallback, used only until
+    // the first validate-cart response for the resolved store lands.
+    gstRate: number;
+    packagingCharge: number;
+    baseDeliveryCharge: number;
+    freeDeliveryThreshold: number;
   };
 }
 
@@ -176,6 +203,10 @@ export const useCartStore = create<CartState>()(
         nearbyHint: null,
         openingHours: null,
         closingHours: null,
+        gstRate: 0,
+        packagingCharge: 0,
+        baseDeliveryCharge: 49,
+        freeDeliveryThreshold: 500,
       },
 
       addItem: (product, quantity, cuttingType, pieceSize, size, priceBreakdown) => {
@@ -235,9 +266,57 @@ export const useCartStore = create<CartState>()(
     });
   },
 
+  addComboItem: (comboId, product, quantity, cuttingType, pieceSize, unitPrice) => {
+    const normalizedCuttingType = normalizeOption(cuttingType, "cutting-type");
+    const normalizedPieceSize = normalizeOption(pieceSize, "piece-size");
+    set((state) => {
+      const size = DEFAULT_SIZE;
+      const existingIndex = state.items.findIndex(
+        (item) =>
+          item.comboId === comboId &&
+          item.product.id === product.id &&
+          item.cuttingType.id === normalizedCuttingType.id &&
+          item.pieceSize.id === normalizedPieceSize.id,
+      );
+
+      let nextItems: CartItem[];
+      if (existingIndex >= 0) {
+        nextItems = [...state.items];
+        const existing = nextItems[existingIndex]!;
+        const newQty = existing.quantity + quantity;
+        nextItems[existingIndex] = { ...existing, quantity: newQty, totalPayable: newQty * unitPrice };
+      } else {
+        nextItems = [
+          ...state.items,
+          {
+            product,
+            quantity,
+            cuttingType: normalizedCuttingType,
+            pieceSize: normalizedPieceSize,
+            size,
+            totalPayable: quantity * unitPrice,
+            comboId,
+          },
+        ];
+      }
+      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      return { items: nextItems };
+    });
+  },
+
   removeItem: (index) => {
     set((state) => {
       const nextItems = state.items.filter((_, i) => i !== index);
+      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
+      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      return { items: nextItems };
+    });
+  },
+
+  removeComboGroup: (comboId) => {
+    set((state) => {
+      const nextItems = state.items.filter((it) => it.comboId !== comboId);
       const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
       scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
       return { items: nextItems };
@@ -404,6 +483,10 @@ export const useCartStore = create<CartState>()(
         nearbyHint: null,
         openingHours: null,
         closingHours: null,
+        gstRate: 0,
+        packagingCharge: 0,
+        baseDeliveryCharge: 49,
+        freeDeliveryThreshold: 500,
       },
     });
   },
@@ -442,8 +525,10 @@ export const useCartStore = create<CartState>()(
 
     // Get pincode from address store
     const { selectedLocation, getSelectedAddress } = (await import("./address-store")).useAddressStore.getState();
-    const pincode = selectedLocation?.pincode || getSelectedAddress()?.pincode;
-    const city = selectedLocation?.city || getSelectedAddress()?.city;
+    const selectedAddress = getSelectedAddress();
+    const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+    const city = selectedLocation?.city || selectedAddress?.city;
+    const area = selectedLocation?.area || selectedAddress?.area;
 
     if (!pincode) return;
 
@@ -451,12 +536,16 @@ export const useCartStore = create<CartState>()(
       const cartItems = items.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
+        // Lets the backend identify combo bundle members and reprice the
+        // whole group to the bundle price instead of catalog price.
+        ...(item.comboId ? { comboId: item.comboId, cuttingType: item.cuttingType?.name, pieceSize: item.pieceSize?.name } : {}),
       }));
 
       const { data } = await axiosInstance.post("/product/api/validate-cart", {
         cartItems,
         pincode,
         city,
+        area,
         storeId: selectedLocation?.storeId || undefined,
       });
 
@@ -473,6 +562,10 @@ export const useCartStore = create<CartState>()(
             nearbyHint: data.nearbyHint || null,
             openingHours: data.openingHours || data.store?.opening_hours || null,
             closingHours: data.closingHours || data.store?.closing_hours || null,
+            gstRate: data.gstRate ?? 0,
+            packagingCharge: data.packagingCharge ?? 0,
+            baseDeliveryCharge: data.baseDeliveryCharge ?? 49,
+            freeDeliveryThreshold: data.freeDeliveryThreshold ?? 500,
           },
           items: state.items.map((item) => {
             const fresh = validatedItems.find((p: any) => p.productId === item.product.id);
@@ -535,6 +628,17 @@ export function addToCart(
   priceBreakdown?: PriceBreakdown,
 ) {
   useCartStore.getState().addItem(product, quantity, cuttingType, pieceSize, size, priceBreakdown);
+}
+
+export function addComboItemToCart(
+  comboId: string,
+  product: Product,
+  quantity: number,
+  cuttingType: CuttingType | string,
+  pieceSize: PieceSize | string,
+  unitPrice: number,
+) {
+  useCartStore.getState().addComboItem(comboId, product, quantity, cuttingType, pieceSize, unitPrice);
 }
 
 export function removeFromCart(index: number) {

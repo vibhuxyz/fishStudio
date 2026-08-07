@@ -6,11 +6,9 @@ import { useCouponStore } from "@/lib/coupon-store";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
 import { useStore } from "@/store";
 import { SLOT_OPTIONS, SCHEDULED_SLOTS } from "@/constants/delivery-slots";
-import { BASE_DELIVERY_CHARGE, FREE_DELIVERY_THRESHOLD, GST_RATE, PACKAGING_CHARGE } from "@/constants/pricing";
 import axiosInstance from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
 import { toast } from "@/utils/toast";
-import { rankCoupons } from "@repo/pricing";
 import { createOrderSchema } from "@repo/zod-schema";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -129,19 +127,20 @@ export default function CheckoutScreen() {
   const {
     appliedCoupons,
     availableCoupons,
-    autoApplied,
     applyCoupon,
     removeCoupon,
     clearAllCoupons,
-    setAutoApplied,
     isCouponApplied,
     getDiscountForCoupon,
     getTotalDiscount,
     fetchAvailableCoupons,
-    validateCouponCode,
   } = useCouponStore();
 
-  const { selectedSlot, instantFee, setSlotAvailability } = useDeliverySlotStore();
+  const {
+    selectedSlot, instantFee, setSlotAvailability,
+    gstRate, packagingCharge, baseDeliveryCharge: sellerDeliveryCharge, freeDeliveryThreshold,
+    setBillConfig,
+  } = useDeliverySlotStore();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [onlineRail, setOnlineRail] = useState<OnlineRail | null>(null);
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
@@ -215,6 +214,7 @@ export default function CheckoutScreen() {
       const cartItems = cart.map((item) => ({
         productId: item.id,
         quantity: item.quantity || 1,
+        size: item.selectedSize || undefined,
       }));
       axiosInstance
         .post("/product/api/validate-cart", {
@@ -226,6 +226,12 @@ export default function CheckoutScreen() {
         .then(({ data }) => {
           if (data.success) {
             setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+            setBillConfig({
+              gstRate: data.gstRate ?? 0,
+              packagingCharge: data.packagingCharge ?? 0,
+              baseDeliveryCharge: data.baseDeliveryCharge ?? 49,
+              freeDeliveryThreshold: data.freeDeliveryThreshold ?? 500,
+            });
           }
         })
         .catch(() => {});
@@ -250,72 +256,15 @@ export default function CheckoutScreen() {
     setPaymentIssue(issue);
   };
 
-  const baseDelivery = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : BASE_DELIVERY_CHARGE;
-
-  // Best saving first — same ranking the web cart uses, so an offer that leads
-  // the list on one surface leads it on the other.
-  const rankedCoupons = useMemo(
-    () => rankCoupons(availableCoupons, { subtotal, deliveryCharge: baseDelivery }),
-    [availableCoupons, subtotal, baseDelivery],
-  );
-
-  // Auto-apply the best eligible coupon — but only once the backend confirms
-  // it's actually usable. minOrderValue is the only thing rankedCoupons checks
-  // locally; isFirstOrder, per-user usage limits and seller scope live only
-  // in validate-coupon, so an offer that looks eligible from the cached
-  // store-offers list can still be one the server won't honor.
-  useEffect(() => {
-    if (appliedCoupons.length > 0 || autoApplied || !selectedLocation?.storeId) return;
-    const candidate = rankedCoupons.find(
-      (r) => r.eligible && r.coupon.autoApply && !isCouponApplied(r.coupon.code),
-    )?.coupon;
-    if (!candidate) return; // try again once something makes a coupon eligible
-
-    // Event-derived offers (Flash Sale / seasonal Discount / Free Delivery
-    // banners) have no discount_codes row behind them — validate-coupon can
-    // never find one and would always report it invalid. They were just
-    // fetched fresh from store-offers, and order-service re-validates the
-    // eventId for real at order creation, so there's nothing to check here.
-    if (candidate.isEvent) {
-      applyCoupon(candidate);
-      const saved = getDiscountForCoupon(candidate, subtotal);
-      toast.success(
-        saved > 0 ? `Applied ${candidate.code}. You saved ₹${saved}.` : `Applied ${candidate.code} — free delivery.`,
-        { haptic: false },
-      );
-      setAutoApplied(true);
-      return;
-    }
-
-    let cancelled = false;
-    validateCouponCode(candidate.code, subtotal, selectedLocation.storeId).then(({ coupon }) => {
-      if (cancelled) return;
-      if (coupon) {
-        applyCoupon(coupon);
-        const saved = getDiscountForCoupon(coupon, subtotal);
-        toast.success(
-          saved > 0 ? `Applied ${coupon.code}. You saved ₹${saved}.` : `Applied ${coupon.code} — free delivery.`,
-          { haptic: false },
-        );
-      }
-      setAutoApplied(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [rankedCoupons, appliedCoupons.length, autoApplied, selectedLocation?.storeId, subtotal]);
+  const baseDelivery = subtotal >= freeDeliveryThreshold ? 0 : sellerDeliveryCharge;
 
   // A quantity change in the cart can drop the subtotal below an already
   // applied coupon's minimum — getDiscountForCoupon would then silently
-  // clamp its saving to 0 while the UI still claimed it was applied. Reset
-  // autoApplied too, so the effect above immediately looks for a valid
-  // replacement instead of leaving the order coupon-less for the rest of the
-  // session.
+  // clamp its saving to 0 while the UI still claimed it was applied.
   useEffect(() => {
     const applied = appliedCoupons[0];
     if (!applied || subtotal >= applied.minOrderValue) return;
     removeCoupon(applied.code);
-    setAutoApplied(false);
     toast.info(`'${applied.code}' removed — order no longer meets its ₹${applied.minOrderValue} minimum`);
   }, [subtotal]);
 
@@ -325,9 +274,8 @@ export default function CheckoutScreen() {
   );
   const deliveryCharge = isFreeDelivery ? 0 : baseDelivery;
   const slotExtraCharge = selectedSlot === "instant" ? instantFee : 0;
-  const packagingCharge = PACKAGING_CHARGE;
   const discount = Math.min(getTotalDiscount(subtotal), subtotal);
-  const gstAmount = Math.round(subtotal * GST_RATE);
+  const gstAmount = Math.round(subtotal * gstRate);
   const grandTotal = Math.max(
     0,
     subtotal - discount + deliveryCharge + slotExtraCharge + packagingCharge + gstAmount,
@@ -610,6 +558,10 @@ export default function CheckoutScreen() {
           selectedOptions: {
             cuttingType: item.cuttingType || "",
             pieceSize: item.pieceSize || "",
+            size: item.selectedSize || "",
+            // Tags this line as a combo bundle member so order-service
+            // reprices the whole group to the bundle price at checkout.
+            ...(item.comboId ? { comboId: item.comboId } : {}),
             ...(item.priceBreakdown || {}),
           },
         })),

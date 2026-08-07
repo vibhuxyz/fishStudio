@@ -10,6 +10,8 @@ import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-she
 import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, useAdminSellerOrders, StatsPeriod, DetailedProductRow, SellerOrder } from "@/hooks/useAdminQueries";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender } from "@tanstack/react-table";
 import ProductDetailModal from "@/shared/components/analytics/ProductDetailModal";
+import { formatOrderId } from "@repo/shared/order-id";
+import { formatPaymentRef } from "@repo/shared/payment-id";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
   { label: "Week", value: "week" },
@@ -46,6 +48,25 @@ const SellerDetailPage = () => {
     });
   };
 
+  const handleToggleActive = () => {
+    if (!seller) return;
+    const nextIsActive = seller.isActive === false;
+    if (
+      !nextIsActive &&
+      !window.confirm(
+        "Deactivate this seller? Their store and all products will be hidden from customers immediately.",
+      )
+    ) {
+      return;
+    }
+    updateMutation.mutate({
+      sellerId,
+      isApprovedByAdmin: seller.isApprovedByAdmin || false,
+      permissions: seller.permissions || [],
+      isActive: nextIsActive,
+    });
+  };
+
   const handleTogglePermission = (permId: string) => {
     if (!seller) return;
     let newPerms = seller.permissions || [];
@@ -68,7 +89,7 @@ const SellerDetailPage = () => {
         header: "Order ID",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-[10px] font-mono tracking-tighter">
-            #{row.original.id.slice(-6).toUpperCase()}
+            {formatOrderId(row.original.id)}
           </span>
         ),
       },
@@ -83,7 +104,7 @@ const SellerDetailPage = () => {
                 {method === "COD" ? "Cash on Delivery" : method || "Online"}
               </span>
               {method !== "COD" && ref && (
-                <span className="text-sky-400 text-[9px] font-mono tracking-tight truncate max-w-[80px]">#{ref}</span>
+                <span className="text-sky-400 text-[9px] font-mono tracking-tight truncate max-w-[80px]">{formatPaymentRef(ref)}</span>
               ) }
             </div>
           );
@@ -218,6 +239,24 @@ const SellerDetailPage = () => {
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${seller.isApprovedByAdmin ? "bg-green-500" : "bg-gray-600"} disabled:opacity-50`}
                     >
                       <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${seller.isApprovedByAdmin ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-slate-950/50 p-4 rounded-lg border border-gray-800">
+                    <div>
+                      <p className="font-medium text-white">Account Status</p>
+                      <p className="text-xs text-slate-400">
+                        {seller.isActive === false
+                          ? "Deactivated — store and products are hidden from customers, seller cannot log in."
+                          : "Active — seller can log in and their store is visible to customers."}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleActive}
+                      disabled={updateMutation.isPending}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${seller.isActive === false ? "bg-gray-600" : "bg-green-500"} disabled:opacity-50`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${seller.isActive === false ? "translate-x-1" : "translate-x-6"}`} />
                     </button>
                   </div>
 

@@ -49,6 +49,21 @@ const STEPS = [
 type StepKey = (typeof STEPS)[number]["key"];
 const STEP_KEYS = STEPS.map((s) => s.key) as StepKey[];
 
+// PREPARING/READY_FOR_PICKUP/ASSIGNED_TO_RIDER are real order statuses but
+// this tracker stays 4 visual steps — each maps onto "Preparing" rather than
+// getting its own step, with a status-specific sub-label instead.
+const STATUS_TO_STEP: Record<string, StepKey> = {
+  PREPARING: "ACCEPTED",
+  READY_FOR_PICKUP: "ACCEPTED",
+  ASSIGNED_TO_RIDER: "ACCEPTED",
+};
+
+const SUB_LABEL_OVERRIDES: Record<string, string> = {
+  PREPARING: "Freshly being prepared for you",
+  READY_FOR_PICKUP: "Packed and ready for pickup",
+  ASSIGNED_TO_RIDER: "A rider is on the way to pick up your order",
+};
+
 // ── Keyframes injected once ──────────────────────────────────────────────────
 const KEYFRAMES = `
   @keyframes pulse-ring {
@@ -152,10 +167,12 @@ export function OrderTracker({
   storeName?: string;
   cancelNote?: string;
 }) {
-  const upper = (status || "PENDING").toUpperCase() as StepKey | "CANCELLED" | "REJECTED";
+  const rawStatus = (status || "PENDING").toUpperCase();
+  const upper = (STATUS_TO_STEP[rawStatus] ?? rawStatus) as StepKey | "CANCELLED" | "REJECTED";
   const isCancelled = upper === "CANCELLED" || upper === "REJECTED";
   const activeIdx = isCancelled ? -1 : STEP_KEYS.indexOf(upper as StepKey);
   const currentStep = isCancelled ? null : STEPS[activeIdx] ?? STEPS[0];
+  const subLabel = SUB_LABEL_OVERRIDES[rawStatus] ?? currentStep?.sub;
 
   // Track previous status to detect real-time changes
   const prevStatusRef = useRef<string>(upper);
@@ -311,7 +328,7 @@ export function OrderTracker({
             {currentStep?.label}
           </p>
           <p className="mt-0.5 text-sm font-medium text-foreground/60">
-            {currentStep?.sub}
+            {subLabel}
           </p>
           {updatedAt && (
             <p className="mt-1 text-[11px] text-muted-foreground">

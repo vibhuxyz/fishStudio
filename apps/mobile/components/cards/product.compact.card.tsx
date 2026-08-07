@@ -25,9 +25,15 @@ const IMAGE_RATIO = 0.62;
 // Body is a fixed stack — image ratio is the only thing that varies with width,
 // so the rails can reserve an exact row height without measuring.
 const BODY_HEIGHT = 76;
+// Custom-font line-height doesn't render pixel-identically to its declared
+// value on every platform (Android in particular can render a font's glyphs
+// a couple of px taller than its stated lineHeight) — callers use this to
+// size a hard ScrollView height, which clips rather than overflows, so a
+// small buffer keeps that variance from ever cutting off the price/add row.
+const HEIGHT_SAFETY_MARGIN = spacing[2];
 
 export const compactCardHeight = (cardWidth: number) =>
-  Math.round(cardWidth * IMAGE_RATIO) + BODY_HEIGHT;
+  Math.round(cardWidth * IMAGE_RATIO) + BODY_HEIGHT + HEIGHT_SAFETY_MARGIN;
 
 interface ProductCompactCardProps {
   product: Product;

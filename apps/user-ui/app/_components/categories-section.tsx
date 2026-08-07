@@ -4,12 +4,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fish } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
-import { normalizeSlug } from "@repo/slug";
+import { normalizeSlug } from "@repo/shared/slug";
+import type { StorefrontCategories } from "@/lib/storefront";
 
 // Home "Categories" section — a horizontally scrollable strip of category tiles
 // (image + name) linking into each category page.
-export function CategoriesSection() {
-  const { data, isLoading } = useCategories();
+export function CategoriesSection({
+  initialData,
+}: {
+  initialData?: StorefrontCategories;
+}) {
+  // initialData comes from the server-rendered fetch in page.tsx, so the
+  // first client render already has data (isLoading false) and matches the
+  // server HTML exactly — without it, the server always renders the loading
+  // skeleton (effects don't run during SSR) while a client with a warm
+  // query cache can render real content, causing a hydration mismatch.
+  const { data, isLoading } = useCategories(initialData);
   const categories: string[] = data?.categories ?? [];
   const categoryImages: Record<string, string> = data?.categoryImages ?? {};
 

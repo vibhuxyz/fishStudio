@@ -35,6 +35,12 @@ interface AddressModalProps {
   onSelect?: (location: SelectedLocation) => void;
   /** "sheet" keeps the cart on screen behind a bottom sheet. */
   presentation?: "page" | "sheet";
+  // When true, picking a nearby area continues straight into the full Add
+  // Address screen (cart/checkout flows, where a complete address is
+  // actually needed to place the order). When false (default — the home
+  // header's location switcher), picking a nearby area just sets the
+  // location and closes.
+  requireAddressForm?: boolean;
 }
 
 interface StoreInfo {
@@ -44,6 +50,9 @@ interface StoreInfo {
   state?: string;
   availableCities: string[];
   cityDeliveryTimes?: Record<string, number>;
+  // Map of area name -> its real city, e.g. {"Kavi Nagar": "Ghaziabad"} —
+  // an area's real city can differ from the store's own base `city` above.
+  areaCities?: Record<string, string>;
   isOpen?: boolean;
   opening_hours?: string;
   closing_hours?: string;
@@ -55,6 +64,7 @@ export default function AddressModal({
   savedAddressesOnly = false,
   onSelect,
   presentation = "page",
+  requireAddressForm = false,
 }: AddressModalProps) {
   const queryClient = useQueryClient();
   const { user } = useUser();
@@ -74,6 +84,11 @@ export default function AddressModal({
   const [pincodeLoading, setPincodeLoading] = useState(false);
   const [pincodeError, setPincodeError] = useState("");
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
+  // Areas actually pinned to the pincode just checked — a store's
+  // availableCities can span several pincodes (e.g. "Kavi Nagar" under a
+  // different pincode than "Sector 34"), so the full list would wrongly
+  // suggest areas that aren't reachable via this pincode.
+  const [matchedAreas, setMatchedAreas] = useState<string[]>([]);
   const [serviceablePincodes, setServiceablePincodes] = useState<string[]>([]);
   const [detecting, setDetecting] = useState(false);
 
@@ -108,6 +123,7 @@ export default function AddressModal({
     setPincodeLoading(true);
     setPincodeError("");
     setStoreInfo(null);
+    setMatchedAreas([]);
     setServiceablePincodes([]);
 
     try {
@@ -118,6 +134,7 @@ export default function AddressModal({
 
       if (data.success && data.store) {
         setStoreInfo(data.store);
+        setMatchedAreas(data.matchedAreas || []);
       } else {
         // Fetch serviceable areas for suggestion
         try {
@@ -166,7 +183,12 @@ export default function AddressModal({
     handleCheckPincode(result.place.pincode);
   };
 
-  // ── Select a city from pincode results — close modal immediately ───────────
+  // ── Select an area from pincode results ────────────────────────────────────
+  // In cart/checkout flows (requireAddressForm), picking a nearby area is the
+  // start of adding an address, not the end, so it hands off to the full Add
+  // Address screen with the area pre-filled. In the home header's location
+  // switcher (requireAddressForm=false), it just sets the location and closes
+  // — no address form needed to browse a different area.
   const handleSelectCity = (city: string) => {
     if (!storeInfo) return;
     const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
@@ -175,29 +197,46 @@ export default function AddressModal({
       storeName: storeInfo.name,
       pincode,
       city,
+      area: city,
       deliveryTimeMinutes: deliveryMins,
       isOpen: storeInfo.isOpen,
       openingHours: storeInfo.opening_hours,
       closingHours: storeInfo.closing_hours,
     };
     setSelectedLocation(location);
-    queryClient.invalidateQueries({ queryKey: ["store"] });
-    queryClient.invalidateQueries({ queryKey: ["storefront"] });
-    toast.success(`Delivering to ${city}`);
+
+    if (!requireAddressForm) {
+      onClose();
+      toast.success(`Delivering to ${city}`);
+      onSelect?.(location);
+      return;
+    }
+
     onClose();
-    onSelect?.(location);
+    router.push({
+      pathname: "/(routes)/add-address",
+      params: {
+        pincode,
+        // The area's real city (e.g. "Ghaziabad") can differ from the
+        // store's own base city — one pincode can span areas in both.
+        city: storeInfo.areaCities?.[city] || storeInfo.city || "",
+        state: storeInfo.state || "",
+        area: city,
+      },
+    });
   };
 
   // ── Enter manually — hand off to the dedicated Add Address screen ─────────
   const handleEnterManually = () => {
+    let area = "";
     if (storeInfo) {
-      const city = storeInfo.availableCities?.[0] || storeInfo.city || "";
-      const deliveryMins = storeInfo.cityDeliveryTimes?.[city];
+      area = matchedAreas[0] || storeInfo.availableCities?.[0] || storeInfo.city || "";
+      const deliveryMins = storeInfo.cityDeliveryTimes?.[area];
       setSelectedLocation({
         storeId: storeInfo.id,
         storeName: storeInfo.name,
         pincode,
-        city,
+        city: area,
         deliveryTimeMinutes: deliveryMins,
         isOpen: storeInfo.isOpen,
         openingHours: storeInfo.opening_hours,
@@ -209,7 +248,7 @@ export default function AddressModal({
       pathname: "/(routes)/add-address",
       params: {
         pincode,
-        city: storeInfo?.city || "",
+        city: storeInfo?.areaCities?.[area] || storeInfo?.city || "",
         state: storeInfo?.state || "",
       },
     });
@@ -366,7 +405,9 @@ export default function AddressModal({
           </View>
         </View>
 
-        {/* Actions row — just pencil + (optional) trash, matching user-ui */}
+        {/* Actions row — pencil + trash. Trash stays visible even when
+            selected, since a lone saved address is always auto-selected
+            and would otherwise be undeletable. */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity
             style={{
@@ -383,24 +424,22 @@ export default function AddressModal({
           >
             <Ionicons name="pencil-outline" size={14} color="#64748B" />
           </TouchableOpacity>
-          {!isSelected && (
-            <TouchableOpacity
-              onPress={() => handleDeleteAddress(address.id)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: "#E2E8F0",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#fff",
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="trash-outline" size={14} color="#64748B" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => handleDeleteAddress(address.id)}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#fff",
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={14} color="#64748B" />
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -702,7 +741,7 @@ export default function AddressModal({
             >
               Nearby areas in {pincode}
             </Text>
-            {storeInfo.availableCities.map((city) => {
+            {(matchedAreas.length > 0 ? matchedAreas : storeInfo.availableCities).map((city) => {
               const mins = storeInfo.cityDeliveryTimes?.[city];
               return (
                 <TouchableOpacity

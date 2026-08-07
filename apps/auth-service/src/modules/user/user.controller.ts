@@ -13,7 +13,12 @@ import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
 import { redis } from "@repo/libs/redis";
 import { cloudinary } from "@repo/libs/cloudinary";
-import { updateAvatarSchema, uploadAvatarImageSchema, validate } from "@repo/zod-schema";
+import {
+  updateAvatarSchema,
+  updateNotificationPreferencesSchema,
+  uploadAvatarImageSchema,
+  validate,
+} from "@repo/zod-schema";
 import {
   signAccessToken,
   signRefreshToken,
@@ -516,6 +521,40 @@ export const updateUserProfile = async (
     if (error?.code === "P2002") {
       return next(new ValidationError("That email is already in use"));
     }
+    next(error);
+  }
+};
+
+export const updateNotificationPreferences = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { expoPushToken, emailNotificationsEnabled } = validate(
+      updateNotificationPreferencesSchema,
+      req.body,
+    );
+
+    if (expoPushToken === undefined && emailNotificationsEnabled === undefined) {
+      return next(new ValidationError("Nothing to update"));
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        ...(expoPushToken !== undefined && { expoPushToken }),
+        ...(emailNotificationsEnabled !== undefined && { emailNotificationsEnabled }),
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Notification preferences updated",
+      user: updatedUser,
+    });
+  } catch (error) {
     next(error);
   }
 };

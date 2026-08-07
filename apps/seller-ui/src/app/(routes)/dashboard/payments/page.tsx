@@ -14,6 +14,8 @@ import Link from "next/link";
 
 import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
+import { formatOrderId } from "@repo/shared/order-id";
+import { formatPaymentRef } from "@repo/shared/payment-id";
 
 const fetchOrders = async () => {
   const res = await axiosInstance.get("/order/api/get-seller-orders");
@@ -42,7 +44,7 @@ const SellerPayments = () => {
         header: "Order ID",
         cell: ({ row }: any) => (
           <span className="text-white text-sm">
-            #{row.original.id.slice(-6).toUpperCase()}
+            {formatOrderId(row.original.id)}
           </span>
         ),
       },
@@ -72,7 +74,7 @@ const SellerPayments = () => {
                 <span className="text-emerald-400/90 text-[9px] font-bold">CASH COLLECTED</span>
               ) : (
                 ref ? (
-                  <span className="text-sky-400/80 text-[9px] font-mono font-bold tracking-tight">#{ref}</span>
+                  <span className="text-sky-400/80 text-[9px] font-mono font-bold tracking-tight">{formatPaymentRef(ref)}</span>
                 ) : (
                   <span className="text-amber-500/60 text-[9px] font-bold italic">REF. PENDING</span>
                 )

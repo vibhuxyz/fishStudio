@@ -13,7 +13,8 @@
     "node-cron": "^4.2.1",
     "@repo/db-mongo": "workspace:*",
     "@repo/db-postgres": "workspace:*",
-    "@repo/libs": "workspace:*"
+    "@repo/libs": "workspace:*",
+    "@repo/shared": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

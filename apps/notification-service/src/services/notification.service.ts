@@ -46,8 +46,10 @@ export async function send({
     return results;
   }
 
-  // 2. Email
-  if (channels.includes("EMAIL") && contact.email) {
+  // 2. Email — customer accounts can opt out (emailNotificationsEnabled ===
+  // false); sellers/admins and accounts that never set the preference
+  // (undefined/null) keep the previous always-on behavior.
+  if (channels.includes("EMAIL") && contact.email && contact.emailNotificationsEnabled !== false) {
     try {
       const template = metadata?.template || "notification-template";
       await sendEmail(contact.email, title, template, {
@@ -87,12 +89,44 @@ export async function send({
   return results;
 }
 
-export async function getUserNotifications(userId: string) {
-  return prismaPostgres.notification.findMany({
+/**
+ * A page of a user's notifications, newest first.
+ *
+ * Cursor rather than offset because this is an infinite-scroll feed whose head
+ * moves: new notifications arrive while a user is scrolling, and with an offset
+ * every insert shifts the window and duplicates a row onto the next page. The
+ * cursor is a notification id, so paging stays anchored to a real position.
+ *
+ * Purely additive — the endpoint previously took no pagination parameters at
+ * all and simply capped the result, so callers that pass nothing still get the
+ * same first page they always did.
+ */
+export async function getUserNotifications(
+  userId: string,
+  options: { cursor?: string; limit?: number } = {},
+) {
+  const limit = Math.min(
+    Math.max(options.limit ?? MAX_NOTIFICATIONS_PER_PAGE, 1),
+    MAX_NOTIFICATIONS_PER_PAGE,
+  );
+
+  const rows = await prismaPostgres.notification.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
-    take: MAX_NOTIFICATIONS_PER_PAGE,
+    // One extra row is fetched purely to answer "is there another page?"
+    // without a second count query, then dropped before returning.
+    take: limit + 1,
+    ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
   });
+
+  const hasMore = rows.length > limit;
+  const notifications = hasMore ? rows.slice(0, limit) : rows;
+
+  return {
+    notifications,
+    hasMore,
+    nextCursor: hasMore ? (notifications[notifications.length - 1]?.id ?? null) : null,
+  };
 }
 
 export async function markAsRead(notificationId: string, userId: string) {

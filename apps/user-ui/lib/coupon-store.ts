@@ -8,7 +8,6 @@ export type Coupon = {
   discountType: "percent" | "flat" | "free_delivery";
   discountValue: number;
   minOrderValue: number;
-  autoApply?: boolean;
   badge?: string;
   isEvent?: boolean;
   // Real seller_events id — events have no discountCode row in the DB, so
@@ -22,14 +21,12 @@ export type Coupon = {
 
 interface CouponState {
   appliedCoupons: Coupon[];
-  autoApplied: boolean;
   availableCoupons: Coupon[];
   isLoadingCoupons: boolean;
 
   applyCoupon: (coupon: Coupon) => void;
   removeCoupon: (code: string) => void;
   clearAllCoupons: () => void;
-  setAutoApplied: (val: boolean) => void;
   isCouponApplied: (code: string) => boolean;
   getTotalDiscount: (subtotal: number) => number;
   getDiscountForCoupon: (coupon: Coupon, subtotal: number) => number;
@@ -46,7 +43,6 @@ export const useCouponStore = create<CouponState>()(
   persist(
     (set, get) => ({
       appliedCoupons: [],
-      autoApplied: false,
       availableCoupons: [],
       isLoadingCoupons: false,
 
@@ -108,7 +104,6 @@ export const useCouponStore = create<CouponState>()(
                   discountValue: 0,
                   minOrderValue: ev.minOrder ?? 0,
                   badge: "Event",
-                  autoApply: true,
                   isEvent: true,
                   eventId: ev.id,
                 });
@@ -120,7 +115,6 @@ export const useCouponStore = create<CouponState>()(
                   discountValue: ev.discount,
                   minOrderValue: ev.minOrder ?? 0,
                   badge: "Event",
-                  autoApply: true,
                   isEvent: true,
                   eventId: ev.id,
                 });
@@ -216,17 +210,10 @@ export const useCouponStore = create<CouponState>()(
       removeCoupon: (code) => {
         set((state) => ({
           appliedCoupons: state.appliedCoupons.filter((c) => c.code !== code),
-          autoApplied:
-            state.autoApplied &&
-            state.appliedCoupons.some((c) => c.code === code && c.autoApply)
-              ? false
-              : state.autoApplied,
         }));
       },
 
-      clearAllCoupons: () => set({ appliedCoupons: [], autoApplied: false }),
-
-      setAutoApplied: (val) => set({ autoApplied: val }),
+      clearAllCoupons: () => set({ appliedCoupons: [] }),
 
       isCouponApplied: (code) =>
         get().appliedCoupons.some((c) => c.code === code),

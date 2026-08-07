@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { rankCoupons } from "@repo/pricing";
+import { rankCoupons } from "@repo/shared/pricing";
 import { useCartStore } from "@/lib/cart-store";
 import { useCouponStore, type Coupon } from "@/lib/coupon-store";
 import { useAddressStore } from "@/lib/address-store";
@@ -25,15 +25,14 @@ export const TIP_OPTIONS = [20, 30, 50];
  */
 export function useCartCheckoutSummary() {
   const items = useCartStore((s) => s.items);
+  const deliveryMetadata = useCartStore((s) => s.deliveryMetadata);
   const { user } = useAuth();
   const {
     appliedCoupons,
-    autoApplied,
     availableCoupons,
     isLoadingCoupons,
     applyCoupon,
     removeCoupon,
-    setAutoApplied,
     isCouponApplied,
     getTotalDiscount,
     getDiscountForCoupon,
@@ -53,14 +52,22 @@ export function useCartCheckoutSummary() {
     (c) => c.discountType === "free_delivery" && subtotal >= c.minOrderValue,
   );
   // What delivery would cost without a free-delivery coupon — that's what such
-  // a coupon is worth when ranking offers against each other.
-  const baseDeliveryCharge = subtotal > 500 ? 0 : subtotal > 0 ? 40 : 0;
+  // a coupon is worth when ranking offers against each other. Values come from
+  // the resolved store's own settings (seller-ui Store settings), synced into
+  // deliveryMetadata by whichever surface last called syncItems().
+  const baseDeliveryCharge =
+    subtotal >= deliveryMetadata.freeDeliveryThreshold
+      ? 0
+      : subtotal > 0
+        ? deliveryMetadata.baseDeliveryCharge
+        : 0;
   const deliveryCharge = isFreeDelivery ? 0 : baseDeliveryCharge;
-  const handlingCharge = items.length > 0 ? 8 : 0;
+  const packagingCharge = items.length > 0 ? deliveryMetadata.packagingCharge : 0;
+  const gstAmount = items.length > 0 ? Math.round(subtotal * deliveryMetadata.gstRate) : 0;
   const discount = getTotalDiscount(subtotal);
   const tip = showCustomTip ? Number(customTip) || 0 : (selectedTip ?? 0);
   const donation = donationEnabled ? 1 : 0;
-  const grandTotal = subtotal + deliveryCharge + handlingCharge - discount + tip + donation;
+  const grandTotal = subtotal + deliveryCharge + packagingCharge + gstAmount - discount + tip + donation;
 
   // Best saving first, so the offer worth most for this cart is what the
   // shopper sees at the top of the list.
@@ -84,12 +91,18 @@ export function useCartCheckoutSummary() {
       .then(({ data }) => {
         if (data.success && data.store?.id) {
           const city = addr.city || data.store.city || "";
+          // A pincode can span several localities with different real
+          // delivery times, so a matching area-level entry wins over city.
+          const deliveryTimeMinutes =
+            (data.store.cityDeliveryTimes as any)?.[addr.area || ""] ??
+            (data.store.cityDeliveryTimes as any)?.[city];
           setSelectedLocation({
             storeId: data.store.id,
             storeName: data.store.name,
             pincode: addr.pincode,
             city,
-            deliveryTimeMinutes: (data.store.cityDeliveryTimes as any)?.[city],
+            area: addr.area,
+            deliveryTimeMinutes,
           });
         }
       })
@@ -102,22 +115,6 @@ export function useCartCheckoutSummary() {
       fetchAvailableCoupons(selectedLocation.storeId, user?.id);
     }
   }, [selectedLocation?.storeId, user?.id]);
-
-  // Auto-apply one eligible auto-coupon once coupons and subtotal are known
-  useEffect(() => {
-    if (appliedCoupons.length > 0 || autoApplied) return;
-    if (subtotal === 0) return;
-    // Ranked, so when several auto-apply offers qualify the shopper gets the
-    // one that saves the most rather than whichever Mongo returned first.
-    const autoCoupon = rankedCoupons.find(
-      (r) => r.eligible && r.coupon.autoApply && !isCouponApplied(r.coupon.code),
-    )?.coupon;
-    if (autoCoupon) {
-      applyCoupon(autoCoupon);
-      setAutoApplied(true);
-      toast.success(`Coupon ${autoCoupon.code} auto-applied!`);
-    }
-  }, [subtotal, rankedCoupons, appliedCoupons.length, autoApplied]);
 
   const handleApplyCouponCode = () => {
     const found = availableCoupons.find(
@@ -155,7 +152,8 @@ export function useCartCheckoutSummary() {
     items,
     subtotal,
     deliveryCharge,
-    handlingCharge,
+    packagingCharge,
+    gstAmount,
     discount,
     tip,
     donation,

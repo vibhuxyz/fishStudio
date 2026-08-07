@@ -1,5 +1,6 @@
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import {
   computePerKgSalePrice,
   normalizeSizePricing,
@@ -21,6 +22,8 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { spacing } from "@/constants/theme";
 import { toast } from "@/utils/toast";
 import { router } from "expo-router";
 
@@ -110,6 +113,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
   const { getSelectedAddress } = useAddressStore();
   const selectedAddress = getSelectedAddress();
   const { addToCart } = useStore();
+  const insets = useSafeAreaInsets();
 
   const [selectedCutting, setSelectedCutting] = useState<string>("");
   const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
@@ -117,6 +121,10 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [perKgWeightGrams, setPerKgWeightGrams] = useState(PER_KG_DEFAULT);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  // Measured via onLayout below so the scroll content always reserves
+  // exactly enough room to clear the sticky footer, on any device/font size
+  // — never a guessed pixel value.
+  const [footerHeight, setFooterHeight] = useState(0);
 
   useEffect(() => {
     if (visible && product) {
@@ -223,6 +231,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
         quantity: isPerKgMode ? 1 : quantity,
         cuttingType: selectedCutting || undefined,
         pieceSize: selectedPieceSize || undefined,
+        selectedSize: selectedSize || undefined,
         priceBreakdown: breakdown,
       },
       user,
@@ -271,15 +280,19 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
         </View>
 
         <ScrollView
+          style={{ flexShrink: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 20, paddingBottom: 36 }}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: footerHeight + insets.bottom + spacing[5],
+          }}
           keyboardShouldPersistTaps="handled"
         >
           {/* ── Product info row ── */}
           <View className="flex-row gap-4 mb-5">
             <View className="relative">
               <Image
-                source={{ uri: currentImage }}
+                source={{ uri: cloudinaryThumbnail(currentImage, 192) }}
                 className="w-24 h-24 rounded-2xl bg-muted"
                 resizeMode="cover"
               />
@@ -362,7 +375,7 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
                   }`}
                 >
                   <Image
-                    source={{ uri: typeof img === "string" ? img : img?.url }}
+                    source={{ uri: cloudinaryThumbnail(typeof img === "string" ? img : img?.url, 112) }}
                     style={{ width: 56, height: 56 }}
                     resizeMode="cover"
                   />
@@ -515,43 +528,49 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
               </Text>
             </View>
           </View>
-
-          {/* ── CTA Buttons ── */}
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              className={`flex-1 h-13 py-4 rounded-2xl items-center justify-center ${
-                isOutOfStock ? "bg-muted" : "bg-accent"
-              }`}
-              onPress={() => handleAddToCart(false)}
-              disabled={isOutOfStock}
-              activeOpacity={0.85}
-            >
-              <Text
-                className={`text-sm font-poppins-semibold ${
-                  isOutOfStock ? "text-muted-foreground" : "text-white"
-                }`}
-              >
-                Add to Cart
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 h-13 py-4 rounded-2xl items-center justify-center ${
-                isOutOfStock ? "bg-muted" : "bg-primary"
-              }`}
-              onPress={() => handleAddToCart(true)}
-              disabled={isOutOfStock}
-              activeOpacity={0.85}
-            >
-              <Text
-                className={`text-sm font-poppins-semibold ${
-                  isOutOfStock ? "text-muted-foreground" : "text-white"
-                }`}
-              >
-                Buy Now
-              </Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
+
+        {/* ── Sticky CTA footer — measured so the scroll content above always
+            reserves exactly enough room to clear it, and padded for the
+            device's bottom safe area (gesture bar / home indicator) ── */}
+        <View
+          onLayout={(e) => setFooterHeight(e.nativeEvent.layout.height)}
+          className="flex-row gap-3 px-5 pt-3 border-t border-border bg-white"
+          style={{ paddingBottom: insets.bottom + spacing[3] }}
+        >
+          <TouchableOpacity
+            className={`flex-1 h-13 py-4 rounded-2xl items-center justify-center ${
+              isOutOfStock ? "bg-muted" : "bg-accent"
+            }`}
+            onPress={() => handleAddToCart(false)}
+            disabled={isOutOfStock}
+            activeOpacity={0.85}
+          >
+            <Text
+              className={`text-sm font-poppins-semibold ${
+                isOutOfStock ? "text-muted-foreground" : "text-white"
+              }`}
+            >
+              Add to Cart
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`flex-1 h-13 py-4 rounded-2xl items-center justify-center ${
+              isOutOfStock ? "bg-muted" : "bg-primary"
+            }`}
+            onPress={() => handleAddToCart(true)}
+            disabled={isOutOfStock}
+            activeOpacity={0.85}
+          >
+            <Text
+              className={`text-sm font-poppins-semibold ${
+                isOutOfStock ? "text-muted-foreground" : "text-white"
+              }`}
+            >
+              Buy Now
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );

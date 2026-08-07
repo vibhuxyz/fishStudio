@@ -1,14 +1,29 @@
-import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { prismaPostgres, writeAuditLog, enqueueOutboxEvent } from "@repo/db-postgres";
+import { AppError, NotFoundError, ValidationError } from "@repo/error-handlers";
+import {
+  prismaPostgres,
+  writeAuditLog,
+  enqueueOutboxEvent,
+  runSerializable,
+  toMoney,
+  type PaymentMethod,
+} from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Request, Response } from "express";
-import { createOrderSchema, validate } from "@repo/zod-schema";
-import { computeCartSummary } from "@repo/pricing";
+import { createOrderSchema, cartQuoteSchema, cancelOrderSchema, validate } from "@repo/zod-schema";
+import { computeCartSummary, distributeComboPrice, comboItemsMatchDefinition, ComboDefinitionItem } from "@repo/shared/pricing";
+import { formatOrderId } from "@repo/shared/order-id";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
-import { restoreOrderStock } from "./utils.js";
+import {
+  restoreOrderStock,
+  decrementStockItem,
+  restoreStockItem,
+  orderMoneyFields,
+  orderItemMoneyFields,
+  releaseRiderIfNoOtherDeliveries,
+} from "./utils.js";
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const IDEMPOTENCY_TTL_SEC = 86_400; // 24 hours
@@ -20,7 +35,7 @@ const PAYMENT_SETTLE_GRACE_MS = 10 * 60 * 1000;
 
 /* ─── Coupon helpers ────────────────────────────────────────────────────── */
 async function prefetchCoupon(couponCode: string) {
-  return prismaMongo.discount_codes.findFirst({
+  const coupon = await prismaMongo.discount_codes.findFirst({
     where: {
       discountCode: couponCode.toUpperCase(),
       isActive: true,
@@ -36,9 +51,20 @@ async function prefetchCoupon(couponCode: string) {
       adminId: true,
       sellerId: true,
       restrictedToUserId: true,
-      _count: { select: { usages: true } },
     },
   });
+
+  if (!coupon) return null;
+
+  // Redemptions are recorded in Postgres CouponUsage, not the Mongo
+  // `coupon_usages` collection the discount_codes relation points at — nothing
+  // has ever written to that one. Counting the relation (`_count.usages`) made
+  // the global cap read as 0 used, so maxUses was never actually enforced.
+  const globalUsageCount = await prismaPostgres.couponUsage.count({
+    where: { couponId: coupon.id },
+  });
+
+  return { ...coupon, globalUsageCount };
 }
 
 function computeCouponDiscount(
@@ -62,7 +88,10 @@ function computeCouponDiscount(
   if (coupon.restrictedToUserId && coupon.restrictedToUserId !== userId) {
     throw new ValidationError("Coupon is not valid for this order");
   }
-  if (coupon.maxUses !== null && coupon._count.usages >= coupon.maxUses) {
+  // Advisory only — the authoritative check runs inside the order transaction,
+  // where a concurrent redemption can't slip past it. This one just avoids
+  // quoting a discount the customer won't get.
+  if (coupon.maxUses !== null && coupon.globalUsageCount >= coupon.maxUses) {
     throw new ValidationError("Coupon is not valid for this order");
   }
   if (itemTotal < coupon.minOrderValue) {
@@ -232,6 +261,10 @@ function computeOrderTotals(params: {
   itemTotal: number;
   deliverySlot: string;
   instantDeliveryFee: number | null;
+  gstRate?: number | null;
+  packagingCharge?: number | null;
+  baseDeliveryCharge?: number | null;
+  freeDeliveryThreshold?: number | null;
   sellerId: string | null;
   userId: string;
   couponCode: string | null | undefined;
@@ -239,7 +272,11 @@ function computeOrderTotals(params: {
   eventId?: string | null;
   eventRaw?: NonNullable<Awaited<ReturnType<typeof prefetchEvent>>> | null;
 }) {
-  const { itemTotal, deliverySlot, instantDeliveryFee, sellerId, userId, couponCode, couponRaw, eventId, eventRaw } = params;
+  const {
+    itemTotal, deliverySlot, instantDeliveryFee,
+    gstRate, packagingCharge, baseDeliveryCharge, freeDeliveryThreshold,
+    sellerId, userId, couponCode, couponRaw, eventId, eventRaw,
+  } = params;
 
   let couponId: string | null = null;
   let eventDiscountCode: string | null = null;
@@ -262,12 +299,20 @@ function computeOrderTotals(params: {
 
   // The one place the bill is calculated. /quote and /create both land here, so
   // the price a customer is shown is the price this function charges them.
+  // GST/packaging/delivery are seller-set per store (Store settings in
+  // seller-ui); undefined/null falls back to computeCartSummary's defaults.
   const summary = computeCartSummary({
     subtotal: itemTotal,
     discount: couponDiscount,
     hasFreeDeliveryCoupon: freeDelivery,
     isInstantDelivery: deliverySlot === "instant",
-    config: { instantDeliveryFee: instantDeliveryFee || 20 },
+    config: {
+      instantDeliveryFee: instantDeliveryFee || 20,
+      ...(gstRate != null ? { gstRate } : {}),
+      ...(packagingCharge != null ? { packagingCharge } : {}),
+      ...(baseDeliveryCharge != null ? { baseDeliveryCharge } : {}),
+      ...(freeDeliveryThreshold != null ? { freeDeliveryThreshold } : {}),
+    },
   });
 
   return {
@@ -315,11 +360,25 @@ export const getCartQuote = async (
           isDeleted: false,
           status: "Active",
         },
-        select: { id: true, sale_price: true, stock: true, title: true },
+        select: {
+          id: true,
+          sale_price: true,
+          stock: true,
+          title: true,
+          trackStockPerSize: true,
+          sizeStock: true,
+        },
       }),
       prismaMongo.stores.findUnique({
         where: { id: storeId },
-        select: { sellerId: true, instant_delivery_fee: true },
+        select: {
+          sellerId: true,
+          instant_delivery_fee: true,
+          gst_rate: true,
+          packaging_charge: true,
+          base_delivery_charge: true,
+          free_delivery_threshold: true,
+        },
       }),
       couponCode ? prefetchCoupon(couponCode) : Promise.resolve(null),
     ]);
@@ -340,7 +399,16 @@ export const getCartQuote = async (
         unavailable.push({ productId: item.productId, reason: "unavailable" });
         continue;
       }
-      if (dbProduct.stock < item.quantity) {
+      const itemSize = item.selectedOptions?.size;
+      const availableQty =
+        dbProduct.trackStockPerSize && typeof itemSize === "string" && itemSize
+          ? Number(
+              (dbProduct.sizeStock as Array<{ size: string; qty: number }> | null)?.find(
+                (entry) => entry.size === itemSize,
+              )?.qty ?? 0,
+            )
+          : dbProduct.stock;
+      if (availableQty < item.quantity) {
         unavailable.push({ productId: item.productId, reason: "insufficient_stock" });
         continue;
       }
@@ -359,6 +427,10 @@ export const getCartQuote = async (
       itemTotal,
       deliverySlot: deliverySlot ?? "evening",
       instantDeliveryFee: store.instant_delivery_fee,
+      gstRate: store.gst_rate,
+      packagingCharge: store.packaging_charge,
+      baseDeliveryCharge: store.base_delivery_charge,
+      freeDeliveryThreshold: store.free_delivery_threshold,
       sellerId: store.sellerId,
       couponCode,
       couponRaw,
@@ -403,46 +475,113 @@ export const getCartQuote = async (
 };
 
 /* ─── Stock reservation (with rollback on partial failure) ─────────────── */
-async function rollbackStock(decrementedItems: Array<{ productId: string; quantity: number }>) {
+
+/**
+ * A stock decrement failed in a way that leaves it unknown whether Mongo
+ * applied it. Signals to createOrder that the StockReservation must be left
+ * HELD for the sweeper rather than RELEASED — releasing it would strand any
+ * decrement that did land.
+ */
+class StockReservationUncertainError extends AppError {
+  constructor(readonly cause: unknown) {
+    super("Could not reserve stock, please try again", 503, true, {
+      code: "STOCK_RESERVATION_UNCERTAIN",
+    });
+  }
+}
+
+async function rollbackStock(
+  decrementedItems: Array<{ productId: string; quantity: number; size?: string }>,
+) {
   if (decrementedItems.length === 0) return;
   await Promise.allSettled(
-    decrementedItems.map(({ productId, quantity }) =>
-      prismaMongo.products.update({
-        where: { id: productId },
-        data: { stock: { increment: quantity }, totalSold: { decrement: quantity } },
-      }),
+    decrementedItems.map(({ productId, quantity, size }) =>
+      restoreStockItem(productId, quantity, size),
     ),
   );
 }
 
 // Atomic per-item conditional decrement (prevents overselling under concurrent
-// checkouts); rolls back any items already decremented if a later item fails.
+// checkouts); rolls back any items already decremented if another item fails.
+// Whole-fish style products (trackStockPerSize) resolve/decrement against
+// their size-specific bucket via decrementStockItem instead of the flat pool.
+//
+// The decrements are issued in parallel. Each one is a single-document
+// conditional update, so they neither depend on nor block each other, and
+// running them sequentially just paid one Mongo round trip per cart item —
+// the largest single latency cost in checkout for a multi-item cart.
+//
+// allSettled rather than all, because `all` rejects on the first failure while
+// the others are still in flight — leaving decrements that landed with nobody
+// tracking them. Rollback is driven by what each call actually reported.
+//
+// A *rejected* decrement is ambiguous: the write may have been applied by Mongo
+// and the failure hit on the way back. It is therefore neither rolled back
+// (restoreStockItem is an unconditional $inc and would invent stock that was
+// never taken) nor treated as applied. Those cases throw
+// StockReservationUncertainError, which tells createOrder to leave the
+// StockReservation HELD so the sweeper reconciles the whole thing — matching
+// the trade-off that sweeper already documents, where over-crediting a product
+// beats leaking stock permanently.
 async function reserveStock(
-  items: Array<{ productId: string; quantity: number }>,
-  productMap: Map<string, { title: string }>,
-): Promise<Array<{ productId: string; quantity: number }>> {
-  const decrementedItems: Array<{ productId: string; quantity: number }> = [];
+  items: Array<{ productId: string; quantity: number; selectedOptions?: Record<string, unknown> }>,
+  productMap: Map<string, { title: string; trackStockPerSize?: boolean }>,
+): Promise<Array<{ productId: string; quantity: number; size?: string }>> {
+  const planned = items.map((item) => {
+    const dbProduct = productMap.get(item.productId);
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      size:
+        dbProduct?.trackStockPerSize && typeof item.selectedOptions?.size === "string"
+          ? (item.selectedOptions.size as string)
+          : undefined,
+      title: dbProduct?.title ?? item.productId,
+    };
+  });
 
-  try {
-    for (const item of items) {
-      const result = await prismaMongo.products.updateMany({
-        where: { id: item.productId, stock: { gte: item.quantity } },
-        data: {
-          stock: { decrement: item.quantity },
-          totalSold: { increment: item.quantity },
-        },
-      });
+  const results = await Promise.allSettled(
+    planned.map((entry) =>
+      decrementStockItem(entry.productId, entry.quantity, entry.size),
+    ),
+  );
 
-      if (result.count === 0) {
-        throw new ValidationError(
-          `"${productMap.get(item.productId)?.title ?? item.productId}" just went out of stock. Please remove it from your cart.`,
-        );
-      }
-      decrementedItems.push({ productId: item.productId, quantity: item.quantity });
+  const decrementedItems: Array<{ productId: string; quantity: number; size?: string }> = [];
+  let outOfStockTitle: string | null = null;
+  let failure: unknown = null;
+
+  results.forEach((result, i) => {
+    const entry = planned[i]!;
+    if (result.status === "rejected") {
+      failure ??= result.reason;
+      return;
     }
-  } catch (stockError) {
+    if (result.value) {
+      decrementedItems.push({
+        productId: entry.productId,
+        quantity: entry.quantity,
+        size: entry.size,
+      });
+    } else if (!outOfStockTitle) {
+      outOfStockTitle = entry.title;
+    }
+  });
+
+  // Ambiguity wins over out-of-stock: once any decrement's outcome is unknown,
+  // this request can no longer safely reason about what it holds, so it hands
+  // the whole reservation to the sweeper rather than rolling back a partial
+  // picture.
+  if (failure) {
+    throw new StockReservationUncertainError(failure);
+  }
+
+  if (outOfStockTitle) {
+    // Every outcome here is known, so the successful decrements can be undone
+    // precisely and the reservation closed out.
     await rollbackStock(decrementedItems);
-    throw stockError;
+    throw new ValidationError(
+      `"${outOfStockTitle}" just went out of stock. Please remove it from your cart.`,
+    );
   }
 
   return decrementedItems;
@@ -485,7 +624,14 @@ export const createOrder = async (
     const [dbProducts, store, couponRaw] = await Promise.all([
       prismaMongo.products.findMany({
         where: { id: { in: productIds }, isDeleted: false, status: "Active" },
-        select: { id: true, sale_price: true, stock: true, title: true },
+        select: {
+          id: true,
+          sale_price: true,
+          stock: true,
+          title: true,
+          trackStockPerSize: true,
+          sizeStock: true,
+        },
       }),
       prismaMongo.stores.findUnique({
         where: { id: storeId },
@@ -498,6 +644,10 @@ export const createOrder = async (
           is_instant_delivery_enabled: true,
           instant_delivery_window_start: true,
           instant_delivery_window_end: true,
+          gst_rate: true,
+          packaging_charge: true,
+          base_delivery_charge: true,
+          free_delivery_threshold: true,
           seller: { select: { name: true } },
         },
       }),
@@ -514,16 +664,91 @@ export const createOrder = async (
     /* ── 2. Validate products + compute itemTotal ────────────────────────── */
     const productMap = new Map(dbProducts.map((p) => [p.id, p]));
     let itemTotal = 0;
+    // Per-item resolved unit price, keyed by index (not productId — a combo
+    // can legitimately repeat a product with a different variant). Combo
+    // members get their proportional share of the bundle price below
+    // instead of the catalog sale_price.
+    const resolvedPrices: number[] = new Array(items.length).fill(0);
 
-    for (const item of items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
       const dbProduct = productMap.get(item.productId);
       if (!dbProduct) {
         return next(new ValidationError(`Product ${item.productId} is no longer available`));
       }
-      if (dbProduct.stock < item.quantity) {
+      const itemSize = item.selectedOptions?.size;
+      const availableQty =
+        dbProduct.trackStockPerSize && typeof itemSize === "string" && itemSize
+          ? Number(
+              (dbProduct.sizeStock as Array<{ size: string; qty: number }> | null)?.find(
+                (entry) => entry.size === itemSize,
+              )?.qty ?? 0,
+            )
+          : dbProduct.stock;
+      if (availableQty < item.quantity) {
         return next(new ValidationError(`Insufficient stock for "${dbProduct.title}"`));
       }
-      itemTotal += dbProduct.sale_price * item.quantity;
+      resolvedPrices[i] = dbProduct.sale_price;
+    }
+
+    /* ── 2b. Combo pricing — bundle members are charged as a set, not individually ──
+       A combo-tagged item carries `selectedOptions.comboId`. The whole group
+       must match the combo's own item list exactly (same products,
+       quantities, and any seller-fixed variant) before its members are
+       repriced to the bundle price — otherwise a client could swap in a
+       cheaper product and still get the combo discount. */
+    const comboGroups = new Map<string, number[]>(); // comboId -> item indexes
+    items.forEach((item: any, i: number) => {
+      const comboId = item.selectedOptions?.comboId as string | undefined;
+      if (comboId) {
+        if (!comboGroups.has(comboId)) comboGroups.set(comboId, []);
+        comboGroups.get(comboId)!.push(i);
+      }
+    });
+
+    if (comboGroups.size > 0) {
+      const combos = await prismaMongo.combos.findMany({
+        where: { id: { in: [...comboGroups.keys()] }, isActive: true },
+      });
+      const comboMap = new Map(combos.map((c) => [c.id, c]));
+
+      for (const [comboId, indexes] of comboGroups) {
+        const combo = comboMap.get(comboId);
+        if (!combo) {
+          return next(new ValidationError("A combo in your cart is no longer available"));
+        }
+        if (combo.storeId !== storeId) {
+          return next(new ValidationError("A combo in your cart belongs to a different store"));
+        }
+
+        const submitted = indexes.map((i) => {
+          const options = items[i]!.selectedOptions;
+          return {
+            productId: items[i]!.productId,
+            quantity: items[i]!.quantity,
+            cuttingType: typeof options?.cuttingType === "string" ? options.cuttingType : undefined,
+            pieceSize: typeof options?.pieceSize === "string" ? options.pieceSize : undefined,
+          };
+        });
+        if (!comboItemsMatchDefinition(submitted, combo.items as unknown as ComboDefinitionItem[])) {
+          return next(new ValidationError("Combo items don't match the combo definition"));
+        }
+
+        const linePrices = distributeComboPrice(
+          combo.comboPrice,
+          indexes.map((i) => ({
+            catalogUnitPrice: resolvedPrices[i]!,
+            quantity: items[i]!.quantity,
+          })),
+        );
+        indexes.forEach((i, idx) => {
+          resolvedPrices[i] = linePrices[idx]!;
+        });
+      }
+    }
+
+    for (let i = 0; i < items.length; i++) {
+      itemTotal += resolvedPrices[i]! * items[i]!.quantity;
     }
 
     /* ── 3. Instant delivery slot validation ────────────────────────────── */
@@ -538,10 +763,15 @@ export const createOrder = async (
       totalAmount,
       baseDeliveryCharge,
       slotExtraCharge,
+      summary,
     } = computeOrderTotals({
       itemTotal,
       deliverySlot,
       instantDeliveryFee: store.instant_delivery_fee,
+      gstRate: store.gst_rate,
+      packagingCharge: store.packaging_charge,
+      baseDeliveryCharge: store.base_delivery_charge,
+      freeDeliveryThreshold: store.free_delivery_threshold,
       sellerId: store.sellerId,
       userId,
       couponCode,
@@ -571,15 +801,35 @@ export const createOrder = async (
     const reservation = await prismaPostgres.stockReservation.create({
       data: {
         userId,
-        items: items.map((i: any) => ({ productId: i.productId, quantity: i.quantity })),
+        items: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+          size:
+            productMap.get(i.productId)?.trackStockPerSize &&
+            typeof i.selectedOptions?.size === "string"
+              ? i.selectedOptions.size
+              : undefined,
+        })),
       },
       select: { id: true },
     });
 
-    let decrementedItems: Array<{ productId: string; quantity: number }>;
+    let decrementedItems: Array<{ productId: string; quantity: number; size?: string }>;
     try {
       decrementedItems = await reserveStock(items, productMap);
     } catch (stockError) {
+      if (stockError instanceof StockReservationUncertainError) {
+        // Deliberately left HELD: reserveStock could not establish what it
+        // actually took, so the sweeper restores the whole reservation later
+        // instead of this request guessing now.
+        logger.error("[createOrder] stock reservation outcome unknown, leaving HELD", {
+          reservationId: reservation.id,
+          userId,
+          cause: stockError.cause,
+        });
+        return next(stockError);
+      }
+
       await prismaPostgres.stockReservation
         .update({ where: { id: reservation.id }, data: { status: "RELEASED" } })
         .catch((err) => logger.error("[createOrder] failed to release reservation", { err }));
@@ -595,16 +845,40 @@ export const createOrder = async (
           ? "Morning (6AM-10AM)"
           : "Evening (5PM-9PM)";
 
-    let order: { id: string; deliverySlot: string | null; paymentMethod: string | null; totalAmount: number };
+    // totalAmount is numeric(12,2) in Postgres and arrives as a Decimal. It is
+    // converted to a number before leaving the transaction because this object
+    // is serialized straight into the response below, and a Decimal would
+    // JSON-encode as a string — changing the shape clients already parse.
+    let order: {
+      id: string;
+      deliverySlot: string | null;
+      paymentMethod: PaymentMethod | null;
+      totalAmount: number;
+    };
 
     try {
-      order = await prismaPostgres.$transaction(async (tx) => {
-        // Re-check per-user coupon usage inside the transaction (serialized)
+      // Retried on serialization failure. The Mongo stock decrement and the
+      // StockReservation row both happened before this point and survive a
+      // retry untouched — the reservation stays HELD and the callback below
+      // re-consumes it — so replaying only the Postgres side is safe.
+      order = await runSerializable(async (tx) => {
+        // Re-check coupon limits inside the transaction. Both counts are read
+        // at Serializable isolation against the same CouponUsage rows this
+        // transaction is about to insert into, so two concurrent redemptions
+        // of the last remaining use conflict and one is rolled back rather
+        // than both passing a check made before either committed.
         if (couponCode && couponRaw) {
-          const usageCount = await tx.couponUsage.count({
-            where: { couponId: couponRaw.id, userId },
-          });
-          if (usageCount >= couponRaw.maxUsesPerUser) {
+          const [userUsageCount, globalUsageCount] = await Promise.all([
+            tx.couponUsage.count({ where: { couponId: couponRaw.id, userId } }),
+            couponRaw.maxUses !== null
+              ? tx.couponUsage.count({ where: { couponId: couponRaw.id } })
+              : Promise.resolve(0),
+          ]);
+
+          if (userUsageCount >= couponRaw.maxUsesPerUser) {
+            throw new ValidationError("Coupon is not valid for this order");
+          }
+          if (couponRaw.maxUses !== null && globalUsageCount >= couponRaw.maxUses) {
             throw new ValidationError("Coupon is not valid for this order");
           }
         }
@@ -630,6 +904,8 @@ export const createOrder = async (
               itemTotal,
               deliveryCharge: baseDeliveryCharge,
               slotExtraCharge,
+              packagingCharge: summary.packagingCharge,
+              gstAmount: summary.gstAmount,
               discount: totalDiscount,
               totalAmount,
               ...(eventId && eventDiscountCode ? { eventId } : {}),
@@ -643,10 +919,10 @@ export const createOrder = async (
             // the order DELIVERED (see updateOrderStatus/updateAdminOrderStatus).
             paymentStatus: "PENDING",
             orderItems: {
-              create: items.map((item: any) => ({
+              create: items.map((item: any, idx: number) => ({
                 productId: item.productId,
                 quantity: item.quantity,
-                price: productMap.get(item.productId)!.sale_price,
+                price: resolvedPrices[idx],
                 selectedOptions: item.selectedOptions ?? {},
               })),
             },
@@ -692,8 +968,8 @@ export const createOrder = async (
             userId,
             title: "Order Placed Successfully",
             message:
-              `Hi ${orderUser?.name || "there"}! Your FishStudio order #${newOrder.id.slice(-6).toUpperCase()} has been placed. ` +
-              `Total: ₹${newOrder.totalAmount}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
+              `Hi ${orderUser?.name || "there"}! Your FishStudio order ${formatOrderId(newOrder.id)} has been placed. ` +
+              `Total: ₹${toMoney(newOrder.totalAmount)}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
               `Slot: ${slotLabel} | Payment: ${newOrder.paymentMethod}.`,
             type: "SUCCESS",
             category: "ORDER",
@@ -702,8 +978,17 @@ export const createOrder = async (
           },
         });
 
-        return newOrder;
-      }, { isolationLevel: "Serializable" });
+        return { ...newOrder, totalAmount: toMoney(newOrder.totalAmount) };
+      }, {
+        onRetry: (attempt, error) =>
+          logger.warn("[createOrder] serialization conflict, retrying", {
+            attempt,
+            userId,
+            storeId,
+            couponCode: couponCode ?? null,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+      });
     } catch (txError: any) {
       // Postgres failed (e.g., coupon race condition caught by Serializable).
       // Rollback the Mongo stock reservation to prevent stock leaks!
@@ -726,6 +1011,30 @@ export const createOrder = async (
       redis
         .set(redisKey, JSON.stringify(responsePayload), "EX", IDEMPOTENCY_TTL_SEC)
         .catch(() => {});
+    }
+
+    // Stop the abandoned-cart reminder sequence for this cart — the next
+    // add-to-cart upserts a fresh (unconverted) record and starts it over.
+    prismaMongo.abandoned_carts
+      .update({ where: { userId }, data: { isConverted: true } })
+      .catch(() => {}); // no open cart tracked for this user — nothing to stop
+
+    /* ── 7b. Warm the payment gateway order ──────────────────────────────
+       Published before the notification fan-out below so it starts racing the
+       user's trip to the Pay button immediately — payment-service creates the
+       Razorpay order now, and the tap then opens the sheet without waiting on
+       a gateway round trip. Best-effort: createPaymentOrder still does the
+       work itself if this never lands. */
+    if (order.paymentMethod && order.paymentMethod !== "COD") {
+      publishToQueue(QUEUE_NAMES.PAYMENT_EVENTS, {
+        type: "PAYMENT_PREWARM",
+        orderId: order.id,
+      }).catch((err) =>
+        logger.error("[createOrder] payment prewarm publish failed", {
+          err,
+          orderId: order.id,
+        }),
+      );
     }
 
     /* ── 8. Write audit log (fire-and-forget) ───────────────────────────── */
@@ -775,7 +1084,7 @@ export const createOrder = async (
     // transaction. What follows is seller-facing dashboard fan-out: useful,
     // but the dashboard refetches anyway, so best-effort is acceptable here.
     const user = orderUser;
-    const shortId = order.id.slice(-6).toUpperCase();
+    const shortId = formatOrderId(order.id);
 
     Promise.resolve()
       .then(() =>
@@ -810,10 +1119,10 @@ export const createOrder = async (
     // Notifications run after the response is sent
     setImmediate(async () => {
       try {
-        const hydratedItems = items.map((item: any) => ({
+        const hydratedItems = items.map((item: any, idx: number) => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: productMap.get(item.productId)?.sale_price ?? 0,
+          price: resolvedPrices[idx],
           product: dbProducts.find((p) => p.id === item.productId),
         }));
         const orderPayload = {
@@ -850,7 +1159,7 @@ export const createOrder = async (
             publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
               userId: target.id,
               title: "New Order Received",
-              message: `New order #${shortId} received for ${store.name}. Total: ₹${order.totalAmount}`,
+              message: `New order ${shortId} received for ${store.name}. Total: ₹${order.totalAmount}`,
               type: "INFO",
               category: "ORDER",
               metadata: { orderId: order.id },
@@ -888,7 +1197,7 @@ export const getUserOrderStats = async (
     res.status(200).json({
       success: true,
       totalOrders,
-      totalSavings: discountAgg._sum.discountAmount ?? 0,
+      totalSavings: toMoney(discountAgg._sum.discountAmount),
     });
   } catch (error) {
     next(error);
@@ -937,15 +1246,16 @@ export const getUserOrders = async (
 
     const mappedOrders = orders.map((o: any) => ({
       ...o,
+      ...orderMoneyFields(o),
       store: storeMap.get(o.storeId),
       items: o.orderItems.map((oi: any) => {
         const prod = productMap.get(oi.productId) as any;
-        if (!prod) return { ...oi, product: null };
+        if (!prod) return { ...oi, ...orderItemMoneyFields(oi), product: null };
         // Fall back to catalog product images when the store product has none
         const images = prod.images?.length > 0 ? prod.images : (prod.catalogProduct?.images ?? []);
-        return { ...oi, product: { ...prod, images } };
+        return { ...oi, ...orderItemMoneyFields(oi), product: { ...prod, images } };
       }),
-      total: o.totalAmount,
+      total: toMoney(o.totalAmount),
     }));
 
     res.status(200).json({
@@ -973,7 +1283,7 @@ export const getOrderById = async (
     const { orderId } = req.params;
     const order = await prismaPostgres.order.findUnique({
       where: { id: orderId as string },
-      include: { orderItems: true },
+      include: { orderItems: true, payments: true },
     });
 
     if (!order) return next(new NotFoundError("Order not found"));
@@ -993,10 +1303,10 @@ export const getOrderById = async (
       return next(new NotFoundError("Order not found"));
     }
 
-    const [store, products] = await Promise.all([
-      // No delivery-partner/rider record exists in this system — the seller's
-      // own number is the only real, dialable contact for "out for delivery"
-      // orders, so it rides along here instead of the mobile app fabricating one.
+    const [store, products, buyer, coupon, rider] = await Promise.all([
+      // Falls back to the seller's own number when no rider is assigned yet
+      // (pre-pickup general support) — once order.riderId is set, the client
+      // prefers rider.phone for "call for delivery help" instead.
       prismaMongo.stores.findUnique({
         where: { id: order.storeId },
         include: { seller: { select: { phone_number: true } } },
@@ -1005,6 +1315,22 @@ export const getOrderById = async (
         where: { id: { in: order.orderItems.map((oi) => oi.productId) } },
         include: { images: true, catalogProduct: { include: { images: true } } },
       }),
+      prismaMongo.users.findUnique({
+        where: { id: order.userId },
+        select: { id: true, name: true, email: true, phone_number: true },
+      }),
+      order.couponCode
+        ? prismaMongo.discount_codes.findUnique({
+            where: { discountCode: order.couponCode },
+            select: { public_name: true, discountType: true, discountValue: true },
+          })
+        : null,
+      order.riderId
+        ? prismaMongo.riders.findUnique({
+            where: { id: order.riderId },
+            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, avatar: true },
+          })
+        : null,
     ]);
 
     // Store variants often carry no images of their own — the catalog root
@@ -1018,12 +1344,17 @@ export const getOrderById = async (
 
     const orderData = {
       ...order,
+      ...orderMoneyFields(order),
       store: store ? { ...store, sellerPhone: store.seller?.phone_number ?? null, seller: undefined } : store,
+      buyer,
+      coupon,
+      rider,
       items: order.orderItems.map((oi) => ({
         ...oi,
+        ...orderItemMoneyFields(oi),
         product: productMap.get(oi.productId),
       })),
-      total: order.totalAmount,
+      total: toMoney(order.totalAmount),
     };
 
     res.status(200).json({ success: true, order: orderData });
@@ -1046,6 +1377,7 @@ export const cancelOrder = async (
   try {
     const userId  = req.user?.id;
     const { orderId } = req.params as { orderId: string };
+    const { reason, note } = validate(cancelOrderSchema, req.body ?? {});
 
     const order = await prismaPostgres.order.findUnique({
       where: { id: orderId },
@@ -1056,10 +1388,14 @@ export const cancelOrder = async (
     if (order.userId !== userId) {
       return next(new ValidationError("You can only cancel your own orders"));
     }
-    if (order.status !== "PENDING") {
+    // Self-cancel is only safe before the store has started preparing the
+    // order — once PREPARING (or later), stock may already be pulled/cut and
+    // a rider path may be forming, so the customer is directed to store
+    // support instead (see the mobile/web order screens' support fallback).
+    if (order.status !== "PENDING" && order.status !== "ACCEPTED") {
       return next(
         new ValidationError(
-          `Cannot cancel an order in "${order.status}" state. Only PENDING orders can be cancelled.`,
+          `Cannot cancel an order in "${order.status}" state. Only PENDING or ACCEPTED orders can be cancelled — please contact store support.`,
         ),
       );
     }
@@ -1087,44 +1423,126 @@ export const cancelOrder = async (
         );
       }
     }
-    // A paid order is still PENDING until the seller accepts it. Plain cancel
-    // restores stock without refunding, so refuse it here — a paid order must
-    // go through the refund flow instead.
-    if (order.paymentStatus === "COMPLETED") {
-      return next(
-        new ValidationError(
-          "This order is already paid and cannot be cancelled here. Please request a refund instead.",
-        ),
-      );
-    }
+    // A quick-pick reason is stored as-is; "Other" pairs with the customer's
+    // own note when they left one.
+    const cancellationReason =
+      reason === "Other" ? note?.trim() || "Other" : (reason ?? undefined);
+
+    const refundNeeded = order.paymentMethod === "RAZORPAY" && order.paymentStatus === "COMPLETED";
 
     // Mark cancelled in Postgres
     const cancelled = await prismaPostgres.order.update({
       where: { id: orderId },
-      data: { status: "CANCELLED", updatedAt: new Date() },
+      data: {
+        status: "CANCELLED",
+        updatedAt: new Date(),
+        cancelledBy: "CUSTOMER",
+        cancelledAt: new Date(),
+        ...(cancellationReason ? { cancellationReason } : {}),
+        ...(refundNeeded ? { refundStatus: "REQUESTED" } : {}),
+      },
     });
 
     // Restore stock in MongoDB (fire-and-forget with logging)
     restoreOrderStock(order.orderItems, "cancelOrder");
 
+    // A rider is never assigned this early (PENDING/ACCEPTED, well before
+    // READY_FOR_PICKUP), but release defensively rather than assume.
+    if (order.riderId) {
+      releaseRiderIfNoOtherDeliveries(order.riderId).catch((err) =>
+        logger.error("Failed to release rider after customer cancel", { orderId, riderId: order.riderId, err }),
+      );
+    }
+
+    // A paid online order gets auto-refunded — order-service has already
+    // confirmed ownership and the cancellable state above, so payment-service
+    // processes this as a "system" actor rather than needing an admin/seller
+    // session. COD and unpaid orders have nothing to refund.
+    if (refundNeeded) {
+      publishToQueue(QUEUE_NAMES.PAYMENT_EVENTS, {
+        type: "REFUND_REQUESTED",
+        orderId,
+        userId,
+        reason: "Customer cancelled the order",
+      }).catch((err) => logger.error("Failed to queue refund for cancelled order", { orderId, err }));
+    }
+
     // Audit log
     writeAuditLog("ORDER", orderId, "ORDER_CANCELLED_BY_USER", userId, "USER", {
       itemCount: order.orderItems.length,
+      reason: cancellationReason ?? null,
     });
+
+    // Live-update any open order-tracking screen, same as seller-driven
+    // status changes.
+    publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
+      type: "ORDER_STATUS_UPDATE",
+      userId,
+      storeId: order.storeId,
+      orderId,
+      status: "CANCELLED",
+    }).catch((err) => logger.error("Failed to publish cancel order event", { orderId, err }));
+
+    // Domain event, separate from the UI-facing status update above — lets
+    // analytics/loyalty/CRM-style consumers react to a cancellation without
+    // coupling to the live-tracking event shape.
+    publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
+      type: "ORDER_CANCELLED",
+      orderId,
+      storeId: order.storeId,
+      userId,
+      cancelledBy: "CUSTOMER",
+      reason: cancellationReason ?? null,
+      refundRequested: refundNeeded,
+    }).catch((err) => logger.error("Failed to publish ORDER_CANCELLED event", { orderId, err }));
 
     // Notify user
     try {
-      const shortId = orderId.slice(-6).toUpperCase();
       await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
         userId,
         title:    "Order Cancelled",
-        message:  `Your order #${shortId} has been cancelled and stock has been released.`,
+        message:  refundNeeded
+          ? "Your order has been cancelled successfully.\nYour refund has been initiated.\nRefund Status: Processing"
+          : "Your order has been cancelled successfully.",
         type:     "INFO",
         category: "ORDER",
         metadata: { orderId },
         channels: ["IN_APP"],
       });
     } catch { /* non-critical */ }
+
+    // Notify the seller/staff — fire-and-forget, a customer cancel shouldn't
+    // wait on Mongo lookups for who to notify.
+    (async () => {
+      try {
+        const shortId = formatOrderId(orderId);
+        const store = await prismaMongo.stores.findUnique({
+          where: { id: order.storeId },
+          select: { sellerId: true },
+        });
+        if (!store?.sellerId) return;
+        const staffs = await prismaMongo.staffs.findMany({
+          where: { sellerId: store.sellerId, isActive: true },
+          select: { id: true },
+        });
+        const notifyTargets = [{ id: store.sellerId }, ...staffs];
+        await Promise.all(
+          notifyTargets.map((target) =>
+            publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
+              userId: target.id,
+              title: "Order Cancelled by Customer",
+              message: `Customer cancelled order ${shortId}.`,
+              type: "INFO",
+              category: "ORDER",
+              metadata: { orderId },
+              channels: ["IN_APP"],
+            }),
+          ),
+        );
+      } catch (err) {
+        logger.error("Failed to notify seller of customer cancellation", { orderId, err });
+      }
+    })();
 
     return res.status(200).json({
       success: true,

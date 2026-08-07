@@ -54,6 +54,7 @@ export const productSchema = z.object({
     return val;
   }, z.array(z.string())).optional(),
   sizes: wrapArray(z.array(z.string())).optional(),
+  trackStockPerSize: wrapValue(z.boolean()).optional().default(false),
   sizePricing: z.array(productSizePricingSchema).nullable().optional(),
   cuttingTypePricing: z.array(productCuttingTypePricingSchema).nullable().optional(),
   pieceSizePricing: z.array(productPieceSizePricingSchema).nullable().optional(),
@@ -97,6 +98,14 @@ export const addCatalogProductToStoreSchema = z.object({
   // snake_case keys (salePrice/sale_price etc.) and fills in the rest, so we
   // only rule out non-object entries here rather than pinning exact fields.
   sizePricing: z.array(z.record(z.string(), z.unknown())).optional(),
+  // Only meaningful when the catalog product is trackStockPerSize — one
+  // entry per stocked size. An array rather than a { size: qty } map because
+  // size labels (e.g. "1.1 kg") can contain literal dots, which Mongo would
+  // otherwise misparse as a nested-path separator during atomic updates.
+  sizeStock: z.array(z.object({
+    size: z.string(),
+    qty: z.preprocess((val) => Number(val), z.number().nonnegative()),
+  })).optional(),
   stock: z.preprocess((val) => Number(val), z.number().nonnegative()).optional(),
   cash_on_delivery: z.enum(["yes", "no"]).optional(),
   discountCodes: z.array(z.string()).optional(),
@@ -115,9 +124,16 @@ export const validateCartSchema = z.object({
   cartItems: z.array(z.object({
     productId: z.string(),
     quantity: z.number().nonnegative(),
+    // Present when this line is part of a combo bundle — lets the preview
+    // reprice the group to the bundle price instead of catalog price.
+    comboId: z.string().optional(),
+    cuttingType: z.string().optional(),
+    pieceSize: z.string().optional(),
+    size: z.string().optional(),
   })).min(1, "At least one item is required"),
   pincode: z.string().min(6, "Pincode is required"),
   city: z.string().optional(),
+  area: z.string().optional(),
   storeId: z.string().optional(),
 });
 

@@ -158,7 +158,7 @@ const Page = () => {
               <tbody>
                 {discountCodes.map((discount: any) => {
                   const expired = isExpired(discount.expiresAt);
-                  const usageCount = discount._count?.usages ?? discount.usedCount ?? 0;
+                  const usageCount = discount.usedCount ?? 0;
                   const maxUses = discount.maxUses;
 
                   return (
@@ -426,13 +426,18 @@ const Page = () => {
                   </div>
                   <div>
                     <Input
-                      label="Per-User Limit"
+                      label="Per-User Limit *"
                       type="number"
                       min={1}
-                      defaultValue={1}
-                      {...register("maxUsesPerUser")}
+                      {...register("maxUsesPerUser", {
+                        required: "Per-user limit is required",
+                        min: { value: 1, message: "Must be at least 1" },
+                      })}
                     />
                     <p className="text-gray-500 text-xs mt-0.5">How many times one user can use</p>
+                    {errors.maxUsesPerUser && (
+                      <p className="text-red-400 text-xs mt-1">{errors.maxUsesPerUser.message}</p>
+                    )}
                   </div>
                 </div>
               )}

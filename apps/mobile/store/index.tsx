@@ -30,7 +30,12 @@ export type CartItem = {
   status?: string;  // "Active" | "NonActive"
   cuttingType?: string;
   pieceSize?: string;
+  selectedSize?: string;
   priceBreakdown?: PriceBreakdown;
+  // Set when this line came from a combo bundle — checkout tags the order
+  // item with it so order-service reprices the whole group to the bundle
+  // price instead of charging this line's own catalog price.
+  comboId?: string;
 };
 
 type Store = {
@@ -39,6 +44,9 @@ type Store = {
 
   addToCart: (product: CartItem, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
   removeFromCart: (id: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
+  /** Removes every line belonging to a combo bundle in one shot — combo
+   *  members can't be removed individually, only as a whole group. */
+  removeComboGroup: (comboId: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
   /** Update quantity for a cart item by id. Removes the item if qty <= 0. */
   updateQuantity: (id: string, quantity: number) => void;
   /**
@@ -61,8 +69,14 @@ export const useStore = create<Store>()(
       // ── Add to cart ──────────────────────────────────────────────────────
       addToCart: (product, user, location, deviceInfo) => {
         set((state) => {
+          // Combo-linked lines never merge with a standalone purchase of the
+          // same product+cuttingType — they're priced (and must checkout) as
+          // part of the bundle, not merged into an unrelated line.
           const existing = state.cart.find(
-            (item) => item.id === product.id && item.cuttingType === product.cuttingType
+            (item) =>
+              item.id === product.id &&
+              item.cuttingType === product.cuttingType &&
+              item.comboId === product.comboId
           );
           if (existing) {
             // Check local stock before incrementing
@@ -72,7 +86,7 @@ export const useStore = create<Store>()(
             }
             return {
               cart: state.cart.map((item) =>
-                item.id === product.id && item.cuttingType === product.cuttingType
+                item.id === product.id && item.cuttingType === product.cuttingType && item.comboId === product.comboId
                   ? { ...item, quantity: newQty }
                   : item
               ),
@@ -115,6 +129,26 @@ export const useStore = create<Store>()(
             country: location.country || "Unknown",
             city: location.city || "Unknown",
             device: deviceInfo || "Unknown Device",
+          });
+        }
+      },
+
+      // ── Remove a whole combo group ───────────────────────────────────────
+      removeComboGroup: (comboId, user, location, deviceInfo) => {
+        const removed = get().cart.filter((item) => item.comboId === comboId);
+        set((state) => ({ cart: state.cart.filter((item) => item.comboId !== comboId) }));
+
+        if (user?.id && location && deviceInfo) {
+          removed.forEach((item) => {
+            sendKafkaEvent({
+              userId: user.id,
+              productId: item.id,
+              shopId: item.shopId,
+              action: "remove_from_cart",
+              country: location.country || "Unknown",
+              city: location.city || "Unknown",
+              device: deviceInfo || "Unknown Device",
+            });
           });
         }
       },

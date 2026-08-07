@@ -1,5 +1,6 @@
 import { colors, radii, spacing } from "@/constants/theme";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -121,7 +122,7 @@ export default function BannerCarousel() {
               style={{ width: CARD_WIDTH, height: BANNER_HEIGHT }}
             >
               <Image
-                source={{ uri: banner.imageUrl }}
+                source={{ uri: cloudinaryThumbnail(banner.imageUrl, Math.round(CARD_WIDTH * 2)) }}
                 style={{ width: "100%", height: "100%" }}
                 resizeMode="cover"
                 accessibilityLabel={banner.title || "Offer banner"}

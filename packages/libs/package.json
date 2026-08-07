@@ -4,8 +4,8 @@
   "private": true,
   "main": "./dist/main.js",
   "scripts": {
-    "build": "tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts --format esm --dts && mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/",
-    "dev": "mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/ ; tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts --format esm --dts --watch"
+    "build": "tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts --format esm --dts && mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/",
+    "dev": "mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/ ; tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts --format esm --dts --watch"
   },
   "exports": {
     "./cloudinary": {
@@ -39,6 +39,10 @@
     "./logger": {
       "types": "./dist/utils/logger.d.ts",
       "default": "./dist/utils/logger.js"
+    },
+    "./cache": {
+      "types": "./dist/cache/index.d.ts",
+      "default": "./dist/cache/index.js"
     }
   },
   "devDependencies": {

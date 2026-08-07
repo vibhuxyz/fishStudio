@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance from "@/utils/axiosInstance";
+import { requestPushPermission, syncNotificationPreferences } from "@/utils/push-notifications";
 import { toast } from "@/utils/toast";
 
 interface SettingItem {
@@ -83,11 +84,24 @@ export default function Settings() {
     const newSettings = { ...settingsData };
 
     switch (id) {
-      case "notifications":
-        newSettings.notifications = !newSettings.notifications;
+      case "notifications": {
+        const turningOn = !newSettings.notifications;
+        if (turningOn) {
+          const result = await requestPushPermission();
+          if (!result.granted) {
+            toast.error("Enable notifications for this app in your device Settings");
+            return;
+          }
+          await syncNotificationPreferences({ expoPushToken: result.token });
+        }
+        newSettings.notifications = turningOn;
         break;
+      }
       case "email_notifications":
         newSettings.email_notifications = !newSettings.email_notifications;
+        await syncNotificationPreferences({
+          emailNotificationsEnabled: newSettings.email_notifications,
+        });
         break;
       case "dark_mode":
         newSettings.dark_mode = !newSettings.dark_mode;

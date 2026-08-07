@@ -1,3 +1,6 @@
+import { Request } from "express";
+import jwt from "jsonwebtoken";
+import { ENV } from "@repo/env-config";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { redis } from "@repo/libs/redis";
 
@@ -8,7 +11,49 @@ import { redis } from "@repo/libs/redis";
 export const STOREFRONT_CACHE_TTL = 300;
 export const MAX_STOREFRONT_LIMIT = 48;
 
-export const storefrontVariantInclude = {
+// Best-effort, non-throwing user id extraction. Unlike isAuthenticated this
+// never rejects the request — anonymous callers fall back to guest handling.
+export const optionalUserId = (req: Request): string | null => {
+  try {
+    const bearer = (req.headers.authorization as string | undefined)?.split(" ")[1];
+    const token = bearer || (req as any).cookies?.access_token;
+    if (!token) return null;
+    const decoded = jwt.verify(token, ENV.ACCESS_TOKEN_JWT_SECRET_KEY as string) as {
+      id?: string;
+      role?: string;
+    };
+    return decoded?.id ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * The only variant fields mergeCatalogWithVariant and pickBestVariantPerCatalog
+ * actually read.
+ *
+ * A `select`, not an `include`: every descriptive field on a product (nutrition,
+ * cooking tips, storage, the long marketing copy) is taken from the catalog root
+ * during the merge, so including them per variant moved ~40 unused fields per
+ * row on the hottest storefront queries. The seller was previously `include`d
+ * whole — which fetched its password hash — when only its events are read.
+ *
+ * Keep this in step with the fields mergeCatalogWithVariant touches; it takes
+ * `any`, so dropping one here fails at runtime rather than at compile time.
+ */
+export const storefrontVariantSelect = {
+  id: true,
+  catalogProductId: true,
+  stock: true,
+  sale_price: true,
+  regular_price: true,
+  sizePricing: true,
+  cuttingTypePricing: true,
+  pieceSizePricing: true,
+  basePricePerKg: true,
+  slug: true,
+  storeId: true,
+  discount_codes: true,
   images: true,
   store: {
     select: {
@@ -16,7 +61,7 @@ export const storefrontVariantInclude = {
       name: true,
       pincode: true,
       city: true,
-      seller: { include: { events: true } },
+      seller: { select: { events: true } },
     },
   },
 } as const;
@@ -86,6 +131,7 @@ const buildStoreLocationWhere = ({
   if (pincode) {
     filters.push({ pincode: String(pincode) });
     filters.push({ availableCities: { has: String(pincode) } });
+    filters.push({ servicePincodes: { has: String(pincode) } });
   }
   if (city) {
     filters.push({ city: { equals: String(city), mode: "insensitive" } });
@@ -101,6 +147,7 @@ const scoreStoreForLocation = (
     pincode: string;
     city: string;
     availableCities: string[];
+    servicePincodes?: string[];
   },
   location: StoreLocationInput,
 ) => {
@@ -109,6 +156,9 @@ const scoreStoreForLocation = (
   const normalizedStoreCity = normalizeLocationValue(store.city);
   const normalizedAvailableCities = Array.isArray(store.availableCities)
     ? store.availableCities.map(normalizeLocationValue)
+    : [];
+  const normalizedServicePincodes = Array.isArray(store.servicePincodes)
+    ? store.servicePincodes.map(normalizeLocationValue)
     : [];
 
   if (location.storeId && store.id === location.storeId) return 1000;
@@ -123,7 +173,8 @@ const scoreStoreForLocation = (
   }
   if (
     normalizedPincode &&
-    normalizedAvailableCities.includes(normalizedPincode)
+    (normalizedAvailableCities.includes(normalizedPincode) ||
+      normalizedServicePincodes.includes(normalizedPincode))
   ) {
     return 700;
   }
@@ -153,6 +204,7 @@ export const resolvePreferredStore = async (location: StoreLocationInput) => {
       instant_delivery_window_end: true,
       cityDeliveryTimes: true,
       availableCities: true,
+      servicePincodes: true,
       sellerId: true,
     },
   });

@@ -9,8 +9,34 @@ import type {
   GatewaySettlement,
   VerifySignatureParams,
   NormalizedWebhookEvent,
+  PaymentInstrument,
   RefundParams,
 } from "../payment.interface.js";
+
+/**
+ * Razorpay's payment.entity shape (both `payments.fetch()` and the
+ * `payment.captured` webhook payload use it) carries the instrument under a
+ * method-specific key — card details under `card`, UPI under `vpa`, etc.
+ */
+function extractInstrument(payload: any): PaymentInstrument | null {
+  const method = payload?.method as string | undefined;
+  if (!method) return null;
+  switch (method) {
+    case "card": {
+      const card = payload.card;
+      const detail = card ? [card.network, card.last4 ? `•••• ${card.last4}` : null].filter(Boolean).join(" ") : undefined;
+      return { method, detail: detail || undefined };
+    }
+    case "upi":
+      return { method, detail: payload.vpa ?? undefined };
+    case "netbanking":
+      return { method, detail: payload.bank ?? undefined };
+    case "wallet":
+      return { method, detail: payload.wallet ?? undefined };
+    default:
+      return { method };
+  }
+}
 
 /* ── Timing-safe hex-string compare ─────────────────────────────────────────
    Comparing signatures with === leaks length/position info via timing. This
@@ -111,6 +137,7 @@ export class RazorpayProvider implements PaymentProvider {
           orderId,
           gatewayPaymentId: payload.id,
           amountInPaise: typeof payload.amount === "number" ? payload.amount : undefined,
+          instrument: extractInstrument(payload) ?? undefined,
         };
       case "payment.failed":
         return { kind: "PAYMENT_FAILED", orderId, gatewayPaymentId: payload.id, reason: payload.error_description };
@@ -132,6 +159,16 @@ export class RazorpayProvider implements PaymentProvider {
         };
       default:
         return { kind: "UNHANDLED", eventType };
+    }
+  }
+
+  async fetchPaymentInstrument(gatewayPaymentId: string): Promise<PaymentInstrument | null> {
+    try {
+      const payment = await this.client().payments.fetch(gatewayPaymentId);
+      return extractInstrument(payment);
+    } catch {
+      // Display-only lookup — a failure here must never block verification.
+      return null;
     }
   }
 

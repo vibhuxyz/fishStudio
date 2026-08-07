@@ -1,5 +1,6 @@
 import { colors } from "@/constants/theme";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -60,7 +61,7 @@ export default function MyReviewsScreen() {
               style={{ flexDirection: "row", backgroundColor: colors.white, borderRadius: 16, padding: 14, marginBottom: 12 }}
             >
               <Image
-                source={{ uri: review.product?.images?.[0]?.url || "https://via.placeholder.com/56" }}
+                source={{ uri: cloudinaryThumbnail(review.product?.images?.[0]?.url, 104) || "https://via.placeholder.com/56" }}
                 style={{ width: 52, height: 52, borderRadius: 12, backgroundColor: colors.secondaryBg }}
                 resizeMode="cover"
               />

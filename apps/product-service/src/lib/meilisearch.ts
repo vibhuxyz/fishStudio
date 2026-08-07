@@ -213,6 +213,35 @@ export async function reindexCatalogVariants(catalogProductId: string) {
   }
 }
 
+/** Reindex every product in a store — used when the seller's isActive flag
+ * changes, since that flips every product's `status` in bulk via a raw
+ * updateMany that (unlike the single-product update path) doesn't touch
+ * Meilisearch on its own. */
+export async function reindexStoreProducts(storeId: string) {
+  try {
+    const products = await prisma.products.findMany({
+      where: { storeId, isDeleted: false },
+      include: {
+        images: { take: 1 },
+        catalogProduct: { include: { images: { take: 1 } } },
+      },
+    });
+
+    if (products.length === 0) return;
+
+    const docs = products.map(toMeiliDoc);
+    const index = meiliClient.index(PRODUCTS_INDEX);
+    await Promise.all(
+      docs.map((d) => index.deleteDocument(d.id).catch(() => {})),
+    );
+    await index.addDocuments(docs);
+
+    console.log(`[Meili] Reindexed ${products.length} products for store ${storeId}`);
+  } catch (err) {
+    console.error("[Meili] reindexStoreProducts error:", (err as Error).message);
+  }
+}
+
 /** Full reindex — indexes BOTH catalog templates and store variants with the NEW logic */
 export async function clearAndReindexAll() {
   const index = meiliClient.index(PRODUCTS_INDEX);

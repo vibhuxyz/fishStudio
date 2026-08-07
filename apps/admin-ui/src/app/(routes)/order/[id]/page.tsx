@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
@@ -9,14 +10,30 @@ import {
   adminUpdateOrderStatus,
   useAdminOrderDetail,
   type AdminOrder,
+  type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
+import { formatOrderId } from "@repo/shared/order-id";
 
-const ORDER_STATUSES = ["PENDING", "ACCEPTED", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const ORDER_STATUSES = [
+  "PENDING",
+  "ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "ASSIGNED_TO_RIDER",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
 
-// Valid transitions from each status — admins can only move orders forward (or cancel)
+// Valid transitions from each status — admins can only move orders forward (or cancel).
+// ASSIGNED_TO_RIDER is reachable here too (unlike the seller-facing endpoint)
+// since admin is a trusted manual-override role for fixing stuck orders.
 const ALLOWED_NEXT: Record<string, string[]> = {
-  PENDING:   ["PENDING", "ACCEPTED", "CANCELLED", "REJECTED"],
-  ACCEPTED:  ["ACCEPTED", "SHIPPED", "CANCELLED", "REJECTED"],
+  PENDING:           ["PENDING", "ACCEPTED", "CANCELLED", "REJECTED"],
+  ACCEPTED:          ["ACCEPTED", "PREPARING", "CANCELLED", "REJECTED"],
+  PREPARING:         ["PREPARING", "READY_FOR_PICKUP", "CANCELLED"],
+  READY_FOR_PICKUP:  ["READY_FOR_PICKUP", "ASSIGNED_TO_RIDER", "SHIPPED", "CANCELLED"],
+  ASSIGNED_TO_RIDER: ["ASSIGNED_TO_RIDER", "SHIPPED", "CANCELLED"],
   SHIPPED:   ["SHIPPED", "DELIVERED", "CANCELLED"],
   DELIVERED: ["DELIVERED"],
   CANCELLED: ["CANCELLED"],
@@ -27,6 +44,9 @@ const statusColor = (s: string) => {
   if (s === "DELIVERED") return "text-emerald-400";
   if (s === "PENDING")   return "text-amber-400";
   if (s === "ACCEPTED")  return "text-blue-400";
+  if (s === "PREPARING") return "text-cyan-400";
+  if (s === "READY_FOR_PICKUP") return "text-teal-400";
+  if (s === "ASSIGNED_TO_RIDER") return "text-fuchsia-400";
   if (s === "SHIPPED")   return "text-purple-400";
   if (s === "REJECTED" || s === "CANCELLED") return "text-rose-400";
   return "text-gray-400";
@@ -34,6 +54,16 @@ const statusColor = (s: string) => {
 
 const payColor = (s: string) =>
   s === "COMPLETED" ? "text-emerald-400" : s === "REFUNDED" ? "text-purple-400" : "text-amber-400";
+
+/** Razorpay's own sub-instrument (card/upi/netbanking/wallet), read off the
+ *  payment's metadata — `payment.method` itself is only ever "COD" | "RAZORPAY". */
+function instrumentLabel(payment: AdminOrderPayment): string | null {
+  const method = payment.metadata?.method;
+  if (!method) return null;
+  const detail = payment.metadata?.instrumentDetail;
+  const label = method.toUpperCase();
+  return detail ? `${label} · ${detail}` : label;
+}
 
 const Page = () => {
   const params  = useParams();
@@ -76,6 +106,8 @@ const Page = () => {
   const currentIdx = ORDER_STATUSES.indexOf(order.status as any);
   const amount     = (order as any).totalAmount ?? 0;
   const billDetails = order.billDetails as any;
+  const primaryPayment = order.payments?.find((p) => p.status === "COMPLETED") ?? order.payments?.[0];
+  const primaryInstrument = primaryPayment ? instrumentLabel(primaryPayment) : null;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
@@ -91,7 +123,7 @@ const Page = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-100">
-            Order #{order.id.slice(-8).toUpperCase()}
+            Order {formatOrderId(order.id)}
           </h1>
           <p className="text-xs text-gray-500 mt-1">
             {new Date(order.createdAt).toLocaleString("en-IN")}
@@ -107,6 +139,7 @@ const Page = () => {
           {(order as any).paymentMethod && (
             <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded-full">
               {(order as any).paymentMethod}
+              {primaryInstrument && ` · ${primaryInstrument}`}
             </span>
           )}
         </div>
@@ -210,7 +243,49 @@ const Page = () => {
             <Row label="Grand Total" value={`₹${amount.toFixed(0)}`} bold />
           </div>
         </Section>
+
+        {/* Assigned rider */}
+        {order.rider && (
+          <Section title="Assigned Rider">
+            <div className="flex items-center gap-3 mb-3">
+              {order.rider.avatar?.url ? (
+                <Image src={order.rider.avatar.url} alt={order.rider.name} width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center">
+                  <span className="text-fuchsia-400 text-sm font-bold">{order.rider.name?.[0]?.toUpperCase() ?? "R"}</span>
+                </div>
+              )}
+              <p className="text-white font-semibold">{order.rider.name}</p>
+            </div>
+            <Row label="Phone"   value={order.rider.phone} />
+            <Row label="Vehicle" value={`${order.rider.vehicleType} · ${order.rider.vehicleNumber}`} />
+            <Row label="Assigned At" value={order.assignedAt ? new Date(order.assignedAt).toLocaleString("en-IN") : undefined} />
+          </Section>
+        )}
       </div>
+
+      {/* Payments */}
+      {order.payments && order.payments.length > 0 && (
+        <Section title={`Payment${order.payments.length > 1 ? "s" : ""} (${order.payments.length})`}>
+          <div className="space-y-3">
+            {order.payments.map((payment) => (
+              <div key={payment.id} className="bg-gray-800 rounded-xl p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-white">
+                    {payment.method}
+                    {instrumentLabel(payment) && (
+                      <span className="text-gray-400 font-normal"> · {instrumentLabel(payment)}</span>
+                    )}
+                  </span>
+                  <span className={`text-xs font-semibold ${payColor(payment.status)}`}>{payment.status}</span>
+                </div>
+                <Row label="Amount" value={`₹${payment.amount.toFixed(0)}`} />
+                {payment.transactionId && <Row label="Transaction ID" value={payment.transactionId} />}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* Order items */}
       <Section title={`Items (${order.items?.length ?? 0})`}>

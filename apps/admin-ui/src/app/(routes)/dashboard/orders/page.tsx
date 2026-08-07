@@ -11,6 +11,7 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { type AdminOrder, useAdminOrderList, useAdminOrderPincodes } from "@/hooks/useAdminQueries";
+import { formatOrderId } from "@repo/shared/order-id";
 
 const statusColor = (status: string) => {
   if (status === "DELIVERED")  return "bg-emerald-600 text-white";
@@ -41,7 +42,7 @@ const OrdersTable = () => {
         header: "Order ID",
         cell: ({ row }: { row: { original: AdminOrder } }) => (
           <span className="text-white text-sm font-mono">
-            #{row.original.id.slice(-6).toUpperCase()}
+            {formatOrderId(row.original.id)}
           </span>
         ),
       },

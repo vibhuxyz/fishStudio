@@ -2,6 +2,7 @@ import { useConversation } from "@/context/conversation.context";
 import { useWebSocket } from "@/context/web-socket.context";
 import useUser from "@/hooks/useUser";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
@@ -379,7 +380,7 @@ export default function ChatDetails() {
         </TouchableOpacity>
 
         <Image
-          source={{ uri: currentConversation.seller.avatar }}
+          source={{ uri: cloudinaryThumbnail(currentConversation.seller.avatar, 80) }}
           className="w-10 h-10 rounded-full"
           resizeMode="cover"
         />
@@ -431,7 +432,7 @@ export default function ChatDetails() {
             >
               {msg.messageType === "image" && msg.imageUrl ? (
                 <Image
-                  source={{ uri: msg.imageUrl }}
+                  source={{ uri: cloudinaryThumbnail(msg.imageUrl, 384) }}
                   className="w-48 h-32 rounded-lg"
                   resizeMode="cover"
                 />

@@ -11,6 +11,12 @@ import {
   getOrderById,
   cancelOrder,
 } from "../controllers/order/user.controller.js";
+import {
+  getEligibleRiders,
+  assignRider,
+  changeRider,
+  removeRider,
+} from "../controllers/order/rider-assignment.controller.js";
 import { getSellerStats, getAdminStats, getAdminSellerOrders } from "../controllers/order/stats.controller.js";
 import { getAdminOrderList, getAdminOrderDetail, updateAdminOrderStatus, getAdminOrderPincodes } from "../controllers/order/admin.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff } from "@repo/middlewares";
@@ -41,6 +47,12 @@ router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, isApprovedSel
 router.get("/get-order-details/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, getOrderById);
 router.put("/accept-reject/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, acceptOrRejectOrder);
 router.put("/update-status/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, updateOrderStatus);
+
+// ── Rider Assignment ─────────────────────────────────────────────────────────
+router.get("/eligible-riders/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, getEligibleRiders);
+router.put("/assign-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, assignRider);
+router.put("/change-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, changeRider);
+router.put("/remove-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, removeRider);
 
 // ── Analytics Routes ──────────────────────────────────────────────────────────
 router.get("/seller-stats", isAuthenticated, allowRoles("seller", "staff"), getSellerStats);

@@ -55,6 +55,8 @@ export type AdminProduct = {
   nutritionCalories?: string | null;
   cuttingTypes?: string[];
   pieceSizes?: string[];
+  sizes?: string[];
+  trackStockPerSize?: boolean;
 };
 
 export type DiscountCode = {
@@ -91,6 +93,7 @@ export type AdminSellerSummary = {
   totalBanners?: number;
   totalReviews?: number;
   isApprovedByAdmin?: boolean;
+  isActive?: boolean;
   permissions?: string[];
   store?: {
     id: string;
@@ -347,6 +350,7 @@ export type UpdateProductPayload = {
   nutritionCalories?: string;
   cuttingTypes?: Array<{ value: string }>;
   pieceSizes?: Array<{ value: string }>;
+  trackStockPerSize?: boolean;
 };
 
 export type AdminBanner = {

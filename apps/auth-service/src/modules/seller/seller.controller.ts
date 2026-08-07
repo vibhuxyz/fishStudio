@@ -275,6 +275,10 @@ export const loginSeller = async (
         throw new AuthError("Invalid email or password");
       }
 
+      if (seller.isActive === false) {
+        throw new AuthError("Your seller account has been deactivated by the admin.");
+      }
+
       const accessToken = signAccessToken({ id: seller.id, role: "seller" }, "24h");
       const refreshToken = await signRefreshToken({ id: seller.id, role: "seller" }, "24h");
 
@@ -285,9 +289,9 @@ export const loginSeller = async (
         success: true,
         message: "Seller logged in successfully",
         role: "seller",
-        user: { 
-          id: seller.id, 
-          name: seller.name, 
+        user: {
+          id: seller.id,
+          name: seller.name,
           email: seller.email,
           isApprovedByAdmin: seller.isApprovedByAdmin,
           permissions: seller.permissions

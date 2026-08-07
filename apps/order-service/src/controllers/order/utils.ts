@@ -1,9 +1,21 @@
 import { redis } from "@repo/libs/redis";
 import { prismaMongo } from "@repo/db-mongo";
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, toMoney, type Prisma } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
 
 export const STATS_CACHE_TTL = 120; // 2 minutes
+
+/**
+ * The order id shown to customers is never the raw cuid — every client
+ * (mobile, user-ui, admin-ui, seller-ui) derives its own display string from
+ * it, e.g. "#" + last 6/8 chars, or mobile's "FS" + last 10 chars. Users
+ * paste these display strings straight into search boxes, so a raw
+ * `contains` match against `Order.id` fails unless the known display
+ * affordances are stripped first.
+ */
+export function normalizeOrderIdFragment(raw: string): string {
+  return raw.trim().replace(/^#/, "").replace(/^FS/i, "");
+}
 
 // Shared Mongo `select` shapes for admin order endpoints — identical fields
 // requested by both the list and detail views, kept in one place so the two
@@ -42,6 +54,27 @@ export function queueStalePaymentFix(orderIds: string[]) {
     .catch(() => {});
 }
 
+/**
+ * Order responses are assembled by spreading the Prisma row (`{ ...order }`),
+ * which carries the numeric(12,2) columns through as Decimal objects. Those
+ * JSON-encode as strings, so every such response spreads these overrides on
+ * top to restore the numbers clients already parse.
+ */
+export const orderMoneyFields = (order: {
+  totalAmount: Prisma.Decimal;
+  discountAmount: Prisma.Decimal;
+  deliveryCharge: Prisma.Decimal;
+}) => ({
+  totalAmount: toMoney(order.totalAmount),
+  discountAmount: toMoney(order.discountAmount),
+  deliveryCharge: toMoney(order.deliveryCharge),
+});
+
+/** Same, for a spread OrderItem row. */
+export const orderItemMoneyFields = (item: { price: Prisma.Decimal }) => ({
+  price: toMoney(item.price),
+});
+
 export type Period = "week" | "month" | "year";
 
 export const invalidateSellerStatsCache = async (sellerId: string) => {
@@ -56,6 +89,82 @@ export const invalidateSellerStatsCache = async (sellerId: string) => {
   }
 };
 
+// Whole-fish style products track stock per exact weight instead of one
+// shared pool (see `products.trackStockPerSize`/`sizeStock` in the Mongo
+// schema). `sizeStock` is stored as an array of { size, qty } rather than a
+// { [size]: qty } map because size labels (e.g. "1.1 kg") can contain
+// literal dots, which Mongo would otherwise misparse as a nested-path
+// separator in a dot-notation update — so the size value is only ever
+// compared, never used as a path segment, via `arrayFilters`.
+export async function decrementStockItem(
+  productId: string,
+  quantity: number,
+  size: string | undefined,
+): Promise<boolean> {
+  if (size) {
+    const result: Record<string, unknown> = await prismaMongo.$runCommandRaw({
+      update: "products",
+      updates: [
+        {
+          q: {
+            _id: { $oid: productId },
+            sizeStock: { $elemMatch: { size, qty: { $gte: quantity } } },
+          },
+          u: {
+            $inc: {
+              "sizeStock.$[elem].qty": -quantity,
+              stock: -quantity,
+              totalSold: quantity,
+            },
+          },
+          arrayFilters: [{ "elem.size": size }],
+        },
+      ],
+    });
+    return Number(result.nModified ?? 0) > 0;
+  }
+
+  const result = await prismaMongo.products.updateMany({
+    where: { id: productId, stock: { gte: quantity } },
+    data: { stock: { decrement: quantity }, totalSold: { increment: quantity } },
+  });
+  return result.count > 0;
+}
+
+export async function restoreStockItem(
+  productId: string,
+  quantity: number,
+  size: string | undefined,
+) {
+  if (size) {
+    await prismaMongo.$runCommandRaw({
+      update: "products",
+      updates: [
+        {
+          q: { _id: { $oid: productId }, "sizeStock.size": size },
+          u: {
+            $inc: {
+              "sizeStock.$[elem].qty": quantity,
+              stock: quantity,
+              totalSold: -quantity,
+            },
+          },
+          arrayFilters: [{ "elem.size": size }],
+        },
+      ],
+    });
+    return;
+  }
+
+  await prismaMongo.products.update({
+    where: { id: productId },
+    data: {
+      stock: { increment: quantity },
+      totalSold: { decrement: quantity },
+    },
+  });
+}
+
 /**
  * Restores stock + totalSold for cancelled/rejected order items.
  * Fire-and-forget: called after the status change is already committed,
@@ -63,20 +172,46 @@ export const invalidateSellerStatsCache = async (sellerId: string) => {
  * for manual reconciliation instead.
  */
 export function restoreOrderStock(
-  orderItems: { productId: string; quantity: number }[],
+  orderItems: {
+    productId: string;
+    quantity: number;
+    selectedOptions?: unknown;
+  }[],
   context: string,
 ) {
   return Promise.all(
-    orderItems.map((item) =>
-      prismaMongo.products.update({
-        where: { id: item.productId },
-        data: {
-          stock: { increment: item.quantity },
-          totalSold: { decrement: item.quantity },
-        },
-      }),
-    ),
+    orderItems.map((item) => {
+      const size =
+        item.selectedOptions &&
+        typeof item.selectedOptions === "object" &&
+        typeof (item.selectedOptions as Record<string, unknown>).size === "string"
+          ? ((item.selectedOptions as Record<string, unknown>).size as string)
+          : undefined;
+      return restoreStockItem(item.productId, item.quantity, size || undefined);
+    }),
   ).catch((err) => logger.error(`[${context}] stock restore failed`, { err }));
+}
+
+/**
+ * Releases a rider's claim on one delivery — decrements activeDeliveryCount
+ * and, if that was their only active delivery, flips them back to AVAILABLE
+ * so they reappear in the assignment list. Shared by changeRider, removeRider,
+ * and updateOrderStatus's DELIVERED/CANCELLED branches — one implementation
+ * of this bookkeeping instead of four copies.
+ */
+export async function releaseRiderIfNoOtherDeliveries(riderId: string): Promise<void> {
+  const rider = await prismaMongo.riders.update({
+    where: { id: riderId },
+    data: { activeDeliveryCount: { decrement: 1 } },
+  });
+  if (rider.activeDeliveryCount <= 0) {
+    await prismaMongo.riders.update({
+      where: { id: riderId },
+      // Clamp to 0 (rather than leaving it negative) — defends against a
+      // double-release race decrementing past zero.
+      data: { activeDeliveryCount: 0, status: "AVAILABLE" },
+    });
+  }
 }
 
 export function getPeriodStart(period: Period): Date {

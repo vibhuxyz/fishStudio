@@ -6,9 +6,11 @@ import { SuccessStep } from "@/components/auth/success-step";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance, { storeAccessToken } from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
+import { NOTIFICATION_ONBOARDING_SEEN_KEY } from "@/utils/push-notifications";
 import { toast } from "@/utils/toast";
 import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
@@ -119,7 +121,14 @@ export default function LoginScreen() {
 
       setStep("success");
       haptic.success();
-      setTimeout(() => router.replace("/(tabs)"), 1300);
+      setTimeout(async () => {
+        const hasSeenNotificationPrompt = await AsyncStorage.getItem(
+          NOTIFICATION_ONBOARDING_SEEN_KEY,
+        );
+        router.replace(
+          hasSeenNotificationPrompt ? "/(tabs)" : "/(routes)/notification-permissions",
+        );
+      }, 1300);
     },
     onError: (error: unknown) => {
       const message = isAxiosError(error)

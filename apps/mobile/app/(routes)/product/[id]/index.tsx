@@ -1,25 +1,28 @@
 import useUser from "@/hooks/useUser";
 import { useStore } from "@/store";
+import { useBottomBarStore } from "@/store/bottom-bar-store";
 import { useAddressStore } from "@/lib/address-store";
 import { trackProductView } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { computePerKgSalePrice, resolvePerKgPricing, resolveProductSizePricing } from "@/utils/pricing";
 import { ProductBadges } from "@/components/home/badge";
+import AddToCartModal from "@/components/home/add-to-cart-modal";
+import FloatingCartBar from "@/components/shared/floating-cart-bar";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
-  Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   ScrollView,
   Share,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -119,6 +122,10 @@ export default function ProductDetailScreen() {
   const { user } = useUser();
   const { wishlist, addToWishlist, removeFromWishlist, addToCart } = useStore();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const imageScrollRef = useRef<ScrollView>(null);
+  // Collapses the nutrition stats + cooking tips under "Read more" so the
+  // Product Information block doesn't dump everything on screen at once.
+  const [showFullInfo, setShowFullInfo] = useState(false);
 
   const { selectedLocation, locationVersion, getSelectedAddress } = useAddressStore();
   const selectedAddress = getSelectedAddress();
@@ -157,6 +164,7 @@ export default function ProductDetailScreen() {
     setSelectedCutting(product.cuttingTypes?.[0] || "");
     setSelectedPieceSize(product.pieceSizes?.[0] || "");
     setSelectedSize(product.weight || product.sizes?.[0] || "");
+    setRemovedBundleIds(new Set());
   }, [product]);
 
   const { normalizedPricing, selected } = useMemo(
@@ -241,13 +249,39 @@ export default function ProductDetailScreen() {
   );
   const relatedLoading = productLoading;
 
-  // Reviews — real per-product reviews (average rating, list, write-a-review)
-  const queryClient = useQueryClient();
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState("");
+  // "Add all to cart" / "You May Also Like" both add OTHER products, which
+  // may have their own cutting type / piece size / weight variants — those
+  // need the same picker the main product's own "Add to Cart" button uses,
+  // not a direct add with hardcoded defaults. Queue lets "Add all" walk the
+  // bundle one variant-picker at a time instead of only prompting for one.
+  const [quickAddProduct, setQuickAddProduct] = useState<any | null>(null);
+  const [bundleQueue, setBundleQueue] = useState<any[]>([]);
 
-  const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
+  // Lets the shopper drop items out of "Frequently Bought Together" before
+  // adding the rest — ids here are excluded from the bundle total and cart add.
+  const [removedBundleIds, setRemovedBundleIds] = useState<Set<string>>(new Set());
+
+  const handleQuickAddClose = () => {
+    if (bundleQueue.length > 0) {
+      const [next, ...rest] = bundleQueue;
+      setBundleQueue(rest);
+      setQuickAddProduct(next);
+    } else {
+      setQuickAddProduct(null);
+    }
+  };
+
+  // Tells FloatingCartBar how tall this page's own bottom bar is, so it can
+  // sit above it instead of overlapping the price/Add to Cart bar. Reset on
+  // unmount so leaving this screen doesn't leave other screens offset.
+  const setBottomBarHeight = useBottomBarStore((s) => s.setHeight);
+  useEffect(() => {
+    return () => setBottomBarHeight(0);
+  }, [setBottomBarHeight]);
+
+  // Average rating still feeds the star badge in the product summary below —
+  // the Reviews list/write-a-review UI itself was removed.
+  const { data: reviewsData } = useQuery({
     queryKey: ["product-reviews", product?.id],
     queryFn: async () => {
       const res = await axiosInstance.get(
@@ -262,30 +296,6 @@ export default function ProductDetailScreen() {
     },
     enabled: !!product?.id,
   });
-
-  const submitReviewMutation = useMutation({
-    mutationFn: async () => {
-      return axiosInstance.post("/product/api/create-review", {
-        productId: product.id,
-        rating: reviewRating,
-        comment: reviewComment.trim() || undefined,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Review submitted!");
-      setReviewModalOpen(false);
-      setReviewComment("");
-      setReviewRating(5);
-      queryClient.invalidateQueries({ queryKey: ["product-reviews", product.id] });
-      queryClient.invalidateQueries({ queryKey: ["product", id] });
-    },
-    onError: () => toast.error("Couldn't submit your review. Try again."),
-  });
-
-  const handleSubmitReview = () => {
-    if (!user) { toast.error("Please login to write a review"); return; }
-    submitReviewMutation.mutate();
-  };
 
   const isWishlisted = product ? wishlist.some((i) => i.id === product.id) : false;
 
@@ -330,6 +340,7 @@ export default function ProductDetailScreen() {
         quantity: 1,
         cuttingType: selectedCutting || undefined,
         pieceSize: selectedPieceSize || undefined,
+        selectedSize: selectedSize || undefined,
         priceBreakdown: buildBreakdown(),
       },
       user, selectedAddress, "Mobile App"
@@ -350,23 +361,45 @@ export default function ProductDetailScreen() {
       ? Math.round(((product.regular_price - product.sale_price) / product.regular_price) * 100)
       : 0;
 
-    const mainUri =
-      images.length > 0
-        ? images[selectedImageIndex]?.url || images[selectedImageIndex]
-        : null;
+    // Snaps selectedImageIndex to whichever page the user's swipe actually
+    // landed on, so the counter badge and chevrons stay in sync with a
+    // finger-driven scroll, not just the button taps.
+    const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const index = Math.round(e.nativeEvent.contentOffset.x / width);
+      setSelectedImageIndex(index);
+    };
+
+    const goToImage = (index: number) => {
+      setSelectedImageIndex(index);
+      imageScrollRef.current?.scrollTo({ x: index * width, animated: true });
+    };
 
     return (
       <View className="mb-4">
         <View className="relative">
-          <Image
-            source={
-              mainUri
-                ? { uri: cloudinaryThumbnail(mainUri, 800) }
-                : require("@/assets/images/icon.png")
-            }
-            style={{ width, height: width * 0.85 }}
-            resizeMode="cover"
-          />
+          <ScrollView
+            ref={imageScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleScrollEnd}
+          >
+            {(images.length > 0 ? images : [null]).map((img: { url?: string } | string | null, i: number) => {
+              const uri = img ? (typeof img === "string" ? img : img.url) : null;
+              return (
+                <Image
+                  key={i}
+                  source={
+                    uri
+                      ? { uri: cloudinaryThumbnail(uri, 800) }
+                      : require("@/assets/images/icon.png")
+                  }
+                  style={{ width, height: width * 0.85 }}
+                  resizeMode="cover"
+                />
+              );
+            })}
+          </ScrollView>
           {/* Freshness / handling badges — computed by the storefront API from tags */}
           <ProductBadges badges={product?.badges} max={3} />
 
@@ -392,14 +425,14 @@ export default function ProductDetailScreen() {
               <TouchableOpacity
                 className="absolute left-3 bg-white/90 rounded-full w-9 h-9 items-center justify-center shadow"
                 style={{ top: width * 0.85 / 2 - 18 }}
-                onPress={() => setSelectedImageIndex((p) => (p - 1 + images.length) % images.length)}
+                onPress={() => goToImage((selectedImageIndex - 1 + images.length) % images.length)}
               >
                 <Ionicons name="chevron-back" size={18} color="#1E293B" />
               </TouchableOpacity>
               <TouchableOpacity
                 className="absolute right-3 bg-white/90 rounded-full w-9 h-9 items-center justify-center shadow"
                 style={{ top: width * 0.85 / 2 - 18 }}
-                onPress={() => setSelectedImageIndex((p) => (p + 1) % images.length)}
+                onPress={() => goToImage((selectedImageIndex + 1) % images.length)}
               >
                 <Ionicons name="chevron-forward" size={18} color="#1E293B" />
               </TouchableOpacity>
@@ -748,49 +781,6 @@ export default function ProductDetailScreen() {
     );
   };
 
-  // ─── Why choose FishStudio (static trust strip) ───────────────────────────
-  const renderTrustStrip = () => {
-    const items = [
-      { icon: "fish-outline" as const, label: "Freshly sourced\nevery day" },
-      { icon: "cut-outline" as const, label: "Cut fresh\nafter order" },
-      { icon: "shield-checkmark-outline" as const, label: "Hygienic &\nchemical free" },
-      { icon: "car-outline" as const, label: "Cold chain\nsafe delivery" },
-      { icon: "ribbon-outline" as const, label: "Premium quality\nassurance" },
-    ];
-    return (
-      <View className="px-4 py-5 border-t border-gray-100">
-        <Text className="text-base font-poppins-bold text-foreground mb-4">
-          Why choose FishStudio?
-        </Text>
-        <View className="flex-row justify-between">
-          {items.map((item) => (
-            <View key={item.label} style={{ width: 62, alignItems: "center" }}>
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 22,
-                  backgroundColor: "#F3EEFB",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 6,
-                }}
-              >
-                <Ionicons name={item.icon} size={20} color="#5A2C96" />
-              </View>
-              <Text
-                className="text-gray-600 font-poppins-medium text-center"
-                style={{ fontSize: 10, lineHeight: 13 }}
-              >
-                {item.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  };
-
   // ─── Product Information / What makes it great / Cooking tips ─────────────
   const renderProductInformation = () => {
     const infoRows = [
@@ -809,6 +799,7 @@ export default function ProductDetailScreen() {
 
     const highlight = product?.highlightDescription || product?.short_description;
     const hasCookingTips = Array.isArray(product?.cookingTips) && product.cookingTips.length > 0;
+    const hasMoreToShow = nutrition.length > 0 || hasCookingTips;
 
     if (infoRows.length === 0 && !highlight && !hasCookingTips) return null;
 
@@ -840,11 +831,14 @@ export default function ProductDetailScreen() {
                 What makes it great?
               </Text>
               {highlight && (
-                <Text className="text-gray-600 font-poppins text-xs leading-5 mb-3">
+                <Text
+                  className="text-gray-600 font-poppins text-xs leading-5 mb-3"
+                  numberOfLines={showFullInfo ? undefined : 2}
+                >
                   {highlight}
                 </Text>
               )}
-              {nutrition.length > 0 && (
+              {showFullInfo && nutrition.length > 0 && (
                 <View className="flex-row" style={{ gap: 10 }}>
                   {nutrition.map((n) => (
                     <View key={n.label} style={{ alignItems: "center" }}>
@@ -861,7 +855,7 @@ export default function ProductDetailScreen() {
           )}
         </View>
 
-        {hasCookingTips && (
+        {showFullInfo && hasCookingTips && (
           <View className="mt-4">
             <Text className="text-sm font-poppins-bold text-foreground mb-2">
               Cooking Tips
@@ -876,139 +870,23 @@ export default function ProductDetailScreen() {
             ))}
           </View>
         )}
-      </View>
-    );
-  };
 
-  // ─── Reviews ────────────────────────────────────────────────────────────
-  const renderReviews = () => {
-    const reviews = reviewsData?.reviews ?? [];
-    const totalReviews = reviewsData?.totalReviews ?? 0;
-    const averageRating = reviewsData?.averageRating;
-
-    return (
-      <View className="px-4 py-5 border-t border-gray-100">
-        <View className="flex-row items-center justify-between mb-4">
-          <View>
-            <Text className="text-base font-poppins-bold text-foreground">Reviews</Text>
-            {averageRating != null && totalReviews > 0 && (
-              <View className="flex-row items-center mt-1">
-                <Ionicons name="star" size={14} color="#F59E0B" />
-                <Text className="text-gray-700 font-poppins-semibold text-xs ml-1">
-                  {averageRating.toFixed(1)} · {totalReviews} review{totalReviews === 1 ? "" : "s"}
-                </Text>
-              </View>
-            )}
-          </View>
+        {hasMoreToShow && (
           <TouchableOpacity
-            onPress={() => setReviewModalOpen(true)}
-            className="bg-primary/10 px-3 py-2 rounded-xl"
-            activeOpacity={0.8}
+            onPress={() => setShowFullInfo((v) => !v)}
+            className="flex-row items-center mt-3"
+            activeOpacity={0.7}
           >
-            <Text className="text-primary font-poppins-semibold text-xs">Write a review</Text>
+            <Text className="text-primary font-poppins-semibold text-xs mr-1">
+              {showFullInfo ? "Show less" : "Read more"}
+            </Text>
+            <Ionicons
+              name={showFullInfo ? "chevron-up" : "chevron-down"}
+              size={14}
+              color="#5A2C96"
+            />
           </TouchableOpacity>
-        </View>
-
-        {reviewsLoading ? (
-          <Text className="text-muted-foreground font-poppins text-sm">Loading reviews...</Text>
-        ) : reviews.length === 0 ? (
-          <Text className="text-muted-foreground font-poppins text-sm">
-            No reviews yet. Be the first to share your experience!
-          </Text>
-        ) : (
-          reviews.map((review: any) => (
-            <View key={review.id} className="mb-4 pb-4 border-b border-gray-100">
-              <View className="flex-row items-center justify-between mb-1">
-                <Text className="text-gray-900 font-poppins-semibold text-sm">
-                  {review.user?.name || "Fish Studio customer"}
-                </Text>
-                <Text className="text-gray-400 font-poppins text-[11px]">
-                  {new Date(review.createdAt).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </Text>
-              </View>
-              <View className="flex-row items-center mb-1">
-                {[...Array(5)].map((_, i) => (
-                  <Ionicons
-                    key={i}
-                    name="star"
-                    size={12}
-                    color={i < review.rating ? "#F59E0B" : "#E5E7EB"}
-                    style={{ marginRight: 1 }}
-                  />
-                ))}
-              </View>
-              {review.comment ? (
-                <Text className="text-gray-600 font-poppins text-xs leading-5">
-                  {review.comment}
-                </Text>
-              ) : null}
-            </View>
-          ))
         )}
-
-        {/* Write-a-review modal */}
-        <Modal
-          visible={reviewModalOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setReviewModalOpen(false)}
-        >
-          <TouchableOpacity
-            className="flex-1 bg-black/40 justify-end"
-            activeOpacity={1}
-            onPress={() => setReviewModalOpen(false)}
-          >
-            <TouchableOpacity activeOpacity={1} className="bg-white rounded-t-3xl p-6">
-              <Text className="text-lg font-poppins-semibold text-foreground mb-4">
-                Rate this product
-              </Text>
-              <View className="flex-row justify-center mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity key={star} onPress={() => setReviewRating(star)} className="px-1">
-                    <Ionicons
-                      name={star <= reviewRating ? "star" : "star-outline"}
-                      size={32}
-                      color="#F59E0B"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <TextInput
-                value={reviewComment}
-                onChangeText={setReviewComment}
-                placeholder="Share your experience (optional)"
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={4}
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#E5E7EB",
-                  borderRadius: 12,
-                  padding: 12,
-                  fontFamily: "Inter-Regular",
-                  fontSize: 14,
-                  color: "#1A1C1C",
-                  minHeight: 90,
-                  textAlignVertical: "top",
-                }}
-              />
-              <TouchableOpacity
-                onPress={handleSubmitReview}
-                disabled={submitReviewMutation.isPending}
-                className="bg-primary rounded-2xl py-4 mt-4"
-                activeOpacity={0.85}
-              >
-                <Text className="text-white text-center font-poppins-semibold">
-                  {submitReviewMutation.isPending ? "Submitting..." : "Submit Review"}
-                </Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
       </View>
     );
   };
@@ -1018,11 +896,13 @@ export default function ProductDetailScreen() {
     const bundleItems = (relatedProducts ?? []).slice(0, 2);
     if (!product || bundleItems.length === 0) return null;
 
-    const bundleTotal =
-      (product.sale_price || product.regular_price || 0) +
-      bundleItems.reduce((sum: number, item: any) => sum + (item.sale_price || item.regular_price || 0), 0);
-
     const allItems = [product, ...bundleItems];
+    const selectedItems = allItems.filter((item) => !removedBundleIds.has(item.id));
+
+    const bundleTotal = selectedItems.reduce(
+      (sum: number, item: any) => sum + (item.sale_price || item.regular_price || 0),
+      0,
+    );
 
     return (
       <View className="px-4 py-5 border-t border-gray-100">
@@ -1032,21 +912,48 @@ export default function ProductDetailScreen() {
         <View className="flex-row items-center flex-wrap">
           {allItems.map((item, index) => {
             const itemImage = item.images?.[0]?.url || item.images?.[0];
+            const isRemoved = removedBundleIds.has(item.id);
             return (
             <React.Fragment key={item.id}>
               <View style={{ alignItems: "center", width: 72 }}>
-                <View className="rounded-xl overflow-hidden border border-gray-200 bg-muted items-center justify-center" style={{ width: 60, height: 60 }}>
-                  {itemImage ? (
-                    <Image
-                      source={{ uri: cloudinaryThumbnail(itemImage, 120) }}
-                      style={{ width: 60, height: 60 }}
-                      resizeMode="cover"
+                <View style={{ width: 60, height: 60 }}>
+                  <View
+                    className="rounded-xl overflow-hidden border border-gray-200 bg-muted items-center justify-center"
+                    style={{ width: 60, height: 60, opacity: isRemoved ? 0.4 : 1 }}
+                  >
+                    {itemImage ? (
+                      <Image
+                        source={{ uri: cloudinaryThumbnail(itemImage, 120) }}
+                        style={{ width: 60, height: 60 }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="fish-outline" size={22} color="#94A3B8" />
+                    )}
+                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setRemovedBundleIds((prev) => {
+                        const next = new Set(prev);
+                        if (isRemoved) {
+                          next.delete(item.id);
+                        } else {
+                          next.add(item.id);
+                        }
+                        return next;
+                      })
+                    }
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ position: "absolute", top: -6, right: -6 }}
+                  >
+                    <Ionicons
+                      name={isRemoved ? "add-circle" : "close-circle"}
+                      size={18}
+                      color={isRemoved ? "#22C55E" : "#9CA3AF"}
                     />
-                  ) : (
-                    <Ionicons name="fish-outline" size={22} color="#94A3B8" />
-                  )}
+                  </TouchableOpacity>
                 </View>
-                <Text className="text-gray-900 font-poppins-bold text-[11px] mt-1">
+                <Text className={`font-poppins-bold text-[11px] mt-1 ${isRemoved ? "text-gray-400" : "text-gray-900"}`}>
                   ₹{item.sale_price || item.regular_price}
                 </Text>
               </View>
@@ -1063,33 +970,28 @@ export default function ProductDetailScreen() {
             Total: <Text className="text-gray-900 font-poppins-bold">₹{bundleTotal.toFixed(0)}</Text>
           </Text>
           <TouchableOpacity
+            disabled={selectedItems.length === 0}
             onPress={() => {
               if (!user) { toast.error("Please login to add items to cart"); return; }
-              addCurrentToCart();
-              bundleItems.forEach((item: any) => {
-                addToCart(
-                  {
-                    id: item.id,
-                    slug: item.slug,
-                    title: item.title,
-                    price: item.sale_price || item.regular_price || 0,
-                    regularPrice:
-                      item.regular_price > item.sale_price ? item.regular_price : undefined,
-                    badges: item.badges,
-                    image: item.images?.[0]?.url || item.images?.[0] || "",
-                    shopId: item.Shop?.id || "",
-                    quantity: 1,
-                  },
-                  user, selectedAddress, "Mobile App"
-                );
-              });
-              toast.success(`Added ${allItems.length} items to cart!`);
+              // The current product already has its own variant selector on
+              // this page, so addCurrentToCart() covers it directly. The
+              // other bundle items don't — queue them through the same
+              // picker modal the rest of the app uses for "Add".
+              const selectedBundleItems = bundleItems.filter((item: any) => !removedBundleIds.has(item.id));
+              if (!removedBundleIds.has(product.id)) {
+                addCurrentToCart();
+              }
+              const [first, ...rest] = selectedBundleItems;
+              if (first) {
+                setBundleQueue(rest);
+                setQuickAddProduct(first);
+              }
             }}
-            className="bg-primary rounded-xl px-4 py-2.5"
+            className={`rounded-xl px-4 py-2.5 ${selectedItems.length === 0 ? "bg-gray-300" : "bg-primary"}`}
             activeOpacity={0.85}
           >
             <Text className="text-white font-poppins-semibold text-xs">
-              Add all {allItems.length} to cart
+              Add all {selectedItems.length} to cart
             </Text>
           </TouchableOpacity>
         </View>
@@ -1204,21 +1106,7 @@ export default function ProductDetailScreen() {
                         className="bg-accent px-3 py-1.5 rounded-lg"
                         onPress={() => {
                           if (!user) { toast.error("Please login"); return; }
-                          addToCart(
-                            {
-                              id: item.id,
-                              slug: item.slug,
-                              title: item.title,
-                              price: itemPrice,
-                              regularPrice: discountPct > 0 ? originalPrice : undefined,
-                              badges: item.badges,
-                              image: itemImage || "",
-                              shopId: item.Shop?.id || "",
-                              quantity: 1,
-                            },
-                            user, selectedAddress, "Mobile App"
-                          );
-                          toast.success("Added!");
+                          setQuickAddProduct(item);
                         }}
                         activeOpacity={0.8}
                       >
@@ -1304,16 +1192,17 @@ export default function ProductDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {renderImageGallery()}
         {renderProductInfo()}
-        {renderTrustStrip()}
-        {renderProductInformation()}
-        {renderReviews()}
         {renderFrequentlyBoughtTogether()}
+        {renderProductInformation()}
         {renderRelatedProducts()}
         <View className="h-24" />
       </ScrollView>
 
       {/* Bottom fixed bar — price + single Add to Cart action */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-100">
+      <View
+        className="flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-100"
+        onLayout={(e) => setBottomBarHeight(e.nativeEvent.layout.height)}
+      >
         <View>
           <Text
             className="text-primary text-xl"
@@ -1345,6 +1234,13 @@ export default function ProductDetailScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <AddToCartModal
+        product={quickAddProduct}
+        visible={!!quickAddProduct}
+        onClose={handleQuickAddClose}
+      />
+      <FloatingCartBar />
     </SafeAreaView>
   );
 }

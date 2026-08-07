@@ -61,7 +61,14 @@ const SellersPage = () => {
                 >
                   <td className="p-3">
                     <div className="flex flex-col">
-                      <span>{seller.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{seller.name}</span>
+                        {seller.isActive === false && (
+                          <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-400">
+                            Deactivated
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-gray-400">
                         {seller.email}
                       </span>

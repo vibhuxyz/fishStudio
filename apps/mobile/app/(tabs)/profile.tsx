@@ -4,8 +4,11 @@ import { useCouponStore } from "@/lib/coupon-store";
 import { fetchRecentlyViewed } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
 import { clearStoredAuth } from "@/utils/auth";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
 import { colors } from "@/constants/theme";
+import { Order, STATUS_CONFIG } from "@/constants/order";
+import { formatOrderId } from "@repo/shared/order-id";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
@@ -31,16 +34,24 @@ import SectionCarousel from "@/components/home/section-carousel";
 const PRIMARY = colors.primary;
 const SUPPORT_WHATSAPP_URL = "https://wa.me/919999999999";
 
-// The six stages a customer actually cares about tracking — mirrors
-// STATUS_CONFIG's states but with the profile mockup's own short labels.
+// The three stages a customer actually looks up from here — everything
+// in-between (confirmed/packed/out for delivery) is covered by "All Orders"
+// and the in-page status chips on the orders list itself.
 const ORDER_QUICK_FILTERS: { key: string; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "all", label: "All Orders", icon: "cube-outline" },
-  { key: "PENDING", label: "Confirmed", icon: "checkmark-circle-outline" },
-  { key: "ACCEPTED", label: "Packed", icon: "cube-outline" },
-  { key: "SHIPPED", label: "Out for Delivery", icon: "bicycle-outline" },
   { key: "DELIVERED", label: "Delivered", icon: "home-outline" },
   { key: "CANCELLED", label: "Cancelled", icon: "close-outline" },
 ];
+
+// Mirrors my-orders/index.tsx: a RAZORPAY order still PENDING never got a
+// completed payment, so it reads as cancelled rather than "in progress".
+function getDisplayStatus(order: Order): string {
+  const isUnpaidOnline =
+    order.paymentMethod === "RAZORPAY" &&
+    order.status === "PENDING" &&
+    order.paymentStatus !== "COMPLETED";
+  return isUnpaidOnline ? "CANCELLED" : order.status;
+}
 
 export default function Profile() {
   const { user: cachedUser, updateUserData, clearUserData } = useUser();
@@ -76,6 +87,22 @@ export default function Profile() {
     enabled: !!cachedUser,
     staleTime: 1000 * 60,
   });
+
+  // Shares the "user-orders" cache key with the my-orders screen so the two
+  // don't double-fetch when a shopper opens one after the other.
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ["user-orders"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/order/api/user-orders");
+      return res.data.orders as Order[];
+    },
+    enabled: !!cachedUser,
+    staleTime: 1000 * 60,
+  });
+  const recentOrders = (ordersData || [])
+    .slice()
+    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+    .slice(0, 3);
 
   const { data: unreadCount = 0 } = useQuery({
     queryKey: ["notifications-unread-count"],
@@ -272,7 +299,7 @@ export default function Profile() {
                     <View style={{ position: "relative", marginRight: 14 }}>
                       <Image
                         source={{
-                          uri: user?.avatar?.url ||
+                          uri: cloudinaryThumbnail(user?.avatar?.url, 128) ||
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=FFFFFF&color=5A2C96&size=200`,
                         }}
                         style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" }}
@@ -382,6 +409,79 @@ export default function Profile() {
                 );
               })}
             </View>
+
+            {recentOrders.length > 0 && (
+              <View style={{ marginTop: 4, borderTopWidth: 1, borderTopColor: "#F3F4F6", paddingTop: 12, gap: 8 }}>
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12.5, color: colors.textMuted, marginBottom: 2 }}>
+                  Recent Orders
+                </Text>
+                {recentOrders.map((order) => {
+                  const displayStatus = getDisplayStatus(order);
+                  const cfg = STATUS_CONFIG[displayStatus] ?? {
+                    bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: displayStatus,
+                  };
+                  const orderNumber = formatOrderId(order.id);
+                  const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  });
+                  const amount = order.totalAmount ?? order.total ?? 0;
+                  const firstItem = order.items?.[0];
+                  const image =
+                    cloudinaryThumbnail(firstItem?.product?.images?.[0]?.url, 112) ||
+                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=120";
+                  const title = firstItem?.product?.title || `Order ${orderNumber}`;
+                  const itemCount = order.items?.length ?? 0;
+
+                  return (
+                    <TouchableOpacity
+                      key={order.id}
+                      activeOpacity={0.8}
+                      onPress={() => router.push({ pathname: "/(routes)/order-details/[id]", params: { id: order.id } })}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        backgroundColor: colors.white,
+                        borderRadius: 14,
+                        borderWidth: 1,
+                        borderColor: "#F0F0F0",
+                        padding: 8,
+                        shadowColor: "#000",
+                        shadowOpacity: 0.03,
+                        shadowRadius: 4,
+                        shadowOffset: { width: 0, height: 1 },
+                        elevation: 1,
+                      }}
+                    >
+                      <Image
+                        source={{ uri: image }}
+                        style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.secondaryBg }}
+                        resizeMode="cover"
+                      />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12.5, color: colors.textPrimary }} numberOfLines={1}>
+                          {title}
+                        </Text>
+                        <Text style={{ fontFamily: "Inter-Regular", fontSize: 10.5, color: colors.textMuted, marginTop: 1 }}>
+                          {itemCount} item{itemCount !== 1 ? "s" : ""} · ₹{amount.toFixed(0)} · {orderDate}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row", alignItems: "center",
+                          backgroundColor: cfg.bg, borderRadius: 50,
+                          paddingHorizontal: 7, paddingVertical: 3, marginLeft: 6,
+                        }}
+                      >
+                        <Ionicons name={cfg.icon as any} size={10} color={cfg.text} />
+                        <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 9.5, color: cfg.text, marginLeft: 3 }}>
+                          {cfg.label}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* ── Refer & Earn ─────────────────────────────────────────────── */}

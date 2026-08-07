@@ -1,5 +1,6 @@
 import React from "react";
 import { X, ShoppingCart, CheckCircle2, XCircle, Users, IndianRupee, ExternalLink } from "lucide-react";
+import { formatOrderId } from "@repo/shared/order-id";
 
 // Local types to avoid prop-drilling from hooks
 export type ProductRow = { id: string; title: string; orders: number; revenue: number; image?: string };
@@ -129,7 +130,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                   product.orderIds.slice(0, 5).map((oid, i) => (
                     <div key={i} className="p-5 flex items-center justify-between hover:bg-gray-800/40 transition cursor-default group/row">
                       <div>
-                        <p className="text-xs font-black text-gray-300 group-hover/row:text-white transition-colors">ORD-{oid.slice(-8).toUpperCase()}</p>
+                        <p className="text-xs font-black text-gray-300 group-hover/row:text-white transition-colors">{formatOrderId(oid)}</p>
                         <p className="text-[10px] text-gray-500 font-bold uppercase mt-0.5">Automated Dispatch Sequence</p>
                       </div>
                       <div className="text-right">

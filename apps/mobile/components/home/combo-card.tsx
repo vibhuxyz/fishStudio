@@ -2,6 +2,7 @@ import type { Banner } from "@/components/home/banner-carousel";
 import { colors, fonts, radii, spacing } from "@/constants/theme";
 import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -57,7 +58,7 @@ export default function ComboCard({
   return (
     <Pressable onPress={openCombo} style={[styles.card, { height }]}>
       <Image
-        source={{ uri: imageUrl }}
+        source={{ uri: cloudinaryThumbnail(imageUrl, 400) }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
         accessibilityLabel={banner?.title || fallbackProduct?.title || "Combo offer"}

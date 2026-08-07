@@ -23,6 +23,7 @@ export interface SelectedLocation {
   storeName: string;
   pincode: string;
   city: string;
+  area?: string;
   deliveryTimeMinutes?: number;
   isOpen?: boolean;
   opening_hours?: string;

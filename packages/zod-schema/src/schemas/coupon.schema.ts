@@ -30,9 +30,11 @@ export const createCouponSchema = z.object({
     (val) => (val === "" || val == null ? null : Number(val)),
     z.number().int().positive().nullable().optional(),
   ),
+  // Every coupon must state how many times a single user may redeem it —
+  // no silent default, sellers/admins choose this explicitly at creation.
   maxUsesPerUser: z.preprocess(
-    (val) => (val == null || val === "" ? 1 : Number(val)),
-    z.number().int().min(1).default(1),
+    (val) => (val === "" ? undefined : Number(val)),
+    z.number({ required_error: "Per-user usage limit is required" }).int().min(1),
   ),
   // When true: coupon only works for users with zero prior orders at this store (once-per-lifetime)
   isFirstOrder: z.boolean().optional().default(false),

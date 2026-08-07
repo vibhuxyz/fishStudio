@@ -17,6 +17,16 @@ const TIMELINE_STEPS: {
 ];
 const STEP_KEYS = TIMELINE_STEPS.map((s) => s.key);
 
+// PREPARING/READY_FOR_PICKUP/ASSIGNED_TO_RIDER are real order statuses but
+// this timeline stays 4 visual steps — each maps onto the "Packed" step
+// rather than getting its own, so the bar doesn't regress to step 0 for a
+// status it doesn't otherwise recognize.
+const STATUS_TO_STEP: Record<string, (typeof STEP_KEYS)[number]> = {
+  PREPARING: "ACCEPTED",
+  READY_FOR_PICKUP: "ACCEPTED",
+  ASSIGNED_TO_RIDER: "ACCEPTED",
+};
+
 const formatTime = (iso?: string) =>
   iso
     ? new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })
@@ -38,7 +48,9 @@ export function StatusTimeline({
   createdAt: string;
   updatedAt?: string;
 }) {
-  const currentIdx = Math.max(0, STEP_KEYS.indexOf((status || "PENDING").toUpperCase() as any));
+  const normalizedStatus = (status || "PENDING").toUpperCase();
+  const mappedStatus = STATUS_TO_STEP[normalizedStatus] ?? normalizedStatus;
+  const currentIdx = Math.max(0, STEP_KEYS.indexOf(mappedStatus as any));
 
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>

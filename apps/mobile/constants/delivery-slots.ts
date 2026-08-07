@@ -16,7 +16,7 @@ export type DeliverySlotKey = (typeof SLOT_OPTIONS)[number]["key"];
 // and inside its instant-delivery window.
 export const SCHEDULED_SLOTS: DeliverySlotKey[] = ["morning", "evening"];
 
-export const formatSlotLabel = (key: string) => {
+export const formatSlotLabel = (key: string | null) => {
   const slot = SLOT_OPTIONS.find((s) => s.key === key);
   if (!slot) return "Select a slot";
   return `${slot.name} · ${slot.time}`;
