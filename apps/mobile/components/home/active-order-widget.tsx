@@ -1,4 +1,5 @@
 import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
+import { DeliverySlotKey, formatSlotLabel, SCHEDULED_SLOTS } from "@/constants/delivery-slots";
 import { Order, STATUS_CONFIG } from "@/constants/order";
 import { useAddressStore } from "@/lib/address-store";
 import useUser from "@/hooks/useUser";
@@ -85,12 +86,27 @@ export default function ActiveOrderWidget() {
 
   if (!activeOrder) return null;
 
-  const etaMinutes = getDeliveryEtaMinutes(activeOrder, selectedLocation?.deliveryTimeMinutes);
-  const arrivalTime = new Date(activeOrder.createdAt).getTime() + etaMinutes * 60000;
-  const remainingMinutes = Math.max(0, Math.round((arrivalTime - now) / 60000));
   const cfg = STATUS_CONFIG[activeOrder.status] ?? {
-    bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: activeOrder.status,
+    bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: activeOrder.status, description: activeOrder.status,
   };
+
+  // Only SHIPPED means a rider has actually picked up the order, so that's
+  // the only state where a live "arriving in" countdown means anything —
+  // before that there's no rider en route yet to be arriving.
+  const isShipped = activeOrder.status === "SHIPPED";
+  const isScheduled = SCHEDULED_SLOTS.includes(activeOrder.deliverySlot as DeliverySlotKey);
+
+  let subtitle: string;
+  if (isShipped) {
+    const etaMinutes = getDeliveryEtaMinutes(activeOrder, selectedLocation?.deliveryTimeMinutes);
+    const arrivalTime = new Date(activeOrder.createdAt).getTime() + etaMinutes * 60000;
+    const remainingMinutes = Math.max(0, Math.round((arrivalTime - now) / 60000));
+    subtitle = remainingMinutes > 0 ? `Arriving in ~${remainingMinutes} min` : "Arriving any moment";
+  } else if (isScheduled) {
+    subtitle = `Scheduled · ${formatSlotLabel(activeOrder.deliverySlot || null)}`;
+  } else {
+    subtitle = cfg.description ?? cfg.label;
+  }
 
   const bottomOffset =
     (insets.bottom > 0 ? insets.bottom + 8 : 16) +
@@ -151,8 +167,8 @@ export default function ActiveOrderWidget() {
           <Text style={{ fontFamily: "Inter-Bold", fontSize: 12, color: "#1E293B" }}>
             {cfg.label}
           </Text>
-          <Text style={{ fontFamily: "Inter-Medium", fontSize: 11, color: "#5A2C96", marginTop: 1 }}>
-            {remainingMinutes > 0 ? `Arriving in ~${remainingMinutes} min` : "Arriving any moment"}
+          <Text style={{ fontFamily: "Inter-Medium", fontSize: 11, color: "#5A2C96", marginTop: 1 }} numberOfLines={1}>
+            {subtitle}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={16} color="#5A2C96" />

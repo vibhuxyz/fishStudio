@@ -45,6 +45,26 @@ interface Props {
   onClose: () => void;
 }
 
+// A combo doesn't let the seller configure a weight per item — order-service
+// (createOrder's resolveItemUnitPrice) silently prices any per-kg combo
+// member at this default when no size/weight was selected. Surfacing the
+// same number here means the modal never promises more fish than the order
+// actually gets charged and packed for.
+const PER_KG_DEFAULT_WEIGHT_GRAMS = 250;
+
+const formatGrams = (grams: number) =>
+  grams >= 1000 ? `${parseFloat((grams / 1000).toFixed(2))} kg` : `${grams} g`;
+
+// Piece-cut items (item.pieceSize / product.pieceSizes) already communicate
+// "how much" via their cut size — only whole/fillet items priced by weight
+// need this line, and only when the product doesn't already define one.
+function comboItemWeightLabel(item: ComboItemData, product: Product | null): string | null {
+  if (item.pieceSize || (product?.pieceSizes?.length ?? 0) > 0) return null;
+  if (product?.sizes && product.sizes.length > 0) return product.sizes[0];
+  if (product?.weight) return product.weight;
+  return formatGrams(PER_KG_DEFAULT_WEIGHT_GRAMS);
+}
+
 // Inline accordion dropdown — same pattern as add-to-cart-modal.tsx's
 // InlineDropdown, kept local since this modal has its own per-item state.
 function InlineDropdown({
@@ -66,10 +86,10 @@ function InlineDropdown({
         onPress={() => setOpen((o) => !o)}
         activeOpacity={0.8}
       >
-        <Text className="text-foreground font-poppins text-xs flex-1 mr-2">
+        <Text className="text-foreground font-poppins text-sm flex-1 mr-2">
           {value || `Choose ${label}`}
         </Text>
-        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={14} color="#64748B" />
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={16} color="#64748B" />
       </TouchableOpacity>
       {open && (
         <View className="mt-1 border border-border rounded-lg bg-white overflow-hidden">
@@ -85,10 +105,10 @@ function InlineDropdown({
               }}
               activeOpacity={0.7}
             >
-              <Text className={`font-poppins text-xs ${opt === value ? "text-primary font-poppins-semibold" : "text-foreground"}`}>
+              <Text className={`font-poppins text-sm ${opt === value ? "text-primary font-poppins-semibold" : "text-foreground"}`}>
                 {opt}
               </Text>
-              {opt === value && <Ionicons name="checkmark" size={14} color="#5A2C96" />}
+              {opt === value && <Ionicons name="checkmark" size={16} color="#5A2C96" />}
             </TouchableOpacity>
           ))}
         </View>
@@ -173,6 +193,10 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
         const selection = selections[idx] || {};
         const cuttingType = item.cuttingType || selection.cuttingType;
         const pieceSize = item.pieceSize || selection.pieceSize;
+        // Piece-cut items carry their "how much" via pieceSize already —
+        // only stamp selectedSize for the weight-based fallback so it
+        // doesn't collide with that.
+        const selectedSize = pieceSize ? undefined : comboItemWeightLabel(item, product) || undefined;
         addToCart(
           {
             id: product.id,
@@ -184,6 +208,7 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
             quantity: item.quantity,
             cuttingType,
             pieceSize,
+            selectedSize,
             comboId: combo.id,
           },
           user,
@@ -204,17 +229,24 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
         <View className="flex-1 bg-black/50" />
       </TouchableWithoutFeedback>
 
-      <View className="bg-white rounded-t-3xl" style={{ maxHeight: SCREEN_HEIGHT * 0.85 }}>
-        <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 bg-gray-300 rounded-full" />
+      <View
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderTopLeftRadius: 40,
+          borderTopRightRadius: 40,
+          maxHeight: SCREEN_HEIGHT * 0.8,
+        }}
+      >
+        <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ width: 44, height: 5, borderRadius: 99, backgroundColor: "#D1D5DB" }} />
         </View>
 
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
-          <Text className="text-base font-poppins-semibold text-foreground" numberOfLines={1}>
+          <Text className="text-lg font-poppins-semibold text-foreground" numberOfLines={1}>
             {combo?.title || "Combo"}
           </Text>
           <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={22} color="#64748B" />
+            <Ionicons name="close" size={24} color="#64748B" />
           </TouchableOpacity>
         </View>
 
@@ -226,7 +258,7 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
           <>
             <ScrollView className="px-5 py-4" style={{ maxHeight: SCREEN_HEIGHT * 0.55 }}>
               {combo.description && (
-                <Text className="text-xs text-muted-foreground font-poppins mb-3">{combo.description}</Text>
+                <Text className="text-sm text-muted-foreground font-poppins mb-3">{combo.description}</Text>
               )}
               {combo.items.map((item, idx) => {
                 const product = item.product;
@@ -242,12 +274,12 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
                       )}
                     </View>
                     <View className="flex-1">
-                      <Text className="text-sm font-poppins-semibold text-foreground mb-1" numberOfLines={1}>
+                      <Text className="text-base font-poppins-semibold text-foreground mb-1" numberOfLines={1}>
                         {product?.title || "Unavailable"}
                         {item.quantity > 1 ? ` × ${item.quantity}` : ""}
                       </Text>
                       {item.cuttingType && (
-                        <Text className="text-xs text-muted-foreground font-poppins mb-1">Cutting: {item.cuttingType}</Text>
+                        <Text className="text-sm text-muted-foreground font-poppins mb-1">Cutting: {item.cuttingType}</Text>
                       )}
                       {needsCutting && product?.cuttingTypes && (
                         <InlineDropdown
@@ -258,7 +290,12 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
                         />
                       )}
                       {item.pieceSize && (
-                        <Text className="text-xs text-muted-foreground font-poppins mb-1">Size: {item.pieceSize}</Text>
+                        <Text className="text-sm text-muted-foreground font-poppins mb-1">Size: {item.pieceSize}</Text>
+                      )}
+                      {comboItemWeightLabel(item, product) && (
+                        <Text className="text-sm text-muted-foreground font-poppins mb-1">
+                          Weight: {comboItemWeightLabel(item, product)}
+                        </Text>
                       )}
                       {needsPieceSize && product?.pieceSizes && (
                         <InlineDropdown
@@ -277,14 +314,14 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
             <View className="px-5 pt-3 pb-2 border-t border-border">
               <View className="flex-row items-center justify-between bg-primary/5 rounded-xl px-4 py-3 mb-3">
                 <View>
-                  <Text className="text-xs text-muted-foreground font-poppins" style={{ textDecorationLine: "line-through" }}>
+                  <Text className="text-sm text-muted-foreground font-poppins" style={{ textDecorationLine: "line-through" }}>
                     ₹{combo.regularTotal.toFixed(0)}
                   </Text>
-                  <Text className="text-lg font-poppins-bold text-foreground">₹{combo.comboPrice.toFixed(0)}</Text>
+                  <Text className="text-xl font-poppins-bold text-foreground">₹{combo.comboPrice.toFixed(0)}</Text>
                 </View>
                 {discountPct > 0 && (
                   <View className="bg-offer-green/10 px-2.5 py-1 rounded-full">
-                    <Text className="text-xs font-poppins-semibold text-offer-green">{discountPct}% off</Text>
+                    <Text className="text-sm font-poppins-semibold text-offer-green">{discountPct}% off</Text>
                   </View>
                 )}
               </View>
@@ -294,7 +331,7 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
                 disabled={adding}
                 activeOpacity={0.85}
               >
-                <Text className="text-white font-poppins-semibold text-base">
+                <Text className="text-white font-poppins-semibold text-lg">
                   {adding ? "Adding..." : `Add Combo to Cart · ₹${combo.comboPrice.toFixed(0)}`}
                 </Text>
               </TouchableOpacity>

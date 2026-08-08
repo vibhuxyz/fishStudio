@@ -10,8 +10,23 @@ import {
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Request, Response } from "express";
 import { createOrderSchema, cartQuoteSchema, cancelOrderSchema, validate } from "@repo/zod-schema";
-import { computeCartSummary, distributeComboPrice, comboItemsMatchDefinition, ComboDefinitionItem } from "@repo/shared/pricing";
+import {
+  computeCartSummary,
+  distributeComboPrice,
+  comboItemsMatchDefinition,
+  ComboDefinitionItem,
+  resolveSizePricing,
+  resolvePerKgPricing,
+  computePerKgSalePrice,
+  ProductSizePricing,
+  ProductCuttingTypePricing,
+  ProductPieceSizePricing,
+} from "@repo/shared/pricing";
 import { formatOrderId } from "@repo/shared/order-id";
+import {
+  isInstantDeliveryAvailableNow,
+  StoreHours,
+} from "@repo/shared/store-hours";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { redis } from "@repo/libs/redis";
@@ -223,37 +238,80 @@ async function grantReferralReward(
 
 /* ─── Instant delivery window check ─────────────────────────────────────── */
 function assertInstantDeliveryAvailable(
-  store: {
-    opening_hours: string | null;
-    closing_hours: string | null;
-    is_instant_delivery_enabled: boolean;
-    instant_delivery_window_start: string | null;
-    instant_delivery_window_end: string | null;
-  },
+  store: StoreHours,
   deliverySlot: string,
 ) {
   if (deliverySlot !== "instant") return;
 
-  const now = new Date();
-  const nowTotal = now.getHours() * 60 + now.getMinutes();
-  const toMins = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    return (h || 0) * 60 + (m || 0);
-  };
-  const isStoreOpen =
-    nowTotal >= toMins(store.opening_hours || "09:00") &&
-    nowTotal <= toMins(store.closing_hours || "23:00");
-  const isInstantAvailable =
-    isStoreOpen &&
-    store.is_instant_delivery_enabled &&
-    nowTotal >= toMins(store.instant_delivery_window_start || "11:00") &&
-    nowTotal <= toMins(store.instant_delivery_window_end || "19:00");
-
-  if (!isInstantAvailable) {
+  if (!isInstantDeliveryAvailableNow(store)) {
     throw new ValidationError(
       "Instant delivery is not available currently. Please select a scheduled slot.",
     );
   }
+}
+
+/* ─── Per-item price resolution ──────────────────────────────────────────
+   Products are sold either as discrete size tiers (500g/1kg/1.5kg, each
+   with its own catalog price) or per-kg with cutting-type/piece-size
+   add-ons — mirrors the same resolveSizePricing/resolvePerKgPricing math
+   the product detail screen uses to show the price a customer actually
+   agrees to (apps/mobile/app/(routes)/product/[id]/index.tsx). Recomputed
+   here from the DB's own pricing fields rather than trusting the client's
+   submitted price, so a stale or tampered client can't set its own total —
+   but still charges the size/weight tier the customer actually selected
+   instead of falling back to the catalog's flat (cheapest-tier) sale_price. */
+const PER_KG_DEFAULT_WEIGHT_GRAMS = 250;
+
+type PricedProduct = {
+  sale_price: number;
+  regular_price: number;
+  sizes: string[];
+  sizePricing: unknown;
+  cuttingTypes: string[];
+  pieceSizes: string[];
+  cuttingTypePricing: unknown;
+  pieceSizePricing: unknown;
+  basePricePerKg: number | null;
+};
+
+function resolveItemUnitPrice(
+  dbProduct: PricedProduct,
+  selectedOptions: Record<string, string | number | boolean> | undefined,
+): number {
+  const isPerKgMode =
+    dbProduct.sizes.length === 0 &&
+    (dbProduct.cuttingTypes.length > 0 || dbProduct.pieceSizes.length > 0);
+  const selectedCutting =
+    typeof selectedOptions?.cuttingType === "string" ? selectedOptions.cuttingType : undefined;
+  const selectedPieceSize =
+    typeof selectedOptions?.pieceSize === "string" ? selectedOptions.pieceSize : undefined;
+  const selectedSize =
+    typeof selectedOptions?.size === "string" ? selectedOptions.size : undefined;
+
+  if (isPerKgMode) {
+    const basePricePerKg = dbProduct.basePricePerKg ?? dbProduct.sale_price;
+    const pricing = resolvePerKgPricing(
+      basePricePerKg,
+      dbProduct.cuttingTypePricing as ProductCuttingTypePricing[] | null,
+      dbProduct.pieceSizePricing as ProductPieceSizePricing[] | null,
+      selectedCutting,
+      selectedPieceSize,
+    );
+    const weightGrams =
+      typeof selectedOptions?.weightGrams === "number" && selectedOptions.weightGrams > 0
+        ? selectedOptions.weightGrams
+        : PER_KG_DEFAULT_WEIGHT_GRAMS;
+    return computePerKgSalePrice(pricing, weightGrams);
+  }
+
+  const { selected } = resolveSizePricing(
+    dbProduct.sizePricing as ProductSizePricing[] | null,
+    dbProduct.sizes,
+    dbProduct.sale_price,
+    dbProduct.regular_price || dbProduct.sale_price,
+    selectedSize,
+  );
+  return selected.salePrice;
 }
 
 /* ─── Delivery + coupon totals ──────────────────────────────────────────── */
@@ -363,10 +421,18 @@ export const getCartQuote = async (
         select: {
           id: true,
           sale_price: true,
+          regular_price: true,
           stock: true,
           title: true,
           trackStockPerSize: true,
           sizeStock: true,
+          sizes: true,
+          sizePricing: true,
+          cuttingTypes: true,
+          pieceSizes: true,
+          cuttingTypePricing: true,
+          pieceSizePricing: true,
+          basePricePerKg: true,
         },
       }),
       prismaMongo.stores.findUnique({
@@ -412,12 +478,13 @@ export const getCartQuote = async (
         unavailable.push({ productId: item.productId, reason: "insufficient_stock" });
         continue;
       }
-      const total = dbProduct.sale_price * item.quantity;
+      const unitPrice = resolveItemUnitPrice(dbProduct, item.selectedOptions);
+      const total = unitPrice * item.quantity;
       itemTotal += total;
       lines.push({
         productId: dbProduct.id,
         title: dbProduct.title,
-        unitPrice: dbProduct.sale_price,
+        unitPrice,
         quantity: item.quantity,
         total,
       });
@@ -627,10 +694,18 @@ export const createOrder = async (
         select: {
           id: true,
           sale_price: true,
+          regular_price: true,
           stock: true,
           title: true,
           trackStockPerSize: true,
           sizeStock: true,
+          sizes: true,
+          sizePricing: true,
+          cuttingTypes: true,
+          pieceSizes: true,
+          cuttingTypePricing: true,
+          pieceSizePricing: true,
+          basePricePerKg: true,
         },
       }),
       prismaMongo.stores.findUnique({
@@ -688,7 +763,7 @@ export const createOrder = async (
       if (availableQty < item.quantity) {
         return next(new ValidationError(`Insufficient stock for "${dbProduct.title}"`));
       }
-      resolvedPrices[i] = dbProduct.sale_price;
+      resolvedPrices[i] = resolveItemUnitPrice(dbProduct, item.selectedOptions);
     }
 
     /* ── 2b. Combo pricing — bundle members are charged as a set, not individually ──
@@ -899,6 +974,10 @@ export const createOrder = async (
             deliveryAddress: deliveryDetails.address,
             deliveryCity: deliveryDetails.city,
             deliveryPincode: deliveryDetails.pincode,
+            deliveryLatitude: deliveryDetails.latitude ?? null,
+            deliveryLongitude: deliveryDetails.longitude ?? null,
+            deliveryLandmark: deliveryDetails.landmark ?? null,
+            deliveryInstructions: deliveryDetails.deliveryInstructions ?? null,
             deliveryCharge: totalDelivery,
             billDetails: {
               itemTotal,
@@ -974,7 +1053,7 @@ export const createOrder = async (
             type: "SUCCESS",
             category: "ORDER",
             metadata: { orderId: newOrder.id },
-            channels: ["IN_APP", "SMS"],
+            channels: ["IN_APP", "SMS", "PUSH"],
           },
         });
 
@@ -1326,9 +1405,9 @@ export const getOrderById = async (
           })
         : null,
       order.riderId
-        ? prismaMongo.riders.findUnique({
+        ? prismaMongo.staffs.findUnique({
             where: { id: order.riderId },
-            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, avatar: true },
+            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, photo: true },
           })
         : null,
     ]);
@@ -1507,7 +1586,7 @@ export const cancelOrder = async (
         type:     "INFO",
         category: "ORDER",
         metadata: { orderId },
-        channels: ["IN_APP"],
+        channels: ["IN_APP", "PUSH"],
       });
     } catch { /* non-critical */ }
 

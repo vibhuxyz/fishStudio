@@ -35,6 +35,8 @@ export type CreateReviewInput = z.infer<typeof schemas.createReviewSchema>;
 export type CreateOrderInput = z.infer<typeof schemas.createOrderSchema>;
 export type AcceptOrRejectOrderInput = z.infer<typeof schemas.acceptOrRejectOrderSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof schemas.updateOrderStatusSchema>;
+export type MarkPreparationCompleteInput = z.infer<typeof schemas.markPreparationCompleteSchema>;
+export type MarkDeliveredInput = z.infer<typeof schemas.markDeliveredSchema>;
 export type UpdateAdminOrderStatusInput = z.infer<typeof schemas.updateAdminOrderStatusSchema>;
 export type AdminOrderListQueryInput = z.infer<typeof schemas.adminOrderListQuerySchema>;
 export type StoreInput = z.infer<typeof schemas.storeSchema>;
@@ -50,8 +52,11 @@ export type CreateRazorpayOrderInput = z.infer<typeof schemas.createRazorpayOrde
 export type VerifyPaymentInput = z.infer<typeof schemas.verifyPaymentSchema>;
 export type InitiateRefundInput = z.infer<typeof schemas.initiateRefundSchema>;
 
-export type CreateRiderInput = z.infer<typeof schemas.createRiderSchema>;
-export type UpdateRiderInput = z.infer<typeof schemas.updateRiderSchema>;
-export type UpdateRiderStatusInput = z.infer<typeof schemas.updateRiderStatusSchema>;
-export type ToggleRiderActiveInput = z.infer<typeof schemas.toggleRiderActiveSchema>;
 export type AssignRiderInput = z.infer<typeof schemas.assignRiderSchema>;
+
+export type CreateOperationalStaffInput = z.infer<typeof schemas.createOperationalStaffSchema>;
+export type UpdateOperationalStaffInput = z.infer<typeof schemas.updateOperationalStaffSchema>;
+export type StaffLoginInput = z.infer<typeof schemas.staffLoginSchema>;
+export type ResetStaffPasswordInput = z.infer<typeof schemas.resetStaffPasswordSchema>;
+export type UpdateStaffRiderStatusInput = z.infer<typeof schemas.updateStaffRiderStatusSchema>;
+export type ToggleStaffActiveInput = z.infer<typeof schemas.toggleStaffActiveSchema>;

@@ -206,17 +206,17 @@ export default function CartScreen() {
   );
 
   const rowKeyFor = (p: CartItem) =>
-    `${p.id}__${p.cuttingType || "default"}__${p.pieceSize || "default"}`;
+    `${p.id}__${p.cuttingType || "default"}__${p.pieceSize || "default"}__${p.selectedSize || "default"}__${p.comboId || "default"}`;
 
   const handleDecrement = (product: CartItem) => {
     const newQty = (product.quantity || 1) - 1;
-    updateQuantity(product.id, newQty);
+    updateQuantity(product, newQty);
   };
 
   const handleIncrement = async (product: CartItem) => {
     const key = rowKeyFor(product);
     setIncrementingKey(key);
-    const result = await checkAndIncrement(product.id, 1);
+    const result = await checkAndIncrement(product, 1);
     setIncrementingKey(null);
     if (!result.ok && result.message) {
       toast.error(result.message);
@@ -250,7 +250,7 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     if (!user) {
-      router.push("/(routes)/login");
+      router.push({ pathname: "/(routes)/login", params: { redirect: "/(tabs)/cart" } });
       return;
     }
     if (!selectedAddress) {
@@ -513,7 +513,7 @@ export default function CartScreen() {
                       {product.title}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => removeFromCart(product.id, user, selectedAddress, "Mobile App")}
+                      onPress={() => removeFromCart(product, user, selectedAddress, "Mobile App")}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <Ionicons name="trash-outline" size={17} color="#9CA3AF" />
@@ -701,7 +701,24 @@ export default function CartScreen() {
       <View className="bg-white border-t border-gray-100 px-3 pt-3 pb-4">
         {/* Address strip — the cart is where delivery is confirmed, checkout
             only shows what it's charging for. */}
-        {selectedAddress ? (
+        {!user ? (
+          <TouchableOpacity
+            className="flex-row items-center pb-3 mb-3 border-b border-gray-100"
+            onPress={handleCheckout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-in-outline" size={18} color="#9CA3AF" />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-xs text-gray-900 font-poppins-semibold">
+                Login to continue
+              </Text>
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Sign in to add a delivery address and place your order
+              </Text>
+            </View>
+            <Text className="text-primary font-poppins-semibold text-xs">Login</Text>
+          </TouchableOpacity>
+        ) : selectedAddress ? (
           <TouchableOpacity
             className="flex-row items-center pb-3 mb-3 border-b border-gray-100"
             onPress={() => setAddressSheetOpen(true)}
@@ -757,7 +774,7 @@ export default function CartScreen() {
             activeOpacity={0.9}
           >
             <Text className="text-white font-poppins-semibold text-sm mr-1.5">
-              {selectedAddress ? "Proceed to Checkout" : "Add Address"}
+              {!user ? "Login to Continue" : selectedAddress ? "Proceed to Checkout" : "Add Address"}
             </Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </TouchableOpacity>

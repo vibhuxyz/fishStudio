@@ -30,13 +30,16 @@ export default function SlotSheet({ visible, onClose }: SlotSheetProps) {
           activeOpacity={1}
           style={{
             backgroundColor: "#FFFFFF",
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
+            borderTopLeftRadius: 40,
+            borderTopRightRadius: 40,
             paddingHorizontal: 20,
-            paddingTop: 20,
             paddingBottom: 28,
+            flexShrink: 1,
           }}
         >
+          <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+            <View style={{ width: 44, height: 5, borderRadius: 99, backgroundColor: "#D1D5DB" }} />
+          </View>
           <View
             style={{
               flexDirection: "row",

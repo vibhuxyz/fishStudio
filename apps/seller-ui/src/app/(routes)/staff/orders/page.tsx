@@ -301,11 +301,11 @@ function RejectModal({
 
 // ─── Rider avatar ────────────────────────────────────────────────────────────
 
-function RiderAvatar({ rider, size = 40 }: { rider: { name: string; avatar?: { url: string } | null }; size?: number }) {
-  if (rider.avatar?.url) {
+function RiderAvatar({ rider, size = 40 }: { rider: { name: string; photo?: { url: string } | null }; size?: number }) {
+  if (rider.photo?.url) {
     return (
       <Image
-        src={rider.avatar.url}
+        src={rider.photo.url}
         alt={rider.name}
         width={size}
         height={size}
@@ -996,6 +996,36 @@ const StaffOrdersPage = () => {
     const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
     audio.preload = "auto";
     audioRef.current = audio;
+  }, []);
+
+  // Browsers block audio.play() until the page has seen a real user gesture.
+  // If sound was left on from a previous session (localStorage), the very
+  // first NEW_ORDER that arrives before any click/tap hits that block and
+  // throws NotAllowedError. Priming playback on the first interaction —
+  // whatever it is, not just the mute button — closes that window as early
+  // as possible.
+  React.useEffect(() => {
+    const unlockAudio = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const originalVolume = audio.volume;
+      audio.volume = 0;
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = originalVolume;
+        })
+        .catch(() => {
+          // Still locked — the next interaction will retry via the listener below.
+        });
+    };
+    const events: Array<keyof DocumentEventMap> = ["click", "touchstart", "keydown"];
+    events.forEach((event) => document.addEventListener(event, unlockAudio, { once: true }));
+    return () => {
+      events.forEach((event) => document.removeEventListener(event, unlockAudio));
+    };
   }, []);
 
   React.useEffect(() => {

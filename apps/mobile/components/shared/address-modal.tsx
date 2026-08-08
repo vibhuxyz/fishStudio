@@ -410,6 +410,13 @@ export default function AddressModal({
             and would otherwise be undeletable. */}
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TouchableOpacity
+            onPress={() => {
+              onClose();
+              router.push({
+                pathname: "/(routes)/add-address",
+                params: { addressId: address.id },
+              });
+            }}
             style={{
               width: 32,
               height: 32,
@@ -1012,12 +1019,15 @@ export default function AddressModal({
             activeOpacity={1}
             style={{
               backgroundColor: "#fff",
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              maxHeight: "88%",
+              borderTopLeftRadius: 40,
+              borderTopRightRadius: 40,
+              maxHeight: "80%",
               paddingBottom: 12,
             }}
           >
+            <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+              <View style={{ width: 44, height: 5, borderRadius: 99, backgroundColor: "#D1D5DB" }} />
+            </View>
             {body}
           </TouchableOpacity>
         </TouchableOpacity>

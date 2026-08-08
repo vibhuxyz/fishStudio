@@ -299,7 +299,7 @@ export const loginSeller = async (
       });
     }
 
-    const staff = await prisma.staffs.findUnique({ where: { email } });
+    const staff = await prisma.staffs.findFirst({ where: { email } });
 
     if (!staff) {
       throw new AuthError("Invalid email or password");
@@ -341,7 +341,7 @@ export const forgotPasswordSeller = async (
     const { email } = validate(forgetPasswordSchema, req.body);
 
     const seller = await prisma.sellers.findUnique({ where: { email } });
-    const staff = !seller ? await prisma.staffs.findUnique({ where: { email } }) : null;
+    const staff = !seller ? await prisma.staffs.findFirst({ where: { email } }) : null;
 
     if (!seller && !staff) {
       // Don't reveal whether the email exists
@@ -391,10 +391,10 @@ export const resetPasswordSeller = async (
       return res.status(200).json({ success: true, message: "Password reset successfully." });
     }
 
-    const staff = await prisma.staffs.findUnique({ where: { email } });
+    const staff = await prisma.staffs.findFirst({ where: { email } });
     if (staff) {
       await prisma.staffs.update({
-        where: { email },
+        where: { id: staff.id },
         data: { password: hashedPassword },
       });
       return res.status(200).json({ success: true, message: "Password reset successfully." });

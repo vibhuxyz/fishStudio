@@ -20,7 +20,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Volume2,
-  VolumeX
+  VolumeX,
+  Bike,
+  Scissors,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
@@ -188,14 +190,30 @@ export default function DashboardClient() {
         </div>
 
         <div className="flex flex-wrap items-center gap-4 relative z-10">
-          <Link 
-            href="/staff" 
+          <Link
+            href="/staff"
             className="flex items-center gap-3 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-emerald-600/30 active:scale-95 group"
           >
             <Users size={18} className="transition-transform group-hover:scale-110" />
             Synchronize Team
           </Link>
-          
+
+          <Link
+            href="/staff/rider"
+            className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-blue-600/30 active:scale-95 group"
+          >
+            <Bike size={18} className="transition-transform group-hover:scale-110" />
+            Rider View
+          </Link>
+
+          <Link
+            href="/staff/cutting"
+            className="flex items-center gap-3 bg-amber-600 hover:bg-amber-500 text-white px-6 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl shadow-amber-600/30 active:scale-95 group"
+          >
+            <Scissors size={18} className="transition-transform group-hover:scale-110" />
+            Cutting View
+          </Link>
+
           <button
             type="button"
             onClick={() => {

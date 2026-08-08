@@ -21,7 +21,10 @@ const useSeller = () => {
           ...isProtected,
           headers: { "x-auth-role": "staff" },
         } as any);
-        return { ...staffResponse.data.staff, role: "staff" };
+        // Backend's own `role` field is the operational role (ORDER_MANAGER /
+        // RIDER / CUTTING_STAFF) — preserve it as `staffRole` since `role`
+        // here means the auth role and every existing caller depends on that.
+        return { ...staffResponse.data.staff, staffRole: staffResponse.data.staff.role, role: "staff" };
       }
 
       try {
@@ -36,7 +39,7 @@ const useSeller = () => {
           ...isProtected,
           headers: { "x-auth-role": "staff" },
         } as any);
-        return { ...staffResponse.data.staff, role: "staff" };
+        return { ...staffResponse.data.staff, staffRole: staffResponse.data.staff.role, role: "staff" };
       }
     },
     staleTime: 1000 * 60 * 5,   // 5 min — don't refetch while cached

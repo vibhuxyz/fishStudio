@@ -1,4 +1,5 @@
 import ProductCard from "@/components/cards/product.card";
+import AddToCartModal from "@/components/home/add-to-cart-modal";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { useAddressStore } from "@/lib/address-store";
 import type { Product } from "@/types/product";
@@ -42,6 +43,7 @@ export default function ProductsScreen() {
   const itemsPerPage = 20;
 
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [cartProduct, setCartProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,7 +60,7 @@ export default function ProductsScreen() {
       const res = await axiosInstance.get("/product/api/get-categories?activeOnly=true");
       return res.data as { categories: string[] };
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: Infinity,
   });
   const categories = categoriesData?.categories ?? [];
 
@@ -167,7 +169,12 @@ export default function ProductsScreen() {
 
   const renderProduct = ({ item }: { item: Product }) => (
     <View style={{ width: "48.5%", marginBottom: 16 }}>
-      <ProductCard product={item} cardWidth="100%" noRightMargin />
+      <ProductCard
+        product={item}
+        cardWidth="100%"
+        noRightMargin
+        onAddToCart={setCartProduct}
+      />
     </View>
   );
 
@@ -404,6 +411,13 @@ export default function ProductsScreen() {
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 pt-14 bg-white">
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      <AddToCartModal
+        product={cartProduct}
+        visible={!!cartProduct}
+        onClose={() => setCartProduct(null)}
+      />
+
       {/* Header */}
       <View className="bg-white px-4 py-4 border-b border-gray-100">
         <View className="flex-row items-center justify-between mb-4">

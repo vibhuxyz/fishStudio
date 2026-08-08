@@ -5,10 +5,9 @@ import { NextFunction, Response } from "express";
 import {
   invalidateSellerStatsCache,
   restoreOrderStock,
-  orderMoneyFields,
-  orderItemMoneyFields,
   normalizeOrderIdFragment,
   releaseRiderIfNoOtherDeliveries,
+  hydrateOrders,
 } from "./utils.js";
 import { formatOrderId } from "@repo/shared/order-id";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
@@ -60,49 +59,7 @@ export const getSellerOrders = async (
     ]);
 
     // Hydrate orders with Users, Products, and any assigned Riders from Mongo
-    const userIds = [...new Set(orders.map(o => o.userId))];
-    const productIds = [...new Set(orders.flatMap(o => o.orderItems.map(oi => oi.productId)))];
-    const riderIds = [...new Set(orders.map(o => o.riderId).filter((id): id is string => Boolean(id)))];
-
-    const [users, products, riders] = await Promise.all([
-      prismaMongo.users.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, name: true, phone_number: true, email: true },
-      }),
-      prismaMongo.products.findMany({
-        where: { id: { in: productIds } },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          sale_price: true,
-          images: { select: { url: true }, take: 1 },
-        },
-      }),
-      riderIds.length
-        ? prismaMongo.riders.findMany({
-            where: { id: { in: riderIds } },
-            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, status: true, avatar: true },
-          })
-        : [],
-    ]);
-
-    const userMap = new Map(users.map(u => [u.id, u]));
-    const productMap = new Map(products.map(p => [p.id, p]));
-    const riderMap = new Map(riders.map(r => [r.id, r]));
-
-    const mappedOrders = orders.map((o: any) => ({
-      ...o,
-      ...orderMoneyFields(o),
-      user: userMap.get(o.userId),
-      rider: o.riderId ? riderMap.get(o.riderId) ?? null : null,
-      items: o.orderItems.map((oi: any) => ({
-        ...oi,
-        ...orderItemMoneyFields(oi),
-        product: productMap.get(oi.productId),
-      })),
-      total: toMoney(o.totalAmount),
-    }));
+    const mappedOrders = await hydrateOrders(orders);
 
     res.status(200).json({
       success: true,
@@ -175,7 +132,7 @@ export const acceptOrRejectOrder = async (
         type: action === "accept" ? "SUCCESS" : "ERROR",
         category: "ORDER",
         metadata: { orderId },
-        channels: ["IN_APP", "SMS"],
+        channels: ["IN_APP", "SMS", "PUSH"],
       });
 
       await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {

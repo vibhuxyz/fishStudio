@@ -24,7 +24,7 @@ export function useComboBanner() {
       const banners: Banner[] = Array.isArray(data.banners) ? data.banners : [];
       return banners.find((banner) => banner.isActive) ?? null;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: Infinity,
   });
 }
 

@@ -198,6 +198,8 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
             id: req.staff.id,
             name: req.staff.name,
             email: req.staff.email,
+            username: req.staff.username,
+            role: req.staff.role,
             isActive: req.staff.isActive,
             sellerId: req.staff.sellerId,
           }

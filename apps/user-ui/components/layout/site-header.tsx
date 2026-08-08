@@ -448,6 +448,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       if (store) {
         updateStoreStatus({
           isOpen: store.isOpen,
+          isInstantAvailable: store.isInstantAvailable,
           deliveryTimeMinutes: selectedLocation?.city
             ? store.cityDeliveryTimes?.[selectedLocation.city]
             : undefined,
@@ -485,7 +486,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
       };
     }
 
-    if (deliveryMetadata.cartDeliveryTime) {
+    if (deliveryMetadata.isInstantAvailable && deliveryMetadata.cartDeliveryTime) {
       return {
         primary: `⚡ Instant · ${deliveryMetadata.cartDeliveryTime} min`,
         secondary: null,
@@ -500,7 +501,7 @@ export function SiteHeader({ onLoginClick, onCartClick }: SiteHeaderProps) {
           secondary: scheduleWindow(selectedLocation.opening_hours, selectedLocation.closing_hours),
         };
       }
-      if (selectedLocation.deliveryTimeMinutes) {
+      if (selectedLocation.isInstantAvailable && selectedLocation.deliveryTimeMinutes) {
         return {
           primary: `⚡ Instant · ${selectedLocation.deliveryTimeMinutes} min`,
           secondary: null,

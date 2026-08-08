@@ -38,22 +38,41 @@ export type CartItem = {
   comboId?: string;
 };
 
+// Identifies one cart line. Two lines can share a product `id` but differ by
+// cuttingType/pieceSize/selectedSize/comboId (e.g. 1kg vs 2kg of the same
+// fish) — every read/write against a specific line must match on all of
+// these, not just `id`, or it silently hits the wrong (or every) variant.
+export type CartLineKey = {
+  id: string;
+  cuttingType?: string;
+  pieceSize?: string;
+  selectedSize?: string;
+  comboId?: string;
+};
+
+const matchesLine = (item: CartItem, key: CartLineKey) =>
+  item.id === key.id &&
+  item.cuttingType === key.cuttingType &&
+  item.pieceSize === key.pieceSize &&
+  item.selectedSize === key.selectedSize &&
+  item.comboId === key.comboId;
+
 type Store = {
   cart: CartItem[];
   wishlist: CartItem[];
 
   addToCart: (product: CartItem, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
-  removeFromCart: (id: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
+  removeFromCart: (line: CartLineKey, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
   /** Removes every line belonging to a combo bundle in one shot — combo
    *  members can't be removed individually, only as a whole group. */
   removeComboGroup: (comboId: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
-  /** Update quantity for a cart item by id. Removes the item if qty <= 0. */
-  updateQuantity: (id: string, quantity: number) => void;
+  /** Update quantity for one specific cart line. Removes the line if qty <= 0. */
+  updateQuantity: (line: CartLineKey, quantity: number) => void;
   /**
    * Async + tap: fetches live stock from the backend before incrementing.
    * Returns { ok: boolean; message?: string } so the UI can show feedback.
    */
-  checkAndIncrement: (id: string, step?: number) => Promise<{ ok: boolean; message?: string }>;
+  checkAndIncrement: (line: CartLineKey, step?: number) => Promise<{ ok: boolean; message?: string }>;
   clearCart: () => void;
 
   addToWishlist: (product: CartItem, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
@@ -69,15 +88,11 @@ export const useStore = create<Store>()(
       // ── Add to cart ──────────────────────────────────────────────────────
       addToCart: (product, user, location, deviceInfo) => {
         set((state) => {
-          // Combo-linked lines never merge with a standalone purchase of the
-          // same product+cuttingType — they're priced (and must checkout) as
-          // part of the bundle, not merged into an unrelated line.
-          const existing = state.cart.find(
-            (item) =>
-              item.id === product.id &&
-              item.cuttingType === product.cuttingType &&
-              item.comboId === product.comboId
-          );
+          // Two lines only merge if they're the exact same variant — a
+          // different pieceSize or selectedSize (e.g. 1kg vs 2kg) is a
+          // different purchase with its own price and must stay its own
+          // line, not silently fold its quantity into another tier's price.
+          const existing = state.cart.find((item) => matchesLine(item, product));
           if (existing) {
             // Check local stock before incrementing
             const newQty = (existing.quantity ?? 1) + (product.quantity ?? 1);
@@ -86,9 +101,7 @@ export const useStore = create<Store>()(
             }
             return {
               cart: state.cart.map((item) =>
-                item.id === product.id && item.cuttingType === product.cuttingType && item.comboId === product.comboId
-                  ? { ...item, quantity: newQty }
-                  : item
+                matchesLine(item, product) ? { ...item, quantity: newQty } : item
               ),
             };
           }
@@ -111,14 +124,9 @@ export const useStore = create<Store>()(
       },
 
       // ── Remove from cart ─────────────────────────────────────────────────
-      removeFromCart: (id, user, location, deviceInfo) => {
-        const removeProduct = get().cart.find((item) => item.id === id);
-        // Remove only the first matching entry (by id)
-        let removed = false;
-        set((state) => ({ cart: state.cart.filter((item) => {
-          if (!removed && item.id === id) { removed = true; return false; }
-          return true;
-        }) }));
+      removeFromCart: (line, user, location, deviceInfo) => {
+        const removeProduct = get().cart.find((item) => matchesLine(item, line));
+        set((state) => ({ cart: state.cart.filter((item) => !matchesLine(item, line)) }));
 
         if (user?.id && location && deviceInfo && removeProduct) {
           sendKafkaEvent({
@@ -154,32 +162,32 @@ export const useStore = create<Store>()(
       },
 
       // ── Update quantity in-place ─────────────────────────────────────────
-      updateQuantity: (id, quantity) => {
+      updateQuantity: (line, quantity) => {
         if (quantity <= 0) {
-          set((state) => ({ cart: state.cart.filter((item) => item.id !== id) }));
+          set((state) => ({ cart: state.cart.filter((item) => !matchesLine(item, line)) }));
           return;
         }
         set((state) => ({
           cart: state.cart.map((item) =>
-            item.id === id ? { ...item, quantity } : item
+            matchesLine(item, line) ? { ...item, quantity } : item
           ),
         }));
       },
 
       // ── checkAndIncrement: live stock check before + tap ─────────────────
-      checkAndIncrement: async (id, step = 1) => {
-        const item = get().cart.find((i) => i.id === id);
+      checkAndIncrement: async (line, step = 1) => {
+        const item = get().cart.find((i) => matchesLine(i, line));
         if (!item) return { ok: false, message: "Item not found" };
 
         try {
-          const { data } = await axiosInstance.get(`/product/api/stock/${id}`);
+          const { data } = await axiosInstance.get(`/product/api/stock/${line.id}`);
           const freshStock: number = data.stock ?? 0;
           const freshStatus: string = data.status ?? "Active";
 
           // Refresh the stock value in cart so the UI stays accurate
           set((state) => ({
             cart: state.cart.map((i) =>
-              i.id === id ? { ...i, stock: freshStock, status: freshStatus } : i
+              matchesLine(i, line) ? { ...i, stock: freshStock, status: freshStatus } : i
             ),
           }));
 
@@ -190,7 +198,7 @@ export const useStore = create<Store>()(
             return { ok: false, message: msg };
           }
 
-          const currentQty = get().cart.find((i) => i.id === id)?.quantity ?? 0;
+          const currentQty = get().cart.find((i) => matchesLine(i, line))?.quantity ?? 0;
           if (currentQty + step > freshStock) {
             return {
               ok: false,
@@ -200,17 +208,17 @@ export const useStore = create<Store>()(
             };
           }
 
-          get().updateQuantity(id, currentQty + step);
+          get().updateQuantity(line, currentQty + step);
           return { ok: true };
         } catch {
           // Network error — fall back to local check
-          const currentItem = get().cart.find((i) => i.id === id);
+          const currentItem = get().cart.find((i) => matchesLine(i, line));
           if (!currentItem) return { ok: false, message: "Item not found" };
           const currentQty = currentItem.quantity ?? 0;
           if (currentItem.stock !== undefined && currentQty + step > currentItem.stock) {
             return { ok: false, message: `Only ${currentItem.stock} units available` };
           }
-          get().updateQuantity(id, currentQty + step);
+          get().updateQuantity(line, currentQty + step);
           return { ok: true };
         }
       },

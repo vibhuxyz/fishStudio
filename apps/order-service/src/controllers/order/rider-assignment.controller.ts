@@ -28,7 +28,7 @@ async function notifyCustomer(order: { id: string; userId: string }, title: stri
       type: "INFO",
       category: "ORDER",
       metadata: { orderId: order.id },
-      channels: ["IN_APP"],
+      channels: ["IN_APP", "PUSH"],
     });
   } catch (notifyErr) {
     logger.error("Failed to notify user of rider assignment change", { orderId: order.id, notifyErr });
@@ -49,9 +49,9 @@ export const getEligibleRiders = async (
     // Single-active-delivery-per-rider is the assumed business rule — only
     // AVAILABLE riders are eligible; DELIVERING/OFFLINE/ON_LEAVE/inactive
     // are hidden.
-    const riders = await prismaMongo.riders.findMany({
-      where: { storeId, status: "AVAILABLE", isActive: true },
-      include: { avatar: true },
+    const riders = await prismaMongo.staffs.findMany({
+      where: { storeId, role: "RIDER", riderStatus: "AVAILABLE", isActive: true },
+      include: { photo: true },
       orderBy: { name: "asc" },
     });
 
@@ -77,14 +77,14 @@ export const assignRider = async (
       return next(new ValidationError("Order must be Ready for Pickup before assigning a rider"));
     }
 
-    const rider = await prismaMongo.riders.findUnique({ where: { id: riderId }, include: { avatar: true } });
-    if (!rider) return next(new NotFoundError("Rider not found"));
+    const rider = await prismaMongo.staffs.findUnique({ where: { id: riderId }, include: { photo: true } });
+    if (!rider || rider.role !== "RIDER") return next(new NotFoundError("Rider not found"));
     if (rider.storeId !== storeId) {
       return next(new ValidationError("Rider does not belong to your store"));
     }
     // Defends against a race between listing eligible riders and clicking
     // Assign — another order may have grabbed this rider in between.
-    if (rider.status !== "AVAILABLE" || !rider.isActive) {
+    if (rider.riderStatus !== "AVAILABLE" || !rider.isActive) {
       return next(new ValidationError("Rider is not available"));
     }
 
@@ -100,9 +100,9 @@ export const assignRider = async (
           updatedAt: new Date(),
         },
       }),
-      prismaMongo.riders.update({
+      prismaMongo.staffs.update({
         where: { id: riderId },
-        data: { status: "DELIVERING", activeDeliveryCount: { increment: 1 } },
+        data: { riderStatus: "DELIVERING", activeDeliveryCount: { increment: 1 } },
       }),
     ]);
 
@@ -121,7 +121,7 @@ export const assignRider = async (
       logger.error("Failed to publish rider-assignment order event", { orderId, err });
     }
 
-    res.status(200).json({ success: true, order: updatedOrder, rider: { ...rider, status: "DELIVERING" } });
+    res.status(200).json({ success: true, order: updatedOrder, rider: { ...rider, riderStatus: "DELIVERING" } });
   } catch (error) {
     next(error);
   }
@@ -146,12 +146,12 @@ export const changeRider = async (
       return next(new ValidationError("This rider is already assigned to this order"));
     }
 
-    const newRider = await prismaMongo.riders.findUnique({ where: { id: riderId }, include: { avatar: true } });
-    if (!newRider) return next(new NotFoundError("Rider not found"));
+    const newRider = await prismaMongo.staffs.findUnique({ where: { id: riderId }, include: { photo: true } });
+    if (!newRider || newRider.role !== "RIDER") return next(new NotFoundError("Rider not found"));
     if (newRider.storeId !== storeId) {
       return next(new ValidationError("Rider does not belong to your store"));
     }
-    if (newRider.status !== "AVAILABLE" || !newRider.isActive) {
+    if (newRider.riderStatus !== "AVAILABLE" || !newRider.isActive) {
       return next(new ValidationError("Rider is not available"));
     }
 
@@ -169,15 +169,15 @@ export const changeRider = async (
           updatedAt: new Date(),
         },
       }),
-      prismaMongo.riders.update({
+      prismaMongo.staffs.update({
         where: { id: riderId },
-        data: { status: "DELIVERING", activeDeliveryCount: { increment: 1 } },
+        data: { riderStatus: "DELIVERING", activeDeliveryCount: { increment: 1 } },
       }),
     ]);
 
     await notifyCustomer(order, "Delivery Rider Changed", "Your delivery rider has been changed.");
 
-    res.status(200).json({ success: true, order: updatedOrder, rider: { ...newRider, status: "DELIVERING" } });
+    res.status(200).json({ success: true, order: updatedOrder, rider: { ...newRider, riderStatus: "DELIVERING" } });
   } catch (error) {
     next(error);
   }

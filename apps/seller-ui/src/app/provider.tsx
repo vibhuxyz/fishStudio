@@ -36,7 +36,10 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
  * Inner component: reads seller/staff identity from the cache, then passes
  * the correct IDs to WorkerWSProvider. This means:
  *  - Seller → connects with ?sellerId=X&storeId=Y
- *  - Staff  → connects with ?staffId=X
+ *  - Staff  → connects with ?staffId=X&sellerId=Y (their linked seller) so
+ *    store-wide broadcasts (new order placed, order status changed, a rider
+ *    assigned) reach them too — a staff-only connection previously joined
+ *    just the staffId room, missing every one of those events entirely.
  *
  * The connection is re-created ONLY when the identity changes (login/logout).
  * Normal page navigation never causes a reconnect.
@@ -46,7 +49,7 @@ const WorkerWSBridge = ({ children }: { children: React.ReactNode }) => {
 
   const isStaff = seller?.role === "staff";
 
-  const sellerId = !isStaff ? seller?.id : undefined;
+  const sellerId = isStaff ? seller?.sellerId : seller?.id;
   const storeId = !isStaff ? seller?.store?.id : undefined;
   const staffId = isStaff ? seller?.id : undefined;
 

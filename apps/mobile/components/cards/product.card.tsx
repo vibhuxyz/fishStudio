@@ -83,7 +83,7 @@ export default function ProductCard({
   };
 
   const handleIncrement = async () => {
-    const result = await checkAndIncrement(product.id);
+    const result = await checkAndIncrement({ id: product.id });
     if (!result.ok && result.message) {
       toast.error(result.message);
     }
@@ -167,7 +167,7 @@ export default function ProductCard({
                 (quantity > 0 ? (
                   <View style={styles.stepper}>
                     <TouchableOpacity
-                      onPress={() => updateQuantity(product.id, quantity - 1)}
+                      onPress={() => updateQuantity({ id: product.id }, quantity - 1)}
                       hitSlop={6}
                       activeOpacity={0.7}
                     >

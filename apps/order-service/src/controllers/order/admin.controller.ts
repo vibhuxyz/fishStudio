@@ -308,9 +308,17 @@ export const getAdminOrderDetail = async (
         },
       }),
       order.riderId
-        ? prismaMongo.riders.findUnique({
+        ? prismaMongo.staffs.findUnique({
             where: { id: order.riderId },
-            select: { id: true, name: true, phone: true, vehicleType: true, vehicleNumber: true, status: true, avatar: true },
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              vehicleType: true,
+              vehicleNumber: true,
+              riderStatus: true,
+              photo: true,
+            },
           })
         : null,
     ]);

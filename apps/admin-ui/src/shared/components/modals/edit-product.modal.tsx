@@ -156,7 +156,7 @@ const EditProductModal = ({
 
   return (
     <div className="fixed top-0 left-0 z-50 w-full h-full bg-black/70 flex items-center justify-center px-4 py-6">
-      <div className="bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-full overflow-y-auto p-6">
+      <div className="bg-gray-800 p-6 rounded-t-2xl rounded-b-2xl w-full max-w-md max-h-full overflow-y-auto backdrop-blur-sm shadow-lg md:max-w-3xl md:rounded-lg md:overflow-visible md:backdrop-blur-none">
         <div className="flex justify-between items-center border-b border-gray-700 pb-3">
           <div>
             <h3 className="text-xl text-white">Update Product</h3>

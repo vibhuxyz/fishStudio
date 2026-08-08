@@ -195,9 +195,19 @@ exports.Prisma.StaffsScalarFieldEnum = {
   id: 'id',
   name: 'name',
   email: 'email',
+  username: 'username',
   password: 'password',
+  phone: 'phone',
   isActive: 'isActive',
+  role: 'role',
+  photoId: 'photoId',
   sellerId: 'sellerId',
+  storeId: 'storeId',
+  vehicleType: 'vehicleType',
+  vehicleNumber: 'vehicleNumber',
+  deliveryZone: 'deliveryZone',
+  riderStatus: 'riderStatus',
+  activeDeliveryCount: 'activeDeliveryCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -235,24 +245,6 @@ exports.Prisma.StoresScalarFieldEnum = {
   supportDescription: 'supportDescription',
   faqLink: 'faqLink',
   sellerId: 'sellerId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.RidersScalarFieldEnum = {
-  id: 'id',
-  name: 'name',
-  phone: 'phone',
-  email: 'email',
-  avatarId: 'avatarId',
-  vehicleType: 'vehicleType',
-  vehicleNumber: 'vehicleNumber',
-  deliveryZone: 'deliveryZone',
-  status: 'status',
-  activeDeliveryCount: 'activeDeliveryCount',
-  isActive: 'isActive',
-  notes: 'notes',
-  storeId: 'storeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -433,6 +425,12 @@ exports.ImageType = exports.$Enums.ImageType = {
   RIDER_AVATAR: 'RIDER_AVATAR'
 };
 
+exports.StaffRole = exports.$Enums.StaffRole = {
+  ORDER_MANAGER: 'ORDER_MANAGER',
+  RIDER: 'RIDER',
+  CUTTING_STAFF: 'CUTTING_STAFF'
+};
+
 exports.RiderVehicleType = exports.$Enums.RiderVehicleType = {
   BIKE: 'BIKE',
   SCOOTER: 'SCOOTER',
@@ -467,7 +465,6 @@ exports.Prisma.ModelName = {
   sellers: 'sellers',
   staffs: 'staffs',
   stores: 'stores',
-  riders: 'riders',
   favorites: 'favorites',
   reviews: 'reviews',
   site_config: 'site_config',

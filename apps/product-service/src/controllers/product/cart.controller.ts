@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma, Prisma } from "@repo/db-mongo";
 import { validateCartSchema, validate } from "@repo/zod-schema";
 import { distributeComboPrice, comboItemsMatchDefinition, ComboDefinitionItem } from "@repo/shared/pricing";
+import { isStoreOpenNow, isInstantDeliveryAvailableNow } from "@repo/shared/store-hours";
 import { optionalUserId, resolvePreferredStore } from "./storefront.utils.js";
 
 // Keeps the abandoned-cart reminder flow (see checkAbandonedCarts) in sync
@@ -235,33 +236,10 @@ export const validateCart = async (
 
     const cartDeliveryTime = deliveryTimeForStore(store);
 
-    // Helper: Convert "HH:MM" to minutes from midnight
-    const toMins = (timeStr: string) => {
-      const [h, m] = timeStr.split(":").map(Number);
-      return (h || 0) * 60 + (m || 0);
-    };
+    const isStoreOpen = isStoreOpenNow(store);
+    const isInstantAvailable = isInstantDeliveryAvailableNow(store);
 
-    const nowH = now.getHours();
-    const nowM = now.getMinutes();
-    const nowTotal = nowH * 60 + nowM;
-
-    // 1. Store Opening Hours Check
-    const openMins = toMins(store.opening_hours || "09:00");
-    const closeMins = toMins(store.closing_hours || "23:00");
-    const isStoreOpen = nowTotal >= openMins && nowTotal <= closeMins;
-
-    // 2. Instant Delivery Window Check
-    const instantStartMins = toMins(
-      store.instant_delivery_window_start || "11:00",
-    );
-    const instantEndMins = toMins(store.instant_delivery_window_end || "19:00");
-
-    const isInstantWindow =
-      nowTotal >= instantStartMins && nowTotal <= instantEndMins;
-    const isInstantAvailable =
-      isStoreOpen && store.is_instant_delivery_enabled && isInstantWindow;
-
-    // 3. Define Available Slots
+    // Define Available Slots
     const availableSlots = isInstantAvailable
       ? ["instant", "morning", "evening"]
       : ["morning", "evening"];

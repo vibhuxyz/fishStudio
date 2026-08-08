@@ -54,11 +54,6 @@ export type staffs = $Result.DefaultSelection<Prisma.$staffsPayload>
  */
 export type stores = $Result.DefaultSelection<Prisma.$storesPayload>
 /**
- * Model riders
- * 
- */
-export type riders = $Result.DefaultSelection<Prisma.$ridersPayload>
-/**
  * Model favorites
  * 
  */
@@ -123,6 +118,15 @@ export namespace $Enums {
 export type ImageType = (typeof ImageType)[keyof typeof ImageType]
 
 
+export const StaffRole: {
+  ORDER_MANAGER: 'ORDER_MANAGER',
+  RIDER: 'RIDER',
+  CUTTING_STAFF: 'CUTTING_STAFF'
+};
+
+export type StaffRole = (typeof StaffRole)[keyof typeof StaffRole]
+
+
 export const RiderVehicleType: {
   BIKE: 'BIKE',
   SCOOTER: 'SCOOTER',
@@ -164,6 +168,10 @@ export type sellerEventType = (typeof sellerEventType)[keyof typeof sellerEventT
 export type ImageType = $Enums.ImageType
 
 export const ImageType: typeof $Enums.ImageType
+
+export type StaffRole = $Enums.StaffRole
+
+export const StaffRole: typeof $Enums.StaffRole
 
 export type RiderVehicleType = $Enums.RiderVehicleType
 
@@ -350,16 +358,6 @@ export class PrismaClient<
     * ```
     */
   get stores(): Prisma.storesDelegate<ExtArgs>;
-
-  /**
-   * `prisma.riders`: Exposes CRUD operations for the **riders** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more Riders
-    * const riders = await prisma.riders.findMany()
-    * ```
-    */
-  get riders(): Prisma.ridersDelegate<ExtArgs>;
 
   /**
    * `prisma.favorites`: Exposes CRUD operations for the **favorites** model.
@@ -909,7 +907,6 @@ export namespace Prisma {
     sellers: 'sellers',
     staffs: 'staffs',
     stores: 'stores',
-    riders: 'riders',
     favorites: 'favorites',
     reviews: 'reviews',
     site_config: 'site_config',
@@ -935,7 +932,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "riders" | "favorites" | "reviews" | "site_config" | "products" | "banners" | "seller_events" | "combos" | "signupAccessCode" | "abandoned_carts" | "product_views"
+      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "favorites" | "reviews" | "site_config" | "products" | "banners" | "seller_events" | "combos" | "signupAccessCode" | "abandoned_carts" | "product_views"
       txIsolationLevel: never
     }
     model: {
@@ -1528,80 +1525,6 @@ export namespace Prisma {
           count: {
             args: Prisma.storesCountArgs<ExtArgs>
             result: $Utils.Optional<StoresCountAggregateOutputType> | number
-          }
-        }
-      }
-      riders: {
-        payload: Prisma.$ridersPayload<ExtArgs>
-        fields: Prisma.ridersFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.ridersFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.ridersFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          findFirst: {
-            args: Prisma.ridersFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.ridersFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          findMany: {
-            args: Prisma.ridersFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>[]
-          }
-          create: {
-            args: Prisma.ridersCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          createMany: {
-            args: Prisma.ridersCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          delete: {
-            args: Prisma.ridersDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          update: {
-            args: Prisma.ridersUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          deleteMany: {
-            args: Prisma.ridersDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.ridersUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.ridersUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ridersPayload>
-          }
-          aggregate: {
-            args: Prisma.RidersAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateRiders>
-          }
-          groupBy: {
-            args: Prisma.ridersGroupByArgs<ExtArgs>
-            result: $Utils.Optional<RidersGroupByOutputType>[]
-          }
-          findRaw: {
-            args: Prisma.ridersFindRawArgs<ExtArgs>
-            result: JsonObject
-          }
-          aggregateRaw: {
-            args: Prisma.ridersAggregateRawArgs<ExtArgs>
-            result: JsonObject
-          }
-          count: {
-            args: Prisma.ridersCountArgs<ExtArgs>
-            result: $Utils.Optional<RidersCountAggregateOutputType> | number
           }
         }
       }
@@ -2544,13 +2467,13 @@ export namespace Prisma {
   export type ImagesCountOutputType = {
     users: number
     stores: number
-    riders: number
+    staffs: number
   }
 
   export type ImagesCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | ImagesCountOutputTypeCountUsersArgs
     stores?: boolean | ImagesCountOutputTypeCountStoresArgs
-    riders?: boolean | ImagesCountOutputTypeCountRidersArgs
+    staffs?: boolean | ImagesCountOutputTypeCountStaffsArgs
   }
 
   // Custom InputTypes
@@ -2581,8 +2504,8 @@ export namespace Prisma {
   /**
    * ImagesCountOutputType without action
    */
-  export type ImagesCountOutputTypeCountRidersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ridersWhereInput
+  export type ImagesCountOutputTypeCountStaffsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: staffsWhereInput
   }
 
 
@@ -2722,13 +2645,13 @@ export namespace Prisma {
   export type StoresCountOutputType = {
     products: number
     combos: number
-    riders: number
+    staffs: number
   }
 
   export type StoresCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     products?: boolean | StoresCountOutputTypeCountProductsArgs
     combos?: boolean | StoresCountOutputTypeCountCombosArgs
-    riders?: boolean | StoresCountOutputTypeCountRidersArgs
+    staffs?: boolean | StoresCountOutputTypeCountStaffsArgs
   }
 
   // Custom InputTypes
@@ -2759,8 +2682,8 @@ export namespace Prisma {
   /**
    * StoresCountOutputType without action
    */
-  export type StoresCountOutputTypeCountRidersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ridersWhereInput
+  export type StoresCountOutputTypeCountStaffsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: staffsWhereInput
   }
 
 
@@ -4011,7 +3934,7 @@ export namespace Prisma {
     product?: boolean | images$productArgs<ExtArgs>
     users?: boolean | images$usersArgs<ExtArgs>
     stores?: boolean | images$storesArgs<ExtArgs>
-    riders?: boolean | images$ridersArgs<ExtArgs>
+    staffs?: boolean | images$staffsArgs<ExtArgs>
     _count?: boolean | ImagesCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["images"]>
 
@@ -4029,7 +3952,7 @@ export namespace Prisma {
     product?: boolean | images$productArgs<ExtArgs>
     users?: boolean | images$usersArgs<ExtArgs>
     stores?: boolean | images$storesArgs<ExtArgs>
-    riders?: boolean | images$ridersArgs<ExtArgs>
+    staffs?: boolean | images$staffsArgs<ExtArgs>
     _count?: boolean | ImagesCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -4039,7 +3962,7 @@ export namespace Prisma {
       product: Prisma.$productsPayload<ExtArgs> | null
       users: Prisma.$usersPayload<ExtArgs>[]
       stores: Prisma.$storesPayload<ExtArgs>[]
-      riders: Prisma.$ridersPayload<ExtArgs>[]
+      staffs: Prisma.$staffsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -4414,7 +4337,7 @@ export namespace Prisma {
     product<T extends images$productArgs<ExtArgs> = {}>(args?: Subset<T, images$productArgs<ExtArgs>>): Prisma__productsClient<$Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     users<T extends images$usersArgs<ExtArgs> = {}>(args?: Subset<T, images$usersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findMany"> | Null>
     stores<T extends images$storesArgs<ExtArgs> = {}>(args?: Subset<T, images$storesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findMany"> | Null>
-    riders<T extends images$ridersArgs<ExtArgs> = {}>(args?: Subset<T, images$ridersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findMany"> | Null>
+    staffs<T extends images$staffsArgs<ExtArgs> = {}>(args?: Subset<T, images$staffsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$staffsPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4831,23 +4754,23 @@ export namespace Prisma {
   }
 
   /**
-   * images.riders
+   * images.staffs
    */
-  export type images$ridersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type images$staffsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the riders
+     * Select specific fields to fetch from the staffs
      */
-    select?: ridersSelect<ExtArgs> | null
+    select?: staffsSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ridersInclude<ExtArgs> | null
-    where?: ridersWhereInput
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    cursor?: ridersWhereUniqueInput
+    include?: staffsInclude<ExtArgs> | null
+    where?: staffsWhereInput
+    orderBy?: staffsOrderByWithRelationInput | staffsOrderByWithRelationInput[]
+    cursor?: staffsWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: RidersScalarFieldEnum | RidersScalarFieldEnum[]
+    distinct?: StaffsScalarFieldEnum | StaffsScalarFieldEnum[]
   }
 
   /**
@@ -9145,17 +9068,37 @@ export namespace Prisma {
 
   export type AggregateStaffs = {
     _count: StaffsCountAggregateOutputType | null
+    _avg: StaffsAvgAggregateOutputType | null
+    _sum: StaffsSumAggregateOutputType | null
     _min: StaffsMinAggregateOutputType | null
     _max: StaffsMaxAggregateOutputType | null
+  }
+
+  export type StaffsAvgAggregateOutputType = {
+    activeDeliveryCount: number | null
+  }
+
+  export type StaffsSumAggregateOutputType = {
+    activeDeliveryCount: number | null
   }
 
   export type StaffsMinAggregateOutputType = {
     id: string | null
     name: string | null
     email: string | null
+    username: string | null
     password: string | null
+    phone: string | null
     isActive: boolean | null
+    role: $Enums.StaffRole | null
+    photoId: string | null
     sellerId: string | null
+    storeId: string | null
+    vehicleType: $Enums.RiderVehicleType | null
+    vehicleNumber: string | null
+    deliveryZone: string | null
+    riderStatus: $Enums.RiderStatus | null
+    activeDeliveryCount: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9164,9 +9107,19 @@ export namespace Prisma {
     id: string | null
     name: string | null
     email: string | null
+    username: string | null
     password: string | null
+    phone: string | null
     isActive: boolean | null
+    role: $Enums.StaffRole | null
+    photoId: string | null
     sellerId: string | null
+    storeId: string | null
+    vehicleType: $Enums.RiderVehicleType | null
+    vehicleNumber: string | null
+    deliveryZone: string | null
+    riderStatus: $Enums.RiderStatus | null
+    activeDeliveryCount: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -9175,22 +9128,50 @@ export namespace Prisma {
     id: number
     name: number
     email: number
+    username: number
     password: number
+    phone: number
     isActive: number
+    role: number
+    photoId: number
     sellerId: number
+    storeId: number
+    vehicleType: number
+    vehicleNumber: number
+    deliveryZone: number
+    riderStatus: number
+    activeDeliveryCount: number
     createdAt: number
     updatedAt: number
     _all: number
   }
 
 
+  export type StaffsAvgAggregateInputType = {
+    activeDeliveryCount?: true
+  }
+
+  export type StaffsSumAggregateInputType = {
+    activeDeliveryCount?: true
+  }
+
   export type StaffsMinAggregateInputType = {
     id?: true
     name?: true
     email?: true
+    username?: true
     password?: true
+    phone?: true
     isActive?: true
+    role?: true
+    photoId?: true
     sellerId?: true
+    storeId?: true
+    vehicleType?: true
+    vehicleNumber?: true
+    deliveryZone?: true
+    riderStatus?: true
+    activeDeliveryCount?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -9199,9 +9180,19 @@ export namespace Prisma {
     id?: true
     name?: true
     email?: true
+    username?: true
     password?: true
+    phone?: true
     isActive?: true
+    role?: true
+    photoId?: true
     sellerId?: true
+    storeId?: true
+    vehicleType?: true
+    vehicleNumber?: true
+    deliveryZone?: true
+    riderStatus?: true
+    activeDeliveryCount?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -9210,9 +9201,19 @@ export namespace Prisma {
     id?: true
     name?: true
     email?: true
+    username?: true
     password?: true
+    phone?: true
     isActive?: true
+    role?: true
+    photoId?: true
     sellerId?: true
+    storeId?: true
+    vehicleType?: true
+    vehicleNumber?: true
+    deliveryZone?: true
+    riderStatus?: true
+    activeDeliveryCount?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -9256,6 +9257,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: StaffsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: StaffsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: StaffsMinAggregateInputType
@@ -9286,6 +9299,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: StaffsCountAggregateInputType | true
+    _avg?: StaffsAvgAggregateInputType
+    _sum?: StaffsSumAggregateInputType
     _min?: StaffsMinAggregateInputType
     _max?: StaffsMaxAggregateInputType
   }
@@ -9293,13 +9308,25 @@ export namespace Prisma {
   export type StaffsGroupByOutputType = {
     id: string
     name: string
-    email: string
+    email: string | null
+    username: string | null
     password: string
+    phone: string | null
     isActive: boolean
+    role: $Enums.StaffRole
+    photoId: string | null
     sellerId: string | null
+    storeId: string | null
+    vehicleType: $Enums.RiderVehicleType | null
+    vehicleNumber: string | null
+    deliveryZone: string | null
+    riderStatus: $Enums.RiderStatus | null
+    activeDeliveryCount: number | null
     createdAt: Date
     updatedAt: Date
     _count: StaffsCountAggregateOutputType | null
+    _avg: StaffsAvgAggregateOutputType | null
+    _sum: StaffsSumAggregateOutputType | null
     _min: StaffsMinAggregateOutputType | null
     _max: StaffsMaxAggregateOutputType | null
   }
@@ -9322,12 +9349,24 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     email?: boolean
+    username?: boolean
     password?: boolean
+    phone?: boolean
     isActive?: boolean
+    role?: boolean
+    photoId?: boolean
     sellerId?: boolean
+    storeId?: boolean
+    vehicleType?: boolean
+    vehicleNumber?: boolean
+    deliveryZone?: boolean
+    riderStatus?: boolean
+    activeDeliveryCount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    photo?: boolean | staffs$photoArgs<ExtArgs>
     seller?: boolean | staffs$sellerArgs<ExtArgs>
+    store?: boolean | staffs$storeArgs<ExtArgs>
   }, ExtArgs["result"]["staffs"]>
 
 
@@ -9335,29 +9374,53 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     email?: boolean
+    username?: boolean
     password?: boolean
+    phone?: boolean
     isActive?: boolean
+    role?: boolean
+    photoId?: boolean
     sellerId?: boolean
+    storeId?: boolean
+    vehicleType?: boolean
+    vehicleNumber?: boolean
+    deliveryZone?: boolean
+    riderStatus?: boolean
+    activeDeliveryCount?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
   export type staffsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    photo?: boolean | staffs$photoArgs<ExtArgs>
     seller?: boolean | staffs$sellerArgs<ExtArgs>
+    store?: boolean | staffs$storeArgs<ExtArgs>
   }
 
   export type $staffsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "staffs"
     objects: {
+      photo: Prisma.$imagesPayload<ExtArgs> | null
       seller: Prisma.$sellersPayload<ExtArgs> | null
+      store: Prisma.$storesPayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       name: string
-      email: string
+      email: string | null
+      username: string | null
       password: string
+      phone: string | null
       isActive: boolean
+      role: $Enums.StaffRole
+      photoId: string | null
       sellerId: string | null
+      storeId: string | null
+      vehicleType: $Enums.RiderVehicleType | null
+      vehicleNumber: string | null
+      deliveryZone: string | null
+      riderStatus: $Enums.RiderStatus | null
+      activeDeliveryCount: number | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["staffs"]>
@@ -9723,7 +9786,9 @@ export namespace Prisma {
    */
   export interface Prisma__staffsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    photo<T extends staffs$photoArgs<ExtArgs> = {}>(args?: Subset<T, staffs$photoArgs<ExtArgs>>): Prisma__imagesClient<$Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     seller<T extends staffs$sellerArgs<ExtArgs> = {}>(args?: Subset<T, staffs$sellerArgs<ExtArgs>>): Prisma__sellersClient<$Result.GetResult<Prisma.$sellersPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    store<T extends staffs$storeArgs<ExtArgs> = {}>(args?: Subset<T, staffs$storeArgs<ExtArgs>>): Prisma__storesClient<$Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9756,9 +9821,19 @@ export namespace Prisma {
     readonly id: FieldRef<"staffs", 'String'>
     readonly name: FieldRef<"staffs", 'String'>
     readonly email: FieldRef<"staffs", 'String'>
+    readonly username: FieldRef<"staffs", 'String'>
     readonly password: FieldRef<"staffs", 'String'>
+    readonly phone: FieldRef<"staffs", 'String'>
     readonly isActive: FieldRef<"staffs", 'Boolean'>
+    readonly role: FieldRef<"staffs", 'StaffRole'>
+    readonly photoId: FieldRef<"staffs", 'String'>
     readonly sellerId: FieldRef<"staffs", 'String'>
+    readonly storeId: FieldRef<"staffs", 'String'>
+    readonly vehicleType: FieldRef<"staffs", 'RiderVehicleType'>
+    readonly vehicleNumber: FieldRef<"staffs", 'String'>
+    readonly deliveryZone: FieldRef<"staffs", 'String'>
+    readonly riderStatus: FieldRef<"staffs", 'RiderStatus'>
+    readonly activeDeliveryCount: FieldRef<"staffs", 'Int'>
     readonly createdAt: FieldRef<"staffs", 'DateTime'>
     readonly updatedAt: FieldRef<"staffs", 'DateTime'>
   }
@@ -10087,6 +10162,21 @@ export namespace Prisma {
   }
 
   /**
+   * staffs.photo
+   */
+  export type staffs$photoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the images
+     */
+    select?: imagesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: imagesInclude<ExtArgs> | null
+    where?: imagesWhereInput
+  }
+
+  /**
    * staffs.seller
    */
   export type staffs$sellerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10099,6 +10189,21 @@ export namespace Prisma {
      */
     include?: sellersInclude<ExtArgs> | null
     where?: sellersWhereInput
+  }
+
+  /**
+   * staffs.store
+   */
+  export type staffs$storeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the stores
+     */
+    select?: storesSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: storesInclude<ExtArgs> | null
+    where?: storesWhereInput
   }
 
   /**
@@ -10546,7 +10651,7 @@ export namespace Prisma {
     seller?: boolean | sellersDefaultArgs<ExtArgs>
     products?: boolean | stores$productsArgs<ExtArgs>
     combos?: boolean | stores$combosArgs<ExtArgs>
-    riders?: boolean | stores$ridersArgs<ExtArgs>
+    staffs?: boolean | stores$staffsArgs<ExtArgs>
     _count?: boolean | StoresCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["stores"]>
 
@@ -10593,7 +10698,7 @@ export namespace Prisma {
     seller?: boolean | sellersDefaultArgs<ExtArgs>
     products?: boolean | stores$productsArgs<ExtArgs>
     combos?: boolean | stores$combosArgs<ExtArgs>
-    riders?: boolean | stores$ridersArgs<ExtArgs>
+    staffs?: boolean | stores$staffsArgs<ExtArgs>
     _count?: boolean | StoresCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -10604,7 +10709,7 @@ export namespace Prisma {
       seller: Prisma.$sellersPayload<ExtArgs>
       products: Prisma.$productsPayload<ExtArgs>[]
       combos: Prisma.$combosPayload<ExtArgs>[]
-      riders: Prisma.$ridersPayload<ExtArgs>[]
+      staffs: Prisma.$staffsPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -11008,7 +11113,7 @@ export namespace Prisma {
     seller<T extends sellersDefaultArgs<ExtArgs> = {}>(args?: Subset<T, sellersDefaultArgs<ExtArgs>>): Prisma__sellersClient<$Result.GetResult<Prisma.$sellersPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
     products<T extends stores$productsArgs<ExtArgs> = {}>(args?: Subset<T, stores$productsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findMany"> | Null>
     combos<T extends stores$combosArgs<ExtArgs> = {}>(args?: Subset<T, stores$combosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$combosPayload<ExtArgs>, T, "findMany"> | Null>
-    riders<T extends stores$ridersArgs<ExtArgs> = {}>(args?: Subset<T, stores$ridersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findMany"> | Null>
+    staffs<T extends stores$staffsArgs<ExtArgs> = {}>(args?: Subset<T, stores$staffsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$staffsPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11453,23 +11558,23 @@ export namespace Prisma {
   }
 
   /**
-   * stores.riders
+   * stores.staffs
    */
-  export type stores$ridersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type stores$staffsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the riders
+     * Select specific fields to fetch from the staffs
      */
-    select?: ridersSelect<ExtArgs> | null
+    select?: staffsSelect<ExtArgs> | null
     /**
      * Choose, which related nodes to fetch as well
      */
-    include?: ridersInclude<ExtArgs> | null
-    where?: ridersWhereInput
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    cursor?: ridersWhereUniqueInput
+    include?: staffsInclude<ExtArgs> | null
+    where?: staffsWhereInput
+    orderBy?: staffsOrderByWithRelationInput | staffsOrderByWithRelationInput[]
+    cursor?: staffsWhereUniqueInput
     take?: number
     skip?: number
-    distinct?: RidersScalarFieldEnum | RidersScalarFieldEnum[]
+    distinct?: StaffsScalarFieldEnum | StaffsScalarFieldEnum[]
   }
 
   /**
@@ -11484,1098 +11589,6 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: storesInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model riders
-   */
-
-  export type AggregateRiders = {
-    _count: RidersCountAggregateOutputType | null
-    _avg: RidersAvgAggregateOutputType | null
-    _sum: RidersSumAggregateOutputType | null
-    _min: RidersMinAggregateOutputType | null
-    _max: RidersMaxAggregateOutputType | null
-  }
-
-  export type RidersAvgAggregateOutputType = {
-    activeDeliveryCount: number | null
-  }
-
-  export type RidersSumAggregateOutputType = {
-    activeDeliveryCount: number | null
-  }
-
-  export type RidersMinAggregateOutputType = {
-    id: string | null
-    name: string | null
-    phone: string | null
-    email: string | null
-    avatarId: string | null
-    vehicleType: $Enums.RiderVehicleType | null
-    vehicleNumber: string | null
-    deliveryZone: string | null
-    status: $Enums.RiderStatus | null
-    activeDeliveryCount: number | null
-    isActive: boolean | null
-    notes: string | null
-    storeId: string | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type RidersMaxAggregateOutputType = {
-    id: string | null
-    name: string | null
-    phone: string | null
-    email: string | null
-    avatarId: string | null
-    vehicleType: $Enums.RiderVehicleType | null
-    vehicleNumber: string | null
-    deliveryZone: string | null
-    status: $Enums.RiderStatus | null
-    activeDeliveryCount: number | null
-    isActive: boolean | null
-    notes: string | null
-    storeId: string | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type RidersCountAggregateOutputType = {
-    id: number
-    name: number
-    phone: number
-    email: number
-    avatarId: number
-    vehicleType: number
-    vehicleNumber: number
-    deliveryZone: number
-    status: number
-    activeDeliveryCount: number
-    isActive: number
-    notes: number
-    storeId: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type RidersAvgAggregateInputType = {
-    activeDeliveryCount?: true
-  }
-
-  export type RidersSumAggregateInputType = {
-    activeDeliveryCount?: true
-  }
-
-  export type RidersMinAggregateInputType = {
-    id?: true
-    name?: true
-    phone?: true
-    email?: true
-    avatarId?: true
-    vehicleType?: true
-    vehicleNumber?: true
-    deliveryZone?: true
-    status?: true
-    activeDeliveryCount?: true
-    isActive?: true
-    notes?: true
-    storeId?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type RidersMaxAggregateInputType = {
-    id?: true
-    name?: true
-    phone?: true
-    email?: true
-    avatarId?: true
-    vehicleType?: true
-    vehicleNumber?: true
-    deliveryZone?: true
-    status?: true
-    activeDeliveryCount?: true
-    isActive?: true
-    notes?: true
-    storeId?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type RidersCountAggregateInputType = {
-    id?: true
-    name?: true
-    phone?: true
-    email?: true
-    avatarId?: true
-    vehicleType?: true
-    vehicleNumber?: true
-    deliveryZone?: true
-    status?: true
-    activeDeliveryCount?: true
-    isActive?: true
-    notes?: true
-    storeId?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type RidersAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which riders to aggregate.
-     */
-    where?: ridersWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of riders to fetch.
-     */
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: ridersWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` riders from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` riders.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned riders
-    **/
-    _count?: true | RidersCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: RidersAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: RidersSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: RidersMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: RidersMaxAggregateInputType
-  }
-
-  export type GetRidersAggregateType<T extends RidersAggregateArgs> = {
-        [P in keyof T & keyof AggregateRiders]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateRiders[P]>
-      : GetScalarType<T[P], AggregateRiders[P]>
-  }
-
-
-
-
-  export type ridersGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ridersWhereInput
-    orderBy?: ridersOrderByWithAggregationInput | ridersOrderByWithAggregationInput[]
-    by: RidersScalarFieldEnum[] | RidersScalarFieldEnum
-    having?: ridersScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: RidersCountAggregateInputType | true
-    _avg?: RidersAvgAggregateInputType
-    _sum?: RidersSumAggregateInputType
-    _min?: RidersMinAggregateInputType
-    _max?: RidersMaxAggregateInputType
-  }
-
-  export type RidersGroupByOutputType = {
-    id: string
-    name: string
-    phone: string
-    email: string | null
-    avatarId: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone: string | null
-    status: $Enums.RiderStatus
-    activeDeliveryCount: number
-    isActive: boolean
-    notes: string | null
-    storeId: string
-    createdAt: Date
-    updatedAt: Date
-    _count: RidersCountAggregateOutputType | null
-    _avg: RidersAvgAggregateOutputType | null
-    _sum: RidersSumAggregateOutputType | null
-    _min: RidersMinAggregateOutputType | null
-    _max: RidersMaxAggregateOutputType | null
-  }
-
-  type GetRidersGroupByPayload<T extends ridersGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<RidersGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof RidersGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], RidersGroupByOutputType[P]>
-            : GetScalarType<T[P], RidersGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type ridersSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    phone?: boolean
-    email?: boolean
-    avatarId?: boolean
-    vehicleType?: boolean
-    vehicleNumber?: boolean
-    deliveryZone?: boolean
-    status?: boolean
-    activeDeliveryCount?: boolean
-    isActive?: boolean
-    notes?: boolean
-    storeId?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    avatar?: boolean | riders$avatarArgs<ExtArgs>
-    store?: boolean | storesDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["riders"]>
-
-
-  export type ridersSelectScalar = {
-    id?: boolean
-    name?: boolean
-    phone?: boolean
-    email?: boolean
-    avatarId?: boolean
-    vehicleType?: boolean
-    vehicleNumber?: boolean
-    deliveryZone?: boolean
-    status?: boolean
-    activeDeliveryCount?: boolean
-    isActive?: boolean
-    notes?: boolean
-    storeId?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type ridersInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    avatar?: boolean | riders$avatarArgs<ExtArgs>
-    store?: boolean | storesDefaultArgs<ExtArgs>
-  }
-
-  export type $ridersPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "riders"
-    objects: {
-      avatar: Prisma.$imagesPayload<ExtArgs> | null
-      store: Prisma.$storesPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: string
-      name: string
-      phone: string
-      email: string | null
-      avatarId: string | null
-      vehicleType: $Enums.RiderVehicleType
-      vehicleNumber: string
-      deliveryZone: string | null
-      status: $Enums.RiderStatus
-      activeDeliveryCount: number
-      isActive: boolean
-      notes: string | null
-      storeId: string
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["riders"]>
-    composites: {}
-  }
-
-  type ridersGetPayload<S extends boolean | null | undefined | ridersDefaultArgs> = $Result.GetResult<Prisma.$ridersPayload, S>
-
-  type ridersCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<ridersFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: RidersCountAggregateInputType | true
-    }
-
-  export interface ridersDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['riders'], meta: { name: 'riders' } }
-    /**
-     * Find zero or one Riders that matches the filter.
-     * @param {ridersFindUniqueArgs} args - Arguments to find a Riders
-     * @example
-     * // Get one Riders
-     * const riders = await prisma.riders.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends ridersFindUniqueArgs>(args: SelectSubset<T, ridersFindUniqueArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one Riders that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {ridersFindUniqueOrThrowArgs} args - Arguments to find a Riders
-     * @example
-     * // Get one Riders
-     * const riders = await prisma.riders.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends ridersFindUniqueOrThrowArgs>(args: SelectSubset<T, ridersFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first Riders that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersFindFirstArgs} args - Arguments to find a Riders
-     * @example
-     * // Get one Riders
-     * const riders = await prisma.riders.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends ridersFindFirstArgs>(args?: SelectSubset<T, ridersFindFirstArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first Riders that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersFindFirstOrThrowArgs} args - Arguments to find a Riders
-     * @example
-     * // Get one Riders
-     * const riders = await prisma.riders.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends ridersFindFirstOrThrowArgs>(args?: SelectSubset<T, ridersFindFirstOrThrowArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more Riders that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all Riders
-     * const riders = await prisma.riders.findMany()
-     * 
-     * // Get first 10 Riders
-     * const riders = await prisma.riders.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const ridersWithIdOnly = await prisma.riders.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends ridersFindManyArgs>(args?: SelectSubset<T, ridersFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a Riders.
-     * @param {ridersCreateArgs} args - Arguments to create a Riders.
-     * @example
-     * // Create one Riders
-     * const Riders = await prisma.riders.create({
-     *   data: {
-     *     // ... data to create a Riders
-     *   }
-     * })
-     * 
-     */
-    create<T extends ridersCreateArgs>(args: SelectSubset<T, ridersCreateArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many Riders.
-     * @param {ridersCreateManyArgs} args - Arguments to create many Riders.
-     * @example
-     * // Create many Riders
-     * const riders = await prisma.riders.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends ridersCreateManyArgs>(args?: SelectSubset<T, ridersCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Delete a Riders.
-     * @param {ridersDeleteArgs} args - Arguments to delete one Riders.
-     * @example
-     * // Delete one Riders
-     * const Riders = await prisma.riders.delete({
-     *   where: {
-     *     // ... filter to delete one Riders
-     *   }
-     * })
-     * 
-     */
-    delete<T extends ridersDeleteArgs>(args: SelectSubset<T, ridersDeleteArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one Riders.
-     * @param {ridersUpdateArgs} args - Arguments to update one Riders.
-     * @example
-     * // Update one Riders
-     * const riders = await prisma.riders.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends ridersUpdateArgs>(args: SelectSubset<T, ridersUpdateArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more Riders.
-     * @param {ridersDeleteManyArgs} args - Arguments to filter Riders to delete.
-     * @example
-     * // Delete a few Riders
-     * const { count } = await prisma.riders.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends ridersDeleteManyArgs>(args?: SelectSubset<T, ridersDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Riders.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many Riders
-     * const riders = await prisma.riders.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends ridersUpdateManyArgs>(args: SelectSubset<T, ridersUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one Riders.
-     * @param {ridersUpsertArgs} args - Arguments to update or create a Riders.
-     * @example
-     * // Update or create a Riders
-     * const riders = await prisma.riders.upsert({
-     *   create: {
-     *     // ... data to create a Riders
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the Riders we want to update
-     *   }
-     * })
-     */
-    upsert<T extends ridersUpsertArgs>(args: SelectSubset<T, ridersUpsertArgs<ExtArgs>>): Prisma__ridersClient<$Result.GetResult<Prisma.$ridersPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-    /**
-     * Find zero or more Riders that matches the filter.
-     * @param {ridersFindRawArgs} args - Select which filters you would like to apply.
-     * @example
-     * const riders = await prisma.riders.findRaw({
-     *   filter: { age: { $gt: 25 } } 
-     * })
-     */
-    findRaw(args?: ridersFindRawArgs): Prisma.PrismaPromise<JsonObject>
-
-    /**
-     * Perform aggregation operations on a Riders.
-     * @param {ridersAggregateRawArgs} args - Select which aggregations you would like to apply.
-     * @example
-     * const riders = await prisma.riders.aggregateRaw({
-     *   pipeline: [
-     *     { $match: { status: "registered" } },
-     *     { $group: { _id: "$country", total: { $sum: 1 } } }
-     *   ]
-     * })
-     */
-    aggregateRaw(args?: ridersAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
-
-
-    /**
-     * Count the number of Riders.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersCountArgs} args - Arguments to filter Riders to count.
-     * @example
-     * // Count the number of Riders
-     * const count = await prisma.riders.count({
-     *   where: {
-     *     // ... the filter for the Riders we want to count
-     *   }
-     * })
-    **/
-    count<T extends ridersCountArgs>(
-      args?: Subset<T, ridersCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], RidersCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a Riders.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RidersAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends RidersAggregateArgs>(args: Subset<T, RidersAggregateArgs>): Prisma.PrismaPromise<GetRidersAggregateType<T>>
-
-    /**
-     * Group by Riders.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ridersGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends ridersGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: ridersGroupByArgs['orderBy'] }
-        : { orderBy?: ridersGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, ridersGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRidersGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the riders model
-   */
-  readonly fields: ridersFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for riders.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__ridersClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    avatar<T extends riders$avatarArgs<ExtArgs> = {}>(args?: Subset<T, riders$avatarArgs<ExtArgs>>): Prisma__imagesClient<$Result.GetResult<Prisma.$imagesPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
-    store<T extends storesDefaultArgs<ExtArgs> = {}>(args?: Subset<T, storesDefaultArgs<ExtArgs>>): Prisma__storesClient<$Result.GetResult<Prisma.$storesPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the riders model
-   */ 
-  interface ridersFieldRefs {
-    readonly id: FieldRef<"riders", 'String'>
-    readonly name: FieldRef<"riders", 'String'>
-    readonly phone: FieldRef<"riders", 'String'>
-    readonly email: FieldRef<"riders", 'String'>
-    readonly avatarId: FieldRef<"riders", 'String'>
-    readonly vehicleType: FieldRef<"riders", 'RiderVehicleType'>
-    readonly vehicleNumber: FieldRef<"riders", 'String'>
-    readonly deliveryZone: FieldRef<"riders", 'String'>
-    readonly status: FieldRef<"riders", 'RiderStatus'>
-    readonly activeDeliveryCount: FieldRef<"riders", 'Int'>
-    readonly isActive: FieldRef<"riders", 'Boolean'>
-    readonly notes: FieldRef<"riders", 'String'>
-    readonly storeId: FieldRef<"riders", 'String'>
-    readonly createdAt: FieldRef<"riders", 'DateTime'>
-    readonly updatedAt: FieldRef<"riders", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * riders findUnique
-   */
-  export type ridersFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter, which riders to fetch.
-     */
-    where: ridersWhereUniqueInput
-  }
-
-  /**
-   * riders findUniqueOrThrow
-   */
-  export type ridersFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter, which riders to fetch.
-     */
-    where: ridersWhereUniqueInput
-  }
-
-  /**
-   * riders findFirst
-   */
-  export type ridersFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter, which riders to fetch.
-     */
-    where?: ridersWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of riders to fetch.
-     */
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for riders.
-     */
-    cursor?: ridersWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` riders from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` riders.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of riders.
-     */
-    distinct?: RidersScalarFieldEnum | RidersScalarFieldEnum[]
-  }
-
-  /**
-   * riders findFirstOrThrow
-   */
-  export type ridersFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter, which riders to fetch.
-     */
-    where?: ridersWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of riders to fetch.
-     */
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for riders.
-     */
-    cursor?: ridersWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` riders from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` riders.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of riders.
-     */
-    distinct?: RidersScalarFieldEnum | RidersScalarFieldEnum[]
-  }
-
-  /**
-   * riders findMany
-   */
-  export type ridersFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter, which riders to fetch.
-     */
-    where?: ridersWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of riders to fetch.
-     */
-    orderBy?: ridersOrderByWithRelationInput | ridersOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing riders.
-     */
-    cursor?: ridersWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` riders from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` riders.
-     */
-    skip?: number
-    distinct?: RidersScalarFieldEnum | RidersScalarFieldEnum[]
-  }
-
-  /**
-   * riders create
-   */
-  export type ridersCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * The data needed to create a riders.
-     */
-    data: XOR<ridersCreateInput, ridersUncheckedCreateInput>
-  }
-
-  /**
-   * riders createMany
-   */
-  export type ridersCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many riders.
-     */
-    data: ridersCreateManyInput | ridersCreateManyInput[]
-  }
-
-  /**
-   * riders update
-   */
-  export type ridersUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * The data needed to update a riders.
-     */
-    data: XOR<ridersUpdateInput, ridersUncheckedUpdateInput>
-    /**
-     * Choose, which riders to update.
-     */
-    where: ridersWhereUniqueInput
-  }
-
-  /**
-   * riders updateMany
-   */
-  export type ridersUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update riders.
-     */
-    data: XOR<ridersUpdateManyMutationInput, ridersUncheckedUpdateManyInput>
-    /**
-     * Filter which riders to update
-     */
-    where?: ridersWhereInput
-  }
-
-  /**
-   * riders upsert
-   */
-  export type ridersUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * The filter to search for the riders to update in case it exists.
-     */
-    where: ridersWhereUniqueInput
-    /**
-     * In case the riders found by the `where` argument doesn't exist, create a new riders with this data.
-     */
-    create: XOR<ridersCreateInput, ridersUncheckedCreateInput>
-    /**
-     * In case the riders was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<ridersUpdateInput, ridersUncheckedUpdateInput>
-  }
-
-  /**
-   * riders delete
-   */
-  export type ridersDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
-    /**
-     * Filter which riders to delete.
-     */
-    where: ridersWhereUniqueInput
-  }
-
-  /**
-   * riders deleteMany
-   */
-  export type ridersDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which riders to delete
-     */
-    where?: ridersWhereInput
-  }
-
-  /**
-   * riders findRaw
-   */
-  export type ridersFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
-     */
-    filter?: InputJsonValue
-    /**
-     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
-     */
-    options?: InputJsonValue
-  }
-
-  /**
-   * riders aggregateRaw
-   */
-  export type ridersAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
-     */
-    pipeline?: InputJsonValue[]
-    /**
-     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
-     */
-    options?: InputJsonValue
-  }
-
-  /**
-   * riders.avatar
-   */
-  export type riders$avatarArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the images
-     */
-    select?: imagesSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: imagesInclude<ExtArgs> | null
-    where?: imagesWhereInput
-  }
-
-  /**
-   * riders without action
-   */
-  export type ridersDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the riders
-     */
-    select?: ridersSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ridersInclude<ExtArgs> | null
   }
 
 
@@ -22986,9 +21999,19 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     email: 'email',
+    username: 'username',
     password: 'password',
+    phone: 'phone',
     isActive: 'isActive',
+    role: 'role',
+    photoId: 'photoId',
     sellerId: 'sellerId',
+    storeId: 'storeId',
+    vehicleType: 'vehicleType',
+    vehicleNumber: 'vehicleNumber',
+    deliveryZone: 'deliveryZone',
+    riderStatus: 'riderStatus',
+    activeDeliveryCount: 'activeDeliveryCount',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -23034,27 +22057,6 @@ export namespace Prisma {
   };
 
   export type StoresScalarFieldEnum = (typeof StoresScalarFieldEnum)[keyof typeof StoresScalarFieldEnum]
-
-
-  export const RidersScalarFieldEnum: {
-    id: 'id',
-    name: 'name',
-    phone: 'phone',
-    email: 'email',
-    avatarId: 'avatarId',
-    vehicleType: 'vehicleType',
-    vehicleNumber: 'vehicleNumber',
-    deliveryZone: 'deliveryZone',
-    status: 'status',
-    activeDeliveryCount: 'activeDeliveryCount',
-    isActive: 'isActive',
-    notes: 'notes',
-    storeId: 'storeId',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type RidersScalarFieldEnum = (typeof RidersScalarFieldEnum)[keyof typeof RidersScalarFieldEnum]
 
 
   export const FavoritesScalarFieldEnum: {
@@ -23360,6 +22362,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'StaffRole'
+   */
+  export type EnumStaffRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffRole'>
+    
+
+
+  /**
+   * Reference to a field of type 'StaffRole[]'
+   */
+  export type ListEnumStaffRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StaffRole[]'>
+    
+
+
+  /**
    * Reference to a field of type 'RiderVehicleType'
    */
   export type EnumRiderVehicleTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RiderVehicleType'>
@@ -23497,7 +22513,7 @@ export namespace Prisma {
     product?: XOR<ProductsNullableRelationFilter, productsWhereInput> | null
     users?: UsersListRelationFilter
     stores?: StoresListRelationFilter
-    riders?: RidersListRelationFilter
+    staffs?: StaffsListRelationFilter
   }
 
   export type imagesOrderByWithRelationInput = {
@@ -23510,7 +22526,7 @@ export namespace Prisma {
     product?: productsOrderByWithRelationInput
     users?: usersOrderByRelationAggregateInput
     stores?: storesOrderByRelationAggregateInput
-    riders?: ridersOrderByRelationAggregateInput
+    staffs?: staffsOrderByRelationAggregateInput
   }
 
   export type imagesWhereUniqueInput = Prisma.AtLeast<{
@@ -23527,7 +22543,7 @@ export namespace Prisma {
     product?: XOR<ProductsNullableRelationFilter, productsWhereInput> | null
     users?: UsersListRelationFilter
     stores?: StoresListRelationFilter
-    riders?: RidersListRelationFilter
+    staffs?: StaffsListRelationFilter
   }, "id" | "productId_file_id">
 
   export type imagesOrderByWithAggregationInput = {
@@ -23936,54 +22952,102 @@ export namespace Prisma {
     NOT?: staffsWhereInput | staffsWhereInput[]
     id?: StringFilter<"staffs"> | string
     name?: StringFilter<"staffs"> | string
-    email?: StringFilter<"staffs"> | string
+    email?: StringNullableFilter<"staffs"> | string | null
+    username?: StringNullableFilter<"staffs"> | string | null
     password?: StringFilter<"staffs"> | string
+    phone?: StringNullableFilter<"staffs"> | string | null
     isActive?: BoolFilter<"staffs"> | boolean
+    role?: EnumStaffRoleFilter<"staffs"> | $Enums.StaffRole
+    photoId?: StringNullableFilter<"staffs"> | string | null
     sellerId?: StringNullableFilter<"staffs"> | string | null
+    storeId?: StringNullableFilter<"staffs"> | string | null
+    vehicleType?: EnumRiderVehicleTypeNullableFilter<"staffs"> | $Enums.RiderVehicleType | null
+    vehicleNumber?: StringNullableFilter<"staffs"> | string | null
+    deliveryZone?: StringNullableFilter<"staffs"> | string | null
+    riderStatus?: EnumRiderStatusNullableFilter<"staffs"> | $Enums.RiderStatus | null
+    activeDeliveryCount?: IntNullableFilter<"staffs"> | number | null
     createdAt?: DateTimeFilter<"staffs"> | Date | string
     updatedAt?: DateTimeFilter<"staffs"> | Date | string
+    photo?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
     seller?: XOR<SellersNullableRelationFilter, sellersWhereInput> | null
+    store?: XOR<StoresNullableRelationFilter, storesWhereInput> | null
   }
 
   export type staffsOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    username?: SortOrder
     password?: SortOrder
+    phone?: SortOrder
     isActive?: SortOrder
+    role?: SortOrder
+    photoId?: SortOrder
     sellerId?: SortOrder
+    storeId?: SortOrder
+    vehicleType?: SortOrder
+    vehicleNumber?: SortOrder
+    deliveryZone?: SortOrder
+    riderStatus?: SortOrder
+    activeDeliveryCount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    photo?: imagesOrderByWithRelationInput
     seller?: sellersOrderByWithRelationInput
+    store?: storesOrderByWithRelationInput
   }
 
   export type staffsWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    email?: string
     AND?: staffsWhereInput | staffsWhereInput[]
     OR?: staffsWhereInput[]
     NOT?: staffsWhereInput | staffsWhereInput[]
     name?: StringFilter<"staffs"> | string
+    email?: StringNullableFilter<"staffs"> | string | null
+    username?: StringNullableFilter<"staffs"> | string | null
     password?: StringFilter<"staffs"> | string
+    phone?: StringNullableFilter<"staffs"> | string | null
     isActive?: BoolFilter<"staffs"> | boolean
+    role?: EnumStaffRoleFilter<"staffs"> | $Enums.StaffRole
+    photoId?: StringNullableFilter<"staffs"> | string | null
     sellerId?: StringNullableFilter<"staffs"> | string | null
+    storeId?: StringNullableFilter<"staffs"> | string | null
+    vehicleType?: EnumRiderVehicleTypeNullableFilter<"staffs"> | $Enums.RiderVehicleType | null
+    vehicleNumber?: StringNullableFilter<"staffs"> | string | null
+    deliveryZone?: StringNullableFilter<"staffs"> | string | null
+    riderStatus?: EnumRiderStatusNullableFilter<"staffs"> | $Enums.RiderStatus | null
+    activeDeliveryCount?: IntNullableFilter<"staffs"> | number | null
     createdAt?: DateTimeFilter<"staffs"> | Date | string
     updatedAt?: DateTimeFilter<"staffs"> | Date | string
+    photo?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
     seller?: XOR<SellersNullableRelationFilter, sellersWhereInput> | null
-  }, "id" | "email">
+    store?: XOR<StoresNullableRelationFilter, storesWhereInput> | null
+  }, "id">
 
   export type staffsOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    username?: SortOrder
     password?: SortOrder
+    phone?: SortOrder
     isActive?: SortOrder
+    role?: SortOrder
+    photoId?: SortOrder
     sellerId?: SortOrder
+    storeId?: SortOrder
+    vehicleType?: SortOrder
+    vehicleNumber?: SortOrder
+    deliveryZone?: SortOrder
+    riderStatus?: SortOrder
+    activeDeliveryCount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: staffsCountOrderByAggregateInput
+    _avg?: staffsAvgOrderByAggregateInput
     _max?: staffsMaxOrderByAggregateInput
     _min?: staffsMinOrderByAggregateInput
+    _sum?: staffsSumOrderByAggregateInput
   }
 
   export type staffsScalarWhereWithAggregatesInput = {
@@ -23992,10 +23056,20 @@ export namespace Prisma {
     NOT?: staffsScalarWhereWithAggregatesInput | staffsScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"staffs"> | string
     name?: StringWithAggregatesFilter<"staffs"> | string
-    email?: StringWithAggregatesFilter<"staffs"> | string
+    email?: StringNullableWithAggregatesFilter<"staffs"> | string | null
+    username?: StringNullableWithAggregatesFilter<"staffs"> | string | null
     password?: StringWithAggregatesFilter<"staffs"> | string
+    phone?: StringNullableWithAggregatesFilter<"staffs"> | string | null
     isActive?: BoolWithAggregatesFilter<"staffs"> | boolean
+    role?: EnumStaffRoleWithAggregatesFilter<"staffs"> | $Enums.StaffRole
+    photoId?: StringNullableWithAggregatesFilter<"staffs"> | string | null
     sellerId?: StringNullableWithAggregatesFilter<"staffs"> | string | null
+    storeId?: StringNullableWithAggregatesFilter<"staffs"> | string | null
+    vehicleType?: EnumRiderVehicleTypeNullableWithAggregatesFilter<"staffs"> | $Enums.RiderVehicleType | null
+    vehicleNumber?: StringNullableWithAggregatesFilter<"staffs"> | string | null
+    deliveryZone?: StringNullableWithAggregatesFilter<"staffs"> | string | null
+    riderStatus?: EnumRiderStatusNullableWithAggregatesFilter<"staffs"> | $Enums.RiderStatus | null
+    activeDeliveryCount?: IntNullableWithAggregatesFilter<"staffs"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"staffs"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"staffs"> | Date | string
   }
@@ -24042,7 +23116,7 @@ export namespace Prisma {
     seller?: XOR<SellersRelationFilter, sellersWhereInput>
     products?: ProductsListRelationFilter
     combos?: CombosListRelationFilter
-    riders?: RidersListRelationFilter
+    staffs?: StaffsListRelationFilter
   }
 
   export type storesOrderByWithRelationInput = {
@@ -24084,7 +23158,7 @@ export namespace Prisma {
     seller?: sellersOrderByWithRelationInput
     products?: productsOrderByRelationAggregateInput
     combos?: combosOrderByRelationAggregateInput
-    riders?: ridersOrderByRelationAggregateInput
+    staffs?: staffsOrderByRelationAggregateInput
   }
 
   export type storesWhereUniqueInput = Prisma.AtLeast<{
@@ -24129,7 +23203,7 @@ export namespace Prisma {
     seller?: XOR<SellersRelationFilter, sellersWhereInput>
     products?: ProductsListRelationFilter
     combos?: CombosListRelationFilter
-    riders?: RidersListRelationFilter
+    staffs?: StaffsListRelationFilter
   }, "id" | "sellerId">
 
   export type storesOrderByWithAggregationInput = {
@@ -24212,116 +23286,6 @@ export namespace Prisma {
     sellerId?: StringWithAggregatesFilter<"stores"> | string
     createdAt?: DateTimeWithAggregatesFilter<"stores"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"stores"> | Date | string
-  }
-
-  export type ridersWhereInput = {
-    AND?: ridersWhereInput | ridersWhereInput[]
-    OR?: ridersWhereInput[]
-    NOT?: ridersWhereInput | ridersWhereInput[]
-    id?: StringFilter<"riders"> | string
-    name?: StringFilter<"riders"> | string
-    phone?: StringFilter<"riders"> | string
-    email?: StringNullableFilter<"riders"> | string | null
-    avatarId?: StringNullableFilter<"riders"> | string | null
-    vehicleType?: EnumRiderVehicleTypeFilter<"riders"> | $Enums.RiderVehicleType
-    vehicleNumber?: StringFilter<"riders"> | string
-    deliveryZone?: StringNullableFilter<"riders"> | string | null
-    status?: EnumRiderStatusFilter<"riders"> | $Enums.RiderStatus
-    activeDeliveryCount?: IntFilter<"riders"> | number
-    isActive?: BoolFilter<"riders"> | boolean
-    notes?: StringNullableFilter<"riders"> | string | null
-    storeId?: StringFilter<"riders"> | string
-    createdAt?: DateTimeFilter<"riders"> | Date | string
-    updatedAt?: DateTimeFilter<"riders"> | Date | string
-    avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
-    store?: XOR<StoresRelationFilter, storesWhereInput>
-  }
-
-  export type ridersOrderByWithRelationInput = {
-    id?: SortOrder
-    name?: SortOrder
-    phone?: SortOrder
-    email?: SortOrder
-    avatarId?: SortOrder
-    vehicleType?: SortOrder
-    vehicleNumber?: SortOrder
-    deliveryZone?: SortOrder
-    status?: SortOrder
-    activeDeliveryCount?: SortOrder
-    isActive?: SortOrder
-    notes?: SortOrder
-    storeId?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    avatar?: imagesOrderByWithRelationInput
-    store?: storesOrderByWithRelationInput
-  }
-
-  export type ridersWhereUniqueInput = Prisma.AtLeast<{
-    id?: string
-    AND?: ridersWhereInput | ridersWhereInput[]
-    OR?: ridersWhereInput[]
-    NOT?: ridersWhereInput | ridersWhereInput[]
-    name?: StringFilter<"riders"> | string
-    phone?: StringFilter<"riders"> | string
-    email?: StringNullableFilter<"riders"> | string | null
-    avatarId?: StringNullableFilter<"riders"> | string | null
-    vehicleType?: EnumRiderVehicleTypeFilter<"riders"> | $Enums.RiderVehicleType
-    vehicleNumber?: StringFilter<"riders"> | string
-    deliveryZone?: StringNullableFilter<"riders"> | string | null
-    status?: EnumRiderStatusFilter<"riders"> | $Enums.RiderStatus
-    activeDeliveryCount?: IntFilter<"riders"> | number
-    isActive?: BoolFilter<"riders"> | boolean
-    notes?: StringNullableFilter<"riders"> | string | null
-    storeId?: StringFilter<"riders"> | string
-    createdAt?: DateTimeFilter<"riders"> | Date | string
-    updatedAt?: DateTimeFilter<"riders"> | Date | string
-    avatar?: XOR<ImagesNullableRelationFilter, imagesWhereInput> | null
-    store?: XOR<StoresRelationFilter, storesWhereInput>
-  }, "id">
-
-  export type ridersOrderByWithAggregationInput = {
-    id?: SortOrder
-    name?: SortOrder
-    phone?: SortOrder
-    email?: SortOrder
-    avatarId?: SortOrder
-    vehicleType?: SortOrder
-    vehicleNumber?: SortOrder
-    deliveryZone?: SortOrder
-    status?: SortOrder
-    activeDeliveryCount?: SortOrder
-    isActive?: SortOrder
-    notes?: SortOrder
-    storeId?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: ridersCountOrderByAggregateInput
-    _avg?: ridersAvgOrderByAggregateInput
-    _max?: ridersMaxOrderByAggregateInput
-    _min?: ridersMinOrderByAggregateInput
-    _sum?: ridersSumOrderByAggregateInput
-  }
-
-  export type ridersScalarWhereWithAggregatesInput = {
-    AND?: ridersScalarWhereWithAggregatesInput | ridersScalarWhereWithAggregatesInput[]
-    OR?: ridersScalarWhereWithAggregatesInput[]
-    NOT?: ridersScalarWhereWithAggregatesInput | ridersScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"riders"> | string
-    name?: StringWithAggregatesFilter<"riders"> | string
-    phone?: StringWithAggregatesFilter<"riders"> | string
-    email?: StringNullableWithAggregatesFilter<"riders"> | string | null
-    avatarId?: StringNullableWithAggregatesFilter<"riders"> | string | null
-    vehicleType?: EnumRiderVehicleTypeWithAggregatesFilter<"riders"> | $Enums.RiderVehicleType
-    vehicleNumber?: StringWithAggregatesFilter<"riders"> | string
-    deliveryZone?: StringNullableWithAggregatesFilter<"riders"> | string | null
-    status?: EnumRiderStatusWithAggregatesFilter<"riders"> | $Enums.RiderStatus
-    activeDeliveryCount?: IntWithAggregatesFilter<"riders"> | number
-    isActive?: BoolWithAggregatesFilter<"riders"> | boolean
-    notes?: StringNullableWithAggregatesFilter<"riders"> | string | null
-    storeId?: StringWithAggregatesFilter<"riders"> | string
-    createdAt?: DateTimeWithAggregatesFilter<"riders"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"riders"> | Date | string
   }
 
   export type favoritesWhereInput = {
@@ -25381,7 +24345,7 @@ export namespace Prisma {
     product?: productsCreateNestedOneWithoutImagesInput
     users?: usersCreateNestedManyWithoutAvatarInput
     stores?: storesCreateNestedManyWithoutAvatarInput
-    riders?: ridersCreateNestedManyWithoutAvatarInput
+    staffs?: staffsCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesUncheckedCreateInput = {
@@ -25393,7 +24357,7 @@ export namespace Prisma {
     createdAt?: Date | string
     users?: usersUncheckedCreateNestedManyWithoutAvatarInput
     stores?: storesUncheckedCreateNestedManyWithoutAvatarInput
-    riders?: ridersUncheckedCreateNestedManyWithoutAvatarInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesUpdateInput = {
@@ -25404,7 +24368,7 @@ export namespace Prisma {
     product?: productsUpdateOneWithoutImagesNestedInput
     users?: usersUpdateManyWithoutAvatarNestedInput
     stores?: storesUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesUncheckedUpdateInput = {
@@ -25415,7 +24379,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: usersUncheckedUpdateManyWithoutAvatarNestedInput
     stores?: storesUncheckedUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesCreateManyInput = {
@@ -25863,41 +24827,81 @@ export namespace Prisma {
   export type staffsCreateInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    photo?: imagesCreateNestedOneWithoutStaffsInput
     seller?: sellersCreateNestedOneWithoutStaffsInput
+    store?: storesCreateNestedOneWithoutStaffsInput
   }
 
   export type staffsUncheckedCreateInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    photoId?: string | null
     sellerId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type staffsUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photo?: imagesUpdateOneWithoutStaffsNestedInput
     seller?: sellersUpdateOneWithoutStaffsNestedInput
+    store?: storesUpdateOneWithoutStaffsNestedInput
   }
 
   export type staffsUncheckedUpdateInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25905,29 +24909,57 @@ export namespace Prisma {
   export type staffsCreateManyInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    photoId?: string | null
     sellerId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
   export type staffsUpdateManyMutationInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type staffsUncheckedUpdateManyInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25969,7 +25001,7 @@ export namespace Prisma {
     seller: sellersCreateNestedOneWithoutStoreInput
     products?: productsCreateNestedManyWithoutStoreInput
     combos?: combosCreateNestedManyWithoutStoreInput
-    riders?: ridersCreateNestedManyWithoutStoreInput
+    staffs?: staffsCreateNestedManyWithoutStoreInput
   }
 
   export type storesUncheckedCreateInput = {
@@ -26009,7 +25041,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     products?: productsUncheckedCreateNestedManyWithoutStoreInput
     combos?: combosUncheckedCreateNestedManyWithoutStoreInput
-    riders?: ridersUncheckedCreateNestedManyWithoutStoreInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type storesUpdateInput = {
@@ -26048,7 +25080,7 @@ export namespace Prisma {
     seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
     products?: productsUpdateManyWithoutStoreNestedInput
     combos?: combosUpdateManyWithoutStoreNestedInput
-    riders?: ridersUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateInput = {
@@ -26087,7 +25119,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: productsUncheckedUpdateManyWithoutStoreNestedInput
     combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type storesCreateManyInput = {
@@ -26193,126 +25225,6 @@ export namespace Prisma {
     supportDescription?: NullableStringFieldUpdateOperationsInput | string | null
     faqLink?: NullableStringFieldUpdateOperationsInput | string | null
     sellerId?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ridersCreateInput = {
-    id?: string
-    name: string
-    phone: string
-    email?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
-    isActive?: boolean
-    notes?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    avatar?: imagesCreateNestedOneWithoutRidersInput
-    store: storesCreateNestedOneWithoutRidersInput
-  }
-
-  export type ridersUncheckedCreateInput = {
-    id?: string
-    name: string
-    phone: string
-    email?: string | null
-    avatarId?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
-    isActive?: boolean
-    notes?: string | null
-    storeId: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ridersUpdateInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
-    email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    avatar?: imagesUpdateOneWithoutRidersNestedInput
-    store?: storesUpdateOneRequiredWithoutRidersNestedInput
-  }
-
-  export type ridersUncheckedUpdateInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
-    email?: NullableStringFieldUpdateOperationsInput | string | null
-    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    storeId?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ridersCreateManyInput = {
-    id?: string
-    name: string
-    phone: string
-    email?: string | null
-    avatarId?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
-    isActive?: boolean
-    notes?: string | null
-    storeId: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ridersUpdateManyMutationInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
-    email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ridersUncheckedUpdateManyInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
-    email?: NullableStringFieldUpdateOperationsInput | string | null
-    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
-    isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    storeId?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -27557,10 +26469,10 @@ export namespace Prisma {
     none?: storesWhereInput
   }
 
-  export type RidersListRelationFilter = {
-    every?: ridersWhereInput
-    some?: ridersWhereInput
-    none?: ridersWhereInput
+  export type StaffsListRelationFilter = {
+    every?: staffsWhereInput
+    some?: staffsWhereInput
+    none?: staffsWhereInput
   }
 
   export type usersOrderByRelationAggregateInput = {
@@ -27571,7 +26483,7 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type ridersOrderByRelationAggregateInput = {
+  export type staffsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -28013,17 +26925,7 @@ export namespace Prisma {
     isNot?: storesWhereInput | null
   }
 
-  export type StaffsListRelationFilter = {
-    every?: staffsWhereInput
-    some?: staffsWhereInput
-    none?: staffsWhereInput
-  }
-
   export type seller_eventsOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type staffsOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -28080,24 +26982,71 @@ export namespace Prisma {
     isSet?: boolean
   }
 
+  export type EnumStaffRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffRole | EnumStaffRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffRoleFilter<$PrismaModel> | $Enums.StaffRole
+  }
+
+  export type EnumRiderVehicleTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel> | $Enums.RiderVehicleType | null
+    isSet?: boolean
+  }
+
+  export type EnumRiderStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderStatusNullableFilter<$PrismaModel> | $Enums.RiderStatus | null
+    isSet?: boolean
+  }
+
   export type staffsCountOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    username?: SortOrder
     password?: SortOrder
+    phone?: SortOrder
     isActive?: SortOrder
+    role?: SortOrder
+    photoId?: SortOrder
     sellerId?: SortOrder
+    storeId?: SortOrder
+    vehicleType?: SortOrder
+    vehicleNumber?: SortOrder
+    deliveryZone?: SortOrder
+    riderStatus?: SortOrder
+    activeDeliveryCount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type staffsAvgOrderByAggregateInput = {
+    activeDeliveryCount?: SortOrder
   }
 
   export type staffsMaxOrderByAggregateInput = {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    username?: SortOrder
     password?: SortOrder
+    phone?: SortOrder
     isActive?: SortOrder
+    role?: SortOrder
+    photoId?: SortOrder
     sellerId?: SortOrder
+    storeId?: SortOrder
+    vehicleType?: SortOrder
+    vehicleNumber?: SortOrder
+    deliveryZone?: SortOrder
+    riderStatus?: SortOrder
+    activeDeliveryCount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -28106,11 +27055,57 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    username?: SortOrder
     password?: SortOrder
+    phone?: SortOrder
     isActive?: SortOrder
+    role?: SortOrder
+    photoId?: SortOrder
     sellerId?: SortOrder
+    storeId?: SortOrder
+    vehicleType?: SortOrder
+    vehicleNumber?: SortOrder
+    deliveryZone?: SortOrder
+    riderStatus?: SortOrder
+    activeDeliveryCount?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type staffsSumOrderByAggregateInput = {
+    activeDeliveryCount?: SortOrder
+  }
+
+  export type EnumStaffRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffRole | EnumStaffRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffRoleWithAggregatesFilter<$PrismaModel> | $Enums.StaffRole
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStaffRoleFilter<$PrismaModel>
+    _max?: NestedEnumStaffRoleFilter<$PrismaModel>
+  }
+
+  export type EnumRiderVehicleTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderVehicleTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiderVehicleType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
+  export type EnumRiderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiderStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRiderStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumRiderStatusNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type SellersRelationFilter = {
@@ -28243,107 +27238,6 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
-  }
-
-  export type EnumRiderVehicleTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderVehicleTypeFilter<$PrismaModel> | $Enums.RiderVehicleType
-  }
-
-  export type EnumRiderStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderStatusFilter<$PrismaModel> | $Enums.RiderStatus
-  }
-
-  export type StoresRelationFilter = {
-    is?: storesWhereInput
-    isNot?: storesWhereInput
-  }
-
-  export type ridersCountOrderByAggregateInput = {
-    id?: SortOrder
-    name?: SortOrder
-    phone?: SortOrder
-    email?: SortOrder
-    avatarId?: SortOrder
-    vehicleType?: SortOrder
-    vehicleNumber?: SortOrder
-    deliveryZone?: SortOrder
-    status?: SortOrder
-    activeDeliveryCount?: SortOrder
-    isActive?: SortOrder
-    notes?: SortOrder
-    storeId?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ridersAvgOrderByAggregateInput = {
-    activeDeliveryCount?: SortOrder
-  }
-
-  export type ridersMaxOrderByAggregateInput = {
-    id?: SortOrder
-    name?: SortOrder
-    phone?: SortOrder
-    email?: SortOrder
-    avatarId?: SortOrder
-    vehicleType?: SortOrder
-    vehicleNumber?: SortOrder
-    deliveryZone?: SortOrder
-    status?: SortOrder
-    activeDeliveryCount?: SortOrder
-    isActive?: SortOrder
-    notes?: SortOrder
-    storeId?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ridersMinOrderByAggregateInput = {
-    id?: SortOrder
-    name?: SortOrder
-    phone?: SortOrder
-    email?: SortOrder
-    avatarId?: SortOrder
-    vehicleType?: SortOrder
-    vehicleNumber?: SortOrder
-    deliveryZone?: SortOrder
-    status?: SortOrder
-    activeDeliveryCount?: SortOrder
-    isActive?: SortOrder
-    notes?: SortOrder
-    storeId?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ridersSumOrderByAggregateInput = {
-    activeDeliveryCount?: SortOrder
-  }
-
-  export type EnumRiderVehicleTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderVehicleTypeWithAggregatesFilter<$PrismaModel> | $Enums.RiderVehicleType
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumRiderVehicleTypeFilter<$PrismaModel>
-    _max?: NestedEnumRiderVehicleTypeFilter<$PrismaModel>
-  }
-
-  export type EnumRiderStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderStatusWithAggregatesFilter<$PrismaModel> | $Enums.RiderStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumRiderStatusFilter<$PrismaModel>
-    _max?: NestedEnumRiderStatusFilter<$PrismaModel>
   }
 
   export type UsersRelationFilter = {
@@ -28797,6 +27691,11 @@ export namespace Prisma {
     _max?: NestedEnumsellerEventTypeFilter<$PrismaModel>
   }
 
+  export type StoresRelationFilter = {
+    is?: storesWhereInput
+    isNot?: storesWhereInput
+  }
+
   export type combosCountOrderByAggregateInput = {
     id?: SortOrder
     title?: SortOrder
@@ -29118,11 +28017,11 @@ export namespace Prisma {
     connect?: storesWhereUniqueInput | storesWhereUniqueInput[]
   }
 
-  export type ridersCreateNestedManyWithoutAvatarInput = {
-    create?: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput> | ridersCreateWithoutAvatarInput[] | ridersUncheckedCreateWithoutAvatarInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutAvatarInput | ridersCreateOrConnectWithoutAvatarInput[]
-    createMany?: ridersCreateManyAvatarInputEnvelope
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
+  export type staffsCreateNestedManyWithoutPhotoInput = {
+    create?: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput> | staffsCreateWithoutPhotoInput[] | staffsUncheckedCreateWithoutPhotoInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutPhotoInput | staffsCreateOrConnectWithoutPhotoInput[]
+    createMany?: staffsCreateManyPhotoInputEnvelope
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
   }
 
   export type usersUncheckedCreateNestedManyWithoutAvatarInput = {
@@ -29139,11 +28038,11 @@ export namespace Prisma {
     connect?: storesWhereUniqueInput | storesWhereUniqueInput[]
   }
 
-  export type ridersUncheckedCreateNestedManyWithoutAvatarInput = {
-    create?: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput> | ridersCreateWithoutAvatarInput[] | ridersUncheckedCreateWithoutAvatarInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutAvatarInput | ridersCreateOrConnectWithoutAvatarInput[]
-    createMany?: ridersCreateManyAvatarInputEnvelope
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
+  export type staffsUncheckedCreateNestedManyWithoutPhotoInput = {
+    create?: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput> | staffsCreateWithoutPhotoInput[] | staffsUncheckedCreateWithoutPhotoInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutPhotoInput | staffsCreateOrConnectWithoutPhotoInput[]
+    createMany?: staffsCreateManyPhotoInputEnvelope
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
   }
 
   export type EnumImageTypeFieldUpdateOperationsInput = {
@@ -29188,18 +28087,18 @@ export namespace Prisma {
     deleteMany?: storesScalarWhereInput | storesScalarWhereInput[]
   }
 
-  export type ridersUpdateManyWithoutAvatarNestedInput = {
-    create?: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput> | ridersCreateWithoutAvatarInput[] | ridersUncheckedCreateWithoutAvatarInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutAvatarInput | ridersCreateOrConnectWithoutAvatarInput[]
-    upsert?: ridersUpsertWithWhereUniqueWithoutAvatarInput | ridersUpsertWithWhereUniqueWithoutAvatarInput[]
-    createMany?: ridersCreateManyAvatarInputEnvelope
-    set?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    disconnect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    delete?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    update?: ridersUpdateWithWhereUniqueWithoutAvatarInput | ridersUpdateWithWhereUniqueWithoutAvatarInput[]
-    updateMany?: ridersUpdateManyWithWhereWithoutAvatarInput | ridersUpdateManyWithWhereWithoutAvatarInput[]
-    deleteMany?: ridersScalarWhereInput | ridersScalarWhereInput[]
+  export type staffsUpdateManyWithoutPhotoNestedInput = {
+    create?: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput> | staffsCreateWithoutPhotoInput[] | staffsUncheckedCreateWithoutPhotoInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutPhotoInput | staffsCreateOrConnectWithoutPhotoInput[]
+    upsert?: staffsUpsertWithWhereUniqueWithoutPhotoInput | staffsUpsertWithWhereUniqueWithoutPhotoInput[]
+    createMany?: staffsCreateManyPhotoInputEnvelope
+    set?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    disconnect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    delete?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    update?: staffsUpdateWithWhereUniqueWithoutPhotoInput | staffsUpdateWithWhereUniqueWithoutPhotoInput[]
+    updateMany?: staffsUpdateManyWithWhereWithoutPhotoInput | staffsUpdateManyWithWhereWithoutPhotoInput[]
+    deleteMany?: staffsScalarWhereInput | staffsScalarWhereInput[]
   }
 
   export type NullableStringFieldUpdateOperationsInput = {
@@ -29235,18 +28134,18 @@ export namespace Prisma {
     deleteMany?: storesScalarWhereInput | storesScalarWhereInput[]
   }
 
-  export type ridersUncheckedUpdateManyWithoutAvatarNestedInput = {
-    create?: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput> | ridersCreateWithoutAvatarInput[] | ridersUncheckedCreateWithoutAvatarInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutAvatarInput | ridersCreateOrConnectWithoutAvatarInput[]
-    upsert?: ridersUpsertWithWhereUniqueWithoutAvatarInput | ridersUpsertWithWhereUniqueWithoutAvatarInput[]
-    createMany?: ridersCreateManyAvatarInputEnvelope
-    set?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    disconnect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    delete?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    update?: ridersUpdateWithWhereUniqueWithoutAvatarInput | ridersUpdateWithWhereUniqueWithoutAvatarInput[]
-    updateMany?: ridersUpdateManyWithWhereWithoutAvatarInput | ridersUpdateManyWithWhereWithoutAvatarInput[]
-    deleteMany?: ridersScalarWhereInput | ridersScalarWhereInput[]
+  export type staffsUncheckedUpdateManyWithoutPhotoNestedInput = {
+    create?: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput> | staffsCreateWithoutPhotoInput[] | staffsUncheckedCreateWithoutPhotoInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutPhotoInput | staffsCreateOrConnectWithoutPhotoInput[]
+    upsert?: staffsUpsertWithWhereUniqueWithoutPhotoInput | staffsUpsertWithWhereUniqueWithoutPhotoInput[]
+    createMany?: staffsCreateManyPhotoInputEnvelope
+    set?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    disconnect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    delete?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    update?: staffsUpdateWithWhereUniqueWithoutPhotoInput | staffsUpdateWithWhereUniqueWithoutPhotoInput[]
+    updateMany?: staffsUpdateManyWithWhereWithoutPhotoInput | staffsUpdateManyWithWhereWithoutPhotoInput[]
+    deleteMany?: staffsScalarWhereInput | staffsScalarWhereInput[]
   }
 
   export type usersCreatefollowingInput = {
@@ -29703,10 +28602,46 @@ export namespace Prisma {
     deleteMany?: staffsScalarWhereInput | staffsScalarWhereInput[]
   }
 
+  export type imagesCreateNestedOneWithoutStaffsInput = {
+    create?: XOR<imagesCreateWithoutStaffsInput, imagesUncheckedCreateWithoutStaffsInput>
+    connectOrCreate?: imagesCreateOrConnectWithoutStaffsInput
+    connect?: imagesWhereUniqueInput
+  }
+
   export type sellersCreateNestedOneWithoutStaffsInput = {
     create?: XOR<sellersCreateWithoutStaffsInput, sellersUncheckedCreateWithoutStaffsInput>
     connectOrCreate?: sellersCreateOrConnectWithoutStaffsInput
     connect?: sellersWhereUniqueInput
+  }
+
+  export type storesCreateNestedOneWithoutStaffsInput = {
+    create?: XOR<storesCreateWithoutStaffsInput, storesUncheckedCreateWithoutStaffsInput>
+    connectOrCreate?: storesCreateOrConnectWithoutStaffsInput
+    connect?: storesWhereUniqueInput
+  }
+
+  export type EnumStaffRoleFieldUpdateOperationsInput = {
+    set?: $Enums.StaffRole
+  }
+
+  export type NullableEnumRiderVehicleTypeFieldUpdateOperationsInput = {
+    set?: $Enums.RiderVehicleType | null
+    unset?: boolean
+  }
+
+  export type NullableEnumRiderStatusFieldUpdateOperationsInput = {
+    set?: $Enums.RiderStatus | null
+    unset?: boolean
+  }
+
+  export type imagesUpdateOneWithoutStaffsNestedInput = {
+    create?: XOR<imagesCreateWithoutStaffsInput, imagesUncheckedCreateWithoutStaffsInput>
+    connectOrCreate?: imagesCreateOrConnectWithoutStaffsInput
+    upsert?: imagesUpsertWithoutStaffsInput
+    disconnect?: boolean
+    delete?: imagesWhereInput | boolean
+    connect?: imagesWhereUniqueInput
+    update?: XOR<XOR<imagesUpdateToOneWithWhereWithoutStaffsInput, imagesUpdateWithoutStaffsInput>, imagesUncheckedUpdateWithoutStaffsInput>
   }
 
   export type sellersUpdateOneWithoutStaffsNestedInput = {
@@ -29717,6 +28652,16 @@ export namespace Prisma {
     delete?: sellersWhereInput | boolean
     connect?: sellersWhereUniqueInput
     update?: XOR<XOR<sellersUpdateToOneWithWhereWithoutStaffsInput, sellersUpdateWithoutStaffsInput>, sellersUncheckedUpdateWithoutStaffsInput>
+  }
+
+  export type storesUpdateOneWithoutStaffsNestedInput = {
+    create?: XOR<storesCreateWithoutStaffsInput, storesUncheckedCreateWithoutStaffsInput>
+    connectOrCreate?: storesCreateOrConnectWithoutStaffsInput
+    upsert?: storesUpsertWithoutStaffsInput
+    disconnect?: boolean
+    delete?: storesWhereInput | boolean
+    connect?: storesWhereUniqueInput
+    update?: XOR<XOR<storesUpdateToOneWithWhereWithoutStaffsInput, storesUpdateWithoutStaffsInput>, storesUncheckedUpdateWithoutStaffsInput>
   }
 
   export type storesCreateavailableCitiesInput = {
@@ -29753,11 +28698,11 @@ export namespace Prisma {
     connect?: combosWhereUniqueInput | combosWhereUniqueInput[]
   }
 
-  export type ridersCreateNestedManyWithoutStoreInput = {
-    create?: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput> | ridersCreateWithoutStoreInput[] | ridersUncheckedCreateWithoutStoreInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutStoreInput | ridersCreateOrConnectWithoutStoreInput[]
-    createMany?: ridersCreateManyStoreInputEnvelope
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
+  export type staffsCreateNestedManyWithoutStoreInput = {
+    create?: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput> | staffsCreateWithoutStoreInput[] | staffsUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutStoreInput | staffsCreateOrConnectWithoutStoreInput[]
+    createMany?: staffsCreateManyStoreInputEnvelope
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
   }
 
   export type productsUncheckedCreateNestedManyWithoutStoreInput = {
@@ -29774,11 +28719,11 @@ export namespace Prisma {
     connect?: combosWhereUniqueInput | combosWhereUniqueInput[]
   }
 
-  export type ridersUncheckedCreateNestedManyWithoutStoreInput = {
-    create?: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput> | ridersCreateWithoutStoreInput[] | ridersUncheckedCreateWithoutStoreInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutStoreInput | ridersCreateOrConnectWithoutStoreInput[]
-    createMany?: ridersCreateManyStoreInputEnvelope
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
+  export type staffsUncheckedCreateNestedManyWithoutStoreInput = {
+    create?: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput> | staffsCreateWithoutStoreInput[] | staffsUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutStoreInput | staffsCreateOrConnectWithoutStoreInput[]
+    createMany?: staffsCreateManyStoreInputEnvelope
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
   }
 
   export type storesUpdateavailableCitiesInput = {
@@ -29837,18 +28782,18 @@ export namespace Prisma {
     deleteMany?: combosScalarWhereInput | combosScalarWhereInput[]
   }
 
-  export type ridersUpdateManyWithoutStoreNestedInput = {
-    create?: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput> | ridersCreateWithoutStoreInput[] | ridersUncheckedCreateWithoutStoreInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutStoreInput | ridersCreateOrConnectWithoutStoreInput[]
-    upsert?: ridersUpsertWithWhereUniqueWithoutStoreInput | ridersUpsertWithWhereUniqueWithoutStoreInput[]
-    createMany?: ridersCreateManyStoreInputEnvelope
-    set?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    disconnect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    delete?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    update?: ridersUpdateWithWhereUniqueWithoutStoreInput | ridersUpdateWithWhereUniqueWithoutStoreInput[]
-    updateMany?: ridersUpdateManyWithWhereWithoutStoreInput | ridersUpdateManyWithWhereWithoutStoreInput[]
-    deleteMany?: ridersScalarWhereInput | ridersScalarWhereInput[]
+  export type staffsUpdateManyWithoutStoreNestedInput = {
+    create?: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput> | staffsCreateWithoutStoreInput[] | staffsUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutStoreInput | staffsCreateOrConnectWithoutStoreInput[]
+    upsert?: staffsUpsertWithWhereUniqueWithoutStoreInput | staffsUpsertWithWhereUniqueWithoutStoreInput[]
+    createMany?: staffsCreateManyStoreInputEnvelope
+    set?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    disconnect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    delete?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    update?: staffsUpdateWithWhereUniqueWithoutStoreInput | staffsUpdateWithWhereUniqueWithoutStoreInput[]
+    updateMany?: staffsUpdateManyWithWhereWithoutStoreInput | staffsUpdateManyWithWhereWithoutStoreInput[]
+    deleteMany?: staffsScalarWhereInput | staffsScalarWhereInput[]
   }
 
   export type productsUncheckedUpdateManyWithoutStoreNestedInput = {
@@ -29879,56 +28824,18 @@ export namespace Prisma {
     deleteMany?: combosScalarWhereInput | combosScalarWhereInput[]
   }
 
-  export type ridersUncheckedUpdateManyWithoutStoreNestedInput = {
-    create?: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput> | ridersCreateWithoutStoreInput[] | ridersUncheckedCreateWithoutStoreInput[]
-    connectOrCreate?: ridersCreateOrConnectWithoutStoreInput | ridersCreateOrConnectWithoutStoreInput[]
-    upsert?: ridersUpsertWithWhereUniqueWithoutStoreInput | ridersUpsertWithWhereUniqueWithoutStoreInput[]
-    createMany?: ridersCreateManyStoreInputEnvelope
-    set?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    disconnect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    delete?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    connect?: ridersWhereUniqueInput | ridersWhereUniqueInput[]
-    update?: ridersUpdateWithWhereUniqueWithoutStoreInput | ridersUpdateWithWhereUniqueWithoutStoreInput[]
-    updateMany?: ridersUpdateManyWithWhereWithoutStoreInput | ridersUpdateManyWithWhereWithoutStoreInput[]
-    deleteMany?: ridersScalarWhereInput | ridersScalarWhereInput[]
-  }
-
-  export type imagesCreateNestedOneWithoutRidersInput = {
-    create?: XOR<imagesCreateWithoutRidersInput, imagesUncheckedCreateWithoutRidersInput>
-    connectOrCreate?: imagesCreateOrConnectWithoutRidersInput
-    connect?: imagesWhereUniqueInput
-  }
-
-  export type storesCreateNestedOneWithoutRidersInput = {
-    create?: XOR<storesCreateWithoutRidersInput, storesUncheckedCreateWithoutRidersInput>
-    connectOrCreate?: storesCreateOrConnectWithoutRidersInput
-    connect?: storesWhereUniqueInput
-  }
-
-  export type EnumRiderVehicleTypeFieldUpdateOperationsInput = {
-    set?: $Enums.RiderVehicleType
-  }
-
-  export type EnumRiderStatusFieldUpdateOperationsInput = {
-    set?: $Enums.RiderStatus
-  }
-
-  export type imagesUpdateOneWithoutRidersNestedInput = {
-    create?: XOR<imagesCreateWithoutRidersInput, imagesUncheckedCreateWithoutRidersInput>
-    connectOrCreate?: imagesCreateOrConnectWithoutRidersInput
-    upsert?: imagesUpsertWithoutRidersInput
-    disconnect?: boolean
-    delete?: imagesWhereInput | boolean
-    connect?: imagesWhereUniqueInput
-    update?: XOR<XOR<imagesUpdateToOneWithWhereWithoutRidersInput, imagesUpdateWithoutRidersInput>, imagesUncheckedUpdateWithoutRidersInput>
-  }
-
-  export type storesUpdateOneRequiredWithoutRidersNestedInput = {
-    create?: XOR<storesCreateWithoutRidersInput, storesUncheckedCreateWithoutRidersInput>
-    connectOrCreate?: storesCreateOrConnectWithoutRidersInput
-    upsert?: storesUpsertWithoutRidersInput
-    connect?: storesWhereUniqueInput
-    update?: XOR<XOR<storesUpdateToOneWithWhereWithoutRidersInput, storesUpdateWithoutRidersInput>, storesUncheckedUpdateWithoutRidersInput>
+  export type staffsUncheckedUpdateManyWithoutStoreNestedInput = {
+    create?: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput> | staffsCreateWithoutStoreInput[] | staffsUncheckedCreateWithoutStoreInput[]
+    connectOrCreate?: staffsCreateOrConnectWithoutStoreInput | staffsCreateOrConnectWithoutStoreInput[]
+    upsert?: staffsUpsertWithWhereUniqueWithoutStoreInput | staffsUpsertWithWhereUniqueWithoutStoreInput[]
+    createMany?: staffsCreateManyStoreInputEnvelope
+    set?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    disconnect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    delete?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    connect?: staffsWhereUniqueInput | staffsWhereUniqueInput[]
+    update?: staffsUpdateWithWhereUniqueWithoutStoreInput | staffsUpdateWithWhereUniqueWithoutStoreInput[]
+    updateMany?: staffsUpdateManyWithWhereWithoutStoreInput | staffsUpdateManyWithWhereWithoutStoreInput[]
+    deleteMany?: staffsScalarWhereInput | staffsScalarWhereInput[]
   }
 
   export type usersCreateNestedOneWithoutFavoritesInput = {
@@ -30638,38 +29545,59 @@ export namespace Prisma {
     isSet?: boolean
   }
 
-  export type NestedEnumRiderVehicleTypeFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderVehicleTypeFilter<$PrismaModel> | $Enums.RiderVehicleType
+  export type NestedEnumStaffRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffRole | EnumStaffRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffRoleFilter<$PrismaModel> | $Enums.StaffRole
   }
 
-  export type NestedEnumRiderStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderStatusFilter<$PrismaModel> | $Enums.RiderStatus
+  export type NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel> | $Enums.RiderVehicleType | null
+    isSet?: boolean
   }
 
-  export type NestedEnumRiderVehicleTypeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderVehicleTypeWithAggregatesFilter<$PrismaModel> | $Enums.RiderVehicleType
+  export type NestedEnumRiderStatusNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderStatusNullableFilter<$PrismaModel> | $Enums.RiderStatus | null
+    isSet?: boolean
+  }
+
+  export type NestedEnumStaffRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StaffRole | EnumStaffRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.StaffRole[] | ListEnumStaffRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumStaffRoleWithAggregatesFilter<$PrismaModel> | $Enums.StaffRole
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumRiderVehicleTypeFilter<$PrismaModel>
-    _max?: NestedEnumRiderVehicleTypeFilter<$PrismaModel>
+    _min?: NestedEnumStaffRoleFilter<$PrismaModel>
+    _max?: NestedEnumStaffRoleFilter<$PrismaModel>
   }
 
-  export type NestedEnumRiderStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumRiderStatusWithAggregatesFilter<$PrismaModel> | $Enums.RiderStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumRiderStatusFilter<$PrismaModel>
-    _max?: NestedEnumRiderStatusFilter<$PrismaModel>
+  export type NestedEnumRiderVehicleTypeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderVehicleType | EnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderVehicleType[] | ListEnumRiderVehicleTypeFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderVehicleTypeNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiderVehicleType | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel>
+    _max?: NestedEnumRiderVehicleTypeNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
+  export type NestedEnumRiderStatusNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RiderStatus | EnumRiderStatusFieldRefInput<$PrismaModel> | null
+    in?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.RiderStatus[] | ListEnumRiderStatusFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumRiderStatusNullableWithAggregatesFilter<$PrismaModel> | $Enums.RiderStatus | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumRiderStatusNullableFilter<$PrismaModel>
+    _max?: NestedEnumRiderStatusNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
   export type NestedJsonFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -31261,7 +30189,7 @@ export namespace Prisma {
     seller: sellersCreateNestedOneWithoutStoreInput
     products?: productsCreateNestedManyWithoutStoreInput
     combos?: combosCreateNestedManyWithoutStoreInput
-    riders?: ridersCreateNestedManyWithoutStoreInput
+    staffs?: staffsCreateNestedManyWithoutStoreInput
   }
 
   export type storesUncheckedCreateWithoutAvatarInput = {
@@ -31300,7 +30228,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     products?: productsUncheckedCreateNestedManyWithoutStoreInput
     combos?: combosUncheckedCreateNestedManyWithoutStoreInput
-    riders?: ridersUncheckedCreateNestedManyWithoutStoreInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type storesCreateOrConnectWithoutAvatarInput = {
@@ -31312,47 +30240,53 @@ export namespace Prisma {
     data: storesCreateManyAvatarInput | storesCreateManyAvatarInput[]
   }
 
-  export type ridersCreateWithoutAvatarInput = {
+  export type staffsCreateWithoutPhotoInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
+    role?: $Enums.StaffRole
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    store: storesCreateNestedOneWithoutRidersInput
+    seller?: sellersCreateNestedOneWithoutStaffsInput
+    store?: storesCreateNestedOneWithoutStaffsInput
   }
 
-  export type ridersUncheckedCreateWithoutAvatarInput = {
+  export type staffsUncheckedCreateWithoutPhotoInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
-    storeId: string
+    role?: $Enums.StaffRole
+    sellerId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
-  export type ridersCreateOrConnectWithoutAvatarInput = {
-    where: ridersWhereUniqueInput
-    create: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput>
+  export type staffsCreateOrConnectWithoutPhotoInput = {
+    where: staffsWhereUniqueInput
+    create: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput>
   }
 
-  export type ridersCreateManyAvatarInputEnvelope = {
-    data: ridersCreateManyAvatarInput | ridersCreateManyAvatarInput[]
+  export type staffsCreateManyPhotoInputEnvelope = {
+    data: staffsCreateManyPhotoInput | staffsCreateManyPhotoInput[]
   }
 
   export type productsUpsertWithoutImagesInput = {
@@ -31555,41 +30489,44 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"stores"> | Date | string
   }
 
-  export type ridersUpsertWithWhereUniqueWithoutAvatarInput = {
-    where: ridersWhereUniqueInput
-    update: XOR<ridersUpdateWithoutAvatarInput, ridersUncheckedUpdateWithoutAvatarInput>
-    create: XOR<ridersCreateWithoutAvatarInput, ridersUncheckedCreateWithoutAvatarInput>
+  export type staffsUpsertWithWhereUniqueWithoutPhotoInput = {
+    where: staffsWhereUniqueInput
+    update: XOR<staffsUpdateWithoutPhotoInput, staffsUncheckedUpdateWithoutPhotoInput>
+    create: XOR<staffsCreateWithoutPhotoInput, staffsUncheckedCreateWithoutPhotoInput>
   }
 
-  export type ridersUpdateWithWhereUniqueWithoutAvatarInput = {
-    where: ridersWhereUniqueInput
-    data: XOR<ridersUpdateWithoutAvatarInput, ridersUncheckedUpdateWithoutAvatarInput>
+  export type staffsUpdateWithWhereUniqueWithoutPhotoInput = {
+    where: staffsWhereUniqueInput
+    data: XOR<staffsUpdateWithoutPhotoInput, staffsUncheckedUpdateWithoutPhotoInput>
   }
 
-  export type ridersUpdateManyWithWhereWithoutAvatarInput = {
-    where: ridersScalarWhereInput
-    data: XOR<ridersUpdateManyMutationInput, ridersUncheckedUpdateManyWithoutAvatarInput>
+  export type staffsUpdateManyWithWhereWithoutPhotoInput = {
+    where: staffsScalarWhereInput
+    data: XOR<staffsUpdateManyMutationInput, staffsUncheckedUpdateManyWithoutPhotoInput>
   }
 
-  export type ridersScalarWhereInput = {
-    AND?: ridersScalarWhereInput | ridersScalarWhereInput[]
-    OR?: ridersScalarWhereInput[]
-    NOT?: ridersScalarWhereInput | ridersScalarWhereInput[]
-    id?: StringFilter<"riders"> | string
-    name?: StringFilter<"riders"> | string
-    phone?: StringFilter<"riders"> | string
-    email?: StringNullableFilter<"riders"> | string | null
-    avatarId?: StringNullableFilter<"riders"> | string | null
-    vehicleType?: EnumRiderVehicleTypeFilter<"riders"> | $Enums.RiderVehicleType
-    vehicleNumber?: StringFilter<"riders"> | string
-    deliveryZone?: StringNullableFilter<"riders"> | string | null
-    status?: EnumRiderStatusFilter<"riders"> | $Enums.RiderStatus
-    activeDeliveryCount?: IntFilter<"riders"> | number
-    isActive?: BoolFilter<"riders"> | boolean
-    notes?: StringNullableFilter<"riders"> | string | null
-    storeId?: StringFilter<"riders"> | string
-    createdAt?: DateTimeFilter<"riders"> | Date | string
-    updatedAt?: DateTimeFilter<"riders"> | Date | string
+  export type staffsScalarWhereInput = {
+    AND?: staffsScalarWhereInput | staffsScalarWhereInput[]
+    OR?: staffsScalarWhereInput[]
+    NOT?: staffsScalarWhereInput | staffsScalarWhereInput[]
+    id?: StringFilter<"staffs"> | string
+    name?: StringFilter<"staffs"> | string
+    email?: StringNullableFilter<"staffs"> | string | null
+    username?: StringNullableFilter<"staffs"> | string | null
+    password?: StringFilter<"staffs"> | string
+    phone?: StringNullableFilter<"staffs"> | string | null
+    isActive?: BoolFilter<"staffs"> | boolean
+    role?: EnumStaffRoleFilter<"staffs"> | $Enums.StaffRole
+    photoId?: StringNullableFilter<"staffs"> | string | null
+    sellerId?: StringNullableFilter<"staffs"> | string | null
+    storeId?: StringNullableFilter<"staffs"> | string | null
+    vehicleType?: EnumRiderVehicleTypeNullableFilter<"staffs"> | $Enums.RiderVehicleType | null
+    vehicleNumber?: StringNullableFilter<"staffs"> | string | null
+    deliveryZone?: StringNullableFilter<"staffs"> | string | null
+    riderStatus?: EnumRiderStatusNullableFilter<"staffs"> | $Enums.RiderStatus | null
+    activeDeliveryCount?: IntNullableFilter<"staffs"> | number | null
+    createdAt?: DateTimeFilter<"staffs"> | Date | string
+    updatedAt?: DateTimeFilter<"staffs"> | Date | string
   }
 
   export type imagesCreateWithoutUsersInput = {
@@ -31600,7 +30537,7 @@ export namespace Prisma {
     createdAt?: Date | string
     product?: productsCreateNestedOneWithoutImagesInput
     stores?: storesCreateNestedManyWithoutAvatarInput
-    riders?: ridersCreateNestedManyWithoutAvatarInput
+    staffs?: staffsCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesUncheckedCreateWithoutUsersInput = {
@@ -31611,7 +30548,7 @@ export namespace Prisma {
     productId?: string | null
     createdAt?: Date | string
     stores?: storesUncheckedCreateNestedManyWithoutAvatarInput
-    riders?: ridersUncheckedCreateNestedManyWithoutAvatarInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesCreateOrConnectWithoutUsersInput = {
@@ -31687,7 +30624,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: productsUpdateOneWithoutImagesNestedInput
     stores?: storesUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesUncheckedUpdateWithoutUsersInput = {
@@ -31697,7 +30634,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     stores?: storesUncheckedUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutPhotoNestedInput
   }
 
   export type favoritesUpsertWithWhereUniqueWithoutUserInput = {
@@ -32160,7 +31097,7 @@ export namespace Prisma {
     avatar?: imagesCreateNestedOneWithoutStoresInput
     products?: productsCreateNestedManyWithoutStoreInput
     combos?: combosCreateNestedManyWithoutStoreInput
-    riders?: ridersCreateNestedManyWithoutStoreInput
+    staffs?: staffsCreateNestedManyWithoutStoreInput
   }
 
   export type storesUncheckedCreateWithoutSellerInput = {
@@ -32199,7 +31136,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     products?: productsUncheckedCreateNestedManyWithoutStoreInput
     combos?: combosUncheckedCreateNestedManyWithoutStoreInput
-    riders?: ridersUncheckedCreateNestedManyWithoutStoreInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type storesCreateOrConnectWithoutSellerInput = {
@@ -32259,19 +31196,39 @@ export namespace Prisma {
   export type staffsCreateWithoutSellerInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    photo?: imagesCreateNestedOneWithoutStaffsInput
+    store?: storesCreateNestedOneWithoutStaffsInput
   }
 
   export type staffsUncheckedCreateWithoutSellerInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    photoId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -32381,7 +31338,7 @@ export namespace Prisma {
     avatar?: imagesUpdateOneWithoutStoresNestedInput
     products?: productsUpdateManyWithoutStoreNestedInput
     combos?: combosUpdateManyWithoutStoreNestedInput
-    riders?: ridersUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateWithoutSellerInput = {
@@ -32419,7 +31376,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: productsUncheckedUpdateManyWithoutStoreNestedInput
     combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type discount_codesUpsertWithWhereUniqueWithoutSellerInput = {
@@ -32454,18 +31411,31 @@ export namespace Prisma {
     data: XOR<staffsUpdateManyMutationInput, staffsUncheckedUpdateManyWithoutSellerInput>
   }
 
-  export type staffsScalarWhereInput = {
-    AND?: staffsScalarWhereInput | staffsScalarWhereInput[]
-    OR?: staffsScalarWhereInput[]
-    NOT?: staffsScalarWhereInput | staffsScalarWhereInput[]
-    id?: StringFilter<"staffs"> | string
-    name?: StringFilter<"staffs"> | string
-    email?: StringFilter<"staffs"> | string
-    password?: StringFilter<"staffs"> | string
-    isActive?: BoolFilter<"staffs"> | boolean
-    sellerId?: StringNullableFilter<"staffs"> | string | null
-    createdAt?: DateTimeFilter<"staffs"> | Date | string
-    updatedAt?: DateTimeFilter<"staffs"> | Date | string
+  export type imagesCreateWithoutStaffsInput = {
+    id?: string
+    file_id: string
+    url: string
+    type?: $Enums.ImageType
+    createdAt?: Date | string
+    product?: productsCreateNestedOneWithoutImagesInput
+    users?: usersCreateNestedManyWithoutAvatarInput
+    stores?: storesCreateNestedManyWithoutAvatarInput
+  }
+
+  export type imagesUncheckedCreateWithoutStaffsInput = {
+    id?: string
+    file_id: string
+    url: string
+    type?: $Enums.ImageType
+    productId?: string | null
+    createdAt?: Date | string
+    users?: usersUncheckedCreateNestedManyWithoutAvatarInput
+    stores?: storesUncheckedCreateNestedManyWithoutAvatarInput
+  }
+
+  export type imagesCreateOrConnectWithoutStaffsInput = {
+    where: imagesWhereUniqueInput
+    create: XOR<imagesCreateWithoutStaffsInput, imagesUncheckedCreateWithoutStaffsInput>
   }
 
   export type sellersCreateWithoutStaffsInput = {
@@ -32507,6 +31477,120 @@ export namespace Prisma {
   export type sellersCreateOrConnectWithoutStaffsInput = {
     where: sellersWhereUniqueInput
     create: XOR<sellersCreateWithoutStaffsInput, sellersUncheckedCreateWithoutStaffsInput>
+  }
+
+  export type storesCreateWithoutStaffsInput = {
+    id?: string
+    name: string
+    bio: string
+    address: string
+    city: string
+    pincode: string
+    opening_hours: string
+    closing_hours: string
+    is_instant_delivery_enabled?: boolean
+    instant_delivery_fee?: number
+    instant_delivery_window_start?: string
+    instant_delivery_window_end?: string
+    gst_rate?: number
+    packaging_charge?: number
+    base_delivery_charge?: number
+    free_delivery_threshold?: number
+    availableCities?: storesCreateavailableCitiesInput | string[]
+    cityDeliveryTimes?: InputJsonValue | null
+    areaPincodes?: InputJsonValue | null
+    areaCities?: InputJsonValue | null
+    servicePincodes?: storesCreateservicePincodesInput | string[]
+    state?: string | null
+    supportPhone?: string | null
+    whatsappNumber?: string | null
+    whatsappLink?: string | null
+    whatsappMessageTemplate?: string | null
+    supportEmail?: string | null
+    supportHours?: string | null
+    supportDescription?: string | null
+    faqLink?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    avatar?: imagesCreateNestedOneWithoutStoresInput
+    seller: sellersCreateNestedOneWithoutStoreInput
+    products?: productsCreateNestedManyWithoutStoreInput
+    combos?: combosCreateNestedManyWithoutStoreInput
+  }
+
+  export type storesUncheckedCreateWithoutStaffsInput = {
+    id?: string
+    name: string
+    bio: string
+    avatarId?: string | null
+    address: string
+    city: string
+    pincode: string
+    opening_hours: string
+    closing_hours: string
+    is_instant_delivery_enabled?: boolean
+    instant_delivery_fee?: number
+    instant_delivery_window_start?: string
+    instant_delivery_window_end?: string
+    gst_rate?: number
+    packaging_charge?: number
+    base_delivery_charge?: number
+    free_delivery_threshold?: number
+    availableCities?: storesCreateavailableCitiesInput | string[]
+    cityDeliveryTimes?: InputJsonValue | null
+    areaPincodes?: InputJsonValue | null
+    areaCities?: InputJsonValue | null
+    servicePincodes?: storesCreateservicePincodesInput | string[]
+    state?: string | null
+    supportPhone?: string | null
+    whatsappNumber?: string | null
+    whatsappLink?: string | null
+    whatsappMessageTemplate?: string | null
+    supportEmail?: string | null
+    supportHours?: string | null
+    supportDescription?: string | null
+    faqLink?: string | null
+    sellerId: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    products?: productsUncheckedCreateNestedManyWithoutStoreInput
+    combos?: combosUncheckedCreateNestedManyWithoutStoreInput
+  }
+
+  export type storesCreateOrConnectWithoutStaffsInput = {
+    where: storesWhereUniqueInput
+    create: XOR<storesCreateWithoutStaffsInput, storesUncheckedCreateWithoutStaffsInput>
+  }
+
+  export type imagesUpsertWithoutStaffsInput = {
+    update: XOR<imagesUpdateWithoutStaffsInput, imagesUncheckedUpdateWithoutStaffsInput>
+    create: XOR<imagesCreateWithoutStaffsInput, imagesUncheckedCreateWithoutStaffsInput>
+    where?: imagesWhereInput
+  }
+
+  export type imagesUpdateToOneWithWhereWithoutStaffsInput = {
+    where?: imagesWhereInput
+    data: XOR<imagesUpdateWithoutStaffsInput, imagesUncheckedUpdateWithoutStaffsInput>
+  }
+
+  export type imagesUpdateWithoutStaffsInput = {
+    file_id?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    type?: EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    product?: productsUpdateOneWithoutImagesNestedInput
+    users?: usersUpdateManyWithoutAvatarNestedInput
+    stores?: storesUpdateManyWithoutAvatarNestedInput
+  }
+
+  export type imagesUncheckedUpdateWithoutStaffsInput = {
+    file_id?: StringFieldUpdateOperationsInput | string
+    url?: StringFieldUpdateOperationsInput | string
+    type?: EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
+    productId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: usersUncheckedUpdateManyWithoutAvatarNestedInput
+    stores?: storesUncheckedUpdateManyWithoutAvatarNestedInput
   }
 
   export type sellersUpsertWithoutStaffsInput = {
@@ -32554,6 +31638,93 @@ export namespace Prisma {
     coupons?: discount_codesUncheckedUpdateManyWithoutSellerNestedInput
   }
 
+  export type storesUpsertWithoutStaffsInput = {
+    update: XOR<storesUpdateWithoutStaffsInput, storesUncheckedUpdateWithoutStaffsInput>
+    create: XOR<storesCreateWithoutStaffsInput, storesUncheckedCreateWithoutStaffsInput>
+    where?: storesWhereInput
+  }
+
+  export type storesUpdateToOneWithWhereWithoutStaffsInput = {
+    where?: storesWhereInput
+    data: XOR<storesUpdateWithoutStaffsInput, storesUncheckedUpdateWithoutStaffsInput>
+  }
+
+  export type storesUpdateWithoutStaffsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    bio?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    pincode?: StringFieldUpdateOperationsInput | string
+    opening_hours?: StringFieldUpdateOperationsInput | string
+    closing_hours?: StringFieldUpdateOperationsInput | string
+    is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
+    instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
+    instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
+    instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    gst_rate?: FloatFieldUpdateOperationsInput | number
+    packaging_charge?: FloatFieldUpdateOperationsInput | number
+    base_delivery_charge?: FloatFieldUpdateOperationsInput | number
+    free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    availableCities?: storesUpdateavailableCitiesInput | string[]
+    cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
+    areaPincodes?: InputJsonValue | InputJsonValue | null
+    areaCities?: InputJsonValue | InputJsonValue | null
+    servicePincodes?: storesUpdateservicePincodesInput | string[]
+    state?: NullableStringFieldUpdateOperationsInput | string | null
+    supportPhone?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappLink?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappMessageTemplate?: NullableStringFieldUpdateOperationsInput | string | null
+    supportEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    supportHours?: NullableStringFieldUpdateOperationsInput | string | null
+    supportDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    faqLink?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    avatar?: imagesUpdateOneWithoutStoresNestedInput
+    seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
+    products?: productsUpdateManyWithoutStoreNestedInput
+    combos?: combosUpdateManyWithoutStoreNestedInput
+  }
+
+  export type storesUncheckedUpdateWithoutStaffsInput = {
+    name?: StringFieldUpdateOperationsInput | string
+    bio?: StringFieldUpdateOperationsInput | string
+    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
+    address?: StringFieldUpdateOperationsInput | string
+    city?: StringFieldUpdateOperationsInput | string
+    pincode?: StringFieldUpdateOperationsInput | string
+    opening_hours?: StringFieldUpdateOperationsInput | string
+    closing_hours?: StringFieldUpdateOperationsInput | string
+    is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
+    instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
+    instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
+    instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    gst_rate?: FloatFieldUpdateOperationsInput | number
+    packaging_charge?: FloatFieldUpdateOperationsInput | number
+    base_delivery_charge?: FloatFieldUpdateOperationsInput | number
+    free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    availableCities?: storesUpdateavailableCitiesInput | string[]
+    cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
+    areaPincodes?: InputJsonValue | InputJsonValue | null
+    areaCities?: InputJsonValue | InputJsonValue | null
+    servicePincodes?: storesUpdateservicePincodesInput | string[]
+    state?: NullableStringFieldUpdateOperationsInput | string | null
+    supportPhone?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappLink?: NullableStringFieldUpdateOperationsInput | string | null
+    whatsappMessageTemplate?: NullableStringFieldUpdateOperationsInput | string | null
+    supportEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    supportHours?: NullableStringFieldUpdateOperationsInput | string | null
+    supportDescription?: NullableStringFieldUpdateOperationsInput | string | null
+    faqLink?: NullableStringFieldUpdateOperationsInput | string | null
+    sellerId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    products?: productsUncheckedUpdateManyWithoutStoreNestedInput
+    combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
+  }
+
   export type imagesCreateWithoutStoresInput = {
     id?: string
     file_id: string
@@ -32562,7 +31733,7 @@ export namespace Prisma {
     createdAt?: Date | string
     product?: productsCreateNestedOneWithoutImagesInput
     users?: usersCreateNestedManyWithoutAvatarInput
-    riders?: ridersCreateNestedManyWithoutAvatarInput
+    staffs?: staffsCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesUncheckedCreateWithoutStoresInput = {
@@ -32573,7 +31744,7 @@ export namespace Prisma {
     productId?: string | null
     createdAt?: Date | string
     users?: usersUncheckedCreateNestedManyWithoutAvatarInput
-    riders?: ridersUncheckedCreateNestedManyWithoutAvatarInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesCreateOrConnectWithoutStoresInput = {
@@ -32766,47 +31937,53 @@ export namespace Prisma {
     data: combosCreateManyStoreInput | combosCreateManyStoreInput[]
   }
 
-  export type ridersCreateWithoutStoreInput = {
+  export type staffsCreateWithoutStoreInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
+    role?: $Enums.StaffRole
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
-    avatar?: imagesCreateNestedOneWithoutRidersInput
+    photo?: imagesCreateNestedOneWithoutStaffsInput
+    seller?: sellersCreateNestedOneWithoutStaffsInput
   }
 
-  export type ridersUncheckedCreateWithoutStoreInput = {
+  export type staffsUncheckedCreateWithoutStoreInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    avatarId?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
+    role?: $Enums.StaffRole
+    photoId?: string | null
+    sellerId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
 
-  export type ridersCreateOrConnectWithoutStoreInput = {
-    where: ridersWhereUniqueInput
-    create: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput>
+  export type staffsCreateOrConnectWithoutStoreInput = {
+    where: staffsWhereUniqueInput
+    create: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput>
   }
 
-  export type ridersCreateManyStoreInputEnvelope = {
-    data: ridersCreateManyStoreInput | ridersCreateManyStoreInput[]
+  export type staffsCreateManyStoreInputEnvelope = {
+    data: staffsCreateManyStoreInput | staffsCreateManyStoreInput[]
   }
 
   export type imagesUpsertWithoutStoresInput = {
@@ -32827,7 +32004,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: productsUpdateOneWithoutImagesNestedInput
     users?: usersUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesUncheckedUpdateWithoutStoresInput = {
@@ -32837,7 +32014,7 @@ export namespace Prisma {
     productId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: usersUncheckedUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutPhotoNestedInput
   }
 
   export type sellersUpsertWithoutStoreInput = {
@@ -32934,248 +32111,20 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"combos"> | Date | string
   }
 
-  export type ridersUpsertWithWhereUniqueWithoutStoreInput = {
-    where: ridersWhereUniqueInput
-    update: XOR<ridersUpdateWithoutStoreInput, ridersUncheckedUpdateWithoutStoreInput>
-    create: XOR<ridersCreateWithoutStoreInput, ridersUncheckedCreateWithoutStoreInput>
+  export type staffsUpsertWithWhereUniqueWithoutStoreInput = {
+    where: staffsWhereUniqueInput
+    update: XOR<staffsUpdateWithoutStoreInput, staffsUncheckedUpdateWithoutStoreInput>
+    create: XOR<staffsCreateWithoutStoreInput, staffsUncheckedCreateWithoutStoreInput>
   }
 
-  export type ridersUpdateWithWhereUniqueWithoutStoreInput = {
-    where: ridersWhereUniqueInput
-    data: XOR<ridersUpdateWithoutStoreInput, ridersUncheckedUpdateWithoutStoreInput>
+  export type staffsUpdateWithWhereUniqueWithoutStoreInput = {
+    where: staffsWhereUniqueInput
+    data: XOR<staffsUpdateWithoutStoreInput, staffsUncheckedUpdateWithoutStoreInput>
   }
 
-  export type ridersUpdateManyWithWhereWithoutStoreInput = {
-    where: ridersScalarWhereInput
-    data: XOR<ridersUpdateManyMutationInput, ridersUncheckedUpdateManyWithoutStoreInput>
-  }
-
-  export type imagesCreateWithoutRidersInput = {
-    id?: string
-    file_id: string
-    url: string
-    type?: $Enums.ImageType
-    createdAt?: Date | string
-    product?: productsCreateNestedOneWithoutImagesInput
-    users?: usersCreateNestedManyWithoutAvatarInput
-    stores?: storesCreateNestedManyWithoutAvatarInput
-  }
-
-  export type imagesUncheckedCreateWithoutRidersInput = {
-    id?: string
-    file_id: string
-    url: string
-    type?: $Enums.ImageType
-    productId?: string | null
-    createdAt?: Date | string
-    users?: usersUncheckedCreateNestedManyWithoutAvatarInput
-    stores?: storesUncheckedCreateNestedManyWithoutAvatarInput
-  }
-
-  export type imagesCreateOrConnectWithoutRidersInput = {
-    where: imagesWhereUniqueInput
-    create: XOR<imagesCreateWithoutRidersInput, imagesUncheckedCreateWithoutRidersInput>
-  }
-
-  export type storesCreateWithoutRidersInput = {
-    id?: string
-    name: string
-    bio: string
-    address: string
-    city: string
-    pincode: string
-    opening_hours: string
-    closing_hours: string
-    is_instant_delivery_enabled?: boolean
-    instant_delivery_fee?: number
-    instant_delivery_window_start?: string
-    instant_delivery_window_end?: string
-    gst_rate?: number
-    packaging_charge?: number
-    base_delivery_charge?: number
-    free_delivery_threshold?: number
-    availableCities?: storesCreateavailableCitiesInput | string[]
-    cityDeliveryTimes?: InputJsonValue | null
-    areaPincodes?: InputJsonValue | null
-    areaCities?: InputJsonValue | null
-    servicePincodes?: storesCreateservicePincodesInput | string[]
-    state?: string | null
-    supportPhone?: string | null
-    whatsappNumber?: string | null
-    whatsappLink?: string | null
-    whatsappMessageTemplate?: string | null
-    supportEmail?: string | null
-    supportHours?: string | null
-    supportDescription?: string | null
-    faqLink?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    avatar?: imagesCreateNestedOneWithoutStoresInput
-    seller: sellersCreateNestedOneWithoutStoreInput
-    products?: productsCreateNestedManyWithoutStoreInput
-    combos?: combosCreateNestedManyWithoutStoreInput
-  }
-
-  export type storesUncheckedCreateWithoutRidersInput = {
-    id?: string
-    name: string
-    bio: string
-    avatarId?: string | null
-    address: string
-    city: string
-    pincode: string
-    opening_hours: string
-    closing_hours: string
-    is_instant_delivery_enabled?: boolean
-    instant_delivery_fee?: number
-    instant_delivery_window_start?: string
-    instant_delivery_window_end?: string
-    gst_rate?: number
-    packaging_charge?: number
-    base_delivery_charge?: number
-    free_delivery_threshold?: number
-    availableCities?: storesCreateavailableCitiesInput | string[]
-    cityDeliveryTimes?: InputJsonValue | null
-    areaPincodes?: InputJsonValue | null
-    areaCities?: InputJsonValue | null
-    servicePincodes?: storesCreateservicePincodesInput | string[]
-    state?: string | null
-    supportPhone?: string | null
-    whatsappNumber?: string | null
-    whatsappLink?: string | null
-    whatsappMessageTemplate?: string | null
-    supportEmail?: string | null
-    supportHours?: string | null
-    supportDescription?: string | null
-    faqLink?: string | null
-    sellerId: string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    products?: productsUncheckedCreateNestedManyWithoutStoreInput
-    combos?: combosUncheckedCreateNestedManyWithoutStoreInput
-  }
-
-  export type storesCreateOrConnectWithoutRidersInput = {
-    where: storesWhereUniqueInput
-    create: XOR<storesCreateWithoutRidersInput, storesUncheckedCreateWithoutRidersInput>
-  }
-
-  export type imagesUpsertWithoutRidersInput = {
-    update: XOR<imagesUpdateWithoutRidersInput, imagesUncheckedUpdateWithoutRidersInput>
-    create: XOR<imagesCreateWithoutRidersInput, imagesUncheckedCreateWithoutRidersInput>
-    where?: imagesWhereInput
-  }
-
-  export type imagesUpdateToOneWithWhereWithoutRidersInput = {
-    where?: imagesWhereInput
-    data: XOR<imagesUpdateWithoutRidersInput, imagesUncheckedUpdateWithoutRidersInput>
-  }
-
-  export type imagesUpdateWithoutRidersInput = {
-    file_id?: StringFieldUpdateOperationsInput | string
-    url?: StringFieldUpdateOperationsInput | string
-    type?: EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    product?: productsUpdateOneWithoutImagesNestedInput
-    users?: usersUpdateManyWithoutAvatarNestedInput
-    stores?: storesUpdateManyWithoutAvatarNestedInput
-  }
-
-  export type imagesUncheckedUpdateWithoutRidersInput = {
-    file_id?: StringFieldUpdateOperationsInput | string
-    url?: StringFieldUpdateOperationsInput | string
-    type?: EnumImageTypeFieldUpdateOperationsInput | $Enums.ImageType
-    productId?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    users?: usersUncheckedUpdateManyWithoutAvatarNestedInput
-    stores?: storesUncheckedUpdateManyWithoutAvatarNestedInput
-  }
-
-  export type storesUpsertWithoutRidersInput = {
-    update: XOR<storesUpdateWithoutRidersInput, storesUncheckedUpdateWithoutRidersInput>
-    create: XOR<storesCreateWithoutRidersInput, storesUncheckedCreateWithoutRidersInput>
-    where?: storesWhereInput
-  }
-
-  export type storesUpdateToOneWithWhereWithoutRidersInput = {
-    where?: storesWhereInput
-    data: XOR<storesUpdateWithoutRidersInput, storesUncheckedUpdateWithoutRidersInput>
-  }
-
-  export type storesUpdateWithoutRidersInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    bio?: StringFieldUpdateOperationsInput | string
-    address?: StringFieldUpdateOperationsInput | string
-    city?: StringFieldUpdateOperationsInput | string
-    pincode?: StringFieldUpdateOperationsInput | string
-    opening_hours?: StringFieldUpdateOperationsInput | string
-    closing_hours?: StringFieldUpdateOperationsInput | string
-    is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
-    instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
-    instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
-    instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
-    gst_rate?: FloatFieldUpdateOperationsInput | number
-    packaging_charge?: FloatFieldUpdateOperationsInput | number
-    base_delivery_charge?: FloatFieldUpdateOperationsInput | number
-    free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
-    availableCities?: storesUpdateavailableCitiesInput | string[]
-    cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
-    areaPincodes?: InputJsonValue | InputJsonValue | null
-    areaCities?: InputJsonValue | InputJsonValue | null
-    servicePincodes?: storesUpdateservicePincodesInput | string[]
-    state?: NullableStringFieldUpdateOperationsInput | string | null
-    supportPhone?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappLink?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappMessageTemplate?: NullableStringFieldUpdateOperationsInput | string | null
-    supportEmail?: NullableStringFieldUpdateOperationsInput | string | null
-    supportHours?: NullableStringFieldUpdateOperationsInput | string | null
-    supportDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    faqLink?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    avatar?: imagesUpdateOneWithoutStoresNestedInput
-    seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
-    products?: productsUpdateManyWithoutStoreNestedInput
-    combos?: combosUpdateManyWithoutStoreNestedInput
-  }
-
-  export type storesUncheckedUpdateWithoutRidersInput = {
-    name?: StringFieldUpdateOperationsInput | string
-    bio?: StringFieldUpdateOperationsInput | string
-    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
-    address?: StringFieldUpdateOperationsInput | string
-    city?: StringFieldUpdateOperationsInput | string
-    pincode?: StringFieldUpdateOperationsInput | string
-    opening_hours?: StringFieldUpdateOperationsInput | string
-    closing_hours?: StringFieldUpdateOperationsInput | string
-    is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
-    instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
-    instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
-    instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
-    gst_rate?: FloatFieldUpdateOperationsInput | number
-    packaging_charge?: FloatFieldUpdateOperationsInput | number
-    base_delivery_charge?: FloatFieldUpdateOperationsInput | number
-    free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
-    availableCities?: storesUpdateavailableCitiesInput | string[]
-    cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
-    areaPincodes?: InputJsonValue | InputJsonValue | null
-    areaCities?: InputJsonValue | InputJsonValue | null
-    servicePincodes?: storesUpdateservicePincodesInput | string[]
-    state?: NullableStringFieldUpdateOperationsInput | string | null
-    supportPhone?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappLink?: NullableStringFieldUpdateOperationsInput | string | null
-    whatsappMessageTemplate?: NullableStringFieldUpdateOperationsInput | string | null
-    supportEmail?: NullableStringFieldUpdateOperationsInput | string | null
-    supportHours?: NullableStringFieldUpdateOperationsInput | string | null
-    supportDescription?: NullableStringFieldUpdateOperationsInput | string | null
-    faqLink?: NullableStringFieldUpdateOperationsInput | string | null
-    sellerId?: StringFieldUpdateOperationsInput | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    products?: productsUncheckedUpdateManyWithoutStoreNestedInput
-    combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
+  export type staffsUpdateManyWithWhereWithoutStoreInput = {
+    where: staffsScalarWhereInput
+    data: XOR<staffsUpdateManyMutationInput, staffsUncheckedUpdateManyWithoutStoreInput>
   }
 
   export type usersCreateWithoutFavoritesInput = {
@@ -33778,7 +32727,7 @@ export namespace Prisma {
     createdAt?: Date | string
     users?: usersCreateNestedManyWithoutAvatarInput
     stores?: storesCreateNestedManyWithoutAvatarInput
-    riders?: ridersCreateNestedManyWithoutAvatarInput
+    staffs?: staffsCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesUncheckedCreateWithoutProductInput = {
@@ -33789,7 +32738,7 @@ export namespace Prisma {
     createdAt?: Date | string
     users?: usersUncheckedCreateNestedManyWithoutAvatarInput
     stores?: storesUncheckedCreateNestedManyWithoutAvatarInput
-    riders?: ridersUncheckedCreateNestedManyWithoutAvatarInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutPhotoInput
   }
 
   export type imagesCreateOrConnectWithoutProductInput = {
@@ -33887,7 +32836,7 @@ export namespace Prisma {
     avatar?: imagesCreateNestedOneWithoutStoresInput
     seller: sellersCreateNestedOneWithoutStoreInput
     combos?: combosCreateNestedManyWithoutStoreInput
-    riders?: ridersCreateNestedManyWithoutStoreInput
+    staffs?: staffsCreateNestedManyWithoutStoreInput
   }
 
   export type storesUncheckedCreateWithoutProductsInput = {
@@ -33926,7 +32875,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     combos?: combosUncheckedCreateNestedManyWithoutStoreInput
-    riders?: ridersUncheckedCreateNestedManyWithoutStoreInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type storesCreateOrConnectWithoutProductsInput = {
@@ -34281,7 +33230,7 @@ export namespace Prisma {
     avatar?: imagesUpdateOneWithoutStoresNestedInput
     seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
     combos?: combosUpdateManyWithoutStoreNestedInput
-    riders?: ridersUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateWithoutProductsInput = {
@@ -34319,7 +33268,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type adminsUpsertWithoutProductsInput = {
@@ -34744,7 +33693,7 @@ export namespace Prisma {
     avatar?: imagesCreateNestedOneWithoutStoresInput
     seller: sellersCreateNestedOneWithoutStoreInput
     products?: productsCreateNestedManyWithoutStoreInput
-    riders?: ridersCreateNestedManyWithoutStoreInput
+    staffs?: staffsCreateNestedManyWithoutStoreInput
   }
 
   export type storesUncheckedCreateWithoutCombosInput = {
@@ -34783,7 +33732,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: productsUncheckedCreateNestedManyWithoutStoreInput
-    riders?: ridersUncheckedCreateNestedManyWithoutStoreInput
+    staffs?: staffsUncheckedCreateNestedManyWithoutStoreInput
   }
 
   export type storesCreateOrConnectWithoutCombosInput = {
@@ -34837,7 +33786,7 @@ export namespace Prisma {
     avatar?: imagesUpdateOneWithoutStoresNestedInput
     seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
     products?: productsUpdateManyWithoutStoreNestedInput
-    riders?: ridersUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateWithoutCombosInput = {
@@ -34875,7 +33824,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: productsUncheckedUpdateManyWithoutStoreNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type productsCreateManyAdminInput = {
@@ -35258,19 +34207,22 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
-  export type ridersCreateManyAvatarInput = {
+  export type staffsCreateManyPhotoInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
-    storeId: string
+    role?: $Enums.StaffRole
+    sellerId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -35356,7 +34308,7 @@ export namespace Prisma {
     seller?: sellersUpdateOneRequiredWithoutStoreNestedInput
     products?: productsUpdateManyWithoutStoreNestedInput
     combos?: combosUpdateManyWithoutStoreNestedInput
-    riders?: ridersUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateWithoutAvatarInput = {
@@ -35394,7 +34346,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: productsUncheckedUpdateManyWithoutStoreNestedInput
     combos?: combosUncheckedUpdateManyWithoutStoreNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutStoreNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutStoreNestedInput
   }
 
   export type storesUncheckedUpdateManyWithoutAvatarInput = {
@@ -35432,50 +34384,59 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type ridersUpdateWithoutAvatarInput = {
+  export type staffsUpdateWithoutPhotoInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    store?: storesUpdateOneRequiredWithoutRidersNestedInput
+    seller?: sellersUpdateOneWithoutStaffsNestedInput
+    store?: storesUpdateOneWithoutStaffsNestedInput
   }
 
-  export type ridersUncheckedUpdateWithoutAvatarInput = {
+  export type staffsUncheckedUpdateWithoutPhotoInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    storeId?: StringFieldUpdateOperationsInput | string
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type ridersUncheckedUpdateManyWithoutAvatarInput = {
+  export type staffsUncheckedUpdateManyWithoutPhotoInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
-    storeId?: StringFieldUpdateOperationsInput | string
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -35616,9 +34577,19 @@ export namespace Prisma {
   export type staffsCreateManySellerInput = {
     id?: string
     name: string
-    email: string
+    email?: string | null
+    username?: string | null
     password: string
+    phone?: string | null
     isActive?: boolean
+    role?: $Enums.StaffRole
+    photoId?: string | null
+    storeId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -35768,27 +34739,57 @@ export namespace Prisma {
 
   export type staffsUpdateWithoutSellerInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    photo?: imagesUpdateOneWithoutStaffsNestedInput
+    store?: storesUpdateOneWithoutStaffsNestedInput
   }
 
   export type staffsUncheckedUpdateWithoutSellerInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type staffsUncheckedUpdateManyWithoutSellerInput = {
     name?: StringFieldUpdateOperationsInput | string
-    email?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    username?: NullableStringFieldUpdateOperationsInput | string | null
     password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
+    storeId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -35852,19 +34853,22 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
-  export type ridersCreateManyStoreInput = {
+  export type staffsCreateManyStoreInput = {
     id?: string
     name: string
-    phone: string
     email?: string | null
-    avatarId?: string | null
-    vehicleType: $Enums.RiderVehicleType
-    vehicleNumber: string
-    deliveryZone?: string | null
-    status?: $Enums.RiderStatus
-    activeDeliveryCount?: number
+    username?: string | null
+    password: string
+    phone?: string | null
     isActive?: boolean
-    notes?: string | null
+    role?: $Enums.StaffRole
+    photoId?: string | null
+    sellerId?: string | null
+    vehicleType?: $Enums.RiderVehicleType | null
+    vehicleNumber?: string | null
+    deliveryZone?: string | null
+    riderStatus?: $Enums.RiderStatus | null
+    activeDeliveryCount?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -36048,50 +35052,59 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type ridersUpdateWithoutStoreInput = {
+  export type staffsUpdateWithoutStoreInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    avatar?: imagesUpdateOneWithoutRidersNestedInput
+    photo?: imagesUpdateOneWithoutStaffsNestedInput
+    seller?: sellersUpdateOneWithoutStaffsNestedInput
   }
 
-  export type ridersUncheckedUpdateWithoutStoreInput = {
+  export type staffsUncheckedUpdateWithoutStoreInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
+    sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type ridersUncheckedUpdateManyWithoutStoreInput = {
+  export type staffsUncheckedUpdateManyWithoutStoreInput = {
     name?: StringFieldUpdateOperationsInput | string
-    phone?: StringFieldUpdateOperationsInput | string
     email?: NullableStringFieldUpdateOperationsInput | string | null
-    avatarId?: NullableStringFieldUpdateOperationsInput | string | null
-    vehicleType?: EnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType
-    vehicleNumber?: StringFieldUpdateOperationsInput | string
-    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
-    status?: EnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus
-    activeDeliveryCount?: IntFieldUpdateOperationsInput | number
+    username?: NullableStringFieldUpdateOperationsInput | string | null
+    password?: StringFieldUpdateOperationsInput | string
+    phone?: NullableStringFieldUpdateOperationsInput | string | null
     isActive?: BoolFieldUpdateOperationsInput | boolean
-    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumStaffRoleFieldUpdateOperationsInput | $Enums.StaffRole
+    photoId?: NullableStringFieldUpdateOperationsInput | string | null
+    sellerId?: NullableStringFieldUpdateOperationsInput | string | null
+    vehicleType?: NullableEnumRiderVehicleTypeFieldUpdateOperationsInput | $Enums.RiderVehicleType | null
+    vehicleNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryZone?: NullableStringFieldUpdateOperationsInput | string | null
+    riderStatus?: NullableEnumRiderStatusFieldUpdateOperationsInput | $Enums.RiderStatus | null
+    activeDeliveryCount?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -36173,7 +35186,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: usersUpdateManyWithoutAvatarNestedInput
     stores?: storesUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesUncheckedUpdateWithoutProductInput = {
@@ -36183,7 +35196,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: usersUncheckedUpdateManyWithoutAvatarNestedInput
     stores?: storesUncheckedUpdateManyWithoutAvatarNestedInput
-    riders?: ridersUncheckedUpdateManyWithoutAvatarNestedInput
+    staffs?: staffsUncheckedUpdateManyWithoutPhotoNestedInput
   }
 
   export type imagesUncheckedUpdateManyWithoutProductInput = {
@@ -36443,10 +35456,6 @@ export namespace Prisma {
      * @deprecated Use storesDefaultArgs instead
      */
     export type storesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = storesDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use ridersDefaultArgs instead
-     */
-    export type ridersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ridersDefaultArgs<ExtArgs>
     /**
      * @deprecated Use favoritesDefaultArgs instead
      */

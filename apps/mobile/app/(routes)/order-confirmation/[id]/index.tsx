@@ -24,7 +24,9 @@ import SupportMessageModal from "@/components/shared/support-message-modal";
 import { useAddressStore } from "@/lib/address-store";
 import { toast } from "@/utils/toast";
 import { colors, gradients } from "@/constants/theme";
+import { formatDeliveryDateLabel, getScheduledDeliveryDate } from "@/constants/delivery-slots";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
+import OrderConfirmationSkeleton from "@/components/skelton/order-confirmation.skelton";
 import { formatOrderId } from "@repo/shared/order-id";
 import { buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
@@ -39,6 +41,25 @@ const SLOT_LABEL: Record<string, string> = {
   evening: "Evening (5 PM – 9 PM)",
 };
 
+// Razorpay's own instrument string (Payment.metadata.method) — the customer
+// never needs to know it went through Razorpay, only which rail they used.
+const ONLINE_INSTRUMENT_LABEL: Record<string, string> = {
+  upi: "UPI",
+  card: "Card",
+  netbanking: "Net Banking",
+  wallet: "Wallet",
+  emi: "EMI",
+};
+
+// order.payments carries every attempt for the order; the instrument is only
+// known once a Razorpay webhook/verify callback has stamped metadata.method,
+// so fall back to a generic label until then rather than showing "RAZORPAY".
+function getPaymentMethodLabel(order: any): string {
+  if (order.paymentMethod !== "RAZORPAY") return "Pay on Delivery";
+  const method = (order.payments || []).find((p: any) => p.metadata?.method)?.metadata?.method;
+  return (method && ONLINE_INSTRUMENT_LABEL[method]) || "Online Payment";
+}
+
 export default function OrderConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedLocation } = useAddressStore();
@@ -48,15 +69,10 @@ export default function OrderConfirmationScreen() {
 
   if (isLoading || !order) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
-        <StatusBar barStyle="dark-content" backgroundColor={colors.secondaryBg} />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={PRIMARY} />
-          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.textMuted, marginTop: 16 }}>
-            Loading your order…
-          </Text>
-        </View>
-      </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
+        <StatusBar barStyle="light-content" backgroundColor={PRIMARY} />
+        <OrderConfirmationSkeleton />
+      </View>
     );
   }
 
@@ -64,6 +80,13 @@ export default function OrderConfirmationScreen() {
   const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
+  const isScheduledSlot = order.deliverySlot === "morning" || order.deliverySlot === "evening";
+  const scheduledDeliveryDate = isScheduledSlot
+    ? getScheduledDeliveryDate(createdAt, order.deliverySlot)
+    : null;
+  const scheduledSlotLabel = scheduledDeliveryDate
+    ? `${formatDeliveryDateLabel(scheduledDeliveryDate)}, ${slotLabel}`
+    : slotLabel;
   const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
   const itemCount = order.items?.length ?? 0;
   const totalWeightKg = (order.items || []).reduce((sum: number, item: any) => {
@@ -72,7 +95,11 @@ export default function OrderConfirmationScreen() {
   }, 0);
   const itemTotal = billDetails?.itemTotal ?? order.totalAmount;
   const deliveryCharge = billDetails?.deliveryCharge ?? order.deliveryCharge ?? 0;
+  const slotExtraCharge = billDetails?.slotExtraCharge ?? 0;
+  const packagingCharge = billDetails?.packagingCharge ?? 0;
+  const gstAmount = billDetails?.gstAmount ?? 0;
   const discount = billDetails?.discount ?? order.discountAmount ?? 0;
+  const paymentMethodLabel = getPaymentMethodLabel(order);
 
   // Built on demand (not eagerly) so the customer's own message — collected
   // by SupportMessageModal — lands in {{CUSTOMER_MESSAGE}} instead of the
@@ -137,9 +164,12 @@ export default function OrderConfirmationScreen() {
       `Items:\n${lines}\n\n` +
       `Item Total: ₹${itemTotal.toFixed(0)}\n` +
       (deliveryCharge > 0 ? `Delivery: ₹${deliveryCharge.toFixed(0)}\n` : "Delivery: FREE\n") +
+      (slotExtraCharge > 0 ? `Express Delivery Fee: ₹${slotExtraCharge.toFixed(0)}\n` : "") +
+      (packagingCharge > 0 ? `Packaging Charge: ₹${packagingCharge.toFixed(0)}\n` : "") +
+      (gstAmount > 0 ? `Taxes (GST): ₹${gstAmount.toFixed(0)}\n` : "") +
       (discount > 0 ? `Discount: −₹${discount.toFixed(0)}\n` : "") +
       `Total Paid: ₹${order.totalAmount}\n` +
-      `Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod}\n\n` +
+      `Payment: ${paymentMethodLabel}\n\n` +
       `Thank you for shopping with Fish Studio.`;
     try {
       await Share.share({ message: invoice });
@@ -267,7 +297,7 @@ export default function OrderConfirmationScreen() {
                 </Text>
               </View>
               <Text style={{ fontFamily: "Inter-Bold", fontSize: 12, color: colors.textPrimary }}>
-                {order.deliverySlot ? slotLabel : `Today, in ~${deliveryMinutes} mins`}
+                {order.deliverySlot ? scheduledSlotLabel : `Today, in ~${deliveryMinutes} mins`}
               </Text>
               {order.deliveryCity ? (
                 <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: colors.textMuted, marginTop: 1 }}>
@@ -426,7 +456,7 @@ export default function OrderConfirmationScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }}>Delivery Slot</Text>
                   <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-                    {slotLabel}
+                    {scheduledSlotLabel}
                   </Text>
                 </View>
               </View>
@@ -465,27 +495,45 @@ export default function OrderConfirmationScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: "row" }}>
-              <SummaryStat label="Item Total" value={`₹${itemTotal.toFixed(0)}`} />
-              <SummaryStat
-                label="Delivery"
-                value={deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(0)}` : "FREE"}
-                valueColor={deliveryCharge > 0 ? undefined : colors.offerGreen}
-              />
-              {discount > 0 ? (
-                <SummaryStat label="Discount" value={`−₹${discount.toFixed(0)}`} valueColor={colors.offerGreen} />
-              ) : (
-                <SummaryStat
-                  label="Payment"
-                  value={order.paymentMethod === "COD" ? "COD" : order.paymentMethod || "Paid"}
-                />
-              )}
-              <View style={{ backgroundColor: colors.primarySurface, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 8, alignItems: "center" }}>
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: PRIMARY }}>Paid Amount</Text>
-                <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: PRIMARY, marginTop: 2 }}>
-                  ₹{order.totalAmount}
+            <SummaryRow label="Item Total" value={`₹${itemTotal.toFixed(0)}`} />
+            <SummaryRow
+              label="Delivery"
+              value={deliveryCharge > 0 ? `₹${deliveryCharge.toFixed(0)}` : "FREE"}
+              valueColor={deliveryCharge > 0 ? undefined : colors.offerGreen}
+            />
+            {slotExtraCharge > 0 && (
+              <SummaryRow label="Express Delivery Fee" value={`₹${slotExtraCharge.toFixed(0)}`} />
+            )}
+            {packagingCharge > 0 && (
+              <SummaryRow label="Packaging Charge" value={`₹${packagingCharge.toFixed(0)}`} />
+            )}
+            {gstAmount > 0 && <SummaryRow label="Taxes (GST)" value={`₹${gstAmount.toFixed(0)}`} />}
+            {discount > 0 && (
+              <SummaryRow label="Discount" value={`−₹${discount.toFixed(0)}`} valueColor={colors.offerGreen} />
+            )}
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 10,
+                paddingTop: 10,
+                borderTopWidth: 1,
+                borderTopColor: colors.hairline,
+              }}
+            >
+              <View>
+                <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: colors.textPrimary }}>
+                  Paid Amount
+                </Text>
+                <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 1 }}>
+                  via {paymentMethodLabel}
                 </Text>
               </View>
+              <Text style={{ fontFamily: "Inter-Bold", fontSize: 17, color: PRIMARY }}>
+                ₹{order.totalAmount}
+              </Text>
             </View>
           </View>
 
@@ -551,11 +599,11 @@ export default function OrderConfirmationScreen() {
   );
 }
 
-function SummaryStat({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+function SummaryRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: colors.textMuted }}>{label}</Text>
-      <Text style={{ fontFamily: "Inter-Bold", fontSize: 13, color: valueColor || colors.textPrimary, marginTop: 2 }}>
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+      <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: colors.textMuted }}>{label}</Text>
+      <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: valueColor || colors.textPrimary }}>
         {value}
       </Text>
     </View>

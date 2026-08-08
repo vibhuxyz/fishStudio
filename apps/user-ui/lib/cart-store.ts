@@ -141,6 +141,7 @@ interface CartState {
   deliveryMetadata: {
     cartDeliveryTime: number | null;
     isStoreOpen: boolean;
+    isInstantAvailable: boolean;
     storeName: string | null;
     isServiceable: boolean;
     nearbyHint: string | null;
@@ -198,6 +199,7 @@ export const useCartStore = create<CartState>()(
       deliveryMetadata: {
         cartDeliveryTime: null,
         isStoreOpen: true,
+        isInstantAvailable: true,
         storeName: null,
         isServiceable: true,
         nearbyHint: null,
@@ -478,6 +480,7 @@ export const useCartStore = create<CartState>()(
       deliveryMetadata: {
         cartDeliveryTime: null,
         isStoreOpen: true,
+        isInstantAvailable: true,
         storeName: null,
         isServiceable: true,
         nearbyHint: null,
@@ -557,6 +560,7 @@ export const useCartStore = create<CartState>()(
           deliveryMetadata: {
             cartDeliveryTime: data.cartDeliveryTime || null,
             isStoreOpen: data.isStoreOpen !== false,
+            isInstantAvailable: data.isInstantAvailable === true,
             storeName: data.storeName || data.store?.name || null,
             isServiceable: data.isServiceable !== false,
             nearbyHint: data.nearbyHint || null,

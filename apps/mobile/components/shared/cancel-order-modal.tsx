@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { BlurView } from "expo-blur";
 import {
   Dimensions,
   Modal,
@@ -52,14 +53,22 @@ export default function CancelOrderModal({ visible, onClose, onConfirm, isSubmit
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
+      <BlurView style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} intensity={50} tint="dark" />
+<TouchableWithoutFeedback onPress={onClose}>
         <View className="flex-1 bg-black/50" />
       </TouchableWithoutFeedback>
 
       <View style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
-        <View className="bg-white rounded-t-3xl" style={{ maxHeight: SCREEN_HEIGHT * 0.85 }}>
-          <View className="items-center pt-3 pb-1">
-            <View className="w-10 h-1 bg-gray-300 rounded-full" />
+        <View
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderTopLeftRadius: 40,
+            borderTopRightRadius: 40,
+            maxHeight: SCREEN_HEIGHT * 0.8,
+          }}
+        >
+          <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+            <View style={{ width: 44, height: 5, borderRadius: 99, backgroundColor: "#D1D5DB" }} />
           </View>
 
           <View className="px-5 py-3 border-b border-border">

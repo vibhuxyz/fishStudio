@@ -17,9 +17,17 @@ import {
   changeRider,
   removeRider,
 } from "../controllers/order/rider-assignment.controller.js";
+import {
+  startPreparing,
+  markPreparationComplete,
+  markPickedUp,
+  markDelivered,
+  getMyRiderOrders,
+  getMyCuttingOrders,
+} from "../controllers/order/staff-workflow.controller.js";
 import { getSellerStats, getAdminStats, getAdminSellerOrders } from "../controllers/order/stats.controller.js";
 import { getAdminOrderList, getAdminOrderDetail, updateAdminOrderStatus, getAdminOrderPincodes } from "../controllers/order/admin.controller.js";
-import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff } from "@repo/middlewares";
+import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff, hasStaffRole } from "@repo/middlewares";
 import { perUserRateLimit } from "../middlewares/perUserRateLimit.js";
 
 const router: Router = express.Router();
@@ -53,6 +61,52 @@ router.get("/eligible-riders/:orderId", isAuthenticated, isSellerOrStaff, isAppr
 router.put("/assign-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, assignRider);
 router.put("/change-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, changeRider);
 router.put("/remove-rider/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, removeRider);
+
+// ── Rider / Cutting Staff self-service workflow ────────────────────────────
+// Narrower than the generic update-status endpoint above: role- and
+// ownership-scoped so a Cutting Staff can't touch rider actions and vice versa.
+router.put(
+  "/staff/start-preparing/:orderId",
+  isAuthenticated,
+  hasStaffRole("CUTTING_STAFF"),
+  isApprovedSeller,
+  startPreparing,
+);
+router.put(
+  "/staff/prepare-complete/:orderId",
+  isAuthenticated,
+  hasStaffRole("CUTTING_STAFF"),
+  isApprovedSeller,
+  markPreparationComplete,
+);
+router.put(
+  "/staff/mark-picked-up/:orderId",
+  isAuthenticated,
+  hasStaffRole("RIDER"),
+  isApprovedSeller,
+  markPickedUp,
+);
+router.put(
+  "/staff/mark-delivered/:orderId",
+  isAuthenticated,
+  hasStaffRole("RIDER"),
+  isApprovedSeller,
+  markDelivered,
+);
+router.get(
+  "/staff/my-rider-orders",
+  isAuthenticated,
+  hasStaffRole("RIDER"),
+  isApprovedSeller,
+  getMyRiderOrders,
+);
+router.get(
+  "/staff/my-cutting-orders",
+  isAuthenticated,
+  hasStaffRole("CUTTING_STAFF"),
+  isApprovedSeller,
+  getMyCuttingOrders,
+);
 
 // ── Analytics Routes ──────────────────────────────────────────────────────────
 router.get("/seller-stats", isAuthenticated, allowRoles("seller", "staff"), getSellerStats);

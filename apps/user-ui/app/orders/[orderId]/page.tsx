@@ -348,6 +348,33 @@ export default function OrderDetailsPage({
           </div>
         </div>
 
+        {/* ── Preparation photos ── */}
+        {order.preparationPhotos && order.preparationPhotos.length > 0 && (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-6 py-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Preparation Photos
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-5 sm:grid-cols-4">
+              {order.preparationPhotos.map((photo, idx) => (
+                <div
+                  key={photo.publicId ?? idx}
+                  className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
+                >
+                  <Image
+                    src={photo.url}
+                    alt={`Preparation photo ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="120px"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Delivery + Payment ── */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Delivery */}
@@ -484,9 +511,9 @@ export default function OrderDetailsPage({
         {order.rider && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-6 py-4">
             <div className="flex items-center gap-3">
-              {order.rider.avatar?.url ? (
+              {order.rider.photo?.url ? (
                 <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
-                  <Image src={order.rider.avatar.url} alt={order.rider.name} fill className="object-cover" sizes="40px" />
+                  <Image src={order.rider.photo.url} alt={order.rider.name} fill className="object-cover" sizes="40px" />
                 </div>
               ) : (
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
@@ -509,6 +536,28 @@ export default function OrderDetailsPage({
             >
               <Phone className="h-4 w-4" />
             </a>
+          </div>
+        )}
+
+        {/* ── Delivery proof (visible until it auto-expires 5 days after upload) ── */}
+        {order.deliveryProofPhotoUrl && (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-6 py-4">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Delivery Proof
+              </h2>
+            </div>
+            <div className="p-5">
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+                <Image
+                  src={order.deliveryProofPhotoUrl}
+                  alt="Delivery proof"
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 640px, 100vw"
+                />
+              </div>
+            </div>
           </div>
         )}
 

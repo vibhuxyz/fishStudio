@@ -31,7 +31,7 @@ export default function CategoryRow() {
       const res = await axiosInstance.get("/product/api/get-categories?activeOnly=true");
       return res.data as CategoriesResponse;
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: Infinity,
   });
 
   const categories = data?.categories ?? [];

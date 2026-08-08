@@ -27,6 +27,7 @@ import {
 
 import {
   addUserAddress,
+  updateUserAddress,
   deleteUserAddress,
   getUser,
   logOutUser,
@@ -69,15 +70,14 @@ import {
   searchStaffByEmail,
   updateStaffAccess,
   verifyStaff,
+  loginStaffByUsername,
+  createOperationalStaff,
+  updateOperationalStaff,
+  resetOperationalStaffPassword,
+  updateStaffRiderStatus,
+  toggleOperationalStaffActive,
+  deleteOperationalStaff,
 } from "../modules/staff/staff.controller.js";
-import {
-  createRider,
-  getMyRiders,
-  updateRider,
-  updateRiderStatus,
-  toggleRiderActive,
-  deleteRider,
-} from "../modules/seller/rider.controller.js";
 
 const router: Router = express.Router();
 
@@ -99,6 +99,12 @@ router.delete("/delete-user", isAuthenticated, isUser, deleteUser);
 
 // user address routes
 router.post("/add-address", isAuthenticated, isUser, addUserAddress);
+router.put(
+  "/update-address/:addressId",
+  isAuthenticated,
+  isUser,
+  updateUserAddress,
+);
 router.delete(
   "/delete-address/:addressId",
   isAuthenticated,
@@ -155,13 +161,17 @@ router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);
 router.post("/logout-seller", isAuthenticated, isSellerOrStaff, logOutSeller);
 
-// staff routes (anyone can register, seller must approve later)
+// staff routes (anyone can register, seller must approve later) — the
+// ORDER_MANAGER flow.
 router.post("/staff-registration", registrationRateLimiter, registerStaff);
 router.post("/verify-staff", authRateLimiter, verifyStaff);
 router.get("/logged-in-staff", isAuthenticated, isStaff, getStaff);
 router.post("/logout-staff", isAuthenticated, isStaff, logOutStaff);
 
-// seller staff management routes
+// Rider / Cutting Staff — seller-direct-create, username/password login, no OTP.
+router.post("/staff/login", authRateLimiter, loginStaffByUsername);
+
+// seller staff management routes (ORDER_MANAGER access grant/revoke)
 router.get("/seller/staffs", isAuthenticated, isSeller, getMyStaffs);
 router.get(
   "/seller/staff/search",
@@ -176,25 +186,37 @@ router.put(
   updateStaffAccess,
 );
 
-// seller rider management routes — riders are plain seller-managed records
-// with no login of their own, so unlike order processing (isSellerOrStaff),
-// staff never reach the dashboard page that calls these (useRequireAuth
-// redirects staff sessions away from /dashboard/*), so gate isSeller only.
-router.get("/seller/riders", isAuthenticated, isSeller, getMyRiders);
-router.post("/seller/rider", isAuthenticated, isSeller, createRider);
-router.put("/seller/rider/:riderId", isAuthenticated, isSeller, updateRider);
+// seller operational-staff management routes (Rider / Cutting Staff)
+router.post("/seller/staff", isAuthenticated, isSeller, createOperationalStaff);
 router.put(
-  "/seller/rider/:riderId/status",
+  "/seller/staff/:staffId",
   isAuthenticated,
   isSeller,
-  updateRiderStatus,
+  updateOperationalStaff,
 );
-router.put(
-  "/seller/rider/:riderId/toggle-active",
+router.post(
+  "/seller/staff/:staffId/reset-password",
   isAuthenticated,
   isSeller,
-  toggleRiderActive,
+  resetOperationalStaffPassword,
 );
-router.delete("/seller/rider/:riderId", isAuthenticated, isSeller, deleteRider);
+router.put(
+  "/seller/staff/:staffId/status",
+  isAuthenticated,
+  isSeller,
+  updateStaffRiderStatus,
+);
+router.put(
+  "/seller/staff/:staffId/toggle-active",
+  isAuthenticated,
+  isSeller,
+  toggleOperationalStaffActive,
+);
+router.delete(
+  "/seller/staff/:staffId",
+  isAuthenticated,
+  isSeller,
+  deleteOperationalStaff,
+);
 
 export default router;

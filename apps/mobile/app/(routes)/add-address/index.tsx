@@ -5,9 +5,10 @@ import { toast } from "@/utils/toast";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
@@ -18,6 +19,31 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import LocationPickerMap, { type LocationPickerMapHandle } from "@/components/location-picker-map";
+import { geocodingProvider, type GeoBounds, type PlaceResult } from "@/lib/geocoding-provider";
+
+const DEFAULT_MAP_CENTER = { lat: 28.6139, lng: 77.209 }; // New Delhi fallback
+
+// ~5.5km at the equator, tighter at higher latitudes — plenty for a single
+// serviceable area/pincode without being so tight that a legitimate search
+// result just outside it gets rejected.
+const AREA_RADIUS_DEG = 0.05;
+
+function areaBounds(center: { lat: number; lng: number }, radius = AREA_RADIUS_DEG): GeoBounds {
+  return {
+    south: center.lat - radius,
+    north: center.lat + radius,
+    west: center.lng - radius,
+    east: center.lng + radius,
+  };
+}
+
+// A full reverse-geocoded address is a long comma-separated string (street,
+// area, city, state, pincode, country) — the pin label only needs the first
+// couple of segments, the part that actually identifies "this place".
+function shortLabel(label: string): string {
+  return label.split(",").slice(0, 2).join(",").trim();
+}
 
 type AddressLabel = "Home" | "Work" | "Other" | "Gift";
 
@@ -94,24 +120,107 @@ function FormField({
 
 export default function AddAddressScreen() {
   const { user } = useUser();
-  const { addNewAddress, addresses } = useAddress();
-  const params = useLocalSearchParams<{ pincode?: string; city?: string; state?: string; area?: string }>();
+  const { addNewAddress, updateAddress, addresses } = useAddress();
+  const params = useLocalSearchParams<{
+    pincode?: string;
+    city?: string;
+    state?: string;
+    area?: string;
+    addressId?: string;
+  }>();
 
-  const [name, setName] = useState(user?.name || "");
-  const [phone, setPhone] = useState(user?.phone || "");
-  const [flatBuilding, setFlatBuilding] = useState("");
-  const [areaStreet, setAreaStreet] = useState(params.area || "");
-  const [city, setCity] = useState(params.city || "");
-  const [state, setState] = useState(params.state || "");
-  const [pincode, setPincode] = useState(params.pincode || "");
+  const editingAddress = params.addressId
+    ? addresses.find((a) => a.id === params.addressId)
+    : undefined;
+  const isEditing = !!params.addressId;
+
+  const [name, setName] = useState(editingAddress?.name || user?.name || "");
+  const [phone, setPhone] = useState(editingAddress?.phone || user?.phone || "");
+  const [flatBuilding, setFlatBuilding] = useState(editingAddress?.street || "");
+  const [areaStreet, setAreaStreet] = useState(editingAddress?.area || params.area || "");
+  const [city, setCity] = useState(editingAddress?.city || params.city || "");
+  const [state, setState] = useState(editingAddress?.state || params.state || "");
+  const [pincode, setPincode] = useState(editingAddress?.pincode || params.pincode || "");
   const [country] = useState("India");
-  const [label, setLabel] = useState<AddressLabel>("Home");
-  const [savedAs, setSavedAs] = useState("");
-  const [deliveryInstructions, setDeliveryInstructions] = useState("");
+  const [label, setLabel] = useState<AddressLabel>((editingAddress?.label as AddressLabel) || "Home");
+  const [savedAs, setSavedAs] = useState(editingAddress?.savedAs || "");
+  const [deliveryInstructions, setDeliveryInstructions] = useState(
+    editingAddress?.deliveryInstructions || "",
+  );
 
   const [locating, setLocating] = useState(false);
+  // While a finger is down on the map, the outer ScrollView must give up
+  // scrolling entirely — Android's ScrollView still wins the gesture
+  // negotiation for vertical drags over a nested WebView (horizontal drags
+  // pass through fine since the ScrollView only cares about vertical), so
+  // "touch-action: none" inside the WebView's own page isn't enough on its
+  // own to let the map pan freely in every direction.
+  const [mapTouchActive, setMapTouchActive] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+
+  // The exact map pin — this is what the rider actually navigates to, so it's
+  // tracked separately from the reverse-geocoded text fields above (which
+  // stay editable and can drift from the pin).
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [pinLabel, setPinLabel] = useState("");
+  const [resolvingPinLabel, setResolvingPinLabel] = useState(false);
+  const [mapSearchQuery, setMapSearchQuery] = useState("");
+  const [mapSearchResults, setMapSearchResults] = useState<PlaceResult[]>([]);
+  const [mapSearching, setMapSearching] = useState(false);
+  // Set only once a search has genuinely come up empty (not "no results yet
+  // because nothing was typed") — shows nearby landmarks as a fallback.
+  const [mapNoResultsFor, setMapNoResultsFor] = useState<string | null>(null);
+  const [nearbyLandmarks, setNearbyLandmarks] = useState<PlaceResult[]>([]);
+  const [loadingLandmarks, setLoadingLandmarks] = useState(false);
+  const mapRef = useRef<LocationPickerMapHandle>(null);
+  const mapSearchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Approximate center of the pincode/area already chosen on the previous
+  // screen — resolved once on mount, so the map opens scoped to that area
+  // instead of a generic default. `undefined` = still resolving, `null` =
+  // resolved but nothing found (falls back to the generic default).
+  const [areaCenter, setAreaCenter] = useState<{ lat: number; lng: number } | null | undefined>(
+    params.pincode ? undefined : null,
+  );
+
+  useEffect(() => {
+    if (!params.pincode) return;
+    let cancelled = false;
+
+    (async () => {
+      // Nominatim's exact "area, city, pincode" combo can fail to match if
+      // the area name is informal (a sub-locality Nominatim doesn't know by
+      // that spelling) — falling back to just the pincode is much more
+      // reliably geocodable and still gets us into the right neighborhood.
+      const attempts = [
+        [params.area, params.city, params.pincode, "India"],
+        [params.city, params.pincode, "India"],
+        [params.pincode, "India"],
+      ]
+        .map((parts) => parts.filter(Boolean).join(", "))
+        .filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+      for (const query of attempts) {
+        if (cancelled) return;
+        try {
+          const result = await geocodingProvider.geocode(query);
+          if (result) {
+            if (!cancelled) setAreaCenter(result);
+            return;
+          }
+        } catch {
+          // Try the next, looser query.
+        }
+      }
+      if (!cancelled) setAreaCenter(null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Areas actually pinned to the current pincode, and each area's real city
   // (e.g. "Kavi Nagar" under 201001 is Ghaziabad, not the store's own base
@@ -159,6 +268,10 @@ export default function AddAddressScreen() {
       }
 
       const position = await Location.getCurrentPositionAsync({});
+      setLat(position.coords.latitude);
+      setLng(position.coords.longitude);
+      mapRef.current?.setMarker(position.coords.latitude, position.coords.longitude);
+
       const results = await Location.reverseGeocodeAsync({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -178,6 +291,7 @@ export default function AddAddressScreen() {
       if (detectedCity) setCity(detectedCity);
       if (detectedState) setState(detectedState);
       if (detectedArea) setAreaStreet((prev) => prev || detectedArea);
+      setPinLabel([detectedArea, detectedCity].filter(Boolean).join(", "));
 
       toast.success("Location detected");
 
@@ -205,6 +319,74 @@ export default function AddAddressScreen() {
     }
   };
 
+  // Reverse-geocode via the provider (not expo-location) so the label
+  // matches exactly what the map shows — expo-location's OS-level geocoder
+  // can disagree slightly with what the pin visually sits on.
+  const reverseGeocodePin = async (nextLat: number, nextLng: number) => {
+    setResolvingPinLabel(true);
+    try {
+      const label = await geocodingProvider.reverseGeocode({ lat: nextLat, lng: nextLng });
+      if (label) setPinLabel(label);
+    } finally {
+      setResolvingPinLabel(false);
+    }
+  };
+
+  const handleMapLocationSelected = (nextLat: number, nextLng: number) => {
+    setLat(nextLat);
+    setLng(nextLng);
+    reverseGeocodePin(nextLat, nextLng);
+  };
+
+  const handleMapSearchChange = (text: string) => {
+    setMapSearchQuery(text);
+    clearTimeout(mapSearchDebounce.current);
+    setMapNoResultsFor(null);
+    setNearbyLandmarks([]);
+    if (text.trim().length < 3) {
+      setMapSearchResults([]);
+      return;
+    }
+    // Debounced — Nominatim's public instance asks for at most ~1 request/sec.
+    mapSearchDebounce.current = setTimeout(async () => {
+      setMapSearching(true);
+      try {
+        // Biased (not restricted) to the already-chosen pincode/area — a
+        // bounds hint just ranks nearby matches first, it doesn't hide
+        // anything further away. A hard filter was here before and meant a
+        // wrong/failed area lookup could hide every real result.
+        const bounds = areaCenter ? areaBounds(areaCenter) : undefined;
+        const results = await geocodingProvider.search(text, bounds);
+        setMapSearchResults(results);
+
+        if (results.length === 0) {
+          setMapNoResultsFor(text);
+          if (areaCenter) {
+            setLoadingLandmarks(true);
+            try {
+              setNearbyLandmarks(await geocodingProvider.nearbyLandmarks(areaCenter, areaBounds(areaCenter)));
+            } finally {
+              setLoadingLandmarks(false);
+            }
+          }
+        }
+      } catch {
+        setMapSearchResults([]);
+      } finally {
+        setMapSearching(false);
+      }
+    }, 500);
+  };
+
+  const handleSelectMapResult = (result: PlaceResult) => {
+    setLat(result.lat);
+    setLng(result.lng);
+    setPinLabel(result.label);
+    setMapSearchQuery("");
+    setMapSearchResults([]);
+    mapRef.current?.setMarker(result.lat, result.lng);
+  };
+
   const handleSave = async () => {
     setFormError("");
     if (!name.trim()) {
@@ -227,10 +409,14 @@ export default function AddAddressScreen() {
       setFormError("City is required");
       return;
     }
+    if (!deliveryInstructions.trim()) {
+      setFormError("Delivery instructions are required");
+      return;
+    }
 
     setSaving(true);
     try {
-      await addNewAddress({
+      const payload = {
         name: name.trim(),
         label,
         savedAs: savedAs.trim() || undefined,
@@ -241,8 +427,17 @@ export default function AddAddressScreen() {
         pincode: pincode.trim(),
         phone: phone.trim(),
         country,
-        deliveryInstructions: deliveryInstructions.trim() || undefined,
-      });
+        deliveryInstructions: deliveryInstructions.trim(),
+        ...(lat != null && lng != null ? { lat, lng } : {}),
+      };
+      if (isEditing && params.addressId) {
+        await updateAddress(params.addressId, {
+          ...payload,
+          isDefault: editingAddress?.isDefault,
+        });
+      } else {
+        await addNewAddress(payload);
+      }
       router.back();
     } catch (err: any) {
       setFormError(err.response?.data?.message || "Failed to save address");
@@ -290,10 +485,10 @@ export default function AddAddressScreen() {
                 color: "#1A1C1C",
               }}
             >
-              Add New Address
+              {isEditing ? "Edit Address" : "Add New Address"}
             </Text>
             <Text style={{ fontFamily: "Inter-Medium", fontSize: 12, color: "#9CA3AF", marginTop: 1 }}>
-              Please add your complete address
+              {isEditing ? "Update your address details" : "Please add your complete address"}
             </Text>
           </View>
         </View>
@@ -306,10 +501,21 @@ export default function AddAddressScreen() {
         </View>
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        // Android already resizes the window on keyboard show (adjustResize).
+        // "height" behavior duplicates that resize at the RN layer, and the
+        // WebView map's own internal layout passes turn the resulting
+        // double-adjustment into a visible jitter loop on the footer button —
+        // undefined here just lets Android's native resize handle it alone.
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
+      >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+        scrollEnabled={!mapTouchActive}
       >
         {/* Use my current location */}
         <View
@@ -366,6 +572,192 @@ export default function AddAddressScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Pin exact location */}
+        <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C", marginBottom: 2 }}>
+          Pin your exact location
+        </Text>
+        <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#9CA3AF", marginBottom: 10 }}>
+          This is what your delivery partner will navigate to — drag the map in any
+          direction, search, or use your current location to be precise.
+        </Text>
+
+        <View style={{ position: "relative", marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 14,
+              paddingHorizontal: 14,
+              height: 44,
+            }}
+          >
+            <Ionicons name="search-outline" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+            <TextInput
+              style={{ flex: 1, fontFamily: "Inter-Medium", fontSize: 14, color: "#1A1C1C" }}
+              value={mapSearchQuery}
+              onChangeText={handleMapSearchChange}
+              placeholder="Search for a place or landmark..."
+              placeholderTextColor="#C4C4C7"
+            />
+            {mapSearching && <ActivityIndicator size="small" color="#9CA3AF" />}
+          </View>
+          {mapSearchResults.length > 0 && (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                borderRadius: 14,
+                marginTop: 4,
+                overflow: "hidden",
+              }}
+            >
+              {mapSearchResults.map((r) => (
+                <TouchableOpacity
+                  key={r.id}
+                  onPress={() => handleSelectMapResult(r)}
+                  style={{
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    borderBottomWidth: 1,
+                    borderBottomColor: "#F1F5F9",
+                  }}
+                >
+                  <Text
+                    style={{ fontFamily: "Inter-Regular", fontSize: 13, color: "#1A1C1C" }}
+                    numberOfLines={1}
+                  >
+                    {r.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {mapNoResultsFor === mapSearchQuery && mapSearchResults.length === 0 && (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                borderRadius: 14,
+                marginTop: 4,
+                padding: 14,
+              }}
+            >
+              <Text style={{ fontFamily: "Inter-Medium", fontSize: 13, color: "#1A1C1C" }}>
+                Couldn&apos;t find &quot;{mapNoResultsFor}&quot;. Try searching for a well-known
+                place nearby instead.
+              </Text>
+              {loadingLandmarks ? (
+                <ActivityIndicator size="small" color="#9CA3AF" style={{ marginTop: 10 }} />
+              ) : (
+                nearbyLandmarks.length > 0 && (
+                  <View style={{ marginTop: 10, gap: 8 }}>
+                    {nearbyLandmarks.map((r) => (
+                      <TouchableOpacity
+                        key={r.id}
+                        onPress={() => handleSelectMapResult(r)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          borderWidth: 1,
+                          borderColor: "#E5E7EB",
+                          borderRadius: 10,
+                          paddingHorizontal: 10,
+                          paddingVertical: 8,
+                        }}
+                      >
+                        <Ionicons name="location-outline" size={14} color="#5A2C96" style={{ marginRight: 6 }} />
+                        <Text
+                          style={{ flex: 1, fontFamily: "Inter-Regular", fontSize: 12, color: "#1A1C1C" }}
+                          numberOfLines={1}
+                        >
+                          {r.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )
+              )}
+            </View>
+          )}
+        </View>
+
+        <View
+          style={{
+            height: 220,
+            borderRadius: 14,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: "#E5E7EB",
+            marginBottom: 6,
+          }}
+          onTouchStart={() => setMapTouchActive(true)}
+          onTouchEnd={() => setMapTouchActive(false)}
+          onTouchCancel={() => setMapTouchActive(false)}
+        >
+          {areaCenter === undefined ? (
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <ActivityIndicator color="#5A2C96" />
+            </View>
+          ) : (
+            <>
+              <LocationPickerMap
+                ref={mapRef}
+                initialLat={lat ?? areaCenter?.lat ?? DEFAULT_MAP_CENTER.lat}
+                initialLng={lng ?? areaCenter?.lng ?? DEFAULT_MAP_CENTER.lng}
+                onLocationSelected={handleMapLocationSelected}
+              />
+              {/* Rides just above the map's fixed center pin, matching where
+                  it sits inside the WebView — shows what's actually there,
+                  not just in the caption below. */}
+              {(resolvingPinLabel || pinLabel) && (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: 12,
+                    right: 12,
+                    bottom: "50%",
+                    marginBottom: 54,
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      maxWidth: "100%",
+                      backgroundColor: "#fff",
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: "#E5E7EB",
+                      paddingHorizontal: 10,
+                      paddingVertical: 4,
+                      shadowColor: "#000",
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 2,
+                    }}
+                  >
+                    <Text
+                      numberOfLines={1}
+                      style={{ fontFamily: "Inter-Medium", fontSize: 11, color: "#1A1C1C" }}
+                    >
+                      {resolvingPinLabel ? "Locating..." : shortLabel(pinLabel)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+        </View>
+        <Text
+          style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#9CA3AF", marginBottom: 20 }}
+          numberOfLines={2}
+        >
+          {pinLabel ? `Pinned: ${pinLabel}` : "No pin set yet — drag the map or search above."}
+        </Text>
 
         {/* Contact Details */}
         <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C", marginBottom: 10 }}>
@@ -542,12 +934,10 @@ export default function AddAddressScreen() {
           />
         </View>
 
-        {/* Delivery Instructions */}
-        <Text style={{ fontFamily: "Inter-Bold", fontSize: 14, color: "#1A1C1C", marginBottom: 2 }}>
-          Delivery Instructions{" "}
-          <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#9CA3AF" }}>
-            (optional)
-          </Text>
+        {/* Delivery Instructions — required, so it's called out larger than
+            the other section headers on this screen. */}
+        <Text style={{ fontFamily: "Inter-Bold", fontSize: 17, color: "#5A2C96", marginBottom: 2 }}>
+          Delivery Instructions
         </Text>
         <View
           style={{
@@ -646,11 +1036,12 @@ export default function AddAddressScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#fff" }}>
-              Save Address
+              {isEditing ? "Update Address" : "Save Address"}
             </Text>
           )}
         </TouchableOpacity>
       </View>
+      </KeyboardAvoidingView>
 
       {/* Area picker — areas can span different real cities under one
           pincode, so picking here also fills City from the match. */}

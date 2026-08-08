@@ -94,16 +94,55 @@ export function useAddress() {
     phone?: string;
     country: string;
     deliveryInstructions?: string;
+    lat?: number;
+    lng?: number;
   }) => {
+    const { lat, lng, ...rest } = data;
     const response = await axiosInstance.post("/auth/api/add-address", {
       address: {
-        ...data,
+        ...rest,
         isDefault: addresses.length === 0, // First address becomes default
+        // API field names match the Order snapshot (`latitude`/`longitude`);
+        // this hook's callers use the shorter `lat`/`lng`.
+        ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
       },
     });
     // Update local store with fresh address list from API
     setAddresses(response.data.addresses || []);
     toast.success("Address added successfully!");
+    return response.data;
+  };
+
+  // Update an existing address in place
+  const updateAddress = async (
+    id: string,
+    data: {
+      name: string;
+      label: "Home" | "Work" | "Other" | "Gift";
+      savedAs?: string;
+      street: string;
+      area?: string;
+      landmark?: string;
+      city: string;
+      state?: string;
+      pincode: string;
+      phone?: string;
+      country: string;
+      deliveryInstructions?: string;
+      isDefault?: boolean;
+      lat?: number;
+      lng?: number;
+    },
+  ) => {
+    const { lat, lng, ...rest } = data;
+    const response = await axiosInstance.put(`/auth/api/update-address/${id}`, {
+      address: {
+        ...rest,
+        ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+      },
+    });
+    setAddresses(response.data.addresses || []);
+    toast.success("Address updated successfully!");
     return response.data;
   };
 
@@ -129,6 +168,7 @@ export function useAddress() {
     addresses,
     fetchAddresses,
     addNewAddress,
+    updateAddress,
     deleteAddress,
     setDefaultAddress,
     selectAddress,

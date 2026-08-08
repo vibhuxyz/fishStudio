@@ -21,6 +21,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCartStore } from "@/lib/cart-store";
+import { useAuth } from "@/lib/auth-store";
+import { useModals } from "@/components/providers/modal-provider";
 import { useCartCheckoutSummary, TIP_OPTIONS } from "@/hooks/useCartCheckoutSummary";
 import { cn, formatStoreHour } from "@/lib/utils";
 import { AddressModal } from "@/components/shared/address-modal";
@@ -28,6 +30,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function CartPageClient() {
   const router = useRouter();
+  const { isLoggedIn } = useAuth();
+  const modals = useModals();
   const removeItem = useCartStore((s) => s.removeItem);
   const removeComboGroup = useCartStore((s) => s.removeComboGroup);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
@@ -610,29 +614,46 @@ export function CartPageClient() {
       {/* Bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background">
         <div className="mx-auto max-w-2xl px-4 py-3">
-          <button
-            type="button"
-            className="mb-2 flex w-full items-center gap-2 rounded-xl bg-secondary/60 px-3 py-2"
-            onClick={() => setShowAddressModal(true)}
-          >
-            <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
-            <div className="flex-1 text-left">
-              <p className="text-xs font-semibold text-foreground">
-                {selectedAddress ? `Delivering to ${selectedAddress.label}` : "Select delivery address"}
-              </p>
-              {selectedAddress && (
+          {!isLoggedIn ? (
+            <button
+              type="button"
+              className="mb-2 flex w-full items-center gap-2 rounded-xl bg-secondary/60 px-3 py-2"
+              onClick={() => modals.openLogin()}
+            >
+              <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-semibold text-foreground">Login to continue</p>
                 <p className="truncate text-[10px] text-muted-foreground">
-                  {selectedAddress.name}, {selectedAddress.street}...
+                  Sign in to add a delivery address and place your order
                 </p>
-              )}
-            </div>
-            <span className="text-xs font-semibold text-offer-green">Change</span>
-          </button>
+              </div>
+              <span className="text-xs font-semibold text-offer-green">Login</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="mb-2 flex w-full items-center gap-2 rounded-xl bg-secondary/60 px-3 py-2"
+              onClick={() => setShowAddressModal(true)}
+            >
+              <MapPin className="h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-semibold text-foreground">
+                  {selectedAddress ? `Delivering to ${selectedAddress.label}` : "Select delivery address"}
+                </p>
+                {selectedAddress && (
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {selectedAddress.name}, {selectedAddress.street}...
+                  </p>
+                )}
+              </div>
+              <span className="text-xs font-semibold text-offer-green">Change</span>
+            </button>
+          )}
 
           <button
             type="button"
             disabled={items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))}
-            onClick={() => router.push("/checkout")}
+            onClick={() => (isLoggedIn ? router.push("/checkout") : modals.openLogin())}
             className="flex w-full items-center justify-between rounded-2xl bg-offer-green px-5 py-3.5 text-white disabled:opacity-50"
           >
             {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? (
@@ -647,7 +668,11 @@ export function CartPageClient() {
               </div>
             )}
             <div className="flex items-center gap-1.5 font-semibold">
-              {items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) ? "Invalid Cart" : "Proceed To Pay"}
+              {!isLoggedIn
+                ? "Login to Continue"
+                : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0))
+                  ? "Invalid Cart"
+                  : "Proceed To Pay"}
               <ChevronRight className="h-5 w-5" />
             </div>
           </button>

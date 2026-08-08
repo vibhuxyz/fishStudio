@@ -1744,12 +1744,16 @@ export namespace Prisma {
   export type OrderAvgAggregateOutputType = {
     totalAmount: Decimal | null
     discountAmount: Decimal | null
+    deliveryLatitude: Decimal | null
+    deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
   }
 
   export type OrderSumAggregateOutputType = {
     totalAmount: Decimal | null
     discountAmount: Decimal | null
+    deliveryLatitude: Decimal | null
+    deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
   }
 
@@ -1766,6 +1770,10 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
+    deliveryLandmark: string | null
+    deliveryInstructions: string | null
+    deliveryLatitude: Decimal | null
+    deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
     status: $Enums.OrderStatus | null
     paymentStatus: $Enums.PaymentStatus | null
@@ -1777,6 +1785,9 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    deliveryProofPhotoUrl: string | null
+    deliveryProofPhotoPublicId: string | null
+    deliveryProofUploadedAt: Date | null
     rejectionReason: string | null
     cancellationReason: string | null
     cancelledBy: $Enums.CancelledBy | null
@@ -1799,6 +1810,10 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
+    deliveryLandmark: string | null
+    deliveryInstructions: string | null
+    deliveryLatitude: Decimal | null
+    deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
     status: $Enums.OrderStatus | null
     paymentStatus: $Enums.PaymentStatus | null
@@ -1810,6 +1825,9 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    deliveryProofPhotoUrl: string | null
+    deliveryProofPhotoPublicId: string | null
+    deliveryProofUploadedAt: Date | null
     rejectionReason: string | null
     cancellationReason: string | null
     cancelledBy: $Enums.CancelledBy | null
@@ -1832,6 +1850,10 @@ export namespace Prisma {
     deliveryAddress: number
     deliveryCity: number
     deliveryPincode: number
+    deliveryLandmark: number
+    deliveryInstructions: number
+    deliveryLatitude: number
+    deliveryLongitude: number
     deliveryCharge: number
     billDetails: number
     status: number
@@ -1844,6 +1866,10 @@ export namespace Prisma {
     assignedBy: number
     pickupStartedAt: number
     deliveredAt: number
+    preparationPhotos: number
+    deliveryProofPhotoUrl: number
+    deliveryProofPhotoPublicId: number
+    deliveryProofUploadedAt: number
     rejectionReason: number
     cancellationReason: number
     cancelledBy: number
@@ -1858,12 +1884,16 @@ export namespace Prisma {
   export type OrderAvgAggregateInputType = {
     totalAmount?: true
     discountAmount?: true
+    deliveryLatitude?: true
+    deliveryLongitude?: true
     deliveryCharge?: true
   }
 
   export type OrderSumAggregateInputType = {
     totalAmount?: true
     discountAmount?: true
+    deliveryLatitude?: true
+    deliveryLongitude?: true
     deliveryCharge?: true
   }
 
@@ -1880,6 +1910,10 @@ export namespace Prisma {
     deliveryAddress?: true
     deliveryCity?: true
     deliveryPincode?: true
+    deliveryLandmark?: true
+    deliveryInstructions?: true
+    deliveryLatitude?: true
+    deliveryLongitude?: true
     deliveryCharge?: true
     status?: true
     paymentStatus?: true
@@ -1891,6 +1925,9 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    deliveryProofPhotoUrl?: true
+    deliveryProofPhotoPublicId?: true
+    deliveryProofUploadedAt?: true
     rejectionReason?: true
     cancellationReason?: true
     cancelledBy?: true
@@ -1913,6 +1950,10 @@ export namespace Prisma {
     deliveryAddress?: true
     deliveryCity?: true
     deliveryPincode?: true
+    deliveryLandmark?: true
+    deliveryInstructions?: true
+    deliveryLatitude?: true
+    deliveryLongitude?: true
     deliveryCharge?: true
     status?: true
     paymentStatus?: true
@@ -1924,6 +1965,9 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    deliveryProofPhotoUrl?: true
+    deliveryProofPhotoPublicId?: true
+    deliveryProofUploadedAt?: true
     rejectionReason?: true
     cancellationReason?: true
     cancelledBy?: true
@@ -1946,6 +1990,10 @@ export namespace Prisma {
     deliveryAddress?: true
     deliveryCity?: true
     deliveryPincode?: true
+    deliveryLandmark?: true
+    deliveryInstructions?: true
+    deliveryLatitude?: true
+    deliveryLongitude?: true
     deliveryCharge?: true
     billDetails?: true
     status?: true
@@ -1958,6 +2006,10 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    preparationPhotos?: true
+    deliveryProofPhotoUrl?: true
+    deliveryProofPhotoPublicId?: true
+    deliveryProofUploadedAt?: true
     rejectionReason?: true
     cancellationReason?: true
     cancelledBy?: true
@@ -2067,6 +2119,10 @@ export namespace Prisma {
     deliveryAddress: string | null
     deliveryCity: string | null
     deliveryPincode: string | null
+    deliveryLandmark: string | null
+    deliveryInstructions: string | null
+    deliveryLatitude: Decimal | null
+    deliveryLongitude: Decimal | null
     deliveryCharge: Decimal
     billDetails: JsonValue | null
     status: $Enums.OrderStatus
@@ -2079,6 +2135,10 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    preparationPhotos: JsonValue | null
+    deliveryProofPhotoUrl: string | null
+    deliveryProofPhotoPublicId: string | null
+    deliveryProofUploadedAt: Date | null
     rejectionReason: string | null
     cancellationReason: string | null
     cancelledBy: $Enums.CancelledBy | null
@@ -2120,6 +2180,10 @@ export namespace Prisma {
     deliveryAddress?: boolean
     deliveryCity?: boolean
     deliveryPincode?: boolean
+    deliveryLandmark?: boolean
+    deliveryInstructions?: boolean
+    deliveryLatitude?: boolean
+    deliveryLongitude?: boolean
     deliveryCharge?: boolean
     billDetails?: boolean
     status?: boolean
@@ -2132,6 +2196,10 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    preparationPhotos?: boolean
+    deliveryProofPhotoUrl?: boolean
+    deliveryProofPhotoPublicId?: boolean
+    deliveryProofUploadedAt?: boolean
     rejectionReason?: boolean
     cancellationReason?: boolean
     cancelledBy?: boolean
@@ -2158,6 +2226,10 @@ export namespace Prisma {
     deliveryAddress?: boolean
     deliveryCity?: boolean
     deliveryPincode?: boolean
+    deliveryLandmark?: boolean
+    deliveryInstructions?: boolean
+    deliveryLatitude?: boolean
+    deliveryLongitude?: boolean
     deliveryCharge?: boolean
     billDetails?: boolean
     status?: boolean
@@ -2170,6 +2242,10 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    preparationPhotos?: boolean
+    deliveryProofPhotoUrl?: boolean
+    deliveryProofPhotoPublicId?: boolean
+    deliveryProofUploadedAt?: boolean
     rejectionReason?: boolean
     cancellationReason?: boolean
     cancelledBy?: boolean
@@ -2192,6 +2268,10 @@ export namespace Prisma {
     deliveryAddress?: boolean
     deliveryCity?: boolean
     deliveryPincode?: boolean
+    deliveryLandmark?: boolean
+    deliveryInstructions?: boolean
+    deliveryLatitude?: boolean
+    deliveryLongitude?: boolean
     deliveryCharge?: boolean
     billDetails?: boolean
     status?: boolean
@@ -2204,6 +2284,10 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    preparationPhotos?: boolean
+    deliveryProofPhotoUrl?: boolean
+    deliveryProofPhotoPublicId?: boolean
+    deliveryProofUploadedAt?: boolean
     rejectionReason?: boolean
     cancellationReason?: boolean
     cancelledBy?: boolean
@@ -2241,6 +2325,10 @@ export namespace Prisma {
       deliveryAddress: string | null
       deliveryCity: string | null
       deliveryPincode: string | null
+      deliveryLandmark: string | null
+      deliveryInstructions: string | null
+      deliveryLatitude: Prisma.Decimal | null
+      deliveryLongitude: Prisma.Decimal | null
       deliveryCharge: Prisma.Decimal
       billDetails: Prisma.JsonValue | null
       status: $Enums.OrderStatus
@@ -2253,6 +2341,10 @@ export namespace Prisma {
       assignedBy: string | null
       pickupStartedAt: Date | null
       deliveredAt: Date | null
+      preparationPhotos: Prisma.JsonValue | null
+      deliveryProofPhotoUrl: string | null
+      deliveryProofPhotoPublicId: string | null
+      deliveryProofUploadedAt: Date | null
       rejectionReason: string | null
       cancellationReason: string | null
       cancelledBy: $Enums.CancelledBy | null
@@ -2668,6 +2760,10 @@ export namespace Prisma {
     readonly deliveryAddress: FieldRef<"Order", 'String'>
     readonly deliveryCity: FieldRef<"Order", 'String'>
     readonly deliveryPincode: FieldRef<"Order", 'String'>
+    readonly deliveryLandmark: FieldRef<"Order", 'String'>
+    readonly deliveryInstructions: FieldRef<"Order", 'String'>
+    readonly deliveryLatitude: FieldRef<"Order", 'Decimal'>
+    readonly deliveryLongitude: FieldRef<"Order", 'Decimal'>
     readonly deliveryCharge: FieldRef<"Order", 'Decimal'>
     readonly billDetails: FieldRef<"Order", 'Json'>
     readonly status: FieldRef<"Order", 'OrderStatus'>
@@ -2680,6 +2776,10 @@ export namespace Prisma {
     readonly assignedBy: FieldRef<"Order", 'String'>
     readonly pickupStartedAt: FieldRef<"Order", 'DateTime'>
     readonly deliveredAt: FieldRef<"Order", 'DateTime'>
+    readonly preparationPhotos: FieldRef<"Order", 'Json'>
+    readonly deliveryProofPhotoUrl: FieldRef<"Order", 'String'>
+    readonly deliveryProofPhotoPublicId: FieldRef<"Order", 'String'>
+    readonly deliveryProofUploadedAt: FieldRef<"Order", 'DateTime'>
     readonly rejectionReason: FieldRef<"Order", 'String'>
     readonly cancellationReason: FieldRef<"Order", 'String'>
     readonly cancelledBy: FieldRef<"Order", 'CancelledBy'>
@@ -10681,6 +10781,10 @@ export namespace Prisma {
     deliveryAddress: 'deliveryAddress',
     deliveryCity: 'deliveryCity',
     deliveryPincode: 'deliveryPincode',
+    deliveryLandmark: 'deliveryLandmark',
+    deliveryInstructions: 'deliveryInstructions',
+    deliveryLatitude: 'deliveryLatitude',
+    deliveryLongitude: 'deliveryLongitude',
     deliveryCharge: 'deliveryCharge',
     billDetails: 'billDetails',
     status: 'status',
@@ -10693,6 +10797,10 @@ export namespace Prisma {
     assignedBy: 'assignedBy',
     pickupStartedAt: 'pickupStartedAt',
     deliveredAt: 'deliveredAt',
+    preparationPhotos: 'preparationPhotos',
+    deliveryProofPhotoUrl: 'deliveryProofPhotoUrl',
+    deliveryProofPhotoPublicId: 'deliveryProofPhotoPublicId',
+    deliveryProofUploadedAt: 'deliveryProofUploadedAt',
     rejectionReason: 'rejectionReason',
     cancellationReason: 'cancellationReason',
     cancelledBy: 'cancelledBy',
@@ -11115,6 +11223,10 @@ export namespace Prisma {
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
     deliveryCity?: StringNullableFilter<"Order"> | string | null
     deliveryPincode?: StringNullableFilter<"Order"> | string | null
+    deliveryLandmark?: StringNullableFilter<"Order"> | string | null
+    deliveryInstructions?: StringNullableFilter<"Order"> | string | null
+    deliveryLatitude?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableFilter<"Order">
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
@@ -11127,6 +11239,10 @@ export namespace Prisma {
     assignedBy?: StringNullableFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    preparationPhotos?: JsonNullableFilter<"Order">
+    deliveryProofPhotoUrl?: StringNullableFilter<"Order"> | string | null
+    deliveryProofPhotoPublicId?: StringNullableFilter<"Order"> | string | null
+    deliveryProofUploadedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableFilter<"Order"> | string | null
     cancellationReason?: StringNullableFilter<"Order"> | string | null
     cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
@@ -11152,6 +11268,10 @@ export namespace Prisma {
     deliveryAddress?: SortOrderInput | SortOrder
     deliveryCity?: SortOrderInput | SortOrder
     deliveryPincode?: SortOrderInput | SortOrder
+    deliveryLandmark?: SortOrderInput | SortOrder
+    deliveryInstructions?: SortOrderInput | SortOrder
+    deliveryLatitude?: SortOrderInput | SortOrder
+    deliveryLongitude?: SortOrderInput | SortOrder
     deliveryCharge?: SortOrder
     billDetails?: SortOrderInput | SortOrder
     status?: SortOrder
@@ -11164,6 +11284,10 @@ export namespace Prisma {
     assignedBy?: SortOrderInput | SortOrder
     pickupStartedAt?: SortOrderInput | SortOrder
     deliveredAt?: SortOrderInput | SortOrder
+    preparationPhotos?: SortOrderInput | SortOrder
+    deliveryProofPhotoUrl?: SortOrderInput | SortOrder
+    deliveryProofPhotoPublicId?: SortOrderInput | SortOrder
+    deliveryProofUploadedAt?: SortOrderInput | SortOrder
     rejectionReason?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
     cancelledBy?: SortOrderInput | SortOrder
@@ -11192,6 +11316,10 @@ export namespace Prisma {
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
     deliveryCity?: StringNullableFilter<"Order"> | string | null
     deliveryPincode?: StringNullableFilter<"Order"> | string | null
+    deliveryLandmark?: StringNullableFilter<"Order"> | string | null
+    deliveryInstructions?: StringNullableFilter<"Order"> | string | null
+    deliveryLatitude?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableFilter<"Order">
     status?: EnumOrderStatusFilter<"Order"> | $Enums.OrderStatus
@@ -11204,6 +11332,10 @@ export namespace Prisma {
     assignedBy?: StringNullableFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    preparationPhotos?: JsonNullableFilter<"Order">
+    deliveryProofPhotoUrl?: StringNullableFilter<"Order"> | string | null
+    deliveryProofPhotoPublicId?: StringNullableFilter<"Order"> | string | null
+    deliveryProofUploadedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableFilter<"Order"> | string | null
     cancellationReason?: StringNullableFilter<"Order"> | string | null
     cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
@@ -11229,6 +11361,10 @@ export namespace Prisma {
     deliveryAddress?: SortOrderInput | SortOrder
     deliveryCity?: SortOrderInput | SortOrder
     deliveryPincode?: SortOrderInput | SortOrder
+    deliveryLandmark?: SortOrderInput | SortOrder
+    deliveryInstructions?: SortOrderInput | SortOrder
+    deliveryLatitude?: SortOrderInput | SortOrder
+    deliveryLongitude?: SortOrderInput | SortOrder
     deliveryCharge?: SortOrder
     billDetails?: SortOrderInput | SortOrder
     status?: SortOrder
@@ -11241,6 +11377,10 @@ export namespace Prisma {
     assignedBy?: SortOrderInput | SortOrder
     pickupStartedAt?: SortOrderInput | SortOrder
     deliveredAt?: SortOrderInput | SortOrder
+    preparationPhotos?: SortOrderInput | SortOrder
+    deliveryProofPhotoUrl?: SortOrderInput | SortOrder
+    deliveryProofPhotoPublicId?: SortOrderInput | SortOrder
+    deliveryProofUploadedAt?: SortOrderInput | SortOrder
     rejectionReason?: SortOrderInput | SortOrder
     cancellationReason?: SortOrderInput | SortOrder
     cancelledBy?: SortOrderInput | SortOrder
@@ -11271,6 +11411,10 @@ export namespace Prisma {
     deliveryAddress?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryCity?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryPincode?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryLandmark?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryInstructions?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryLatitude?: DecimalNullableWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: DecimalNullableWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     billDetails?: JsonNullableWithAggregatesFilter<"Order">
     status?: EnumOrderStatusWithAggregatesFilter<"Order"> | $Enums.OrderStatus
@@ -11283,6 +11427,10 @@ export namespace Prisma {
     assignedBy?: StringNullableWithAggregatesFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    preparationPhotos?: JsonNullableWithAggregatesFilter<"Order">
+    deliveryProofPhotoUrl?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryProofPhotoPublicId?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryProofUploadedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     rejectionReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
     cancellationReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
     cancelledBy?: EnumCancelledByNullableWithAggregatesFilter<"Order"> | $Enums.CancelledBy | null
@@ -11867,6 +12015,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -11879,6 +12031,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -11904,6 +12060,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -11916,6 +12076,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -11941,6 +12105,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -11953,6 +12121,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -11978,6 +12150,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -11990,6 +12166,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -12015,6 +12195,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -12027,6 +12211,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -12049,6 +12237,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -12061,6 +12253,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -12083,6 +12279,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -12095,6 +12295,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -12771,6 +12975,17 @@ export namespace Prisma {
     mode?: QueryMode
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
+
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
   export type JsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
         Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -12906,6 +13121,10 @@ export namespace Prisma {
     deliveryAddress?: SortOrder
     deliveryCity?: SortOrder
     deliveryPincode?: SortOrder
+    deliveryLandmark?: SortOrder
+    deliveryInstructions?: SortOrder
+    deliveryLatitude?: SortOrder
+    deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
     billDetails?: SortOrder
     status?: SortOrder
@@ -12918,6 +13137,10 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    preparationPhotos?: SortOrder
+    deliveryProofPhotoUrl?: SortOrder
+    deliveryProofPhotoPublicId?: SortOrder
+    deliveryProofUploadedAt?: SortOrder
     rejectionReason?: SortOrder
     cancellationReason?: SortOrder
     cancelledBy?: SortOrder
@@ -12930,6 +13153,8 @@ export namespace Prisma {
   export type OrderAvgOrderByAggregateInput = {
     totalAmount?: SortOrder
     discountAmount?: SortOrder
+    deliveryLatitude?: SortOrder
+    deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
   }
 
@@ -12946,6 +13171,10 @@ export namespace Prisma {
     deliveryAddress?: SortOrder
     deliveryCity?: SortOrder
     deliveryPincode?: SortOrder
+    deliveryLandmark?: SortOrder
+    deliveryInstructions?: SortOrder
+    deliveryLatitude?: SortOrder
+    deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
     status?: SortOrder
     paymentStatus?: SortOrder
@@ -12957,6 +13186,9 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    deliveryProofPhotoUrl?: SortOrder
+    deliveryProofPhotoPublicId?: SortOrder
+    deliveryProofUploadedAt?: SortOrder
     rejectionReason?: SortOrder
     cancellationReason?: SortOrder
     cancelledBy?: SortOrder
@@ -12979,6 +13211,10 @@ export namespace Prisma {
     deliveryAddress?: SortOrder
     deliveryCity?: SortOrder
     deliveryPincode?: SortOrder
+    deliveryLandmark?: SortOrder
+    deliveryInstructions?: SortOrder
+    deliveryLatitude?: SortOrder
+    deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
     status?: SortOrder
     paymentStatus?: SortOrder
@@ -12990,6 +13226,9 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    deliveryProofPhotoUrl?: SortOrder
+    deliveryProofPhotoPublicId?: SortOrder
+    deliveryProofUploadedAt?: SortOrder
     rejectionReason?: SortOrder
     cancellationReason?: SortOrder
     cancelledBy?: SortOrder
@@ -13002,6 +13241,8 @@ export namespace Prisma {
   export type OrderSumOrderByAggregateInput = {
     totalAmount?: SortOrder
     discountAmount?: SortOrder
+    deliveryLatitude?: SortOrder
+    deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
   }
 
@@ -13055,6 +13296,22 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
   export type JsonNullableWithAggregatesFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -13692,6 +13949,14 @@ export namespace Prisma {
     set?: string | null
   }
 
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
   export type EnumOrderStatusFieldUpdateOperationsInput = {
     set?: $Enums.OrderStatus
   }
@@ -13921,6 +14186,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type NestedEnumOrderStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.OrderStatus | EnumOrderStatusFieldRefInput<$PrismaModel>
     in?: $Enums.OrderStatus[] | ListEnumOrderStatusFieldRefInput<$PrismaModel>
@@ -14055,6 +14331,22 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
   export type NestedJsonNullableFilter<$PrismaModel = never> = 
     | PatchUndefined<
@@ -14498,6 +14790,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14510,6 +14806,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14534,6 +14834,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14546,6 +14850,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14586,6 +14894,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14598,6 +14910,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -14622,6 +14938,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14634,6 +14954,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -14658,6 +14982,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14670,6 +14998,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14694,6 +15026,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14706,6 +15042,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14746,6 +15086,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14758,6 +15102,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -14782,6 +15130,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14794,6 +15146,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -14818,6 +15174,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14830,6 +15190,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14854,6 +15218,10 @@ export namespace Prisma {
     deliveryAddress?: string | null
     deliveryCity?: string | null
     deliveryPincode?: string | null
+    deliveryLandmark?: string | null
+    deliveryInstructions?: string | null
+    deliveryLatitude?: Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: $Enums.OrderStatus
@@ -14866,6 +15234,10 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: string | null
+    deliveryProofPhotoPublicId?: string | null
+    deliveryProofUploadedAt?: Date | string | null
     rejectionReason?: string | null
     cancellationReason?: string | null
     cancelledBy?: $Enums.CancelledBy | null
@@ -14906,6 +15278,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14918,6 +15294,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
@@ -14942,6 +15322,10 @@ export namespace Prisma {
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryCity?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPincode?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLandmark?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryLatitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    deliveryLongitude?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     deliveryCharge?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     billDetails?: NullableJsonNullValueInput | InputJsonValue
     status?: EnumOrderStatusFieldUpdateOperationsInput | $Enums.OrderStatus
@@ -14954,6 +15338,10 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
+    deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryProofUploadedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     rejectionReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancellationReason?: NullableStringFieldUpdateOperationsInput | string | null
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null

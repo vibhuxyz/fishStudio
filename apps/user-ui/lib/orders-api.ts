@@ -37,7 +37,13 @@ export interface OrderRider {
   phone: string;
   vehicleType: string;
   vehicleNumber: string;
-  avatar?: { url: string } | null;
+  photo?: { url: string } | null;
+}
+
+export interface OrderPreparationPhoto {
+  url: string;
+  publicId: string;
+  uploadedAt: string;
 }
 
 export interface Order {
@@ -65,4 +71,7 @@ export interface Order {
   cancelledBy?: "CUSTOMER" | "SELLER" | "STAFF" | "SYSTEM" | null;
   cancelledAt?: string | null;
   refundStatus?: "NONE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  preparationPhotos?: OrderPreparationPhoto[] | null;
+  deliveryProofPhotoUrl?: string | null;
+  deliveryProofUploadedAt?: string | null;
 }

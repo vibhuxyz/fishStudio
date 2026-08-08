@@ -21,7 +21,7 @@ const DeleteCategoryModal = ({
 
   return (
     <div className="fixed top-0 left-0 z-50 w-full h-full bg-black/70 flex items-center justify-center px-4">
-      <div className="bg-gray-800 p-6 rounded-lg w-[450px] shadow-lg">
+      <div className="bg-gray-800 p-6 rounded-t-2xl rounded-b-2xl w-full max-w-md max-h-full overflow-y-auto backdrop-blur-sm shadow-lg md:w-[520px] md:rounded-lg md:backdrop-blur-none">
         <div className="flex justify-between items-center border-b border-gray-700 pb-3">
           <h3 className="text-xl text-white">
             {isSubCategory ? "Delete Subcategory" : "Delete Category"}

@@ -94,9 +94,10 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
     [resolvedProduct, selectedSize],
   );
   const isWeightAdjustable = selected.weightGrams > 0;
-  const [selectedWeightGrams, setSelectedWeightGrams] = useState(
-    selected.weightGrams || 0,
-  );
+  // Weight-tiered products (500g/1kg/...) are sold as whole packs — a "+"
+  // tap adds another pack at that tier's price/weight, it never fine-tunes
+  // grams within a pack (a whole fish can't be sold as 650g of it).
+  const [quantity, setQuantity] = useState(1);
 
   const productSpecs = [
     { label: "Origin", value: resolvedProduct.origin },
@@ -202,14 +203,17 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
     return () => clearInterval(interval);
   }, [productImages.length]);
 
+  // Switching tier starts a fresh pack count rather than carrying over a
+  // quantity that was picked against a different tier's price/weight.
   useEffect(() => {
-    setSelectedWeightGrams(selected.weightGrams || 0);
-  }, [selected.size, selected.weightGrams]);
+    setQuantity(1);
+  }, [selected.size]);
 
   useEffect(() => {
     setSelectedCutting(resolvedProduct.cuttingTypes?.[0] || "");
     setSelectedPieceSize(resolvedProduct.pieceSizes?.[0] || "");
     setSelectedSize(resolvedProduct.weight || resolvedProduct.sizes?.[0] || "");
+    setQuantity(1);
     setRemovedBundleIds(new Set());
   }, [resolvedProduct]);
 
@@ -229,26 +233,18 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
     if (isPerKgMode && basePricePerKg && perKgPricing) {
       return computePerKgSalePrice(perKgPricing, perKgWeightGrams);
     }
-    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
-      return Number.parseFloat(selected.salePrice.toFixed(2));
-    }
-    const pricePerGram = selected.salePrice / selected.weightGrams;
-    return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [isPerKgMode, basePricePerKg, perKgPricing, perKgWeightGrams, isWeightAdjustable, selected.salePrice, selected.weightGrams, selectedWeightGrams]);
+    return Number.parseFloat(((selected.salePrice || 0) * quantity).toFixed(2));
+  }, [isPerKgMode, basePricePerKg, perKgPricing, perKgWeightGrams, selected.salePrice, quantity]);
 
   const computedRegularPrice = useMemo(() => {
     if (isPerKgMode) return computedSalePrice;
-    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
-      return Number.parseFloat(selected.regularPrice.toFixed(2));
-    }
-    const pricePerGram = selected.regularPrice / selected.weightGrams;
-    return Number.parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [isPerKgMode, computedSalePrice, isWeightAdjustable, selected.regularPrice, selected.weightGrams, selectedWeightGrams]);
+    return Number.parseFloat(((selected.regularPrice || 0) * quantity).toFixed(2));
+  }, [isPerKgMode, computedSalePrice, selected.regularPrice, quantity]);
 
   const totalPayable = computedSalePrice;
 
-  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : selectedWeightGrams;
-  const weightDisplay = isPerKgMode || (isWeightAdjustable && selectedWeightGrams > 0)
+  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : (selected.weightGrams || 0) * quantity;
+  const weightDisplay = isPerKgMode || isWeightAdjustable
     ? activeWeightGrams >= 1000
       ? `${Number.parseFloat((activeWeightGrams / 1000).toFixed(2))} kg`
       : `${activeWeightGrams} gm`
@@ -256,14 +252,17 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
 
 
   const handleAddToCart = (shouldOpenCart = false, silent = false) => {
+    // Per-kg mode has no separate pack count — computedSalePrice is already
+    // the one-line total for the chosen weight. Size-tier products are sold
+    // in whole packs, so the cart line carries the per-pack price with the
+    // pack count passed as `quantity` below, same as everywhere else in the cart.
+    const unitPrice = isPerKgMode ? computedSalePrice : (selected.salePrice || 0);
+    const unitRegularPrice = isPerKgMode ? computedRegularPrice : (selected.regularPrice || 0);
     const customizedProduct = {
       ...product,
       ...resolvedProduct,
-      price: computedSalePrice,
-      originalPrice:
-        computedRegularPrice > computedSalePrice
-          ? computedRegularPrice
-          : undefined,
+      price: unitPrice,
+      originalPrice: unitRegularPrice > unitPrice ? unitRegularPrice : undefined,
       weight: (isPerKgMode || isWeightAdjustable) ? weightDisplay : selected.size,
     };
 
@@ -277,14 +276,10 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
 
     addToCart(
       customizedProduct,
-      1,
+      isPerKgMode ? 1 : quantity,
       selectedCutting || "default",
       selectedPieceSize || "default",
-      isPerKgMode
-        ? weightDisplay
-        : isWeightAdjustable
-          ? `${selected.size} | ${weightDisplay}`
-          : selected.size,
+      isPerKgMode ? weightDisplay : selected.size,
       breakdown,
     );
     if (shouldOpenCart) {
@@ -535,7 +530,7 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
                           Rs. {computedRegularPrice.toFixed(2)}
                         </span>
                       ) : null}
-                      {isWeightAdjustable && selectedWeightGrams > 0 ? (
+                      {isWeightAdjustable ? (
                         <span className="text-sm font-normal text-muted-foreground">
                           {" "}
                           / {weightDisplay}
@@ -695,26 +690,23 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
                           variant="outline"
                           size="icon"
                           className="h-9 w-9 rounded-full bg-transparent"
-                          onClick={() =>
-                            setSelectedWeightGrams(
-                              Math.max(50, selectedWeightGrams - 50),
-                            )
-                          }
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          disabled={quantity <= 1}
                         >
                           <Minus className="h-4 w-4" />
-                          <span className="sr-only">Decrease weight</span>
+                          <span className="sr-only">Decrease quantity</span>
                         </Button>
                         <span className="min-w-[4.5rem] text-center text-lg font-bold text-foreground">
-                          {weightDisplay}
+                          {quantity} × {selected.size}
                         </span>
                         <Button
                           variant="outline"
                           size="icon"
                           className="h-9 w-9 rounded-full bg-transparent"
-                          onClick={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
+                          onClick={() => setQuantity(quantity + 1)}
                         >
                           <Plus className="h-4 w-4" />
-                          <span className="sr-only">Increase weight</span>
+                          <span className="sr-only">Increase quantity</span>
                         </Button>
                       </>
                     ) : (

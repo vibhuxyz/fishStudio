@@ -20,6 +20,7 @@ import { StatusTimeline } from "@/components/order-tracker/StatusTimeline";
 import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
 import SupportMessageModal from "@/components/shared/support-message-modal";
 import CancelOrderModal from "@/components/shared/cancel-order-modal";
+import OrderTrackingSkeleton from "@/components/skelton/order-tracking.skelton";
 import { Order } from "@/constants/order";
 import { useAddressStore } from "@/lib/address-store";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
@@ -142,12 +143,7 @@ export default function OrderDetailsScreen() {
       <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
         <Header title="Order Details" orderId={undefined} />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color={PRIMARY} />
-          <Text style={{ fontFamily: "Inter-Medium", fontSize: 14, color: colors.textMuted, marginTop: 16 }}>
-            Loading order details…
-          </Text>
-        </View>
+        <OrderTrackingSkeleton />
       </SafeAreaView>
     );
   }

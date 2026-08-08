@@ -117,12 +117,21 @@ function ProductCardComponent({
     }
   };
 
+  const hasVariantOptions =
+    (product.sizes?.length ?? 0) > 0 ||
+    (product.cuttingTypes?.length ?? 0) > 0 ||
+    (product.pieceSizes?.length ?? 0) > 0;
+
   const handleQuickIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isUserLoggedIn()) {
       toast.error("Please login to add items to cart");
       modals.openLogin();
+      return;
+    }
+    if (hasVariantOptions) {
+      modals.openAddToCart(product);
       return;
     }
     quickAdd(product);

@@ -418,9 +418,13 @@ const Page = () => {
               {order.deliveryPhone && <p>{order.deliveryPhone}</p>}
               <p>
                 {order.deliveryAddress}
+                {order.deliveryLandmark ? `, ${order.deliveryLandmark}` : ""}
                 {order.deliveryCity ? `, ${order.deliveryCity}` : ""}
                 {order.deliveryPincode ? ` - ${order.deliveryPincode}` : ""}
               </p>
+              {order.deliveryInstructions && (
+                <p className="text-xs text-amber-300 mt-1">Instructions: {order.deliveryInstructions}</p>
+              )}
               {order.deliverySlot && <p className="text-xs text-gray-500">Slot: {order.deliverySlot}</p>}
             </div>
           )}

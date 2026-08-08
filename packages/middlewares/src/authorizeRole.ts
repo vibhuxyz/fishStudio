@@ -78,3 +78,22 @@ export const isSellerOrStaff = (req: any, res: Response, next: NextFunction) => 
   return next();
 };
 
+/**
+ * Narrower than `isStaff`: also checks the staff member's *operational* role
+ * (ORDER_MANAGER / RIDER / CUTTING_STAFF, stored on the `staffs` record, not
+ * the JWT's auth role). Used to keep e.g. a Cutting Staff account from
+ * hitting rider-only or order-manager-only endpoints.
+ *
+ * A seller always passes — they own every staff view in their shop and
+ * shouldn't need a second, separate staff login to use them.
+ */
+export const hasStaffRole =
+  (...roles: Array<"ORDER_MANAGER" | "RIDER" | "CUTTING_STAFF">) =>
+  (req: any, res: Response, next: NextFunction) => {
+    if (req.role === "seller") return next();
+    if (req.role !== "staff" || !roles.includes(req.staff?.role)) {
+      return next(new AuthError("Access denied"));
+    }
+    return next();
+  };
+

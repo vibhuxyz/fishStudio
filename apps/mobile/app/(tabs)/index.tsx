@@ -11,6 +11,7 @@ import Header from "@/components/home/header";
 import ProductSection from "@/components/home/products";
 import SectionCarousel from "@/components/home/section-carousel";
 import TrustStrip from "@/components/home/trust-strip";
+import EndOfListBanner from "@/components/home/end-of-list-banner";
 import ProductSkeleton from "@/components/skelton/product.skelton";
 import { fetchForYou, fetchRecentlyViewed } from "@/actions/activity";
 import { useAddressStore } from "@/lib/address-store";
@@ -22,7 +23,6 @@ import { router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import React, { useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -300,11 +300,16 @@ export default function Index() {
           />
         )}
 
-        {/* Load more spinner */}
+        {/* Load more skeleton */}
         {isFetchingNextPage && (
-          <View style={{ alignItems: "center", paddingVertical: 20 }}>
-            <ActivityIndicator color="#5A2C96" size="small" />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 16 }}>
+            {[0, 1, 2, 3].map((i) => <ProductSkeleton key={i} />)}
           </View>
+        )}
+
+        {/* End of list banner */}
+        {!hasNextPage && products.length > 0 && !isLoading && (
+          <EndOfListBanner />
         )}
       </ScrollView>
 

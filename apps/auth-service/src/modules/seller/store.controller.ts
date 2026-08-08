@@ -5,6 +5,10 @@ import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
+import {
+  isStoreOpenNow,
+  isInstantDeliveryAvailableNow,
+} from "@repo/shared/store-hours";
 import type { AuthenticatedRequest } from "../../types/auth-request.js";
 
 export const createStore = async (
@@ -243,6 +247,9 @@ export const checkPincode = async (
           state: true,
           opening_hours: true,
           closing_hours: true,
+          is_instant_delivery_enabled: true,
+          instant_delivery_window_start: true,
+          instant_delivery_window_end: true,
           availableCities: true,
           cityDeliveryTimes: true,
           areaPincodes: true,
@@ -257,17 +264,8 @@ export const checkPincode = async (
         });
       }
 
-      // Calculate openness
-      const now = new Date();
-      const nowTotal = now.getHours() * 60 + now.getMinutes();
-      const toMins = (timeStr: string) => {
-        const [h, m] = timeStr.split(":").map(Number);
-        return (h || 0) * 60 + (m || 0);
-      };
-      
-      const openTotal = toMins(store.opening_hours || "09:00");
-      const closeTotal = toMins(store.closing_hours || "23:00");
-      const isOpen = nowTotal >= openTotal && nowTotal <= closeTotal;
+      const isOpen = isStoreOpenNow(store);
+      const isInstantAvailable = isInstantDeliveryAvailableNow(store);
 
       // A pincode can contain several areas, each with its own delivery
       // time — surface which ones so the client can prompt for area
@@ -282,6 +280,7 @@ export const checkPincode = async (
         store: {
           ...store,
           isOpen,
+          isInstantAvailable,
         },
         matchedAreas,
       });

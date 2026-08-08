@@ -47,7 +47,7 @@ export default function BannerCarousel() {
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["storefront-banners"],
     queryFn: fetchBanners,
-    staleTime: 1000 * 60 * 10,
+    staleTime: Infinity,
   });
 
   const total = banners.length;

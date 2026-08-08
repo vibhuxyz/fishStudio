@@ -1,6 +1,7 @@
 import { prismaPostgres } from "@repo/db-postgres";
 import { sendEmail } from "@repo/libs/sendMail";
 import { sendPhoneOtp } from "@repo/libs/sendOtp";
+import { sendPushNotification } from "@repo/libs/sendPush";
 import { logger } from "@repo/libs/logger";
 import { ENV } from "@repo/env-config";
 import { resolveUserContact } from "../utils/resolve-contact.js";
@@ -80,10 +81,24 @@ export async function send({
     }
   }
 
-  // 4. Push Notification — not yet implemented (no push token storage)
+  // 4. Push Notification
   if (channels.includes("PUSH")) {
-    logger.info(`[PUSH] No push tokens found for user ${userId} — skipping`);
-    results.push = "no_tokens";
+    if (!contact.expoPushToken) {
+      results.push = "no_token";
+    } else {
+      try {
+        const result = await sendPushNotification(
+          contact.expoPushToken,
+          title,
+          message,
+          { category, ...(metadata || {}) },
+        );
+        results.push = result.success ? "sent" : "failed";
+      } catch (error) {
+        logger.error(`[Notification] Failed to send push to user ${userId}`, error);
+        results.push = "failed";
+      }
+    }
   }
 
   return results;

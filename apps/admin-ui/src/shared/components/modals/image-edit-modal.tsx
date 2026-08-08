@@ -126,7 +126,7 @@ const ImageEditModal = ({ editType, onClose }: ImageEditModalProps) => {
 
   return (
     <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60 z-50">
-      <div className="bg-gray-800 p-6 rounded-lg w-[450px] text-white">
+      <div className="bg-gray-800 p-6 rounded-t-2xl rounded-b-2xl w-full max-w-md max-h-full overflow-y-auto backdrop-blur-sm text-white md:w-[520px] md:rounded-lg md:backdrop-blur-none shadow-lg">
         {/* Modal Header */}
         <div className="flex justify-between items-center pb-3 mb-4">
           <h2 className="text-lg font-semibold">

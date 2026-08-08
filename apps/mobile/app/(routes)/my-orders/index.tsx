@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatOrderId } from "@repo/shared/order-id";
 import CancelOrderModal from "@/components/shared/cancel-order-modal";
+import OrderListSkeleton from "@/components/skelton/order-list.skelton";
 
 // A RAZORPAY order still sitting PENDING never got a completed payment — the
 // seller never saw it, so it reads as cancelled rather than "in progress".
@@ -459,12 +460,7 @@ export default function MyOrders() {
         {/* List */}
         <View className="px-3 pt-3">
           {isLoading ? (
-            <View className="flex-1 items-center justify-center py-24">
-              <ActivityIndicator size="large" color="#5A2C96" />
-              <Text className="text-gray-500 font-poppins-medium mt-4">
-                Loading orders…
-              </Text>
-            </View>
+            <OrderListSkeleton />
           ) : filteredOrders.length === 0 ? (
             <View className="flex-1 items-center justify-center py-24">
               <Ionicons name="bag-outline" size={64} color="#9CA3AF" />

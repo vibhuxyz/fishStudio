@@ -119,27 +119,49 @@ model Order {
   deliverySlot   String? // "instant" | "morning" | "evening"
 
   // Delivery details
-  deliveryName    String?
-  deliveryPhone   String?
-  deliveryAddress String?
-  deliveryCity    String?
-  deliveryPincode String?
-  deliveryCharge  Decimal @default(0) @db.Decimal(12, 2)
-  billDetails     Json? // Snapshot of { itemTotal, deliveryCharge, slotExtraCharge, packagingCharge, gstAmount, discount, totalAmount, eventId? }
+  deliveryName         String?
+  deliveryPhone        String?
+  deliveryAddress      String?
+  deliveryCity         String?
+  deliveryPincode      String?
+  // Free text carried straight from the customer's saved address so the
+  // rider sees them on the order, not just at checkout time.
+  deliveryLandmark     String?
+  deliveryInstructions String?
+  // The exact map pin the customer dropped on their saved address, carried
+  // through to the order so the rider's map link goes to the precise spot
+  // instead of a fuzzy text-address search. Null for orders placed against
+  // an address saved before the pin-drop picker existed.
+  deliveryLatitude     Decimal? @db.Decimal(9, 6)
+  deliveryLongitude    Decimal? @db.Decimal(9, 6)
+  deliveryCharge       Decimal  @default(0) @db.Decimal(12, 2)
+  billDetails          Json? // Snapshot of { itemTotal, deliveryCharge, slotExtraCharge, packagingCharge, gstAmount, discount, totalAmount, eventId? }
 
   status        OrderStatus    @default(PENDING)
   paymentStatus PaymentStatus  @default(PENDING)
   paymentMethod PaymentMethod?
   paymentRef    String?
 
-  // Rider assignment — riderId is a bare reference to the Mongo `riders`
-  // collection, same cross-DB convention as storeId/userId above.
+  // Rider assignment — riderId is a bare reference to the Mongo `staffs`
+  // collection (role: RIDER), same cross-DB convention as storeId/userId above.
   riderId         String?
   riderStatus     OrderRiderStatus?
   assignedAt      DateTime?
   assignedBy      String? // sellerId or staffId (Mongo ObjectId) who assigned the rider
   pickupStartedAt DateTime? // set when status flips to SHIPPED (rider left the store)
   deliveredAt     DateTime? // set when status flips to DELIVERED
+
+  // Cutting Staff prep photos — set when a CUTTING_STAFF staff member marks
+  // preparation complete (status flips to READY_FOR_PICKUP). Array of
+  // {url, publicId, uploadedAt}.
+  preparationPhotos Json?
+
+  // Rider delivery-proof photo — set when a RIDER staff member marks the
+  // order delivered. Auto-deleted (Cloudinary asset + these fields nulled)
+  // 5 days after upload by a scheduled job.
+  deliveryProofPhotoUrl      String?
+  deliveryProofPhotoPublicId String?
+  deliveryProofUploadedAt    DateTime?
 
   rejectionReason    String?
   // Who/why/when an order was cancelled — set on any path that flips status

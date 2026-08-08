@@ -19,16 +19,16 @@ interface Rider {
   phone: string;
   vehicleType: string;
   vehicleNumber: string;
-  status: string;
+  riderStatus: string;
   activeDeliveryCount: number;
-  avatar?: { url: string } | null;
+  photo?: { url: string } | null;
 }
 
 function RiderAvatar({ rider, size = 40 }: { rider: Rider; size?: number }) {
-  if (rider.avatar?.url) {
+  if (rider.photo?.url) {
     return (
       <Image
-        src={rider.avatar.url}
+        src={rider.photo.url}
         alt={rider.name}
         width={size}
         height={size}

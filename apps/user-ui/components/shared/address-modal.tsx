@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import type { LocationPickerValue } from "./location-picker-map";
+import { geocodingProvider } from "@/lib/geocoding-provider";
 import {
   X,
   MapPin,
@@ -8,6 +11,7 @@ import {
   Briefcase,
   MoreHorizontal,
   Trash2,
+  Pencil,
   Plus,
   ArrowLeft,
   CheckCircle2,
@@ -36,6 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Leaflet touches `window`/`document` at import time — must never render on
+// the server.
+const LocationPickerMap = dynamic(() => import("./location-picker-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-64 w-full items-center justify-center rounded-xl border border-border bg-muted text-sm text-muted-foreground">
+      Loading map...
+    </div>
+  ),
+});
 
 interface AddressModalProps {
   open: boolean;
@@ -174,7 +189,19 @@ export function AddressModal({
     city: "",
     state: "",
     pincode: "",
+    deliveryInstructions: "",
+    lat: undefined as number | undefined,
+    lng: undefined as number | undefined,
   });
+  // Set when the "add" form is editing an existing saved address rather
+  // than creating a new one — routes handleSaveAddress to the update
+  // endpoint and keeps that address's id instead of minting a new one.
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+
+  // Approximate center of the pincode/area already chosen in the previous
+  // steps — resolved once on entering the address form, so the map opens
+  // scoped to that area instead of a generic default.
+  const [areaCenter, setAreaCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   const pincodeInputRef = useRef<HTMLInputElement>(null);
 
@@ -201,9 +228,55 @@ export function AddressModal({
         city: "",
         state: "",
         pincode: "",
+        deliveryInstructions: "",
+        lat: undefined,
+        lng: undefined,
       });
+      setEditingAddressId(null);
+      setAreaCenter(null);
     }
   }, [open, savedAddressesOnly]);
+
+  // Geocode the already-chosen pincode/area once, on entering the address
+  // form — this is what scopes the map/search to that area instead of a
+  // generic default center.
+  useEffect(() => {
+    if (view !== "add" || !form.pincode) return;
+    let cancelled = false;
+
+    (async () => {
+      // Nominatim's exact "area, city, pincode" combo can fail to match if
+      // the area name is informal (a sub-locality Nominatim doesn't know by
+      // that spelling) — falling back to just the pincode is much more
+      // reliably geocodable and still gets us into the right neighborhood.
+      const attempts = [
+        [form.area, form.city, form.pincode, "India"],
+        [form.city, form.pincode, "India"],
+        [form.pincode, "India"],
+      ]
+        .map((parts) => parts.filter(Boolean).join(", "))
+        .filter((q, i, arr) => q && arr.indexOf(q) === i);
+
+      for (const query of attempts) {
+        if (cancelled) return;
+        try {
+          const result = await geocodingProvider.geocode(query);
+          if (result) {
+            if (!cancelled) setAreaCenter(result);
+            return;
+          }
+        } catch {
+          // Try the next, looser query.
+        }
+      }
+      // All attempts failed — the map just falls back to its generic default center.
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, form.pincode, form.area, form.city]);
 
   const handlePincodeInput = (val: string) => {
     const cleaned = val.replace(/\D/g, "").slice(0, 6);
@@ -324,9 +397,35 @@ export function AddressModal({
     setView("add");
   };
 
+  // Enter the "add" form pre-filled with an existing address's data —
+  // handleSaveAddress detects `editingAddressId` and calls the update
+  // endpoint instead of creating a new address.
+  const handleEditAddress = (address: Address) => {
+    setForm({
+      label: address.label,
+      name: address.name,
+      phone: address.phone,
+      street: address.street,
+      landmark: address.landmark || "",
+      area: address.area,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      deliveryInstructions: address.deliveryInstructions || "",
+      lat: address.lat,
+      lng: address.lng,
+    });
+    setEditingAddressId(address.id);
+    setView("add");
+  };
+
   const handleSaveAddress = async () => {
     if (!form.name || !form.phone || !form.street || !form.pincode) {
       toast.error("Please fill all required fields");
+      return;
+    }
+    if (!form.deliveryInstructions.trim()) {
+      toast.error("Delivery instructions are required");
       return;
     }
 
@@ -337,12 +436,23 @@ export function AddressModal({
 
     setLoading(true);
     try {
-      const { data } = await axiosInstance.post("/auth/api/add-address", {
-        address: { ...form, isDefault: addresses.length === 0 },
-      });
+      const { lat, lng, ...rest } = form;
+      const addressPayload = {
+        ...rest,
+        // API field names match the Order snapshot (`latitude`/`longitude`);
+        // the form uses the shorter `lat`/`lng` — translated here.
+        ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+      };
+      const { data } = editingAddressId
+        ? await axiosInstance.put(`/auth/api/update-address/${editingAddressId}`, {
+            address: addressPayload,
+          })
+        : await axiosInstance.post("/auth/api/add-address", {
+            address: { ...addressPayload, isDefault: addresses.length === 0 },
+          });
       if (data.success) {
         setAddresses(data.addresses);
-        toast.success("Address saved!");
+        toast.success(editingAddressId ? "Address updated!" : "Address saved!");
         // Re-resolve delivery time now that we know the precise area — a
         // pincode can span several localities with different real times.
         if (storeInfo) {
@@ -374,7 +484,7 @@ export function AddressModal({
   const getTitle = () => {
     if (view === "list") return savedAddressesOnly ? "Deliver to" : "My Addresses";
     if (view === "pincode") return "Enter Pincode";
-    return "Add New Address";
+    return editingAddressId ? "Edit Address" : "Add New Address";
   };
 
   const getBackView = (): ModalView => {
@@ -506,6 +616,7 @@ export function AddressModal({
                               address={address}
                               isSelected={address.id === selectedAddressId}
                               onSelect={() => handleSelectSavedAddress(address)}
+                              onEdit={() => handleEditAddress(address)}
                               onRemove={async () => {
                                 try {
                                   const { data } = await axiosInstance.delete(
@@ -639,6 +750,7 @@ export function AddressModal({
                               address={address}
                               isSelected={address.id === selectedAddressId}
                               onSelect={() => handleSelectSavedAddress(address)}
+                              onEdit={() => handleEditAddress(address)}
                               onRemove={async () => {
                                 try {
                                   const { data } = await axiosInstance.delete(
@@ -686,6 +798,31 @@ export function AddressModal({
                         </p>
                       </div>
                     )}
+
+                    {/* Pin exact location */}
+                    <div>
+                      <p className="mb-2 text-sm font-semibold text-foreground">
+                        Pin your exact location
+                      </p>
+                      <p className="mb-2 text-xs text-muted-foreground">
+                        This is what your delivery partner will navigate to — detect your
+                        current location, search, or drag the pin to be precise.
+                      </p>
+                      <LocationPickerMap
+                        value={form.lat != null && form.lng != null ? { lat: form.lat, lng: form.lng } : null}
+                        areaCenter={areaCenter}
+                        onChange={(loc: LocationPickerValue) =>
+                          setForm((f) => ({
+                            ...f,
+                            lat: loc.lat,
+                            lng: loc.lng,
+                            // Only prefill street from the pin if the shopper
+                            // hasn't already typed one — never clobber input.
+                            street: f.street ? f.street : (loc.label?.split(",")[0] ?? f.street),
+                          }))
+                        }
+                      />
+                    </div>
 
                     {/* Address type */}
                     <div>
@@ -813,12 +950,34 @@ export function AddressModal({
                       </div>
                     </div>
 
+                    <div>
+                      <label className="mb-2 block text-base font-bold text-primary">
+                        Delivery Instructions *
+                      </label>
+                      <textarea
+                        placeholder="Any special instructions for delivery partner"
+                        value={form.deliveryInstructions}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            deliveryInstructions: e.target.value.slice(0, 120),
+                          }))
+                        }
+                        maxLength={120}
+                        rows={2}
+                        className="w-full resize-none rounded-xl border border-border px-3 py-2 text-sm outline-none focus:border-primary/50"
+                      />
+                      <p className="mt-1 text-right text-xs text-muted-foreground">
+                        {form.deliveryInstructions.length}/120
+                      </p>
+                    </div>
+
                       <Button
                         className="w-full h-12 bg-offer-green text-white hover:bg-offer-green/90 font-bold text-base rounded-xl"
                         onClick={handleSaveAddress}
                         disabled={loading}
                       >
-                        {loading ? "Saving..." : "Save Address"}
+                        {loading ? "Saving..." : editingAddressId ? "Update Address" : "Save Address"}
                       </Button>
                   </div>
                 )}
@@ -835,11 +994,13 @@ function AddressCard({
   address,
   isSelected,
   onSelect,
+  onEdit,
   onRemove,
 }: {
   address: Address;
   isSelected: boolean;
   onSelect: () => void;
+  onEdit: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -866,6 +1027,13 @@ function AddressCard({
         </div>
       </button>
       <div className="flex gap-2 px-4 pb-3">
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          onClick={onEdit}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
         {/* Deletable even while selected — a lone saved address is always
             auto-selected, so hiding this here made it undeletable. */}
         <button

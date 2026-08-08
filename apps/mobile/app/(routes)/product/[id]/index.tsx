@@ -9,6 +9,7 @@ import { computePerKgSalePrice, resolvePerKgPricing, resolveProductSizePricing }
 import { ProductBadges } from "@/components/home/badge";
 import AddToCartModal from "@/components/home/add-to-cart-modal";
 import FloatingCartBar from "@/components/shared/floating-cart-bar";
+import ProductDetailSkeleton from "@/components/skelton/product-detail.skelton";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useGlobalSearchParams } from "expo-router";
@@ -155,7 +156,10 @@ export default function ProductDetailScreen() {
   const [selectedCutting, setSelectedCutting] = useState<string>("");
   const [selectedPieceSize, setSelectedPieceSize] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
-  const [selectedWeightGrams, setSelectedWeightGrams] = useState<number>(0);
+  // Weight-tiered products (500g/1kg/...) are sold as whole packs — a "+"
+  // tap adds another pack at that tier's price/weight, it never fine-tunes
+  // grams within a pack (a whole fish can't be sold as 650g of it).
+  const [quantity, setQuantity] = useState<number>(1);
   const [perKgWeightGrams, setPerKgWeightGrams] = useState(PER_KG_DEFAULT);
 
   // Reset selections whenever the product changes
@@ -164,6 +168,7 @@ export default function ProductDetailScreen() {
     setSelectedCutting(product.cuttingTypes?.[0] || "");
     setSelectedPieceSize(product.pieceSizes?.[0] || "");
     setSelectedSize(product.weight || product.sizes?.[0] || "");
+    setQuantity(1);
     setRemovedBundleIds(new Set());
   }, [product]);
 
@@ -179,9 +184,11 @@ export default function ProductDetailScreen() {
       (product?.pieceSizes?.length ?? 0) > 0);
   const basePricePerKg = isPerKgMode ? selected.salePrice : null;
 
+  // Switching tier starts a fresh pack count rather than carrying over a
+  // quantity that was picked against a different tier's price/weight.
   useEffect(() => {
-    setSelectedWeightGrams(selected.weightGrams || 0);
-  }, [selected.size, selected.weightGrams]);
+    setQuantity(1);
+  }, [selected.size]);
 
   // Per-kg rate + size multiplier derivation (mirrors web exactly)
   const perKgPricing = useMemo(() => {
@@ -199,42 +206,18 @@ export default function ProductDetailScreen() {
     if (isPerKgMode && basePricePerKg && perKgPricing) {
       return computePerKgSalePrice(perKgPricing, perKgWeightGrams);
     }
-    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
-      return parseFloat((selected.salePrice || 0).toFixed(2));
-    }
-    const pricePerGram = selected.salePrice / selected.weightGrams;
-    return parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [
-    isPerKgMode,
-    basePricePerKg,
-    perKgPricing,
-    perKgWeightGrams,
-    isWeightAdjustable,
-    selected.salePrice,
-    selected.weightGrams,
-    selectedWeightGrams,
-  ]);
+    return parseFloat(((selected.salePrice || 0) * quantity).toFixed(2));
+  }, [isPerKgMode, basePricePerKg, perKgPricing, perKgWeightGrams, selected.salePrice, quantity]);
 
   const computedRegularPrice = useMemo(() => {
     if (isPerKgMode) return computedSalePrice;
-    if (!isWeightAdjustable || selectedWeightGrams <= 0) {
-      return parseFloat((selected.regularPrice || 0).toFixed(2));
-    }
-    const pricePerGram = selected.regularPrice / selected.weightGrams;
-    return parseFloat((pricePerGram * selectedWeightGrams).toFixed(2));
-  }, [
-    isPerKgMode,
-    computedSalePrice,
-    isWeightAdjustable,
-    selected.regularPrice,
-    selected.weightGrams,
-    selectedWeightGrams,
-  ]);
+    return parseFloat(((selected.regularPrice || 0) * quantity).toFixed(2));
+  }, [isPerKgMode, computedSalePrice, selected.regularPrice, quantity]);
 
   const totalPayable = computedSalePrice;
-  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : selectedWeightGrams;
+  const activeWeightGrams = isPerKgMode ? perKgWeightGrams : (selected.weightGrams || 0) * quantity;
   const weightDisplay =
-    isPerKgMode || (isWeightAdjustable && selectedWeightGrams > 0)
+    isPerKgMode || isWeightAdjustable
       ? activeWeightGrams >= 1000
         ? `${parseFloat((activeWeightGrams / 1000).toFixed(2))} kg`
         : `${activeWeightGrams} gm`
@@ -327,17 +310,23 @@ export default function ProductDetailScreen() {
 
   const addCurrentToCart = () => {
     if (!product) return;
+    // Per-kg mode has no separate pack count — computedSalePrice is already
+    // the one-line total for the chosen weight. Size-tier products are sold
+    // in whole packs, so the cart line carries the per-pack price with the
+    // pack count in `quantity`, same as everywhere else in the cart.
+    const unitPrice = isPerKgMode ? computedSalePrice : (selected.salePrice || 0);
+    const unitRegularPrice = isPerKgMode ? computedRegularPrice : (selected.regularPrice || 0);
     addToCart(
       {
         id: product.id,
         slug: product.slug,
         title: product.title,
-        price: computedSalePrice,
-        regularPrice: computedRegularPrice > computedSalePrice ? computedRegularPrice : undefined,
+        price: unitPrice,
+        regularPrice: unitRegularPrice > unitPrice ? unitRegularPrice : undefined,
         badges: product.badges,
         image: product.images?.[0]?.url || "",
         shopId: product.Shop?.id || "",
-        quantity: 1,
+        quantity: isPerKgMode ? 1 : quantity,
         cuttingType: selectedCutting || undefined,
         pieceSize: selectedPieceSize || undefined,
         selectedSize: selectedSize || undefined,
@@ -594,7 +583,7 @@ export default function ProductDetailScreen() {
                   Rs. {computedRegularPrice.toFixed(2)}
                 </Text>
               )}
-              {isWeightAdjustable && selectedWeightGrams > 0 && (
+              {isWeightAdjustable && (
                 <Text className="text-sm text-gray-500 font-poppins-medium ml-1">
                   {" "}/ {weightDisplay}
                 </Text>
@@ -726,12 +715,11 @@ export default function ProductDetailScreen() {
             ) : isWeightAdjustable ? (
               <View className="flex-row items-center border border-gray-200 rounded-xl px-1 py-1 bg-white">
                 <TouchableOpacity
-                  onPress={() =>
-                    setSelectedWeightGrams(Math.max(50, selectedWeightGrams - 50))
-                  }
+                  onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
                   className="w-8 h-8 items-center justify-center"
                 >
-                  <Ionicons name="remove" size={18} color="#1F2937" />
+                  <Ionicons name="remove" size={18} color={quantity <= 1 ? "#9CA3AF" : "#1F2937"} />
                 </TouchableOpacity>
                 <Text
                   className="mx-2 text-base text-gray-900 min-w-[64px] text-center"
@@ -740,10 +728,10 @@ export default function ProductDetailScreen() {
                     fontWeight: Platform.OS === "android" ? "700" : "normal",
                   }}
                 >
-                  {weightDisplay}
+                  {quantity} × {selected.size}
                 </Text>
                 <TouchableOpacity
-                  onPress={() => setSelectedWeightGrams(selectedWeightGrams + 50)}
+                  onPress={() => setQuantity(quantity + 1)}
                   className="w-8 h-8 items-center justify-center"
                 >
                   <Ionicons name="add" size={18} color="#1F2937" />
@@ -1125,17 +1113,7 @@ export default function ProductDetailScreen() {
 
   // ─── Loading / Error states ───────────────────────────────────────────────
   if (productLoading) {
-    return (
-      <SafeAreaView className="flex-1 bg-white justify-center items-center">
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View className="w-16 h-16 bg-primary rounded-full items-center justify-center">
-          <Ionicons name="fish-outline" size={32} color="white" />
-        </View>
-        <Text className="text-muted-foreground font-poppins-medium mt-4">
-          Loading product details...
-        </Text>
-      </SafeAreaView>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (!product) {

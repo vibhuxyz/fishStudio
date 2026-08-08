@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
 import { CategoryHeader } from "./category-header";
 import { CategorySidebar } from "./category-sidebar";
 import { CategoryProductGrid } from "./category-product-grid";
@@ -149,13 +148,11 @@ export function CategoryShell({
                 activeSubCategory={activeSubCategory}
                 products={allProducts}
                 isLoading={isLoading}
+                isFetchingNextPage={isFetchingNextPage}
               />
 
               {/* Infinite scroll sentinel */}
               <div ref={sentinelRef} className="mt-8 flex justify-center py-4">
-                {isFetchingNextPage && (
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                )}
                 {!hasNextPage && allProducts.length > 0 && !isLoading && (
                   <p className="text-sm text-muted-foreground">All products loaded</p>
                 )}

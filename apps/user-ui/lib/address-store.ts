@@ -14,6 +14,7 @@ export interface Address {
   city: string;
   state: string;
   pincode: string;
+  deliveryInstructions?: string;
   lat?: number;
   lng?: number;
 }
@@ -26,6 +27,7 @@ export interface SelectedLocation {
   area?: string;
   deliveryTimeMinutes?: number;
   isOpen?: boolean;
+  isInstantAvailable?: boolean;
   opening_hours?: string;
   closing_hours?: string;
 }
@@ -43,6 +45,7 @@ interface AddressState {
   setSelectedLocation: (location: SelectedLocation | null) => void;
   updateStoreStatus: (status: {
     isOpen?: boolean;
+    isInstantAvailable?: boolean;
     deliveryTimeMinutes?: number;
     opening_hours?: string;
     closing_hours?: string;
@@ -77,12 +80,21 @@ export const useAddressStore = create<AddressState>()(
 
       setAddresses: (addresses: Address[]) =>
         set((state) => {
-          const stillExists = addresses.some((a) => a.id === state.selectedAddressId);
+          // The API stores/returns `latitude`/`longitude` (matches the Order
+          // snapshot's field names); the frontend Address type uses the
+          // shorter `lat`/`lng` — translated once here so every caller can
+          // just pass the raw API response through.
+          const normalized = addresses.map((a: any) => ({
+            ...a,
+            lat: a.lat ?? a.latitude ?? undefined,
+            lng: a.lng ?? a.longitude ?? undefined,
+          }));
+          const stillExists = normalized.some((a) => a.id === state.selectedAddressId);
           return {
-            addresses,
+            addresses: normalized,
             selectedAddressId: stillExists
               ? state.selectedAddressId
-              : (addresses[0]?.id ?? null),
+              : (normalized[0]?.id ?? null),
           };
         }),
 

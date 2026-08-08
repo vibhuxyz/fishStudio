@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
+export default defineConfig((options) => ({
   entry: {
     index: "src/index.ts",
     "types/index": "src/types/index.ts",
@@ -9,7 +9,9 @@ export default defineConfig({
   format: ["esm"],
   target: "node18",
   outDir: "dist",
-  clean: true,
+  // See packages/db-mongo/tsup.config.ts — cleaning mid-watch races dependent
+  // dev servers that import this package while dist/ is briefly empty.
+  clean: !options.watch,
   dts: true,
   skipNodeModulesBundle: true,
-});
+}));

@@ -1,4 +1,6 @@
 import { prismaMongo } from "@repo/db-mongo";
+import { prismaPostgres } from "@repo/db-postgres";
+import { cloudinary } from "@repo/libs/cloudinary";
 
 /**
  * Cleanup job: Permanently delete unapproved Sellers older than 24 hours.
@@ -57,6 +59,48 @@ export async function cleanupDeletedProducts() {
     }
   } catch (error) {
     console.error(`[JOB] ❌ Error cleaning up deleted products:`, error);
+  }
+}
+
+/**
+ * Cleanup job: delete delivery-proof photos from Cloudinary and clear their
+ * fields on the Order 5 days after upload — the photo has served its purpose
+ * (customer transparency window) and shouldn't linger indefinitely.
+ */
+export async function deleteExpiredDeliveryProof() {
+  const threshold = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+  try {
+    const expired = await prismaPostgres.order.findMany({
+      where: {
+        deliveryProofUploadedAt: { lt: threshold },
+        deliveryProofPhotoPublicId: { not: null },
+      },
+      select: { id: true, deliveryProofPhotoPublicId: true },
+    });
+
+    for (const order of expired) {
+      try {
+        await cloudinary.uploader.destroy(order.deliveryProofPhotoPublicId!);
+      } catch (err) {
+        // If Cloudinary already lacks the asset (e.g. manually removed),
+        // still clear the DB fields below rather than retrying forever.
+        console.error(`[JOB] Failed to delete Cloudinary asset for order ${order.id}:`, err);
+      }
+      await prismaPostgres.order.update({
+        where: { id: order.id },
+        data: {
+          deliveryProofPhotoUrl: null,
+          deliveryProofPhotoPublicId: null,
+          deliveryProofUploadedAt: null,
+        },
+      });
+    }
+
+    if (expired.length > 0) {
+      console.log(`[JOB] 🧹 Cleaned up ${expired.length} expired delivery-proof photos`);
+    }
+  } catch (error) {
+    console.error(`[JOB] ❌ Error cleaning up expired delivery-proof photos:`, error);
   }
 }
 

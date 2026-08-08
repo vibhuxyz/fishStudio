@@ -3,11 +3,20 @@ import { colors } from "@/constants/theme";
 import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
+import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { Image, Text, TouchableOpacity, View, Animated } from "react-native";
+
+const SEARCH_QUERIES = [
+  "Search for fish 🐟",
+  "Search for seafood 🦐",
+  "Search for chicken 🍗",
+  "Search for mutton 🥩",
+  "Search for eggs 🥚"
+];
 
 // Store hours come from the DB as 24h "HH:mm" strings (e.g. "09:00") — drop
 // ":00" minutes to match the "6 AM" style already used for delivery slots.
@@ -26,6 +35,27 @@ export default function Header() {
 
   const selectedAddress = getSelectedAddress();
 
+  const [queryIndex, setQueryIndex] = useState(0);
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.parallel([
+        Animated.timing(translateY, { toValue: -15, duration: 300, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true })
+      ]).start(() => {
+        setQueryIndex((prev) => (prev + 1) % SEARCH_QUERIES.length);
+        translateY.setValue(15);
+        Animated.parallel([
+          Animated.timing(translateY, { toValue: 0, duration: 300, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true })
+        ]).start();
+      });
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [translateY, opacity]);
+
   // isOpen/deliveryTimeMinutes are cached in selectedLocation and only get
   // refreshed when the address is manually reselected in AddressModal — a
   // store that opens or closes while the app sits idle would otherwise show
@@ -40,6 +70,7 @@ export default function Header() {
       if (store) {
         updateStoreStatus({
           isOpen: store.isOpen,
+          isInstantAvailable: store.isInstantAvailable,
           deliveryTimeMinutes: selectedLocation?.city
             ? store.cityDeliveryTimes?.[selectedLocation.city]
             : undefined,
@@ -47,7 +78,9 @@ export default function Header() {
           closingHours: store.closing_hours,
         });
       }
-      return store;
+      // react-query throws if a queryFn resolves to undefined — null is the
+      // correct "no store for this pincode" signal.
+      return store ?? null;
     },
     enabled: !!selectedLocation?.pincode,
     refetchInterval: 1000 * 60 * 2,
@@ -74,7 +107,7 @@ export default function Header() {
       : "Set location";
 
   return (
-    <View className="bg-white px-4 pt-4 pb-2">
+    <View className="bg-white px-4 pt-2 pb-1">
       {/* ── Top row: Logo | Delivery | Profile ── */}
       <View className="flex-row items-center">
 
@@ -136,7 +169,7 @@ export default function Header() {
             <View className="flex-row items-center" style={{ marginTop: 2 }}>
               <Ionicons name="flash" size={11} color={colors.primary} />
               <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 10, color: colors.primary, marginLeft: 3 }}>
-                {selectedLocation?.deliveryTimeMinutes
+                {selectedLocation?.isInstantAvailable && selectedLocation?.deliveryTimeMinutes
                   ? `Instant · ${selectedLocation.deliveryTimeMinutes} min`
                   : "30-45 mins delivery"}
               </Text>
@@ -200,32 +233,55 @@ export default function Header() {
               backgroundColor: "#F3F3F3",
               alignItems: "center",
               justifyContent: "center",
+              overflow: "hidden",
             }}
           >
-            <Ionicons name="person-outline" size={20} color="#1A1C1C" />
+            {(user as any)?.avatar?.url || typeof user?.avatar === 'string' ? (
+              <Image
+                source={{ uri: cloudinaryThumbnail((user as any)?.avatar?.url || user.avatar, 80) }}
+                style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: "#5A2C96" }}
+                resizeMode="cover"
+              />
+            ) : user ? (
+              <Image
+                source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=FFFFFF&color=5A2C96&size=100` }}
+                style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: "#5A2C96" }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons name="person-outline" size={20} color="#1A1C1C" />
+            )}
           </View>
         </TouchableOpacity>
       </View>
 
       {/* ── Search bar ── */}
       <TouchableOpacity
-        className="flex-row items-center mt-4 mb-1"
+        className="flex-row items-center mt-3 mb-0"
         style={{
           backgroundColor: "#EFEFEF",
           borderRadius: 50,
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingVertical: 10,
         }}
         onPress={() => router.push("/(routes)/products")}
         activeOpacity={0.7}
       >
         <Ionicons name="search-outline" size={18} color="#A1A1AA" />
-        <Text
-          style={{ fontFamily: "Inter-Regular", fontSize: 14, color: "#A1A1AA", marginLeft: 10, flex: 1 }}
-          numberOfLines={1}
-        >
-          Search for fish, seafood, chicken, mutton...
-        </Text>
+        <View style={{ flex: 1, height: 20, justifyContent: "center", overflow: "hidden", marginLeft: 10 }}>
+          <Animated.Text
+            style={{ 
+              fontFamily: "Inter-Regular", 
+              fontSize: 14, 
+              color: "#A1A1AA", 
+              transform: [{ translateY }],
+              opacity 
+            }}
+            numberOfLines={1}
+          >
+            {SEARCH_QUERIES[queryIndex]}
+          </Animated.Text>
+        </View>
         <View
           style={{
             width: 30,

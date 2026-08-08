@@ -11,4 +11,5 @@ export * from "./notification.schema.js";
 export * from "./payment.schema.js";
 export * from "./combo.schema.js";
 export * from "./rider.schema.js";
+export * from "./staff.schema.js";
 

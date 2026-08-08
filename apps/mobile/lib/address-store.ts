@@ -20,6 +20,8 @@ export interface Address {
   isDefault: boolean;
   userId: string;
   createdAt: string;
+  lat?: number;
+  lng?: number;
 }
 
 // Lightweight selected location (what user-ui uses)
@@ -31,6 +33,7 @@ export interface SelectedLocation {
   area?: string;
   deliveryTimeMinutes?: number;
   isOpen?: boolean;
+  isInstantAvailable?: boolean;
   openingHours?: string;
   closingHours?: string;
 }
@@ -48,6 +51,7 @@ interface AddressStore {
   setSelectedLocation: (location: SelectedLocation) => void;
   updateStoreStatus: (status: {
     isOpen?: boolean;
+    isInstantAvailable?: boolean;
     deliveryTimeMinutes?: number;
     openingHours?: string;
     closingHours?: string;
@@ -68,7 +72,18 @@ export const useAddressStore = create<AddressStore>()(
       selectedLocation: null,
       locationVersion: 0,
 
-      setAddresses: (addresses) => set({ addresses }),
+      // The API stores/returns `latitude`/`longitude` (matches the Order
+      // snapshot's field names); the app's Address type uses the shorter
+      // `lat`/`lng` — translated once here so every caller can just pass the
+      // raw API response through.
+      setAddresses: (addresses) =>
+        set({
+          addresses: addresses.map((a: any) => ({
+            ...a,
+            lat: a.lat ?? a.latitude ?? undefined,
+            lng: a.lng ?? a.longitude ?? undefined,
+          })),
+        }),
 
       selectAddress: (id) => {
         const address = get().addresses.find((a) => a.id === id);

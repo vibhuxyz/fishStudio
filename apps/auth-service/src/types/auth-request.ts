@@ -24,7 +24,9 @@ export interface AuthSeller {
 export interface AuthStaff {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
+  username?: string | null;
+  role: "ORDER_MANAGER" | "RIDER" | "CUTTING_STAFF";
   isActive: boolean;
   sellerId?: string | null;
   createdAt?: Date;

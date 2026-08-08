@@ -78,6 +78,12 @@ export default function Profile() {
     staleTime: 1000 * 60 * 5,
   });
 
+  useEffect(() => {
+    if (userData) {
+      updateUserData(userData);
+    }
+  }, [userData, updateUserData]);
+
   const { data: orderStats } = useQuery({
     queryKey: ["user-order-stats"],
     queryFn: async () => {
@@ -299,7 +305,7 @@ export default function Profile() {
                     <View style={{ position: "relative", marginRight: 14 }}>
                       <Image
                         source={{
-                          uri: cloudinaryThumbnail(user?.avatar?.url, 128) ||
+                          uri: user?.avatar?.url ? cloudinaryThumbnail(user.avatar.url, 128) : typeof user?.avatar === 'string' ? user.avatar :
                             `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || "U")}&background=FFFFFF&color=5A2C96&size=200`,
                         }}
                         style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: "rgba(255,255,255,0.4)" }}

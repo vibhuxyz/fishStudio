@@ -1,0 +1,19 @@
+{
+  "name": "Fish Studio Staff",
+  "short_name": "Staff Portal",
+  "description": "Rider and cutting-staff order workflow",
+  "start_url": "/staff/login",
+  "scope": "/staff/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080b12",
+  "theme_color": "#080b12",
+  "icons": [
+    {
+      "src": "/staff/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

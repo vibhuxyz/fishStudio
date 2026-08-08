@@ -40,6 +40,7 @@
     "@repo/env-config": "workspace:*",
     "@repo/middlewares": "workspace:*",
     "@repo/libs": "workspace:*",
+    "@repo/shared": "workspace:*",
     "@repo/zod-schema": "workspace:*",
     "@repo/error-handlers": "workspace:*"
   }

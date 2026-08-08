@@ -350,10 +350,18 @@ export const addUserAddress = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const { address } = req.body; // { id, name, phone, street, city, state, pincode, isDefault }
+    const { address } = req.body; // { id, name, phone, street, city, state, pincode, isDefault, latitude?, longitude? }
 
     if (!address || !address.street || !address.city || !address.pincode) {
       return next(new ValidationError("Address details are incomplete"));
+    }
+    const hasLat = address.latitude !== undefined && address.latitude !== null;
+    const hasLng = address.longitude !== undefined && address.longitude !== null;
+    if (hasLat !== hasLng) {
+      return next(new ValidationError("Both latitude and longitude are required together"));
+    }
+    if (hasLat && (typeof address.latitude !== "number" || typeof address.longitude !== "number")) {
+      return next(new ValidationError("latitude/longitude must be numbers"));
     }
 
     const user = await prisma.users.findUnique({ where: { id: userId } });
@@ -382,6 +390,8 @@ export const addUserAddress = async (
       country: address.country || "India",
       deliveryInstructions: address.deliveryInstructions || undefined,
       isDefault: Boolean(address.isDefault),
+      latitude: hasLat ? address.latitude : undefined,
+      longitude: hasLat ? address.longitude : undefined,
     };
     addresses.push(newAddress);
 
@@ -402,6 +412,89 @@ export const addUserAddress = async (
     res.status(200).json({
       success: true,
       message: "Address added successfully",
+      addresses: updatedUser.addresses,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserAddress = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { addressId } = req.params;
+    const { address } = req.body; // { name, phone, street, city, state, pincode, isDefault, latitude?, longitude? }
+
+    if (!address || !address.street || !address.city || !address.pincode) {
+      return next(new ValidationError("Address details are incomplete"));
+    }
+    const hasLat = address.latitude !== undefined && address.latitude !== null;
+    const hasLng = address.longitude !== undefined && address.longitude !== null;
+    if (hasLat !== hasLng) {
+      return next(new ValidationError("Both latitude and longitude are required together"));
+    }
+    if (hasLat && (typeof address.latitude !== "number" || typeof address.longitude !== "number")) {
+      return next(new ValidationError("latitude/longitude must be numbers"));
+    }
+
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) return next(new NotFoundError("User not found"));
+
+    let addresses = (user.addresses as any[]) || [];
+    const existing = addresses.find((addr) => addr.id === addressId);
+    if (!existing) return next(new NotFoundError("Address not found"));
+
+    // If isDefault is true, unset other defaults
+    if (address.isDefault) {
+      addresses = addresses.map((addr) =>
+        addr.id === addressId ? addr : { ...addr, isDefault: false },
+      );
+    }
+
+    addresses = addresses.map((addr) =>
+      addr.id === addressId
+        ? {
+            ...addr,
+            label: address.label || addr.label || "Home",
+            savedAs: address.savedAs || undefined,
+            name: address.name,
+            phone: address.phone,
+            street: address.street,
+            area: address.area || undefined,
+            landmark: address.landmark || undefined,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+            country: address.country || "India",
+            deliveryInstructions: address.deliveryInstructions || undefined,
+            isDefault: Boolean(address.isDefault),
+            latitude: hasLat ? address.latitude : undefined,
+            longitude: hasLat ? address.longitude : undefined,
+          }
+        : addr,
+    );
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: { addresses },
+    });
+
+    const token = req.cookies["access_token"] || req.headers.authorization?.split(" ")[1];
+    if (token) {
+      try {
+        await redis.del(`auth:${hashToken(token)}`);
+      } catch {
+        // Non-fatal: address was still updated in DB.
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Address updated successfully",
       addresses: updatedUser.addresses,
     });
   } catch (error) {

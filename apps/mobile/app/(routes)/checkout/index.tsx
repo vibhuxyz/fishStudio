@@ -571,6 +571,13 @@ export default function CheckoutScreen() {
           address: `${selectedAddress.street}${selectedAddress.area ? `, ${selectedAddress.area}` : ""}`,
           city: selectedAddress.city,
           pincode: selectedAddress.pincode,
+          ...(selectedAddress.lat != null && selectedAddress.lng != null
+            ? { latitude: selectedAddress.lat, longitude: selectedAddress.lng }
+            : {}),
+          ...(selectedAddress.landmark ? { landmark: selectedAddress.landmark } : {}),
+          ...(selectedAddress.deliveryInstructions
+            ? { deliveryInstructions: selectedAddress.deliveryInstructions }
+            : {}),
         },
         billDetails: {
           itemTotal: subtotal,

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Loader2 } from "lucide-react";
 import { ProductCard } from "@/components/shared/product-card";
+import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
 import { useInfiniteProducts } from "@/hooks/useInfiniteProducts";
+import { EndOfListBanner } from "./end-of-list-banner";
 
 // Homepage's "browse everything" tail — infinite-scrolls through the same
 // scope=homepage listing (bestseller-first) that mobile's home tab already
@@ -54,12 +55,13 @@ export function AllProductsSection() {
               variant="compact"
             />
           ))}
+          {isFetchingNextPage &&
+            Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`next-${i}`} />)}
         </div>
 
         <div ref={sentinelRef} className="mt-8 flex justify-center py-4">
-          {isFetchingNextPage && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
           {!hasNextPage && allProducts.length > 0 && !isLoading && (
-            <p className="text-sm text-muted-foreground">You've reached the end</p>
+            <EndOfListBanner />
           )}
         </div>
       </div>

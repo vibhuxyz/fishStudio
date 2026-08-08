@@ -9,9 +9,16 @@ export type AdminProfile = {
 export type Staff = {
   id: string;
   name: string;
-  email: string;
-  role: string;
+  email?: string | null;
+  username?: string | null;
+  phone?: string | null;
+  role: "ORDER_MANAGER" | "RIDER" | "CUTTING_STAFF";
   isActive: boolean;
+  vehicleType?: "BIKE" | "SCOOTER" | "BICYCLE" | "OTHER" | null;
+  vehicleNumber?: string | null;
+  deliveryZone?: string | null;
+  riderStatus?: "AVAILABLE" | "DELIVERING" | "OFFLINE" | "ON_LEAVE" | null;
+  activeDeliveryCount?: number | null;
   createdAt: string;
   updatedAt?: string;
 };

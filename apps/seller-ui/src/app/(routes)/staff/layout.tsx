@@ -1,15 +1,35 @@
 "use client";
 import StaffSidebar from "@/shared/components/staff-sidebar/staff-sidebar";
 import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import useRequireStaff from "@/hooks/useRequireStaff";
+import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
+import StaffPwaMeta from "@/shared/components/staff-pwa-meta";
+
+// This layout wraps every route under /staff/* in Next.js's nesting model,
+// but /staff/login and the Rider/Cutting-Staff subtrees are fully
+// self-contained (their own auth gate + chrome) — this layout's
+// ORDER_MANAGER gate and StaffSidebar must not wrap them, and its redirect
+// must not fire for them either (hence useSeller directly instead of the
+// auto-redirecting useRequireStaff).
+const SELF_CONTAINED_PREFIXES = ["/staff/login", "/staff/rider", "/staff/cutting"];
 
 const StaffLayout = ({ children }: { children: React.ReactNode }) => {
+  const pathname = usePathname();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { staff, isLoading } = useRequireStaff();
+  const { seller: staff, isLoading } = useSeller();
   // Shared persistent WS connection established at app root — no new socket here.
   const { subscribe } = useWorkerWS();
+
+  const isSelfContained = SELF_CONTAINED_PREFIXES.some((p) => pathname?.startsWith(p));
+
+  useEffect(() => {
+    if (!isSelfContained && !isLoading && !staff) {
+      router.replace("/login");
+    }
+  }, [isSelfContained, isLoading, staff, router]);
 
   // Subscribe to STAFF_ACCESS_GRANTED only while the staff member is inactive.
   // When the seller grants access, invalidate the seller query so isActive becomes true.
@@ -21,6 +41,10 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
       queryClient.invalidateQueries({ queryKey: ["seller"] });
     });
   }, [staff?.id, staff?.isActive, subscribe, queryClient]);
+
+  if (isSelfContained) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return <div className="min-h-screen bg-[#080b12] flex items-center justify-center text-white">Loading...</div>;
@@ -40,6 +64,7 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="flex h-full bg-[#080b12] min-h-screen">
+      <StaffPwaMeta />
       <aside className="w-[260px] min-w-[240px] max-w-[280px] border-r border-gray-800/60 text-white">
         <div className="sticky top-0 h-screen overflow-y-auto">
           <StaffSidebar />

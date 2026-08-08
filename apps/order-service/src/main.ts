@@ -37,7 +37,10 @@ app.use(rateLimit({
   message: { error: "Too many requests, please slow down." },
 }));
 
-app.use(express.json());
+// Preparation/delivery-proof photos arrive as base64 in the JSON body
+// (staff-workflow.controller), sometimes several per request — matches
+// product-service's limit for the same reason.
+app.use(express.json({ limit: "20mb" }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {

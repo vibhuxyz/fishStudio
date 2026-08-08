@@ -42,7 +42,10 @@ export function useLiveOrder(orderId?: string) {
     queryKey: ["order", orderId],
     queryFn: async () => {
       const res = await axiosInstance.get(`/order/api/get-order/${orderId}`);
-      return res.data.order;
+      // react-query throws if a queryFn resolves to undefined — null is the
+      // correct "no order" signal so a 200-with-no-order response doesn't
+      // surface as a dev-only "Query data cannot be undefined" toast.
+      return res.data.order ?? null;
     },
     enabled: !!orderId,
     staleTime: 0,

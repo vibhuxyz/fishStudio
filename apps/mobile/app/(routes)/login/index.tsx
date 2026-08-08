@@ -11,7 +11,7 @@ import { toast } from "@/utils/toast";
 import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { router, useLocalSearchParams, type Href } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 
@@ -27,6 +27,7 @@ const RESEND_SECONDS = 45;
 const emptyOtp = () => Array<string>(OTP_LENGTH).fill("");
 
 export default function LoginScreen() {
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [step, setStep] = useState<Step>("identifier");
   const [identifier, setIdentifier] = useState("");
   const [fullName, setFullName] = useState("");
@@ -125,9 +126,11 @@ export default function LoginScreen() {
         const hasSeenNotificationPrompt = await AsyncStorage.getItem(
           NOTIFICATION_ONBOARDING_SEEN_KEY,
         );
-        router.replace(
-          hasSeenNotificationPrompt ? "/(tabs)" : "/(routes)/notification-permissions",
-        );
+        if (!hasSeenNotificationPrompt) {
+          router.replace("/(routes)/notification-permissions");
+          return;
+        }
+        router.replace(redirect && redirect.startsWith("/") ? (redirect as Href) : "/(tabs)");
       }, 1300);
     },
     onError: (error: unknown) => {

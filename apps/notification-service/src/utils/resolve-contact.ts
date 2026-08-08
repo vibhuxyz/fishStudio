@@ -7,6 +7,9 @@ interface UserContact {
   // Only set for customer accounts (`users`) — sellers/admins have no opt-out
   // preference, so `undefined` there is treated as "email allowed".
   emailNotificationsEnabled?: boolean | null;
+  // Only set for customer accounts (`users`) — sellers/admins have no mobile
+  // app to register a push token from.
+  expoPushToken?: string | null;
 }
 
 /** Resolve email + phone for any userId, checking users → sellers → admins */
@@ -14,7 +17,13 @@ export async function resolveUserContact(userId: string): Promise<UserContact | 
   // 1. Regular users
   const user = await prismaMongo.users.findUnique({
     where: { id: userId },
-    select: { email: true, phone_number: true, name: true, emailNotificationsEnabled: true },
+    select: {
+      email: true,
+      phone_number: true,
+      name: true,
+      emailNotificationsEnabled: true,
+      expoPushToken: true,
+    },
   });
   if (user) return user;
 

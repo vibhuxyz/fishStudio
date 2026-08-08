@@ -72,6 +72,13 @@ const INDEXES: { collection: string; indexes: IndexSpec[] }[] = [
       },
     ],
   },
+  {
+    collection: "staffs",
+    indexes: [
+      { key: { email: 1 }, name: "staffs_email_unique", unique: true, sparse: true },
+      { key: { username: 1 }, name: "staffs_username_unique", unique: true, sparse: true },
+    ],
+  },
 ];
 
 // IndexOptionsConflict / IndexKeySpecsConflict — an index of this name or shape

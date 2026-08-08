@@ -263,11 +263,15 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
       </TouchableWithoutFeedback>
 
       <View
-        className="bg-white rounded-t-3xl"
-        style={{ maxHeight: SCREEN_HEIGHT * 0.9 }}
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderTopLeftRadius: 40,
+          borderTopRightRadius: 40,
+          maxHeight: SCREEN_HEIGHT * 0.8,
+        }}
       >
-        <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 bg-gray-300 rounded-full" />
+        <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ width: 44, height: 5, borderRadius: 99, backgroundColor: "#D1D5DB" }} />
         </View>
 
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">

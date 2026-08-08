@@ -3,18 +3,21 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/shared/product-card";
+import { ProductCardSkeleton } from "@/components/shared/product-card-skeleton";
 import type { Product } from "@repo/zod-schema";
 
 interface CategoryProductGridProps {
   activeSubCategory: string | null;
   products: Product[];
   isLoading: boolean;
+  isFetchingNextPage?: boolean;
 }
 
 export function CategoryProductGrid({
   activeSubCategory,
   products,
   isLoading,
+  isFetchingNextPage = false,
 }: CategoryProductGridProps) {
   const displayedProducts = useMemo(() => {
     if (!activeSubCategory) return products;
@@ -55,6 +58,8 @@ export function CategoryProductGrid({
               variant="compact"
             />
           ))}
+          {isFetchingNextPage &&
+            Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`next-${i}`} />)}
         </motion.div>
       </AnimatePresence>
     </div>

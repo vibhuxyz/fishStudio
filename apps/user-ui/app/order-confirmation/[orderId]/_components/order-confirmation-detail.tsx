@@ -26,6 +26,7 @@ import { useWs } from "@/context/ws-context";
 import { toast } from "sonner";
 import type { Order } from "@/lib/orders-api";
 import { formatOrderId } from "@repo/shared/order-id";
+import { OrderConfirmationSkeleton } from "./order-confirmation-skeleton";
 
 interface OrderConfirmationDetailProps {
   initialOrder: Order | null;
@@ -129,20 +130,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   }
 
   if (isLoading && !order) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 md:py-14">
-        <div className="animate-pulse space-y-6">
-          <div className="mx-auto h-20 w-20 rounded-full bg-muted" />
-          <div className="mx-auto h-10 w-72 rounded bg-muted" />
-          <div className="mx-auto h-5 w-96 rounded bg-muted" />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="h-64 rounded-2xl bg-muted" />
-            <div className="h-64 rounded-2xl bg-muted" />
-          </div>
-          <div className="h-80 rounded-2xl bg-muted" />
-        </div>
-      </div>
-    );
+    return <OrderConfirmationSkeleton />;
   }
 
   if (!order) {

@@ -1,4 +1,5 @@
 import ProductCard from "@/components/cards/product.card";
+import AddToCartModal from "@/components/home/add-to-cart-modal";
 import Header from "@/components/home/header";
 import FloatingCartBar, { useFloatingCartBarSpace } from "@/components/shared/floating-cart-bar";
 import { spacing } from "@/constants/theme";
@@ -52,6 +53,7 @@ export default function CategoryScreen() {
     subCategory ? decodeURIComponent(subCategory) : null,
   );
   const [currentBanner, setCurrentBanner] = useState(0);
+  const [cartProduct, setCartProduct] = useState<Product | null>(null);
   const bannerScrollRef = useRef<ScrollView>(null);
   const selectedAddress = getSelectedAddress();
   // Reserve extra scroll space only while the floating "View cart" pill is
@@ -70,7 +72,7 @@ export default function CategoryScreen() {
         categoryImages: Record<string, string>;
       };
     },
-    staleTime: 1000 * 60 * 10,
+    staleTime: Infinity,
   });
 
   const resolvedCategory = useMemo(() => {
@@ -196,6 +198,12 @@ export default function CategoryScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Header />
 
+      <AddToCartModal
+        product={cartProduct}
+        visible={!!cartProduct}
+        onClose={() => setCartProduct(null)}
+      />
+
       <FlatList
         data={isLoading ? [] : displayedProducts}
         keyExtractor={(item) => item.id}
@@ -211,7 +219,12 @@ export default function CategoryScreen() {
         removeClippedSubviews
         renderItem={({ item }) => (
           <View style={{ width: "48.5%", marginBottom: 12 }}>
-            <ProductCard product={item} cardWidth="100%" noRightMargin />
+            <ProductCard
+              product={item}
+              cardWidth="100%"
+              noRightMargin
+              onAddToCart={setCartProduct}
+            />
           </View>
         )}
         ListHeaderComponent={

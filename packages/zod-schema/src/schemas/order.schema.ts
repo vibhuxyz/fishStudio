@@ -28,6 +28,16 @@ export const deliveryDetailsSchema = z.object({
   address: z.string().min(1, "Address is required"),
   city: z.string().min(1, "City is required"),
   pincode: z.string().min(6, "Pincode must be at least 6 digits"),
+  // The exact map pin the customer placed when saving this address — optional
+  // since addresses saved before the pin-drop picker existed have none, and
+  // the order must still be placeable without forcing a re-save.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  // Carried straight from the customer's saved address so the rider sees
+  // them on the order, not just at checkout time. Optional for the same
+  // reason as lat/lng — addresses saved before these fields existed.
+  landmark: z.string().optional(),
+  deliveryInstructions: z.string().optional(),
 });
 
 export const billDetailsSchema = z.object({
@@ -104,6 +114,17 @@ export const updateOrderStatusSchema = z.object({
   // Only meaningful when status is CANCELLED — the seller/staff cancelling an
   // order that's already past ACCEPTED can optionally record why.
   cancellationReason: z.string().max(500, "Reason max 500 characters").optional(),
+});
+
+// Cutting Staff: base64 data-URI photos, validated further (size/type) by
+// assertSafeImageSource in @repo/libs/cloudinary before upload.
+export const markPreparationCompleteSchema = z.object({
+  photos: z.array(z.string()).min(1, "At least one preparation photo is required"),
+});
+
+// Rider: single delivery-proof photo.
+export const markDeliveredSchema = z.object({
+  photo: z.string().min(1, "A delivery-proof photo is required"),
 });
 
 // Admin can set any status, unlike the seller-facing updateOrderStatusSchema above.

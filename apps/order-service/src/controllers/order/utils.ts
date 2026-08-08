@@ -1,6 +1,6 @@
 import { redis } from "@repo/libs/redis";
 import { prismaMongo } from "@repo/db-mongo";
-import { prismaPostgres, toMoney, type Prisma } from "@repo/db-postgres";
+import { prismaPostgres, toMoney, toMoneyOrNull, type Prisma } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
 
 export const STATS_CACHE_TTL = 120; // 2 minutes
@@ -64,16 +64,81 @@ export const orderMoneyFields = (order: {
   totalAmount: Prisma.Decimal;
   discountAmount: Prisma.Decimal;
   deliveryCharge: Prisma.Decimal;
+  deliveryLatitude?: Prisma.Decimal | null;
+  deliveryLongitude?: Prisma.Decimal | null;
 }) => ({
   totalAmount: toMoney(order.totalAmount),
   discountAmount: toMoney(order.discountAmount),
   deliveryCharge: toMoney(order.deliveryCharge),
+  // toMoneyOrNull (not toMoney) — 0,0 is a real coordinate (Gulf of Guinea),
+  // so a missing pin must stay null rather than coerce to it.
+  deliveryLatitude: toMoneyOrNull(order.deliveryLatitude),
+  deliveryLongitude: toMoneyOrNull(order.deliveryLongitude),
 });
 
 /** Same, for a spread OrderItem row. */
 export const orderItemMoneyFields = (item: { price: Prisma.Decimal }) => ({
   price: toMoney(item.price),
 });
+
+/**
+ * Attaches Mongo-side User/Product/Rider data to a page of Postgres orders.
+ * Shared by every order-list endpoint (seller, rider, cutting-staff) so the
+ * user/product/rider lookup and money-field mapping stay in one place.
+ */
+export async function hydrateOrders(orders: any[]) {
+  const userIds = [...new Set(orders.map((o) => o.userId))];
+  const productIds = [...new Set(orders.flatMap((o) => o.orderItems.map((oi: any) => oi.productId)))];
+  const riderIds = [...new Set(orders.map((o) => o.riderId).filter((id): id is string => Boolean(id)))];
+
+  const [users, products, riders] = await Promise.all([
+    prismaMongo.users.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, phone_number: true, email: true },
+    }),
+    prismaMongo.products.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        sale_price: true,
+        images: { select: { url: true }, take: 1 },
+      },
+    }),
+    riderIds.length
+      ? prismaMongo.staffs.findMany({
+          where: { id: { in: riderIds }, role: "RIDER" },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            vehicleType: true,
+            vehicleNumber: true,
+            riderStatus: true,
+            photo: true,
+          },
+        })
+      : [],
+  ]);
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  const productMap = new Map(products.map((p) => [p.id, p]));
+  const riderMap = new Map(riders.map((r) => [r.id, r]));
+
+  return orders.map((o: any) => ({
+    ...o,
+    ...orderMoneyFields(o),
+    user: userMap.get(o.userId),
+    rider: o.riderId ? riderMap.get(o.riderId) ?? null : null,
+    items: o.orderItems.map((oi: any) => ({
+      ...oi,
+      ...orderItemMoneyFields(oi),
+      product: productMap.get(oi.productId),
+    })),
+    total: toMoney(o.totalAmount),
+  }));
+}
 
 export type Period = "week" | "month" | "year";
 
@@ -200,16 +265,16 @@ export function restoreOrderStock(
  * of this bookkeeping instead of four copies.
  */
 export async function releaseRiderIfNoOtherDeliveries(riderId: string): Promise<void> {
-  const rider = await prismaMongo.riders.update({
+  const rider = await prismaMongo.staffs.update({
     where: { id: riderId },
     data: { activeDeliveryCount: { decrement: 1 } },
   });
-  if (rider.activeDeliveryCount <= 0) {
-    await prismaMongo.riders.update({
+  if ((rider.activeDeliveryCount ?? 0) <= 0) {
+    await prismaMongo.staffs.update({
       where: { id: riderId },
       // Clamp to 0 (rather than leaving it negative) — defends against a
       // double-release race decrementing past zero.
-      data: { activeDeliveryCount: 0, status: "AVAILABLE" },
+      data: { activeDeliveryCount: 0, riderStatus: "AVAILABLE" },
     });
   }
 }

@@ -34,6 +34,7 @@ export class CronManager {
         cleanupJobs.cleanupInactiveStaff(),
         cleanupJobs.cleanupDeletedProducts(),
         cleanupJobs.cleanupExpiredAccessCodes(),
+        cleanupJobs.deleteExpiredDeliveryProof(),
       ]);
       console.log("[CRON] Hourly cleanup jobs completed.");
     });
