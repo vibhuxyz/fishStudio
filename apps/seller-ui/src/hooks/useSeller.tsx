@@ -13,7 +13,16 @@ const useSeller = () => {
     isPending,
     isError,
   } = useQuery({
-    queryKey: ["seller", role],
+    // `role` must NOT be part of this key: it's set FROM this query's own
+    // result below (setRole(seller.role)), so keying on it makes every
+    // successful fetch immediately invalidate itself into a brand-new,
+    // never-fetched cache entry (null → "seller"/"staff") the instant it
+    // resolves. That refetch briefly reports isLoading:false/seller:undefined
+    // while in flight, and if it hits any transient hiccup (rate limit, cold
+    // start) with retry disabled, every `!seller && !isLoading` auth gate in
+    // the app reads that as "logged out" and bounces to /login — even though
+    // the very first fetch under the old key already had valid seller data.
+    queryKey: ["seller"],
     queryFn: async () => {
       // If we already know the user is a staff member, skip the seller fetch to avoid 401s
       if (role === "staff") {
