@@ -17,12 +17,16 @@ let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
 
 // Handle logout and prevent infinite loops
+const publicPaths = ["/login", "/signup", "/forgot-password", "/staff/login"];
+
 const handleLogout = () => {
-  const publicPaths = ["/login", "/signup", "/forgot-password"];
   const currentPath = window.location.pathname;
-  if (!publicPaths.includes(currentPath)) {
-    runRedirectToLogin();
-  }
+  if (publicPaths.includes(currentPath)) return;
+  // Rider/Cutting-Staff/Order-Manager all live under /staff/* with their own
+  // login page — bouncing them to the seller /login instead sends a staff
+  // member into a login form they have no seller credentials for.
+  const loginPath = currentPath.startsWith("/staff/") ? "/staff/login" : "/login";
+  runRedirectToLogin(loginPath);
 };
 
 // Handle adding a new access token to queued requests

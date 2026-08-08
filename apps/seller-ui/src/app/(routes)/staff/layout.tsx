@@ -27,7 +27,9 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!isSelfContained && !isLoading && !staff) {
-      router.replace("/login");
+      // Still under /staff/* (e.g. /staff/orders) — send unauthenticated
+      // visitors to the staff login, not the seller one.
+      router.replace("/staff/login");
     }
   }, [isSelfContained, isLoading, staff, router]);
 

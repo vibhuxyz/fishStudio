@@ -1,15 +1,12 @@
 
-let redirectToLogin = () => {
-    window.location.href = "/login";
-  };
-  
-  export const setRedirectHandler = (handler: () => void) => {
-    redirectToLogin = handler;
-  };
-  
-  export const runRedirectToLogin = () => {
-    redirectToLogin();
-  };
-  
-  
-  
+let redirectToLogin = (path: string) => {
+  window.location.href = path;
+};
+
+export const setRedirectHandler = (handler: (path: string) => void) => {
+  redirectToLogin = handler;
+};
+
+export const runRedirectToLogin = (path: string = "/login") => {
+  redirectToLogin(path);
+};

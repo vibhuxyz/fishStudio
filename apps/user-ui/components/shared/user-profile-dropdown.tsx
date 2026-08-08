@@ -84,7 +84,7 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
         aria-haspopup="menu"
       >
         {(user as any)?.avatar?.url || typeof user?.avatar === 'string' ? (
-          <img src={(user as any)?.avatar?.url || user.avatar} alt={user?.name ?? "User avatar"} className="h-8 w-8 rounded-full object-cover" />
+          <img src={(user as any)?.avatar?.url || user?.avatar} alt={user?.name ?? "User avatar"} className="h-8 w-8 rounded-full object-cover" />
         ) : (
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {user?.name.charAt(0).toUpperCase()}
@@ -117,7 +117,7 @@ export function UserProfileDropdown({ onAddressClick }: UserProfileDropdownProps
             {/* User info */}
             <div className="flex items-center gap-3 px-5 pb-4 pt-5">
               {(user as any)?.avatar?.url || typeof user?.avatar === 'string' ? (
-                <img src={(user as any)?.avatar?.url || user.avatar} alt={user?.name ?? "User avatar"} className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
+                <img src={(user as any)?.avatar?.url || user?.avatar} alt={user?.name ?? "User avatar"} className="h-12 w-12 flex-shrink-0 rounded-full object-cover" />
               ) : (
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
                   {user?.name.charAt(0).toUpperCase()}
