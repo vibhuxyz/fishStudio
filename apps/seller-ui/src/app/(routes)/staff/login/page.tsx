@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/authStore";
-import { frontendEnv } from "@/config/env";
 import AuthLayout from "@/shared/components/layout/AuthLayout";
 import StaffPwaMeta from "@/shared/components/staff-pwa-meta";
 
@@ -32,7 +31,7 @@ const StaffLogin = () => {
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/staff/login`,
+        "/auth/api/staff/login",
         data,
         { withCredentials: true },
       );

@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@repo/ui";
 import AuthLayout from "@/shared/components/layout/AuthLayout";
-import { frontendEnv } from "@/config/env";
 
 type EmailForm = { email: string };
 type ResetForm = { otp: string; newPassword: string; confirmPassword: string };
@@ -28,7 +27,7 @@ const ForgotPassword = () => {
   const sendOtpMutation = useMutation({
     mutationFn: async (data: EmailForm) => {
       const res = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/forgot-password-seller`,
+        "/auth/api/forgot-password-seller",
         data,
         { withCredentials: true },
       );
@@ -48,7 +47,7 @@ const ForgotPassword = () => {
   const resetMutation = useMutation({
     mutationFn: async (data: ResetForm) => {
       const res = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/reset-password-seller`,
+        "/auth/api/reset-password-seller",
         { email, otp: data.otp, newPassword: data.newPassword },
         { withCredentials: true },
       );

@@ -6,7 +6,6 @@ import Link from "next/link";
 import React, { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
-import { frontendEnv } from "@/config/env";
 import CreateShop from "../../../shared/modules/auth/create-shop";
 import { motion, AnimatePresence } from "framer-motion";
 import AuthLayout from "@/shared/components/layout/AuthLayout";
@@ -45,7 +44,7 @@ const Signup = () => {
   const verifyCodeMutation = useMutation({
     mutationFn: async (data: { email: string; code: string }) => {
       const response = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/verify-seller-code`,
+        "/auth/api/verify-seller-code",
         data
       );
       return response.data;
@@ -93,7 +92,7 @@ const Signup = () => {
     mutationFn: async (data: any) => {
       const payload = selectedRole === "seller" ? { ...data, code: accessCode } : data;
       const response = await axios.post(
-        `${frontendEnv.apiUrl}${registrationEndpoint}`,
+        registrationEndpoint,
         payload,
       );
       return response.data;
@@ -110,7 +109,7 @@ const Signup = () => {
       if (!sellerData) return;
       const payload = selectedRole === "seller" ? { ...sellerData, otp: otp.join(""), code: accessCode } : { ...sellerData, otp: otp.join("") };
       const response = await axios.post(
-        `${frontendEnv.apiUrl}${verifyEndpoint}`,
+        verifyEndpoint,
         payload,
         { withCredentials: true }
       );

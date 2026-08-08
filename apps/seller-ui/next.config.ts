@@ -22,6 +22,25 @@ const nextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
+  // Proxies API calls through this app's own origin so the auth-service's
+  // Set-Cookie responses land as first-party cookies. Calling the API
+  // directly cross-origin (its own domain) meant browsers with third-party
+  // cookie blocking (the Vercel preview/production default) silently
+  // dropped the session cookie, so login appeared to succeed but the
+  // dashboard's auth guard never found a session and bounced back to /login.
+  async rewrites() {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_SERVER_URI ||
+      "http://localhost:8080";
+    return [
+      {
+        source:
+          "/:service(auth|product|order|notification|seller)/api/:path*",
+        destination: `${apiUrl}/:service/api/:path*`,
+      },
+    ];
+  },
   experimental: {
     externalDir: true,
     optimizePackageImports: [

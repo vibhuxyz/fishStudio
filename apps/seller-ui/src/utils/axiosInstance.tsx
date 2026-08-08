@@ -1,9 +1,10 @@
 import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
-import { frontendEnv } from "@/config/env";
 
+// Relative — requests go through this app's own origin and next.config.ts's
+// rewrites() proxies them to the API, so the auth cookie stays first-party.
 const axiosInstance = axios.create({
-  baseURL: frontendEnv.apiUrl,
+  baseURL: "",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

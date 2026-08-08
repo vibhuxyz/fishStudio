@@ -100,7 +100,7 @@ async function resolveSession(
   return null;
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // The staff login form and the staff PWA's static assets (manifest, service

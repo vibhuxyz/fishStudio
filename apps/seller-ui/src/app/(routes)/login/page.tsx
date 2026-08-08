@@ -8,7 +8,6 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "../../../store/authStore";
 import Link from "next/link";
-import { frontendEnv } from "@/config/env";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@repo/ui";
 
@@ -47,7 +46,7 @@ const Login = () => {
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const response = await axios.post(
-        `${frontendEnv.apiUrl}/auth/api/login-seller`,
+        "/auth/api/login-seller",
         data,
         { withCredentials: true },
       );
