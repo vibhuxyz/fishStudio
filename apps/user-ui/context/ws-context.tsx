@@ -26,6 +26,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-store";
 import { frontendEnv } from "@/lib/env";
+import axiosInstance from "@/utils/axiosInstance";
 
 type EventHandler = (payload: any) => void;
 type Unsubscribe = () => void;
@@ -83,14 +84,44 @@ export function WsProvider({ children }: { children: React.ReactNode }) {
       process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006"
     ).replace(/\?.*$/, "");
 
-    // Authenticated: register for userId room so ORDER_STATUS_UPDATE is delivered.
-    // Anonymous: generic connection that still receives broadcast STOCK_UPDATE.
-    const wsUrl = userId ? `${wsBase}?userId=${userId}` : wsBase;
+    // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
+    const scheduleReconnect = () => {
+      if (destroyedRef.current) return;
+      const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
+      attemptRef.current += 1;
+      reconnectRef.current = setTimeout(() => {
+        void connect();
+      }, delay);
+    };
 
-    const connect = () => {
+    const connect = async () => {
       if (destroyedRef.current) return;
 
-      const ws = new WebSocket(wsUrl);
+      // worker-service pins the userId room from a verified token, never from
+      // the query string — so an authenticated feed needs a ticket. The session
+      // cookie can't do this job: it belongs to the API origin, and browsers
+      // don't attach it to an upgrade on the worker-service origin.
+      // Anonymous visitors connect without one and still get STOCK_UPDATE.
+      let ticket: string | null = null;
+      if (userId) {
+        try {
+          const res = await axiosInstance.get("/auth/api/ws-ticket");
+          ticket = res.data?.ticket ?? null;
+        } catch {
+          // Handled below — retried rather than silently downgraded.
+        }
+
+        if (destroyedRef.current) return;
+
+        // Connecting without it would join no room and never close, so the
+        // customer would sit there never seeing their order status change.
+        if (!ticket) {
+          scheduleReconnect();
+          return;
+        }
+      }
+
+      const ws = new WebSocket(ticket ? `${wsBase}?access_token=${ticket}` : wsBase);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -159,17 +190,13 @@ export function WsProvider({ children }: { children: React.ReactNode }) {
       };
 
       ws.onclose = () => {
-        if (destroyedRef.current) return;
-        // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
-        const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
-        attemptRef.current += 1;
-        reconnectRef.current = setTimeout(connect, delay);
+        scheduleReconnect();
       };
 
       ws.onerror = () => ws.close();
     };
 
-    connect();
+    void connect();
 
     return () => {
       destroyedRef.current = true;

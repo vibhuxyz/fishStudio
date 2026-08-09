@@ -19,6 +19,7 @@ import React, {
   useRef,
 } from "react";
 import { frontendEnv } from "@/config/env";
+import axiosInstance from "@/utils/axiosInstance";
 
 type EventHandler = (payload: any) => void;
 type Unsubscribe = () => void;
@@ -84,12 +85,40 @@ export const WorkerWSProvider = ({
       process.env.NEXT_PUBLIC_WORKER_WS_URL || derivedWs || "ws://localhost:6006"
     ).replace(/\?.*$/, "");
 
-    const wsUrl = `${wsBase}?adminId=${adminId}`;
+    // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
+    const scheduleReconnect = () => {
+      if (destroyedRef.current) return;
+      const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
+      attemptRef.current += 1;
+      reconnectRef.current = setTimeout(() => {
+        void connect();
+      }, delay);
+    };
 
-    const connect = () => {
+    const connect = async () => {
       if (destroyedRef.current) return;
 
-      const ws = new WebSocket(wsUrl);
+      // worker-service pins the adminId room from a verified token, never from
+      // the query string — and the session cookie belongs to the API origin, so
+      // browsers never attach it to an upgrade on the worker-service origin.
+      let ticket: string | null = null;
+      try {
+        const res = await axiosInstance.get("/auth/api/ws-ticket");
+        ticket = res.data?.ticket ?? null;
+      } catch {
+        // Handled below — retried rather than connecting to nothing.
+      }
+
+      if (destroyedRef.current) return;
+
+      // A ticketless socket joins no room and never closes, so it would sit
+      // open forever receiving none of this admin's events.
+      if (!ticket) {
+        scheduleReconnect();
+        return;
+      }
+
+      const ws = new WebSocket(`${wsBase}?access_token=${ticket}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -105,17 +134,13 @@ export const WorkerWSProvider = ({
       };
 
       ws.onclose = () => {
-        if (destroyedRef.current) return;
-        // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
-        const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
-        attemptRef.current += 1;
-        reconnectRef.current = setTimeout(connect, delay);
+        scheduleReconnect();
       };
 
       ws.onerror = () => ws.close();
     };
 
-    connect();
+    void connect();
 
     return () => {
       destroyedRef.current = true;

@@ -61,15 +61,14 @@ import {
   getSellerDetailsForAdmin,
   updateSellerApproval,
 } from "../modules/admin/seller-admin.controller.js";
+import { issueWsTicket } from "../modules/auth/wsTicket.controller.js";
 
 import {
   getMyStaffs,
   getStaff,
   logOutStaff,
-  registerStaff,
   searchStaffByEmail,
   updateStaffAccess,
-  verifyStaff,
   loginStaffByUsername,
   createOperationalStaff,
   updateOperationalStaff,
@@ -161,11 +160,16 @@ router.get("/logged-in-seller", isAuthenticated, isSeller, getSeller);
 router.post("/update-store", isAuthenticated, isSeller, updateStore);
 router.post("/logout-seller", isAuthenticated, isSellerOrStaff, logOutSeller);
 
-// staff routes (anyone can register, seller must approve later) — the
-// ORDER_MANAGER flow.
-router.post("/staff-registration", registrationRateLimiter, registerStaff);
-router.post("/verify-staff", authRateLimiter, verifyStaff);
+// Staff no longer self-register. Every role — including ORDER_MANAGER — is
+// created by the seller at POST /seller/staff and logs in with a username at
+// /staff/login, so there is no open registration endpoint to guard.
 router.get("/logged-in-staff", isAuthenticated, isStaff, getStaff);
+
+// Short-lived token so the browser can authenticate its WebSocket upgrade to
+// worker-service, which sits on a different origin than the session cookie.
+// Every authenticated role has a realtime feed of its own (customers track
+// their order, admins watch approvals), so the ticket is not seller/staff-only.
+router.get("/ws-ticket", isAuthenticated, issueWsTicket);
 router.post("/logout-staff", isAuthenticated, isStaff, logOutStaff);
 
 // Rider / Cutting Staff — seller-direct-create, username/password login, no OTP.

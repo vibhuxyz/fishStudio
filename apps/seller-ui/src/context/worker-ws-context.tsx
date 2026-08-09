@@ -17,9 +17,12 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
+  useState,
 } from "react";
 import { frontendEnv } from "@/config/env";
+import { STAFF_SCOPE_HEADER, currentStaffScope } from "@/utils/staffScope";
 
 type EventHandler = (payload: any) => void;
 type Unsubscribe = () => void;
@@ -29,11 +32,14 @@ interface WorkerWSContextValue {
   subscribe: (eventType: string, handler: EventHandler) => Unsubscribe;
   /** Send a raw message to the server (e.g. JOIN_STAFF). */
   send: (message: object) => void;
+  /** Whether the shared socket is currently open — drives live/offline badges. */
+  connected: boolean;
 }
 
 const WorkerWSContext = createContext<WorkerWSContextValue>({
   subscribe: () => () => {},
   send: () => {},
+  connected: false,
 });
 
 export const useWorkerWS = () => useContext(WorkerWSContext);
@@ -60,6 +66,7 @@ export const WorkerWSProvider = ({
   const destroyedRef = useRef(false);
   const reconnectRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attemptRef = useRef(0);
+  const [connected, setConnected] = useState(false);
 
   /** Dispatch a received event to all registered handlers. */
   const emit = useCallback((type: string, payload: any) => {
@@ -112,16 +119,62 @@ export const WorkerWSProvider = ({
     if (storeId) params.set("storeId", storeId);
     if (staffId) params.set("staffId", staffId);
 
-    const wsUrl = `${wsBase}?${params.toString()}`;
+    // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
+    const scheduleReconnect = () => {
+      if (destroyedRef.current) return;
+      const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
+      attemptRef.current += 1;
+      reconnectRef.current = setTimeout(() => {
+        void connect();
+      }, delay);
+    };
 
-    const connect = () => {
+    // The session cookie is first-party to this UI origin, so it is never sent
+    // on an upgrade to the worker-service origin. Fetch a short-lived ticket
+    // over the authenticated same-origin API path instead; without it the
+    // socket connects anonymously and joins no room, so staff receive nothing.
+    const connect = async () => {
       if (destroyedRef.current) return;
 
-      const ws = new WebSocket(wsUrl);
+      let ticket: string | null = null;
+      try {
+        const scope = currentStaffScope();
+        const res = await fetch("/auth/api/ws-ticket", {
+          credentials: "include",
+          // Be explicit rather than relying on the server's
+          // whichever-cookie-is-present fallback: this browser may hold a
+          // seller cookie plus all three scoped staff cookies at once, and
+          // this tab's socket must authenticate as its own session.
+          headers: {
+            "x-auth-role": staffId ? "staff" : "seller",
+            ...(scope ? { [STAFF_SCOPE_HEADER]: scope } : {}),
+          },
+        });
+        if (res.ok) ticket = ((await res.json()) as { ticket?: string }).ticket ?? null;
+      } catch {
+        // Handled below — a ticketless socket is treated as a failed connect.
+      }
+
+      if (destroyedRef.current) return;
+
+      // Without a ticket the socket authenticates as nobody and the server
+      // joins it to no room, so it sits open receiving nothing — and because
+      // it never closes, the reconnect path below never runs either. Retry
+      // instead: a staff member whose ticket call lost a race at login would
+      // otherwise go the whole shift without a single order alert.
+      if (!ticket) {
+        scheduleReconnect();
+        return;
+      }
+
+      const query = new URLSearchParams(params);
+      query.set("access_token", ticket);
+      const ws = new WebSocket(`${wsBase}?${query.toString()}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
         attemptRef.current = 0;
+        setConnected(true);
         console.log("✅ WorkerWS connected (persistent seller session)");
       };
 
@@ -133,29 +186,30 @@ export const WorkerWSProvider = ({
       };
 
       ws.onclose = () => {
-        if (destroyedRef.current) return;
-        // Exponential backoff: 3s → 6s → 12s → 24s → 30s max
-        const delay = Math.min(3000 * 2 ** attemptRef.current, 30_000);
-        attemptRef.current += 1;
-        reconnectRef.current = setTimeout(connect, delay);
+        setConnected(false);
+        scheduleReconnect();
       };
 
       ws.onerror = () => ws.close();
     };
 
-    connect();
+    void connect();
 
     return () => {
       destroyedRef.current = true;
       clearTimeout(reconnectRef.current);
       wsRef.current?.close();
       wsRef.current = null;
+      setConnected(false);
     };
   }, [sellerId, storeId, staffId, emit]);
 
+  const value = useMemo(
+    () => ({ subscribe, send, connected }),
+    [subscribe, send, connected],
+  );
+
   return (
-    <WorkerWSContext.Provider value={{ subscribe, send }}>
-      {children}
-    </WorkerWSContext.Provider>
+    <WorkerWSContext.Provider value={value}>{children}</WorkerWSContext.Provider>
   );
 };

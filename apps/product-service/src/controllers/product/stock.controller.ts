@@ -17,7 +17,9 @@ export const getProductStock = async (
   next: NextFunction,
 ) => {
   try {
-    const { productId } = req.params;
+    // Express types a route param as string | string[] (repeated params), and
+    // only a single id can identify a product.
+    const productId = typeof req.params.productId === "string" ? req.params.productId : null;
     if (!productId) return next(new NotFoundError("Product not found"));
 
     const cacheKey = `stock:${productId}`;

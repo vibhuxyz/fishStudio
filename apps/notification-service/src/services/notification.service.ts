@@ -1,4 +1,4 @@
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, type Prisma } from "@repo/db-postgres";
 import { sendEmail } from "@repo/libs/sendMail";
 import { sendPhoneOtp } from "@repo/libs/sendOtp";
 import { sendPushNotification } from "@repo/libs/sendPush";
@@ -34,7 +34,9 @@ export async function send({
         message,
         type,
         category,
-        metadata: metadata || {},
+        // Arrives as parsed JSON off the queue, so it is already a JSON object —
+        // Record<string, unknown> just can't express that to Prisma.
+        metadata: (metadata ?? {}) as Prisma.InputJsonObject,
       },
     });
   }
@@ -52,7 +54,8 @@ export async function send({
   // (undefined/null) keep the previous always-on behavior.
   if (channels.includes("EMAIL") && contact.email && contact.emailNotificationsEnabled !== false) {
     try {
-      const template = metadata?.template || "notification-template";
+      const template =
+        typeof metadata?.template === "string" ? metadata.template : "notification-template";
       await sendEmail(contact.email, title, template, {
         name: contact.name,
         title,

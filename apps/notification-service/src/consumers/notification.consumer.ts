@@ -1,16 +1,17 @@
 import { connectRabbitMQ } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { logger } from "@repo/libs/logger";
-import { notificationMessageSchema, otpMessageSchema } from "@repo/zod-schema";
+import { notificationMessageSchema, otpMessageSchema, type ZodSchema } from "@repo/zod-schema";
 import { send, sendOtp } from "../services/notification.service.js";
 import type { Channel } from "amqplib";
-import type { z } from "zod";
 
 async function consumeQueue<T>(
     channel: Channel,
     queueName: string,
-    schema: z.ZodSchema<T>,
-    handler: (data: T) => Promise<void>,
+    schema: ZodSchema<T>,
+    // Handlers return their own results (a delivery map, a boolean); the
+    // consumer only cares that the work finished before it acks.
+    handler: (data: T) => Promise<unknown>,
     logContext: (data: T) => object
 ) {
     await channel.assertQueue(queueName, { durable: true });

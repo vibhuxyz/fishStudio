@@ -33,6 +33,11 @@ export default function Header() {
   const { user } = useUser();
   const [showAddressModal, setShowAddressModal] = useState(false);
 
+  // Installs from before the avatar became an object still have a bare URL
+  // string sitting in storage, so both shapes can come back out of it.
+  const storedAvatar = user?.avatar as { url?: string } | string | undefined;
+  const avatarUrl = typeof storedAvatar === "string" ? storedAvatar : storedAvatar?.url;
+
   const selectedAddress = getSelectedAddress();
 
   const [queryIndex, setQueryIndex] = useState(0);
@@ -236,9 +241,9 @@ export default function Header() {
               overflow: "hidden",
             }}
           >
-            {(user as any)?.avatar?.url || typeof user?.avatar === 'string' ? (
+            {avatarUrl ? (
               <Image
-                source={{ uri: cloudinaryThumbnail((user as any)?.avatar?.url || user.avatar, 80) }}
+                source={{ uri: cloudinaryThumbnail(avatarUrl, 80) }}
                 style={{ width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: "#5A2C96" }}
                 resizeMode="cover"
               />

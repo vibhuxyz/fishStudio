@@ -7,9 +7,11 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { useAuthStore } from "@/store/authStore";
 import StaffPwaMeta from "@/shared/components/staff-pwa-meta";
+import useOrderAlerts from "@/hooks/useOrderAlerts";
 
 const RiderLayout = ({ children }: { children: React.ReactNode }) => {
   const { staff, isLoading } = useRequireStaffRole("RIDER");
+  useOrderAlerts("RIDER");
   const router = useRouter();
   const { setLoggedIn, setRole } = useAuthStore();
   const isSellerViewing = staff?.role === "seller";

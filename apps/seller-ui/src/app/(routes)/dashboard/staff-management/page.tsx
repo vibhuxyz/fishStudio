@@ -11,6 +11,7 @@ import {
   Scissors,
   Trash,
   KeyRound,
+  ClipboardList,
 } from "lucide-react";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -48,7 +49,7 @@ type OperationalStaffFormValues = {
   username: string;
   password: string;
   phone: string;
-  role: "RIDER" | "CUTTING_STAFF";
+  role: "ORDER_MANAGER" | "RIDER" | "CUTTING_STAFF";
   vehicleType: string;
   vehicleNumber: string;
   deliveryZone: string;
@@ -140,7 +141,7 @@ const StaffManagementPage = () => {
     toggleAccessMutation.mutate({ staffId, isActive: makeActive });
   };
 
-  const openAddStaffModal = (role: "RIDER" | "CUTTING_STAFF") => {
+  const openAddStaffModal = (role: OperationalStaffFormValues["role"]) => {
     reset({ ...EMPTY_OPERATIONAL_FORM, role });
     setIsAddStaffModalOpen(true);
   };
@@ -238,6 +239,13 @@ const StaffManagementPage = () => {
           <BreadCrumbs title="Staff Management" />
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => openAddStaffModal("ORDER_MANAGER")}
+            className="flex items-center gap-2 px-4 py-2 bg-[#111827] border border-gray-700 hover:bg-[#1a2235] text-white rounded-lg text-sm font-medium transition"
+          >
+            <ClipboardList size={16} />
+            Add Order Manager
+          </button>
           <button
             onClick={() => openAddStaffModal("CUTTING_STAFF")}
             className="flex items-center gap-2 px-4 py-2 bg-[#111827] border border-gray-700 hover:bg-[#1a2235] text-white rounded-lg text-sm font-medium transition"
@@ -446,7 +454,11 @@ const StaffManagementPage = () => {
                       {new Date(staff.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3">
-                      {staff.role === "ORDER_MANAGER" || !staff.role ? (
+                      {/* Legacy self-registered staff (email, no username)
+                          are still managed by granting/revoking access. Every
+                          seller-created account has a username and gets the
+                          full action set below, order managers included. */}
+                      {!staff.username ? (
                         staff.isActive ? (
                           <button
                             type="button"
@@ -612,7 +624,7 @@ const StaffManagementPage = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4">
           <div className="w-full max-w-lg rounded-xl border border-gray-800 bg-[#111827] p-6 shadow-2xl relative">
             <h2 className="mb-4 text-xl font-bold text-white">
-              Add {selectedRole === "RIDER" ? "Rider" : "Cutting Staff"}
+              Add {ROLE_LABELS[selectedRole] ?? "Staff"}
             </h2>
             <form
               onSubmit={handleSubmit((data) => createOperationalStaffMutation.mutate(data))}

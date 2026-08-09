@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Bike,
   XCircle,
+  Scissors,
 } from "lucide-react";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
@@ -34,6 +35,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,6 +70,7 @@ export default function OrderDetailsPage({
   const { user, isLoading: isSessionLoading } = useUserSession();
   const selectedLocation = useAddressStore((state) => state.selectedLocation);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+  const [prepPhotosOpen, setPrepPhotosOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [cancelNote, setCancelNote] = useState("");
@@ -348,31 +357,29 @@ export default function OrderDetailsPage({
           </div>
         </div>
 
-        {/* ── Preparation photos ── */}
+        {/* ── Cutting & weight proof ── */}
         {order.preparationPhotos && order.preparationPhotos.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-6 py-4">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Preparation Photos
-              </h2>
-            </div>
-            <div className="grid grid-cols-3 gap-2 p-5 sm:grid-cols-4">
-              {order.preparationPhotos.map((photo, idx) => (
-                <div
-                  key={photo.publicId ?? idx}
-                  className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted"
-                >
-                  <Image
-                    src={photo.url}
-                    alt={`Preparation photo ${idx + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="120px"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setPrepPhotosOpen(true)}
+            className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-6 py-4 text-left transition-colors hover:bg-accent"
+          >
+            <span className="flex items-center gap-3">
+              <Scissors className="h-4 w-4 text-primary" />
+              <span>
+                <span className="block text-sm font-semibold text-foreground">
+                  See cutting &amp; weight photos
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Taken at the shop while your order was prepared
+                </span>
+              </span>
+            </span>
+            <span className="text-xs font-semibold text-primary">
+              {order.preparationPhotos.length} photo
+              {order.preparationPhotos.length > 1 ? "s" : ""}
+            </span>
+          </button>
         )}
 
         {/* ── Delivery + Payment ── */}
@@ -539,27 +546,9 @@ export default function OrderDetailsPage({
           </div>
         )}
 
-        {/* ── Delivery proof (visible until it auto-expires 5 days after upload) ── */}
-        {order.deliveryProofPhotoUrl && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-6 py-4">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                Delivery Proof
-              </h2>
-            </div>
-            <div className="p-5">
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
-                <Image
-                  src={order.deliveryProofPhotoUrl}
-                  alt="Delivery proof"
-                  fill
-                  className="object-cover"
-                  sizes="(min-width: 768px) 640px, 100vw"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* The delivery-proof photo is deliberately not shown here — it exists to
+            settle "it never arrived" disputes, so the seller dashboard is where
+            it belongs, not the customer's own copy of the order. */}
 
         {/* ── Cancel order — disabled + explained once PREPARING starts ── */}
         {!isTerminal && !isUnpaidOnline && (
@@ -760,6 +749,33 @@ export default function OrderDetailsPage({
         onOpenChange={setSupportModalOpen}
         onSend={handleSendSupportMessage}
       />
+
+      <Dialog open={prepPhotosOpen} onOpenChange={setPrepPhotosOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Cutting &amp; weight photos</DialogTitle>
+            <DialogDescription>
+              Photos taken at the shop after your fish was cut and weighed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[70vh] space-y-3 overflow-y-auto">
+            {(order.preparationPhotos ?? []).map((photo, idx) => (
+              <div
+                key={photo.publicId ?? idx}
+                className="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-muted"
+              >
+                <Image
+                  src={photo.url}
+                  alt={`Cutting and weight photo ${idx + 1}`}
+                  fill
+                  className="object-contain"
+                  sizes="(min-width: 640px) 512px, 100vw"
+                />
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -11,6 +11,12 @@ import {
 import argon2 from "argon2";
 import { setCookie, DAY_MS } from "../../utils/cookies/setCookie.js";
 import { clearCookie } from "../../utils/cookies/clearCookie.js";
+import {
+  allStaffAccessCookieNames,
+  allStaffRefreshCookieNames,
+  staffCookieNames,
+  staffScopeOf,
+} from "@repo/middlewares";
 import { redis } from "@repo/libs/redis";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { logger } from "@repo/libs/logger";
@@ -32,14 +38,28 @@ import {
 } from "@repo/zod-schema";
 
 export const logOutSeller = async (req: AuthenticatedRequest, res: Response) => {
-  const sellerAccess = req.cookies["seller_access_token"];
-  const sellerRefresh = req.cookies["seller_refresh_token"];
-  const staffAccess = req.cookies["staff_access_token"];
-  const staffRefresh = req.cookies["staff_refresh_token"];
   const bearer = req.headers.authorization?.split(" ")[1];
 
+  // A staff member hitting this endpoint only ends their own scope; a seller
+  // ends every staff scope too, since all of them belong to their shop and
+  // "log out" from the seller dashboard should mean exactly that.
+  const staffCookieNamesToClear =
+    req.role === "staff"
+      ? (() => {
+          const { access, refresh } = staffCookieNames(staffScopeOf(req.staff?.role));
+          return [access, refresh];
+        })()
+      : [...allStaffAccessCookieNames(), ...allStaffRefreshCookieNames()];
+
+  const tokensToRevoke = [
+    req.cookies["seller_access_token"],
+    req.cookies["seller_refresh_token"],
+    ...staffCookieNamesToClear.map((name) => req.cookies[name]),
+    bearer,
+  ];
+
   // Revoke every token present so stolen copies can't be replayed.
-  for (const t of [sellerAccess, sellerRefresh, staffAccess, staffRefresh, bearer]) {
+  for (const t of tokensToRevoke) {
     if (t) await revokeToken(t).catch(() => {});
   }
 
@@ -48,8 +68,7 @@ export const logOutSeller = async (req: AuthenticatedRequest, res: Response) => 
 
   clearCookie(res, "seller_access_token");
   clearCookie(res, "seller_refresh_token");
-  clearCookie(res, "staff_access_token");
-  clearCookie(res, "staff_refresh_token");
+  staffCookieNamesToClear.forEach((name) => clearCookie(res, name));
 
   res.status(200).json({ success: true });
 };
@@ -318,8 +337,11 @@ export const loginSeller = async (
     const accessToken = signAccessToken({ id: staff.id, role: "staff" }, "7d");
     const refreshToken = await signRefreshToken({ id: staff.id, role: "staff" }, "7d");
 
-    setCookie(res, "staff_refresh_token", refreshToken);
-    setCookie(res, "staff_access_token", accessToken);
+    // Scoped per operational role so concurrent staff sessions in one browser
+    // don't evict each other (see staffCookies.ts).
+    const staffCookies = staffCookieNames(staffScopeOf(staff.role));
+    setCookie(res, staffCookies.refresh, refreshToken);
+    setCookie(res, staffCookies.access, accessToken);
 
     return res.status(200).json({
       success: true,
@@ -417,10 +439,24 @@ export const getSeller = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
     // Always fetch from DB with the full store so settings fields are never
-    // missing due to the slim-store Redis cache.
+    // missing due to the slim-store Redis cache. `password` is omitted
+    // explicitly — this response is rendered in the browser, and the argon2
+    // hash has no business leaving the server.
     const seller = await prisma.sellers.findUnique({
       where: { id: sellerId },
-      include: { store: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone_number: true,
+        following: true,
+        isApprovedByAdmin: true,
+        permissions: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        store: true,
+      },
     });
     res.status(200).json({ success: true, seller });
   } catch (error) {

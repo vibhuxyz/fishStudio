@@ -32,7 +32,9 @@ export const getNotifications = async (req: AuthenticatedRequest, res: Response,
 export const markAsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = getUserId(req);
-    const { id } = req.params;
+    // Express types a route param as string | string[] (repeated params); only
+    // a single notification id is meaningful here.
+    const id = typeof req.params.id === "string" ? req.params.id : null;
 
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });

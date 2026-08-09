@@ -1,40 +1,42 @@
-import crypto from "node:crypto";
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
+import { hashToken, isTokenRevoked } from "@repo/libs/auth-tokens";
 import { redis } from "@repo/libs/redis";
+import {
+  STAFF_SCOPE_HEADER,
+  allStaffAccessCookieNames,
+  parseStaffScope,
+  staffCookieNames,
+} from "./staffCookies.js";
 
 const AUTH_CACHE_TTL = 300; // 5 minutes — reduces DB lookups per authenticated user
 
-// Fix #13: hash the token before using it as a Redis key so that a Redis
-// read-leak does not directly expose valid JWTs.
-const hashToken = (token: string) =>
-  crypto.createHash("sha256").update(token).digest("hex");
-
-// Fix #14: explicit server-side revocation. Logout writes a blocklist entry
-// keyed by token hash (optionally jti) so stolen tokens become unusable
-// immediately rather than waiting for natural JWT expiry.
-const isTokenRevoked = async (token: string, jti?: string): Promise<boolean> => {
-  try {
-    const [byHash, byJti] = await Promise.all([
-      redis.exists(`auth:revoked:${hashToken(token)}`),
-      jti ? redis.exists(`auth:revoked:jti:${jti}`) : Promise.resolve(0),
-    ]);
-    return byHash > 0 || byJti > 0;
-  } catch {
-    // If Redis is unreachable, don't block valid tokens. Logout blocklist is
-    // a belt-and-suspenders layer on top of short-lived JWTs.
-    return false;
-  }
-};
+// hashToken / isTokenRevoked (Fix #13 + #14) now live in @repo/libs/auth-tokens
+// so worker-service's WebSocket upgrade enforces the same blocklist.
 
 const ROLE_ACCESS_COOKIES: Record<string, string> = {
   admin: "admin_access_token",
-  staff: "staff_access_token",
   seller: "seller_access_token",
   user: "access_token",
 };
+
+/**
+ * Staff cookies, most-specific first: the scope the caller asked for, then the
+ * other scopes, then the pre-scoping legacy name. A tab that declares its
+ * scope always resolves to its own session even when the browser is holding
+ * all three staff cookies at once.
+ */
+const staffAccessCookieOrder = (req: any): string[] => {
+  const scope = parseStaffScope(req.headers[STAFF_SCOPE_HEADER]);
+  if (!scope) return allStaffAccessCookieNames();
+  const scoped = staffCookieNames(scope).access;
+  return [scoped, ...allStaffAccessCookieNames().filter((n) => n !== scoped)];
+};
+
+const firstCookie = (req: any, names: string[]): string | null =>
+  names.map((name) => req.cookies[name]).find(Boolean) || null;
 
 // Fix #12: role detection is driven purely by the `x-auth-role` header. If
 // it's missing, we try each cookie in a fixed order — the JWT payload's
@@ -43,14 +45,22 @@ const pickToken = (req: any): { token: string | null; requestedRole: string | nu
   const requestedRole = (req.headers["x-auth-role"] as string | undefined)?.trim() || null;
   const bearer = (req.headers.authorization as string | undefined)?.split(" ")[1] || null;
 
+  if (requestedRole === "staff") {
+    return { token: firstCookie(req, staffAccessCookieOrder(req)) || bearer, requestedRole };
+  }
+
   if (requestedRole === "seller") {
     // Staff act within their seller's shop context, so a seller-scoped
     // request also accepts a staff access token.
     return {
-      token: req.cookies["seller_access_token"] || req.cookies["staff_access_token"] || bearer,
+      token:
+        req.cookies["seller_access_token"] ||
+        firstCookie(req, staffAccessCookieOrder(req)) ||
+        bearer,
       requestedRole,
     };
   }
+
   const cookieName = requestedRole ? ROLE_ACCESS_COOKIES[requestedRole] : undefined;
   if (cookieName) {
     return { token: req.cookies[cookieName] || bearer, requestedRole };
@@ -58,9 +68,12 @@ const pickToken = (req: any): { token: string | null; requestedRole: string | nu
 
   // No explicit role header — use whichever cookie is present.
   const token =
-    Object.values(ROLE_ACCESS_COOKIES)
-      .map((cookieName) => req.cookies[cookieName])
-      .find(Boolean) ||
+    firstCookie(req, [
+      ROLE_ACCESS_COOKIES.admin!,
+      ...staffAccessCookieOrder(req),
+      ROLE_ACCESS_COOKIES.seller!,
+      ROLE_ACCESS_COOKIES.user!,
+    ]) ||
     bearer ||
     null;
   return { token, requestedRole };
@@ -202,6 +215,11 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
             role: req.staff.role,
             isActive: req.staff.isActive,
             sellerId: req.staff.sellerId,
+            // `logged-in-staff` hands req.staff straight to the client, and the
+            // staff portal scopes its order queries by seller.store.id. Dropping
+            // the linked seller here made that id present on a cache miss and
+            // absent on every hit, so the board silently stopped fetching.
+            seller: slimSeller,
           }
         : null;
       const slimAdmin = req.admin

@@ -104,6 +104,10 @@ export async function hydrateOrders(orders: any[]) {
         slug: true,
         sale_price: true,
         images: { select: { url: true }, take: 1 },
+        // A store variant usually carries no images of its own — the photos
+        // are authored once on the catalog root and inherited, so without
+        // this fallback every order line renders as a blank placeholder.
+        catalogProduct: { select: { images: { select: { url: true }, take: 1 } } },
       },
     }),
     riderIds.length
@@ -123,7 +127,14 @@ export async function hydrateOrders(orders: any[]) {
   ]);
 
   const userMap = new Map(users.map((u) => [u.id, u]));
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  // Keep the response shape unchanged — callers read product.images[0].url —
+  // by resolving the inherited catalog image into `images` here.
+  const productMap = new Map(
+    products.map(({ catalogProduct, ...p }) => [
+      p.id,
+      { ...p, images: p.images.length > 0 ? p.images : catalogProduct?.images ?? [] },
+    ]),
+  );
   const riderMap = new Map(riders.map((r) => [r.id, r]));
 
   return orders.map((o: any) => ({

@@ -6,7 +6,7 @@ import { SuccessStep } from "@/components/auth/success-step";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance, { storeAccessToken } from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
-import { NOTIFICATION_ONBOARDING_SEEN_KEY } from "@/utils/push-notifications";
+import { NOTIFICATION_ONBOARDING_SEEN_KEY } from "@/utils/notification-preferences";
 import { toast } from "@/utils/toast";
 import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";

@@ -29,13 +29,23 @@ type EditProductFormValues = UpdateProductPayload & {
   cuttingType?: Array<{ value: string }>;
 };
 
+// Stored images carry either the ImageKit spelling (file_url/fileId) or the
+// normalised one, depending on when they were uploaded. The save payload only
+// accepts the latter, so collapse them on the way into local state rather than
+// carrying both shapes through the form.
+const toPayloadImages = (images: AdminProduct["images"] = []) =>
+  images.map((img) => ({
+    url: img.url || img.file_url || "",
+    file_id: img.file_id || img.fileId || "",
+  }));
+
 const EditProductModal = ({
   product,
   isSaving,
   onClose,
   onSave,
 }: EditProductModalProps) => {
-  const [images, setImages] = useState(product.images || []);
+  const [images, setImages] = useState(() => toPayloadImages(product.images));
   const [isUploading, setIsUploading] = useState(false);
 
   const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } =
@@ -85,7 +95,7 @@ const EditProductModal = ({
       pieceSizes: product.pieceSizes?.map((value) => ({ value })) || [],
       trackStockPerSize: product.trackStockPerSize || false,
     });
-    setImages(product.images || []);
+    setImages(toPayloadImages(product.images));
   }, [product, reset]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

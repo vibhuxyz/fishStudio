@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { AppError, NotFoundError, ValidationError } from "@repo/error-handlers";
 import {
   prismaPostgres,
@@ -39,6 +40,11 @@ import {
   orderItemMoneyFields,
   releaseRiderIfNoOtherDeliveries,
 } from "./utils.js";
+
+// Populated by @repo/middlewares' isAuthenticated from the verified JWT.
+interface AuthenticatedRequest extends Request {
+  user?: { id: string };
+}
 
 /* ─── Constants ────────────────────────────────────────────────────────── */
 const IDEMPOTENCY_TTL_SEC = 86_400; // 24 hours
@@ -400,12 +406,19 @@ const QUOTE_TTL_SEC = 60;
  * quoted total and the charged total cannot drift.
  */
 export const getCartQuote = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
     const userId = req.user?.id;
+    // The quote is parked per-customer (quote:<userId>:<quoteId>) and coupon
+    // eligibility is evaluated against them, so an anonymous caller has no
+    // quote to be given.
+    if (!userId) {
+      return next(new ValidationError("You must be signed in to price a cart"));
+    }
+
     const { storeId, items, couponCode, deliverySlot } = validate(
       cartQuoteSchema,
       req.body,
@@ -499,6 +512,10 @@ export const getCartQuote = async (
       baseDeliveryCharge: store.base_delivery_charge,
       freeDeliveryThreshold: store.free_delivery_threshold,
       sellerId: store.sellerId,
+      // Per-customer coupon rules (restrictedToUserId, per-user usage caps) are
+      // checked inside — without this the quote would price a coupon the
+      // customer isn't actually allowed to use at /create.
+      userId,
       couponCode,
       couponRaw,
     });
@@ -1001,7 +1018,9 @@ export const createOrder = async (
               create: items.map((item: any, idx: number) => ({
                 productId: item.productId,
                 quantity: item.quantity,
-                price: resolvedPrices[idx],
+                // Pre-filled to items.length above and written on every index,
+                // same assertion the itemTotal loop already relies on.
+                price: resolvedPrices[idx]!,
                 selectedOptions: item.selectedOptions ?? {},
               })),
             },
@@ -1284,6 +1303,22 @@ export const getUserOrderStats = async (
 };
 
 /* ─── Get user orders ─────────────────────────────────────────────────── */
+/**
+ * The delivery-proof photo exists so the store can answer an "it never arrived"
+ * complaint — it is evidence about the customer, not content for them, and it
+ * belongs to the seller dashboard only. Preparation (cutting/weight) photos are
+ * deliberately left in: those are exactly what the customer wants to check.
+ */
+function withoutDeliveryProof<T extends Record<string, unknown>>(order: T) {
+  const {
+    deliveryProofPhotoUrl,
+    deliveryProofPhotoPublicId,
+    deliveryProofUploadedAt,
+    ...rest
+  } = order;
+  return rest;
+}
+
 export const getUserOrders = async (
   req: any,
   res: Response,
@@ -1324,7 +1359,7 @@ export const getUserOrders = async (
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     const mappedOrders = orders.map((o: any) => ({
-      ...o,
+      ...withoutDeliveryProof(o),
       ...orderMoneyFields(o),
       store: storeMap.get(o.storeId),
       items: o.orderItems.map((oi: any) => {
@@ -1422,7 +1457,9 @@ export const getOrderById = async (
     );
 
     const orderData = {
-      ...order,
+      // Sellers, staff and admins keep the proof photo — they are the ones who
+      // need it when a delivery is disputed.
+      ...(role === "user" ? withoutDeliveryProof(order) : order),
       ...orderMoneyFields(order),
       store: store ? { ...store, sellerPhone: store.seller?.phone_number ?? null, seller: undefined } : store,
       buyer,

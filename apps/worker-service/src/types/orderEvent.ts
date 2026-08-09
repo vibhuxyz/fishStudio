@@ -13,6 +13,11 @@ export type OrderEvent =
       userId?: string;
       storeId?: string;
       sellerId?: string;
+      // Set when this transition hands the order to one specific staff member
+      // (rider assignment, cutting assignment). Everyone in the store room
+      // still gets the sync event; only this person gets the personal alert.
+      assignedStaffId?: string;
+      orderCode?: string;
     }
   | {
       // Domain event, separate from ORDER_STATUS_UPDATE (which drives the

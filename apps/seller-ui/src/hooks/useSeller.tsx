@@ -36,9 +36,15 @@ const useSeller = () => {
         return { ...staffResponse.data.staff, staffRole: staffResponse.data.staff.role, role: "staff" };
       }
 
+      // Role is unknown (first load after clearing storage). Probe seller,
+      // then staff. Both probes keep refresh-on-401 but opt out of the
+      // forced logout: /logged-in-seller always 401s for a staff member
+      // (isSeller rejects their role), and treating that as a dead session
+      // kicked staff to /staff/login before the fallback below could run.
       try {
         const response = await axiosInstance.get("/auth/api/logged-in-seller", {
           ...isProtected,
+          skipAuthRedirect: true,
           headers: { "x-auth-role": "seller" },
         } as any);
         return { ...response.data.seller, role: "seller" };
@@ -46,6 +52,7 @@ const useSeller = () => {
         // Fallback to staff if role is unknown or seller failed
         const staffResponse = await axiosInstance.get("/auth/api/logged-in-staff", {
           ...isProtected,
+          skipAuthRedirect: true,
           headers: { "x-auth-role": "staff" },
         } as any);
         return { ...staffResponse.data.staff, staffRole: staffResponse.data.staff.role, role: "staff" };

@@ -33,7 +33,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { Loader2, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
-import { frontendEnv } from "@/config/env";
+import { useWorkerWS } from "@/context/worker-ws-context";
 import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
 import { formatOrderId } from "@repo/shared/order-id";
@@ -976,7 +976,6 @@ function StatsBar({ orders }: { orders: MockOrder[] }) {
 
 const StaffOrdersPage = () => {
   const [mounted, setMounted] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const isMutedRef = React.useRef(true);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -1034,7 +1033,7 @@ const StaffOrdersPage = () => {
 
   const { staff, isLoading: authLoading } = useRequireStaff();
   const queryClient = useQueryClient();
-  const linkedSellerId = staff?.role === "staff" ? staff?.sellerId : staff?.id;
+  const { subscribe, connected: wsConnected } = useWorkerWS();
   const linkedStoreId =
     staff?.role === "staff" ? staff?.seller?.store?.id : staff?.store?.id;
   const orderRequestConfig = {
@@ -1044,127 +1043,85 @@ const StaffOrdersPage = () => {
     },
   } as any;
 
-  // ── Real-time WebSocket (worker-service port 6006) ──────────────────────────
-  // Staff connect with ?sellerId= so the worker can broadcast new orders to them.
-  // Sellers visiting this page also work because useSeller returns seller with sellerId.
+  // ── Real-time order feed ────────────────────────────────────────────────────
+  // Uses the app-wide socket from WorkerWSProvider rather than opening one here:
+  // a page-local connection carries no auth ticket, and the worker joins
+  // ticketless sockets to no room, so it never received a single order event.
   React.useEffect(() => {
-    if (!linkedSellerId) return;
+    const unsubStatus = subscribe("ORDER_STATUS_UPDATE", () => {
+      // A sibling staff screen (or this one) mutated the order — resync.
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+    });
 
-    const wsUrl = `${frontendEnv.workerWebsocketUrl}?sellerId=${linkedSellerId}`;
+    const unsubNew = subscribe("NEW_ORDER", (payload: any) => {
+      const raw = payload?.order || payload;
+      if (!raw) return;
+      if (linkedStoreId && raw.storeId && raw.storeId !== linkedStoreId) return;
 
-    let ws: WebSocket;
-    let reconnectTimeout: ReturnType<typeof setTimeout>;
-    let destroyed = false;
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
 
-    const connect = () => {
-      if (destroyed) return;
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log("✅ Staff: connected to real-time order service");
-        setWsConnected(true);
+      // Map to MockOrder format for the modal
+      const newOrder: MockOrder = {
+        id: raw.id,
+        status: "New",
+        createdAt: raw.createdAt || new Date().toISOString(),
+        total: raw.totalAmount ?? 0,
+        user: {
+          id: raw.userId || "",
+          name: raw.userName || raw.deliveryName || "Customer",
+          phone: raw.deliveryPhone || "-",
+          email: "-",
+          avatar: null,
+        },
+        shippingAddress: {
+          name: raw.deliveryName || raw.userName || "Customer",
+          street: raw.deliveryAddress || "N/A",
+          city: raw.deliveryCity || "-",
+          state: "-",
+          zip: raw.deliveryPincode || "-",
+        },
+        items: (raw.items || []).map((item: any) => ({
+          productId: item.productId,
+          product: {
+            id: item.product?.id || item.productId,
+            title: item.product?.title || "Product",
+            images: item.product?.images || [],
+          },
+          quantity: item.quantity,
+          price: item.price ?? item.priceAtOrder ?? 0,
+          unit: item.unit || item.product?.unit || "pc",
+          selectedOptions: item.selectedOptions || {},
+        })),
+        billDetails: raw.billDetails,
+        deliverySlot: raw.deliverySlot,
+        paymentMethod: raw.paymentMethod,
+        rejectionReason: null,
+        refundStatus: null,
       };
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "ORDER_STATUS_UPDATE") {
-            // A sibling staff screen (or this one) mutated the order — resync.
-            console.log("🔄 Staff: order status update via WebSocket", data.payload);
-            queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
-            return;
-          }
-          if (data.type === "NEW_ORDER") {
-            const raw = data.payload?.order || data.payload;
-            if (!raw) return;
-            if (linkedStoreId && raw.storeId && raw.storeId !== linkedStoreId) return;
+      // Play notification sound
+      if (!isMutedRef.current && audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch((err) => {
+          console.error("🔊 Sound playback failed:", err);
+        });
+      }
 
-            console.log("📦 Staff: new order received via WebSocket", raw);
-            queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+      setDetailTarget(newOrder);
 
-            // Map to MockOrder format for the modal
-            const newOrder: MockOrder = {
-              id: raw.id,
-              status: "New",
-              createdAt: raw.createdAt || new Date().toISOString(),
-              total: raw.totalAmount ?? 0,
-              user: {
-                id: raw.userId || "",
-                name: raw.userName || raw.deliveryName || "Customer",
-                phone: raw.deliveryPhone || "-",
-                email: "-",
-                avatar: null,
-              },
-              shippingAddress: {
-                name: raw.deliveryName || raw.userName || "Customer",
-                street: raw.deliveryAddress || "N/A",
-                city: raw.deliveryCity || "-",
-                state: "-",
-                zip: raw.deliveryPincode || "-",
-              },
-              items: (raw.items || []).map((item: any) => ({
-                productId: item.productId,
-                product: {
-                  id: item.product?.id || item.productId,
-                  title: item.product?.title || "Product",
-                  images: item.product?.images || [],
-                },
-                quantity: item.quantity,
-                price: item.price ?? item.priceAtOrder ?? 0,
-                unit: item.unit || item.product?.unit || "pc",
-                selectedOptions: item.selectedOptions || {},
-              })),
-              billDetails: raw.billDetails,
-              deliverySlot: raw.deliverySlot,
-              paymentMethod: raw.paymentMethod,
-              rejectionReason: null,
-              refundStatus: null,
-            };
-
-            // Play notification sound
-            if (!isMutedRef.current && audioRef.current) {
-              audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(err => {
-                console.error("🔊 Sound playback failed:", err);
-              });
-            }
-
-            // setDetailTarget(newOrder); // Replacing the undefined setSelectedOrder with detailTarget to show the modal
-            setDetailTarget(newOrder); 
-
-            toast.info("New Order Received!", {
-              description: `Order ${raw.id ? formatOrderId(raw.id) : ""} is waiting for review.`,
-              icon: <Bell className="h-4 w-4 text-blue-500" />,
-              duration: 8000,
-              position: "top-center",
-            });
-          }
-        } catch (e) {
-          console.error("Staff WS parse error:", e);
-        }
-      };
-
-      ws.onerror = () => {
-        console.warn(`⚠️ Staff WS: could not connect to ${wsUrl} (worker-service may not be running)`);
-      };
-
-      ws.onclose = () => {
-        setWsConnected(false);
-        if (!destroyed) {
-          console.log("🔌 Staff WS closed — reconnecting in 3s");
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
-      };
-    };
-
-    connect();
+      toast.info("New Order Received!", {
+        description: `Order ${raw.id ? formatOrderId(raw.id) : ""} is waiting for review.`,
+        icon: <Bell className="h-4 w-4 text-blue-500" />,
+        duration: 8000,
+        position: "top-center",
+      });
+    });
 
     return () => {
-      destroyed = true;
-      clearTimeout(reconnectTimeout);
-      ws?.close();
+      unsubStatus();
+      unsubNew();
     };
-  }, [linkedSellerId, linkedStoreId, queryClient]);
+  }, [subscribe, linkedStoreId, queryClient]);
 
   const isStaff = staff?.role === "staff";
   const sellerNotLinked = !authLoading && staff && isStaff && (!staff.isActive || !staff.sellerId);
@@ -1222,7 +1179,10 @@ const StaffOrdersPage = () => {
         refundStatus: o.paymentStatus === "REFUNDED" ? "Refunded" : null,
       }));
     },
-    enabled: canFetch && !!linkedStoreId,
+    // Deliberately not gated on linkedStoreId: the server already scopes this
+    // endpoint to the caller's own store, so gating on a client-side copy of
+    // that id only creates a second way for the board to silently render empty.
+    enabled: canFetch,
   });
 
   const [acceptTarget, setAcceptTarget] = useState<MockOrder | null>(null);

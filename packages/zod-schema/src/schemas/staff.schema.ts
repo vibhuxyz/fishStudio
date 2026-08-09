@@ -3,8 +3,10 @@ import { riderVehicleTypeValues } from "./rider.schema.js";
 
 export const staffRoleValues = ["ORDER_MANAGER", "RIDER", "CUTTING_STAFF"] as const;
 
-// Seller-direct-create path for RIDER/CUTTING_STAFF — no OTP, active immediately.
-// The ORDER_MANAGER role keeps using registerStaffSchema/verifyStaffSchema (OTP flow).
+// Seller-direct-create path for every staff role — no OTP, active immediately.
+// ORDER_MANAGER used to self-register with an email + OTP and wait for the
+// seller to grant access; that flow is gone, so sellers now create all three
+// roles here with a username and password the staff member logs in with.
 export const createOperationalStaffSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
@@ -15,7 +17,7 @@ export const createOperationalStaffSchema = z
     password: z.string().min(6, "Password must be at least 6 characters"),
     phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
     photoId: z.string().optional(),
-    role: z.enum(["RIDER", "CUTTING_STAFF"]),
+    role: z.enum(staffRoleValues),
     vehicleType: z.enum(riderVehicleTypeValues).optional(),
     vehicleNumber: z.string().optional(),
     deliveryZone: z.string().optional(),

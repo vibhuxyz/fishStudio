@@ -1,14 +1,14 @@
-import crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { ENV } from "@repo/env-config";
+// Shared with the readers (isAuthenticated, worker-service's WS upgrade): if
+// the write side and read side ever hashed differently, revocation would fail
+// silently rather than loudly.
+import { hashToken } from "@repo/libs/auth-tokens";
 import { redis } from "@repo/libs/redis";
 
 // Longest access-token lifetime in the system (user: 7d). We keep blocklist
 // entries for this long so revoked tokens can't be replayed until they expire.
 const MAX_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
-
-const hashToken = (token: string) =>
-  crypto.createHash("sha256").update(token).digest("hex");
 
 const computeSecondsUntilExpiry = (token: string): number => {
   try {
@@ -79,7 +79,15 @@ export const bumpRefreshFamily = async (role: string, id: string): Promise<numbe
 
 /** Sign an access token with a jti (used by the blocklist for targeted revocation). */
 export const signAccessToken = (
-  payload: { id: string; role: "admin" | "seller" | "user" | "staff" },
+  payload: {
+    id: string;
+    role: "admin" | "seller" | "user" | "staff";
+    // Realtime room membership, resolved here where the caller's own store and
+    // seller link are already known. Signed rather than passed on the socket
+    // URL so worker-service can trust it without a Mongo lookup of its own.
+    storeId?: string;
+    sellerId?: string;
+  },
   expiresIn: string | number,
 ) =>
   jwt.sign(

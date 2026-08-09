@@ -335,7 +335,9 @@ const SellerEventForm = () => {
                         type="number"
                         min={1}
                         {...register("firstOrderCoupon.discountValue", {
-                          required: attachCoupon && selectedType !== "FREE_DELIVERY" ? "Value required" : false,
+                          // Already inside the non-FREE_DELIVERY branch, so the
+                          // only remaining question is whether a coupon is attached.
+                          required: attachCoupon ? "Value required" : false,
                           valueAsNumber: true,
                         })}
                         className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"

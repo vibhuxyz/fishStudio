@@ -71,7 +71,7 @@ export interface Order {
   cancelledBy?: "CUSTOMER" | "SELLER" | "STAFF" | "SYSTEM" | null;
   cancelledAt?: string | null;
   refundStatus?: "NONE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  // Cutting/weight photos only — the delivery-proof photo is no longer sent to
+  // customers; it lives in the seller dashboard for delivery disputes.
   preparationPhotos?: OrderPreparationPhoto[] | null;
-  deliveryProofPhotoUrl?: string | null;
-  deliveryProofUploadedAt?: string | null;
 }

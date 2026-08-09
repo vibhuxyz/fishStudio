@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import StaffPwaMeta from "@/shared/components/staff-pwa-meta";
+import useOrderAlerts from "@/hooks/useOrderAlerts";
 
 // This layout wraps every route under /staff/* in Next.js's nesting model,
 // but /staff/login and the Rider/Cutting-Staff subtrees are fully
@@ -24,6 +25,10 @@ const StaffLayout = ({ children }: { children: React.ReactNode }) => {
   const { subscribe } = useWorkerWS();
 
   const isSelfContained = SELF_CONTAINED_PREFIXES.some((p) => pathname?.startsWith(p));
+
+  // Only this layout's own ORDER_MANAGER screens — the rider and cutting
+  // subtrees mount their own role-specific alerts in their layouts.
+  useOrderAlerts(isSelfContained ? undefined : "ORDER_MANAGER");
 
   useEffect(() => {
     if (!isSelfContained && !isLoading && !staff) {

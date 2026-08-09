@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ChevronRight, Eye, EyeOff, Store, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,11 +21,43 @@ import { TestAccounts } from "@/shared/components/login/TestAccounts";
 import { testAccounts } from "@/shared/components/login/data";
 
 
+/**
+ * Contents of a role-choice Button. Split out because the shared Button centres
+ * and uppercases its children for CTA use, and these read as list rows — the
+ * overrides are the same for both and only make sense together.
+ */
+const AudienceOption = ({
+  icon,
+  label,
+  description,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+}) => (
+  <span className="flex w-full items-center gap-4 text-left">
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+      {icon}
+    </span>
+    <span className="flex-1">
+      <span className="block text-sm font-black uppercase tracking-wider">{label}</span>
+      <span className="mt-0.5 block text-[11px] font-medium normal-case italic tracking-normal text-white/70">
+        {description}
+      </span>
+    </span>
+    <ChevronRight size={18} className="shrink-0 opacity-70" />
+  </span>
+);
+
 const Login = () => {
   const { setLoggedIn, setRole } = useAuthStore();
   const queryClient = useQueryClient();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  // Staff never authenticate here — they have their own username/password form
+  // and their own scoped session cookies — so picking "Staff" hands off to
+  // /staff/login rather than branching this form.
+  const [audience, setAudience] = useState<"seller" | null>(null);
   const router = useRouter();
 
   const {
@@ -57,7 +89,10 @@ const Login = () => {
       setLoggedIn(true);
       const role = data.role as "seller" | "staff";
       setRole(role);
-      queryClient.invalidateQueries({ queryKey: ["seller"] });
+      // remove, not invalidate — see the staff login page: a cached identity
+      // from a previous session is served while the refetch is in flight and
+      // trips the role gates on the destination page.
+      queryClient.removeQueries({ queryKey: ["seller"] });
 
       if (role === "staff") {
         router.push("/staff/orders");
@@ -78,12 +113,73 @@ const Login = () => {
     loginMutation.mutate(data);
   };
 
+  if (!audience) {
+    return (
+      <AuthLayout
+        title="Merchant Hub"
+        subtitle="Securely access your shop & order workstation"
+        accentColor="emerald"
+      >
+        <div className="mb-10">
+          <h3 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">
+            Who&apos;s signing in?
+          </h3>
+          <p className="text-slate-500 text-sm font-medium italic">
+            Choose how you work with this shop
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <Button variant="emerald" onClick={() => setAudience("seller")}>
+            <AudienceOption
+              icon={<Store size={20} />}
+              label="Seller"
+              description="Your shop, products, payouts & full dashboard"
+            />
+          </Button>
+
+          <Button variant="blue" onClick={() => router.push("/staff/login")}>
+            <AudienceOption
+              icon={<Users size={20} />}
+              label="Staff"
+              description="Order manager, rider or cutting staff"
+            />
+          </Button>
+        </div>
+
+        <div className="mt-10 pt-8 border-t border-white/5 text-center">
+          <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+            New to the network?{" "}
+            <Link
+              href="/signup"
+              className="text-emerald-500 hover:text-emerald-400 transition-colors ml-1"
+            >
+              Join Marketplace
+            </Link>
+          </p>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
-    <AuthLayout 
-      title="Merchant Hub" 
+    <AuthLayout
+      title="Merchant Hub"
       subtitle="Securely access your shop & order workstation"
       accentColor="emerald"
     >
+      <button
+        type="button"
+        onClick={() => {
+          setAudience(null);
+          setServerError(null);
+        }}
+        className="mb-6 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:text-white"
+      >
+        <ArrowLeft size={13} />
+        Not a seller?
+      </button>
+
       <div className="mb-10">
         <h3 className="text-3xl font-black text-white mb-2 uppercase italic tracking-tight">
           Welcome Back

@@ -10,6 +10,10 @@ export const validate = <T>(schema: z.ZodType<T, any, any>, data: unknown): T =>
   return result.data;
 };
 
+// Re-exported so consumers can type a schema parameter (z.ZodSchema<T>) without
+// taking a direct zod dependency of their own just to name the type.
+export { z, type ZodSchema } from "zod";
+
 export * from "./schemas/index.js";
 export * from "./types/index.js";
 

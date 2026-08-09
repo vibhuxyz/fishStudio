@@ -29,6 +29,13 @@ import {
 } from "../../utils/tokenRevocation.js";
 import type { AuthenticatedRequest } from "../../types/auth-request.js";
 import { ROLE_COOKIES, REFRESH_TTL_BY_ROLE, type AuthRole } from "../../utils/roleCookies.js";
+import {
+  STAFF_SCOPE_HEADER,
+  allStaffRefreshCookieNames,
+  parseStaffScope,
+  staffCookieNames,
+  staffScopeOf,
+} from "@repo/middlewares";
 
 export const sendOtpToUser = async (
   req: Request,
@@ -207,14 +214,33 @@ export const refreshToken = async (
 
     let refreshToken: string | undefined;
 
-    if (isAuthRole(requestedRole)) {
+    // Staff refresh cookies are scoped per operational role, so the tab tells
+    // us which of its concurrent staff sessions it is refreshing.
+    const staffScope = parseStaffScope(req.headers[STAFF_SCOPE_HEADER]);
+    const staffRefreshNames = staffScope
+      ? [
+          staffCookieNames(staffScope).refresh,
+          ...allStaffRefreshCookieNames().filter(
+            (n) => n !== staffCookieNames(staffScope).refresh,
+          ),
+        ]
+      : allStaffRefreshCookieNames();
+
+    if (requestedRole === "staff") {
+      refreshToken = staffRefreshNames.map((n) => req.cookies[n]).find(Boolean) || bearer;
+    } else if (isAuthRole(requestedRole)) {
       refreshToken = req.cookies[ROLE_COOKIES[requestedRole].refresh] || bearer;
     } else {
       // No x-auth-role header: fall back to the first cookie we find, but
       // never mix bearer tokens across roles.
       refreshToken =
-        Object.values(ROLE_COOKIES)
-          .map(({ refresh }) => req.cookies[refresh])
+        [
+          ROLE_COOKIES.user.refresh,
+          ROLE_COOKIES.seller.refresh,
+          ROLE_COOKIES.admin.refresh,
+          ...staffRefreshNames,
+        ]
+          .map((name) => req.cookies[name])
           .find(Boolean) || bearer;
     }
 
@@ -255,6 +281,9 @@ export const refreshToken = async (
 
     // Fix #11 (account-existence): don't mint tokens for deleted/disabled accounts.
     let accountExists = false;
+    // Carried out of the staff branch below so the cookie-scope decision can
+    // reuse it instead of re-querying the same row.
+    let staffOperationalRole: string | null = null;
     if (decoded.role === "admin") {
       accountExists = !!(await prisma.admins.findUnique({ where: { id: decoded.id } }));
     } else if (decoded.role === "user") {
@@ -262,8 +291,12 @@ export const refreshToken = async (
     } else if (decoded.role === "seller") {
       accountExists = !!(await prisma.sellers.findUnique({ where: { id: decoded.id } }));
     } else if (decoded.role === "staff") {
-      const staff = await prisma.staffs.findUnique({ where: { id: decoded.id } });
+      const staff = await prisma.staffs.findUnique({
+        where: { id: decoded.id },
+        select: { isActive: true, role: true },
+      });
       accountExists = !!staff && staff.isActive !== false;
+      staffOperationalRole = staff?.role ?? null;
     }
     if (!accountExists) {
       return res.status(401).json({ success: false, message: "Account no longer exists" });
@@ -279,7 +312,12 @@ export const refreshToken = async (
       REFRESH_TTL_BY_ROLE[decoded.role],
     );
 
-    const cookieNames = ROLE_COOKIES[decoded.role];
+    // Rotate back into the same scoped cookie the request came from, so a
+    // refresh in the Rider tab can't overwrite the Cutting Staff session.
+    const cookieNames =
+      decoded.role === "staff"
+        ? staffCookieNames(staffScope ?? staffScopeOf(staffOperationalRole))
+        : ROLE_COOKIES[decoded.role];
     setCookie(res, cookieNames.access, newAccessToken);
     setCookie(res, cookieNames.refresh, newRefreshToken);
 

@@ -12,7 +12,9 @@ export const PRODUCTS_INDEX = "products";
 export function toMeiliDoc(product: {
   id: string;
   title: string;
-  slug: string;
+  // products.slug is optional in Mongo — legacy rows imported before slugs
+  // were generated still have none.
+  slug?: string | null;
   category: string;
   subCategory?: string | null;
   tags?: string[];
@@ -40,7 +42,7 @@ export function toMeiliDoc(product: {
     "https://res.cloudinary.com/dndqbtajj/image/upload/v1774574932/fishStudio-app/placeholders/product-placeholder.png";
 
   // Canonical slug: ALWAYS favor catalog product slug for clean, consistent redirects
-  const canonicalSlug = product.catalogProduct?.slug || product.slug;
+  const canonicalSlug = product.catalogProduct?.slug || product.slug || "";
   const catalogId =
     product.catalogProductId || (product.storeId ? null : product.id);
 

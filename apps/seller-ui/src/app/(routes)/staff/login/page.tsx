@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/store/authStore";
+import { rememberStaffScope, staffScopeOf } from "@/utils/staffScope";
 import AuthLayout from "@/shared/components/layout/AuthLayout";
 import StaffPwaMeta from "@/shared/components/staff-pwa-meta";
 
@@ -41,7 +42,15 @@ const StaffLogin = () => {
       setServerError(null);
       setLoggedIn(true);
       setRole("staff");
-      queryClient.invalidateQueries({ queryKey: ["seller"] });
+      // Must come before the cache is cleared: that triggers an immediate
+      // identity refetch from this page, whose URL can't say which of the
+      // staff sessions in this browser the request belongs to.
+      rememberStaffScope(staffScopeOf(data.user.role));
+      // remove, not invalidate: invalidation keeps serving the previous staff
+      // member's cached identity while it refetches, and the role gate on the
+      // page we're about to push to reads that stale staffRole, decides it's
+      // the wrong role, and bounces straight back here.
+      queryClient.removeQueries({ queryKey: ["seller"] });
 
       if (data.user.role === "RIDER") {
         router.push("/staff/rider");

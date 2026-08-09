@@ -49,6 +49,12 @@ const NEXT_STATUS_OPTIONS: Record<string, string[]> = {
   SHIPPED: ["DELIVERED", "CANCELLED"],
 };
 
+interface OrderPhoto {
+  url: string;
+  publicId: string;
+  uploadedAt: string;
+}
+
 const formatCurrency = (value: number) =>
   `₹${Number(value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
@@ -486,6 +492,71 @@ const Page = () => {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fulfilment proof — kept on the seller side so a "never delivered"
+          complaint can be answered with the rider's own photo. */}
+      {(order.deliveryProofPhotoUrl || (order.preparationPhotos?.length ?? 0) > 0) && (
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-300 mb-4">Fulfilment Proof</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {(order.preparationPhotos?.length ?? 0) > 0 && (
+              <div className="rounded-md border border-slate-800 bg-slate-900/50 p-4">
+                <p className="text-sm font-semibold text-gray-200 mb-3">
+                  Cutting &amp; Weight
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    shared with the customer
+                  </span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {order.preparationPhotos.map((photo: OrderPhoto, idx: number) => (
+                    <a
+                      key={photo.publicId ?? idx}
+                      href={photo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block aspect-square overflow-hidden rounded-md border border-slate-800"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={`Cutting and weight photo ${idx + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {order.deliveryProofPhotoUrl && (
+              <div className="rounded-md border border-slate-800 bg-slate-900/50 p-4">
+                <p className="text-sm font-semibold text-gray-200 mb-3">
+                  Delivery Proof
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    store record only
+                  </span>
+                </p>
+                <a
+                  href={order.deliveryProofPhotoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block aspect-video overflow-hidden rounded-md border border-slate-800"
+                >
+                  <img
+                    src={order.deliveryProofPhotoUrl}
+                    alt="Delivery proof"
+                    className="h-full w-full object-cover"
+                  />
+                </a>
+                {order.deliveryProofUploadedAt && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Taken {new Date(order.deliveryProofUploadedAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

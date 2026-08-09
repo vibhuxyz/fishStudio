@@ -1,5 +1,23 @@
 import axios from "axios";
 import { runRedirectToLogin } from "./redirect";
+import { AUTH_STORAGE_KEY } from "../store/authStore";
+import { STAFF_SCOPE_HEADER, currentStaffScope } from "./staffScope";
+
+// Read the persisted auth role without importing the React store hook — the
+// interceptors below run outside React and need this synchronously.
+const getAuthRole = (): "seller" | "staff" => {
+  if (typeof window === "undefined") return "seller";
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return "seller";
+    const persisted = JSON.parse(raw) as { state?: { role?: string } };
+    return persisted.state?.role === "staff" ? "staff" : "seller";
+  } catch {
+    // Corrupt/unavailable storage shouldn't break requests — seller is the
+    // safe default since its cookie lookup also accepts a staff token.
+    return "seller";
+  }
+};
 
 // Relative — requests go through this app's own origin and next.config.ts's
 // rewrites() proxies them to the API, so the auth cookie stays first-party.
@@ -8,8 +26,6 @@ const axiosInstance = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    // Tell the auth middleware to look for seller_access_token cookie
-    "x-auth-role": "seller",
     "ngrok-skip-browser-warning": "true",
   },
 });
@@ -41,9 +57,21 @@ const onRefreshSuccess = () => {
   refreshSubscribers = [];
 };
 
-// Handle API requests
+// Default every request to the caller's actual role. Call sites that know
+// better (the staff layouts, useStaffRequestConfig) still override this.
 axiosInstance.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    if (!config.headers["x-auth-role"]) {
+      config.headers["x-auth-role"] = getAuthRole();
+    }
+    // Tells the server which of the concurrent staff sessions this tab is,
+    // so three staff can be signed in at once in one browser.
+    const scope = currentStaffScope();
+    if (scope && !config.headers[STAFF_SCOPE_HEADER]) {
+      config.headers[STAFF_SCOPE_HEADER] = scope;
+    }
+    return config;
+  },
   (error) => Promise.reject(error),
 );
 
@@ -68,16 +96,27 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
       try {
-        // await axios.post(
-        //   `${process.env.NEXT_PUBLIC_SERVER_URI}/auth/api/refresh-token`,
-        //   {},
-        //   { withCredentials: true },
-        // );
-        //
+        // The refresh must be scoped to the same role as the request that
+        // 401'd. Sending a blanket "seller" here meant the server looked for
+        // seller_refresh_token, which a staff member never has — so every
+        // staff refresh 401'd and logged them straight back out.
+        const refreshRole =
+          originalRequest.headers?.["x-auth-role"] ?? getAuthRole();
+        // Same scope as the request that 401'd, so the rotated cookie replaces
+        // this tab's session rather than clobbering another staff tab's.
+        const refreshScope =
+          originalRequest.headers?.[STAFF_SCOPE_HEADER] ?? currentStaffScope();
+
         await axiosInstance.post(
           `/auth/api/refresh-token`, // Using relative path since baseURL is set
           {},
-          { _retry: true } as any, // Mark this as a retry to avoid interceptor loops
+          {
+            _retry: true,
+            headers: {
+              "x-auth-role": refreshRole,
+              ...(refreshScope ? { [STAFF_SCOPE_HEADER]: refreshScope } : {}),
+            },
+          } as any, // Mark this as a retry to avoid interceptor loops
         );
 
         isRefreshing = false;
@@ -87,7 +126,12 @@ axiosInstance.interceptors.response.use(
       } catch (error) {
         isRefreshing = false;
         refreshSubscribers = [];
-        handleLogout();
+        // An identity probe that 401s just means "not this role" — the caller
+        // has another role to try, so tearing the session down here would
+        // log out a perfectly valid user mid-discovery.
+        if (!originalRequest?.skipAuthRedirect) {
+          handleLogout();
+        }
         return Promise.reject(error);
       }
     }

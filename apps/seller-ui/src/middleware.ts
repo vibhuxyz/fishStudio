@@ -10,7 +10,29 @@ type StaffRole = "ORDER_MANAGER" | "RIDER" | "CUTTING_STAFF";
 
 const ROLE_COOKIES: Record<SessionRole, { access: string; refresh: string }> = {
   seller: { access: "seller_access_token", refresh: "seller_refresh_token" },
+  // Staff cookies are scoped per operational role — resolved from the path
+  // below, since one browser may hold all three at once.
   staff: { access: "staff_access_token", refresh: "staff_refresh_token" },
+};
+
+const STAFF_SCOPE_HEADER = "x-staff-scope";
+
+const STAFF_SCOPE_SLUG: Record<StaffRole, string> = {
+  ORDER_MANAGER: "order_manager",
+  RIDER: "rider",
+  CUTTING_STAFF: "cutting_staff",
+};
+
+const staffCookiesFor = (scope: StaffRole) => ({
+  access: `staff_${STAFF_SCOPE_SLUG[scope]}_access_token`,
+  refresh: `staff_${STAFF_SCOPE_SLUG[scope]}_refresh_token`,
+});
+
+/** Which staff session this URL belongs to. Mirrors utils/staffScope.ts. */
+const staffScopeForPath = (pathname: string): StaffRole => {
+  if (pathname.startsWith("/staff/rider")) return "RIDER";
+  if (pathname.startsWith("/staff/cutting")) return "CUTTING_STAFF";
+  return "ORDER_MANAGER";
 };
 
 // Each operational staff role is confined to its own subtree — a Rider
@@ -56,9 +78,18 @@ type SessionResult = { ok: true; setCookie: string[]; staffRole?: StaffRole } | 
 // of re-implementing JWT/Redis-revocation/isActive checks at the edge — those
 // checks already live in isAuthenticated + isSeller/isStaff and must not drift
 // out of sync with a second copy here.
-async function verifySession(role: SessionRole, cookieHeader: string): Promise<SessionResult> {
+async function verifySession(
+  role: SessionRole,
+  cookieHeader: string,
+  scope: StaffRole,
+): Promise<SessionResult> {
+  const authHeaders: Record<string, string> =
+    role === "staff"
+      ? { "x-auth-role": role, [STAFF_SCOPE_HEADER]: scope }
+      : { "x-auth-role": role };
+
   let sessionRes = await fetch(`${frontendEnv.apiUrl}/auth/api/logged-in-${role}`, {
-    headers: { cookie: cookieHeader, "x-auth-role": role },
+    headers: { cookie: cookieHeader, ...authHeaders },
   });
   let setCookie: string[] = [];
 
@@ -67,13 +98,13 @@ async function verifySession(role: SessionRole, cookieHeader: string): Promise<S
     // forcing a re-login, matching axiosInstance's client-side refresh flow.
     const refreshRes = await fetch(`${frontendEnv.apiUrl}/auth/api/refresh-token`, {
       method: "POST",
-      headers: { cookie: cookieHeader, "x-auth-role": role },
+      headers: { cookie: cookieHeader, ...authHeaders },
     });
     if (!refreshRes.ok) return { ok: false };
 
     setCookie = refreshRes.headers.getSetCookie();
     sessionRes = await fetch(`${frontendEnv.apiUrl}/auth/api/logged-in-${role}`, {
-      headers: { cookie: mergeCookieHeader(cookieHeader, setCookie), "x-auth-role": role },
+      headers: { cookie: mergeCookieHeader(cookieHeader, setCookie), ...authHeaders },
     });
     if (!sessionRes.ok) return { ok: false };
   }
@@ -86,14 +117,27 @@ async function verifySession(role: SessionRole, cookieHeader: string): Promise<S
 
 async function resolveSession(
   request: NextRequest,
+  scope: StaffRole,
 ): Promise<{ role: SessionRole; setCookie: string[]; staffRole?: StaffRole } | null> {
   const cookieHeader = request.headers.get("cookie") ?? "";
 
   for (const role of ["seller", "staff"] as const) {
-    const { access, refresh } = ROLE_COOKIES[role];
-    if (!request.cookies.has(access) && !request.cookies.has(refresh)) continue;
+    // For staff, only this path's own scoped cookies count. Falling back to
+    // another scope's cookie here would let a Rider session satisfy a request
+    // for /staff/cutting, defeating the point of separate sessions. The
+    // legacy unscoped names stay accepted so sessions from before scoping
+    // shipped survive until their next login.
+    const candidates =
+      role === "staff"
+        ? [staffCookiesFor(scope), ROLE_COOKIES.staff]
+        : [ROLE_COOKIES.seller];
 
-    const result = await verifySession(role, cookieHeader);
+    const hasCookie = candidates.some(
+      ({ access, refresh }) => request.cookies.has(access) || request.cookies.has(refresh),
+    );
+    if (!hasCookie) continue;
+
+    const result = await verifySession(role, cookieHeader, scope);
     if (result.ok) return { role, setCookie: result.setCookie, staffRole: result.staffRole };
   }
 
@@ -115,7 +159,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const session = await resolveSession(request);
+  const session = await resolveSession(request, staffScopeForPath(pathname));
 
   if (!session) {
     const loginPath = pathname.startsWith("/staff") ? "/staff/login" : "/login";

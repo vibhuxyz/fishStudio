@@ -42,6 +42,16 @@ export const orderWorker = async () => {
           if (content.sellerId) {
             socketManager.broadcastToSeller(content.sellerId, "ORDER_STATUS_UPDATE", payload);
           }
+          // Personal, alert-worthy event for the one staff member who now owns
+          // this order. Separate type so their device can ring/vibrate for it
+          // without also ringing for every sibling status change in the store.
+          if (content.assignedStaffId) {
+            socketManager.broadcastToStaff(content.assignedStaffId, "ORDER_ASSIGNED_TO_ME", {
+              orderId: content.orderId,
+              status: content.status,
+              orderCode: content.orderCode ?? null,
+            });
+          }
         }
         if (content.type === "ORDER_CANCELLED") {
           // No dedicated consumer yet (analytics/loyalty/CRM would hook in

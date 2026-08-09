@@ -116,6 +116,8 @@ export const assignRider = async (
         storeId: order.storeId,
         orderId,
         status: "ASSIGNED_TO_RIDER",
+        assignedStaffId: riderId,
+        orderCode: shortId,
       });
     } catch (err) {
       logger.error("Failed to publish rider-assignment order event", { orderId, err });

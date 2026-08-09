@@ -20,6 +20,7 @@ import { StatusTimeline } from "@/components/order-tracker/StatusTimeline";
 import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
 import SupportMessageModal from "@/components/shared/support-message-modal";
 import CancelOrderModal from "@/components/shared/cancel-order-modal";
+import PreparationPhotosModal from "@/components/shared/preparation-photos-modal";
 import OrderTrackingSkeleton from "@/components/skelton/order-tracking.skelton";
 import { Order } from "@/constants/order";
 import { useAddressStore } from "@/lib/address-store";
@@ -122,6 +123,7 @@ export default function OrderDetailsScreen() {
   const { isLoading } = liveOrder;
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [prepPhotosVisible, setPrepPhotosVisible] = useState(false);
   const queryClient = useQueryClient();
 
   const { mutate: cancelOrder, isPending: isCancelling } = useMutation({
@@ -174,6 +176,7 @@ export default function OrderDetailsScreen() {
   const upperStatus = isUnpaidOnline ? "CANCELLED" : rawStatus;
   const isShipped = upperStatus === "SHIPPED";
   const isTerminal = upperStatus === "DELIVERED" || upperStatus === "CANCELLED" || upperStatus === "REJECTED";
+  const prepPhotos = order.preparationPhotos ?? [];
   // Self-cancel only before the store starts preparing — matches
   // order-service's cancelOrder guard (PENDING or ACCEPTED).
   const isCancellable = !isUnpaidOnline && (upperStatus === "PENDING" || upperStatus === "ACCEPTED");
@@ -580,6 +583,39 @@ export default function OrderDetailsScreen() {
           </View>
         )}
 
+        {/* ── Cutting & weight proof ───────────────────────────────────── */}
+        {prepPhotos.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setPrepPhotosVisible(true)}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: colors.white,
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 12,
+              shadowColor: "#000",
+              shadowOpacity: 0.04,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+              <Ionicons name="cut-outline" size={18} color={PRIMARY} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }}>
+                See Cutting & Weight Photos
+              </Text>
+              <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 1 }}>
+                {prepPhotos.length} photo{prepPhotos.length > 1 ? "s" : ""} taken at the shop
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+
         {/* ── Need help ────────────────────────────────────────────────── */}
         <View
           style={{
@@ -648,6 +684,12 @@ export default function OrderDetailsScreen() {
         onClose={() => setCancelModalVisible(false)}
         isSubmitting={isCancelling}
         onConfirm={(reason, note) => cancelOrder({ reason, note })}
+      />
+
+      <PreparationPhotosModal
+        visible={prepPhotosVisible}
+        onClose={() => setPrepPhotosVisible(false)}
+        photos={prepPhotos}
       />
     </SafeAreaView>
   );

@@ -49,6 +49,10 @@ export interface Order {
   cancelledBy?: "CUSTOMER" | "SELLER" | "STAFF" | "SYSTEM" | null;
   cancelledAt?: string | null;
   refundStatus?: "NONE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED";
+  // Shot by the cutting staff after the fish is cut and weighed. The delivery
+  // proof photo is deliberately absent: it settles delivery disputes for the
+  // seller and is not part of the customer's view of their order.
+  preparationPhotos?: { url: string; publicId: string; uploadedAt: string }[] | null;
   items: OrderItem[];
   store?: {
     id: string;

@@ -48,7 +48,7 @@ export const publicCache = (
  * few minutes is harmless — it is already served from a 10-minute Redis cache
  * behind this.
  */
-export const CATEGORY_CACHE = publicCache(300, 600);
+export const CATEGORY_CACHE: RequestHandler = publicCache(300, 600);
 
 /** Merchandising content — changes more often than categories, still not per-user. */
-export const BANNER_CACHE = publicCache(120, 300);
+export const BANNER_CACHE: RequestHandler = publicCache(120, 300);

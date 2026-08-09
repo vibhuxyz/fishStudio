@@ -21,50 +21,31 @@ import {
 } from "lucide-react";
 
 import { useAdminStats, useAdminSellers, useAdminProducts } from "@/hooks/useAdminQueries";
-import { 
-  calculateAdminOrderTraffic, 
-  getAdminDeviceTrafficData, 
+import {
+  calculateAdminOrderTraffic,
+  getAdminDeviceTrafficData,
   ADMIN_CHART_COLORS,
-  HD_ADMIN_CHART_COLORS 
 } from "@/utils/stats.utils";
 
 /* ===========================
    Dynamic imports (NO SSR)
  =========================== */
 
-const PieChart = dynamic(() => import("recharts").then((m) => m.PieChart), {
-  ssr: false,
-});
-const Pie = dynamic(() => import("recharts").then((m) => m.Pie), {
-  ssr: false,
-});
-const Cell = dynamic(() => import("recharts").then((m) => m.Cell), {
-  ssr: false,
-});
-const ResponsiveContainer = dynamic(
-  () => import("recharts").then((m) => m.ResponsiveContainer),
+// One lazy boundary per chart, not per recharts primitive: recharts inspects
+// its children's component types to assemble a chart, and a next/dynamic
+// wrapper is opaque to that.
+const DeviceTrafficChart = dynamic(
+  () =>
+    import("@/shared/components/charts/device-traffic.chart").then(
+      (m) => m.DeviceTrafficChart,
+    ),
   { ssr: false },
 );
-const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), {
-  ssr: false,
-});
-const Legend = dynamic(() => import("recharts").then((m) => m.Legend), {
-  ssr: false,
-});
-const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), {
-  ssr: false,
-});
-const Bar = dynamic(() => import("recharts").then((m) => m.Bar), {
-  ssr: false,
-});
-const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), {
-  ssr: false,
-});
-const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), {
-  ssr: false,
-});
-const CartesianGrid = dynamic(
-  () => import("recharts").then((m) => m.CartesianGrid),
+const CategoryBreakdownChart = dynamic(
+  () =>
+    import("@/shared/components/charts/category-breakdown.chart").then(
+      (m) => m.CategoryBreakdownChart,
+    ),
   { ssr: false },
 );
 
@@ -100,24 +81,6 @@ const StatsCard = ({ title, value, icon: Icon, trend, trendValue, color }: any) 
   );
 };
 
-const CustomLegend = ({ payload }: any) => {
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-6 mt-6">
-      {payload.map((entry: any, index: number) => (
-        <div key={`item-${index}`} className="flex items-center gap-2 group cursor-pointer">
-          <div 
-            className="w-3 h-3 rounded-full transition-transform duration-300 group-hover:scale-125 shadow-lg shadow-black/20" 
-            style={{ backgroundColor: entry.color }} 
-          />
-          <span className="text-xs font-bold text-slate-400 group-hover:text-white transition-colors">
-            {entry.value}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 /* ===========================
    Dashboard Page
  =========================== */
@@ -128,7 +91,6 @@ export default function DashboardClient() {
   const { data: products = [] } = useAdminProducts();
 
   const [lastUpdated, setLastUpdated] = useState<string>("");
-  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
   useEffect(() => {
     setLastUpdated(new Date().toLocaleTimeString());
@@ -137,13 +99,6 @@ export default function DashboardClient() {
   const stats = statsData?.stats;
   const orderTraffic = calculateAdminOrderTraffic(stats);
   const deviceData = getAdminDeviceTrafficData();
-
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index);
-  };
-  const onPieLeave = () => {
-    setActiveIndex(null);
-  };
 
   return (
     <div className="p-8 space-y-8 max-w-[1600px] mx-auto min-h-screen bg-[#050505]">
@@ -241,60 +196,7 @@ export default function DashboardClient() {
             </div>
             
             <div className="w-full h-[300px] relative z-10">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <defs>
-                    <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={HD_ADMIN_CHART_COLORS.emerald[0]} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={HD_ADMIN_CHART_COLORS.emerald[1]} stopOpacity={1}/>
-                    </linearGradient>
-                    <linearGradient id="amberGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={HD_ADMIN_CHART_COLORS.amber[0]} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={HD_ADMIN_CHART_COLORS.amber[1]} stopOpacity={1}/>
-                    </linearGradient>
-                    <linearGradient id="skyGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={HD_ADMIN_CHART_COLORS.sky[0]} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={HD_ADMIN_CHART_COLORS.sky[1]} stopOpacity={1}/>
-                    </linearGradient>
-                  </defs>
-                  <Pie
-                    data={deviceData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={75}
-                    outerRadius={105}
-                    paddingAngle={8}
-                    stroke="none"
-                    onMouseEnter={onPieEnter}
-                    onMouseLeave={onPieLeave}
-                  >
-                    {deviceData.map((entry, i) => (
-                      <Cell 
-                        key={i} 
-                        fill={entry.fill} 
-                        style={{
-                          filter: activeIndex === i ? 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.4))' : 'none',
-                          transform: activeIndex === i ? 'scale(1.05)' : 'scale(1)',
-                          transition: 'all 0.4s cubic-bezier(0.23, 1, 0.32, 1)',
-                          transformOrigin: 'center'
-                        }}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)', 
-                      border: '1px solid rgba(255, 255, 255, 0.05)', 
-                      borderRadius: '16px', 
-                      backdropFilter: 'blur(12px)',
-                      boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'
-                    }}
-                    itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                    cursor={{ fill: 'transparent' }}
-                  />
-                  <Legend content={<CustomLegend />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <DeviceTrafficChart data={deviceData} />
             </div>
 
             <div className="mt-8 pt-8 border-t border-white/5 w-full relative z-10">
@@ -324,31 +226,7 @@ export default function DashboardClient() {
         <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl">
           <h2 className="text-white text-xl font-bold mb-6">Category Sales Breakdown</h2>
           <div className="h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statsData?.categoryBreakdown || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `₹${value}`}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                  itemStyle={{ color: '#fff' }}
-                  formatter={(value) => `₹${value}`}
-                />
-                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <CategoryBreakdownChart data={statsData?.categoryBreakdown || []} />
           </div>
         </div>
 

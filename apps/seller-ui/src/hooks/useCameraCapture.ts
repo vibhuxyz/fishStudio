@@ -13,6 +13,29 @@ import { toast } from "sonner";
  * to the user as "it's not even asking for permission." Distinguishing that
  * case from an actual permission denial is the whole point of this hook.
  */
+type DocumentWithPolicy = Document & {
+  permissionsPolicy?: { allowsFeature: (feature: string) => boolean };
+  featurePolicy?: { allowsFeature: (feature: string) => boolean };
+};
+
+/**
+ * True when a Permissions-Policy header (not the user) is what blocked the
+ * camera. Chromium-only and non-standard, so an unknown answer is treated as
+ * "not blocked" — a wrong guess here would only mislabel a real denial.
+ */
+const isCameraBlockedByPolicy = (): boolean => {
+  if (typeof document === "undefined") return false;
+  const policy =
+    (document as DocumentWithPolicy).permissionsPolicy ??
+    (document as DocumentWithPolicy).featurePolicy;
+  if (!policy?.allowsFeature) return false;
+  try {
+    return !policy.allowsFeature("camera");
+  } catch {
+    return false;
+  }
+};
+
 export function useCameraCapture() {
   const [isOpen, setIsOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -53,7 +76,15 @@ export function useCameraCapture() {
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        toast.error("Camera permission was denied. Enable it for this site in your browser settings and try again.");
+        // A Permissions-Policy block surfaces as the same NotAllowedError as a
+        // real user denial, but no prompt is ever shown — so telling staff to
+        // "change your browser settings" sends them somewhere that cannot fix
+        // it. Separate the two so the message names the actual problem.
+        toast.error(
+          isCameraBlockedByPolicy()
+            ? "Camera is blocked by this site's security policy. This needs a fix on the server, not on your phone."
+            : "Camera permission was denied. Enable it for this site in your browser settings and try again.",
+        );
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         toast.error("No camera was found on this device.");
       } else if (name === "NotReadableError") {

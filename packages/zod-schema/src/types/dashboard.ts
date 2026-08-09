@@ -47,9 +47,13 @@ export type AdminProduct = {
     name: string;
     sellerId?: string;
   } | null;
+  // Both spellings appear depending on which upload path wrote the record —
+  // productImageSchema normalises the pair down to { url, file_id }.
   images: Array<{
     url?: string | null;
     file_url?: string | null;
+    file_id?: string | null;
+    fileId?: string | null;
   }>;
   origin?: string | null;
   source?: string | null;

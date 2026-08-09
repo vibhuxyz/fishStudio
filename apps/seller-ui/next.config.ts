@@ -6,8 +6,12 @@ const securityHeaders = [
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
+    // `camera=(self)`, not `camera=()`: an empty allowlist blocks the camera
+    // for every origin *including this one*, so the rider/cutting-staff proof
+    // photo flows had getUserMedia rejected by the browser before any
+    // permission prompt could appear.
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self), payment=()",
+    value: "camera=(self), microphone=(), geolocation=(self), payment=()",
   },
   {
     key: "Strict-Transport-Security",

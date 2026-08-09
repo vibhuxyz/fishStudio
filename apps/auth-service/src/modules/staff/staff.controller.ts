@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { AuthError, NotFoundError, ValidationError } from "@repo/error-handlers";
-import {
-  checkOtpRestrictions,
-  sendOtp,
-  trackOtpRequests,
-  verifyOtp,
-} from "../../utils/auth.helper.js";
 import argon2 from "argon2";
 import { setCookie } from "../../utils/cookies/setCookie.js";
 import { clearCookie } from "../../utils/cookies/clearCookie.js";
+import {
+  allStaffAccessCookieNames,
+  allStaffRefreshCookieNames,
+  staffCookieNames,
+  staffScopeOf,
+} from "@repo/middlewares";
 import { redis } from "@repo/libs/redis";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
@@ -23,8 +23,6 @@ import {
 import type { AuthenticatedRequest } from "../../types/auth-request.js";
 import {
   validate,
-  registerStaffSchema,
-  verifyStaffSchema,
   updateStaffAccessSchema,
   createOperationalStaffSchema,
   updateOperationalStaffSchema,
@@ -34,75 +32,6 @@ import {
   toggleStaffActiveSchema,
 } from "@repo/zod-schema";
 import { runBestEffort } from "../../utils/runBestEffort.js";
-
-// ─── Register staff (step 1 – send OTP) ───────────────────────────────────────
-export const registerStaff = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { name, email } = validate(registerStaffSchema, req.body);
-
-    const existingStaff = await prisma.staffs.findFirst({ where: { email } });
-    if (existingStaff) {
-      throw new ValidationError("Staff already exists with this email!");
-    }
-
-    await checkOtpRestrictions(email, next);
-    await trackOtpRequests(email, next);
-
-    await sendOtp("seller", {
-      name,
-      email,
-      template: "seller-activation",
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "OTP sent to email. Please verify your account.",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// ─── Verify staff OTP and create account ──────────────────────────────────────
-export const verifyStaff = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { name, email, password, otp } = validate(verifyStaffSchema, req.body);
-
-    const existingStaff = await prisma.staffs.findFirst({ where: { email } });
-    if (existingStaff) {
-      return next(new ValidationError("Staff already exists with this email!"));
-    }
-
-    await verifyOtp(email, otp, next);
-    const hashedPassword = await argon2.hash(password);
-
-    const staff = await prisma.staffs.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        isActive: false,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message:
-        "Staff account created! Wait for a seller to grant you access before you can log in.",
-      staff: { id: staff.id, name: staff.name, email: staff.email },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // ─── Get logged-in staff ──────────────────────────────────────────────────────
 export const getStaff = async (
@@ -120,13 +49,22 @@ export const getStaff = async (
 
 // ─── Logout staff ─────────────────────────────────────────────────────────────
 export const logOutStaff = async (req: AuthenticatedRequest, res: Response) => {
-  const accessToken = req.cookies["staff_access_token"] || req.headers.authorization?.split(" ")[1];
-  const refreshTok = req.cookies["staff_refresh_token"];
+  // Only this staff member's own scope is signed out — a Rider logging out
+  // must not also end the Cutting Staff session running in another tab.
+  const scope = staffScopeOf(req.staff?.role);
+  const { access, refresh } = staffCookieNames(scope);
+
+  const accessToken = req.cookies[access] || req.headers.authorization?.split(" ")[1];
+  const refreshTok = req.cookies[refresh];
 
   await revokeToken(accessToken).catch(() => {});
   await revokeToken(refreshTok).catch(() => {});
   if (req.staff?.id) await bumpRefreshFamily("staff", req.staff.id).catch(() => {});
 
+  clearCookie(res, access);
+  clearCookie(res, refresh);
+  // Legacy pre-scoping cookie: clear it too, or a stale copy keeps
+  // resurrecting the session on requests that fall back to it.
   clearCookie(res, "staff_access_token");
   clearCookie(res, "staff_refresh_token");
 
@@ -146,7 +84,9 @@ export const searchStaffByEmail = async (
       return next(new ValidationError("Email is required"));
     }
 
-    const staff = await prisma.staffs.findUnique({
+    // findFirst, not findUnique: staff.email is optional and carries no unique
+    // constraint — username-created RIDER/CUTTING_STAFF rows have none at all.
+    const staff = await prisma.staffs.findFirst({
       where: { email: String(email) },
       select: {
         id: true,
@@ -275,8 +215,9 @@ export const getMyStaffs = async (
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Operational staff (RIDER / CUTTING_STAFF) — seller-direct-create, no OTP.
-// Distinct from the ORDER_MANAGER flow above (self-signup + seller-approval).
+// Staff (ORDER_MANAGER / RIDER / CUTTING_STAFF) — seller-direct-create, no OTP.
+// The seller sets a username and password; the staff member signs in with it
+// at /staff/login. Self-registration no longer exists.
 // ═══════════════════════════════════════════════════════════════════════════
 
 function requireStoreId(req: AuthenticatedRequest): string {
@@ -293,9 +234,9 @@ async function findOwnedOperationalStaff(sellerId: string, staffId: string) {
   if (staff.sellerId !== sellerId) {
     throw new ValidationError("You can only manage staff in your own shop");
   }
-  if (staff.role === "ORDER_MANAGER") {
-    throw new ValidationError("Use the staff access endpoint to manage this staff member");
-  }
+  // Order managers used to be excluded here because they self-registered and
+  // were managed through the separate access-grant endpoint. Sellers now
+  // create them directly, so they are managed like any other staff member.
   return staff;
 }
 
@@ -325,8 +266,12 @@ export const loginStaffByUsername = async (
     const accessToken = signAccessToken({ id: staff.id, role: "staff" }, "7d");
     const refreshToken = await signRefreshToken({ id: staff.id, role: "staff" }, "7d");
 
-    setCookie(res, "staff_refresh_token", refreshToken);
-    setCookie(res, "staff_access_token", accessToken);
+    // Cookie name is scoped to this staff member's operational role, so
+    // signing in as a Rider leaves an existing Cutting Staff or Order Manager
+    // session in the same browser untouched.
+    const cookies = staffCookieNames(staffScopeOf(staff.role));
+    setCookie(res, cookies.refresh, refreshToken);
+    setCookie(res, cookies.access, accessToken);
 
     res.status(200).json({
       success: true,

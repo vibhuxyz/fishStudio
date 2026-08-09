@@ -1,7 +1,15 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig((options) => ({
-  entry: ["src/index.ts", "src/authorizeRole.ts", "src/isAuthenticated.ts"],
+  // Every file re-exported from index.ts needs its own entry: `bundle: false`
+  // emits one output per entry and leaves the re-export specifiers untouched,
+  // so a missing entry resolves to a file that was never written.
+  entry: [
+    "src/index.ts",
+    "src/authorizeRole.ts",
+    "src/isAuthenticated.ts",
+    "src/staffCookies.ts",
+  ],
   format: ["esm"],
   dts: true,
   platform: "node",

@@ -17,7 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance from "@/utils/axiosInstance";
-import { requestPushPermission, syncNotificationPreferences } from "@/utils/push-notifications";
+import { syncNotificationPreferences } from "@/utils/notification-preferences";
 import { toast } from "@/utils/toast";
 
 interface SettingItem {
@@ -33,13 +33,11 @@ interface SettingItem {
 }
 
 interface SettingsData {
-  notifications: boolean;
   email_notifications: boolean;
   dark_mode: boolean;
 }
 
 const DEFAULT_SETTINGS: SettingsData = {
-  notifications: true,
   email_notifications: true,
   dark_mode: false,
 };
@@ -84,19 +82,6 @@ export default function Settings() {
     const newSettings = { ...settingsData };
 
     switch (id) {
-      case "notifications": {
-        const turningOn = !newSettings.notifications;
-        if (turningOn) {
-          const result = await requestPushPermission();
-          if (!result.granted) {
-            toast.error("Enable notifications for this app in your device Settings");
-            return;
-          }
-          await syncNotificationPreferences({ expoPushToken: result.token });
-        }
-        newSettings.notifications = turningOn;
-        break;
-      }
       case "email_notifications":
         newSettings.email_notifications = !newSettings.email_notifications;
         await syncNotificationPreferences({
@@ -173,16 +158,6 @@ export default function Settings() {
   };
 
   const settings: SettingItem[] = [
-    {
-      id: "notifications",
-      title: "Push Notifications",
-      subtitle: "Receive notifications about orders and promotions",
-      icon: "notifications-outline",
-      iconColor: "#2563EB",
-      iconBg: "#DBEAFE",
-      type: "toggle",
-      value: settingsData.notifications,
-    },
     {
       id: "email_notifications",
       title: "Email Notifications",
@@ -280,7 +255,7 @@ export default function Settings() {
   );
 
   const notificationSettings = settings.filter((item) =>
-    ["notifications", "email_notifications"].includes(item.id)
+    ["email_notifications"].includes(item.id)
   );
 
   const appSettings = settings.filter((item) =>
