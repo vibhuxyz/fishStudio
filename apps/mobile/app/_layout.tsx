@@ -1,4 +1,7 @@
-import "react-native-reanimated";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 import {
   DarkTheme,
   DefaultTheme,
@@ -20,6 +23,15 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { clearStoredAuth } from "@/utils/auth";
 import { registerForceLogoutHandler } from "@/utils/axiosInstance";
 import { useCallback, useEffect, useState } from "react";
+
+// NativeWind's interop layer (react-native-css-interop) assigns to its shared
+// values while rendering, which Reanimated's strict mode flags on every
+// className'd element — noise we can't fix from here. Warnings still print;
+// only the strict-mode render checks are off.
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

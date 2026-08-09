@@ -137,15 +137,17 @@ export default function ProductDetailScreen() {
     : "";
 
   // Fetch product details (same endpoint as user-ui's fetchStorefrontProductBySlug)
-  const { data: product, isLoading: productLoading } = useQuery({
+  const { data: productPayload, isLoading: productLoading } = useQuery({
     queryKey: ["product", id, locationParams, locationVersion],
     queryFn: async () => {
       const response = await axiosInstance.get(
         `/product/api/get-product/${id}${locationParams ? `?${locationParams}` : ""}`
       );
-      return response.data.product;
+      return response.data;
     },
   });
+
+  const product = productPayload?.product;
 
   // Record the view for recently-viewed + recommendations (fire-and-forget).
   useEffect(() => {
@@ -224,11 +226,15 @@ export default function ProductDetailScreen() {
       : selected.size;
 
   // Related products — get-product already computes up to 4 of these
-  // server-side (storefront.controller.ts), so reuse that instead of firing
-  // a second get-all-products round trip for the same category.
+  // server-side (storefront.controller.ts) and returns them alongside the
+  // product, so reuse that instead of firing a second get-all-products round
+  // trip for the same category.
   const relatedProducts = useMemo(
-    () => (product?.relatedProducts ?? []).filter((p: any) => p.id !== product?.id),
-    [product],
+    () =>
+      ((productPayload?.relatedProducts as any[]) ?? []).filter(
+        (p: any) => p.id !== product?.id,
+      ),
+    [productPayload, product?.id],
   );
   const relatedLoading = productLoading;
 
@@ -239,18 +245,30 @@ export default function ProductDetailScreen() {
   // bundle one variant-picker at a time instead of only prompting for one.
   const [quickAddProduct, setQuickAddProduct] = useState<any | null>(null);
   const [bundleQueue, setBundleQueue] = useState<any[]>([]);
+  // Total items in the run that "Add all N to cart" started, so each picker
+  // can tell the shopper which of the N they're on. 0 = no run in progress.
+  const [bundleStepCount, setBundleStepCount] = useState(0);
 
   // Lets the shopper drop items out of "Frequently Bought Together" before
   // adding the rest — ids here are excluded from the bundle total and cart add.
   const [removedBundleIds, setRemovedBundleIds] = useState<Set<string>>(new Set());
 
+  // Dismissing the picker means "stop here" — the items still queued behind
+  // it are dropped rather than paraded past the shopper one more time.
   const handleQuickAddClose = () => {
-    if (bundleQueue.length > 0) {
-      const [next, ...rest] = bundleQueue;
+    setQuickAddProduct(null);
+    setBundleQueue([]);
+    setBundleStepCount(0);
+  };
+
+  const handleQuickAddAdded = () => {
+    const [next, ...rest] = bundleQueue;
+    if (next) {
       setBundleQueue(rest);
       setQuickAddProduct(next);
     } else {
       setQuickAddProduct(null);
+      setBundleStepCount(0);
     }
   };
 
@@ -971,6 +989,7 @@ export default function ProductDetailScreen() {
               }
               const [first, ...rest] = selectedBundleItems;
               if (first) {
+                setBundleStepCount(selectedItems.length);
                 setBundleQueue(rest);
                 setQuickAddProduct(first);
               }
@@ -1217,6 +1236,15 @@ export default function ProductDetailScreen() {
         product={quickAddProduct}
         visible={!!quickAddProduct}
         onClose={handleQuickAddClose}
+        onAdded={handleQuickAddAdded}
+        bundleProgress={
+          bundleStepCount > 1
+            ? {
+                current: bundleStepCount - bundleQueue.length,
+                total: bundleStepCount,
+              }
+            : undefined
+        }
       />
       <FloatingCartBar />
     </SafeAreaView>

@@ -37,6 +37,17 @@ interface Props {
   product: Product | null;
   visible: boolean;
   onClose: () => void;
+  /**
+   * Set when this modal is one step of a multi-item flow ("Add all 3 to
+   * cart"), so the shopper can see how far through the items they are.
+   */
+  bundleProgress?: { current: number; total: number };
+  /**
+   * Called instead of `onClose` when the item was actually added, so a
+   * multi-item flow can move to its next item while a plain dismiss
+   * (X / backdrop / back button) still means "stop here".
+   */
+  onAdded?: () => void;
 }
 
 // Inline accordion dropdown (safe inside a Modal — no nested Modal)
@@ -108,7 +119,13 @@ function InlineDropdown({
   );
 }
 
-export default function AddToCartModal({ product, visible, onClose }: Props) {
+export default function AddToCartModal({
+  product,
+  visible,
+  onClose,
+  bundleProgress,
+  onAdded,
+}: Props) {
   const { user } = useUser();
   const { getSelectedAddress } = useAddressStore();
   const selectedAddress = getSelectedAddress();
@@ -238,7 +255,12 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
       selectedAddress,
       "Mobile App"
     );
-    onClose();
+    // "Buy now" leaves for the cart, so it ends any multi-item run either way.
+    if (onAdded && !buyNow) {
+      onAdded();
+    } else {
+      onClose();
+    }
     if (buyNow) {
       router.push("/(tabs)/cart");
     } else {
@@ -275,9 +297,18 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
         </View>
 
         <View className="flex-row items-center justify-between px-5 py-3 border-b border-border">
-          <Text className="text-base font-poppins-semibold text-foreground">
-            Customize & Add
-          </Text>
+          <View className="flex-row items-center flex-1 mr-2">
+            <Text className="text-base font-poppins-semibold text-foreground">
+              Customize & Add
+            </Text>
+            {bundleProgress && (
+              <View className="ml-2 rounded-full bg-primary/10 px-2.5 py-1">
+                <Text className="text-[11px] font-poppins-semibold text-primary">
+                  Item {bundleProgress.current} of {bundleProgress.total}
+                </Text>
+              </View>
+            )}
+          </View>
           <TouchableOpacity onPress={onClose} className="p-1">
             <Ionicons name="close" size={22} color="#64748B" />
           </TouchableOpacity>
@@ -555,7 +586,9 @@ export default function AddToCartModal({ product, visible, onClose }: Props) {
                 isOutOfStock ? "text-muted-foreground" : "text-white"
               }`}
             >
-              Add to Cart
+              {bundleProgress && bundleProgress.current < bundleProgress.total
+                ? "Add & Next Item"
+                : "Add to Cart"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity

@@ -30,12 +30,25 @@ interface AddToCartModalProps {
   product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Set when this modal is one step of a multi-item flow ("Add all 3 to
+   * cart"), so the shopper can see how far through the items they are.
+   */
+  bundleProgress?: { current: number; total: number };
+  /**
+   * Called instead of `onOpenChange(false)` when the item was actually added,
+   * so a multi-item flow can move to its next item while a plain dismiss
+   * (X / overlay / Esc) still means "stop here".
+   */
+  onAdded?: () => void;
 }
 
 export function AddToCartModal({
   product,
   open,
   onOpenChange,
+  bundleProgress,
+  onAdded,
 }: AddToCartModalProps) {
   const modals = useModals();
   const [selectedCutting, setSelectedCutting] = useState<string>("");
@@ -132,7 +145,12 @@ export function AddToCartModal({
       isPerKgMode ? weightDisplay : (selectedSize || resolved.unit || product.weight || "unit"),
       breakdown,
     );
-    onOpenChange(false);
+    // "Buy now" leaves for the cart, so it ends any multi-item run either way.
+    if (onAdded && !shouldOpenCart) {
+      onAdded();
+    } else {
+      onOpenChange(false);
+    }
     if (shouldOpenCart) {
       modals.openCart();
     } else {
@@ -273,6 +291,11 @@ export function AddToCartModal({
 
             {/* Category + Name */}
             <div>
+              {bundleProgress && (
+                <span className="mb-1.5 inline-block rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                  Item {bundleProgress.current} of {bundleProgress.total}
+                </span>
+              )}
               <p className="mb-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {product.subCategory || product.category}
               </p>
@@ -524,7 +547,9 @@ export function AddToCartModal({
                 className="h-12 bg-accent text-accent-foreground hover:bg-accent/90 text-sm font-semibold"
                 onClick={() => handleAddToCart(false)}
               >
-                Add to cart
+                {bundleProgress && bundleProgress.current < bundleProgress.total
+                  ? "Add & next item"
+                  : "Add to cart"}
               </Button>
               <Button
                 className="h-12 bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold"

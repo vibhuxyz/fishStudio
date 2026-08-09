@@ -66,15 +66,27 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
   // the same picker modal used everywhere else on the site, one at a time.
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
   const [bundleQueue, setBundleQueue] = useState<Product[]>([]);
+  // Total items in the run that "Add all N to cart" started, so each picker
+  // can tell the shopper which of the N they're on. 0 = no run in progress.
+  const [bundleStepCount, setBundleStepCount] = useState(0);
 
+  // Dismissing the picker means "stop here" — the items still queued behind
+  // it are dropped rather than paraded past the shopper one more time.
   const handleQuickAddOpenChange = (open: boolean) => {
     if (open) return;
-    if (bundleQueue.length > 0) {
-      const [next, ...rest] = bundleQueue;
+    setQuickAddProduct(null);
+    setBundleQueue([]);
+    setBundleStepCount(0);
+  };
+
+  const handleQuickAddAdded = () => {
+    const [next, ...rest] = bundleQueue;
+    if (next) {
       setBundleQueue(rest);
       setQuickAddProduct(next);
     } else {
       setQuickAddProduct(null);
+      setBundleStepCount(0);
     }
   };
 
@@ -318,6 +330,7 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
     );
     const [first, ...rest] = selectedBundleItems;
     if (first) {
+      setBundleStepCount(bundleSelectedItems.length);
       setBundleQueue(rest);
       setQuickAddProduct(first);
     }
@@ -911,6 +924,15 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
         product={quickAddProduct}
         open={!!quickAddProduct}
         onOpenChange={handleQuickAddOpenChange}
+        onAdded={handleQuickAddAdded}
+        bundleProgress={
+          bundleStepCount > 1
+            ? {
+                current: bundleStepCount - bundleQueue.length,
+                total: bundleStepCount,
+              }
+            : undefined
+        }
       />
     </div>
   );
