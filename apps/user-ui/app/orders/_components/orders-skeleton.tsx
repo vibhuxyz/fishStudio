@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { OrdersHeader } from "./orders-header";
 
 export function OrdersSkeleton() {
   return (
@@ -17,6 +18,17 @@ export function OrdersSkeleton() {
           <Skeleton className="h-4 w-4 flex-shrink-0 rounded" />
         </div>
       ))}
+    </div>
+  );
+}
+
+// The whole route in its loading state — used by loading.tsx while the page
+// chunk streams, and by the page itself while the session is still resolving.
+export function OrdersPageSkeleton() {
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <OrdersHeader />
+      <OrdersSkeleton />
     </div>
   );
 }

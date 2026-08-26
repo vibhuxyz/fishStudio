@@ -31,6 +31,24 @@ export function HomeProductSectionSkeleton() {
   );
 }
 
+export function HomeProductGridSkeleton() {
+  return (
+    <section className="px-3 py-6 sm:px-4 sm:py-8 md:py-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 flex flex-col items-center gap-2">
+          <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+          <div className="h-8 w-48 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomeSkeleton() {
   return (
     <div className="flex flex-col gap-4">

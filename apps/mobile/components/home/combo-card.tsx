@@ -14,8 +14,9 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
  * pricing live in the image. Falls back to the first product in the Combos
  * section until someone uploads one.
  */
-export function useComboBanner() {
+export function useComboBanner(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["combo-banner"],
     queryFn: async (): Promise<Banner | null> => {
       const { data } = await axiosInstance.get("/product/api/get-banners", {

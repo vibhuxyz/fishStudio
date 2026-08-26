@@ -4,7 +4,12 @@ export const dynamic = "force-dynamic";
 import { HeroBanners } from "./_components/hero-banners";
 import { HomeActivitySections } from "./_components/home-activity-sections";
 import { AllProductsSection } from "./_components/all-products-section";
-import { HomeBannerSkeleton } from "./_components/home-skeleton";
+import {
+  HomeBannerSkeleton,
+  HomeProductGridSkeleton,
+  HomeProductSectionSkeleton,
+} from "./_components/home-skeleton";
+import { LazySection } from "./_components/lazy-section";
 import nextDynamic from "next/dynamic";
 
 // Dynamically import non-critical sections
@@ -32,11 +37,16 @@ export default async function Page() {
           <HomeActivitySections />
         </div>
 
-        {/* 8. All Products — infinite scroll */}
-        <AllProductsSection />
+        {/* 8. All Products — infinite scroll, and the heaviest fetch on the
+                page, so it waits until the reader has scrolled past the rails */}
+        <LazySection fallback={<HomeProductGridSkeleton />}>
+          <AllProductsSection />
+        </LazySection>
 
         {/* Social proof */}
-        <TestimonialsSection />
+        <LazySection fallback={<HomeProductSectionSkeleton />}>
+          <TestimonialsSection />
+        </LazySection>
       </main>
     </div>
   );

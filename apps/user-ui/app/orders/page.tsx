@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 import { OrdersRealtimeLayer } from "./_components/orders-realtime-layer";
 import { OrderLoginAction } from "./_components/order-login-action";
+import { OrdersHeader } from "./_components/orders-header";
+import { OrdersPageSkeleton } from "./_components/orders-skeleton";
 import { useUserSession } from "@/hooks/useUserSession";
 
 export default function OrdersPage() {
   const { isLoading, user } = useUserSession();
 
+  // The session query decides between the order list and the signed-out
+  // prompt, so until it settles we show the list's shape rather than a spinner
+  // — it's what the signed-in majority is about to get.
   if (isLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
-      </div>
-    );
+    return <OrdersPageSkeleton />;
   }
 
   if (!user) {
@@ -33,18 +33,7 @@ export default function OrdersPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex items-center gap-3">
-        <Link
-          href="/"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-muted"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-foreground">My Orders</h1>
-          <p className="text-sm text-muted-foreground">Manage your orders and track status</p>
-        </div>
-      </div>
+      <OrdersHeader />
 
       <OrdersRealtimeLayer initialOrders={[]} />
     </div>

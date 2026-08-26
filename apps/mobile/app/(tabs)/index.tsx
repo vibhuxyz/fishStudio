@@ -13,6 +13,8 @@ import SectionCarousel from "@/components/home/section-carousel";
 import TrustStrip from "@/components/home/trust-strip";
 import EndOfListBanner from "@/components/home/end-of-list-banner";
 import ProductSkeleton from "@/components/skelton/product.skelton";
+import SectionRailSkeleton from "@/components/skelton/section-rail.skelton";
+import { useProgressiveRender } from "@/hooks/useProgressiveRender";
 import { fetchForYou, fetchRecentlyViewed } from "@/actions/activity";
 import { useAddressStore } from "@/lib/address-store";
 import { useScrollDirectionStore } from "@/store/scroll-direction-store";
@@ -39,8 +41,19 @@ interface ProductListingPage {
   pagination?: { page: number; hasMore?: boolean; nextCursor?: string | null };
 }
 
+// The home tab reveals itself in stages instead of firing every request and
+// rendering every rail on the first frame. Header, banner, trust strip and
+// categories paint at stage 0; each heavier block below waits its turn, so the
+// customer sees the top of the screen immediately rather than a blank tab.
+const HOME_STAGE = {
+  rails: 1, // Fresh Arrivals · Combos · Best Sellers · Seasonal
+  personalised: 2, // Recently Viewed · Recommended
+  grid: 3, // All Products
+} as const;
+
 export default function Index() {
   const { selectedLocation, locationVersion } = useAddressStore();
+  const stage = useProgressiveRender(HOME_STAGE.grid);
 
   const locationParams = selectedLocation?.storeId
     ? { storeId: selectedLocation.storeId, pincode: selectedLocation.pincode, city: selectedLocation.city }
@@ -50,7 +63,7 @@ export default function Index() {
 
   const {
     data: infiniteData,
-    isLoading,
+    isPending: productsPending,
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
@@ -66,12 +79,13 @@ export default function Index() {
     getNextPageParam: (lastPage) =>
       lastPage.pagination?.hasMore ? (lastPage.pagination.nextCursor ?? undefined) : undefined,
     staleTime: 1000 * 60 * 5,
+    enabled: stage >= HOME_STAGE.grid,
   });
 
   const products = infiniteData?.pages.flatMap((p) => p.products) ?? [];
 
   // Home sections (Fresh Today / Best Seller / Trending / New Arrival)
-  const { data: sectionsData } = useQuery({
+  const { data: sectionsData, isPending: sectionsPending } = useQuery({
     queryKey: ["home-sections", locationParams.storeId, locationParams.pincode, locationVersion],
     queryFn: async () => {
       const res = await axiosInstance.get("/product/api/get-homepage-sections", {
@@ -80,6 +94,7 @@ export default function Index() {
       return res.data;
     },
     staleTime: 1000 * 60 * 5,
+    enabled: stage >= HOME_STAGE.rails,
   });
   const sections: { key: string; title: string; products: Product[] }[] =
     sectionsData?.sections ?? [];
@@ -88,21 +103,27 @@ export default function Index() {
   const bestSellers = getSection("best-sellers");
   const combos = getSection("combos");
   const seasonal = getSection("seasonal");
+  // Curated rails share one response, so they all become real content at the
+  // same moment. Until then they hold their space with a placeholder rail
+  // rather than collapsing and shifting everything below them.
+  const railsReady = stage >= HOME_STAGE.rails && !sectionsPending;
 
   // Personalised rails
   const { data: recentlyViewed = [] } = useQuery({
     queryKey: ["recently-viewed", locationParams.storeId, locationParams.pincode, locationVersion],
     queryFn: () => fetchRecentlyViewed(locationParams),
     staleTime: 1000 * 60 * 2,
+    enabled: stage >= HOME_STAGE.personalised,
   });
   const { data: forYou = [] } = useQuery({
     queryKey: ["for-you", locationParams.storeId, locationParams.pincode, locationVersion],
     queryFn: () => fetchForYou(locationParams),
     staleTime: 1000 * 60 * 5,
+    enabled: stage >= HOME_STAGE.personalised,
   });
 
   // Combo artwork is uploaded from admin as a "combo" banner.
-  const { data: comboBanner = null } = useComboBanner();
+  const { data: comboBanner = null } = useComboBanner(stage >= HOME_STAGE.rails);
   const [cartProduct, setCartProduct] = useState<Product | null>(null);
   // Reserve extra scroll space only while the floating "View cart" pill is
   // actually showing, sized from its real measured footprint rather than a
@@ -177,34 +198,44 @@ export default function Index() {
         <CategoryRow />
 
         {/* Fresh Arrivals */}
-        {freshArrivals && (
-          <SectionCarousel
-            title={freshArrivals.title}
-            products={freshArrivals.products}
-            onSeeAll={() => openSection(freshArrivals.key)}
-          />
+        {railsReady ? (
+          freshArrivals && (
+            <SectionCarousel
+              title={freshArrivals.title}
+              products={freshArrivals.products}
+              onSeeAll={() => openSection(freshArrivals.key)}
+            />
+          )
+        ) : (
+          <SectionRailSkeleton />
         )}
 
         {/* Real combo bundles for the resolved store — the actual "Combos"
             section. Falls back to the old tag-based combo tile when a store
             hasn't created one yet, same as the web homepage. */}
-        <RealCombosSection
-          fallback={
-            <LegacyCombosSection
-              comboBanner={comboBanner}
-              comboProduct={combos?.products?.[0]}
-              onViewAllCombos={() => openSection("combos")}
-              onAddToCart={setCartProduct}
-            />
-          }
-        />
+        {stage >= HOME_STAGE.rails && (
+          <RealCombosSection
+            fallback={
+              <LegacyCombosSection
+                comboBanner={comboBanner}
+                comboProduct={combos?.products?.[0]}
+                onViewAllCombos={() => openSection("combos")}
+                onAddToCart={setCartProduct}
+              />
+            }
+          />
+        )}
 
         {/* Best Sellers rail */}
-        <BestSellersCombos
-          bestSellers={bestSellers?.products ?? []}
-          onViewAllBestSellers={() => openSection("best-sellers")}
-          onAddToCart={setCartProduct}
-        />
+        {railsReady ? (
+          <BestSellersCombos
+            bestSellers={bestSellers?.products ?? []}
+            onViewAllBestSellers={() => openSection("best-sellers")}
+            onAddToCart={setCartProduct}
+          />
+        ) : (
+          <SectionRailSkeleton />
+        )}
 
         {/* Tagline + WhatsApp CTA */}
         <View
@@ -247,11 +278,13 @@ export default function Index() {
         </View>
 
         {/* Recently viewed rail */}
-        <SectionCarousel
-          title="Recently Viewed"
-          products={recentlyViewed}
-          onSeeAll={() => openSection("recently-viewed")}
-        />
+        {stage >= HOME_STAGE.personalised && (
+          <SectionCarousel
+            title="Recently Viewed"
+            products={recentlyViewed}
+            onSeeAll={() => openSection("recently-viewed")}
+          />
+        )}
 
         {/* Seasonal Specials */}
         {seasonal && (
@@ -263,14 +296,16 @@ export default function Index() {
         )}
 
         {/* Recommended Products (content-based recommendations) */}
-        <SectionCarousel
-          title="Recommended Products"
-          products={forYou}
-          onSeeAll={() => openSection("for-you")}
-        />
+        {stage >= HOME_STAGE.personalised && (
+          <SectionCarousel
+            title="Recommended Products"
+            products={forYou}
+            onSeeAll={() => openSection("for-you")}
+          />
+        )}
 
         {/* All products heading */}
-        {!isLoading && products.length > 0 && (
+        {!productsPending && products.length > 0 && (
           <Text
             style={{
               fontFamily: "Inter-Bold",
@@ -286,7 +321,7 @@ export default function Index() {
         )}
 
         {/* Products 2-column grid */}
-        {isLoading ? (
+        {productsPending ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, gap: 16 }}>
             {[0, 1, 2, 3].map((i) => <ProductSkeleton key={i} />)}
           </View>
@@ -308,7 +343,7 @@ export default function Index() {
         )}
 
         {/* End of list banner */}
-        {!hasNextPage && products.length > 0 && !isLoading && (
+        {!hasNextPage && products.length > 0 && !productsPending && (
           <EndOfListBanner />
         )}
       </ScrollView>

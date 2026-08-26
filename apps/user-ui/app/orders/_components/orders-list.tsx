@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Package, Clock, CheckCircle2, Truck, XCircle, ChevronRight, ShoppingBag, PackageCheck, Bike } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/lib/orders-api";
+import { OrdersSkeleton } from "./orders-skeleton";
 import { formatOrderId } from "@repo/shared/order-id";
 import { resolvePaymentState } from "@repo/shared/payment-state";
 
@@ -22,7 +23,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?: boolean }) {
-  if (orders.length === 0 && !isLoading) {
+  // Without this the first fetch fell through to the map below and rendered an
+  // empty container — a blank gap where the list is about to be.
+  if (isLoading && orders.length === 0) {
+    return <OrdersSkeleton />;
+  }
+
+  if (orders.length === 0) {
     return (
       <div className="py-20 text-center">
         <ShoppingBag className="mx-auto mb-4 h-16 w-16 text-muted-foreground/30" />
