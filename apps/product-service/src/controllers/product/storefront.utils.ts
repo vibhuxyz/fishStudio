@@ -118,6 +118,12 @@ export type StoreLocationInput = {
 const normalizeLocationValue = (value?: string | null) =>
   typeof value === "string" ? value.trim().toLowerCase() : "";
 
+// storeId arrives straight from a query string, and Prisma rejects anything
+// that isn't a 24-char hex ObjectId with P2023 — which surfaces as a 500 on a
+// storefront page rather than as a plain "no store here". A stale or hand-typed
+// id is dropped from the filter so pincode/city can still resolve a store.
+const isObjectId = (value: string) => /^[0-9a-fA-F]{24}$/.test(value);
+
 const buildStoreLocationWhere = ({
   storeId,
   pincode,
@@ -125,7 +131,7 @@ const buildStoreLocationWhere = ({
 }: StoreLocationInput) => {
   const filters: Record<string, unknown>[] = [];
 
-  if (storeId) {
+  if (storeId && isObjectId(storeId)) {
     filters.push({ id: String(storeId) });
   }
   if (pincode) {

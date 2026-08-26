@@ -1,4 +1,5 @@
-import { Order, STATUS_CONFIG } from "@/constants/order";
+import { Order, PAYMENT_TONE_COLORS, STATUS_CONFIG } from "@/constants/order";
+import { resolvePaymentState } from "@repo/shared/payment-state";
 import axiosInstance from "@/utils/axiosInstance";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
@@ -22,14 +23,18 @@ import { formatOrderId } from "@repo/shared/order-id";
 import CancelOrderModal from "@/components/shared/cancel-order-modal";
 import OrderListSkeleton from "@/components/skelton/order-list.skelton";
 
-// A RAZORPAY order still sitting PENDING never got a completed payment — the
+// An online order still sitting PENDING never got a completed payment — the
 // seller never saw it, so it reads as cancelled rather than "in progress".
-// COD is exempt: PENDING there just means payment is due on delivery.
+// COD is exempt: cash is simply due on delivery. The payment states come from
+// the shared resolver, so this agrees with the seller and admin dashboards.
 function getDisplayStatus(order: Order): string {
+  const { key } = resolvePaymentState({
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    orderStatus: order.status,
+  });
   const isUnpaidOnline =
-    order.paymentMethod === "RAZORPAY" &&
-    order.status === "PENDING" &&
-    order.paymentStatus !== "COMPLETED";
+    order.status === "PENDING" && (key === "AWAITING_PAYMENT" || key === "NOT_PAID");
   return isUnpaidOnline ? "CANCELLED" : order.status;
 }
 
@@ -118,6 +123,12 @@ export default function MyOrders() {
       : orders.filter((o) => getDisplayStatus(o) === selectedStatus);
 
   const renderOrderCard = (order: Order) => {
+    const paymentState = resolvePaymentState({
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      refundStatus: order.refundStatus,
+      orderStatus: order.status,
+    });
     const cfg = STATUS_CONFIG[order.status] ?? {
       bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: order.status,
     };
@@ -166,13 +177,13 @@ export default function MyOrders() {
             </View>
             <View
               className="px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: order.paymentStatus === "COMPLETED" ? "#D1FAE5" : "#FEF3C7" }}
+              style={{ backgroundColor: PAYMENT_TONE_COLORS[paymentState.tone].bg }}
             >
               <Text
                 className="text-[10px] font-poppins-semibold"
-                style={{ color: order.paymentStatus === "COMPLETED" ? "#059669" : "#D97706" }}
+                style={{ color: PAYMENT_TONE_COLORS[paymentState.tone].text }}
               >
-                {order.paymentStatus}
+                {paymentState.label}
               </Text>
             </View>
           </View>

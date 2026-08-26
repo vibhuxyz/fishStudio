@@ -64,11 +64,16 @@ export function useInfiniteProducts(options: UseInfiniteProductsOptions = {}) {
   const allProducts = query.data?.pages.flatMap((p) => p.products) ?? [];
   const store = query.data?.pages[0]?.store;
   const pagination = query.data?.pages[query.data.pages.length - 1]?.pagination;
+  // A whole-category facet, identical on every page — take it from the first.
+  const subCategoryCounts = query.data?.pages[0]?.subCategoryCounts;
+  const categoryTotal = query.data?.pages[0]?.categoryTotal;
 
   return {
     ...query,
     allProducts,
     store,
     pagination,
+    subCategoryCounts,
+    categoryTotal,
   };
 }

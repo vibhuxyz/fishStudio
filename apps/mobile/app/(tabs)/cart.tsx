@@ -208,6 +208,12 @@ export default function CartScreen() {
   const rowKeyFor = (p: CartItem) =>
     `${p.id}__${p.cuttingType || "default"}__${p.pieceSize || "default"}__${p.selectedSize || "default"}__${p.comboId || "default"}`;
 
+  // Cutting type, piece size, and pack weight (e.g. "500g"/"1kg") are all
+  // variant choices made on the product page — the cart row needs to show
+  // all three, or a re-order can't tell which pack size is in the cart.
+  const variantLine = (item: CartItem) =>
+    [item.cuttingType, item.pieceSize, item.selectedSize].filter(Boolean).join(" • ");
+
   const handleDecrement = (product: CartItem) => {
     const newQty = (product.quantity || 1) - 1;
     updateQuantity(product, newQty);
@@ -417,9 +423,7 @@ export default function CartScreen() {
                 </View>
 
                 {entry.members.map((member) => {
-                  const optionsLine = [member.cuttingType, member.pieceSize]
-                    .filter(Boolean)
-                    .join(" • ");
+                  const optionsLine = variantLine(member);
                   return (
                     <View key={rowKeyFor(member)} className="flex-row items-center mb-2 last:mb-0">
                       <Image
@@ -471,9 +475,7 @@ export default function CartScreen() {
           const weightKg = product.priceBreakdown?.weightGrams
             ? (product.priceBreakdown.weightGrams * (product.quantity || 1)) / 1000
             : null;
-          const optionsLine = [product.cuttingType, product.pieceSize]
-            .filter(Boolean)
-            .join(" • ");
+          const optionsLine = variantLine(product);
           const weightLine = weightKg
             ? `${weightKg >= 1 ? `${weightKg.toFixed(weightKg % 1 === 0 ? 0 : 1)} kg` : `${Math.round(weightKg * 1000)} g`}`
             : null;
@@ -677,6 +679,68 @@ export default function CartScreen() {
             <Ionicons name="chevron-forward" size={16} color="#5A2C96" />
           </TouchableOpacity>
         </View>
+        {/* Delivery address — comes before the slot picker because the
+            available slots / instant fee below are resolved from this
+            address's pincode. */}
+        {!user ? (
+          <TouchableOpacity
+            className="bg-white rounded-2xl border border-gray-100 flex-row items-center px-4 py-3.5 mb-3"
+            onPress={handleCheckout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-in-outline" size={18} color="#9CA3AF" />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-xs text-gray-900 font-poppins-semibold">
+                Login to continue
+              </Text>
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Sign in to add a delivery address and place your order
+              </Text>
+            </View>
+            <Text className="text-primary font-poppins-semibold text-xs">Login</Text>
+          </TouchableOpacity>
+        ) : selectedAddress ? (
+          <TouchableOpacity
+            className="bg-white rounded-2xl border border-gray-100 flex-row items-center px-4 py-3.5 mb-3"
+            onPress={() => setAddressSheetOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={selectedAddress.label === "Work" ? "briefcase-outline" : "home-outline"}
+              size={18}
+              color="#5A2C96"
+            />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Delivering to {selectedAddress.label}
+              </Text>
+              <Text className="text-xs text-gray-900 font-poppins-semibold" numberOfLines={1}>
+                {selectedAddress.street}
+                {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
+                {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
+              </Text>
+            </View>
+            <Text className="text-primary font-poppins-semibold text-xs">Change</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            className="bg-white rounded-2xl border border-gray-100 flex-row items-center px-4 py-3.5 mb-3"
+            onPress={() => setAddressSheetOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+            <View className="flex-1 mx-2.5">
+              <Text className="text-xs text-gray-900 font-poppins-semibold">
+                No delivery address
+              </Text>
+              <Text className="text-[11px] text-gray-400 font-poppins-medium">
+                Add one to place your order
+              </Text>
+            </View>
+            <Text className="text-primary font-poppins-semibold text-xs">Add</Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Delivery slot ─────────────────────────────────────────── */}
         <TouchableOpacity
           className="bg-white rounded-2xl border border-gray-100 flex-row items-center justify-between px-4 py-3.5 mb-3"
@@ -699,62 +763,6 @@ export default function CartScreen() {
 
       {/* ── Sticky bottom bar ─────────────────────────────────────────────── */}
       <View className="bg-white border-t border-gray-100 px-3 pt-3 pb-4">
-        {/* Address strip — the cart is where delivery is confirmed, checkout
-            only shows what it's charging for. */}
-        {!user ? (
-          <TouchableOpacity
-            className="flex-row items-center pb-3 mb-3 border-b border-gray-100"
-            onPress={handleCheckout}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="log-in-outline" size={18} color="#9CA3AF" />
-            <View className="flex-1 mx-2.5">
-              <Text className="text-xs text-gray-900 font-poppins-semibold">
-                Login to continue
-              </Text>
-              <Text className="text-[11px] text-gray-400 font-poppins-medium">
-                Sign in to add a delivery address and place your order
-              </Text>
-            </View>
-            <Text className="text-primary font-poppins-semibold text-xs">Login</Text>
-          </TouchableOpacity>
-        ) : selectedAddress ? (
-          <TouchableOpacity
-            className="flex-row items-center pb-3 mb-3 border-b border-gray-100"
-            onPress={() => setAddressSheetOpen(true)}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={selectedAddress.label === "Work" ? "briefcase-outline" : "home-outline"}
-              size={18}
-              color="#5A2C96"
-            />
-            <View className="flex-1 mx-2.5">
-              <Text className="text-[11px] text-gray-400 font-poppins-medium">
-                Delivering to {selectedAddress.label}
-              </Text>
-              <Text className="text-xs text-gray-900 font-poppins-semibold" numberOfLines={1}>
-                {selectedAddress.street}
-                {selectedAddress.area ? `, ${selectedAddress.area}` : ""}
-                {selectedAddress.city ? `, ${selectedAddress.city}` : ""}
-              </Text>
-            </View>
-            <Text className="text-primary font-poppins-semibold text-xs">Change</Text>
-          </TouchableOpacity>
-        ) : (
-          <View className="flex-row items-center pb-3 mb-3 border-b border-gray-100">
-            <Ionicons name="location-outline" size={18} color="#9CA3AF" />
-            <View className="flex-1 mx-2.5">
-              <Text className="text-xs text-gray-900 font-poppins-semibold">
-                No delivery address
-              </Text>
-              <Text className="text-[11px] text-gray-400 font-poppins-medium">
-                Add one to place your order
-              </Text>
-            </View>
-          </View>
-        )}
-
         <View className="flex-row items-center">
           <View className="mr-3">
             <Text

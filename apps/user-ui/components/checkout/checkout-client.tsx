@@ -205,6 +205,17 @@ export function CheckoutClient() {
       .put(`/order/api/cancel/${orderId}`)
       .catch(() => {/* webhook / cleanup job will reconcile if this fails */});
 
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const fetchOrderPaymentStatus = async (orderId: string): Promise<string | null> => {
+    try {
+      const { data } = await axiosInstance.get(`/order/api/get-order/${orderId}`);
+      return data?.order?.paymentStatus ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   // Order created with paymentMethod RAZORPAY is unpaid until verified.
   // Open the Razorpay popup, then verify the signature server-side.
   const startRazorpayPayment = async (orderId: string) => {
@@ -261,9 +272,30 @@ export function CheckoutClient() {
             toast.error("Payment could not be verified. Please contact support.");
           }
         } catch {
-          toast.error(
-            "Payment verification failed. If money was deducted, it will be auto-confirmed shortly."
-          );
+          // The verify call itself failing doesn't mean the payment failed —
+          // Razorpay already handed us a payment by this point, so a webhook
+          // may settle the order server-side moments after this request
+          // drops. Check twice, a few seconds apart, before telling the
+          // customer nothing went through (mirrors the mobile app's retry
+          // logic — see apps/mobile/app/(routes)/checkout/index.tsx).
+          paymentSettled = true; // stop ondismiss from cancelling while we check
+          let status = await fetchOrderPaymentStatus(orderId);
+          if (status !== "COMPLETED") {
+            await wait(3000);
+            status = await fetchOrderPaymentStatus(orderId);
+          }
+
+          if (status === "COMPLETED") {
+            toast.success("Payment successful!");
+            clearCart();
+            clearAllCoupons();
+            router.push(`/order-confirmation/${orderId}`);
+          } else {
+            paymentSettled = false;
+            toast.error(
+              "Payment verification failed. If money was deducted, it will be auto-confirmed shortly."
+            );
+          }
         } finally {
           setIsPlacingOrder(false);
         }

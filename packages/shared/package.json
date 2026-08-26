@@ -21,6 +21,10 @@
       "types": "./dist/payment-id/index.d.ts",
       "default": "./dist/payment-id/index.js"
     },
+    "./payment-state": {
+      "types": "./dist/payment-state/index.d.ts",
+      "default": "./dist/payment-state/index.js"
+    },
     "./whatsapp": {
       "types": "./dist/whatsapp/index.d.ts",
       "default": "./dist/whatsapp/index.js"

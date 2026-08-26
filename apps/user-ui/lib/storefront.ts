@@ -75,6 +75,11 @@ export interface StorefrontProductListingResponse {
   } | null;
   isServiceable: boolean;
   pagination: StorefrontPagination;
+  // Whole-category totals per subcategory, returned only for category
+  // requests. Independent of the active subcategory filter, so the sidebar
+  // keeps showing every option's real size.
+  subCategoryCounts?: Record<string, number>;
+  categoryTotal?: number;
 }
 
 export const storefrontKeys = {
@@ -283,6 +288,8 @@ export async function fetchStorefrontProductListing(
     store?: StorefrontProductListingResponse["store"];
     isServiceable?: boolean;
     pagination?: Partial<StorefrontPagination>;
+    subCategoryCounts?: Record<string, number>;
+    categoryTotal?: number;
   }>(response);
 
   return {
@@ -291,6 +298,8 @@ export async function fetchStorefrontProductListing(
       : [],
     store: data.store ?? null,
     isServiceable: data.isServiceable ?? true,
+    subCategoryCounts: data.subCategoryCounts,
+    categoryTotal: data.categoryTotal,
     pagination: {
       page: data.pagination?.page ?? params.page ?? 1,
       limit: data.pagination?.limit ?? params.limit ?? 20,
@@ -331,6 +340,7 @@ export async function fetchStorefrontProductBySlug(
 ): Promise<{
   product: Product | null;
   relatedProducts: Product[];
+  frequentlyBoughtTogether: Product[];
   coupon?: any;
 }> {
   const encodedSlug = encodeURIComponent(slug);
@@ -351,13 +361,14 @@ export async function fetchStorefrontProductBySlug(
   );
 
   if (response.status === 404) {
-    return { product: null, relatedProducts: [] };
+    return { product: null, relatedProducts: [], frequentlyBoughtTogether: [] };
   }
 
   const data = await parseJson<{
     success: boolean;
     product?: BackendProduct;
     relatedProducts?: BackendProduct[];
+    frequentlyBoughtTogether?: BackendProduct[];
     coupon?: any;
   }>(response);
 
@@ -365,6 +376,11 @@ export async function fetchStorefrontProductBySlug(
     product: data.product ? transformProduct(data.product) : null,
     relatedProducts: Array.isArray(data.relatedProducts)
       ? data.relatedProducts.map(transformProduct)
+      : [],
+    // Absent on responses served from a cache entry written before this field
+    // existed, so it is treated exactly like "no co-purchase data".
+    frequentlyBoughtTogether: Array.isArray(data.frequentlyBoughtTogether)
+      ? data.frequentlyBoughtTogether.map(transformProduct)
       : [],
     coupon: data.coupon || null,
   };

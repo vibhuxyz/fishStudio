@@ -6,6 +6,7 @@ import { useStore } from "@/store";
 import type { Product } from "@/types/product";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
+import { resolveCardPrice } from "@repo/shared/pricing";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
@@ -38,10 +39,16 @@ export default function ProductCard({
   const quantity = cart.find((item) => item.id === product.id)?.quantity ?? 0;
   const isOutOfStock = product.stock === 0 || product.outOfStock;
   const currentPrice = product.sale_price || product.regular_price;
+  const cardPrice = resolveCardPrice({
+    basePricePerKg: product.basePricePerKg,
+    sizePricing: product.sizePricing,
+    salePrice: currentPrice,
+    regularPrice: product.regular_price,
+  });
   const discountPercentage =
-    product.sale_price && product.regular_price > product.sale_price
+    cardPrice.regularPrice > cardPrice.salePrice
       ? Math.round(
-          ((product.regular_price - product.sale_price) / product.regular_price) *
+          ((cardPrice.regularPrice - cardPrice.salePrice) / cardPrice.regularPrice) *
             100,
         )
       : 0;
@@ -146,10 +153,13 @@ export default function ProductCard({
         ) : (
           <View style={styles.footer}>
             <View style={styles.priceRow}>
-              <Text style={styles.price}>₹{currentPrice}</Text>
+              <Text style={styles.price}>
+                ₹{cardPrice.salePrice}
+                <Text style={styles.priceUnit}>/{cardPrice.unit}</Text>
+              </Text>
               {discountPercentage > 0 && (
                 <>
-                  <Text style={styles.strikePrice}>₹{product.regular_price}</Text>
+                  <Text style={styles.strikePrice}>₹{cardPrice.regularPrice}</Text>
                   <Text style={styles.discount}>{discountPercentage}% off</Text>
                 </>
               )}
@@ -273,6 +283,11 @@ const styles = StyleSheet.create({
     color: colors.inkStrong,
     fontFamily: fonts.displayBold,
     fontSize: 17,
+  },
+  priceUnit: {
+    color: colors.textSecondary,
+    fontFamily: fonts.displayRegular,
+    fontSize: 12,
   },
   strikePrice: {
     marginLeft: spacing[2],

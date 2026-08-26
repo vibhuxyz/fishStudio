@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import { Navigation, Search, Loader2, X, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { geocodingProvider, type GeoBounds, type PlaceResult } from "@/lib/geocoding-provider";
+import { frontendEnv } from "@/lib/env";
+import LeafletMapView from "./location-picker-map-leaflet-view";
+import GoogleMapView from "./location-picker-map-google-view";
 
 const DEFAULT_CENTER: [number, number] = [28.6139, 77.209]; // New Delhi fallback
 
@@ -35,30 +36,6 @@ function shortLabel(label: string): string {
   return label.split(",").slice(0, 2).join(",").trim();
 }
 
-function RecenterOnChange({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lng], Math.max(map.getZoom(), 16));
-  }, [lat, lng, map]);
-  return null;
-}
-
-// The pin stays fixed at the screen's center (rendered as a plain overlay,
-// not a Leaflet marker) — dragging the map in any direction, not the pin
-// itself, is what selects a location. `dragend` (not `moveend`) is
-// deliberate: `moveend` also fires after a programmatic `flyTo` (e.g. the
-// area re-centering itself once resolved), which isn't a real selection and
-// shouldn't silently report a location the shopper never actually chose.
-function CenterPinTracker({ onSettled }: { onSettled: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    dragend(e) {
-      const c = e.target.getCenter();
-      onSettled(c.lat, c.lng);
-    },
-  });
-  return null;
-}
-
 export interface LocationPickerValue {
   lat: number;
   lng: number;
@@ -75,8 +52,8 @@ interface LocationPickerMapProps {
 }
 
 export default function LocationPickerMap({ value, onChange, areaCenter }: LocationPickerMapProps) {
-  // Read once — MapContainer only honors `center` at creation (that's why
-  // `RecenterOnChange`/`flyTarget` exist for every later move).
+  // Read once — both map views only honor this at creation, every later
+  // move goes through `flyTarget` instead.
   const [initialCenter] = useState<[number, number]>(
     value
       ? [value.lat, value.lng]
@@ -271,22 +248,21 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
       </div>
 
       <div className="relative h-64 w-full overflow-hidden rounded-xl border border-border">
-        <MapContainer
-          center={initialCenter}
-          zoom={value ? 16 : 12}
-          scrollWheelZoom
-          // touch-action: none hands touch gestures over to Leaflet's own
-          // panning entirely — without it, dragging the map on a touchscreen
-          // can be interpreted as scrolling the page the map sits inside.
-          style={{ height: "100%", width: "100%", touchAction: "none" }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        {frontendEnv.mapProvider === "google" && frontendEnv.googleMapsApiKey ? (
+          <GoogleMapView
+            initialCenter={initialCenter}
+            zoom={value ? 16 : 12}
+            flyTarget={flyTarget}
+            onDragEnd={reverseGeocode}
           />
-          {flyTarget && <RecenterOnChange lat={flyTarget[0]} lng={flyTarget[1]} />}
-          <CenterPinTracker onSettled={reverseGeocode} />
-        </MapContainer>
+        ) : (
+          <LeafletMapView
+            initialCenter={initialCenter}
+            zoom={value ? 16 : 12}
+            flyTarget={flyTarget}
+            onDragEnd={reverseGeocode}
+          />
+        )}
 
         {/* Fixed at the container's visual center — dragging the map (not
             the pin) is how you select a spot, like Swiggy/Uber Eats. The

@@ -88,7 +88,7 @@ const StatsCard = ({ title, value, icon: Icon, trend, trendValue, color }: any) 
 export default function DashboardClient() {
   const { data: statsData, isLoading: statsLoading } = useAdminStats("month");
   const { data: sellers = [] } = useAdminSellers();
-  const { data: products = [] } = useAdminProducts();
+  const { data: productsPage } = useAdminProducts();
 
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
@@ -162,7 +162,7 @@ export default function DashboardClient() {
         />
         <StatsCard 
           title="Total Products" 
-          value={products.length} 
+          value={productsPage?.pagination.total ?? 0} 
           icon={Package} 
           color="bg-indigo-500"
         />

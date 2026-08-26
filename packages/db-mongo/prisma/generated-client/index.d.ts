@@ -5876,6 +5876,7 @@ export namespace Prisma {
 
   export type Discount_codesAvgAggregateOutputType = {
     discountValue: number | null
+    maxDiscountAmount: number | null
     minOrderValue: number | null
     maxUses: number | null
     maxUsesPerUser: number | null
@@ -5884,6 +5885,7 @@ export namespace Prisma {
 
   export type Discount_codesSumAggregateOutputType = {
     discountValue: number | null
+    maxDiscountAmount: number | null
     minOrderValue: number | null
     maxUses: number | null
     maxUsesPerUser: number | null
@@ -5895,6 +5897,7 @@ export namespace Prisma {
     public_name: string | null
     discountType: string | null
     discountValue: number | null
+    maxDiscountAmount: number | null
     minOrderValue: number | null
     discountCode: string | null
     expiresAt: Date | null
@@ -5915,6 +5918,7 @@ export namespace Prisma {
     public_name: string | null
     discountType: string | null
     discountValue: number | null
+    maxDiscountAmount: number | null
     minOrderValue: number | null
     discountCode: string | null
     expiresAt: Date | null
@@ -5935,6 +5939,7 @@ export namespace Prisma {
     public_name: number
     discountType: number
     discountValue: number
+    maxDiscountAmount: number
     minOrderValue: number
     discountCode: number
     expiresAt: number
@@ -5954,6 +5959,7 @@ export namespace Prisma {
 
   export type Discount_codesAvgAggregateInputType = {
     discountValue?: true
+    maxDiscountAmount?: true
     minOrderValue?: true
     maxUses?: true
     maxUsesPerUser?: true
@@ -5962,6 +5968,7 @@ export namespace Prisma {
 
   export type Discount_codesSumAggregateInputType = {
     discountValue?: true
+    maxDiscountAmount?: true
     minOrderValue?: true
     maxUses?: true
     maxUsesPerUser?: true
@@ -5973,6 +5980,7 @@ export namespace Prisma {
     public_name?: true
     discountType?: true
     discountValue?: true
+    maxDiscountAmount?: true
     minOrderValue?: true
     discountCode?: true
     expiresAt?: true
@@ -5993,6 +6001,7 @@ export namespace Prisma {
     public_name?: true
     discountType?: true
     discountValue?: true
+    maxDiscountAmount?: true
     minOrderValue?: true
     discountCode?: true
     expiresAt?: true
@@ -6013,6 +6022,7 @@ export namespace Prisma {
     public_name?: true
     discountType?: true
     discountValue?: true
+    maxDiscountAmount?: true
     minOrderValue?: true
     discountCode?: true
     expiresAt?: true
@@ -6120,6 +6130,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount: number | null
     minOrderValue: number
     discountCode: string
     expiresAt: Date | null
@@ -6159,6 +6170,7 @@ export namespace Prisma {
     public_name?: boolean
     discountType?: boolean
     discountValue?: boolean
+    maxDiscountAmount?: boolean
     minOrderValue?: boolean
     discountCode?: boolean
     expiresAt?: boolean
@@ -6184,6 +6196,7 @@ export namespace Prisma {
     public_name?: boolean
     discountType?: boolean
     discountValue?: boolean
+    maxDiscountAmount?: boolean
     minOrderValue?: boolean
     discountCode?: boolean
     expiresAt?: boolean
@@ -6218,6 +6231,7 @@ export namespace Prisma {
       public_name: string
       discountType: string
       discountValue: number
+      maxDiscountAmount: number | null
       minOrderValue: number
       discountCode: string
       expiresAt: Date | null
@@ -6630,6 +6644,7 @@ export namespace Prisma {
     readonly public_name: FieldRef<"discount_codes", 'String'>
     readonly discountType: FieldRef<"discount_codes", 'String'>
     readonly discountValue: FieldRef<"discount_codes", 'Float'>
+    readonly maxDiscountAmount: FieldRef<"discount_codes", 'Float'>
     readonly minOrderValue: FieldRef<"discount_codes", 'Float'>
     readonly discountCode: FieldRef<"discount_codes", 'String'>
     readonly expiresAt: FieldRef<"discount_codes", 'DateTime'>
@@ -21949,6 +21964,7 @@ export namespace Prisma {
     public_name: 'public_name',
     discountType: 'discountType',
     discountValue: 'discountValue',
+    maxDiscountAmount: 'maxDiscountAmount',
     minOrderValue: 'minOrderValue',
     discountCode: 'discountCode',
     expiresAt: 'expiresAt',
@@ -22679,6 +22695,7 @@ export namespace Prisma {
     public_name?: StringFilter<"discount_codes"> | string
     discountType?: StringFilter<"discount_codes"> | string
     discountValue?: FloatFilter<"discount_codes"> | number
+    maxDiscountAmount?: FloatNullableFilter<"discount_codes"> | number | null
     minOrderValue?: FloatFilter<"discount_codes"> | number
     discountCode?: StringFilter<"discount_codes"> | string
     expiresAt?: DateTimeNullableFilter<"discount_codes"> | Date | string | null
@@ -22702,6 +22719,7 @@ export namespace Prisma {
     public_name?: SortOrder
     discountType?: SortOrder
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     discountCode?: SortOrder
     expiresAt?: SortOrder
@@ -22729,6 +22747,7 @@ export namespace Prisma {
     public_name?: StringFilter<"discount_codes"> | string
     discountType?: StringFilter<"discount_codes"> | string
     discountValue?: FloatFilter<"discount_codes"> | number
+    maxDiscountAmount?: FloatNullableFilter<"discount_codes"> | number | null
     minOrderValue?: FloatFilter<"discount_codes"> | number
     expiresAt?: DateTimeNullableFilter<"discount_codes"> | Date | string | null
     maxUses?: IntNullableFilter<"discount_codes"> | number | null
@@ -22751,6 +22770,7 @@ export namespace Prisma {
     public_name?: SortOrder
     discountType?: SortOrder
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     discountCode?: SortOrder
     expiresAt?: SortOrder
@@ -22779,6 +22799,7 @@ export namespace Prisma {
     public_name?: StringWithAggregatesFilter<"discount_codes"> | string
     discountType?: StringWithAggregatesFilter<"discount_codes"> | string
     discountValue?: FloatWithAggregatesFilter<"discount_codes"> | number
+    maxDiscountAmount?: FloatNullableWithAggregatesFilter<"discount_codes"> | number | null
     minOrderValue?: FloatWithAggregatesFilter<"discount_codes"> | number
     discountCode?: StringWithAggregatesFilter<"discount_codes"> | string
     expiresAt?: DateTimeNullableWithAggregatesFilter<"discount_codes"> | Date | string | null
@@ -24526,6 +24547,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -24547,6 +24569,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -24567,6 +24590,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -24587,6 +24611,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -24608,6 +24633,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -24627,6 +24653,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -24644,6 +24671,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -26665,6 +26693,18 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
   export type DateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -26730,6 +26770,7 @@ export namespace Prisma {
     public_name?: SortOrder
     discountType?: SortOrder
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     discountCode?: SortOrder
     expiresAt?: SortOrder
@@ -26747,6 +26788,7 @@ export namespace Prisma {
 
   export type discount_codesAvgOrderByAggregateInput = {
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     maxUses?: SortOrder
     maxUsesPerUser?: SortOrder
@@ -26758,6 +26800,7 @@ export namespace Prisma {
     public_name?: SortOrder
     discountType?: SortOrder
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     discountCode?: SortOrder
     expiresAt?: SortOrder
@@ -26778,6 +26821,7 @@ export namespace Prisma {
     public_name?: SortOrder
     discountType?: SortOrder
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     discountCode?: SortOrder
     expiresAt?: SortOrder
@@ -26795,6 +26839,7 @@ export namespace Prisma {
 
   export type discount_codesSumOrderByAggregateInput = {
     discountValue?: SortOrder
+    maxDiscountAmount?: SortOrder
     minOrderValue?: SortOrder
     maxUses?: SortOrder
     maxUsesPerUser?: SortOrder
@@ -26815,6 +26860,23 @@ export namespace Prisma {
     _sum?: NestedFloatFilter<$PrismaModel>
     _min?: NestedFloatFilter<$PrismaModel>
     _max?: NestedFloatFilter<$PrismaModel>
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -27368,18 +27430,6 @@ export namespace Prisma {
     _max?: NestedJsonFilter<$PrismaModel>
   }
 
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-    isSet?: boolean
-  }
-
   export type EnumproductStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.productStatus | EnumproductStatusFieldRefInput<$PrismaModel>
     in?: $Enums.productStatus[] | ListEnumproductStatusFieldRefInput<$PrismaModel>
@@ -27536,23 +27586,6 @@ export namespace Prisma {
     regular_price?: SortOrder
     totalSold?: SortOrder
     ratings?: SortOrder
-  }
-
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-    isSet?: boolean
   }
 
   export type EnumproductStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -28305,6 +28338,15 @@ export namespace Prisma {
     divide?: number
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+    unset?: boolean
+  }
+
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
     unset?: boolean
@@ -29030,15 +29072,6 @@ export namespace Prisma {
     push?: string | string[]
   }
 
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-    unset?: boolean
-  }
-
   export type productsUpdatecookingTipsInput = {
     set?: string[]
     push?: string | string[]
@@ -29432,6 +29465,18 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
+  }
+
   export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -29465,6 +29510,23 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+    isSet?: boolean
+  }
+
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
@@ -29494,18 +29556,6 @@ export namespace Prisma {
     _sum?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedIntNullableFilter<$PrismaModel>
     _max?: NestedIntNullableFilter<$PrismaModel>
-    isSet?: boolean
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
     isSet?: boolean
   }
 
@@ -29616,23 +29666,6 @@ export namespace Prisma {
     in?: $Enums.productStatus[] | ListEnumproductStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.productStatus[] | ListEnumproductStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumproductStatusFilter<$PrismaModel> | $Enums.productStatus
-  }
-
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-    isSet?: boolean
   }
 
   export type NestedEnumproductStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -29776,6 +29809,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -29796,6 +29830,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -29953,6 +29988,7 @@ export namespace Prisma {
     public_name?: StringFilter<"discount_codes"> | string
     discountType?: StringFilter<"discount_codes"> | string
     discountValue?: FloatFilter<"discount_codes"> | number
+    maxDiscountAmount?: FloatNullableFilter<"discount_codes"> | number | null
     minOrderValue?: FloatFilter<"discount_codes"> | number
     discountCode?: StringFilter<"discount_codes"> | string
     expiresAt?: DateTimeNullableFilter<"discount_codes"> | Date | string | null
@@ -30892,6 +30928,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -30912,6 +30949,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -30947,6 +30985,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -30966,6 +31005,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -31149,6 +31189,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -31169,6 +31210,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -33878,6 +33920,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -34056,6 +34099,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34075,6 +34119,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34094,6 +34139,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34560,6 +34606,7 @@ export namespace Prisma {
     public_name: string
     discountType: string
     discountValue: number
+    maxDiscountAmount?: number | null
     minOrderValue?: number
     discountCode: string
     expiresAt?: Date | string | null
@@ -34685,6 +34732,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34704,6 +34752,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -34723,6 +34772,7 @@ export namespace Prisma {
     public_name?: StringFieldUpdateOperationsInput | string
     discountType?: StringFieldUpdateOperationsInput | string
     discountValue?: FloatFieldUpdateOperationsInput | number
+    maxDiscountAmount?: NullableFloatFieldUpdateOperationsInput | number | null
     minOrderValue?: FloatFieldUpdateOperationsInput | number
     discountCode?: StringFieldUpdateOperationsInput | string
     expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

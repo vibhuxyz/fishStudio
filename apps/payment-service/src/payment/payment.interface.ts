@@ -65,7 +65,15 @@ export type NormalizedWebhookEvent =
     }
   | { kind: "PAYMENT_FAILED"; orderId?: string; gatewayPaymentId: string; reason?: string }
   | { kind: "REFUND"; orderId?: string; refundId: string; gatewayPaymentId?: string; amount?: number }
-  | { kind: "REFUND_FAILED"; orderId?: string; refundId: string; gatewayPaymentId?: string }
+  | {
+      kind: "REFUND_FAILED";
+      orderId?: string;
+      refundId: string;
+      gatewayPaymentId?: string;
+      // Gateway's own words for the refusal — shown to the operator who has
+      // to decide whether retrying is worth anything.
+      reason?: string;
+    }
   | { kind: "UNHANDLED"; eventType: string };
 
 /**
@@ -75,7 +83,12 @@ export type NormalizedWebhookEvent =
  */
 export type GatewaySettlement =
   | { status: "CAPTURED"; gatewayPaymentId: string; amountInPaise: number }
-  | { status: "FAILED"; gatewayPaymentId: string; reason?: string };
+  | { status: "FAILED"; gatewayPaymentId: string; reason?: string }
+  // The checkout was created but the customer never attempted a payment. Not
+  // a failure — there is nothing to investigate — but it is still a final
+  // answer, and treating it as "unknown" is what left abandoned checkouts
+  // reading PENDING forever.
+  | { status: "NOT_ATTEMPTED" };
 
 export interface PaymentProvider {
   /** Stored on Order.paymentMethod / Payment.method, e.g. "RAZORPAY". */
@@ -106,7 +119,8 @@ export interface PaymentProvider {
 
   /**
    * Ask the gateway how an order actually settled. Returns null while the
-   * outcome is still open (no attempt yet, or authorized-not-captured).
+   * outcome is still genuinely open (money authorized but not captured, or an
+   * attempt still in flight); NOT_ATTEMPTED when the customer never tried.
    */
   fetchOrderSettlement(gatewayOrderId: string): Promise<GatewaySettlement | null>;
 }

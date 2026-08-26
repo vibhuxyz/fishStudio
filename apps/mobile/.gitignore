@@ -38,4 +38,7 @@ yarn-error.*
 
 app-example
 
-fishstudio.apk
+# local build artifacts (eas build --local / gradle output)
+output/
+*.apk
+*.aab

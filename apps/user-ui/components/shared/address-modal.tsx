@@ -424,11 +424,6 @@ export function AddressModal({
       toast.error("Please fill all required fields");
       return;
     }
-    if (!form.deliveryInstructions.trim()) {
-      toast.error("Delivery instructions are required");
-      return;
-    }
-
     if (!isLoggedIn) {
       toast.error("Please log in to save addresses");
       return;
@@ -952,7 +947,7 @@ export function AddressModal({
 
                     <div>
                       <label className="mb-2 block text-base font-bold text-primary">
-                        Delivery Instructions *
+                        Delivery Instructions (Optional)
                       </label>
                       <textarea
                         placeholder="Any special instructions for delivery partner"

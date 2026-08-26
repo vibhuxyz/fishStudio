@@ -13,6 +13,8 @@ import {
   type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
 import { formatOrderId } from "@repo/shared/order-id";
+import RefundPanel from "@/shared/components/orders/refund-panel";
+import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
 
 const ORDER_STATUSES = [
   "PENDING",
@@ -52,8 +54,14 @@ const statusColor = (s: string) => {
   return "text-gray-400";
 };
 
-const payColor = (s: string) =>
-  s === "COMPLETED" ? "text-emerald-400" : s === "REFUNDED" ? "text-purple-400" : "text-amber-400";
+const PAY_TONE_CLASS: Record<PaymentTone, string> = {
+  paid:     "text-emerald-400",
+  due:      "text-amber-400",
+  pending:  "text-amber-400",
+  refunded: "text-purple-400",
+  dead:     "text-gray-500",
+  danger:   "text-rose-400",
+};
 
 /** Razorpay's own sub-instrument (card/upi/netbanking/wallet), read off the
  *  payment's metadata — `payment.method` itself is only ever "COD" | "RAZORPAY". */
@@ -63,6 +71,24 @@ function instrumentLabel(payment: AdminOrderPayment): string | null {
   const detail = payment.metadata?.instrumentDetail;
   const label = method.toUpperCase();
   return detail ? `${label} · ${detail}` : label;
+}
+
+/** One row in the payments list — a payment has no refund column of its own. */
+function PaymentRowBadge({
+  status,
+  method,
+  orderStatus,
+}: {
+  status: string;
+  method?: string | null;
+  orderStatus: string;
+}) {
+  const state = resolvePaymentState({ paymentStatus: status, paymentMethod: method, orderStatus });
+  return (
+    <span className={`text-xs font-semibold ${PAY_TONE_CLASS[state.tone]}`} title={state.detail}>
+      {state.label}
+    </span>
+  );
 }
 
 const Page = () => {
@@ -108,6 +134,12 @@ const Page = () => {
   const billDetails = order.billDetails as any;
   const primaryPayment = order.payments?.find((p) => p.status === "COMPLETED") ?? order.payments?.[0];
   const primaryInstrument = primaryPayment ? instrumentLabel(primaryPayment) : null;
+  const paymentState = resolvePaymentState({
+    paymentStatus: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    refundStatus: order.refundStatus,
+    orderStatus: order.status,
+  });
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
@@ -133,8 +165,11 @@ const Page = () => {
           <span className={`text-sm font-bold uppercase ${statusColor(order.status)}`}>
             {order.status}
           </span>
-          <span className={`text-sm font-semibold ${payColor(order.paymentStatus)}`}>
-            {order.paymentStatus}
+          <span
+            className={`text-sm font-semibold ${PAY_TONE_CLASS[paymentState.tone]}`}
+            title={paymentState.detail}
+          >
+            {paymentState.label}
           </span>
           {(order as any).paymentMethod && (
             <span className="text-xs text-gray-500 bg-gray-800 px-2 py-1 rounded-full">
@@ -144,6 +179,14 @@ const Page = () => {
           )}
         </div>
       </div>
+
+      <RefundPanel
+        order={order}
+        onRefunded={() => {
+          queryClient.invalidateQueries({ queryKey: adminQueryKeys.adminOrder(orderId) });
+          queryClient.invalidateQueries({ queryKey: ["admin", "admin-orders"] });
+        }}
+      />
 
       {/* Status stepper */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
@@ -277,7 +320,7 @@ const Page = () => {
                       <span className="text-gray-400 font-normal"> · {instrumentLabel(payment)}</span>
                     )}
                   </span>
-                  <span className={`text-xs font-semibold ${payColor(payment.status)}`}>{payment.status}</span>
+                  <PaymentRowBadge status={payment.status} method={payment.method} orderStatus={order.status} />
                 </div>
                 <Row label="Amount" value={`₹${payment.amount.toFixed(0)}`} />
                 {payment.transactionId && <Row label="Transaction ID" value={payment.transactionId} />}

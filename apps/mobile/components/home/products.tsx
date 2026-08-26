@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { toast } from "@/utils/toast";
+import { resolveCardPrice } from "@repo/shared/pricing";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2; // 16 side padding each + 16 gap
@@ -90,14 +91,21 @@ export default function ProductSection({
       {/* 2-column grid */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
         {products.map((product, index: number) => {
-          const discountPercentage = product?.sale_price
-            ? Math.round(
-                ((product.regular_price - product.sale_price) /
-                  product.regular_price) *
-                  100
-              )
-            : 0;
           const currentPrice = product.sale_price || product.regular_price;
+          const cardPrice = resolveCardPrice({
+            basePricePerKg: product.basePricePerKg,
+            sizePricing: product.sizePricing,
+            salePrice: currentPrice,
+            regularPrice: product.regular_price,
+          });
+          const discountPercentage =
+            cardPrice.regularPrice > cardPrice.salePrice
+              ? Math.round(
+                  ((cardPrice.regularPrice - cardPrice.salePrice) /
+                    cardPrice.regularPrice) *
+                    100
+                )
+              : 0;
           const isOutOfStock = product.stock === 0 || product.outOfStock;
           const rating = product.rating ?? product.averageRating ?? 4.9;
 
@@ -216,9 +224,14 @@ export default function ProductSection({
                 {/* Price */}
                 <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
                   <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>
-                    ₹{currentPrice}
+                    ₹{cardPrice.salePrice}
+                    <Text
+                      style={{ fontFamily: "Inter-Regular", fontSize: 11, color: "#898B8A" }}
+                    >
+                      /{cardPrice.unit}
+                    </Text>
                   </Text>
-                  {product.sale_price && product.regular_price && (
+                  {discountPercentage > 0 && (
                     <Text
                       style={{
                         fontFamily: "Inter-Regular",
@@ -228,7 +241,7 @@ export default function ProductSection({
                         marginLeft: 4,
                       }}
                     >
-                      ₹{product.regular_price}
+                      ₹{cardPrice.regularPrice}
                     </Text>
                   )}
                 </View>

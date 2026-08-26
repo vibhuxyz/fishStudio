@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationPickerMap, { type LocationPickerMapHandle } from "@/components/location-picker-map";
 import { geocodingProvider, type GeoBounds, type PlaceResult } from "@/lib/geocoding-provider";
 
@@ -38,9 +38,7 @@ function areaBounds(center: { lat: number; lng: number }, radius = AREA_RADIUS_D
   };
 }
 
-// A full reverse-geocoded address is a long comma-separated string (street,
-// area, city, state, pincode, country) — the pin label only needs the first
-// couple of segments, the part that actually identifies "this place".
+
 function shortLabel(label: string): string {
   return label.split(",").slice(0, 2).join(",").trim();
 }
@@ -121,6 +119,7 @@ function FormField({
 export default function AddAddressScreen() {
   const { user } = useUser();
   const { addNewAddress, updateAddress, addresses } = useAddress();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     pincode?: string;
     city?: string;
@@ -1062,7 +1061,7 @@ export default function AddAddressScreen() {
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               maxHeight: "60%",
-              paddingBottom: 24,
+              paddingBottom: insets.bottom + 24,
             }}
           >
             <View

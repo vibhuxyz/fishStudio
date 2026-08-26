@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -41,6 +42,7 @@ interface Props {
 export default function SupportMessageModal({ visible, onClose, onSend }: Props) {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!visible) {
@@ -141,7 +143,7 @@ export default function SupportMessageModal({ visible, onClose, onSend }: Props)
             />
           </View>
 
-          <View className="px-5 pt-1 pb-6 border-t border-border">
+          <View className="px-5 pt-1 border-t border-border" style={{ paddingBottom: insets.bottom + 24 }}>
             <TouchableOpacity
               disabled={!message.trim()}
               className={`rounded-2xl py-4 items-center mt-4 ${

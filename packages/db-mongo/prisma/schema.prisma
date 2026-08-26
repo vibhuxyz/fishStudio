@@ -137,6 +137,10 @@ model discount_codes {
   public_name   String
   discountType  String // "percentage" | "fixed" | "free_delivery"
   discountValue Float
+  // Ceiling on the rupee amount a percentage coupon can knock off — without
+  // this, "20% off" on a large order has no upper bound. Ignored for fixed
+  // (already capped at order value) and free_delivery (no rupee value).
+  maxDiscountAmount Float?
   minOrderValue Float  @default(0)
   discountCode  String @unique
 

@@ -405,6 +405,38 @@ export function AddToCartModal({
             {/* Dropdowns */}
             {hasOptions && (
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {hasSizes && (
+                  <div
+                    className={
+                      hasCuttingTypes || hasPieceSizes ? "sm:col-span-2" : ""
+                    }
+                  >
+                    <label className="text-xs font-semibold text-foreground">
+                      Fish / Pack Size
+                    </label>
+                    <Select
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
+                    >
+                      <SelectTrigger className="mt-1 h-10 text-sm">
+                        <SelectValue placeholder="Select size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {normalizedSizePricing.map((entry) => (
+                          <SelectItem key={entry.size} value={entry.size}>
+                            {entry.size}
+                            {entry.salePrice > 0 && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                — Rs. {entry.salePrice}
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 {hasCuttingTypes && (
                   <div>
                     <label className="text-xs font-semibold text-foreground">
@@ -444,38 +476,6 @@ export function AddToCartModal({
                         {product.pieceSizes.map((size) => (
                           <SelectItem key={size} value={size}>
                             {size}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {hasSizes && (
-                  <div
-                    className={
-                      hasCuttingTypes || hasPieceSizes ? "sm:col-span-2" : ""
-                    }
-                  >
-                    <label className="text-xs font-semibold text-foreground">
-                      Fish / Pack Size
-                    </label>
-                    <Select
-                      value={selectedSize}
-                      onValueChange={setSelectedSize}
-                    >
-                      <SelectTrigger className="mt-1 h-10 text-sm">
-                        <SelectValue placeholder="Select size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {normalizedSizePricing.map((entry) => (
-                          <SelectItem key={entry.size} value={entry.size}>
-                            {entry.size}
-                            {entry.salePrice > 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                — Rs. {entry.salePrice}
-                              </span>
-                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>

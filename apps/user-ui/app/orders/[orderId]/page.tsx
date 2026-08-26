@@ -51,6 +51,7 @@ import { SupportMessageModal } from "@/components/shared/support-message-modal";
 import type { Order } from "@/lib/orders-api";
 import { toast } from "sonner";
 import { formatOrderId } from "@repo/shared/order-id";
+import { resolvePaymentState } from "@repo/shared/payment-state";
 import { buildTelUrl, buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 import { CUSTOMER_CANCEL_REASONS } from "@repo/zod-schema";
 
@@ -165,12 +166,17 @@ export default function OrderDetailsPage({
 
   const orderNumber = formatOrderId(order.id);
   const orderStatus = (order.status || "PENDING").toUpperCase();
-  // Same rule as the orders list: an unpaid RAZORPAY order never reached the
+  const paymentState = resolvePaymentState({
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    refundStatus: order.refundStatus,
+    orderStatus,
+  });
+  // Same rule as the orders list: an unpaid online order never reached the
   // seller, so it reads as cancelled rather than an in-progress order.
   const isUnpaidOnline =
-    order.paymentMethod === "RAZORPAY" &&
     orderStatus === "PENDING" &&
-    order.paymentStatus !== "COMPLETED";
+    (paymentState.key === "AWAITING_PAYMENT" || paymentState.key === "NOT_PAID");
   const isTerminal = orderStatus === "DELIVERED" || orderStatus === "CANCELLED" || orderStatus === "REJECTED";
   // Self-cancel only before the store starts preparing — matches
   // order-service's cancelOrder guard (PENDING or ACCEPTED).
@@ -635,20 +641,14 @@ export default function OrderDetailsPage({
                   <span className="text-muted-foreground">Refund</span>
                   <span
                     className={
-                      order.refundStatus === "COMPLETED"
+                      paymentState.tone === "refunded"
                         ? "font-semibold text-emerald-600"
-                        : order.refundStatus === "FAILED"
+                        : paymentState.tone === "danger"
                           ? "font-semibold text-red-600"
                           : "font-semibold text-primary"
                     }
                   >
-                    {order.refundStatus === "REQUESTED"
-                      ? "Requested"
-                      : order.refundStatus === "PROCESSING"
-                        ? "Processing"
-                        : order.refundStatus === "COMPLETED"
-                          ? "Completed"
-                          : "Failed"}
+                    {paymentState.label}
                   </span>
                 </div>
               )}

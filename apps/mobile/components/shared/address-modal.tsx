@@ -20,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "@/utils/toast";
 
 const OFFER_GREEN = "#22C55E";
@@ -76,6 +76,7 @@ export default function AddressModal({
     setAddresses,
     setSelectedLocation,
   } = useAddressStore();
+  const insets = useSafeAreaInsets();
 
   const [view, setView] = useState<ModalView>("pincode");
 
@@ -1022,7 +1023,7 @@ export default function AddressModal({
               borderTopLeftRadius: 40,
               borderTopRightRadius: 40,
               maxHeight: "80%",
-              paddingBottom: 12,
+              paddingBottom: insets.bottom + 12,
             }}
           >
             <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>

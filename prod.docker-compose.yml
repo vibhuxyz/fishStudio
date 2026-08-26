@@ -76,6 +76,10 @@ services:
 
   rabbitmq-service:
     container_name: rabbitmq-service_prod
+    # RabbitMQ stores its data under a node name derived from the hostname.
+    # container_name makes Compose fall back to a random hostname, so without
+    # this the node identity changes on every recreate.
+    hostname: rabbitmq-service
     image: rabbitmq:3-management-alpine
     restart: always
     environment:

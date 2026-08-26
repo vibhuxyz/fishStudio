@@ -12,6 +12,16 @@ import Link from "next/link";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { type AdminOrder, useAdminOrderList, useAdminOrderPincodes } from "@/hooks/useAdminQueries";
 import { formatOrderId } from "@repo/shared/order-id";
+import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
+
+const PAY_TONE_CLASS: Record<PaymentTone, string> = {
+  paid:     "text-emerald-400",
+  due:      "text-amber-400",
+  pending:  "text-amber-400",
+  refunded: "text-purple-400",
+  dead:     "text-gray-500",
+  danger:   "text-rose-400",
+};
 
 const statusColor = (status: string) => {
   if (status === "DELIVERED")  return "bg-emerald-600 text-white";
@@ -25,15 +35,17 @@ const statusColor = (status: string) => {
 const OrdersTable = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedPincode, setSelectedPincode] = useState("");
+  const [page, setPage] = useState(1);
   const { data: pincodeData } = useAdminOrderPincodes();
   const pincodes: string[] = pincodeData ?? [];
-  const { data, isLoading } = useAdminOrderList({
-    page: 1,
+  const { data, isLoading, isFetching } = useAdminOrderList({
+    page,
     limit: 50,
     search: globalFilter || undefined,
     pincode: selectedPincode || undefined,
   });
   const orders: AdminOrder[] = data?.orders ?? [];
+  const pagination = data?.pagination;
 
   const columns = useMemo(
     () => [
@@ -75,11 +87,19 @@ const OrdersTable = () => {
       },
       {
         header: "Payment",
-        cell: ({ row }: { row: { original: AdminOrder } }) => (
-          <span className={`text-xs font-semibold ${row.original.paymentStatus === "COMPLETED" ? "text-emerald-400" : "text-amber-400"}`}>
-            {row.original.paymentStatus}
-          </span>
-        ),
+        cell: ({ row }: { row: { original: AdminOrder } }) => {
+          const state = resolvePaymentState({
+            paymentStatus: row.original.paymentStatus,
+            paymentMethod: row.original.paymentMethod,
+            refundStatus: row.original.refundStatus,
+            orderStatus: row.original.status,
+          });
+          return (
+            <span className={`text-xs font-semibold ${PAY_TONE_CLASS[state.tone]}`} title={state.detail}>
+              {state.label}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "createdAt",
@@ -119,7 +139,10 @@ const OrdersTable = () => {
       description="Track every order across all sellers on the platform."
       search={{
         value: globalFilter,
-        onChange: setGlobalFilter,
+        onChange: (value: string) => {
+          setGlobalFilter(value);
+          setPage(1);
+        },
         placeholder: "Search orders...",
       }}
     >
@@ -127,7 +150,10 @@ const OrdersTable = () => {
           <label className="text-sm text-gray-400 whitespace-nowrap">Filter by Pincode:</label>
           <select
             value={selectedPincode}
-            onChange={(e) => setSelectedPincode(e.target.value)}
+            onChange={(e) => {
+              setSelectedPincode(e.target.value);
+              setPage(1);
+            }}
             className="bg-gray-800 border border-gray-700 text-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
           >
             <option value="">All Pincodes</option>
@@ -137,7 +163,10 @@ const OrdersTable = () => {
           </select>
           {selectedPincode && (
             <button
-              onClick={() => setSelectedPincode("")}
+              onClick={() => {
+                setSelectedPincode("");
+                setPage(1);
+              }}
               className="text-xs text-gray-400 hover:text-white transition underline"
             >
               Clear
@@ -177,6 +206,30 @@ const OrdersTable = () => {
           <p className="text-center py-3 text-white">No orders found.</p>
         )}
       </div>
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <p className="text-sm text-gray-400">
+            Page {pagination.page} of {pagination.totalPages} &mdash; {pagination.total} orders total
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={!pagination.hasPrevPage || isFetching}
+              className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!pagination.hasNextPage || isFetching}
+              className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardPageShell>
   );
 };

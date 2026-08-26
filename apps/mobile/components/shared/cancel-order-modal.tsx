@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -36,6 +37,7 @@ interface Props {
 export default function CancelOrderModal({ visible, onClose, onConfirm, isSubmitting }: Props) {
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!visible) {
@@ -134,7 +136,7 @@ export default function CancelOrderModal({ visible, onClose, onConfirm, isSubmit
             )}
           </View>
 
-          <View className="px-5 pt-1 pb-6 border-t border-border flex-row gap-3">
+          <View className="px-5 pt-1 border-t border-border flex-row gap-3" style={{ paddingBottom: insets.bottom + 24 }}>
             <TouchableOpacity
               disabled={isSubmitting}
               onPress={onClose}

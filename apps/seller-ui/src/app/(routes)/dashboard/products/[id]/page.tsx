@@ -32,17 +32,28 @@ const parseWeightToGrams = (size: string) => {
 const buildSizePricingRows = (
   sizes: string[],
   sizePricing?: SizePricingRow[] | null,
+  sizeStock?: Array<{ size: string; qty: number }> | null,
 ): SizePricingRow[] =>
   sizes.map((size) => {
     const existing = sizePricing?.find((entry) => entry.size === size);
+    const weightGrams = existing?.weightGrams ?? parseWeightToGrams(size);
+    const stockQty = Number(sizeStock?.find((entry) => entry.size === size)?.qty ?? 0);
 
     return {
       size,
-      weightGrams: existing?.weightGrams ?? parseWeightToGrams(size),
+      weightGrams,
       regularPrice: Number(existing?.regularPrice ?? 0),
       salePrice: Number(existing?.salePrice ?? 0),
+      stockQty,
+      // Reverse-derived from the saved unit count — accurate as long as
+      // weightGrams hasn't changed since the stock was last set.
+      totalInventoryGrams: stockQty * weightGrams,
     };
   });
+
+// Whole units only — a pack can't be sold as a fraction of itself.
+const deriveStockQty = (weightGrams: number, totalInventoryGrams: number) =>
+  weightGrams > 0 ? Math.floor(totalInventoryGrams / weightGrams) : 0;
 
 
 const fetchOwnedProduct = async (productId: string): Promise<SellerOwnedProduct> => {
@@ -120,7 +131,7 @@ const SellerProductDetailsPage = () => {
       discountCodes: Array.isArray(product.discount_codes)
         ? product.discount_codes
         : [],
-      sizePricing: buildSizePricingRows(product.sizes || [], product.sizePricing),
+      sizePricing: buildSizePricingRows(product.sizes || [], product.sizePricing, product.sizeStock),
       cuttingTypePricing: (product.cuttingTypes || []).map((ct) => {
         const existing = product.cuttingTypePricing?.find((c) => c.cuttingType === ct);
         return { cuttingType: ct, salePrice: existing?.salePrice ?? 0, regularPrice: 0 };
@@ -172,6 +183,12 @@ const SellerProductDetailsPage = () => {
     const payload = {
       ...values,
       basePricePerKg: values.sizePricing.length === 0 ? values.sale_price : undefined,
+      sizeStock: product?.trackStockPerSize
+        ? values.sizePricing.map((entry) => ({
+            size: entry.size,
+            qty: Math.max(0, entry.stockQty ?? 0),
+          }))
+        : undefined,
     };
 
     updateMutation.mutate(payload);
@@ -363,7 +380,11 @@ const SellerProductDetailsPage = () => {
                   {selectedSizePricing.map((entry, index) => (
                     <div
                       key={entry.size}
-                      className="grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
+                      className={`grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 ${
+                        product.trackStockPerSize
+                          ? "md:grid-cols-[1.2fr_0.8fr_1fr_1fr_0.8fr]"
+                          : "md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
+                      }`}
                     >
                       <div>
                         <p className="text-sm font-medium text-white">{entry.size}</p>
@@ -381,9 +402,11 @@ const SellerProductDetailsPage = () => {
                           value={entry.weightGrams ?? 0}
                           onChange={(event) => {
                             const nextRows = [...selectedSizePricing];
+                            const weightGrams = Number(event.target.value || 0);
                             nextRows[index] = {
                               ...entry,
-                              weightGrams: Number(event.target.value || 0),
+                              weightGrams,
+                              stockQty: deriveStockQty(weightGrams, entry.totalInventoryGrams ?? 0),
                             };
                             setValue("sizePricing", nextRows, { shouldDirty: true });
                           }}
@@ -428,6 +451,32 @@ const SellerProductDetailsPage = () => {
                           className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                         />
                       </div>
+                      {product.trackStockPerSize && (
+                        <div>
+                          <label className="mb-1 block text-xs text-slate-400">
+                            Total Inventory (g)
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={entry.totalInventoryGrams ?? 0}
+                            onChange={(event) => {
+                              const nextRows = [...selectedSizePricing];
+                              const totalInventoryGrams = Number(event.target.value || 0);
+                              nextRows[index] = {
+                                ...entry,
+                                totalInventoryGrams,
+                                stockQty: deriveStockQty(entry.weightGrams, totalInventoryGrams),
+                              };
+                              setValue("sizePricing", nextRows, { shouldDirty: true });
+                            }}
+                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                          />
+                          <p className="mt-1 text-xs text-slate-500">
+                            = {entry.stockQty ?? 0} unit{(entry.stockQty ?? 0) === 1 ? "" : "s"} at {entry.weightGrams || 0}g each
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

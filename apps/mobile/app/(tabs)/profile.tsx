@@ -6,9 +6,11 @@ import axiosInstance from "@/utils/axiosInstance";
 import { clearStoredAuth } from "@/utils/auth";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
+import { openWhatsApp } from "@/utils/whatsapp";
 import { colors } from "@/constants/theme";
 import { Order, STATUS_CONFIG } from "@/constants/order";
 import { formatOrderId } from "@repo/shared/order-id";
+import { resolvePaymentState } from "@repo/shared/payment-state";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
@@ -18,7 +20,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Linking,
   Modal,
   ScrollView,
   Share,
@@ -43,13 +44,16 @@ const ORDER_QUICK_FILTERS: { key: string; label: string; icon: keyof typeof Ioni
   { key: "CANCELLED", label: "Cancelled", icon: "close-outline" },
 ];
 
-// Mirrors my-orders/index.tsx: a RAZORPAY order still PENDING never got a
+// Mirrors my-orders/index.tsx: an online order still PENDING never got a
 // completed payment, so it reads as cancelled rather than "in progress".
 function getDisplayStatus(order: Order): string {
+  const { key } = resolvePaymentState({
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    orderStatus: order.status,
+  });
   const isUnpaidOnline =
-    order.paymentMethod === "RAZORPAY" &&
-    order.status === "PENDING" &&
-    order.paymentStatus !== "COMPLETED";
+    order.status === "PENDING" && (key === "AWAITING_PAYMENT" || key === "NOT_PAID");
   return isUnpaidOnline ? "CANCELLED" : order.status;
 }
 
@@ -542,7 +546,7 @@ export default function Profile() {
             <MenuGridItem
               icon="headset-outline" iconBg="#D1FAE5" iconColor={colors.success}
               label="Help & Support" sub="FAQs, chat & more"
-              onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+              onPress={() => openWhatsApp(SUPPORT_WHATSAPP_URL)}
             />
             <MenuGridItem
               icon="notifications-outline" iconBg="#FEF3C7" iconColor="#D97706"
@@ -593,7 +597,7 @@ export default function Profile() {
                 Bulk orders of fresh fish and meat for weddings, parties, and events — chat with us for custom cuts, quantities, and delivery scheduling.
               </Text>
               <TouchableOpacity
-                onPress={() => Linking.openURL(SUPPORT_WHATSAPP_URL)}
+                onPress={() => openWhatsApp(SUPPORT_WHATSAPP_URL)}
                 activeOpacity={0.85}
                 style={{ alignSelf: "flex-start", backgroundColor: colors.white, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 50 }}
               >

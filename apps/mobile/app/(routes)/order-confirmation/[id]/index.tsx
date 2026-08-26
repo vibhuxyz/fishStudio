@@ -9,7 +9,6 @@ import {
   Animated,
   Easing,
   Image,
-  Linking,
   ScrollView,
   Share,
   StatusBar,
@@ -23,6 +22,7 @@ import { getDeliveryEtaMinutes } from "@/components/order-tracker/simulation";
 import SupportMessageModal from "@/components/shared/support-message-modal";
 import { useAddressStore } from "@/lib/address-store";
 import { toast } from "@/utils/toast";
+import { openWhatsApp } from "@/utils/whatsapp";
 import { colors, gradients } from "@/constants/theme";
 import { formatDeliveryDateLabel, getScheduledDeliveryDate } from "@/constants/delivery-slots";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
@@ -131,7 +131,7 @@ export default function OrderConfirmationScreen() {
     );
 
   const handleSendSupportMessage = (message: string) => {
-    Linking.openURL(buildSupportWhatsAppUrl(message));
+    openWhatsApp(buildSupportWhatsAppUrl(message));
   };
 
   const handleCopyOrderId = async () => {

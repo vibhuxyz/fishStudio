@@ -10,6 +10,7 @@ import { useModals } from "@/components/providers/modal-provider";
 import { useAddressStore } from "@/lib/address-store";
 import { isUserLoggedIn } from "@/lib/auth-store";
 import { Product } from "@repo/zod-schema";
+import { resolveCardPrice } from "@repo/shared/pricing";
 import { ProductBadges } from "@/components/shared/product-badge";
 import { toast } from "sonner";
 
@@ -96,8 +97,15 @@ function ProductCardComponent({
   const quickAdd = useCartStore((s) => s.quickAdd);
   const quickRemove = useCartStore((s) => s.quickRemove);
 
-  const discountPercentage = product.originalPrice && product.originalPrice > product.price
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const cardPrice = resolveCardPrice({
+    basePricePerKg: product.basePricePerKg,
+    sizePricing: product.sizePricing,
+    salePrice: product.price,
+    regularPrice: product.originalPrice ?? product.price,
+  });
+
+  const discountPercentage = cardPrice.regularPrice > cardPrice.salePrice
+    ? Math.round(((cardPrice.regularPrice - cardPrice.salePrice) / cardPrice.regularPrice) * 100)
     : 0;
 
   const slug = product.slug;
@@ -280,12 +288,15 @@ function ProductCardComponent({
             {!isOutOfStock && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-card-foreground">
-                  ₹{product.price}
+                  ₹{cardPrice.salePrice}
+                  <span className="ml-0.5 text-[11px] font-normal text-muted-foreground">
+                    /{cardPrice.unit}
+                  </span>
                 </span>
-                {discountPercentage > 0 && product.originalPrice && (
+                {discountPercentage > 0 && (
                   <>
                     <span className="text-[11px] text-muted-foreground line-through">
-                      ₹{product.originalPrice}
+                      ₹{cardPrice.regularPrice}
                     </span>
                     <span className="text-[11px] font-bold text-green-500">
                       {discountPercentage}% off
@@ -433,12 +444,15 @@ function ProductCardComponent({
           {!isOutOfStock && (
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-card-foreground">
-                ₹{product.price}
+                ₹{cardPrice.salePrice}
+                <span className="ml-0.5 text-[11px] font-normal text-muted-foreground">
+                  /{cardPrice.unit}
+                </span>
               </span>
-              {discountPercentage > 0 && product.originalPrice && (
+              {discountPercentage > 0 && (
                 <>
                   <span className="text-[11px] text-muted-foreground line-through">
-                    ₹{product.originalPrice}
+                    ₹{cardPrice.regularPrice}
                   </span>
                   <span className="text-[11px] font-bold text-green-500">
                     {discountPercentage}% off

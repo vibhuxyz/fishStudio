@@ -32,6 +32,7 @@ import {
 } from "@/hooks/useAdminQueries";
 import { formatOrderId } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
   { label: "Week", value: "week" },
@@ -46,25 +47,14 @@ const formatINR = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const statusBadge = (order: SellerOrder) => {
-  const pStatus = order.paymentStatus;
-  const oStatus = order.status;
-  const isCOD = order.paymentMethod === "COD";
-
-  if (isCOD && oStatus === "DELIVERED") {
-    return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-900/40 text-emerald-400 border border-emerald-900/30">COLLECTED</span>;
-  }
-  if (pStatus === "COMPLETED") {
-    return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-900/40 text-emerald-400 border border-emerald-900/30">PAID</span>;
-  }
-  if (pStatus === "REFUNDED") {
-    return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-900/40 text-rose-400 border border-rose-900/30">REFUNDED</span>;
-  }
-  if (oStatus === "REJECTED" || oStatus === "CANCELLED") {
-    return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-900/40 text-amber-400 border border-amber-900/30">REFUND PROCESSING</span>;
-  }
-  return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gray-800 text-gray-400">PENDING</span>;
-};
+const statusBadge = (order: SellerOrder) => (
+  <PaymentBadge
+    variant="pill"
+    paymentStatus={order.paymentStatus}
+    paymentMethod={order.paymentMethod}
+    orderStatus={order.status}
+  />
+);
 
 const orderStatusIcon = (status: string) => {
   switch (status) {

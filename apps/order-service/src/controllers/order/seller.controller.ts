@@ -8,6 +8,7 @@ import {
   normalizeOrderIdFragment,
   releaseRiderIfNoOtherDeliveries,
   hydrateOrders,
+  releaseCouponUsage,
 } from "./utils.js";
 import { formatOrderId } from "@repo/shared/order-id";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
@@ -116,6 +117,8 @@ export const acceptOrRejectOrder = async (
       });
 
       restoreOrderStock(existingOrder.orderItems, "acceptOrRejectOrder");
+      // A rejected order was never fulfilled, so the customer keeps the coupon.
+      void releaseCouponUsage(orderId);
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
@@ -180,6 +183,9 @@ export const updateOrderStatus = async (
       status === "CANCELLED" &&
       existing.paymentMethod === "RAZORPAY" &&
       existing.paymentStatus === "COMPLETED";
+    // Cancelling an order nobody ever paid for: terminal, not outstanding.
+    const nothingCaptured =
+      status === "CANCELLED" && existing.paymentStatus !== "COMPLETED";
 
     // Rider assignment is opt-in — a store that never uses it can go
     // straight READY_FOR_PICKUP -> SHIPPED -> DELIVERED with no rider
@@ -195,6 +201,7 @@ export const updateOrderStatus = async (
               cancelledAt: new Date(),
               ...(cancellationReason?.trim() ? { cancellationReason: cancellationReason.trim() } : {}),
               ...(refundNeeded ? { refundStatus: "REQUESTED" } : {}),
+              ...(nothingCaptured ? { paymentStatus: "NOT_PAID" as const } : {}),
             }
           : {}),
         ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" } : {}),
@@ -210,6 +217,7 @@ export const updateOrderStatus = async (
     // Restore stock when seller manually cancels an order
     if (status === "CANCELLED") {
       restoreOrderStock(existing.orderItems, "updateOrderStatus");
+      void releaseCouponUsage(orderId);
 
       // A customer who paid online but is only cancellable this late through
       // support gets refunded the same way self-cancel does — order-service

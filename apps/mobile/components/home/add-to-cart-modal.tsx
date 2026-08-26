@@ -438,6 +438,18 @@ export default function AddToCartModal({
             </View>
           )}
 
+          {/* ── Fish / Pack Size (only if backend provides) ── */}
+          {hasSizes && (
+            <InlineDropdown
+              label="Fish / Pack Size"
+              value={selectedSize}
+              options={normalizedSizePricing.map((e) => {
+                return e.salePrice > 0 ? `${e.size} — Rs. ${e.salePrice}` : e.size;
+              })}
+              onSelect={(v) => setSelectedSize(v.split(" — ")[0])}
+            />
+          )}
+
           {/* ── Cutting Type (only if backend provides) ── */}
           {hasCuttingTypes && (
             <InlineDropdown
@@ -455,18 +467,6 @@ export default function AddToCartModal({
               value={selectedPieceSize}
               options={product.pieceSizes}
               onSelect={setSelectedPieceSize}
-            />
-          )}
-
-          {/* ── Fish / Pack Size (only if backend provides) ── */}
-          {hasSizes && (
-            <InlineDropdown
-              label="Fish / Pack Size"
-              value={selectedSize}
-              options={normalizedSizePricing.map((e) => {
-                return e.salePrice > 0 ? `${e.size} — Rs. ${e.salePrice}` : e.size;
-              })}
-              onSelect={(v) => setSelectedSize(v.split(" — ")[0])}
             />
           )}
 

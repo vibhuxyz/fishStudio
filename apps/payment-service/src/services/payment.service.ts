@@ -483,7 +483,13 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
     const [orderRes] = await prismaPostgres.$transaction([
       prismaPostgres.order.updateMany({
         where: { id: orderId, paymentStatus: "REFUND_PENDING" },
-        data: { paymentStatus: "COMPLETED", refundStatus: "FAILED" },
+        data: {
+          paymentStatus: "COMPLETED",
+          refundStatus: "FAILED",
+          refundFailureReason:
+            evt.reason ?? "The gateway rejected the refund after accepting it.",
+          refundFailedAt: new Date(),
+        },
       }),
       prismaPostgres.payment.updateMany({
         where: { orderId, status: "REFUND_PENDING" },
@@ -516,6 +522,122 @@ const RECONCILE_MIN_AGE_MS = 2 * 60 * 1000;
 // Razorpay orders don't stay payable forever; past this, settle by hand.
 const RECONCILE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
 const RECONCILE_BATCH_SIZE = 100;
+// Below this age a checkout with no attempt is simply one the customer hasn't
+// finished. Matches UNPAID_ORDER_TTL_MS in stale-orders.job, which cancels the
+// order at the same point.
+const ABANDONED_AFTER_MS = 30 * 60 * 1000;
+
+// Shared by the batch sweep below and recheckOrderPayment (an on-demand,
+// single-order version a seller/admin can trigger from the UI) — both ask
+// the gateway for the same thing and apply the result the same way.
+async function settleFromGateway(
+  orderId: string,
+  gatewayOrderId: string,
+  // Only an abandoned checkout can be closed out, and only once it is clearly
+  // abandoned — a customer who opened Razorpay 30 seconds ago has simply not
+  // paid *yet*. Callers that can't judge that (the on-demand recheck) pass
+  // false and get NO_CHANGE instead.
+  closeOutAbandoned = false,
+): Promise<"CAPTURED" | "FAILED" | "ABANDONED" | "NO_CHANGE"> {
+  const settlement = await gateway.fetchOrderSettlement(gatewayOrderId);
+  if (!settlement) return "NO_CHANGE";
+
+  if (settlement.status === "NOT_ATTEMPTED") {
+    if (!closeOutAbandoned) return "NO_CHANGE";
+    // No gateway attempt exists, so there is no PAYMENT_FAILED event to apply
+    // — write the terminal state directly, conditionally so a capture landing
+    // in the meantime is never clobbered.
+    const closed = await prismaPostgres.order.updateMany({
+      where: { id: orderId, paymentStatus: "PENDING" },
+      data: { paymentStatus: "NOT_PAID" },
+    });
+    if (closed.count === 0) return "NO_CHANGE";
+    await prismaPostgres.payment.updateMany({
+      where: { orderId, status: "PENDING" },
+      data: { status: "NOT_PAID" },
+    });
+    writeAuditLog("PAYMENT", orderId, "PAYMENT_ABANDONED", null, "SYSTEM", {
+      gatewayOrderId,
+      source: "reconcile",
+    });
+    return "ABANDONED";
+  }
+
+  if (settlement.status === "CAPTURED") {
+    // applyWebhookEvent owns the amount check, so live and recovered
+    // payments are validated identically.
+    await applyWebhookEvent({
+      kind: "PAYMENT_CAPTURED",
+      orderId,
+      gatewayPaymentId: settlement.gatewayPaymentId,
+      amountInPaise: settlement.amountInPaise,
+    });
+    return "CAPTURED";
+  }
+
+  await applyWebhookEvent({
+    kind: "PAYMENT_FAILED",
+    orderId,
+    gatewayPaymentId: settlement.gatewayPaymentId,
+    reason: settlement.reason,
+  });
+  return "FAILED";
+}
+
+/**
+ * On-demand version of the reconciliation sweep for one order — lets a
+ * seller/admin looking at a stuck "pending" payment force a fresh check
+ * against Razorpay right now, instead of waiting for the next cron pass (or
+ * one that skips it for falling outside the sweep's min/max age window).
+ */
+export async function recheckOrderPayment(params: {
+  orderId: string;
+  actorRole: "admin" | "seller";
+  sellerStoreId?: string;
+}): Promise<{ paymentStatus: string; changed: boolean }> {
+  const { orderId, actorRole, sellerStoreId } = params;
+
+  const order = await prismaPostgres.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, storeId: true, paymentMethod: true, paymentStatus: true },
+  });
+  if (!order) throw new NotFoundError("Order not found");
+
+  // Same "NotFound, not Forbidden" shape as initiateRefund — order ids
+  // shouldn't be enumerable by a seller poking at another store's order.
+  if (actorRole === "seller") {
+    if (!sellerStoreId || order.storeId !== sellerStoreId) {
+      throw new NotFoundError("Order not found");
+    }
+  }
+
+  if (order.paymentMethod !== "RAZORPAY") {
+    return { paymentStatus: order.paymentStatus, changed: false };
+  }
+
+  const payment = await prismaPostgres.payment.findFirst({
+    where: { orderId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true, gatewayOrderId: true },
+  });
+
+  // Nothing pending against the gateway to ask about — either never bound
+  // to a gateway order, or already resolved one way or the other.
+  if (!payment || payment.status !== "PENDING" || !payment.gatewayOrderId) {
+    return { paymentStatus: order.paymentStatus, changed: false };
+  }
+
+  const outcome = await settleFromGateway(orderId, payment.gatewayOrderId);
+  if (outcome === "NO_CHANGE") {
+    return { paymentStatus: order.paymentStatus, changed: false };
+  }
+
+  const refreshed = await prismaPostgres.order.findUnique({
+    where: { id: orderId },
+    select: { paymentStatus: true },
+  });
+  return { paymentStatus: refreshed?.paymentStatus ?? order.paymentStatus, changed: true };
+}
 
 export async function reconcilePendingPayments(): Promise<{ scanned: number; settled: number }> {
   const now = Date.now();
@@ -531,7 +653,7 @@ export async function reconcilePendingPayments(): Promise<{ scanned: number; set
       },
       order: { paymentMethod: "RAZORPAY", paymentStatus: "PENDING" },
     },
-    select: { orderId: true, gatewayOrderId: true },
+    select: { orderId: true, gatewayOrderId: true, createdAt: true },
     take: RECONCILE_BATCH_SIZE,
   });
 
@@ -541,32 +663,18 @@ export async function reconcilePendingPayments(): Promise<{ scanned: number; set
     const gatewayOrderId = payment.gatewayOrderId!;
 
     try {
-      const settlement = await gateway.fetchOrderSettlement(gatewayOrderId);
-      if (!settlement) continue;
-
-      if (settlement.status === "CAPTURED") {
-        // applyWebhookEvent owns the amount check, so live and recovered
-        // payments are validated identically.
-        await applyWebhookEvent({
-          kind: "PAYMENT_CAPTURED",
-          orderId: payment.orderId,
-          gatewayPaymentId: settlement.gatewayPaymentId,
-          amountInPaise: settlement.amountInPaise,
-        });
-      } else {
-        await applyWebhookEvent({
-          kind: "PAYMENT_FAILED",
-          orderId: payment.orderId,
-          gatewayPaymentId: settlement.gatewayPaymentId,
-          reason: settlement.reason,
-        });
-      }
+      const outcome = await settleFromGateway(
+        payment.orderId,
+        gatewayOrderId,
+        now - payment.createdAt.getTime() >= ABANDONED_AFTER_MS,
+      );
+      if (outcome === "NO_CHANGE") continue;
 
       settled++;
-      logger.info("[Reconcile] Settled a payment the webhook missed", {
+      logger.info("[Reconcile] Closed out a payment the webhook never settled", {
         orderId: payment.orderId,
         gatewayOrderId,
-        outcome: settlement.status,
+        outcome,
       });
     } catch (err) {
       // One bad order must not abort the batch — the next run retries it.
@@ -622,6 +730,19 @@ export async function listPaymentsNeedingAttention(limit: number) {
 
 /* ── Full refund via the gateway (admin, seller on their own store, or the
    system itself auto-refunding a customer's self-cancel) ─────────────────── */
+// Razorpay surfaces the useful part of a refusal in `error.description`; the
+// bare Error message is usually just the HTTP status. Whatever we pick is shown
+// verbatim to a seller, so it is trimmed and length-capped.
+const describeRefundFailure = (error: unknown): string => {
+  const candidate =
+    (error as { error?: { description?: string } })?.error?.description ??
+    (error as { description?: string })?.description ??
+    (error instanceof Error ? error.message : null);
+  const text = typeof candidate === "string" ? candidate.trim() : "";
+  if (!text) return "The payment gateway rejected the refund.";
+  return text.length > 300 ? `${text.slice(0, 297)}...` : text;
+};
+
 export async function initiateRefund(params: {
   input: InitiateRefundInput;
   actorId: string | null;
@@ -666,7 +787,12 @@ export async function initiateRefund(params: {
   // done. The losing claimant (and any repeat call) sees count 0.
   const claim = await prismaPostgres.order.updateMany({
     where: { id: orderId, paymentStatus: "COMPLETED" },
-    data: { paymentStatus: "REFUND_PENDING", refundStatus: "PROCESSING" },
+    data: {
+      paymentStatus: "REFUND_PENDING",
+      refundStatus: "PROCESSING",
+      refundFailureReason: null,
+      refundFailedAt: null,
+    },
   });
   if (claim.count === 0) {
     throw new ValidationError("Order has already been refunded or is not in a refundable state");
@@ -686,7 +812,12 @@ export async function initiateRefund(params: {
     await prismaPostgres.order
       .updateMany({
         where: { id: orderId, paymentStatus: "REFUND_PENDING" },
-        data: { paymentStatus: "COMPLETED", refundStatus: "FAILED" },
+        data: {
+          paymentStatus: "COMPLETED",
+          refundStatus: "FAILED",
+          refundFailureReason: describeRefundFailure(gatewayErr),
+          refundFailedAt: new Date(),
+        },
       })
       .catch((releaseErr) =>
         logger.error(`[Refund] Failed to release refund claim for order ${orderId}`, releaseErr),

@@ -51,7 +51,8 @@ export async function generateMetadata({
 // 2. Main Product Section (Stream Wave 1)
 async function MainProduct({ slug }: { slug: string }) {
   const decodedSlug = decodeURIComponent(slug);
-  const { product, coupon, relatedProducts } = await getProductBySlug(decodedSlug);
+  const { product, coupon, frequentlyBoughtTogether } =
+    await getProductBySlug(decodedSlug);
 
   if (!product) notFound();
 
@@ -59,7 +60,7 @@ async function MainProduct({ slug }: { slug: string }) {
     <ProductDetailClient
       product={product}
       coupon={coupon}
-      relatedProducts={relatedProducts}
+      frequentlyBoughtTogether={frequentlyBoughtTogether}
     />
   );
 }

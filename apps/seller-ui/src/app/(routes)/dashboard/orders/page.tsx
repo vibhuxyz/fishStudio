@@ -5,10 +5,10 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-import { Search, Eye } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Eye, RefreshCw } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-import Link from "next/link";
 import { useEffect } from "react";
 
 import axiosInstance from "@/utils/axiosInstance";
@@ -17,6 +17,9 @@ import { SellerOrder } from "@repo/zod-schema";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import { formatOrderId } from "@repo/shared/order-id";
+import { PaymentBadge } from "@/shared/components/orders/payment-badge";
+import OrderDetailDrawer from "./_components/order-detail-drawer";
+import { paymentStateLabel, resolvePaymentState } from "@repo/shared/payment-state";
 
 // Strip leading "#" so searching "#3W5KYD" works the same as "3W5KYD"
 const cleanOrderIdSearch = (value: string) =>
@@ -32,6 +35,7 @@ const fetchOrders = async (page: number, search: string) => {
 const OrdersTable = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { seller } = useSeller();
   // Shared persistent WS connection — no new socket created per page.
@@ -43,6 +47,31 @@ const OrdersTable = () => {
     queryKey: ["seller-orders", page, cleanSearch],
     queryFn: () => fetchOrders(page, cleanSearch),
     staleTime: 1000 * 60 * 5,
+  });
+
+  const recheckMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const res = await axiosInstance.get(`/payment/api/recheck-payment/${orderId}`);
+      return res.data as { paymentStatus: string; changed: boolean };
+    },
+    onSuccess: (result) => {
+      const label = paymentStateLabel({
+        paymentStatus: result.paymentStatus,
+        paymentMethod: "RAZORPAY",
+      });
+      if (result.changed) {
+        queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
+        toast.success(`Payment status updated: ${label}`);
+      } else {
+        toast.info(`Still ${label} — Razorpay hasn't reported a change yet`);
+      }
+    },
+    onError: (err: any) => {
+      // Surface the server's reason: a bare "couldn't recheck" leaves nothing
+      // to act on the next time this fails.
+      const reason = err?.response?.data?.message || err?.message;
+      toast.error(reason ? `Couldn't recheck payment: ${reason}` : "Couldn't recheck payment status");
+    },
   });
 
   // Subscribe to NEW_ORDER events via the shared connection.
@@ -71,7 +100,7 @@ const OrdersTable = () => {
       },
       {
         accessorKey: "user.name",
-        header: "Buyer",
+        header: "Customer",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white">
             {row.original.user?.name ?? "Guest"}
@@ -80,8 +109,44 @@ const OrdersTable = () => {
       },
       {
         accessorKey: "total",
-        header: "Total",
+        header: "Amount",
         cell: ({ row }: { row: { original: SellerOrder } }) => <span>₹{row.original.total}</span>,
+      },
+      {
+        accessorKey: "paymentStatus",
+        header: "Payment",
+        cell: ({ row }: { row: { original: SellerOrder } }) => {
+          const { id, paymentMethod, paymentStatus, status } = row.original;
+          // Whether the gateway is worth asking again is a property of the
+          // payment state, not a condition each table re-invents.
+          const { canRecheck } = resolvePaymentState({
+            paymentStatus,
+            paymentMethod,
+            orderStatus: status,
+          });
+          const isRechecking = recheckMutation.isPending && recheckMutation.variables === id;
+
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <PaymentBadge
+                paymentStatus={paymentStatus}
+                paymentMethod={paymentMethod}
+                orderStatus={status}
+              />
+              {canRecheck && (
+                <button
+                  type="button"
+                  title="Recheck payment status with Razorpay"
+                  disabled={isRechecking}
+                  onClick={() => recheckMutation.mutate(id)}
+                  className="text-gray-400 hover:text-white transition disabled:opacity-50"
+                >
+                  <RefreshCw size={13} className={isRechecking ? "animate-spin" : ""} />
+                </button>
+              )}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -103,6 +168,13 @@ const OrdersTable = () => {
         },
       },
       {
+        accessorKey: "deliverySlot",
+        header: "Slot",
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <span className="text-gray-300 text-sm">{row.original.deliverySlot ?? "—"}</span>
+        ),
+      },
+      {
         accessorKey: "createdAt",
         header: "Date",
         cell: ({ row }: { row: { original: SellerOrder } }) => {
@@ -111,18 +183,20 @@ const OrdersTable = () => {
         },
       },
       {
-        header: "Actions",
+        header: "Detail",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
-          <Link
-            href={`/order/${row.original.id}`}
+          <button
+            type="button"
+            title="View order details"
+            onClick={() => setDetailOrderId(row.original.id)}
             className="text-blue-400 hover:text-blue-300 transition"
           >
             <Eye size={18} />
-          </Link>
+          </button>
         ),
       },
     ],
-    [],
+    [recheckMutation],
   );
 
   const table = useReactTable({
@@ -222,6 +296,13 @@ const OrdersTable = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {detailOrderId && (
+        <OrderDetailDrawer
+          orderId={detailOrderId}
+          onClose={() => setDetailOrderId(null)}
+        />
       )}
     </div>
   );

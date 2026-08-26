@@ -35,6 +35,12 @@ enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
+  // No money was ever due or attempted: a COD order cancelled before the rider
+  // collected, or an online checkout the customer abandoned. Distinct from
+  // FAILED, which means the gateway declined a real attempt and is worth
+  // investigating — collapsing the two would bury genuine failures. PENDING is
+  // reserved for orders where money is still expected.
+  NOT_PAID
   // Refund submitted to the gateway but not yet settled. Gateway refunds are
   // asynchronous and can still fail, so REFUNDED is only set once the
   // refund.processed webhook confirms it.
@@ -163,17 +169,22 @@ model Order {
   deliveryProofPhotoPublicId String?
   deliveryProofUploadedAt    DateTime?
 
-  rejectionReason    String?
+  rejectionReason     String?
   // Who/why/when an order was cancelled — set on any path that flips status
   // to CANCELLED (customer self-cancel, seller/staff cancel, or the system).
   // cancellationReason is free text from staff but one of a fixed quick-pick
   // list from a customer (see cancelOrderSchema).
-  cancellationReason String?
-  cancelledBy        CancelledBy?
-  cancelledAt        DateTime?
+  cancellationReason  String?
+  cancelledBy         CancelledBy?
+  cancelledAt         DateTime?
   // NONE until a refund is actually requested — most cancelled orders (COD,
   // or paid orders cancelled while still unpaid) never touch this.
-  refundStatus       RefundStatus @default(NONE)
+  refundStatus        RefundStatus @default(NONE)
+  // Why the last refund attempt failed, kept so an operator retrying by hand
+  // knows whether to retry at all. Written only on the FAILED transitions and
+  // cleared whenever a new attempt claims the order.
+  refundFailureReason String?
+  refundFailedAt      DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -187,19 +198,28 @@ model Order {
   // write. A standalone [status] was dropped too — six enum values over the
   // whole table is not selective enough for the planner to prefer it; the one
   // query that does filter on status (the stale-order sweeper) is served by a
-  // partial index created in migration 20260807000001.
+  // partial index created in migration 20260807000001. The co-purchase job's
+  // deliveredAt scan is served the same way (migration 20260810000000).
   @@index([userId, createdAt(sort: Desc)]) // user order history with recent-first sort
   @@index([storeId, createdAt(sort: Desc)]) // seller order dashboard + stats range scans
 }
 
 model OrderItem {
-  id              String  @id @default(cuid())
-  orderId         String
-  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId       String // Reference to Mongo Product ID
-  quantity        Int
-  price           Decimal @db.Decimal(12, 2)
-  selectedOptions Json?
+  id               String  @id @default(cuid())
+  orderId          String
+  order            Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String // Reference to Mongo Product ID
+  // The catalog root behind productId, denormalised at checkout. productId is
+  // the *store variant*, so the same fish sold by four stores is four ids —
+  // co-purchase stats aggregated on it would split one product's signal four
+  // ways. Resolving it here costs nothing (checkout has already loaded the
+  // product) and spares the nightly job a Mongo lookup per row. Null on orders
+  // placed before this column existed and on any row the backfill couldn't
+  // resolve; the aggregation job skips those rather than guessing.
+  catalogProductId String?
+  quantity         Int
+  price            Decimal @db.Decimal(12, 2)
+  selectedOptions  Json?
 
   @@index([orderId])
   @@index([productId])
@@ -353,4 +373,50 @@ model StockReservation {
   // Like the outbox, the sweeper only reads HELD rows — partial index in
   // migration 20260807000001.
   @@index([orderId])
+}
+
+// ── Co-purchase intelligence ─────────────────────────────────────────────────
+// Powers "Frequently Bought Together". Aggregated incrementally from delivered
+// orders by the nightly job in packages/jobs (co-purchase.job.ts), then read on
+// the product page. All three tables are keyed by *catalog* product id (a Mongo
+// ObjectId), never a store variant — see the note on OrderItem.catalogProductId.
+//
+// These are derived data: everything here can be rebuilt from Order/OrderItem
+// by resetting CoPurchaseState, which is why nothing else may write to them.
+
+// One row per unordered pair of catalog products that have appeared in the same
+// delivered order. The pair is stored once with catalogA < catalogB so a pair
+// can never be double-counted under two orderings; reads must therefore look at
+// both columns, hence the two indexes.
+model ProductCoPurchase {
+  catalogA   String
+  catalogB   String
+  orderCount Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@id([catalogA, catalogB])
+  @@index([catalogA, orderCount(sort: Desc)])
+  @@index([catalogB, orderCount(sort: Desc)])
+}
+
+// Orders containing this catalog product, counted once per order regardless of
+// quantity or how many of its variants the order held. Denominator for the
+// conditional probability P(B | A) and one of the two marginals in lift.
+model ProductOrderStat {
+  catalogProductId String   @id
+  orderCount       Int      @default(0)
+  updatedAt        DateTime @updatedAt
+}
+
+// Single-row aggregation cursor. lastDeliveredAt is the high-water mark over
+// Order.deliveredAt; totalOrders is the population size lift is computed
+// against. Advanced in the same transaction as the counters it accompanies, so
+// a crashed run resumes without double-counting the batch it was mid-way
+// through. Deleting this row is the supported way to force a full rebuild
+// (truncate the two tables above first, or the counts will double).
+model CoPurchaseState {
+  id              String    @id @default("singleton")
+  lastDeliveredAt DateTime?
+  totalOrders     Int       @default(0)
+  updatedAt       DateTime  @updatedAt
 }

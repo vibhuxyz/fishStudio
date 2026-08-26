@@ -12,6 +12,7 @@ import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender } from 
 import ProductDetailModal from "@/shared/components/analytics/ProductDetailModal";
 import { formatOrderId } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
   { label: "Week", value: "week" },
@@ -123,20 +124,14 @@ const SellerDetailPage = () => {
       },
       {
         header: "Status",
-        cell: ({ row }: { row: { original: SellerOrder } }) => {
-          const pStatus = row.original.paymentStatus;
-          const oStatus = row.original.status;
-          let color = "bg-gray-800 text-gray-400";
-          let label = pStatus || "PENDING";
-          if (pStatus === "COMPLETED") { color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30"; label = "SUCCESSFUL"; }
-          else if (pStatus === "REFUNDED") { color = "bg-rose-900/40 text-rose-500 border border-rose-900/30"; label = "REFUNDED"; }
-          else if (oStatus === "REJECTED") { color = "bg-amber-900/40 text-amber-500 border border-amber-900/30"; label = "REJECT/REFUND"; }
-          return (
-            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${color}`}>
-              {label}
-            </span>
-          );
-        },
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <PaymentBadge
+            variant="pill"
+            paymentStatus={row.original.paymentStatus}
+            paymentMethod={row.original.paymentMethod}
+            orderStatus={row.original.status}
+          />
+        ),
       },
       {
         accessorKey: "createdAt",

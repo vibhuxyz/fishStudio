@@ -156,6 +156,7 @@ export class RazorpayProvider implements PaymentProvider {
           orderId,
           refundId: payload.id,
           gatewayPaymentId: payload.payment_id,
+          reason: payload.error_description ?? payload.status_reason,
         };
       default:
         return { kind: "UNHANDLED", eventType };
@@ -209,7 +210,9 @@ export class RazorpayProvider implements PaymentProvider {
       };
     }
 
-    // No attempts at all — the user never got as far as paying.
-    return null;
+    // No attempts at all — the user never got as far as paying. A final
+    // answer, not an unknown one: the caller decides whether enough time has
+    // passed to call the checkout abandoned.
+    return { status: "NOT_ATTEMPTED" };
   }
 }

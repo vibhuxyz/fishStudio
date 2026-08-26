@@ -39,6 +39,9 @@ export async function cancelStaleUnpaidOrders() {
         },
         data: {
           status: "CANCELLED",
+          // The order is done and no money ever moved. Left on PENDING it
+          // reads as "payment outstanding" on every dashboard forever.
+          paymentStatus: "NOT_PAID",
           rejectionReason: "Payment was not completed in time",
         },
       });

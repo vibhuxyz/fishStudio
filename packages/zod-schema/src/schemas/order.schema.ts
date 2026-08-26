@@ -140,7 +140,17 @@ export const orderStatusValues = [
   "CANCELLED",
 ] as const;
 
-export const paymentStatusValues = ["PENDING", "COMPLETED", "FAILED", "REFUNDED"] as const;
+// Must stay in step with the PaymentStatus enum in db-postgres — the admin
+// order-list filter is built from this, so a missing value is a state that
+// cannot be filtered for.
+export const paymentStatusValues = [
+  "PENDING",
+  "COMPLETED",
+  "FAILED",
+  "NOT_PAID",
+  "REFUND_PENDING",
+  "REFUNDED",
+] as const;
 
 export const updateAdminOrderStatusSchema = z.object({
   status: z.enum(orderStatusValues),

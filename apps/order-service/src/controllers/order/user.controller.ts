@@ -22,6 +22,7 @@ import {
   ProductSizePricing,
   ProductCuttingTypePricing,
   ProductPieceSizePricing,
+  PLACED_ORDER_STATUSES,
 } from "@repo/shared/pricing";
 import { formatOrderId } from "@repo/shared/order-id";
 import {
@@ -39,6 +40,7 @@ import {
   orderMoneyFields,
   orderItemMoneyFields,
   releaseRiderIfNoOtherDeliveries,
+  releaseCouponUsage,
 } from "./utils.js";
 
 // Populated by @repo/middlewares' isAuthenticated from the verified JWT.
@@ -66,9 +68,11 @@ async function prefetchCoupon(couponCode: string) {
       id: true,
       discountType: true,
       discountValue: true,
+      maxDiscountAmount: true,
       maxUses: true,
       maxUsesPerUser: true,
       minOrderValue: true,
+      isFirstOrder: true,
       adminId: true,
       sellerId: true,
       restrictedToUserId: true,
@@ -98,9 +102,13 @@ function computeCouponDiscount(
   // Fix #22: don't distinguish "wrong scope" / "maxed out" / "expired" —
   // each distinct error leaks info about a valid code. The minOrderValue
   // message stays because the user needs to know why checkout refused it.
-  const isAdminCoupon = coupon.adminId !== null;
-  const isSellerCoupon = coupon.sellerId !== null && coupon.sellerId === sellerId;
-  if (!isAdminCoupon && !isSellerCoupon) {
+  // Scope follows the seller the coupon belongs to, not who created it. An
+  // admin picks a seller when creating a coupon, so `adminId` only records the
+  // author — treating it as "global" let a coupon made for one store be spent
+  // at every other store. A coupon with no seller at all is platform-wide.
+  const isPlatformCoupon = coupon.sellerId === null;
+  const isThisStoresCoupon = coupon.sellerId !== null && coupon.sellerId === sellerId;
+  if (!isPlatformCoupon && !isThisStoresCoupon) {
     throw new ValidationError("Coupon is not valid for this order");
   }
   // Referral rewards (and any other personally-issued coupon) only redeem
@@ -124,6 +132,9 @@ function computeCouponDiscount(
   let discountAmount = 0;
   if (coupon.discountType === "percentage") {
     discountAmount = Math.round((itemTotal * coupon.discountValue) / 100);
+    if (coupon.maxDiscountAmount != null) {
+      discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+    }
   } else if (coupon.discountType === "fixed") {
     discountAmount = Math.min(coupon.discountValue, itemTotal);
   }
@@ -710,6 +721,9 @@ export const createOrder = async (
         where: { id: { in: productIds }, isDeleted: false, status: "Active" },
         select: {
           id: true,
+          // Denormalised onto OrderItem below so the co-purchase job can group
+          // by catalog root without a Mongo round trip per order item.
+          catalogProductId: true,
           sale_price: true,
           regular_price: true,
           stock: true,
@@ -960,10 +974,24 @@ export const createOrder = async (
         // of the last remaining use conflict and one is rolled back rather
         // than both passing a check made before either committed.
         if (couponCode && couponRaw) {
-          const [userUsageCount, globalUsageCount] = await Promise.all([
+          const [userUsageCount, globalUsageCount, priorOrderCount] = await Promise.all([
             tx.couponUsage.count({ where: { couponId: couponRaw.id, userId } }),
             couponRaw.maxUses !== null
               ? tx.couponUsage.count({ where: { couponId: couponRaw.id } })
+              : Promise.resolve(0),
+            // A first-order coupon is capped by the customer's order history,
+            // not by its own redemption count — someone who ordered before and
+            // never used this particular code still isn't a new customer.
+            // /validate-coupon has always checked this; the order path never
+            // did, so posting the code straight here skipped it entirely.
+            couponRaw.isFirstOrder
+              ? tx.order.count({
+                  where: {
+                    userId,
+                    ...(couponRaw.sellerId === null ? {} : { storeId }),
+                    status: { in: [...PLACED_ORDER_STATUSES] },
+                  },
+                })
               : Promise.resolve(0),
           ]);
 
@@ -972,6 +1000,13 @@ export const createOrder = async (
           }
           if (couponRaw.maxUses !== null && globalUsageCount >= couponRaw.maxUses) {
             throw new ValidationError("Coupon is not valid for this order");
+          }
+          if (couponRaw.isFirstOrder && priorOrderCount > 0) {
+            throw new ValidationError(
+              couponRaw.sellerId === null
+                ? "This coupon is only valid for your first order on our platform"
+                : "This coupon is only valid for your first order at this store",
+            );
           }
         }
 
@@ -1017,6 +1052,10 @@ export const createOrder = async (
             orderItems: {
               create: items.map((item: any, idx: number) => ({
                 productId: item.productId,
+                // A catalog root ordered directly has no catalogProductId of
+                // its own — it *is* the root, so it stands in for itself.
+                catalogProductId:
+                  productMap.get(item.productId)?.catalogProductId ?? item.productId,
                 quantity: item.quantity,
                 // Pre-filled to items.length above and written on every index,
                 // same assertion the itemTotal loop already relies on.
@@ -1545,6 +1584,10 @@ export const cancelOrder = async (
       reason === "Other" ? note?.trim() || "Other" : (reason ?? undefined);
 
     const refundNeeded = order.paymentMethod === "RAZORPAY" && order.paymentStatus === "COMPLETED";
+    // Nothing was ever captured — a COD order the rider never reached, or an
+    // online checkout that was never paid. Both are terminal: leaving them
+    // PENDING makes every dashboard show money as outstanding forever.
+    const nothingCaptured = order.paymentStatus !== "COMPLETED";
 
     // Mark cancelled in Postgres
     const cancelled = await prismaPostgres.order.update({
@@ -1556,11 +1599,16 @@ export const cancelOrder = async (
         cancelledAt: new Date(),
         ...(cancellationReason ? { cancellationReason } : {}),
         ...(refundNeeded ? { refundStatus: "REQUESTED" } : {}),
+        ...(nothingCaptured ? { paymentStatus: "NOT_PAID" as const } : {}),
       },
     });
 
     // Restore stock in MongoDB (fire-and-forget with logging)
     restoreOrderStock(order.orderItems, "cancelOrder");
+
+    // The order never happened, so neither did the redemption — hand the
+    // coupon back rather than charging the customer a use for a cancellation.
+    void releaseCouponUsage(orderId);
 
     // A rider is never assigned this early (PENDING/ACCEPTED, well before
     // READY_FOR_PICKUP), but release defensively rather than assume.

@@ -28,6 +28,7 @@ import {
   normalizeDynamicValues,
   normalizeSizePricing,
   getDisplayPricesFromSizePricing,
+  normalizeSizeStock,
   normalizeCuttingTypePricing,
   normalizePieceSizePricing,
   getRequiredParam,
@@ -341,14 +342,10 @@ export const addCatalogProductToStore = async (
     let resolvedStock = Number(stock ?? 0);
 
     if (trackStockPerSize && hasSizes) {
-      const stockedSizes = new Set(normalizedSizePricing.map((entry) => entry.size));
-      const submittedQtyBySize = new Map(
-        (sizeStock ?? []).map((entry) => [entry.size, entry.qty]),
+      normalizedSizeStock = normalizeSizeStock(
+        sizeStock,
+        normalizedSizePricing.map((entry) => entry.size),
       );
-      normalizedSizeStock = [...stockedSizes].map((size) => ({
-        size,
-        qty: Math.max(0, Math.floor(Number(submittedQtyBySize.get(size)) || 0)),
-      }));
       if (normalizedSizeStock.every((entry) => entry.qty <= 0)) {
         return next(
           new ValidationError("Add stock for at least one size."),
@@ -437,10 +434,25 @@ export const getOwnedProducts = async (
     // the zero-price/zero-stock catalog roots.
     const scope = req.query.scope as string | undefined;
     const storeId = req.query.storeId as string | undefined;
-    const filter =
+    const baseFilter =
       req.role === "admin" && scope === "store"
         ? { storeId: storeId || { not: null }, isDeleted: false }
         : getOwnedProductFilter(req);
+
+    // Searching has to happen here rather than in the client: the list is
+    // paged, so a filter applied to one page would silently hide matches
+    // sitting on every other page.
+    const search = (req.query.search as string | undefined)?.trim();
+    const filter = search
+      ? {
+          ...baseFilter,
+          OR: [
+            { title: { contains: search, mode: "insensitive" as const } },
+            { slug: { contains: search, mode: "insensitive" as const } },
+            { category: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : baseFilter;
 
     const [products, total] = await Promise.all([
       prisma.products.findMany({
@@ -572,6 +584,7 @@ export const updateProduct = async (
         sizes: true,
         cuttingTypes: true,
         pieceSizes: true,
+        trackStockPerSize: true,
       },
     });
 
@@ -593,6 +606,7 @@ export const updateProduct = async (
       sale_price,
       regular_price,
       sizePricing,
+      sizeStock,
       cuttingTypePricing,
       pieceSizePricing,
       slug,
@@ -719,6 +733,20 @@ export const updateProduct = async (
           updateData.regular_price = Number(regular_price);
       }
 
+      // Per-size stock — only meaningful on products the catalog flagged
+      // trackStockPerSize for. Flat `stock` becomes the sum across sizes so
+      // every existing "in stock"/sort-by-stock read keeps working, same as
+      // on creation.
+      if (
+        product.trackStockPerSize &&
+        Array.isArray(sizeStock) &&
+        effectiveSizes.length > 0
+      ) {
+        const nSizeStock = normalizeSizeStock(sizeStock, effectiveSizes as string[]);
+        updateData.sizeStock = nSizeStock;
+        updateData.stock = nSizeStock.reduce((sum, entry) => sum + entry.qty, 0);
+      }
+
       // basePricePerKg — per-KG pricing mode (used when no sizes are configured)
       if (typeof basePricePerKgRaw === "number" && basePricePerKgRaw > 0) {
         updateData.basePricePerKg = basePricePerKgRaw;
@@ -839,7 +867,13 @@ export const deleteProduct = async (
     const ownerFilter = getOwnedProductFilter(req);
     const product = await prisma.products.findUnique({
       where: { id: productId },
-      select: { id: true, storeId: true, adminId: true, isDeleted: true },
+      select: {
+        id: true,
+        storeId: true,
+        adminId: true,
+        isDeleted: true,
+        catalogProductId: true,
+      },
     });
     if (!product) return next(new NotFoundError("Product not found!"));
 
@@ -850,13 +884,30 @@ export const deleteProduct = async (
     if (product.isDeleted)
       return next(new ValidationError("Product is already in delete state!"));
 
+    const deletedAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const deletedProduct = await prisma.products.update({
       where: { id: productId },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      },
+      data: { isDeleted: true, deletedAt },
     });
+
+    // A catalog root carries its store variants with it. Leaving them behind
+    // would keep them sellable on the storefront under a deleted catalog entry,
+    // and would block the cleanup job forever — the self-relation is
+    // onDelete: NoAction, so the root cannot be purged while a variant exists.
+    if (!product.catalogProductId) {
+      const variants = await prisma.products.findMany({
+        where: { catalogProductId: productId, isDeleted: false },
+        select: { id: true },
+      });
+      if (variants.length > 0) {
+        await prisma.products.updateMany({
+          where: { id: { in: variants.map((variant) => variant.id) } },
+          data: { isDeleted: true, deletedAt },
+        });
+        variants.forEach((variant) => removeIndexedProduct(variant.id));
+      }
+    }
+
     removeIndexedProduct(productId);
     invalidateSearchCache();
     return res.status(200).json({
@@ -879,7 +930,14 @@ export const restoreProduct = async (
     const ownerFilter = getOwnedProductFilter(req);
     const product = await prisma.products.findUnique({
       where: { id: productId },
-      select: { id: true, storeId: true, adminId: true, isDeleted: true },
+      select: {
+        id: true,
+        storeId: true,
+        adminId: true,
+        isDeleted: true,
+        deletedAt: true,
+        catalogProductId: true,
+      },
     });
     if (!product) return next(new NotFoundError("Product not found!"));
 
@@ -896,6 +954,23 @@ export const restoreProduct = async (
       where: { id: productId },
       data: { isDeleted: false, deletedAt: null },
     });
+
+    // Mirror of deleteProduct: the variants that went down with the catalog root
+    // come back with it. `deletedAt` is the marker — variants soft-deleted on
+    // their own carry a different timestamp and stay deleted.
+    if (!product.catalogProductId && product.deletedAt) {
+      await prisma.products.updateMany({
+        where: {
+          catalogProductId: productId,
+          isDeleted: true,
+          deletedAt: product.deletedAt,
+        },
+        data: { isDeleted: false, deletedAt: null },
+      });
+      await reindexCatalogVariants(productId);
+      invalidateSearchCache();
+    }
+
     return res.status(200).json({
       message: "Product is restored successfully!",
       restoreProduct: restoredProduct,

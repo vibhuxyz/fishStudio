@@ -40,6 +40,11 @@ type SizePricingRow = {
   regularPrice: number;
   salePrice: number;
   stockQty: number;
+  // What the seller actually types — total weight of stock on hand for this
+  // size. stockQty (the unit count sizeStock is submitted with) is derived
+  // from it, not typed directly: a fish counter thinks in kg on the scale,
+  // not "how many 500g packs is that."
+  totalInventoryGrams: number;
 };
 
 type DiscountCode = {
@@ -77,7 +82,12 @@ const buildSizePricingRows = (sizes: string[]): SizePricingRow[] =>
     regularPrice: 0,
     salePrice: 0,
     stockQty: 0,
+    totalInventoryGrams: 0,
   }));
+
+// Whole units only — a pack can't be sold as a fraction of itself.
+const deriveStockQty = (weightGrams: number, totalInventoryGrams: number) =>
+  weightGrams > 0 ? Math.floor(totalInventoryGrams / weightGrams) : 0;
 
 
 const fetchCatalogProducts = async (): Promise<CatalogProduct[]> => {
@@ -459,9 +469,11 @@ const Page = () => {
                             value={entry.weightGrams ?? 0}
                             onChange={(event) => {
                               const nextRows = [...selectedSizePricing];
+                              const weightGrams = Number(event.target.value || 0);
                               nextRows[index] = {
                                 ...entry,
-                                weightGrams: Number(event.target.value || 0),
+                                weightGrams,
+                                stockQty: deriveStockQty(weightGrams, entry.totalInventoryGrams),
                               };
                               setValue("sizePricing", nextRows, { shouldDirty: true });
                             }}
@@ -507,22 +519,27 @@ const Page = () => {
                         {selectedProduct.trackStockPerSize && (
                           <div>
                             <label className="mb-1 block text-xs text-slate-400">
-                              Stock (units)
+                              Total Inventory (g)
                             </label>
                             <input
                               type="number"
                               min="0"
-                              value={entry.stockQty ?? 0}
+                              value={entry.totalInventoryGrams ?? 0}
                               onChange={(event) => {
                                 const nextRows = [...selectedSizePricing];
+                                const totalInventoryGrams = Number(event.target.value || 0);
                                 nextRows[index] = {
                                   ...entry,
-                                  stockQty: Number(event.target.value || 0),
+                                  totalInventoryGrams,
+                                  stockQty: deriveStockQty(entry.weightGrams, totalInventoryGrams),
                                 };
                                 setValue("sizePricing", nextRows, { shouldDirty: true });
                               }}
                               className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
                             />
+                            <p className="mt-1 text-xs text-slate-500">
+                              = {entry.stockQty} unit{entry.stockQty === 1 ? "" : "s"} at {entry.weightGrams || 0}g each
+                            </p>
                           </div>
                         )}
                       </div>

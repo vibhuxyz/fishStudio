@@ -3,3 +3,15 @@
 @theme {
   --font-sans: "Poppins", var(--font-poppins), sans-serif;
 }
+
+/* tailwindcss-animate isn't installed, so the `animate-in` utilities other
+   components reach for are inert. The order drawer needs a real slide. */
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-from-right 0.2s ease-out;
+}

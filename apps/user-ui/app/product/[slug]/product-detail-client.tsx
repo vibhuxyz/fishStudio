@@ -45,15 +45,22 @@ const BLUR_DATA =
 interface Props {
   product: Product;
   coupon?: any;
-  relatedProducts?: Product[];
+  frequentlyBoughtTogether?: Product[];
 }
 
-export function ProductDetailClient({ product, coupon, relatedProducts = [] }: Props) {
+export function ProductDetailClient({
+  product,
+  coupon,
+  frequentlyBoughtTogether = [],
+}: Props) {
   const modals = useModals();
   const selectedLocation = useAddressStore((s) => s.selectedLocation);
   const { user } = useAuth();
   const [resolvedProduct, setResolvedProduct] = useState(product);
   const [resolvedCoupon, setResolvedCoupon] = useState(coupon);
+  // Re-resolved with the product below, because which co-purchased items are
+  // actually sellable depends on the store serving the selected location.
+  const [resolvedBundle, setResolvedBundle] = useState(frequentlyBoughtTogether);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -191,6 +198,7 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
         if (cancelled || !data.product) return;
         setResolvedProduct(data.product);
         setResolvedCoupon(data.coupon || null);
+        setResolvedBundle(data.frequentlyBoughtTogether);
       })
       .catch(() => {});
 
@@ -301,10 +309,13 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
     }
   };
 
-  // "Frequently Bought Together" — the main product plus its top two related
-  // items. These don't have a variant picker on this page, so they're added
-  // at their default cutting type / piece size / size.
-  const bundleItems = relatedProducts.slice(0, 2);
+  // "Frequently Bought Together" — the main product plus the two products most
+  // often ordered alongside it (co-purchase stats, computed server-side). Empty
+  // until enough delivered orders back this product, and the block is hidden
+  // rather than padded out with category filler. These items don't have a
+  // variant picker on this page, so they're added at their default cutting
+  // type / piece size / size.
+  const bundleItems = resolvedBundle.slice(0, 2);
   const bundleAllItems = bundleItems.length > 0 ? [resolvedProduct, ...bundleItems] : [];
   const bundleSelectedItems = bundleAllItems.filter((item) => !removedBundleIds.has(item.id));
   const bundleTotal = bundleSelectedItems.reduce((sum, item) => sum + item.price, 0);
@@ -564,6 +575,30 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
                         : ""
                   }`}
                 >
+                  {/* Fish Size Dropdown */}
+                  {resolvedProduct.sizes && resolvedProduct.sizes.length > 0 && (
+                    <div>
+                      <label className="text-sm font-medium text-foreground">
+                        Fish / Pack Size
+                      </label>
+                      <Select
+                        value={selectedSize}
+                        onValueChange={setSelectedSize}
+                      >
+                        <SelectTrigger className="mt-1.5">
+                          <SelectValue placeholder="Select size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {normalizedPricing.map((sizePricing) => (
+                            <SelectItem key={sizePricing.size} value={sizePricing.size}>
+                              {sizePricing.size}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Cutting Type Dropdown */}
                   {resolvedProduct.cuttingTypes && resolvedProduct.cuttingTypes.length > 0 && (
                     <div>
@@ -605,29 +640,6 @@ export function ProductDetailClient({ product, coupon, relatedProducts = [] }: P
                           {resolvedProduct.pieceSizes.map((ps) => (
                             <SelectItem key={ps} value={ps}>
                               {ps}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  {/* Fish Size Dropdown */}
-                  {resolvedProduct.sizes && resolvedProduct.sizes.length > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-foreground">
-                        Fish / Pack Size
-                      </label>
-                      <Select
-                        value={selectedSize}
-                        onValueChange={setSelectedSize}
-                      >
-                        <SelectTrigger className="mt-1.5">
-                          <SelectValue placeholder="Select size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {normalizedPricing.map((sizePricing) => (
-                            <SelectItem key={sizePricing.size} value={sizePricing.size}>
-                              {sizePricing.size}
                             </SelectItem>
                           ))}
                         </SelectContent>

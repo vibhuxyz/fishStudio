@@ -1,3 +1,5 @@
+import type { PaymentTone } from "@repo/shared/payment-state";
+
 export interface SelectedOptions {
   cuttingType?: string;
   pieceSize?: string;
@@ -93,9 +95,15 @@ export const STATUS_CONFIG: Record<
   CANCELLED: { bg: "#F3F4F6", text: "#6B7280", icon: "ban-outline",              label: "Cancelled", description: "Your order has been cancelled" },
 };
 
-export const PAYMENT_STATUS_CONFIG: Record<string, { bg: string; text: string }> = {
-  COMPLETED: { bg: "#D1FAE5", text: "#059669" },
-  PENDING:   { bg: "#FEF3C7", text: "#D97706" },
-  FAILED:    { bg: "#FEE2E2", text: "#DC2626" },
-  REFUNDED:  { bg: "#EDE9FE", text: "#5A2C96" },
+// Mobile's palette for the shared payment vocabulary in
+// @repo/shared/payment-state. Keyed by semantic tone rather than by the raw
+// PaymentStatus enum, because "PENDING" alone cannot say whether cash is due
+// or nobody ever paid — the resolver decides that, this only colours it.
+export const PAYMENT_TONE_COLORS: Record<PaymentTone, { bg: string; text: string }> = {
+  paid:     { bg: "#D1FAE5", text: "#059669" },
+  due:      { bg: "#FEF3C7", text: "#D97706" },
+  pending:  { bg: "#FFEDD5", text: "#C2410C" },
+  refunded: { bg: "#EDE9FE", text: "#5A2C96" },
+  dead:     { bg: "#F1F5F9", text: "#64748B" },
+  danger:   { bg: "#FEE2E2", text: "#DC2626" },
 };

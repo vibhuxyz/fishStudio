@@ -14,6 +14,8 @@ export interface RankableCoupon {
   discountType: "percent" | "flat" | "free_delivery";
   discountValue: number;
   minOrderValue: number;
+  /** Ceiling on rupees off for a percent coupon — undefined/null means uncapped. */
+  maxDiscountAmount?: number | null;
 }
 
 export interface CouponRankingInput {
@@ -35,7 +37,10 @@ export const couponSaving = (
   if (coupon.discountType === "free_delivery") return deliveryCharge;
   if (coupon.discountType === "flat")
     return Math.min(coupon.discountValue, subtotal);
-  return Math.round((subtotal * coupon.discountValue) / 100);
+  const percentSaving = Math.round((subtotal * coupon.discountValue) / 100);
+  return coupon.maxDiscountAmount != null
+    ? Math.min(percentSaving, coupon.maxDiscountAmount)
+    : percentSaving;
 };
 
 export const isCouponEligible = (
@@ -97,3 +102,22 @@ export const bestCoupon = <T extends RankableCoupon>(
   const best = rankCoupons(coupons, input)[0];
   return best && best.eligible ? best : null;
 };
+
+/**
+ * Order statuses that count as "this customer has ordered before".
+ *
+ * Only relevant to first-order coupons, and it has to mean the same thing in
+ * all three places that ask the question — the offer list, /validate-coupon,
+ * and the order transaction — or a coupon shown as available gets refused at
+ * checkout. PENDING is excluded on purpose: an order the store never accepted
+ * should not burn the customer's one welcome offer. CANCELLED and REJECTED
+ * are excluded for the same reason.
+ */
+export const PLACED_ORDER_STATUSES = [
+  "ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "ASSIGNED_TO_RIDER",
+  "SHIPPED",
+  "DELIVERED",
+] as const;

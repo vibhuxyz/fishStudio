@@ -2,9 +2,12 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { prismaPostgres } from "@repo/db-postgres";
 import { NotFoundError } from "@repo/error-handlers";
-import { isCatalogRootProduct, getRequiredParam } from "./utils.js";
+import { isCatalogRootProduct, getRequiredParam, type AuthRequest } from "./utils.js";
 import { computeBadges } from "./badges.js";
+import { fetchFrequentlyBoughtTogether } from "./co-purchase.js";
 import { cached } from "@repo/libs/cache";
+import { logger } from "@repo/libs/logger";
+import { PLACED_ORDER_STATUSES } from "@repo/shared/pricing";
 import {
   parseStorefrontLimit,
   parseStorefrontPage,
@@ -30,41 +33,121 @@ interface StorefrontListingPayload {
     hasMore: boolean;
     nextCursor: string | null;
   };
+  // How many products sit under each subcategory of the requested category,
+  // counted across the whole category rather than the returned page. Only
+  // present when a category was asked for.
+  subCategoryCounts?: Record<string, number>;
+  // The same facet's grand total, including products with no subcategory —
+  // what the sidebar's "All" row should read.
+  categoryTotal?: number;
 }
 
 interface StorefrontProductPayload {
   success: true;
   product: Record<string, unknown>;
   relatedProducts: Record<string, unknown>[];
+  frequentlyBoughtTogether: Record<string, unknown>[];
   coupon: unknown;
   store: Record<string, unknown> | null;
 }
 
-type CouponLike = { id: string; maxUsesPerUser: number };
+/** The fields coupon eligibility is decided from; a full discount_codes row satisfies it. */
+interface CouponEligibilityFields {
+  id: string;
+  maxUses: number | null;
+  maxUsesPerUser: number;
+  isFirstOrder: boolean;
+  sellerId: string | null;
+}
 
-// Removes coupons a specific user has already used up to their per-user
-// limit. Shared by getStoreProductBySlug (single product coupon) and
-// getStorePublicOffers (store-wide offer list) — both need the same
-// Postgres usage lookup, just against different candidate lists.
-async function filterByPerUserUsage<T extends CouponLike>(
+interface CouponAudience {
+  /** The signed-in shopper, or null when browsing anonymously. */
+  userId: string | null;
+  /** Which store the offers are being listed for; scopes the first-order check. */
+  storeId: string | null;
+}
+
+/**
+ * Narrows a candidate list to the coupons this shopper can actually redeem now.
+ *
+ * Three separate rules, all of which the checkout would enforce anyway — the
+ * point of applying them here is that a coupon a shopper can never use should
+ * not appear in their offer list at all:
+ *
+ *  - global cap: counted from Postgres CouponUsage, never from the Mongo
+ *    `usedCount` mirror. That mirror is incremented best-effort after commit
+ *    and never decremented, so it drifts; CouponUsage is what the order
+ *    transaction actually writes and re-checks.
+ *  - per-user cap: how many times this shopper has already redeemed it.
+ *  - first order: a store's coupon means first order at that store; a
+ *    platform-wide coupon (no seller) means first order anywhere.
+ *
+ * Anonymous shoppers skip the last two — there is no one to check them
+ * against, and checkout will ask again once they log in.
+ */
+async function filterRedeemableCoupons<T extends CouponEligibilityFields>(
   codes: T[],
-  userId: string,
+  { userId, storeId }: CouponAudience,
 ): Promise<T[]> {
+  if (codes.length === 0) return codes;
+
+  const couponIds = codes.map((c) => c.id);
+  const needsGlobalCount = codes.some((c) => c.maxUses !== null);
+  const needsFirstOrderCheck = userId !== null && codes.some((c) => c.isFirstOrder);
+
   try {
-    const usages = await prismaPostgres.couponUsage.groupBy({
-      by: ["couponId"],
-      where: { userId, couponId: { in: codes.map((c) => c.id) } },
-      _count: { couponId: true },
-    });
-    const usageMap = new Map<string, number>(
-      usages.map((u) => [u.couponId, u._count.couponId]),
-    );
+    const [globalUsages, userUsages, placedOrders] = await Promise.all([
+      needsGlobalCount
+        ? prismaPostgres.couponUsage.groupBy({
+            by: ["couponId"],
+            where: { couponId: { in: couponIds } },
+            _count: { couponId: true },
+          })
+        : Promise.resolve([]),
+      userId
+        ? prismaPostgres.couponUsage.groupBy({
+            by: ["couponId"],
+            where: { userId, couponId: { in: couponIds } },
+            _count: { couponId: true },
+          })
+        : Promise.resolve([]),
+      needsFirstOrderCheck && userId
+        ? prismaPostgres.order.groupBy({
+            by: ["storeId"],
+            where: { userId, status: { in: [...PLACED_ORDER_STATUSES] } },
+            _count: { storeId: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const globalCount = new Map(globalUsages.map((u) => [u.couponId, u._count.couponId]));
+    const userCount = new Map(userUsages.map((u) => [u.couponId, u._count.couponId]));
+
+    // One groupBy answers both first-order questions: the total is the
+    // platform-wide count, and this store's bucket is the store-level one.
+    const platformOrderCount = placedOrders.reduce((sum, row) => sum + row._count.storeId, 0);
+    const storeOrderCount = storeId
+      ? (placedOrders.find((row) => row.storeId === storeId)?._count.storeId ?? 0)
+      : 0;
+
     return codes.filter((c) => {
-      const used = usageMap.get(c.id) ?? 0;
-      return used < (c.maxUsesPerUser ?? 1);
+      if (c.maxUses !== null && (globalCount.get(c.id) ?? 0) >= c.maxUses) return false;
+      if (userId && (userCount.get(c.id) ?? 0) >= c.maxUsesPerUser) return false;
+      if (c.isFirstOrder && userId) {
+        const priorOrders = c.sellerId === null ? platformOrderCount : storeOrderCount;
+        if (priorOrders > 0) return false;
+      }
+      return true;
     });
-  } catch {
-    // Non-fatal: if Postgres is unavailable, fall back to showing all eligible codes
+  } catch (error) {
+    // Non-fatal: Postgres being down must not empty the storefront's offer
+    // strip. Checkout still enforces every one of these rules, so the worst
+    // case is a shopper being told at apply time that a code is spent.
+    logger.warn("Coupon eligibility filter fell back to unfiltered list", {
+      storeId,
+      couponIds,
+      error,
+    });
     return codes;
   }
 }
@@ -161,7 +244,19 @@ export const getStoreProducts = async (
       // still return a full page even after dropping non-root entries.
       const windowSize = Math.min(Math.max(limit * 3, 60), limit + 80);
 
-      const [total, catalogWindowRaw] = await Promise.all([
+      // Counted over the category with the subcategory filter left off: a
+      // sidebar built from the returned page would zero out every option the
+      // moment one of them is selected, since the page then only contains that
+      // one subcategory.
+      const subCategoryCountsPromise = normalizedCategory
+        ? prisma.products.groupBy({
+            by: ["subCategory"],
+            where: { adminId: { not: null }, isDeleted: false, ...categoryFilter },
+            _count: { _all: true },
+          })
+        : Promise.resolve(null);
+
+      const [total, catalogWindowRaw, subCategoryGroups] = await Promise.all([
         prisma.products.count({ where: catalogWhere }),
         cursor
           ? prisma.products.findMany({
@@ -179,7 +274,19 @@ export const getStoreProducts = async (
               skip,
               take: windowSize,
             }),
+        subCategoryCountsPromise,
       ]);
+
+      const subCategoryCounts = subCategoryGroups
+        ? Object.fromEntries(
+            subCategoryGroups
+              .filter((group) => Boolean(group.subCategory))
+              .map((group) => [group.subCategory as string, group._count._all]),
+          )
+        : undefined;
+      const categoryTotal = subCategoryGroups
+        ? subCategoryGroups.reduce((sum, group) => sum + group._count._all, 0)
+        : undefined;
       // Peel off the sentinel row before processing — it only exists to tell us
       // whether another window is available after this one.
       const hasNextWindow = cursor ? catalogWindowRaw.length > windowSize : false;
@@ -283,6 +390,7 @@ export const getStoreProducts = async (
           hasMore,
           nextCursor,
         },
+        ...(subCategoryCounts ? { subCategoryCounts, categoryTotal } : {}),
       };
 
       return payload;
@@ -375,6 +483,13 @@ export const getStoreProductBySlug = async (
       preferredStore,
     );
 
+    // Started here rather than awaited inline below: it hits Postgres and Mongo
+    // and shares nothing with the related-products chain, so the two overlap.
+    const frequentlyBoughtTogetherPromise = fetchFrequentlyBoughtTogether(
+      catalogProduct.id,
+      preferredStore,
+    );
+
     const relatedCatalogsRaw = await prisma.products.findMany({
       where: {
         adminId: { not: null },
@@ -422,9 +537,13 @@ export const getStoreProductBySlug = async (
       ),
     );
 
+    // Observed co-purchases, which is a different question from the
+    // same-category list above and routinely returns nothing — the block is
+    // hidden until enough delivered orders back it.
+    const frequentlyBoughtTogether = await frequentlyBoughtTogetherPromise;
+
     const discountIds = (product as any).discount_codes || [];
     const nowLocal = new Date();
-    const userId = req.query.userId as string | undefined;
 
     let coupon: any = null;
     if (discountIds.length > 0) {
@@ -437,15 +556,15 @@ export const getStoreProductBySlug = async (
         orderBy: { createdAt: "desc" },
       });
 
-      // Filter out globally exhausted coupons
-      let eligible = candidates.filter(
-        (c) => c.maxUses === null || c.usedCount < c.maxUses,
-      );
-
-      // Filter out coupons this specific user has already fully used
-      if (userId && eligible.length > 0) {
-        eligible = await filterByPerUserUsage(eligible, userId);
-      }
+      // Store-wide rules only. This response is cached under a key with no
+      // shopper in it (see cacheKey above), so filtering by who is asking
+      // would serve one shopper's answer to everybody. Per-user limits and
+      // first-order eligibility are applied by the offer sheet and enforced
+      // again at checkout — both of which are per-request.
+      const eligible = await filterRedeemableCoupons(candidates, {
+        userId: null,
+        storeId: preferredStore?.id ?? null,
+      });
 
       coupon = eligible[0] ?? null;
     }
@@ -454,11 +573,15 @@ export const getStoreProductBySlug = async (
     for (const rp of relatedProducts as any[]) {
       rp.badges = computeBadges(rp);
     }
+    for (const fbt of frequentlyBoughtTogether as any[]) {
+      fbt.badges = computeBadges(fbt);
+    }
 
     const payload = {
       success: true,
       product,
       relatedProducts,
+      frequentlyBoughtTogether,
       coupon,
       store: preferredStore,
     };
@@ -489,11 +612,20 @@ export const getStorePublicOffers = async (
     if (!store)
       return res.status(200).json({ success: true, coupons: [], events: [] });
     const now = new Date();
-    const userId = req.query.userId as string | undefined;
+    // From the session, never `req.query.userId` — that let anyone list a
+    // stranger's personally-issued reward codes by guessing their id.
+    const userId = (req as AuthRequest).user?.id ?? null;
 
     const [discountCodes, activeEvents] = await Promise.all([
       prisma.discount_codes.findMany({
-        where: { sellerId: store.sellerId },
+        // This store's own coupons, plus any platform-wide one (no seller of
+        // its own). Admin-created coupons normally carry the sellerId the
+        // admin picked at creation, so they land in the first branch.
+        where: {
+          isActive: true,
+          OR: [{ sellerId: store.sellerId }, { sellerId: null }],
+          AND: [{ OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] }],
+        },
         orderBy: { createdAt: "desc" },
       }),
       prisma.seller_events.findMany({
@@ -507,22 +639,15 @@ export const getStorePublicOffers = async (
       }),
     ]);
 
-    // Filter: inactive, expired, or globally exhausted coupons are never shown.
-    // Personally-issued coupons (referral rewards, etc.) are also hidden from
-    // everyone except the account they were generated for.
-    let validCodes = discountCodes.filter((dc) => {
-      if (!dc.isActive) return false;
-      if (dc.expiresAt && new Date(dc.expiresAt) <= now) return false;
-      if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) return false;
-      if (dc.restrictedToUserId && dc.restrictedToUserId !== userId) return false;
-      return true;
-    });
+    // Personally-issued coupons (referral rewards, etc.) are hidden from
+    // everyone except the account they were generated for. Active/expiry are
+    // already handled by the query above; the caps and first-order rules run
+    // against the signed-in shopper below.
+    const ownCodes = discountCodes.filter(
+      (dc) => !dc.restrictedToUserId || dc.restrictedToUserId === userId,
+    );
 
-    // If the caller is a logged-in user, additionally filter out coupons this
-    // specific user has already used up to their per-user limit.
-    if (userId && validCodes.length > 0) {
-      validCodes = await filterByPerUserUsage(validCodes, userId);
-    }
+    const validCodes = await filterRedeemableCoupons(ownCodes, { userId, storeId });
 
     return res
       .status(200)

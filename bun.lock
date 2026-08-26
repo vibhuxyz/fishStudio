@@ -423,6 +423,7 @@
         "@repo/shared": "workspace:*",
         "@repo/zod-schema": "workspace:*",
         "@tanstack/react-query": "^5.62.0",
+        "@types/google.maps": "^3.58.1",
         "@types/leaflet": "^1.9.21",
         "autoprefixer": "^10.4.20",
         "axios": "^1.13.5",
@@ -582,6 +583,7 @@
       "devDependencies": {
         "@repo/typescript-config": "workspace:*",
         "tsup": "^8.5.0",
+        "tsx": "^4.7.2",
         "typescript": "^5",
       },
     },
@@ -1602,6 +1604,8 @@
     "@types/geojson": ["@types/geojson@7946.0.16", "", {}, "sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg=="],
 
     "@types/geojson-vt": ["@types/geojson-vt@3.2.5", "", { "dependencies": { "@types/geojson": "*" } }, "sha512-qDO7wqtprzlpe8FfQ//ClPV9xiuoh2nkIgiouIptON9w5jvD/fA4szvP9GBlDVdJ5dldAl0kX/sy3URbWwLx0g=="],
+
+    "@types/google.maps": ["@types/google.maps@3.65.5", "", {}, "sha512-oR9Hq/WaKGzIguZEwoCuyQ0ofDhCbefmS9RrjLUZ5scMziwTE6xA90drJYt2ZsyUCYmCqnxQcDpfGqeRE/Zgog=="],
 
     "@types/graceful-fs": ["@types/graceful-fs@4.1.9", "", { "dependencies": { "@types/node": "*" } }, "sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ=="],
 

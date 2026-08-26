@@ -6,6 +6,7 @@ import {
   pruneSettledEvents,
   pruneSettledStockReservations,
 } from "./jobs/outbox-retention.job.js";
+import { aggregateCoPurchases } from "./jobs/co-purchase.job.js";
 
 export class CronManager {
   private static instance: CronManager;
@@ -62,6 +63,13 @@ export class CronManager {
         pruneSettledEvents(),
         pruneSettledStockReservations(),
       ]);
+    });
+
+    // 5. Co-purchase aggregation for Frequently Bought Together (daily, 03:45).
+    // After the retention prune so the two heavy nightly passes don't overlap.
+    this.schedule("45 3 * * *", async () => {
+      console.log("[CRON] Aggregating co-purchase statistics...");
+      await aggregateCoPurchases();
     });
 
     console.log(`Registered ${this.jobs.length} cron job(s).`);

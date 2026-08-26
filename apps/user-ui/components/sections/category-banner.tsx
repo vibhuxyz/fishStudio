@@ -54,7 +54,10 @@ export function CategoryBanner({ category }: { category: string }) {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="h-full w-full"
+          // `relative` is load-bearing: the Image below is `fill`, which
+          // positions against its nearest positioned ancestor. Without it the
+          // slide is static and the image resolves against the outer box.
+          className="relative h-full w-full"
         >
           <Image
             src={banners[currentIndex]?.imageUrl}

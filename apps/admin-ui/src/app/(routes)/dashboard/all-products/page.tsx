@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
-  getFilteredRowModel,
   flexRender,
 } from "@tanstack/react-table";
 import { Eye, Plus, BarChart, Pencil, RotateCcw, Star, Trash, RefreshCw } from "lucide-react";
@@ -28,10 +27,14 @@ import {
 import { frontendEnv } from "@/config/env";
 import axiosInstance from "@/utils/axiosInstance";
 
+const PAGE_SIZE = 20;
+
 const ProductList = () => {
   const [analyticsData, setAnalyticsData] = useState<AdminProduct | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProduct | null>(null);
@@ -64,10 +67,24 @@ const ProductList = () => {
     }
   };
 
-  const { data: products = [], isLoading } = useAdminProducts({
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(globalFilter.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [globalFilter]);
+
+  const { data, isLoading, isFetching } = useAdminProducts({
     scope: productScope,
     storeId: productScope === "store" ? storeFilter || undefined : undefined,
+    search: searchTerm || undefined,
+    page,
+    limit: PAGE_SIZE,
   });
+  const products = data?.products ?? [];
+  const pagination = data?.pagination;
+  const isCatalogScope = productScope === "catalog";
 
   const deleteMutation = useMutation({
     mutationFn: deleteAdminProduct,
@@ -151,7 +168,7 @@ const ProductList = () => {
         accessorKey: "category",
         header: "Category",
       },
-      ...(productScope === "store"
+      ...(!isCatalogScope
         ? [
             {
               accessorKey: "store",
@@ -206,7 +223,7 @@ const ProductList = () => {
             </button>
             {/* Store products are owned by the seller — this page's edit/delete
                 mutations only authorize against admin-owned catalog products. */}
-            {productScope === "catalog" && (
+            {isCatalogScope && (
               <>
                 <button
                   className="text-purple-400 hover:text-purple-300 transition"
@@ -240,24 +257,24 @@ const ProductList = () => {
         ),
       },
     ],
-    [productScope],
+    [isCatalogScope],
   );
 
   const table = useReactTable({
     data: products,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    globalFilterFn: "includesString",
-    state: { globalFilter },
-    onGlobalFilterChange: setGlobalFilter,
   });
 
   return (
     <DashboardPageShell
-      title="All Products"
-      breadcrumbTitle="All Products"
-      description="Products, analytics, and destructive actions now share one source of truth for cache invalidation."
+      title={isCatalogScope ? "Catalog Products" : "Store Products"}
+      breadcrumbTitle={isCatalogScope ? "Catalog Products" : "Store Products"}
+      description={
+        isCatalogScope
+          ? "The master catalog every seller adopts from. Editing one here updates it for every store that already sells it."
+          : "The live listings sellers sell from. Pricing, stock and availability belong to the seller who owns them."
+      }
       action={
         <div className="flex items-center gap-2">
           <button
@@ -280,13 +297,16 @@ const ProductList = () => {
       search={{
         value: globalFilter,
         onChange: setGlobalFilter,
-        placeholder: "Search products...",
+        placeholder: "Search by name, slug or category...",
       }}
     >
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="flex bg-gray-900 rounded-lg p-1 gap-1">
           <button
-            onClick={() => setProductScope("catalog")}
+            onClick={() => {
+              setProductScope("catalog");
+              setPage(1);
+            }}
             className={`px-3 py-1.5 rounded-md text-sm transition ${
               productScope === "catalog"
                 ? "bg-blue-600 text-white"
@@ -296,7 +316,10 @@ const ProductList = () => {
             Catalog Products
           </button>
           <button
-            onClick={() => setProductScope("store")}
+            onClick={() => {
+              setProductScope("store");
+              setPage(1);
+            }}
             className={`px-3 py-1.5 rounded-md text-sm transition ${
               productScope === "store"
                 ? "bg-blue-600 text-white"
@@ -310,7 +333,10 @@ const ProductList = () => {
         {productScope === "store" && (
           <select
             value={storeFilter}
-            onChange={(event) => setStoreFilter(event.target.value)}
+            onChange={(event) => {
+              setStoreFilter(event.target.value);
+              setPage(1);
+            }}
             className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white"
           >
             <option value="">All Stores</option>
@@ -362,7 +388,43 @@ const ProductList = () => {
         )}
 
         {!isLoading && products.length === 0 && (
-          <p className="text-center py-3 text-white">No products found.</p>
+          <p className="text-center py-3 text-white">
+            {searchTerm
+              ? `No products match “${searchTerm}”.`
+              : "No products found."}
+          </p>
+        )}
+
+        {pagination && pagination.total > 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-800 pt-4 text-sm text-gray-400">
+            <span>
+              Showing {(pagination.page - 1) * pagination.limit + 1}–
+              {(pagination.page - 1) * pagination.limit + products.length} of{" "}
+              {pagination.total}
+              {isFetching && <span className="ml-2 text-gray-500">updating…</span>}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={!pagination.hasPrevPage || isFetching}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                className="rounded-lg bg-gray-800 px-3 py-1.5 text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <span className="font-medium text-white">
+                {pagination.page} / {Math.max(1, pagination.totalPages)}
+              </span>
+              <button
+                type="button"
+                disabled={!pagination.hasNextPage || isFetching}
+                onClick={() => setPage((current) => current + 1)}
+                className="rounded-lg bg-gray-800 px-3 py-1.5 text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         )}
 
         {showAnalytics && analyticsData && (

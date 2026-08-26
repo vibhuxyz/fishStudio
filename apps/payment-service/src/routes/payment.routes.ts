@@ -4,6 +4,7 @@ import {
   verifyPayment,
   handleWebhook,
   initiateRefund,
+  recheckPayment,
   listPaymentsNeedingAttention,
 } from "../controllers/payment.controller.js";
 import { isAuthenticated, allowRoles, isAdmin, isAdminOrApprovedSeller } from "@repo/middlewares";
@@ -25,6 +26,9 @@ router.post("/webhook", handleWebhook);
 // Ops-only: no UI calls this yet, it's driven directly against the API.
 // Full-amount refunds only; partial refunds are not supported.
 router.post("/refund", isAuthenticated, isAdminOrApprovedSeller, initiateRefund);
+
+// ── Admin/Seller: force a fresh payment-status check against the gateway ──
+router.get("/recheck-payment/:orderId", isAuthenticated, isAdminOrApprovedSeller, recheckPayment);
 
 // ── Admin: payments the automated paths could not settle ──────────────────
 router.get("/admin/attention", isAuthenticated, isAdmin, listPaymentsNeedingAttention);

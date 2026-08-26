@@ -80,6 +80,18 @@ export function useCartCheckoutSummary() {
     [availableCoupons, subtotal, baseDeliveryCharge],
   );
 
+  // Removing an item can drop the cart below an applied coupon's minimum —
+  // getTotalDiscount then silently returns 0 while the chip still says the
+  // coupon is applied. Mobile's cart already does this; the web bill didn't.
+  useEffect(() => {
+    const applied = appliedCoupons[0];
+    if (!applied || subtotal >= applied.minOrderValue) return;
+    removeCoupon(applied.code);
+    toast.info(
+      `${applied.code} removed — order no longer meets its ₹${applied.minOrderValue} minimum`,
+    );
+  }, [subtotal]);
+
   // Auto-resolve storeId from address pincode when selectedLocation is not set
   useEffect(() => {
     if (selectedLocation?.storeId) return;

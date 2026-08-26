@@ -8,6 +8,8 @@ export type Coupon = {
   description: string;
   discountType: "percent" | "flat" | "free_delivery";
   discountValue: number;
+  /** Ceiling on rupees off for a percent coupon; null/undefined means uncapped. */
+  maxDiscountAmount?: number | null;
   minOrderValue: number;
   badge?: string;
   isEvent?: boolean;
@@ -15,7 +17,6 @@ export type Coupon = {
   eventId?: string;
   expiresAt?: string | null;
   maxUses?: number | null;
-  usedCount?: number;
 };
 
 interface CouponState {
@@ -48,11 +49,12 @@ export const useCouponStore = create<CouponState>()(
         set({ isLoadingCoupons: true });
 
         try {
+          // `userId` is not sent — the endpoint reads the shopper from the
+          // bearer token instead, so nobody can ask for a stranger's
+          // personalised offers. It stays in the signature because it's what
+          // makes the caller refetch when the shopper logs in or out.
           const { data } = await axiosInstance.get(
             `/product/api/public/store-offers/${storeId}`,
-            {
-              params: userId ? { userId } : undefined,
-            },
           );
 
           if (!data.success) {
@@ -60,15 +62,13 @@ export const useCouponStore = create<CouponState>()(
             return;
           }
 
-          const now = new Date();
           const coupons: Coupon[] = [];
 
           if (Array.isArray(data.discountCodes)) {
             for (const dc of data.discountCodes) {
-              if (!dc.isActive) continue;
-              if (dc.expiresAt && new Date(dc.expiresAt) <= now) continue;
-              if (dc.maxUses !== null && dc.usedCount >= dc.maxUses) continue;
-
+              // Active, expiry, usage caps and first-order eligibility are all
+              // decided server-side now — it counts real redemptions, which the
+              // `usedCount` mirror this used to filter on does not track.
               coupons.push({
                 code: dc.discountCode,
                 description: dc.public_name,
@@ -79,10 +79,11 @@ export const useCouponStore = create<CouponState>()(
                       ? "free_delivery"
                       : "flat",
                 discountValue: Number(dc.discountValue),
+                maxDiscountAmount:
+                  dc.maxDiscountAmount != null ? Number(dc.maxDiscountAmount) : null,
                 minOrderValue: Number(dc.minOrderValue ?? 0),
                 expiresAt: dc.expiresAt ?? null,
                 maxUses: dc.maxUses ?? null,
-                usedCount: dc.usedCount ?? 0,
               });
             }
           }
@@ -165,6 +166,7 @@ export const useCouponStore = create<CouponState>()(
                     ? "free_delivery"
                     : "flat",
               discountValue: c.discountValue,
+              maxDiscountAmount: c.maxDiscountAmount ?? null,
               minOrderValue: c.minOrderValue,
               expiresAt: c.expiresAt ?? null,
             },
@@ -211,7 +213,13 @@ export const useCouponStore = create<CouponState>()(
         if (coupon.discountType === "flat") {
           return Math.min(coupon.discountValue, subtotal);
         }
-        return Math.round((subtotal * coupon.discountValue) / 100);
+        // The cap has to be applied here as well as on the server. Without it
+        // "20% off up to ₹100" previews ₹160 off an ₹800 cart and the bill
+        // jumps back up at the confirmation screen.
+        const percentSaving = Math.round((subtotal * coupon.discountValue) / 100);
+        return coupon.maxDiscountAmount != null
+          ? Math.min(percentSaving, coupon.maxDiscountAmount)
+          : percentSaving;
       },
 
       getTotalDiscount: (subtotal: number): number => {

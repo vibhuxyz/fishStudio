@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ENV } from "@repo/env-config";
-import { AuthError } from "@repo/error-handlers";
+import { AuthError, NotFoundError } from "@repo/error-handlers";
 import { logger } from "@repo/libs/logger";
 import {
   validate,
@@ -148,6 +148,32 @@ export const listPaymentsNeedingAttention = async (
 
 // POST /api/refund — full refund via the gateway. Admin, or approved seller
 // on their own store's orders.
+// GET /api/recheck-payment/:orderId — force a fresh check against Razorpay
+// for one order's pending payment right now, instead of waiting for the
+// reconciliation cron. Ownership (seller can only recheck their own store's
+// orders) is enforced in the service layer, same as initiateRefund.
+export const recheckPayment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const orderId = Array.isArray(req.params.orderId) ? req.params.orderId[0] : req.params.orderId;
+    if (!orderId) return next(new NotFoundError("Order not found"));
+    const actorRole = req.role === "admin" ? "admin" : "seller";
+
+    const result = await paymentService.recheckOrderPayment({
+      orderId,
+      actorRole,
+      sellerStoreId: req.seller?.store?.id,
+    });
+
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const initiateRefund = async (
   req: AuthenticatedRequest,
   res: Response,

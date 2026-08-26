@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PRIMARY = "#5A2C96";
 
@@ -45,6 +46,7 @@ export default function CouponSheet({
     getDiscountForCoupon,
     validateCouponCode,
   } = useCouponStore();
+  const insets = useSafeAreaInsets();
 
   const [couponInput, setCouponInput] = useState("");
   const [validating, setValidating] = useState(false);
@@ -121,7 +123,7 @@ export default function CouponSheet({
             borderTopLeftRadius: 40,
             borderTopRightRadius: 40,
             paddingHorizontal: 20,
-            paddingBottom: 28,
+            paddingBottom: insets.bottom + 28,
             maxHeight: "80%",
             flexShrink: 1,
           }}

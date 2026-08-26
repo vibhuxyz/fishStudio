@@ -549,3 +549,51 @@ export function computeStats(orders: any[]) {
     })),
   };
 }
+
+/**
+ * Gives a coupon back to the customer when their order does not go through.
+ *
+ * A redemption is recorded inside the order transaction, which is right — but
+ * nothing removed it again, so cancelling a ₹100-off order burnt that code
+ * forever. Every path that ends an order before it is fulfilled (customer
+ * cancel, seller reject, seller cancel, admin cancel/reject) calls this.
+ *
+ * Deleting the CouponUsage row is what makes the coupon usable again: both the
+ * per-user and the global caps are counted from that table, and the Mongo
+ * `usedCount` mirror is decremented to match so the seller dashboard doesn't
+ * keep showing a redemption that was undone.
+ *
+ * Best-effort and never throws: the order is already cancelled by the time
+ * this runs, and failing the cancel because a counter could not be rolled back
+ * would be the worse outcome. A failure leaves the customer one redemption
+ * short, which support can undo — it can never grant a discount twice.
+ */
+export async function releaseCouponUsage(orderId: string): Promise<void> {
+  try {
+    const usages = await prismaPostgres.couponUsage.findMany({
+      where: { orderId },
+      select: { id: true, couponId: true },
+    });
+    if (usages.length === 0) return;
+
+    await prismaPostgres.couponUsage.deleteMany({ where: { orderId } });
+
+    await Promise.all(
+      usages.map(({ couponId }) =>
+        prismaMongo.discount_codes.updateMany({
+          // updateMany, not update: the coupon may have been deleted since the
+          // order was placed, and a missing row must not throw here.
+          where: { id: couponId, usedCount: { gt: 0 } },
+          data: { usedCount: { decrement: 1 } },
+        }),
+      ),
+    );
+
+    logger.info("Released coupon usage for ended order", {
+      orderId,
+      couponIds: usages.map((u) => u.couponId),
+    });
+  } catch (error) {
+    logger.error("Failed to release coupon usage", { orderId, error });
+  }
+}

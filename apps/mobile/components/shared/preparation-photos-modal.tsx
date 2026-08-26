@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/constants/theme";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -25,6 +26,8 @@ interface Props {
  * customer can check the weight reading on the scale.
  */
 export default function PreparationPhotosModal({ visible, onClose, photos }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
@@ -61,7 +64,7 @@ export default function PreparationPhotosModal({ visible, onClose, photos }: Pro
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 16 + insets.bottom, gap: 12 }}>
           {photos.map((photo, idx) => (
             <Image
               key={photo.publicId ?? idx}

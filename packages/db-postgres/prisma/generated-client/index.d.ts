@@ -58,6 +58,21 @@ export type OutboxEvent = $Result.DefaultSelection<Prisma.$OutboxEventPayload>
  * 
  */
 export type StockReservation = $Result.DefaultSelection<Prisma.$StockReservationPayload>
+/**
+ * Model ProductCoPurchase
+ * 
+ */
+export type ProductCoPurchase = $Result.DefaultSelection<Prisma.$ProductCoPurchasePayload>
+/**
+ * Model ProductOrderStat
+ * 
+ */
+export type ProductOrderStat = $Result.DefaultSelection<Prisma.$ProductOrderStatPayload>
+/**
+ * Model CoPurchaseState
+ * 
+ */
+export type CoPurchaseState = $Result.DefaultSelection<Prisma.$CoPurchaseStatePayload>
 
 /**
  * Enums
@@ -82,6 +97,7 @@ export const PaymentStatus: {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
+  NOT_PAID: 'NOT_PAID',
   REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED'
 };
@@ -421,6 +437,36 @@ export class PrismaClient<
     * ```
     */
   get stockReservation(): Prisma.StockReservationDelegate<ExtArgs>;
+
+  /**
+   * `prisma.productCoPurchase`: Exposes CRUD operations for the **ProductCoPurchase** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ProductCoPurchases
+    * const productCoPurchases = await prisma.productCoPurchase.findMany()
+    * ```
+    */
+  get productCoPurchase(): Prisma.ProductCoPurchaseDelegate<ExtArgs>;
+
+  /**
+   * `prisma.productOrderStat`: Exposes CRUD operations for the **ProductOrderStat** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ProductOrderStats
+    * const productOrderStats = await prisma.productOrderStat.findMany()
+    * ```
+    */
+  get productOrderStat(): Prisma.ProductOrderStatDelegate<ExtArgs>;
+
+  /**
+   * `prisma.coPurchaseState`: Exposes CRUD operations for the **CoPurchaseState** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CoPurchaseStates
+    * const coPurchaseStates = await prisma.coPurchaseState.findMany()
+    * ```
+    */
+  get coPurchaseState(): Prisma.CoPurchaseStateDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -870,7 +916,10 @@ export namespace Prisma {
     AuditLog: 'AuditLog',
     WebhookEvent: 'WebhookEvent',
     OutboxEvent: 'OutboxEvent',
-    StockReservation: 'StockReservation'
+    StockReservation: 'StockReservation',
+    ProductCoPurchase: 'ProductCoPurchase',
+    ProductOrderStat: 'ProductOrderStat',
+    CoPurchaseState: 'CoPurchaseState'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -886,7 +935,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "order" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation"
+      modelProps: "order" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1520,6 +1569,216 @@ export namespace Prisma {
           }
         }
       }
+      ProductCoPurchase: {
+        payload: Prisma.$ProductCoPurchasePayload<ExtArgs>
+        fields: Prisma.ProductCoPurchaseFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ProductCoPurchaseFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ProductCoPurchaseFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          findFirst: {
+            args: Prisma.ProductCoPurchaseFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ProductCoPurchaseFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          findMany: {
+            args: Prisma.ProductCoPurchaseFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>[]
+          }
+          create: {
+            args: Prisma.ProductCoPurchaseCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          createMany: {
+            args: Prisma.ProductCoPurchaseCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ProductCoPurchaseCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>[]
+          }
+          delete: {
+            args: Prisma.ProductCoPurchaseDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          update: {
+            args: Prisma.ProductCoPurchaseUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          deleteMany: {
+            args: Prisma.ProductCoPurchaseDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ProductCoPurchaseUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ProductCoPurchaseUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductCoPurchasePayload>
+          }
+          aggregate: {
+            args: Prisma.ProductCoPurchaseAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateProductCoPurchase>
+          }
+          groupBy: {
+            args: Prisma.ProductCoPurchaseGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ProductCoPurchaseGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ProductCoPurchaseCountArgs<ExtArgs>
+            result: $Utils.Optional<ProductCoPurchaseCountAggregateOutputType> | number
+          }
+        }
+      }
+      ProductOrderStat: {
+        payload: Prisma.$ProductOrderStatPayload<ExtArgs>
+        fields: Prisma.ProductOrderStatFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ProductOrderStatFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ProductOrderStatFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          findFirst: {
+            args: Prisma.ProductOrderStatFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ProductOrderStatFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          findMany: {
+            args: Prisma.ProductOrderStatFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>[]
+          }
+          create: {
+            args: Prisma.ProductOrderStatCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          createMany: {
+            args: Prisma.ProductOrderStatCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ProductOrderStatCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>[]
+          }
+          delete: {
+            args: Prisma.ProductOrderStatDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          update: {
+            args: Prisma.ProductOrderStatUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          deleteMany: {
+            args: Prisma.ProductOrderStatDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ProductOrderStatUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ProductOrderStatUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ProductOrderStatPayload>
+          }
+          aggregate: {
+            args: Prisma.ProductOrderStatAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateProductOrderStat>
+          }
+          groupBy: {
+            args: Prisma.ProductOrderStatGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ProductOrderStatGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ProductOrderStatCountArgs<ExtArgs>
+            result: $Utils.Optional<ProductOrderStatCountAggregateOutputType> | number
+          }
+        }
+      }
+      CoPurchaseState: {
+        payload: Prisma.$CoPurchaseStatePayload<ExtArgs>
+        fields: Prisma.CoPurchaseStateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CoPurchaseStateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CoPurchaseStateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          findFirst: {
+            args: Prisma.CoPurchaseStateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CoPurchaseStateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          findMany: {
+            args: Prisma.CoPurchaseStateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>[]
+          }
+          create: {
+            args: Prisma.CoPurchaseStateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          createMany: {
+            args: Prisma.CoPurchaseStateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CoPurchaseStateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>[]
+          }
+          delete: {
+            args: Prisma.CoPurchaseStateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          update: {
+            args: Prisma.CoPurchaseStateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          deleteMany: {
+            args: Prisma.CoPurchaseStateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CoPurchaseStateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CoPurchaseStateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CoPurchaseStatePayload>
+          }
+          aggregate: {
+            args: Prisma.CoPurchaseStateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCoPurchaseState>
+          }
+          groupBy: {
+            args: Prisma.CoPurchaseStateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CoPurchaseStateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CoPurchaseStateCountArgs<ExtArgs>
+            result: $Utils.Optional<CoPurchaseStateCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1793,6 +2052,8 @@ export namespace Prisma {
     cancelledBy: $Enums.CancelledBy | null
     cancelledAt: Date | null
     refundStatus: $Enums.RefundStatus | null
+    refundFailureReason: string | null
+    refundFailedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1833,6 +2094,8 @@ export namespace Prisma {
     cancelledBy: $Enums.CancelledBy | null
     cancelledAt: Date | null
     refundStatus: $Enums.RefundStatus | null
+    refundFailureReason: string | null
+    refundFailedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -1875,6 +2138,8 @@ export namespace Prisma {
     cancelledBy: number
     cancelledAt: number
     refundStatus: number
+    refundFailureReason: number
+    refundFailedAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -1933,6 +2198,8 @@ export namespace Prisma {
     cancelledBy?: true
     cancelledAt?: true
     refundStatus?: true
+    refundFailureReason?: true
+    refundFailedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -1973,6 +2240,8 @@ export namespace Prisma {
     cancelledBy?: true
     cancelledAt?: true
     refundStatus?: true
+    refundFailureReason?: true
+    refundFailedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -2015,6 +2284,8 @@ export namespace Prisma {
     cancelledBy?: true
     cancelledAt?: true
     refundStatus?: true
+    refundFailureReason?: true
+    refundFailedAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -2144,6 +2415,8 @@ export namespace Prisma {
     cancelledBy: $Enums.CancelledBy | null
     cancelledAt: Date | null
     refundStatus: $Enums.RefundStatus
+    refundFailureReason: string | null
+    refundFailedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: OrderCountAggregateOutputType | null
@@ -2205,6 +2478,8 @@ export namespace Prisma {
     cancelledBy?: boolean
     cancelledAt?: boolean
     refundStatus?: boolean
+    refundFailureReason?: boolean
+    refundFailedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     orderItems?: boolean | Order$orderItemsArgs<ExtArgs>
@@ -2251,6 +2526,8 @@ export namespace Prisma {
     cancelledBy?: boolean
     cancelledAt?: boolean
     refundStatus?: boolean
+    refundFailureReason?: boolean
+    refundFailedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["order"]>
@@ -2293,6 +2570,8 @@ export namespace Prisma {
     cancelledBy?: boolean
     cancelledAt?: boolean
     refundStatus?: boolean
+    refundFailureReason?: boolean
+    refundFailedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -2350,6 +2629,8 @@ export namespace Prisma {
       cancelledBy: $Enums.CancelledBy | null
       cancelledAt: Date | null
       refundStatus: $Enums.RefundStatus
+      refundFailureReason: string | null
+      refundFailedAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["order"]>
@@ -2785,6 +3066,8 @@ export namespace Prisma {
     readonly cancelledBy: FieldRef<"Order", 'CancelledBy'>
     readonly cancelledAt: FieldRef<"Order", 'DateTime'>
     readonly refundStatus: FieldRef<"Order", 'RefundStatus'>
+    readonly refundFailureReason: FieldRef<"Order", 'String'>
+    readonly refundFailedAt: FieldRef<"Order", 'DateTime'>
     readonly createdAt: FieldRef<"Order", 'DateTime'>
     readonly updatedAt: FieldRef<"Order", 'DateTime'>
   }
@@ -3201,6 +3484,7 @@ export namespace Prisma {
     id: string | null
     orderId: string | null
     productId: string | null
+    catalogProductId: string | null
     quantity: number | null
     price: Decimal | null
   }
@@ -3209,6 +3493,7 @@ export namespace Prisma {
     id: string | null
     orderId: string | null
     productId: string | null
+    catalogProductId: string | null
     quantity: number | null
     price: Decimal | null
   }
@@ -3217,6 +3502,7 @@ export namespace Prisma {
     id: number
     orderId: number
     productId: number
+    catalogProductId: number
     quantity: number
     price: number
     selectedOptions: number
@@ -3238,6 +3524,7 @@ export namespace Prisma {
     id?: true
     orderId?: true
     productId?: true
+    catalogProductId?: true
     quantity?: true
     price?: true
   }
@@ -3246,6 +3533,7 @@ export namespace Prisma {
     id?: true
     orderId?: true
     productId?: true
+    catalogProductId?: true
     quantity?: true
     price?: true
   }
@@ -3254,6 +3542,7 @@ export namespace Prisma {
     id?: true
     orderId?: true
     productId?: true
+    catalogProductId?: true
     quantity?: true
     price?: true
     selectedOptions?: true
@@ -3350,6 +3639,7 @@ export namespace Prisma {
     id: string
     orderId: string
     productId: string
+    catalogProductId: string | null
     quantity: number
     price: Decimal
     selectedOptions: JsonValue | null
@@ -3378,6 +3668,7 @@ export namespace Prisma {
     id?: boolean
     orderId?: boolean
     productId?: boolean
+    catalogProductId?: boolean
     quantity?: boolean
     price?: boolean
     selectedOptions?: boolean
@@ -3388,6 +3679,7 @@ export namespace Prisma {
     id?: boolean
     orderId?: boolean
     productId?: boolean
+    catalogProductId?: boolean
     quantity?: boolean
     price?: boolean
     selectedOptions?: boolean
@@ -3398,6 +3690,7 @@ export namespace Prisma {
     id?: boolean
     orderId?: boolean
     productId?: boolean
+    catalogProductId?: boolean
     quantity?: boolean
     price?: boolean
     selectedOptions?: boolean
@@ -3419,6 +3712,7 @@ export namespace Prisma {
       id: string
       orderId: string
       productId: string
+      catalogProductId: string | null
       quantity: number
       price: Prisma.Decimal
       selectedOptions: Prisma.JsonValue | null
@@ -3819,6 +4113,7 @@ export namespace Prisma {
     readonly id: FieldRef<"OrderItem", 'String'>
     readonly orderId: FieldRef<"OrderItem", 'String'>
     readonly productId: FieldRef<"OrderItem", 'String'>
+    readonly catalogProductId: FieldRef<"OrderItem", 'String'>
     readonly quantity: FieldRef<"OrderItem", 'Int'>
     readonly price: FieldRef<"OrderItem", 'Decimal'>
     readonly selectedOptions: FieldRef<"OrderItem", 'Json'>
@@ -10755,6 +11050,2694 @@ export namespace Prisma {
 
 
   /**
+   * Model ProductCoPurchase
+   */
+
+  export type AggregateProductCoPurchase = {
+    _count: ProductCoPurchaseCountAggregateOutputType | null
+    _avg: ProductCoPurchaseAvgAggregateOutputType | null
+    _sum: ProductCoPurchaseSumAggregateOutputType | null
+    _min: ProductCoPurchaseMinAggregateOutputType | null
+    _max: ProductCoPurchaseMaxAggregateOutputType | null
+  }
+
+  export type ProductCoPurchaseAvgAggregateOutputType = {
+    orderCount: number | null
+  }
+
+  export type ProductCoPurchaseSumAggregateOutputType = {
+    orderCount: number | null
+  }
+
+  export type ProductCoPurchaseMinAggregateOutputType = {
+    catalogA: string | null
+    catalogB: string | null
+    orderCount: number | null
+    updatedAt: Date | null
+  }
+
+  export type ProductCoPurchaseMaxAggregateOutputType = {
+    catalogA: string | null
+    catalogB: string | null
+    orderCount: number | null
+    updatedAt: Date | null
+  }
+
+  export type ProductCoPurchaseCountAggregateOutputType = {
+    catalogA: number
+    catalogB: number
+    orderCount: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ProductCoPurchaseAvgAggregateInputType = {
+    orderCount?: true
+  }
+
+  export type ProductCoPurchaseSumAggregateInputType = {
+    orderCount?: true
+  }
+
+  export type ProductCoPurchaseMinAggregateInputType = {
+    catalogA?: true
+    catalogB?: true
+    orderCount?: true
+    updatedAt?: true
+  }
+
+  export type ProductCoPurchaseMaxAggregateInputType = {
+    catalogA?: true
+    catalogB?: true
+    orderCount?: true
+    updatedAt?: true
+  }
+
+  export type ProductCoPurchaseCountAggregateInputType = {
+    catalogA?: true
+    catalogB?: true
+    orderCount?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ProductCoPurchaseAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductCoPurchase to aggregate.
+     */
+    where?: ProductCoPurchaseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductCoPurchases to fetch.
+     */
+    orderBy?: ProductCoPurchaseOrderByWithRelationInput | ProductCoPurchaseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ProductCoPurchaseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductCoPurchases from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductCoPurchases.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ProductCoPurchases
+    **/
+    _count?: true | ProductCoPurchaseCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ProductCoPurchaseAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ProductCoPurchaseSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ProductCoPurchaseMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ProductCoPurchaseMaxAggregateInputType
+  }
+
+  export type GetProductCoPurchaseAggregateType<T extends ProductCoPurchaseAggregateArgs> = {
+        [P in keyof T & keyof AggregateProductCoPurchase]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateProductCoPurchase[P]>
+      : GetScalarType<T[P], AggregateProductCoPurchase[P]>
+  }
+
+
+
+
+  export type ProductCoPurchaseGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProductCoPurchaseWhereInput
+    orderBy?: ProductCoPurchaseOrderByWithAggregationInput | ProductCoPurchaseOrderByWithAggregationInput[]
+    by: ProductCoPurchaseScalarFieldEnum[] | ProductCoPurchaseScalarFieldEnum
+    having?: ProductCoPurchaseScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ProductCoPurchaseCountAggregateInputType | true
+    _avg?: ProductCoPurchaseAvgAggregateInputType
+    _sum?: ProductCoPurchaseSumAggregateInputType
+    _min?: ProductCoPurchaseMinAggregateInputType
+    _max?: ProductCoPurchaseMaxAggregateInputType
+  }
+
+  export type ProductCoPurchaseGroupByOutputType = {
+    catalogA: string
+    catalogB: string
+    orderCount: number
+    updatedAt: Date
+    _count: ProductCoPurchaseCountAggregateOutputType | null
+    _avg: ProductCoPurchaseAvgAggregateOutputType | null
+    _sum: ProductCoPurchaseSumAggregateOutputType | null
+    _min: ProductCoPurchaseMinAggregateOutputType | null
+    _max: ProductCoPurchaseMaxAggregateOutputType | null
+  }
+
+  type GetProductCoPurchaseGroupByPayload<T extends ProductCoPurchaseGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ProductCoPurchaseGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ProductCoPurchaseGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ProductCoPurchaseGroupByOutputType[P]>
+            : GetScalarType<T[P], ProductCoPurchaseGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ProductCoPurchaseSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    catalogA?: boolean
+    catalogB?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["productCoPurchase"]>
+
+  export type ProductCoPurchaseSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    catalogA?: boolean
+    catalogB?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["productCoPurchase"]>
+
+  export type ProductCoPurchaseSelectScalar = {
+    catalogA?: boolean
+    catalogB?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $ProductCoPurchasePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ProductCoPurchase"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      catalogA: string
+      catalogB: string
+      orderCount: number
+      updatedAt: Date
+    }, ExtArgs["result"]["productCoPurchase"]>
+    composites: {}
+  }
+
+  type ProductCoPurchaseGetPayload<S extends boolean | null | undefined | ProductCoPurchaseDefaultArgs> = $Result.GetResult<Prisma.$ProductCoPurchasePayload, S>
+
+  type ProductCoPurchaseCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ProductCoPurchaseFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ProductCoPurchaseCountAggregateInputType | true
+    }
+
+  export interface ProductCoPurchaseDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ProductCoPurchase'], meta: { name: 'ProductCoPurchase' } }
+    /**
+     * Find zero or one ProductCoPurchase that matches the filter.
+     * @param {ProductCoPurchaseFindUniqueArgs} args - Arguments to find a ProductCoPurchase
+     * @example
+     * // Get one ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ProductCoPurchaseFindUniqueArgs>(args: SelectSubset<T, ProductCoPurchaseFindUniqueArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ProductCoPurchase that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ProductCoPurchaseFindUniqueOrThrowArgs} args - Arguments to find a ProductCoPurchase
+     * @example
+     * // Get one ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ProductCoPurchaseFindUniqueOrThrowArgs>(args: SelectSubset<T, ProductCoPurchaseFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ProductCoPurchase that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseFindFirstArgs} args - Arguments to find a ProductCoPurchase
+     * @example
+     * // Get one ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ProductCoPurchaseFindFirstArgs>(args?: SelectSubset<T, ProductCoPurchaseFindFirstArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ProductCoPurchase that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseFindFirstOrThrowArgs} args - Arguments to find a ProductCoPurchase
+     * @example
+     * // Get one ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ProductCoPurchaseFindFirstOrThrowArgs>(args?: SelectSubset<T, ProductCoPurchaseFindFirstOrThrowArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ProductCoPurchases that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ProductCoPurchases
+     * const productCoPurchases = await prisma.productCoPurchase.findMany()
+     * 
+     * // Get first 10 ProductCoPurchases
+     * const productCoPurchases = await prisma.productCoPurchase.findMany({ take: 10 })
+     * 
+     * // Only select the `catalogA`
+     * const productCoPurchaseWithCatalogAOnly = await prisma.productCoPurchase.findMany({ select: { catalogA: true } })
+     * 
+     */
+    findMany<T extends ProductCoPurchaseFindManyArgs>(args?: SelectSubset<T, ProductCoPurchaseFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ProductCoPurchase.
+     * @param {ProductCoPurchaseCreateArgs} args - Arguments to create a ProductCoPurchase.
+     * @example
+     * // Create one ProductCoPurchase
+     * const ProductCoPurchase = await prisma.productCoPurchase.create({
+     *   data: {
+     *     // ... data to create a ProductCoPurchase
+     *   }
+     * })
+     * 
+     */
+    create<T extends ProductCoPurchaseCreateArgs>(args: SelectSubset<T, ProductCoPurchaseCreateArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ProductCoPurchases.
+     * @param {ProductCoPurchaseCreateManyArgs} args - Arguments to create many ProductCoPurchases.
+     * @example
+     * // Create many ProductCoPurchases
+     * const productCoPurchase = await prisma.productCoPurchase.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ProductCoPurchaseCreateManyArgs>(args?: SelectSubset<T, ProductCoPurchaseCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ProductCoPurchases and returns the data saved in the database.
+     * @param {ProductCoPurchaseCreateManyAndReturnArgs} args - Arguments to create many ProductCoPurchases.
+     * @example
+     * // Create many ProductCoPurchases
+     * const productCoPurchase = await prisma.productCoPurchase.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ProductCoPurchases and only return the `catalogA`
+     * const productCoPurchaseWithCatalogAOnly = await prisma.productCoPurchase.createManyAndReturn({ 
+     *   select: { catalogA: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ProductCoPurchaseCreateManyAndReturnArgs>(args?: SelectSubset<T, ProductCoPurchaseCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ProductCoPurchase.
+     * @param {ProductCoPurchaseDeleteArgs} args - Arguments to delete one ProductCoPurchase.
+     * @example
+     * // Delete one ProductCoPurchase
+     * const ProductCoPurchase = await prisma.productCoPurchase.delete({
+     *   where: {
+     *     // ... filter to delete one ProductCoPurchase
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ProductCoPurchaseDeleteArgs>(args: SelectSubset<T, ProductCoPurchaseDeleteArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ProductCoPurchase.
+     * @param {ProductCoPurchaseUpdateArgs} args - Arguments to update one ProductCoPurchase.
+     * @example
+     * // Update one ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ProductCoPurchaseUpdateArgs>(args: SelectSubset<T, ProductCoPurchaseUpdateArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ProductCoPurchases.
+     * @param {ProductCoPurchaseDeleteManyArgs} args - Arguments to filter ProductCoPurchases to delete.
+     * @example
+     * // Delete a few ProductCoPurchases
+     * const { count } = await prisma.productCoPurchase.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ProductCoPurchaseDeleteManyArgs>(args?: SelectSubset<T, ProductCoPurchaseDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProductCoPurchases.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ProductCoPurchases
+     * const productCoPurchase = await prisma.productCoPurchase.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ProductCoPurchaseUpdateManyArgs>(args: SelectSubset<T, ProductCoPurchaseUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ProductCoPurchase.
+     * @param {ProductCoPurchaseUpsertArgs} args - Arguments to update or create a ProductCoPurchase.
+     * @example
+     * // Update or create a ProductCoPurchase
+     * const productCoPurchase = await prisma.productCoPurchase.upsert({
+     *   create: {
+     *     // ... data to create a ProductCoPurchase
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ProductCoPurchase we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ProductCoPurchaseUpsertArgs>(args: SelectSubset<T, ProductCoPurchaseUpsertArgs<ExtArgs>>): Prisma__ProductCoPurchaseClient<$Result.GetResult<Prisma.$ProductCoPurchasePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ProductCoPurchases.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseCountArgs} args - Arguments to filter ProductCoPurchases to count.
+     * @example
+     * // Count the number of ProductCoPurchases
+     * const count = await prisma.productCoPurchase.count({
+     *   where: {
+     *     // ... the filter for the ProductCoPurchases we want to count
+     *   }
+     * })
+    **/
+    count<T extends ProductCoPurchaseCountArgs>(
+      args?: Subset<T, ProductCoPurchaseCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ProductCoPurchaseCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ProductCoPurchase.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ProductCoPurchaseAggregateArgs>(args: Subset<T, ProductCoPurchaseAggregateArgs>): Prisma.PrismaPromise<GetProductCoPurchaseAggregateType<T>>
+
+    /**
+     * Group by ProductCoPurchase.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductCoPurchaseGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ProductCoPurchaseGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ProductCoPurchaseGroupByArgs['orderBy'] }
+        : { orderBy?: ProductCoPurchaseGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ProductCoPurchaseGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetProductCoPurchaseGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ProductCoPurchase model
+   */
+  readonly fields: ProductCoPurchaseFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ProductCoPurchase.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ProductCoPurchaseClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ProductCoPurchase model
+   */ 
+  interface ProductCoPurchaseFieldRefs {
+    readonly catalogA: FieldRef<"ProductCoPurchase", 'String'>
+    readonly catalogB: FieldRef<"ProductCoPurchase", 'String'>
+    readonly orderCount: FieldRef<"ProductCoPurchase", 'Int'>
+    readonly updatedAt: FieldRef<"ProductCoPurchase", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ProductCoPurchase findUnique
+   */
+  export type ProductCoPurchaseFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductCoPurchase to fetch.
+     */
+    where: ProductCoPurchaseWhereUniqueInput
+  }
+
+  /**
+   * ProductCoPurchase findUniqueOrThrow
+   */
+  export type ProductCoPurchaseFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductCoPurchase to fetch.
+     */
+    where: ProductCoPurchaseWhereUniqueInput
+  }
+
+  /**
+   * ProductCoPurchase findFirst
+   */
+  export type ProductCoPurchaseFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductCoPurchase to fetch.
+     */
+    where?: ProductCoPurchaseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductCoPurchases to fetch.
+     */
+    orderBy?: ProductCoPurchaseOrderByWithRelationInput | ProductCoPurchaseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductCoPurchases.
+     */
+    cursor?: ProductCoPurchaseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductCoPurchases from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductCoPurchases.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductCoPurchases.
+     */
+    distinct?: ProductCoPurchaseScalarFieldEnum | ProductCoPurchaseScalarFieldEnum[]
+  }
+
+  /**
+   * ProductCoPurchase findFirstOrThrow
+   */
+  export type ProductCoPurchaseFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductCoPurchase to fetch.
+     */
+    where?: ProductCoPurchaseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductCoPurchases to fetch.
+     */
+    orderBy?: ProductCoPurchaseOrderByWithRelationInput | ProductCoPurchaseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductCoPurchases.
+     */
+    cursor?: ProductCoPurchaseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductCoPurchases from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductCoPurchases.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductCoPurchases.
+     */
+    distinct?: ProductCoPurchaseScalarFieldEnum | ProductCoPurchaseScalarFieldEnum[]
+  }
+
+  /**
+   * ProductCoPurchase findMany
+   */
+  export type ProductCoPurchaseFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductCoPurchases to fetch.
+     */
+    where?: ProductCoPurchaseWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductCoPurchases to fetch.
+     */
+    orderBy?: ProductCoPurchaseOrderByWithRelationInput | ProductCoPurchaseOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ProductCoPurchases.
+     */
+    cursor?: ProductCoPurchaseWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductCoPurchases from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductCoPurchases.
+     */
+    skip?: number
+    distinct?: ProductCoPurchaseScalarFieldEnum | ProductCoPurchaseScalarFieldEnum[]
+  }
+
+  /**
+   * ProductCoPurchase create
+   */
+  export type ProductCoPurchaseCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * The data needed to create a ProductCoPurchase.
+     */
+    data: XOR<ProductCoPurchaseCreateInput, ProductCoPurchaseUncheckedCreateInput>
+  }
+
+  /**
+   * ProductCoPurchase createMany
+   */
+  export type ProductCoPurchaseCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ProductCoPurchases.
+     */
+    data: ProductCoPurchaseCreateManyInput | ProductCoPurchaseCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProductCoPurchase createManyAndReturn
+   */
+  export type ProductCoPurchaseCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ProductCoPurchases.
+     */
+    data: ProductCoPurchaseCreateManyInput | ProductCoPurchaseCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProductCoPurchase update
+   */
+  export type ProductCoPurchaseUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * The data needed to update a ProductCoPurchase.
+     */
+    data: XOR<ProductCoPurchaseUpdateInput, ProductCoPurchaseUncheckedUpdateInput>
+    /**
+     * Choose, which ProductCoPurchase to update.
+     */
+    where: ProductCoPurchaseWhereUniqueInput
+  }
+
+  /**
+   * ProductCoPurchase updateMany
+   */
+  export type ProductCoPurchaseUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ProductCoPurchases.
+     */
+    data: XOR<ProductCoPurchaseUpdateManyMutationInput, ProductCoPurchaseUncheckedUpdateManyInput>
+    /**
+     * Filter which ProductCoPurchases to update
+     */
+    where?: ProductCoPurchaseWhereInput
+  }
+
+  /**
+   * ProductCoPurchase upsert
+   */
+  export type ProductCoPurchaseUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * The filter to search for the ProductCoPurchase to update in case it exists.
+     */
+    where: ProductCoPurchaseWhereUniqueInput
+    /**
+     * In case the ProductCoPurchase found by the `where` argument doesn't exist, create a new ProductCoPurchase with this data.
+     */
+    create: XOR<ProductCoPurchaseCreateInput, ProductCoPurchaseUncheckedCreateInput>
+    /**
+     * In case the ProductCoPurchase was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ProductCoPurchaseUpdateInput, ProductCoPurchaseUncheckedUpdateInput>
+  }
+
+  /**
+   * ProductCoPurchase delete
+   */
+  export type ProductCoPurchaseDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+    /**
+     * Filter which ProductCoPurchase to delete.
+     */
+    where: ProductCoPurchaseWhereUniqueInput
+  }
+
+  /**
+   * ProductCoPurchase deleteMany
+   */
+  export type ProductCoPurchaseDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductCoPurchases to delete
+     */
+    where?: ProductCoPurchaseWhereInput
+  }
+
+  /**
+   * ProductCoPurchase without action
+   */
+  export type ProductCoPurchaseDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductCoPurchase
+     */
+    select?: ProductCoPurchaseSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ProductOrderStat
+   */
+
+  export type AggregateProductOrderStat = {
+    _count: ProductOrderStatCountAggregateOutputType | null
+    _avg: ProductOrderStatAvgAggregateOutputType | null
+    _sum: ProductOrderStatSumAggregateOutputType | null
+    _min: ProductOrderStatMinAggregateOutputType | null
+    _max: ProductOrderStatMaxAggregateOutputType | null
+  }
+
+  export type ProductOrderStatAvgAggregateOutputType = {
+    orderCount: number | null
+  }
+
+  export type ProductOrderStatSumAggregateOutputType = {
+    orderCount: number | null
+  }
+
+  export type ProductOrderStatMinAggregateOutputType = {
+    catalogProductId: string | null
+    orderCount: number | null
+    updatedAt: Date | null
+  }
+
+  export type ProductOrderStatMaxAggregateOutputType = {
+    catalogProductId: string | null
+    orderCount: number | null
+    updatedAt: Date | null
+  }
+
+  export type ProductOrderStatCountAggregateOutputType = {
+    catalogProductId: number
+    orderCount: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ProductOrderStatAvgAggregateInputType = {
+    orderCount?: true
+  }
+
+  export type ProductOrderStatSumAggregateInputType = {
+    orderCount?: true
+  }
+
+  export type ProductOrderStatMinAggregateInputType = {
+    catalogProductId?: true
+    orderCount?: true
+    updatedAt?: true
+  }
+
+  export type ProductOrderStatMaxAggregateInputType = {
+    catalogProductId?: true
+    orderCount?: true
+    updatedAt?: true
+  }
+
+  export type ProductOrderStatCountAggregateInputType = {
+    catalogProductId?: true
+    orderCount?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ProductOrderStatAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductOrderStat to aggregate.
+     */
+    where?: ProductOrderStatWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductOrderStats to fetch.
+     */
+    orderBy?: ProductOrderStatOrderByWithRelationInput | ProductOrderStatOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ProductOrderStatWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductOrderStats from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductOrderStats.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ProductOrderStats
+    **/
+    _count?: true | ProductOrderStatCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ProductOrderStatAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ProductOrderStatSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ProductOrderStatMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ProductOrderStatMaxAggregateInputType
+  }
+
+  export type GetProductOrderStatAggregateType<T extends ProductOrderStatAggregateArgs> = {
+        [P in keyof T & keyof AggregateProductOrderStat]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateProductOrderStat[P]>
+      : GetScalarType<T[P], AggregateProductOrderStat[P]>
+  }
+
+
+
+
+  export type ProductOrderStatGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ProductOrderStatWhereInput
+    orderBy?: ProductOrderStatOrderByWithAggregationInput | ProductOrderStatOrderByWithAggregationInput[]
+    by: ProductOrderStatScalarFieldEnum[] | ProductOrderStatScalarFieldEnum
+    having?: ProductOrderStatScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ProductOrderStatCountAggregateInputType | true
+    _avg?: ProductOrderStatAvgAggregateInputType
+    _sum?: ProductOrderStatSumAggregateInputType
+    _min?: ProductOrderStatMinAggregateInputType
+    _max?: ProductOrderStatMaxAggregateInputType
+  }
+
+  export type ProductOrderStatGroupByOutputType = {
+    catalogProductId: string
+    orderCount: number
+    updatedAt: Date
+    _count: ProductOrderStatCountAggregateOutputType | null
+    _avg: ProductOrderStatAvgAggregateOutputType | null
+    _sum: ProductOrderStatSumAggregateOutputType | null
+    _min: ProductOrderStatMinAggregateOutputType | null
+    _max: ProductOrderStatMaxAggregateOutputType | null
+  }
+
+  type GetProductOrderStatGroupByPayload<T extends ProductOrderStatGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ProductOrderStatGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ProductOrderStatGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ProductOrderStatGroupByOutputType[P]>
+            : GetScalarType<T[P], ProductOrderStatGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ProductOrderStatSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    catalogProductId?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["productOrderStat"]>
+
+  export type ProductOrderStatSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    catalogProductId?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["productOrderStat"]>
+
+  export type ProductOrderStatSelectScalar = {
+    catalogProductId?: boolean
+    orderCount?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $ProductOrderStatPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ProductOrderStat"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      catalogProductId: string
+      orderCount: number
+      updatedAt: Date
+    }, ExtArgs["result"]["productOrderStat"]>
+    composites: {}
+  }
+
+  type ProductOrderStatGetPayload<S extends boolean | null | undefined | ProductOrderStatDefaultArgs> = $Result.GetResult<Prisma.$ProductOrderStatPayload, S>
+
+  type ProductOrderStatCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<ProductOrderStatFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: ProductOrderStatCountAggregateInputType | true
+    }
+
+  export interface ProductOrderStatDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ProductOrderStat'], meta: { name: 'ProductOrderStat' } }
+    /**
+     * Find zero or one ProductOrderStat that matches the filter.
+     * @param {ProductOrderStatFindUniqueArgs} args - Arguments to find a ProductOrderStat
+     * @example
+     * // Get one ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ProductOrderStatFindUniqueArgs>(args: SelectSubset<T, ProductOrderStatFindUniqueArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one ProductOrderStat that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {ProductOrderStatFindUniqueOrThrowArgs} args - Arguments to find a ProductOrderStat
+     * @example
+     * // Get one ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ProductOrderStatFindUniqueOrThrowArgs>(args: SelectSubset<T, ProductOrderStatFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first ProductOrderStat that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatFindFirstArgs} args - Arguments to find a ProductOrderStat
+     * @example
+     * // Get one ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ProductOrderStatFindFirstArgs>(args?: SelectSubset<T, ProductOrderStatFindFirstArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first ProductOrderStat that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatFindFirstOrThrowArgs} args - Arguments to find a ProductOrderStat
+     * @example
+     * // Get one ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ProductOrderStatFindFirstOrThrowArgs>(args?: SelectSubset<T, ProductOrderStatFindFirstOrThrowArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more ProductOrderStats that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ProductOrderStats
+     * const productOrderStats = await prisma.productOrderStat.findMany()
+     * 
+     * // Get first 10 ProductOrderStats
+     * const productOrderStats = await prisma.productOrderStat.findMany({ take: 10 })
+     * 
+     * // Only select the `catalogProductId`
+     * const productOrderStatWithCatalogProductIdOnly = await prisma.productOrderStat.findMany({ select: { catalogProductId: true } })
+     * 
+     */
+    findMany<T extends ProductOrderStatFindManyArgs>(args?: SelectSubset<T, ProductOrderStatFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a ProductOrderStat.
+     * @param {ProductOrderStatCreateArgs} args - Arguments to create a ProductOrderStat.
+     * @example
+     * // Create one ProductOrderStat
+     * const ProductOrderStat = await prisma.productOrderStat.create({
+     *   data: {
+     *     // ... data to create a ProductOrderStat
+     *   }
+     * })
+     * 
+     */
+    create<T extends ProductOrderStatCreateArgs>(args: SelectSubset<T, ProductOrderStatCreateArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many ProductOrderStats.
+     * @param {ProductOrderStatCreateManyArgs} args - Arguments to create many ProductOrderStats.
+     * @example
+     * // Create many ProductOrderStats
+     * const productOrderStat = await prisma.productOrderStat.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ProductOrderStatCreateManyArgs>(args?: SelectSubset<T, ProductOrderStatCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ProductOrderStats and returns the data saved in the database.
+     * @param {ProductOrderStatCreateManyAndReturnArgs} args - Arguments to create many ProductOrderStats.
+     * @example
+     * // Create many ProductOrderStats
+     * const productOrderStat = await prisma.productOrderStat.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ProductOrderStats and only return the `catalogProductId`
+     * const productOrderStatWithCatalogProductIdOnly = await prisma.productOrderStat.createManyAndReturn({ 
+     *   select: { catalogProductId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ProductOrderStatCreateManyAndReturnArgs>(args?: SelectSubset<T, ProductOrderStatCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a ProductOrderStat.
+     * @param {ProductOrderStatDeleteArgs} args - Arguments to delete one ProductOrderStat.
+     * @example
+     * // Delete one ProductOrderStat
+     * const ProductOrderStat = await prisma.productOrderStat.delete({
+     *   where: {
+     *     // ... filter to delete one ProductOrderStat
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ProductOrderStatDeleteArgs>(args: SelectSubset<T, ProductOrderStatDeleteArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one ProductOrderStat.
+     * @param {ProductOrderStatUpdateArgs} args - Arguments to update one ProductOrderStat.
+     * @example
+     * // Update one ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ProductOrderStatUpdateArgs>(args: SelectSubset<T, ProductOrderStatUpdateArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more ProductOrderStats.
+     * @param {ProductOrderStatDeleteManyArgs} args - Arguments to filter ProductOrderStats to delete.
+     * @example
+     * // Delete a few ProductOrderStats
+     * const { count } = await prisma.productOrderStat.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ProductOrderStatDeleteManyArgs>(args?: SelectSubset<T, ProductOrderStatDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ProductOrderStats.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ProductOrderStats
+     * const productOrderStat = await prisma.productOrderStat.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ProductOrderStatUpdateManyArgs>(args: SelectSubset<T, ProductOrderStatUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ProductOrderStat.
+     * @param {ProductOrderStatUpsertArgs} args - Arguments to update or create a ProductOrderStat.
+     * @example
+     * // Update or create a ProductOrderStat
+     * const productOrderStat = await prisma.productOrderStat.upsert({
+     *   create: {
+     *     // ... data to create a ProductOrderStat
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ProductOrderStat we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ProductOrderStatUpsertArgs>(args: SelectSubset<T, ProductOrderStatUpsertArgs<ExtArgs>>): Prisma__ProductOrderStatClient<$Result.GetResult<Prisma.$ProductOrderStatPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of ProductOrderStats.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatCountArgs} args - Arguments to filter ProductOrderStats to count.
+     * @example
+     * // Count the number of ProductOrderStats
+     * const count = await prisma.productOrderStat.count({
+     *   where: {
+     *     // ... the filter for the ProductOrderStats we want to count
+     *   }
+     * })
+    **/
+    count<T extends ProductOrderStatCountArgs>(
+      args?: Subset<T, ProductOrderStatCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ProductOrderStatCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ProductOrderStat.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ProductOrderStatAggregateArgs>(args: Subset<T, ProductOrderStatAggregateArgs>): Prisma.PrismaPromise<GetProductOrderStatAggregateType<T>>
+
+    /**
+     * Group by ProductOrderStat.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ProductOrderStatGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ProductOrderStatGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ProductOrderStatGroupByArgs['orderBy'] }
+        : { orderBy?: ProductOrderStatGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ProductOrderStatGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetProductOrderStatGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ProductOrderStat model
+   */
+  readonly fields: ProductOrderStatFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ProductOrderStat.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ProductOrderStatClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ProductOrderStat model
+   */ 
+  interface ProductOrderStatFieldRefs {
+    readonly catalogProductId: FieldRef<"ProductOrderStat", 'String'>
+    readonly orderCount: FieldRef<"ProductOrderStat", 'Int'>
+    readonly updatedAt: FieldRef<"ProductOrderStat", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ProductOrderStat findUnique
+   */
+  export type ProductOrderStatFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductOrderStat to fetch.
+     */
+    where: ProductOrderStatWhereUniqueInput
+  }
+
+  /**
+   * ProductOrderStat findUniqueOrThrow
+   */
+  export type ProductOrderStatFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductOrderStat to fetch.
+     */
+    where: ProductOrderStatWhereUniqueInput
+  }
+
+  /**
+   * ProductOrderStat findFirst
+   */
+  export type ProductOrderStatFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductOrderStat to fetch.
+     */
+    where?: ProductOrderStatWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductOrderStats to fetch.
+     */
+    orderBy?: ProductOrderStatOrderByWithRelationInput | ProductOrderStatOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductOrderStats.
+     */
+    cursor?: ProductOrderStatWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductOrderStats from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductOrderStats.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductOrderStats.
+     */
+    distinct?: ProductOrderStatScalarFieldEnum | ProductOrderStatScalarFieldEnum[]
+  }
+
+  /**
+   * ProductOrderStat findFirstOrThrow
+   */
+  export type ProductOrderStatFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductOrderStat to fetch.
+     */
+    where?: ProductOrderStatWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductOrderStats to fetch.
+     */
+    orderBy?: ProductOrderStatOrderByWithRelationInput | ProductOrderStatOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ProductOrderStats.
+     */
+    cursor?: ProductOrderStatWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductOrderStats from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductOrderStats.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProductOrderStats.
+     */
+    distinct?: ProductOrderStatScalarFieldEnum | ProductOrderStatScalarFieldEnum[]
+  }
+
+  /**
+   * ProductOrderStat findMany
+   */
+  export type ProductOrderStatFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter, which ProductOrderStats to fetch.
+     */
+    where?: ProductOrderStatWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ProductOrderStats to fetch.
+     */
+    orderBy?: ProductOrderStatOrderByWithRelationInput | ProductOrderStatOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ProductOrderStats.
+     */
+    cursor?: ProductOrderStatWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ProductOrderStats from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ProductOrderStats.
+     */
+    skip?: number
+    distinct?: ProductOrderStatScalarFieldEnum | ProductOrderStatScalarFieldEnum[]
+  }
+
+  /**
+   * ProductOrderStat create
+   */
+  export type ProductOrderStatCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * The data needed to create a ProductOrderStat.
+     */
+    data: XOR<ProductOrderStatCreateInput, ProductOrderStatUncheckedCreateInput>
+  }
+
+  /**
+   * ProductOrderStat createMany
+   */
+  export type ProductOrderStatCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ProductOrderStats.
+     */
+    data: ProductOrderStatCreateManyInput | ProductOrderStatCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProductOrderStat createManyAndReturn
+   */
+  export type ProductOrderStatCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many ProductOrderStats.
+     */
+    data: ProductOrderStatCreateManyInput | ProductOrderStatCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ProductOrderStat update
+   */
+  export type ProductOrderStatUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * The data needed to update a ProductOrderStat.
+     */
+    data: XOR<ProductOrderStatUpdateInput, ProductOrderStatUncheckedUpdateInput>
+    /**
+     * Choose, which ProductOrderStat to update.
+     */
+    where: ProductOrderStatWhereUniqueInput
+  }
+
+  /**
+   * ProductOrderStat updateMany
+   */
+  export type ProductOrderStatUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ProductOrderStats.
+     */
+    data: XOR<ProductOrderStatUpdateManyMutationInput, ProductOrderStatUncheckedUpdateManyInput>
+    /**
+     * Filter which ProductOrderStats to update
+     */
+    where?: ProductOrderStatWhereInput
+  }
+
+  /**
+   * ProductOrderStat upsert
+   */
+  export type ProductOrderStatUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * The filter to search for the ProductOrderStat to update in case it exists.
+     */
+    where: ProductOrderStatWhereUniqueInput
+    /**
+     * In case the ProductOrderStat found by the `where` argument doesn't exist, create a new ProductOrderStat with this data.
+     */
+    create: XOR<ProductOrderStatCreateInput, ProductOrderStatUncheckedCreateInput>
+    /**
+     * In case the ProductOrderStat was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ProductOrderStatUpdateInput, ProductOrderStatUncheckedUpdateInput>
+  }
+
+  /**
+   * ProductOrderStat delete
+   */
+  export type ProductOrderStatDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+    /**
+     * Filter which ProductOrderStat to delete.
+     */
+    where: ProductOrderStatWhereUniqueInput
+  }
+
+  /**
+   * ProductOrderStat deleteMany
+   */
+  export type ProductOrderStatDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ProductOrderStats to delete
+     */
+    where?: ProductOrderStatWhereInput
+  }
+
+  /**
+   * ProductOrderStat without action
+   */
+  export type ProductOrderStatDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ProductOrderStat
+     */
+    select?: ProductOrderStatSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CoPurchaseState
+   */
+
+  export type AggregateCoPurchaseState = {
+    _count: CoPurchaseStateCountAggregateOutputType | null
+    _avg: CoPurchaseStateAvgAggregateOutputType | null
+    _sum: CoPurchaseStateSumAggregateOutputType | null
+    _min: CoPurchaseStateMinAggregateOutputType | null
+    _max: CoPurchaseStateMaxAggregateOutputType | null
+  }
+
+  export type CoPurchaseStateAvgAggregateOutputType = {
+    totalOrders: number | null
+  }
+
+  export type CoPurchaseStateSumAggregateOutputType = {
+    totalOrders: number | null
+  }
+
+  export type CoPurchaseStateMinAggregateOutputType = {
+    id: string | null
+    lastDeliveredAt: Date | null
+    totalOrders: number | null
+    updatedAt: Date | null
+  }
+
+  export type CoPurchaseStateMaxAggregateOutputType = {
+    id: string | null
+    lastDeliveredAt: Date | null
+    totalOrders: number | null
+    updatedAt: Date | null
+  }
+
+  export type CoPurchaseStateCountAggregateOutputType = {
+    id: number
+    lastDeliveredAt: number
+    totalOrders: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type CoPurchaseStateAvgAggregateInputType = {
+    totalOrders?: true
+  }
+
+  export type CoPurchaseStateSumAggregateInputType = {
+    totalOrders?: true
+  }
+
+  export type CoPurchaseStateMinAggregateInputType = {
+    id?: true
+    lastDeliveredAt?: true
+    totalOrders?: true
+    updatedAt?: true
+  }
+
+  export type CoPurchaseStateMaxAggregateInputType = {
+    id?: true
+    lastDeliveredAt?: true
+    totalOrders?: true
+    updatedAt?: true
+  }
+
+  export type CoPurchaseStateCountAggregateInputType = {
+    id?: true
+    lastDeliveredAt?: true
+    totalOrders?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type CoPurchaseStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CoPurchaseState to aggregate.
+     */
+    where?: CoPurchaseStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CoPurchaseStates to fetch.
+     */
+    orderBy?: CoPurchaseStateOrderByWithRelationInput | CoPurchaseStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CoPurchaseStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CoPurchaseStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CoPurchaseStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CoPurchaseStates
+    **/
+    _count?: true | CoPurchaseStateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CoPurchaseStateAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CoPurchaseStateSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CoPurchaseStateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CoPurchaseStateMaxAggregateInputType
+  }
+
+  export type GetCoPurchaseStateAggregateType<T extends CoPurchaseStateAggregateArgs> = {
+        [P in keyof T & keyof AggregateCoPurchaseState]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCoPurchaseState[P]>
+      : GetScalarType<T[P], AggregateCoPurchaseState[P]>
+  }
+
+
+
+
+  export type CoPurchaseStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CoPurchaseStateWhereInput
+    orderBy?: CoPurchaseStateOrderByWithAggregationInput | CoPurchaseStateOrderByWithAggregationInput[]
+    by: CoPurchaseStateScalarFieldEnum[] | CoPurchaseStateScalarFieldEnum
+    having?: CoPurchaseStateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CoPurchaseStateCountAggregateInputType | true
+    _avg?: CoPurchaseStateAvgAggregateInputType
+    _sum?: CoPurchaseStateSumAggregateInputType
+    _min?: CoPurchaseStateMinAggregateInputType
+    _max?: CoPurchaseStateMaxAggregateInputType
+  }
+
+  export type CoPurchaseStateGroupByOutputType = {
+    id: string
+    lastDeliveredAt: Date | null
+    totalOrders: number
+    updatedAt: Date
+    _count: CoPurchaseStateCountAggregateOutputType | null
+    _avg: CoPurchaseStateAvgAggregateOutputType | null
+    _sum: CoPurchaseStateSumAggregateOutputType | null
+    _min: CoPurchaseStateMinAggregateOutputType | null
+    _max: CoPurchaseStateMaxAggregateOutputType | null
+  }
+
+  type GetCoPurchaseStateGroupByPayload<T extends CoPurchaseStateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CoPurchaseStateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CoPurchaseStateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CoPurchaseStateGroupByOutputType[P]>
+            : GetScalarType<T[P], CoPurchaseStateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CoPurchaseStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    lastDeliveredAt?: boolean
+    totalOrders?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["coPurchaseState"]>
+
+  export type CoPurchaseStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    lastDeliveredAt?: boolean
+    totalOrders?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["coPurchaseState"]>
+
+  export type CoPurchaseStateSelectScalar = {
+    id?: boolean
+    lastDeliveredAt?: boolean
+    totalOrders?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $CoPurchaseStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CoPurchaseState"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      lastDeliveredAt: Date | null
+      totalOrders: number
+      updatedAt: Date
+    }, ExtArgs["result"]["coPurchaseState"]>
+    composites: {}
+  }
+
+  type CoPurchaseStateGetPayload<S extends boolean | null | undefined | CoPurchaseStateDefaultArgs> = $Result.GetResult<Prisma.$CoPurchaseStatePayload, S>
+
+  type CoPurchaseStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CoPurchaseStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CoPurchaseStateCountAggregateInputType | true
+    }
+
+  export interface CoPurchaseStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CoPurchaseState'], meta: { name: 'CoPurchaseState' } }
+    /**
+     * Find zero or one CoPurchaseState that matches the filter.
+     * @param {CoPurchaseStateFindUniqueArgs} args - Arguments to find a CoPurchaseState
+     * @example
+     * // Get one CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CoPurchaseStateFindUniqueArgs>(args: SelectSubset<T, CoPurchaseStateFindUniqueArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CoPurchaseState that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CoPurchaseStateFindUniqueOrThrowArgs} args - Arguments to find a CoPurchaseState
+     * @example
+     * // Get one CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CoPurchaseStateFindUniqueOrThrowArgs>(args: SelectSubset<T, CoPurchaseStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CoPurchaseState that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateFindFirstArgs} args - Arguments to find a CoPurchaseState
+     * @example
+     * // Get one CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CoPurchaseStateFindFirstArgs>(args?: SelectSubset<T, CoPurchaseStateFindFirstArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CoPurchaseState that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateFindFirstOrThrowArgs} args - Arguments to find a CoPurchaseState
+     * @example
+     * // Get one CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CoPurchaseStateFindFirstOrThrowArgs>(args?: SelectSubset<T, CoPurchaseStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CoPurchaseStates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CoPurchaseStates
+     * const coPurchaseStates = await prisma.coPurchaseState.findMany()
+     * 
+     * // Get first 10 CoPurchaseStates
+     * const coPurchaseStates = await prisma.coPurchaseState.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const coPurchaseStateWithIdOnly = await prisma.coPurchaseState.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CoPurchaseStateFindManyArgs>(args?: SelectSubset<T, CoPurchaseStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CoPurchaseState.
+     * @param {CoPurchaseStateCreateArgs} args - Arguments to create a CoPurchaseState.
+     * @example
+     * // Create one CoPurchaseState
+     * const CoPurchaseState = await prisma.coPurchaseState.create({
+     *   data: {
+     *     // ... data to create a CoPurchaseState
+     *   }
+     * })
+     * 
+     */
+    create<T extends CoPurchaseStateCreateArgs>(args: SelectSubset<T, CoPurchaseStateCreateArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CoPurchaseStates.
+     * @param {CoPurchaseStateCreateManyArgs} args - Arguments to create many CoPurchaseStates.
+     * @example
+     * // Create many CoPurchaseStates
+     * const coPurchaseState = await prisma.coPurchaseState.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CoPurchaseStateCreateManyArgs>(args?: SelectSubset<T, CoPurchaseStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CoPurchaseStates and returns the data saved in the database.
+     * @param {CoPurchaseStateCreateManyAndReturnArgs} args - Arguments to create many CoPurchaseStates.
+     * @example
+     * // Create many CoPurchaseStates
+     * const coPurchaseState = await prisma.coPurchaseState.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CoPurchaseStates and only return the `id`
+     * const coPurchaseStateWithIdOnly = await prisma.coPurchaseState.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CoPurchaseStateCreateManyAndReturnArgs>(args?: SelectSubset<T, CoPurchaseStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CoPurchaseState.
+     * @param {CoPurchaseStateDeleteArgs} args - Arguments to delete one CoPurchaseState.
+     * @example
+     * // Delete one CoPurchaseState
+     * const CoPurchaseState = await prisma.coPurchaseState.delete({
+     *   where: {
+     *     // ... filter to delete one CoPurchaseState
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CoPurchaseStateDeleteArgs>(args: SelectSubset<T, CoPurchaseStateDeleteArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CoPurchaseState.
+     * @param {CoPurchaseStateUpdateArgs} args - Arguments to update one CoPurchaseState.
+     * @example
+     * // Update one CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CoPurchaseStateUpdateArgs>(args: SelectSubset<T, CoPurchaseStateUpdateArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CoPurchaseStates.
+     * @param {CoPurchaseStateDeleteManyArgs} args - Arguments to filter CoPurchaseStates to delete.
+     * @example
+     * // Delete a few CoPurchaseStates
+     * const { count } = await prisma.coPurchaseState.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CoPurchaseStateDeleteManyArgs>(args?: SelectSubset<T, CoPurchaseStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CoPurchaseStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CoPurchaseStates
+     * const coPurchaseState = await prisma.coPurchaseState.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CoPurchaseStateUpdateManyArgs>(args: SelectSubset<T, CoPurchaseStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CoPurchaseState.
+     * @param {CoPurchaseStateUpsertArgs} args - Arguments to update or create a CoPurchaseState.
+     * @example
+     * // Update or create a CoPurchaseState
+     * const coPurchaseState = await prisma.coPurchaseState.upsert({
+     *   create: {
+     *     // ... data to create a CoPurchaseState
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CoPurchaseState we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CoPurchaseStateUpsertArgs>(args: SelectSubset<T, CoPurchaseStateUpsertArgs<ExtArgs>>): Prisma__CoPurchaseStateClient<$Result.GetResult<Prisma.$CoPurchaseStatePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CoPurchaseStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateCountArgs} args - Arguments to filter CoPurchaseStates to count.
+     * @example
+     * // Count the number of CoPurchaseStates
+     * const count = await prisma.coPurchaseState.count({
+     *   where: {
+     *     // ... the filter for the CoPurchaseStates we want to count
+     *   }
+     * })
+    **/
+    count<T extends CoPurchaseStateCountArgs>(
+      args?: Subset<T, CoPurchaseStateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CoPurchaseStateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CoPurchaseState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CoPurchaseStateAggregateArgs>(args: Subset<T, CoPurchaseStateAggregateArgs>): Prisma.PrismaPromise<GetCoPurchaseStateAggregateType<T>>
+
+    /**
+     * Group by CoPurchaseState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CoPurchaseStateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CoPurchaseStateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CoPurchaseStateGroupByArgs['orderBy'] }
+        : { orderBy?: CoPurchaseStateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CoPurchaseStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCoPurchaseStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CoPurchaseState model
+   */
+  readonly fields: CoPurchaseStateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CoPurchaseState.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CoPurchaseStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CoPurchaseState model
+   */ 
+  interface CoPurchaseStateFieldRefs {
+    readonly id: FieldRef<"CoPurchaseState", 'String'>
+    readonly lastDeliveredAt: FieldRef<"CoPurchaseState", 'DateTime'>
+    readonly totalOrders: FieldRef<"CoPurchaseState", 'Int'>
+    readonly updatedAt: FieldRef<"CoPurchaseState", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CoPurchaseState findUnique
+   */
+  export type CoPurchaseStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter, which CoPurchaseState to fetch.
+     */
+    where: CoPurchaseStateWhereUniqueInput
+  }
+
+  /**
+   * CoPurchaseState findUniqueOrThrow
+   */
+  export type CoPurchaseStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter, which CoPurchaseState to fetch.
+     */
+    where: CoPurchaseStateWhereUniqueInput
+  }
+
+  /**
+   * CoPurchaseState findFirst
+   */
+  export type CoPurchaseStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter, which CoPurchaseState to fetch.
+     */
+    where?: CoPurchaseStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CoPurchaseStates to fetch.
+     */
+    orderBy?: CoPurchaseStateOrderByWithRelationInput | CoPurchaseStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CoPurchaseStates.
+     */
+    cursor?: CoPurchaseStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CoPurchaseStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CoPurchaseStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CoPurchaseStates.
+     */
+    distinct?: CoPurchaseStateScalarFieldEnum | CoPurchaseStateScalarFieldEnum[]
+  }
+
+  /**
+   * CoPurchaseState findFirstOrThrow
+   */
+  export type CoPurchaseStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter, which CoPurchaseState to fetch.
+     */
+    where?: CoPurchaseStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CoPurchaseStates to fetch.
+     */
+    orderBy?: CoPurchaseStateOrderByWithRelationInput | CoPurchaseStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CoPurchaseStates.
+     */
+    cursor?: CoPurchaseStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CoPurchaseStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CoPurchaseStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CoPurchaseStates.
+     */
+    distinct?: CoPurchaseStateScalarFieldEnum | CoPurchaseStateScalarFieldEnum[]
+  }
+
+  /**
+   * CoPurchaseState findMany
+   */
+  export type CoPurchaseStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter, which CoPurchaseStates to fetch.
+     */
+    where?: CoPurchaseStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CoPurchaseStates to fetch.
+     */
+    orderBy?: CoPurchaseStateOrderByWithRelationInput | CoPurchaseStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CoPurchaseStates.
+     */
+    cursor?: CoPurchaseStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CoPurchaseStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CoPurchaseStates.
+     */
+    skip?: number
+    distinct?: CoPurchaseStateScalarFieldEnum | CoPurchaseStateScalarFieldEnum[]
+  }
+
+  /**
+   * CoPurchaseState create
+   */
+  export type CoPurchaseStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * The data needed to create a CoPurchaseState.
+     */
+    data: XOR<CoPurchaseStateCreateInput, CoPurchaseStateUncheckedCreateInput>
+  }
+
+  /**
+   * CoPurchaseState createMany
+   */
+  export type CoPurchaseStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CoPurchaseStates.
+     */
+    data: CoPurchaseStateCreateManyInput | CoPurchaseStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CoPurchaseState createManyAndReturn
+   */
+  export type CoPurchaseStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CoPurchaseStates.
+     */
+    data: CoPurchaseStateCreateManyInput | CoPurchaseStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CoPurchaseState update
+   */
+  export type CoPurchaseStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * The data needed to update a CoPurchaseState.
+     */
+    data: XOR<CoPurchaseStateUpdateInput, CoPurchaseStateUncheckedUpdateInput>
+    /**
+     * Choose, which CoPurchaseState to update.
+     */
+    where: CoPurchaseStateWhereUniqueInput
+  }
+
+  /**
+   * CoPurchaseState updateMany
+   */
+  export type CoPurchaseStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CoPurchaseStates.
+     */
+    data: XOR<CoPurchaseStateUpdateManyMutationInput, CoPurchaseStateUncheckedUpdateManyInput>
+    /**
+     * Filter which CoPurchaseStates to update
+     */
+    where?: CoPurchaseStateWhereInput
+  }
+
+  /**
+   * CoPurchaseState upsert
+   */
+  export type CoPurchaseStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * The filter to search for the CoPurchaseState to update in case it exists.
+     */
+    where: CoPurchaseStateWhereUniqueInput
+    /**
+     * In case the CoPurchaseState found by the `where` argument doesn't exist, create a new CoPurchaseState with this data.
+     */
+    create: XOR<CoPurchaseStateCreateInput, CoPurchaseStateUncheckedCreateInput>
+    /**
+     * In case the CoPurchaseState was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CoPurchaseStateUpdateInput, CoPurchaseStateUncheckedUpdateInput>
+  }
+
+  /**
+   * CoPurchaseState delete
+   */
+  export type CoPurchaseStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+    /**
+     * Filter which CoPurchaseState to delete.
+     */
+    where: CoPurchaseStateWhereUniqueInput
+  }
+
+  /**
+   * CoPurchaseState deleteMany
+   */
+  export type CoPurchaseStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CoPurchaseStates to delete
+     */
+    where?: CoPurchaseStateWhereInput
+  }
+
+  /**
+   * CoPurchaseState without action
+   */
+  export type CoPurchaseStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CoPurchaseState
+     */
+    select?: CoPurchaseStateSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -10806,6 +13789,8 @@ export namespace Prisma {
     cancelledBy: 'cancelledBy',
     cancelledAt: 'cancelledAt',
     refundStatus: 'refundStatus',
+    refundFailureReason: 'refundFailureReason',
+    refundFailedAt: 'refundFailedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -10817,6 +13802,7 @@ export namespace Prisma {
     id: 'id',
     orderId: 'orderId',
     productId: 'productId',
+    catalogProductId: 'catalogProductId',
     quantity: 'quantity',
     price: 'price',
     selectedOptions: 'selectedOptions'
@@ -10925,6 +13911,35 @@ export namespace Prisma {
   };
 
   export type StockReservationScalarFieldEnum = (typeof StockReservationScalarFieldEnum)[keyof typeof StockReservationScalarFieldEnum]
+
+
+  export const ProductCoPurchaseScalarFieldEnum: {
+    catalogA: 'catalogA',
+    catalogB: 'catalogB',
+    orderCount: 'orderCount',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ProductCoPurchaseScalarFieldEnum = (typeof ProductCoPurchaseScalarFieldEnum)[keyof typeof ProductCoPurchaseScalarFieldEnum]
+
+
+  export const ProductOrderStatScalarFieldEnum: {
+    catalogProductId: 'catalogProductId',
+    orderCount: 'orderCount',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ProductOrderStatScalarFieldEnum = (typeof ProductOrderStatScalarFieldEnum)[keyof typeof ProductOrderStatScalarFieldEnum]
+
+
+  export const CoPurchaseStateScalarFieldEnum: {
+    id: 'id',
+    lastDeliveredAt: 'lastDeliveredAt',
+    totalOrders: 'totalOrders',
+    updatedAt: 'updatedAt'
+  };
+
+  export type CoPurchaseStateScalarFieldEnum = (typeof CoPurchaseStateScalarFieldEnum)[keyof typeof CoPurchaseStateScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -11248,6 +14263,8 @@ export namespace Prisma {
     cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
     cancelledAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     refundStatus?: EnumRefundStatusFilter<"Order"> | $Enums.RefundStatus
+    refundFailureReason?: StringNullableFilter<"Order"> | string | null
+    refundFailedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     orderItems?: OrderItemListRelationFilter
@@ -11293,6 +14310,8 @@ export namespace Prisma {
     cancelledBy?: SortOrderInput | SortOrder
     cancelledAt?: SortOrderInput | SortOrder
     refundStatus?: SortOrder
+    refundFailureReason?: SortOrderInput | SortOrder
+    refundFailedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     orderItems?: OrderItemOrderByRelationAggregateInput
@@ -11341,6 +14360,8 @@ export namespace Prisma {
     cancelledBy?: EnumCancelledByNullableFilter<"Order"> | $Enums.CancelledBy | null
     cancelledAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     refundStatus?: EnumRefundStatusFilter<"Order"> | $Enums.RefundStatus
+    refundFailureReason?: StringNullableFilter<"Order"> | string | null
+    refundFailedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     createdAt?: DateTimeFilter<"Order"> | Date | string
     updatedAt?: DateTimeFilter<"Order"> | Date | string
     orderItems?: OrderItemListRelationFilter
@@ -11386,6 +14407,8 @@ export namespace Prisma {
     cancelledBy?: SortOrderInput | SortOrder
     cancelledAt?: SortOrderInput | SortOrder
     refundStatus?: SortOrder
+    refundFailureReason?: SortOrderInput | SortOrder
+    refundFailedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: OrderCountOrderByAggregateInput
@@ -11436,6 +14459,8 @@ export namespace Prisma {
     cancelledBy?: EnumCancelledByNullableWithAggregatesFilter<"Order"> | $Enums.CancelledBy | null
     cancelledAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     refundStatus?: EnumRefundStatusWithAggregatesFilter<"Order"> | $Enums.RefundStatus
+    refundFailureReason?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    refundFailedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
   }
@@ -11447,6 +14472,7 @@ export namespace Prisma {
     id?: StringFilter<"OrderItem"> | string
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
+    catalogProductId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
@@ -11457,6 +14483,7 @@ export namespace Prisma {
     id?: SortOrder
     orderId?: SortOrder
     productId?: SortOrder
+    catalogProductId?: SortOrderInput | SortOrder
     quantity?: SortOrder
     price?: SortOrder
     selectedOptions?: SortOrderInput | SortOrder
@@ -11470,6 +14497,7 @@ export namespace Prisma {
     NOT?: OrderItemWhereInput | OrderItemWhereInput[]
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
+    catalogProductId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
@@ -11480,6 +14508,7 @@ export namespace Prisma {
     id?: SortOrder
     orderId?: SortOrder
     productId?: SortOrder
+    catalogProductId?: SortOrderInput | SortOrder
     quantity?: SortOrder
     price?: SortOrder
     selectedOptions?: SortOrderInput | SortOrder
@@ -11497,6 +14526,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"OrderItem"> | string
     orderId?: StringWithAggregatesFilter<"OrderItem"> | string
     productId?: StringWithAggregatesFilter<"OrderItem"> | string
+    catalogProductId?: StringNullableWithAggregatesFilter<"OrderItem"> | string | null
     quantity?: IntWithAggregatesFilter<"OrderItem"> | number
     price?: DecimalWithAggregatesFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableWithAggregatesFilter<"OrderItem">
@@ -12002,6 +15032,149 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
   }
 
+  export type ProductCoPurchaseWhereInput = {
+    AND?: ProductCoPurchaseWhereInput | ProductCoPurchaseWhereInput[]
+    OR?: ProductCoPurchaseWhereInput[]
+    NOT?: ProductCoPurchaseWhereInput | ProductCoPurchaseWhereInput[]
+    catalogA?: StringFilter<"ProductCoPurchase"> | string
+    catalogB?: StringFilter<"ProductCoPurchase"> | string
+    orderCount?: IntFilter<"ProductCoPurchase"> | number
+    updatedAt?: DateTimeFilter<"ProductCoPurchase"> | Date | string
+  }
+
+  export type ProductCoPurchaseOrderByWithRelationInput = {
+    catalogA?: SortOrder
+    catalogB?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductCoPurchaseWhereUniqueInput = Prisma.AtLeast<{
+    catalogA_catalogB?: ProductCoPurchaseCatalogACatalogBCompoundUniqueInput
+    AND?: ProductCoPurchaseWhereInput | ProductCoPurchaseWhereInput[]
+    OR?: ProductCoPurchaseWhereInput[]
+    NOT?: ProductCoPurchaseWhereInput | ProductCoPurchaseWhereInput[]
+    catalogA?: StringFilter<"ProductCoPurchase"> | string
+    catalogB?: StringFilter<"ProductCoPurchase"> | string
+    orderCount?: IntFilter<"ProductCoPurchase"> | number
+    updatedAt?: DateTimeFilter<"ProductCoPurchase"> | Date | string
+  }, "catalogA_catalogB">
+
+  export type ProductCoPurchaseOrderByWithAggregationInput = {
+    catalogA?: SortOrder
+    catalogB?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ProductCoPurchaseCountOrderByAggregateInput
+    _avg?: ProductCoPurchaseAvgOrderByAggregateInput
+    _max?: ProductCoPurchaseMaxOrderByAggregateInput
+    _min?: ProductCoPurchaseMinOrderByAggregateInput
+    _sum?: ProductCoPurchaseSumOrderByAggregateInput
+  }
+
+  export type ProductCoPurchaseScalarWhereWithAggregatesInput = {
+    AND?: ProductCoPurchaseScalarWhereWithAggregatesInput | ProductCoPurchaseScalarWhereWithAggregatesInput[]
+    OR?: ProductCoPurchaseScalarWhereWithAggregatesInput[]
+    NOT?: ProductCoPurchaseScalarWhereWithAggregatesInput | ProductCoPurchaseScalarWhereWithAggregatesInput[]
+    catalogA?: StringWithAggregatesFilter<"ProductCoPurchase"> | string
+    catalogB?: StringWithAggregatesFilter<"ProductCoPurchase"> | string
+    orderCount?: IntWithAggregatesFilter<"ProductCoPurchase"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"ProductCoPurchase"> | Date | string
+  }
+
+  export type ProductOrderStatWhereInput = {
+    AND?: ProductOrderStatWhereInput | ProductOrderStatWhereInput[]
+    OR?: ProductOrderStatWhereInput[]
+    NOT?: ProductOrderStatWhereInput | ProductOrderStatWhereInput[]
+    catalogProductId?: StringFilter<"ProductOrderStat"> | string
+    orderCount?: IntFilter<"ProductOrderStat"> | number
+    updatedAt?: DateTimeFilter<"ProductOrderStat"> | Date | string
+  }
+
+  export type ProductOrderStatOrderByWithRelationInput = {
+    catalogProductId?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductOrderStatWhereUniqueInput = Prisma.AtLeast<{
+    catalogProductId?: string
+    AND?: ProductOrderStatWhereInput | ProductOrderStatWhereInput[]
+    OR?: ProductOrderStatWhereInput[]
+    NOT?: ProductOrderStatWhereInput | ProductOrderStatWhereInput[]
+    orderCount?: IntFilter<"ProductOrderStat"> | number
+    updatedAt?: DateTimeFilter<"ProductOrderStat"> | Date | string
+  }, "catalogProductId">
+
+  export type ProductOrderStatOrderByWithAggregationInput = {
+    catalogProductId?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ProductOrderStatCountOrderByAggregateInput
+    _avg?: ProductOrderStatAvgOrderByAggregateInput
+    _max?: ProductOrderStatMaxOrderByAggregateInput
+    _min?: ProductOrderStatMinOrderByAggregateInput
+    _sum?: ProductOrderStatSumOrderByAggregateInput
+  }
+
+  export type ProductOrderStatScalarWhereWithAggregatesInput = {
+    AND?: ProductOrderStatScalarWhereWithAggregatesInput | ProductOrderStatScalarWhereWithAggregatesInput[]
+    OR?: ProductOrderStatScalarWhereWithAggregatesInput[]
+    NOT?: ProductOrderStatScalarWhereWithAggregatesInput | ProductOrderStatScalarWhereWithAggregatesInput[]
+    catalogProductId?: StringWithAggregatesFilter<"ProductOrderStat"> | string
+    orderCount?: IntWithAggregatesFilter<"ProductOrderStat"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"ProductOrderStat"> | Date | string
+  }
+
+  export type CoPurchaseStateWhereInput = {
+    AND?: CoPurchaseStateWhereInput | CoPurchaseStateWhereInput[]
+    OR?: CoPurchaseStateWhereInput[]
+    NOT?: CoPurchaseStateWhereInput | CoPurchaseStateWhereInput[]
+    id?: StringFilter<"CoPurchaseState"> | string
+    lastDeliveredAt?: DateTimeNullableFilter<"CoPurchaseState"> | Date | string | null
+    totalOrders?: IntFilter<"CoPurchaseState"> | number
+    updatedAt?: DateTimeFilter<"CoPurchaseState"> | Date | string
+  }
+
+  export type CoPurchaseStateOrderByWithRelationInput = {
+    id?: SortOrder
+    lastDeliveredAt?: SortOrderInput | SortOrder
+    totalOrders?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CoPurchaseStateWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CoPurchaseStateWhereInput | CoPurchaseStateWhereInput[]
+    OR?: CoPurchaseStateWhereInput[]
+    NOT?: CoPurchaseStateWhereInput | CoPurchaseStateWhereInput[]
+    lastDeliveredAt?: DateTimeNullableFilter<"CoPurchaseState"> | Date | string | null
+    totalOrders?: IntFilter<"CoPurchaseState"> | number
+    updatedAt?: DateTimeFilter<"CoPurchaseState"> | Date | string
+  }, "id">
+
+  export type CoPurchaseStateOrderByWithAggregationInput = {
+    id?: SortOrder
+    lastDeliveredAt?: SortOrderInput | SortOrder
+    totalOrders?: SortOrder
+    updatedAt?: SortOrder
+    _count?: CoPurchaseStateCountOrderByAggregateInput
+    _avg?: CoPurchaseStateAvgOrderByAggregateInput
+    _max?: CoPurchaseStateMaxOrderByAggregateInput
+    _min?: CoPurchaseStateMinOrderByAggregateInput
+    _sum?: CoPurchaseStateSumOrderByAggregateInput
+  }
+
+  export type CoPurchaseStateScalarWhereWithAggregatesInput = {
+    AND?: CoPurchaseStateScalarWhereWithAggregatesInput | CoPurchaseStateScalarWhereWithAggregatesInput[]
+    OR?: CoPurchaseStateScalarWhereWithAggregatesInput[]
+    NOT?: CoPurchaseStateScalarWhereWithAggregatesInput | CoPurchaseStateScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CoPurchaseState"> | string
+    lastDeliveredAt?: DateTimeNullableWithAggregatesFilter<"CoPurchaseState"> | Date | string | null
+    totalOrders?: IntWithAggregatesFilter<"CoPurchaseState"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"CoPurchaseState"> | Date | string
+  }
+
   export type OrderCreateInput = {
     id?: string
     userId: string
@@ -12040,6 +15213,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -12085,6 +15260,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -12130,6 +15307,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -12175,6 +15354,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -12220,6 +15401,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12262,6 +15445,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12304,6 +15489,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12311,6 +15498,7 @@ export namespace Prisma {
   export type OrderItemCreateInput = {
     id?: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12321,6 +15509,7 @@ export namespace Prisma {
     id?: string
     orderId: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12329,6 +15518,7 @@ export namespace Prisma {
   export type OrderItemUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12339,6 +15529,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12348,6 +15539,7 @@ export namespace Prisma {
     id?: string
     orderId: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12356,6 +15548,7 @@ export namespace Prisma {
   export type OrderItemUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12365,6 +15558,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderId?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -12935,6 +16129,146 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type ProductCoPurchaseCreateInput = {
+    catalogA: string
+    catalogB: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductCoPurchaseUncheckedCreateInput = {
+    catalogA: string
+    catalogB: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductCoPurchaseUpdateInput = {
+    catalogA?: StringFieldUpdateOperationsInput | string
+    catalogB?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductCoPurchaseUncheckedUpdateInput = {
+    catalogA?: StringFieldUpdateOperationsInput | string
+    catalogB?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductCoPurchaseCreateManyInput = {
+    catalogA: string
+    catalogB: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductCoPurchaseUpdateManyMutationInput = {
+    catalogA?: StringFieldUpdateOperationsInput | string
+    catalogB?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductCoPurchaseUncheckedUpdateManyInput = {
+    catalogA?: StringFieldUpdateOperationsInput | string
+    catalogB?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductOrderStatCreateInput = {
+    catalogProductId: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductOrderStatUncheckedCreateInput = {
+    catalogProductId: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductOrderStatUpdateInput = {
+    catalogProductId?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductOrderStatUncheckedUpdateInput = {
+    catalogProductId?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductOrderStatCreateManyInput = {
+    catalogProductId: string
+    orderCount?: number
+    updatedAt?: Date | string
+  }
+
+  export type ProductOrderStatUpdateManyMutationInput = {
+    catalogProductId?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProductOrderStatUncheckedUpdateManyInput = {
+    catalogProductId?: StringFieldUpdateOperationsInput | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CoPurchaseStateCreateInput = {
+    id?: string
+    lastDeliveredAt?: Date | string | null
+    totalOrders?: number
+    updatedAt?: Date | string
+  }
+
+  export type CoPurchaseStateUncheckedCreateInput = {
+    id?: string
+    lastDeliveredAt?: Date | string | null
+    totalOrders?: number
+    updatedAt?: Date | string
+  }
+
+  export type CoPurchaseStateUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastDeliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalOrders?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CoPurchaseStateUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastDeliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalOrders?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CoPurchaseStateCreateManyInput = {
+    id?: string
+    lastDeliveredAt?: Date | string | null
+    totalOrders?: number
+    updatedAt?: Date | string
+  }
+
+  export type CoPurchaseStateUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastDeliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalOrders?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CoPurchaseStateUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    lastDeliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    totalOrders?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -13146,6 +16480,8 @@ export namespace Prisma {
     cancelledBy?: SortOrder
     cancelledAt?: SortOrder
     refundStatus?: SortOrder
+    refundFailureReason?: SortOrder
+    refundFailedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -13194,6 +16530,8 @@ export namespace Prisma {
     cancelledBy?: SortOrder
     cancelledAt?: SortOrder
     refundStatus?: SortOrder
+    refundFailureReason?: SortOrder
+    refundFailedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -13234,6 +16572,8 @@ export namespace Prisma {
     cancelledBy?: SortOrder
     cancelledAt?: SortOrder
     refundStatus?: SortOrder
+    refundFailureReason?: SortOrder
+    refundFailedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -13447,6 +16787,7 @@ export namespace Prisma {
     id?: SortOrder
     orderId?: SortOrder
     productId?: SortOrder
+    catalogProductId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
     selectedOptions?: SortOrder
@@ -13461,6 +16802,7 @@ export namespace Prisma {
     id?: SortOrder
     orderId?: SortOrder
     productId?: SortOrder
+    catalogProductId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
   }
@@ -13469,6 +16811,7 @@ export namespace Prisma {
     id?: SortOrder
     orderId?: SortOrder
     productId?: SortOrder
+    catalogProductId?: SortOrder
     quantity?: SortOrder
     price?: SortOrder
   }
@@ -13889,6 +17232,95 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumStockReservationStatusFilter<$PrismaModel>
     _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
+  }
+
+  export type ProductCoPurchaseCatalogACatalogBCompoundUniqueInput = {
+    catalogA: string
+    catalogB: string
+  }
+
+  export type ProductCoPurchaseCountOrderByAggregateInput = {
+    catalogA?: SortOrder
+    catalogB?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductCoPurchaseAvgOrderByAggregateInput = {
+    orderCount?: SortOrder
+  }
+
+  export type ProductCoPurchaseMaxOrderByAggregateInput = {
+    catalogA?: SortOrder
+    catalogB?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductCoPurchaseMinOrderByAggregateInput = {
+    catalogA?: SortOrder
+    catalogB?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductCoPurchaseSumOrderByAggregateInput = {
+    orderCount?: SortOrder
+  }
+
+  export type ProductOrderStatCountOrderByAggregateInput = {
+    catalogProductId?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductOrderStatAvgOrderByAggregateInput = {
+    orderCount?: SortOrder
+  }
+
+  export type ProductOrderStatMaxOrderByAggregateInput = {
+    catalogProductId?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductOrderStatMinOrderByAggregateInput = {
+    catalogProductId?: SortOrder
+    orderCount?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ProductOrderStatSumOrderByAggregateInput = {
+    orderCount?: SortOrder
+  }
+
+  export type CoPurchaseStateCountOrderByAggregateInput = {
+    id?: SortOrder
+    lastDeliveredAt?: SortOrder
+    totalOrders?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CoPurchaseStateAvgOrderByAggregateInput = {
+    totalOrders?: SortOrder
+  }
+
+  export type CoPurchaseStateMaxOrderByAggregateInput = {
+    id?: SortOrder
+    lastDeliveredAt?: SortOrder
+    totalOrders?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CoPurchaseStateMinOrderByAggregateInput = {
+    id?: SortOrder
+    lastDeliveredAt?: SortOrder
+    totalOrders?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CoPurchaseStateSumOrderByAggregateInput = {
+    totalOrders?: SortOrder
   }
 
   export type OrderItemCreateNestedManyWithoutOrderInput = {
@@ -14609,6 +18041,7 @@ export namespace Prisma {
   export type OrderItemCreateWithoutOrderInput = {
     id?: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -14617,6 +18050,7 @@ export namespace Prisma {
   export type OrderItemUncheckedCreateWithoutOrderInput = {
     id?: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -14713,6 +18147,7 @@ export namespace Prisma {
     id?: StringFilter<"OrderItem"> | string
     orderId?: StringFilter<"OrderItem"> | string
     productId?: StringFilter<"OrderItem"> | string
+    catalogProductId?: StringNullableFilter<"OrderItem"> | string | null
     quantity?: IntFilter<"OrderItem"> | number
     price?: DecimalFilter<"OrderItem"> | Decimal | DecimalJsLike | number | string
     selectedOptions?: JsonNullableFilter<"OrderItem">
@@ -14815,6 +18250,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     payments?: PaymentCreateNestedManyWithoutOrderInput
@@ -14859,6 +18296,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     payments?: PaymentUncheckedCreateNestedManyWithoutOrderInput
@@ -14919,6 +18358,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUpdateManyWithoutOrderNestedInput
@@ -14963,6 +18404,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payments?: PaymentUncheckedUpdateManyWithoutOrderNestedInput
@@ -15007,6 +18450,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -15051,6 +18496,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -15111,6 +18558,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -15155,6 +18604,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -15199,6 +18650,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemCreateNestedManyWithoutOrderInput
@@ -15243,6 +18696,8 @@ export namespace Prisma {
     cancelledBy?: $Enums.CancelledBy | null
     cancelledAt?: Date | string | null
     refundStatus?: $Enums.RefundStatus
+    refundFailureReason?: string | null
+    refundFailedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     orderItems?: OrderItemUncheckedCreateNestedManyWithoutOrderInput
@@ -15303,6 +18758,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUpdateManyWithoutOrderNestedInput
@@ -15347,6 +18804,8 @@ export namespace Prisma {
     cancelledBy?: NullableEnumCancelledByFieldUpdateOperationsInput | $Enums.CancelledBy | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     refundStatus?: EnumRefundStatusFieldUpdateOperationsInput | $Enums.RefundStatus
+    refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
+    refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
@@ -15356,6 +18815,7 @@ export namespace Prisma {
   export type OrderItemCreateManyOrderInput = {
     id?: string
     productId: string
+    catalogProductId?: string | null
     quantity: number
     price: Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -15383,6 +18843,7 @@ export namespace Prisma {
   export type OrderItemUpdateWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -15391,6 +18852,7 @@ export namespace Prisma {
   export type OrderItemUncheckedUpdateWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -15399,6 +18861,7 @@ export namespace Prisma {
   export type OrderItemUncheckedUpdateManyWithoutOrderInput = {
     id?: StringFieldUpdateOperationsInput | string
     productId?: StringFieldUpdateOperationsInput | string
+    catalogProductId?: NullableStringFieldUpdateOperationsInput | string | null
     quantity?: IntFieldUpdateOperationsInput | number
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     selectedOptions?: NullableJsonNullValueInput | InputJsonValue
@@ -15506,6 +18969,18 @@ export namespace Prisma {
      * @deprecated Use StockReservationDefaultArgs instead
      */
     export type StockReservationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = StockReservationDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ProductCoPurchaseDefaultArgs instead
+     */
+    export type ProductCoPurchaseArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ProductCoPurchaseDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use ProductOrderStatDefaultArgs instead
+     */
+    export type ProductOrderStatArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ProductOrderStatDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CoPurchaseStateDefaultArgs instead
+     */
+    export type CoPurchaseStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CoPurchaseStateDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

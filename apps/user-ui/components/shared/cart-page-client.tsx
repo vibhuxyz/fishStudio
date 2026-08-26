@@ -203,6 +203,7 @@ export function CartPageClient() {
                                 src={item.product.image || "/placeholder.svg"}
                                 alt={item.product.name}
                                 fill
+                                sizes="48px"
                                 className="object-cover"
                               />
                             </div>
@@ -246,6 +247,7 @@ export function CartPageClient() {
                         src={item.product.image || "/placeholder.svg"}
                         alt={item.product.name}
                         fill
+                        sizes="64px"
                         className="object-cover"
                       />
                     </div>
@@ -662,10 +664,7 @@ export function CartPageClient() {
                 <p className="text-[10px] font-medium opacity-80 uppercase">Remove items to proceed</p>
               </div>
             ) : (
-              <div>
-                <p className="text-lg font-bold">₹{grandTotal.toFixed(0)}</p>
-                <p className="text-[10px] font-medium opacity-80">TOTAL</p>
-              </div>
+              <p className="text-base font-bold">Total - ₹{grandTotal.toFixed(0)}</p>
             )}
             <div className="flex items-center gap-1.5 font-semibold">
               {!isLoggedIn

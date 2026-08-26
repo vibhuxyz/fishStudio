@@ -86,20 +86,50 @@ export const fetchAdminProfile = async (): Promise<AdminProfile | null> => {
 export interface AdminProductsParams {
   scope?: "catalog" | "store";
   storeId?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
 }
+
+export interface AdminProductsPage {
+  products: AdminProduct[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+const EMPTY_PAGINATION: AdminProductsPage["pagination"] = {
+  page: 1,
+  limit: 20,
+  total: 0,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPrevPage: false,
+};
 
 export const fetchAdminProducts = async (
   params: AdminProductsParams = {},
-): Promise<AdminProduct[]> => {
+): Promise<AdminProductsPage> => {
   const query = new URLSearchParams();
   if (params.scope) query.set("scope", params.scope);
   if (params.storeId) query.set("storeId", params.storeId);
+  if (params.search) query.set("search", params.search);
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
   const response = await axiosInstance.get(
     `/product/api/get-owned-products?${query.toString()}`,
     isProtected,
   );
   const products = Array.isArray(response.data.products) ? response.data.products : [];
-  return products.filter((product: AdminProduct) => !product.starting_date);
+  return {
+    products: products.filter((product: AdminProduct) => !product.starting_date),
+    pagination: response.data.pagination ?? { ...EMPTY_PAGINATION, total: products.length },
+  };
 };
 
 export const deleteAdminProduct = async (productId: string) => {
@@ -293,6 +323,8 @@ export const useAdminProducts = (params: AdminProductsParams = {}) =>
   useQuery({
     queryKey: adminQueryKeys.productsList(params as Record<string, string>),
     queryFn: () => fetchAdminProducts(params),
+    // A page of rows shouldn't blank out while the next page loads.
+    placeholderData: (previous) => previous,
   });
 
 export const useAdminAccount = () =>
@@ -478,6 +510,12 @@ export interface AdminOrder {
   deliveryCharge: number;
   billDetails?: any;
   rejectionReason?: string;
+  cancelledBy?: string | null;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
+  refundStatus?: string | null;
+  refundFailureReason?: string | null;
+  refundFailedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   riderStatus?: string | null;

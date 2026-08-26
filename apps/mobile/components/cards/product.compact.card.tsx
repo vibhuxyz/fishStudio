@@ -6,6 +6,7 @@ import { useStore } from "@/store";
 import type { Product } from "@/types/product";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import { toast } from "@/utils/toast";
+import { resolveCardPrice } from "@repo/shared/pricing";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
@@ -60,6 +61,12 @@ export default function ProductCompactCard({
 
   const isOutOfStock = product.stock === 0 || product.outOfStock;
   const currentPrice = product.sale_price || product.regular_price;
+  const cardPrice = resolveCardPrice({
+    basePricePerKg: product.basePricePerKg,
+    sizePricing: product.sizePricing,
+    salePrice: currentPrice,
+    regularPrice: product.regular_price,
+  });
   const inWishlist = wishlist.some((item) => item.id === product.id);
 
   const openProduct = () => {
@@ -158,8 +165,8 @@ export default function ProductCompactCard({
 
         <View style={styles.priceRow}>
           <View style={styles.price}>
-            <Text style={styles.priceValue}>₹{currentPrice}</Text>
-            <Text style={styles.priceUnit}>/{product.unit || "kg"}</Text>
+            <Text style={styles.priceValue}>₹{cardPrice.salePrice}</Text>
+            <Text style={styles.priceUnit}>/{cardPrice.unit}</Text>
           </View>
 
           {!isOutOfStock && (

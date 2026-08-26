@@ -7,7 +7,9 @@
   "type": "module",
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --config tsup.config.dev.ts --watch"
+    "dev": "tsup --config tsup.config.dev.ts --watch",
+    "backfill:order-item-catalog": "tsx src/scripts/backfill-order-item-catalog.ts",
+    "backfill:not-paid-orders": "tsx src/scripts/backfill-not-paid-orders.ts"
   },
   "dependencies": {
     "node-cron": "^4.2.1",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "tsup": "^8.5.0",
+    "tsx": "^4.7.2",
     "typescript": "^5"
   }
 }

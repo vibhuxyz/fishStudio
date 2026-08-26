@@ -23,11 +23,31 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const getSellerDiscountOwnerData = (req: AuthRequest) => {
+// Sellers always own their own coupons. Admins act on behalf of a seller
+// they pick explicitly (there's no "admin's own" store) — adminId records
+// who created it, sellerId still decides which store's coupon it is, same
+// as one the seller created themselves.
+export const getSellerDiscountOwnerData = async (
+  req: AuthRequest,
+  adminPickedSellerId?: string,
+) => {
   if (req.role === "seller" && req.seller?.id) {
     return { sellerId: req.seller.id };
   }
-  throw new ValidationError("Only seller can manage discount codes!");
+  if (req.role === "admin" && req.admin?.id) {
+    if (!adminPickedSellerId) {
+      throw new ValidationError("Select a seller for this coupon");
+    }
+    const seller = await prisma.sellers.findUnique({
+      where: { id: adminPickedSellerId },
+      select: { id: true },
+    });
+    if (!seller) {
+      throw new ValidationError("Selected seller does not exist");
+    }
+    return { sellerId: adminPickedSellerId, adminId: req.admin.id };
+  }
+  throw new ValidationError("Only seller or admin can manage discount codes!");
 };
 
 export const getOwnedProductFilter = (req: AuthRequest) => {
@@ -243,6 +263,22 @@ export const getDisplayPricesFromSizePricing = (
         ? cheapestEntry.regularPrice
         : cheapestEntry.salePrice,
   };
+};
+
+// One entry per tracked size, whether or not the seller submitted a value
+// for it — missing/invalid entries floor to 0 rather than being dropped, so
+// a size can never silently keep a stale qty from a previous submission.
+export const normalizeSizeStock = (
+  sizeStock: Array<{ size: string; qty: number }> | undefined,
+  sizes: string[],
+): Array<{ size: string; qty: number }> => {
+  const submittedQtyBySize = new Map(
+    (sizeStock ?? []).map((entry) => [entry.size, entry.qty]),
+  );
+  return [...new Set(sizes)].map((size) => ({
+    size,
+    qty: Math.max(0, Math.floor(Number(submittedQtyBySize.get(size)) || 0)),
+  }));
 };
 
 export const normalizeCuttingTypePricing = (

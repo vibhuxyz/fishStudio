@@ -47,6 +47,7 @@ const Page = () => {
       public_name: "",
       discountType: "percentage",
       discountValue: "",
+      maxDiscountAmount: "",
       discountCode: "",
       minOrderValue: "",
       expiresAt: "",
@@ -64,6 +65,10 @@ const Page = () => {
       const payload = {
         ...data,
         discountValue: data.discountType === "free_delivery" ? 0 : Number(data.discountValue),
+        maxDiscountAmount:
+          data.discountType === "percentage" && data.maxDiscountAmount
+            ? Number(data.maxDiscountAmount)
+            : null,
         minOrderValue: data.minOrderValue ? Number(data.minOrderValue) : 0,
         maxUses: data.isFirstOrder ? null : (data.maxUses ? Number(data.maxUses) : null),
         maxUsesPerUser: data.isFirstOrder ? 1 : (data.maxUsesPerUser ? Number(data.maxUsesPerUser) : 1),
@@ -185,6 +190,9 @@ const Page = () => {
                           : discount.discountType === "free_delivery"
                             ? "Free"
                             : `₹${discount.discountValue}`}
+                        {discount.discountType === "percentage" && discount.maxDiscountAmount && (
+                          <span className="text-gray-500 text-xs"> (max ₹{discount.maxDiscountAmount})</span>
+                        )}
                       </td>
                       <td className="p-3">
                         {discount.minOrderValue > 0 ? `₹${discount.minOrderValue}` : "–"}
@@ -362,6 +370,23 @@ const Page = () => {
                   {errors.discountValue && (
                     <p className="text-red-400 text-xs mt-1">{errors.discountValue.message}</p>
                   )}
+                </div>
+              )}
+
+              {/* Max discount cap — percentage only, uncapped otherwise means
+                  "50% off" has no ceiling on a large order. */}
+              {watchedType === "percentage" && (
+                <div>
+                  <Input
+                    label="Max Discount Amount (₹)"
+                    type="number"
+                    min={1}
+                    placeholder="No cap"
+                    {...register("maxDiscountAmount")}
+                  />
+                  <p className="text-gray-500 text-xs mt-0.5">
+                    Leave blank for no cap on the discount amount
+                  </p>
                 </div>
               )}
 

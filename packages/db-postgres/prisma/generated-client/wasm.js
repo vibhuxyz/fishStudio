@@ -160,6 +160,8 @@ exports.Prisma.OrderScalarFieldEnum = {
   cancelledBy: 'cancelledBy',
   cancelledAt: 'cancelledAt',
   refundStatus: 'refundStatus',
+  refundFailureReason: 'refundFailureReason',
+  refundFailedAt: 'refundFailedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -168,6 +170,7 @@ exports.Prisma.OrderItemScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
   productId: 'productId',
+  catalogProductId: 'catalogProductId',
   quantity: 'quantity',
   price: 'price',
   selectedOptions: 'selectedOptions'
@@ -254,6 +257,26 @@ exports.Prisma.StockReservationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ProductCoPurchaseScalarFieldEnum = {
+  catalogA: 'catalogA',
+  catalogB: 'catalogB',
+  orderCount: 'orderCount',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProductOrderStatScalarFieldEnum = {
+  catalogProductId: 'catalogProductId',
+  orderCount: 'orderCount',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CoPurchaseStateScalarFieldEnum = {
+  id: 'id',
+  lastDeliveredAt: 'lastDeliveredAt',
+  totalOrders: 'totalOrders',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -299,6 +322,7 @@ exports.PaymentStatus = exports.$Enums.PaymentStatus = {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
+  NOT_PAID: 'NOT_PAID',
   REFUND_PENDING: 'REFUND_PENDING',
   REFUNDED: 'REFUNDED'
 };
@@ -367,7 +391,10 @@ exports.Prisma.ModelName = {
   AuditLog: 'AuditLog',
   WebhookEvent: 'WebhookEvent',
   OutboxEvent: 'OutboxEvent',
-  StockReservation: 'StockReservation'
+  StockReservation: 'StockReservation',
+  ProductCoPurchase: 'ProductCoPurchase',
+  ProductOrderStat: 'ProductOrderStat',
+  CoPurchaseState: 'CoPurchaseState'
 };
 
 /**

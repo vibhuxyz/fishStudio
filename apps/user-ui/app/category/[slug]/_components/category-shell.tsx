@@ -55,6 +55,8 @@ export function CategoryShell({
     hasNextPage,
     fetchNextPage,
     pagination,
+    subCategoryCounts,
+    categoryTotal,
   } = useInfiniteProducts({
     scope: "category",
     category: matchedCategory ?? undefined,
@@ -83,15 +85,10 @@ export function CategoryShell({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const productCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const p of allProducts) {
-      if (p.subCategory) {
-        counts.set(p.subCategory, (counts.get(p.subCategory) || 0) + 1);
-      }
-    }
-    return counts;
-  }, [allProducts]);
+  const productCounts = useMemo(
+    () => new Map(Object.entries(subCategoryCounts ?? {})),
+    [subCategoryCounts],
+  );
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -140,7 +137,7 @@ export function CategoryShell({
               onSubCategoryChange={setActiveSubCategory}
               initialCategories={initialCategories}
               productCounts={productCounts}
-              totalCount={allProducts.length}
+              totalCount={categoryTotal ?? pagination?.total ?? allProducts.length}
             />
 
             <div className="flex-1">

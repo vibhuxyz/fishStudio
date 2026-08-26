@@ -91,7 +91,12 @@ import {
   getStoreCombos,
   getHomeCombos,
 } from "../controllers/product/combo.controller.js";
-import { allowRoles, isAuthenticated, isApprovedSeller } from "@repo/middlewares";
+import {
+  allowRoles,
+  isAuthenticated,
+  isApprovedSeller,
+  optionalAuth,
+} from "@repo/middlewares";
 
 const router: Router = express.Router();
 
@@ -110,8 +115,8 @@ router.post(
 router.post(
   "/create-discount-code",
   isAuthenticated,
-  allowRoles("seller"),
-  isApprovedSeller,
+  allowRoles("seller", "admin"),
+  allowAdminOrApprovedSeller,
   createDiscountCodes,
 );
 router.post(
@@ -151,8 +156,11 @@ router.patch(
   allowRoles("admin", "seller"),
   toggleCouponStatus,
 );
-// Public — called from checkout before order submit (auth optional for per-user limit check)
-router.post("/validate-coupon", validateCoupon);
+// Public — called from checkout before order submit. optionalAuth resolves the
+// shopper when they are logged in, which is what the per-user limit,
+// first-order and personally-issued checks inside the handler run against;
+// a logged-out shopper still gets a straight validity answer.
+router.post("/validate-coupon", optionalAuth, validateCoupon);
 router.delete(
   "/delete-event/:eventId",
   isAuthenticated,
@@ -329,7 +337,7 @@ router.get("/get-product-reviews/:productId", getProductReviews);
 router.get("/get-my-reviews", isAuthenticated, getMyReviews);
 router.post("/create-review", isAuthenticated, createReview);
 router.delete("/delete-review/:reviewId", isAuthenticated, deleteReview);
-router.get("/public/store-offers/:storeId", getStorePublicOffers);
+router.get("/public/store-offers/:storeId", optionalAuth, getStorePublicOffers);
 router.get(
   "/get-catalog-products",
   isAuthenticated,

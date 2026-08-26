@@ -67,6 +67,7 @@ export type AdminProduct = {
   cuttingTypes?: string[];
   pieceSizes?: string[];
   sizes?: string[];
+  processingWeightLoss?: string | null;
   trackStockPerSize?: boolean;
 };
 
@@ -75,6 +76,7 @@ export type DiscountCode = {
   public_name: string;
   discountType: string;
   discountValue: number;
+  maxDiscountAmount?: number | null;
   discountCode: string;
   seller?: {
     id: string;
@@ -261,6 +263,12 @@ export type SizePricingRow = {
   weightGrams: number;
   regularPrice: number;
   salePrice: number;
+  // UI-only — only meaningful when the product tracks stock per size.
+  // stockQty is derived from totalInventoryGrams (what the seller actually
+  // types) divided by weightGrams; neither is sent as part of sizePricing
+  // itself, they're pulled back out into a separate sizeStock submission.
+  stockQty?: number;
+  totalInventoryGrams?: number;
 };
 
 export type SellerOwnedProduct = {
@@ -276,6 +284,8 @@ export type SellerOwnedProduct = {
   stock: number;
   sizes: string[];
   sizePricing?: SizePricingRow[] | null;
+  trackStockPerSize?: boolean;
+  sizeStock?: Array<{ size: string; qty: number }> | null;
   cuttingTypes?: string[] | null;
   pieceSizes?: string[] | null;
   cuttingTypePricing?: Array<{ cuttingType: string; salePrice: number; regularPrice: number }> | null;
@@ -303,6 +313,9 @@ export type SellerProductFormValues = {
   status: "Active" | "NonActive";
   discountCodes: string[];
   sizePricing: SizePricingRow[];
+  // Derived from sizePricing's stockQty at submit time, not form-registered
+  // directly — see products/[id]/page.tsx's onSubmit.
+  sizeStock?: Array<{ size: string; qty: number }>;
   cuttingTypePricing: Array<{ cuttingType: string; salePrice: number; regularPrice: number }>;
   pieceSizePricing: Array<{ pieceSize: string; salePrice: number; regularPrice: number }>;
   regular_price: number;
@@ -330,11 +343,16 @@ export type DiscountCodePayload = {
   public_name: string;
   discountType: string;
   discountValue: number;
+  maxDiscountAmount?: number | null;
   discountCode: string;
   minOrderValue?: number;
   expiresAt?: string | null;
   maxUses?: number | null;
   maxUsesPerUser?: number;
+  /** Only redeemable by a customer with no prior order at this store. */
+  isFirstOrder?: boolean;
+  /** Admin-only: which seller's store this coupon belongs to. */
+  sellerId?: string;
 };
 
 export type UpdateProductPayload = {
@@ -361,6 +379,8 @@ export type UpdateProductPayload = {
   nutritionCalories?: string;
   cuttingTypes?: Array<{ value: string }>;
   pieceSizes?: Array<{ value: string }>;
+  sizes?: Array<{ value: string }>;
+  processingWeightLoss?: string;
   trackStockPerSize?: boolean;
 };
 

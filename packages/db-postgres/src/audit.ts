@@ -23,6 +23,9 @@ export type AuditAction =
   | "PAYMENT_ORDER_MISMATCH"
   | "PAYMENT_SIGNATURE_MISMATCH"
   | "PAYMENT_ON_CANCELLED_ORDER"
+  // Checkout was created but the customer never attempted a payment, and the
+  // reconcile sweep closed it out. Not a failure — nothing to investigate.
+  | "PAYMENT_ABANDONED"
   | "REFUND_INITIATED"
   | "REFUND_PROCESSED"
   | "REFUND_FAILED"

@@ -18,12 +18,12 @@ import { useAddressStore } from "@/lib/address-store";
 import { useScrollDirectionStore } from "@/store/scroll-direction-store";
 import type { Product } from "@/types/product";
 import axiosInstance from "@/utils/axiosInstance";
+import { openWhatsApp } from "@/utils/whatsapp";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import React, { useRef, useState } from "react";
 import {
-  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   ScrollView,
@@ -225,7 +225,7 @@ export default function Index() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => Linking.openURL("https://wa.me/919999999999")}
+            onPress={() => openWhatsApp("https://wa.me/919999999999")}
             activeOpacity={0.8}
             style={{
               width: 52,

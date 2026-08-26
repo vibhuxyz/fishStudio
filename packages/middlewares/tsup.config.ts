@@ -8,6 +8,7 @@ export default defineConfig((options) => ({
     "src/index.ts",
     "src/authorizeRole.ts",
     "src/isAuthenticated.ts",
+    "src/optionalAuth.ts",
     "src/staffCookies.ts",
   ],
   format: ["esm"],

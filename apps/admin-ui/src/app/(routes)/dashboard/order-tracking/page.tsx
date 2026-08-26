@@ -18,6 +18,11 @@ import {
   PackageCheck,
   Bike,
 } from "lucide-react";
+import {
+  PAYMENT_STATUS_FILTER_OPTIONS,
+  resolvePaymentState,
+  type PaymentTone,
+} from "@repo/shared/payment-state";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import {
   useAdminOrderList,
@@ -42,11 +47,15 @@ const statusConfig: Record<string, { label: string; className: string; icon: Rea
   CANCELLED: { label: "Cancelled", className: "bg-gray-500/20 text-gray-400 border border-gray-500/30",       icon: <X size={11} /> },
 };
 
-const payStatusConfig: Record<string, { label: string; className: string }> = {
-  PENDING:   { label: "Pending",   className: "text-amber-400" },
-  COMPLETED: { label: "Paid",      className: "text-emerald-400" },
-  FAILED:    { label: "Failed",    className: "text-rose-400" },
-  REFUNDED:  { label: "Refunded",  className: "text-purple-400" },
+// Semantic tone -> this dashboard's palette. The labels themselves come from
+// @repo/shared/payment-state so every app says the same thing.
+const PAY_TONE_CLASS: Record<PaymentTone, string> = {
+  paid:     "text-emerald-400",
+  due:      "text-amber-400",
+  pending:  "text-amber-400",
+  refunded: "text-purple-400",
+  dead:     "text-gray-500",
+  danger:   "text-rose-400",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -58,14 +67,28 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function PayBadge({ status }: { status: string }) {
-  const cfg = payStatusConfig[status] ?? { label: status, className: "text-gray-400" };
-  return <span className={`text-xs font-semibold ${cfg.className}`}>{cfg.label}</span>;
+function PayBadge({
+  paymentStatus,
+  paymentMethod,
+  refundStatus,
+  orderStatus,
+}: {
+  paymentStatus?: string | null;
+  paymentMethod?: string | null;
+  refundStatus?: string | null;
+  orderStatus?: string | null;
+}) {
+  const state = resolvePaymentState({ paymentStatus, paymentMethod, refundStatus, orderStatus });
+  return (
+    <span className={`text-xs font-semibold ${PAY_TONE_CLASS[state.tone]}`} title={state.detail}>
+      {state.label}
+    </span>
+  );
 }
 
 /* ── Filter bar ─────────────────────────────────────────────────────────── */
 const ORDER_STATUSES = ["PENDING","ACCEPTED","PREPARING","READY_FOR_PICKUP","ASSIGNED_TO_RIDER","SHIPPED","DELIVERED","REJECTED","CANCELLED"];
-const PAY_STATUSES   = ["PENDING","COMPLETED","FAILED","REFUNDED"];
+
 const PAY_METHODS    = ["COD","RAZORPAY"];
 
 interface FiltersState {
@@ -179,7 +202,7 @@ export default function OrderTrackingPage() {
               className="w-full bg-gray-800 text-white text-sm rounded-lg px-3 py-2 border border-gray-700 outline-none"
             >
               <option value="">All</option>
-              {PAY_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {PAYMENT_STATUS_FILTER_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </div>
           <div>
@@ -339,7 +362,12 @@ export default function OrderTrackingPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <PayBadge status={order.paymentStatus} />
+                    <PayBadge
+                      paymentStatus={order.paymentStatus}
+                      paymentMethod={order.paymentMethod}
+                      refundStatus={order.refundStatus}
+                      orderStatus={order.status}
+                    />
                     <div className="text-xs text-gray-500 mt-0.5">{order.paymentMethod ?? "—"}</div>
                   </td>
                   <td className="px-4 py-3">
@@ -451,7 +479,12 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
           {/* Status row */}
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={order.status} />
-            <PayBadge status={order.paymentStatus} />
+            <PayBadge
+              paymentStatus={order.paymentStatus}
+              paymentMethod={order.paymentMethod}
+              refundStatus={order.refundStatus}
+              orderStatus={order.status}
+            />
             <span className="text-xs text-gray-500">
               {order.paymentMethod}
               {primaryInstrument && ` · ${primaryInstrument}`}
@@ -523,7 +556,11 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
                           <span className="text-gray-400 font-normal"> · {instrumentLabel(payment)}</span>
                         )}
                       </span>
-                      <PayBadge status={payment.status} />
+                      <PayBadge
+                        paymentStatus={payment.status}
+                        paymentMethod={payment.method}
+                        orderStatus={order.status}
+                      />
                     </div>
                     <Row label="Amount" value={`₹${payment.amount.toFixed(0)}`} />
                     {payment.transactionId && <Row label="Transaction ID" value={payment.transactionId} />}

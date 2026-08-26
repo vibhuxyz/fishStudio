@@ -133,12 +133,16 @@ model users {
 }
 
 model discount_codes {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
-  public_name   String
-  discountType  String // "percentage" | "fixed" | "free_delivery"
-  discountValue Float
-  minOrderValue Float  @default(0)
-  discountCode  String @unique
+  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  public_name       String
+  discountType      String // "percentage" | "fixed" | "free_delivery"
+  discountValue     Float
+  // Ceiling on the rupee amount a percentage coupon can knock off — without
+  // this, "20% off" on a large order has no upper bound. Ignored for fixed
+  // (already capped at order value) and free_delivery (no rupee value).
+  maxDiscountAmount Float?
+  minOrderValue     Float  @default(0)
+  discountCode      String @unique
 
   // New fields for better control
   expiresAt      DateTime? // null = never expires

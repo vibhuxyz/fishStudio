@@ -16,6 +16,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { formatOrderId } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const fetchOrders = async () => {
   const res = await axiosInstance.get("/order/api/get-seller-orders");
@@ -96,37 +97,14 @@ const SellerPayments = () => {
       },
       {
         header: "Payment Status",
-        cell: ({ row }: any) => {
-          const pStatus = row.original.paymentStatus;
-          const oStatus = row.original.status;
-          const isCOD = row.original.paymentMethod === "COD";
-
-          let color = "bg-gray-800 text-gray-400";
-          let label = pStatus || "PENDING";
-
-          if (isCOD && oStatus === "DELIVERED") {
-            color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30";
-            label = "COLLECTED";
-          } else if (pStatus === "COMPLETED") {
-            color = "bg-emerald-900/40 text-emerald-500 border border-emerald-900/30";
-            label = "SUCCESSFUL";
-          } else if (pStatus === "REFUNDED") {
-            color = "bg-rose-900/40 text-rose-500 border border-rose-900/30";
-            label = "REFUNDED";
-          } else if (oStatus === "REJECTED" || oStatus === "CANCELLED") {
-            color = "bg-amber-900/40 text-amber-500 border border-amber-900/30";
-            label = "REFUND PROCESSING";
-          } else {
-            color = "bg-amber-900/40 text-amber-500 border border-amber-900/30";
-            label = "PENDING";
-          }
-
-          return (
-            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${color}`}>
-              {label}
-            </span>
-          );
-        },
+        cell: ({ row }: any) => (
+          <PaymentBadge
+            variant="pill"
+            paymentStatus={row.original.paymentStatus}
+            paymentMethod={row.original.paymentMethod}
+            orderStatus={row.original.status}
+          />
+        ),
       },
       {
         accessorKey: "createdAt",

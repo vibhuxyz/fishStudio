@@ -13,6 +13,7 @@ import {
   toggleCouponStatusSchema,
   validate,
 } from "@repo/zod-schema";
+import { PLACED_ORDER_STATUSES } from "@repo/shared/pricing";
 
 /* ─── Create ──────────────────────────────────────────────────────────────── */
 export const createDiscountCodes = async (
@@ -25,12 +26,14 @@ export const createDiscountCodes = async (
       public_name,
       discountType,
       discountValue,
+      maxDiscountAmount,
       discountCode,
       minOrderValue,
       expiresAt,
       maxUses,
       maxUsesPerUser,
       isFirstOrder,
+      sellerId,
     } = validate(createCouponSchema, req.body) as any;
 
     // free_delivery coupons don't need a numeric value
@@ -49,11 +52,16 @@ export const createDiscountCodes = async (
       );
     }
 
+    const ownerData = await getSellerDiscountOwnerData(req, sellerId);
+
     const discount_code = await prisma.discount_codes.create({
       data: {
         public_name,
         discountType,
         discountValue,
+        // Only meaningful for percentage — a flat/free_delivery coupon has no
+        // "percent of order" to cap.
+        maxDiscountAmount: discountType === "percentage" ? (maxDiscountAmount ?? null) : null,
         discountCode,
         minOrderValue: minOrderValue ?? 0,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
@@ -61,7 +69,7 @@ export const createDiscountCodes = async (
         // First-order coupons are always per-user = 1 (enforced server-side)
         maxUsesPerUser: isFirstOrder ? 1 : (maxUsesPerUser ?? 1),
         isFirstOrder: isFirstOrder ?? false,
-        ...getSellerDiscountOwnerData(req),
+        ...ownerData,
       },
     });
 
@@ -90,7 +98,7 @@ export const getDiscountCodes = async (
             },
           })
         : await prisma.discount_codes.findMany({
-            where: getSellerDiscountOwnerData(req),
+            where: await getSellerDiscountOwnerData(req),
             orderBy: { createdAt: "desc" },
           });
 
@@ -174,7 +182,11 @@ export const validateCoupon = async (
     const userId: string | null = req.user?.id ?? null;
     const now = new Date();
 
-    // Find coupon: must belong to this store's seller OR be an admin coupon
+    // Scope is decided by which seller the coupon belongs to, never by who
+    // created it: an admin picks a seller when creating a coupon (see
+    // getSellerDiscountOwnerData), so `adminId` records the author, not the
+    // audience. Treating adminId as "global" made a coupon an admin created
+    // for one store spendable at every other store.
     const coupon = await prisma.discount_codes.findFirst({
       where: {
         discountCode: code.toUpperCase(),
@@ -183,8 +195,8 @@ export const validateCoupon = async (
           { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
           {
             OR: [
-              { adminId: { not: null } }, // admin-created = global
-              { seller: { store: { id: storeId } } }, // or belongs to this store's seller
+              { seller: { store: { id: storeId } } }, // this store's coupon
+              { sellerId: null }, // platform-wide: belongs to no single store
             ],
           },
         ],
@@ -216,26 +228,26 @@ export const validateCoupon = async (
         });
       }
 
-      // Check if user has any previous ACCEPTED/DELIVERED orders at this store.
-      // We check store-level (seller-created) or platform-level (admin-created).
-      const previousOrdersWhere = coupon.adminId
-        ? { userId } // admin coupon = platform-wide first order
-        : { userId, storeId }; // seller coupon = first order at this store
+      // A store's own coupon means "first order at this store"; one belonging
+      // to no store means "first order anywhere". PLACED_ORDER_STATUSES is
+      // shared so the offer list and the order transaction count the same
+      // orders — otherwise a coupon shown as available gets refused here.
+      const isPlatformWide = coupon.sellerId === null;
 
       const previousOrders = await prismaPostgres.order.count({
         where: {
-          ...previousOrdersWhere,
-          status: { in: ["ACCEPTED", "SHIPPED", "DELIVERED"] },
+          userId,
+          ...(isPlatformWide ? {} : { storeId }),
+          status: { in: [...PLACED_ORDER_STATUSES] },
         },
       });
 
       if (previousOrders > 0) {
         return res.status(200).json({
           success: false,
-          message:
-            coupon.adminId
-              ? "This coupon is only valid for your first order on our platform"
-              : "This coupon is only valid for your first order at this store",
+          message: isPlatformWide
+            ? "This coupon is only valid for your first order on our platform"
+            : "This coupon is only valid for your first order at this store",
         });
       }
     }
@@ -283,6 +295,9 @@ export const validateCoupon = async (
     let discountAmount = 0;
     if (coupon.discountType === "percentage") {
       discountAmount = Math.round(((orderAmount as number) * coupon.discountValue) / 100);
+      if (coupon.maxDiscountAmount != null) {
+        discountAmount = Math.min(discountAmount, coupon.maxDiscountAmount);
+      }
     } else if (coupon.discountType === "fixed") {
       discountAmount = Math.min(coupon.discountValue, orderAmount as number);
     }
@@ -296,6 +311,10 @@ export const validateCoupon = async (
         description: coupon.public_name,
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,
+        // The cart recomputes its own preview as the basket changes, so it
+        // needs the ceiling, not just today's figure — without it a "20% off
+        // up to ₹100" coupon previews ₹160 off and charges ₹100.
+        maxDiscountAmount: coupon.maxDiscountAmount,
         discountAmount,
         minOrderValue: coupon.minOrderValue,
         expiresAt: coupon.expiresAt,

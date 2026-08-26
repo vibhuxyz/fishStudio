@@ -154,6 +154,7 @@ exports.Prisma.Discount_codesScalarFieldEnum = {
   public_name: 'public_name',
   discountType: 'discountType',
   discountValue: 'discountValue',
+  maxDiscountAmount: 'maxDiscountAmount',
   minOrderValue: 'minOrderValue',
   discountCode: 'discountCode',
   expiresAt: 'expiresAt',

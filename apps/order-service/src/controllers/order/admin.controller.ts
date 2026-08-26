@@ -9,6 +9,7 @@ import {
   normalizeOrderIdFragment,
   ADMIN_ORDER_CUSTOMER_SELECT,
   ADMIN_ORDER_SELLER_SELECT,
+  releaseCouponUsage,
 } from "./utils.js";
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -345,6 +346,17 @@ export const getAdminOrderDetail = async (
         createdAt:       order.createdAt,
         updatedAt:       order.updatedAt,
 
+        // Cancellation + refund trail. An admin looking at a cancelled paid
+        // order needs to know whether the money went back and, if it didn't,
+        // why — otherwise the only signal is a payment row still reading
+        // COMPLETED, which looks like nothing went wrong.
+        cancelledBy:         order.cancelledBy,
+        cancellationReason:  order.cancellationReason,
+        cancelledAt:         order.cancelledAt,
+        refundStatus:        order.refundStatus,
+        refundFailureReason: order.refundFailureReason,
+        refundFailedAt:      order.refundFailedAt,
+
         // Assigned rider, if any — riderStatus/assignedAt/assignedBy are the
         // order's own audit trail; `rider` below is the live Mongo record.
         riderStatus: order.riderStatus,
@@ -507,12 +519,19 @@ export const updateAdminOrderStatus = async (
     });
     if (!existing) return next(new NotFoundError("Order not found"));
 
+    // Cancelling an order nobody ever paid for is terminal, not outstanding —
+    // same rule the seller and customer cancel paths apply.
+    const nothingCaptured =
+      (status === "CANCELLED" || status === "REJECTED") &&
+      existing.paymentStatus !== "COMPLETED";
+
     const updated = await prismaPostgres.order.update({
       where: { id: orderId },
       data: {
         status,
         updatedAt: new Date(),
-        ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" } : {}),
+        ...(status === "DELIVERED" ? { paymentStatus: "COMPLETED" as const } : {}),
+        ...(nothingCaptured ? { paymentStatus: "NOT_PAID" as const } : {}),
       },
     });
 
@@ -521,6 +540,14 @@ export const updateAdminOrderStatus = async (
     // been missing (orders cancelled here previously left stock reserved).
     if (status === "CANCELLED") {
       restoreOrderStock(existing.orderItems, "updateAdminOrderStatus");
+    }
+
+    // REJECTED belongs here too — stock restore is deliberately CANCELLED-only
+    // above (a rejection comes back through the seller path, which restores it),
+    // but either ending means the order was never fulfilled, so the coupon goes
+    // back to the customer.
+    if (status === "CANCELLED" || status === "REJECTED") {
+      void releaseCouponUsage(orderId);
     }
 
     return res.status(200).json({ success: true, order: updated });

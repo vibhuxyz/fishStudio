@@ -3,6 +3,7 @@ import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PRIMARY = "#5A2C96";
 
@@ -18,6 +19,7 @@ interface SlotSheetProps {
  */
 export default function SlotSheet({ visible, onClose }: SlotSheetProps) {
   const { selectedSlot, setSelectedSlot, availableSlots, instantFee } = useDeliverySlotStore();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -33,7 +35,7 @@ export default function SlotSheet({ visible, onClose }: SlotSheetProps) {
             borderTopLeftRadius: 40,
             borderTopRightRadius: 40,
             paddingHorizontal: 20,
-            paddingBottom: 28,
+            paddingBottom: insets.bottom + 28,
             flexShrink: 1,
           }}
         >

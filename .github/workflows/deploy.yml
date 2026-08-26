@@ -35,6 +35,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/api-gateway:prod
+          cache-from: type=gha,scope=api-gateway
+          cache-to: type=gha,scope=api-gateway,mode=max
 
   # ==========================================
   # 2. AUTH SERVICE
@@ -65,6 +67,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/auth-service:prod
+          cache-from: type=gha,scope=auth-service
+          cache-to: type=gha,scope=auth-service,mode=max
 
   # ==========================================
   # 3. PRODUCT SERVICE
@@ -95,6 +99,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/product-service:prod
+          cache-from: type=gha,scope=product-service
+          cache-to: type=gha,scope=product-service,mode=max
 
   # ==========================================
   # 4. ORDER SERVICE
@@ -125,6 +131,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/order-service:prod
+          cache-from: type=gha,scope=order-service
+          cache-to: type=gha,scope=order-service,mode=max
 
   # ==========================================
   # 5. NOTIFICATION SERVICE
@@ -155,6 +163,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/notification-service:prod
+          cache-from: type=gha,scope=notification-service
+          cache-to: type=gha,scope=notification-service,mode=max
 
   # ==========================================
   # 6. WORKER SERVICE
@@ -185,6 +195,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/worker-service:prod
+          cache-from: type=gha,scope=worker-service
+          cache-to: type=gha,scope=worker-service,mode=max
 
   # ==========================================
   # 7. PAYMENT SERVICE
@@ -215,6 +227,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/payment-service:prod
+          cache-from: type=gha,scope=payment-service
+          cache-to: type=gha,scope=payment-service,mode=max
 
   # ==========================================
   # 8. DEPLOY TO AWS EC2

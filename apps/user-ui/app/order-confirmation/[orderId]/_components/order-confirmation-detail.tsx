@@ -220,6 +220,16 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
         <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      <table style="margin-top:8px">
+        <tbody>
+          <tr><td>Item Subtotal</td><td style="text-align:right">₹${(billDetails?.itemTotal ?? 0).toFixed(2)}</td></tr>
+          ${(billDetails?.discount ?? 0) > 0 ? `<tr><td>Discount</td><td style="text-align:right">-₹${(billDetails?.discount ?? 0).toFixed(2)}</td></tr>` : ""}
+          <tr><td>Delivery Charge</td><td style="text-align:right">₹${((billDetails?.deliveryCharge ?? 0) + (billDetails?.slotExtraCharge ?? 0)).toFixed(2)}</td></tr>
+          ${(billDetails?.packagingCharge ?? 0) > 0 ? `<tr><td>Packaging Charge</td><td style="text-align:right">₹${(billDetails?.packagingCharge ?? 0).toFixed(2)}</td></tr>` : ""}
+          <tr><td>CGST</td><td style="text-align:right">₹${((billDetails?.gstAmount ?? 0) / 2).toFixed(2)}</td></tr>
+          <tr><td>SGST</td><td style="text-align:right">₹${((billDetails?.gstAmount ?? 0) / 2).toFixed(2)}</td></tr>
+        </tbody>
+      </table>
       <div class="total"><span>Total Paid</span><span>₹${order.totalAmount}</span></div>
       <p class="muted" style="margin-top:32px">Thank you for shopping with Fish Studio.</p>
       </body></html>`;
@@ -410,6 +420,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
                         src={item.product.images[0].url}
                         alt={item.product.title}
                         fill
+                        sizes="40px"
                         className="object-cover"
                       />
                     </div>

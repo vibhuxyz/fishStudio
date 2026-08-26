@@ -182,6 +182,75 @@ export const resolvePerKgPricing = (
 export const computePerKgSalePrice = (pricing: PerKgPricing, weightGrams: number): number =>
   parseFloat(((pricing.ratePerKg / 1000) * weightGrams * pricing.sizeMultiplier).toFixed(2));
 
+export interface CardPriceDisplay {
+  salePrice: number;
+  regularPrice: number;
+  /** What the price is quoted against — rendered as "/kg" or "/pack". */
+  unit: "kg" | "pack";
+}
+
+export interface CardPriceInput {
+  basePricePerKg?: number | null;
+  sizePricing?: ProductSizePricing[] | null;
+  /** The product's flat display price — already the cheapest variant server-side. */
+  salePrice: number;
+  regularPrice: number;
+}
+
+const ratePerKgFor = (price: number, weightGrams: number) =>
+  (price / weightGrams) * 1000;
+
+/**
+ * The price a listing card should quote.
+ *
+ * A product sold by weight has a flat `sale_price` that is really "the cheapest
+ * variant's total" — ₹600 for the 1 kg pomfret — so printing it next to "/kg" is
+ * only accidentally right when a variant happens to weigh exactly a kilo. Cards
+ * therefore derive the rate from the variant weights, and fall back to "/pack"
+ * for products whose sizes carry no weight at all (seekh kebab, ready-to-cook
+ * packs), where the flat price already is the price of the thing being sold.
+ */
+export const resolveCardPrice = ({
+  basePricePerKg,
+  sizePricing,
+  salePrice,
+  regularPrice,
+}: CardPriceInput): CardPriceDisplay => {
+  if (typeof basePricePerKg === "number" && basePricePerKg > 0) {
+    const rate = Math.round(basePricePerKg);
+    return { salePrice: rate, regularPrice: rate, unit: "kg" };
+  }
+
+  const weighed = (sizePricing ?? []).filter(
+    (entry) => entry.weightGrams > 0 && entry.salePrice > 0,
+  );
+
+  if (weighed.length > 0) {
+    // Cheapest *rate*, not cheapest total — a 1.5 kg fish costs more than a
+    // 1 kg one while often being the better deal per kilo.
+    const cheapest = weighed.reduce((lowest, entry) =>
+      ratePerKgFor(entry.salePrice, entry.weightGrams) <
+      ratePerKgFor(lowest.salePrice, lowest.weightGrams)
+        ? entry
+        : lowest,
+    );
+    const saleRate = Math.round(
+      ratePerKgFor(cheapest.salePrice, cheapest.weightGrams),
+    );
+    const regularRate =
+      cheapest.regularPrice > cheapest.salePrice
+        ? Math.round(ratePerKgFor(cheapest.regularPrice, cheapest.weightGrams))
+        : saleRate;
+    return { salePrice: saleRate, regularPrice: regularRate, unit: "kg" };
+  }
+
+  return {
+    salePrice,
+    regularPrice: regularPrice > salePrice ? regularPrice : salePrice,
+    unit: "pack",
+  };
+};
+
 export * from "./cart-summary.js";
 export * from "./coupons.js";
 export * from "./combo-pricing.js";

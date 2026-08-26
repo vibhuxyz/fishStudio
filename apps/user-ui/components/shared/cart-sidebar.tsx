@@ -252,6 +252,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                                   src={item.product.image || "/placeholder.svg"}
                                   alt={item.product.name}
                                   fill
+                                  sizes="56px"
                                   className="object-cover"
                                   loading="lazy"
                                 />
@@ -714,9 +715,8 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           <span className="block text-[10px] opacity-80">REMOVE TO PROCEED</span>
                         </span>
                       ) : (
-                        <span className="text-left">
-                          <span className="block text-lg font-bold">₹{grandTotal.toFixed(0)}</span>
-                          <span className="block text-xs opacity-80">TOTAL</span>
+                        <span className="text-left text-base font-bold">
+                          Total - ₹{grandTotal.toFixed(0)}
                         </span>
                       )}
                       
@@ -726,7 +726,7 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                           : items.some(item => item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0)) 
                               ? "Invalid Cart" 
                               : !deliveryMetadata.isStoreOpen
-                                ? (isLoggedIn ? "Schedule Order >" : "Login to Checkout")
+                                ? (isLoggedIn ? "Proceed to Payment >" : "Login to Checkout")
                                 : isLoggedIn ? "Proceed To Pay >" : "Login to Checkout"}
                       </span>
                     </div>

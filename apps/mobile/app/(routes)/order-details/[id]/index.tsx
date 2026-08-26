@@ -27,7 +27,9 @@ import { useAddressStore } from "@/lib/address-store";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
+import { openWhatsApp } from "@/utils/whatsapp";
 import { formatOrderId } from "@repo/shared/order-id";
+import { resolvePaymentState } from "@repo/shared/payment-state";
 import { buildTelUrl, buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
 const PRIMARY = colors.primary;
@@ -166,13 +168,18 @@ export default function OrderDetailsScreen() {
   }
 
   const rawStatus = (order.status || "PENDING").toUpperCase();
-  // A RAZORPAY order still sitting PENDING never got a completed payment —
-  // the seller never saw it, so it reads as cancelled rather than "in progress".
-  // COD is exempt: PENDING there just means payment is due on delivery.
+  const paymentState = resolvePaymentState({
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    refundStatus: order.refundStatus,
+    orderStatus: rawStatus,
+  });
+  // An online order still sitting PENDING never got a completed payment — the
+  // seller never saw it, so it reads as cancelled rather than "in progress".
+  // COD is exempt: cash is simply due on delivery.
   const isUnpaidOnline =
-    order.paymentMethod === "RAZORPAY" &&
     rawStatus === "PENDING" &&
-    order.paymentStatus !== "COMPLETED";
+    (paymentState.key === "AWAITING_PAYMENT" || paymentState.key === "NOT_PAID");
   const upperStatus = isUnpaidOnline ? "CANCELLED" : rawStatus;
   const isShipped = upperStatus === "SHIPPED";
   const isTerminal = upperStatus === "DELIVERED" || upperStatus === "CANCELLED" || upperStatus === "REJECTED";
@@ -245,7 +252,7 @@ export default function OrderDetailsScreen() {
     );
 
   const handleSendSupportMessage = (message: string) => {
-    Linking.openURL(buildSupportWhatsAppUrl(message));
+    openWhatsApp(buildSupportWhatsAppUrl(message));
   };
 
   return (
@@ -520,7 +527,7 @@ export default function OrderDetailsScreen() {
                       <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: PRIMARY, marginLeft: 6 }}>Call Support</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => Linking.openURL(buildSupportWhatsAppUrl())}
+                      onPress={() => openWhatsApp(buildSupportWhatsAppUrl())}
                       style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.secondaryBg, borderRadius: 50, paddingVertical: 11 }}
                     >
                       <Ionicons name="logo-whatsapp" size={14} color={PRIMARY} />
@@ -575,8 +582,8 @@ export default function OrderDetailsScreen() {
             {order.refundStatus && order.refundStatus !== "NONE" && (
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
                 <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: colors.textMuted }}>Refund</Text>
-                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: order.refundStatus === "COMPLETED" ? colors.success : order.refundStatus === "FAILED" ? colors.danger : PRIMARY }}>
-                  {order.refundStatus === "REQUESTED" ? "Requested" : order.refundStatus === "PROCESSING" ? "Processing" : order.refundStatus === "COMPLETED" ? "Completed" : "Failed"}
+                <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: paymentState.tone === "refunded" ? colors.success : paymentState.tone === "danger" ? colors.danger : PRIMARY }}>
+                  {paymentState.label}
                 </Text>
               </View>
             )}

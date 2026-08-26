@@ -2,11 +2,9 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 import { HeroBanners } from "./_components/hero-banners";
-import { CategoriesSection } from "./_components/categories-section";
 import { HomeActivitySections } from "./_components/home-activity-sections";
 import { AllProductsSection } from "./_components/all-products-section";
 import { HomeBannerSkeleton } from "./_components/home-skeleton";
-import { fetchStorefrontCategories } from "@/lib/storefront";
 import nextDynamic from "next/dynamic";
 
 // Dynamically import non-critical sections
@@ -19,8 +17,6 @@ const TestimonialsSection = nextDynamic(
 );
 
 export default async function Page() {
-  const initialCategories = await fetchStorefrontCategories().catch(() => undefined);
-
   return (
     <div className="flex min-h-screen flex-col">
       {/* pb on mobile leaves room for the fixed bottom navigation */}
@@ -30,16 +26,13 @@ export default async function Page() {
           <HeroBanners />
         </Suspense>
 
-        {/* 2. Categories */}
-        <CategoriesSection initialData={initialCategories} />
-
-        {/* 3–8. Fresh Arrivals · Best Sellers · Combos · Recently Viewed ·
+        {/* 2–7. Fresh Arrivals · Best Sellers · Combos · Recently Viewed ·
                  Seasonal Specials · Recommended Products */}
         <div className="flex flex-col gap-0 md:gap-4">
           <HomeActivitySections />
         </div>
 
-        {/* 9. All Products — infinite scroll */}
+        {/* 8. All Products — infinite scroll */}
         <AllProductsSection />
 
         {/* Social proof */}

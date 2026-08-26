@@ -10,3 +10,23 @@ coverage
 tmp
 **/.DS_Store
 meili_data
+
+# turbo prune output
+out
+**/out
+
+# Secrets must never enter the build context - COPY . . would bake them into
+# the image layers, where they stay readable even after a later RUN rm.
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+!**/env.example
+
+# Regenerated inside the builder for the target platform only. Shipping the
+# committed copy would push ~180MB of unused query engines through the context.
+**/generated-client
+
+# Not built by any Dockerfile here
+apps/mobile

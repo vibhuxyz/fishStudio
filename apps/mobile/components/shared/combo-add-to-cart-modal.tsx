@@ -10,6 +10,7 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "@/utils/axiosInstance";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
@@ -122,6 +123,7 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
   const { getSelectedAddress } = useAddressStore();
   const selectedAddress = getSelectedAddress();
   const { addToCart } = useStore();
+  const insets = useSafeAreaInsets();
 
   const [combo, setCombo] = useState<ComboData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -311,7 +313,7 @@ export default function ComboAddToCartModal({ comboId, visible, onClose }: Props
               })}
             </ScrollView>
 
-            <View className="px-5 pt-3 pb-2 border-t border-border">
+            <View className="px-5 pt-3 border-t border-border" style={{ paddingBottom: insets.bottom + 8 }}>
               <View className="flex-row items-center justify-between bg-primary/5 rounded-xl px-4 py-3 mb-3">
                 <View>
                   <Text className="text-sm text-muted-foreground font-poppins" style={{ textDecorationLine: "line-through" }}>

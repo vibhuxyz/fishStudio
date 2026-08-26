@@ -56,6 +56,12 @@ export const productSchema = z.object({
   sizes: wrapArray(z.array(z.string())).optional(),
   trackStockPerSize: wrapValue(z.boolean()).optional().default(false),
   sizePricing: z.array(productSizePricingSchema).nullable().optional(),
+  // Only meaningful when trackStockPerSize is true — see addCatalogProductToStoreSchema
+  // for why this is an array of {size, qty} rather than a {size: qty} map.
+  sizeStock: z.array(z.object({
+    size: z.string(),
+    qty: z.preprocess((val) => Number(val), z.number().nonnegative()),
+  })).nullable().optional(),
   cuttingTypePricing: z.array(productCuttingTypePricingSchema).nullable().optional(),
   pieceSizePricing: z.array(productPieceSizePricingSchema).nullable().optional(),
   cuttingTypes: wrapArray(z.array(z.string())).optional(),

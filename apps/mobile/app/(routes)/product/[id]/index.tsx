@@ -121,7 +121,7 @@ const PER_KG_DEFAULT = 250;
 export default function ProductDetailScreen() {
   const { id } = useGlobalSearchParams();
   const { user } = useUser();
-  const { wishlist, addToWishlist, removeFromWishlist, addToCart } = useStore();
+  const { addToCart } = useStore();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const imageScrollRef = useRef<ScrollView>(null);
   // Collapses the nutrition stats + cooking tips under "Read more" so the
@@ -238,6 +238,15 @@ export default function ProductDetailScreen() {
   );
   const relatedLoading = productLoading;
 
+  // Frequently Bought Together is a different list to the one above: products
+  // shoppers actually ordered alongside this one, from the co-purchase stats
+  // the nightly job maintains. Often empty on a young catalogue — the block
+  // hides itself rather than falling back to the category.
+  const bundleProducts = useMemo(
+    () => (productPayload?.frequentlyBoughtTogether as any[]) ?? [],
+    [productPayload],
+  );
+
   // "Add all to cart" / "You May Also Like" both add OTHER products, which
   // may have their own cutting type / piece size / weight variants — those
   // need the same picker the main product's own "Add to Cart" button uses,
@@ -297,23 +306,6 @@ export default function ProductDetailScreen() {
     },
     enabled: !!product?.id,
   });
-
-  const isWishlisted = product ? wishlist.some((i) => i.id === product.id) : false;
-
-  const handleWishlistToggle = () => {
-    if (!user) { toast.error("Please login to add items to wishlist"); return; }
-    if (!product) return;
-    if (isWishlisted) {
-      removeFromWishlist(product.id, user, selectedAddress, "Mobile App");
-      toast.success("Removed from wishlist");
-    } else {
-      addToWishlist(
-        { id: product.id, slug: product.slug, title: product.title, price: product.sale_price || product.regular_price, image: product.images?.[0]?.url || "", shopId: product.Shop?.id || "" },
-        user, selectedAddress, "Mobile App"
-      );
-      toast.success("Added to wishlist");
-    }
-  };
 
   const buildBreakdown = () =>
     isPerKgMode && perKgPricing
@@ -624,7 +616,19 @@ export default function ProductDetailScreen() {
           <Ionicons name="chevron-forward" size={14} color="#5A2C96" />
         </View>
 
-        {/* Cleaning type / piece size / weight — pill selectors */}
+        {/* Weight / cleaning type / piece size — pill selectors */}
+        {hasSizes && (
+          <PillSelector
+            label="Select Weight"
+            value={selectedSize}
+            options={normalizedPricing.map((e) => e.size)}
+            onSelect={setSelectedSize}
+            renderCaption={(opt) => {
+              const entry = normalizedPricing.find((e) => e.size === opt);
+              return entry ? `₹${Number(entry.salePrice).toFixed(0)}` : undefined;
+            }}
+          />
+        )}
         {hasCuttingTypes && (
           <PillSelector
             label="Select Cleaning Type"
@@ -640,18 +644,6 @@ export default function ProductDetailScreen() {
             value={selectedPieceSize}
             options={product.pieceSizes}
             onSelect={setSelectedPieceSize}
-          />
-        )}
-        {hasSizes && (
-          <PillSelector
-            label="Select Weight"
-            value={selectedSize}
-            options={normalizedPricing.map((e) => e.size)}
-            onSelect={setSelectedSize}
-            renderCaption={(opt) => {
-              const entry = normalizedPricing.find((e) => e.size === opt);
-              return entry ? `₹${Number(entry.salePrice).toFixed(0)}` : undefined;
-            }}
           />
         )}
 
@@ -899,7 +891,7 @@ export default function ProductDetailScreen() {
 
   // ─── Frequently Bought Together ────────────────────────────────────────────
   const renderFrequentlyBoughtTogether = () => {
-    const bundleItems = (relatedProducts ?? []).slice(0, 2);
+    const bundleItems = bundleProducts.slice(0, 2);
     if (!product || bundleItems.length === 0) return null;
 
     const allItems = [product, ...bundleItems];
@@ -1160,30 +1152,12 @@ export default function ProductDetailScreen() {
         >
           <Ionicons name="chevron-back" size={20} color="#1F2937" />
         </TouchableOpacity>
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => handleShare(product)}
-            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-2"
-          >
-            <Ionicons name="share-outline" size={18} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleWishlistToggle}
-            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-2"
-          >
-            <Ionicons
-              name={isWishlisted ? "heart" : "heart-outline"}
-              size={18}
-              color={isWishlisted ? "#EF4444" : "#1F2937"}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)/cart")}
-            className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
-          >
-            <Ionicons name="bag-handle-outline" size={18} color="#1F2937" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => handleShare(product)}
+          className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
+        >
+          <Ionicons name="share-outline" size={18} color="#1F2937" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>

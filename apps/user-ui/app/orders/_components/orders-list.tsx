@@ -7,6 +7,7 @@ import { Package, Clock, CheckCircle2, Truck, XCircle, ChevronRight, ShoppingBag
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/lib/orders-api";
 import { formatOrderId } from "@repo/shared/order-id";
+import { resolvePaymentState } from "@repo/shared/payment-state";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   PENDING:   { label: "Pending",   color: "text-amber-600 bg-amber-50 border-amber-200",   icon: <Clock className="h-3.5 w-3.5" /> },
@@ -38,13 +39,19 @@ export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?:
     <div className="space-y-3">
       {orders.map((order) => {
         const orderStatus = (order.status || "PENDING").toUpperCase();
-        // A RAZORPAY order still sitting PENDING never got a completed payment —
-        // the seller never saw it, so it reads as cancelled rather than "in progress".
-        // COD is exempt: PENDING there just means payment is due on delivery.
+        const paymentState = resolvePaymentState({
+          paymentMethod: order.paymentMethod,
+          paymentStatus: order.paymentStatus,
+          orderStatus,
+        });
+        // An online order still sitting PENDING never got a completed payment —
+        // the seller never saw it, so it reads as cancelled rather than "in
+        // progress". COD is exempt: cash is simply due on delivery. The states
+        // come from the shared resolver now, so this agrees with what the
+        // seller and admin dashboards say about the same order.
         const isUnpaidOnline =
-          order.paymentMethod === "RAZORPAY" &&
           orderStatus === "PENDING" &&
-          order.paymentStatus !== "COMPLETED";
+          (paymentState.key === "AWAITING_PAYMENT" || paymentState.key === "NOT_PAID");
         const displayStatus = isUnpaidOnline ? "CANCELLED" : orderStatus;
         const statusCfg = STATUS_CONFIG[displayStatus] ?? STATUS_CONFIG.PENDING;
         const primaryItem = order.items?.[0];
