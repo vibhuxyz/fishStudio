@@ -334,14 +334,14 @@ export const addCatalogProductToStore = async (
       };
     }
 
-    // Whole-fish style products: stock is entered per size rather than as
-    // one shared pool, so the flat `stock` field becomes the sum of those
-    // buckets — every existing "in stock"/sort-by-stock read keeps working.
-    const trackStockPerSize = Boolean(catalogProduct.trackStockPerSize);
+    // Sized seller products can stock each available weight independently.
+    // The flat `stock` field remains the summed unit count so existing reads
+    // such as in-stock sorting and badges keep working.
+    const trackStockPerSize = hasSizes;
     let normalizedSizeStock: Array<{ size: string; qty: number }> | undefined;
     let resolvedStock = Number(stock ?? 0);
 
-    if (trackStockPerSize && hasSizes) {
+    if (trackStockPerSize) {
       normalizedSizeStock = normalizeSizeStock(
         sizeStock,
         normalizedSizePricing.map((entry) => entry.size),
@@ -733,18 +733,13 @@ export const updateProduct = async (
           updateData.regular_price = Number(regular_price);
       }
 
-      // Per-size stock — only meaningful on products the catalog flagged
-      // trackStockPerSize for. Flat `stock` becomes the sum across sizes so
-      // every existing "in stock"/sort-by-stock read keeps working, same as
-      // on creation.
-      if (
-        product.trackStockPerSize &&
-        Array.isArray(sizeStock) &&
-        effectiveSizes.length > 0
-      ) {
+      // Sized seller products can stock each available weight independently.
+      // Saving sizeStock opts this seller copy into per-size stock tracking.
+      if (Array.isArray(sizeStock) && effectiveSizes.length > 0) {
         const nSizeStock = normalizeSizeStock(sizeStock, effectiveSizes as string[]);
         updateData.sizeStock = nSizeStock;
         updateData.stock = nSizeStock.reduce((sum, entry) => sum + entry.qty, 0);
+        updateData.trackStockPerSize = true;
       }
 
       // basePricePerKg — per-KG pricing mode (used when no sizes are configured)

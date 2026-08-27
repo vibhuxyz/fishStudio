@@ -264,8 +264,8 @@ export type SizePricingRow = {
   regularPrice: number;
   salePrice: number;
   // UI-only — only meaningful when the product tracks stock per size.
-  // stockQty is derived from totalInventoryGrams (what the seller actually
-  // types) divided by weightGrams; neither is sent as part of sizePricing
+  // totalInventoryGrams is derived from stockQty (what the seller actually
+  // types) multiplied by weightGrams; neither is sent as part of sizePricing
   // itself, they're pulled back out into a separate sizeStock submission.
   stockQty?: number;
   totalInventoryGrams?: number;

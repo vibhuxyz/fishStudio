@@ -14,6 +14,7 @@ import { Eye, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import BreadCrumbs from "@/shared/components/breadcrumbs";
+import SizePricingEditor from "@/shared/components/inventory/size-pricing-editor";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
@@ -39,12 +40,10 @@ type SizePricingRow = {
   weightGrams: number;
   regularPrice: number;
   salePrice: number;
-  stockQty: number;
-  // What the seller actually types — total weight of stock on hand for this
-  // size. stockQty (the unit count sizeStock is submitted with) is derived
-  // from it, not typed directly: a fish counter thinks in kg on the scale,
-  // not "how many 500g packs is that."
-  totalInventoryGrams: number;
+  stockQty?: number;
+  // totalInventoryGrams is now derived from stockQty * weightGrams.
+  // The seller types the unit count (stockQty) directly.
+  totalInventoryGrams?: number;
 };
 
 type DiscountCode = {
@@ -85,11 +84,6 @@ const buildSizePricingRows = (sizes: string[]): SizePricingRow[] =>
     totalInventoryGrams: 0,
   }));
 
-// Whole units only — a pack can't be sold as a fraction of itself.
-const deriveStockQty = (weightGrams: number, totalInventoryGrams: number) =>
-  weightGrams > 0 ? Math.floor(totalInventoryGrams / weightGrams) : 0;
-
-
 const fetchCatalogProducts = async (): Promise<CatalogProduct[]> => {
   const res = await axiosInstance.get("/product/api/get-catalog-products", isProtected);
   return Array.isArray(res.data.products) ? res.data.products : [];
@@ -112,6 +106,25 @@ const addProductToStore = async ({
     payload,
     isProtected,
   );
+};
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof error.response === "object" &&
+    error.response !== null &&
+    "data" in error.response &&
+    typeof error.response.data === "object" &&
+    error.response.data !== null &&
+    "message" in error.response.data &&
+    typeof error.response.data.message === "string"
+  ) {
+    return error.response.data.message;
+  }
+
+  return fallback;
 };
 
 const Page = () => {
@@ -139,7 +152,7 @@ const Page = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { register, handleSubmit, reset, watch, setValue, formState } =
+  const { register, handleSubmit, reset, watch, setValue } =
     useForm<SellerCatalogFormValues>({
       mode: "onChange",
       defaultValues: {
@@ -155,10 +168,12 @@ const Page = () => {
       },
     });
 
-  const { isValid } = formState;
-
   const selectedDiscountCodes = watch("discountCodes") || [];
   const selectedSizePricing = watch("sizePricing") || [];
+  const derivedStock = selectedSizePricing.reduce(
+    (sum, entry) => sum + Math.max(0, entry.stockQty ?? 0),
+    0,
+  );
 
   const addMutation = useMutation({
     mutationFn: addProductToStore,
@@ -169,8 +184,8 @@ const Page = () => {
       setSelectedProduct(null);
       router.push("/dashboard/all-products");
     },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Failed to add product to store.");
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, "Failed to add product to store."));
     },
   });
 
@@ -204,7 +219,6 @@ const Page = () => {
     if (!selectedProduct) return;
 
     const hasSizes = (selectedProduct.sizes || []).length > 0;
-    const trackStockPerSize = Boolean(selectedProduct.trackStockPerSize);
 
     // A size left at 0 weight/price means the seller doesn't stock that
     // size right now — drop it rather than blocking the whole submission.
@@ -217,7 +231,7 @@ const Page = () => {
         toast.error("Add a valid weight and sale price for at least one size.");
         return;
       }
-      if (trackStockPerSize && stockedSizePricing.every((entry) => entry.stockQty <= 0)) {
+      if (stockedSizePricing.every((entry) => (entry.stockQty ?? 0) <= 0)) {
         toast.error("Add stock for at least one size.");
         return;
       }
@@ -228,16 +242,17 @@ const Page = () => {
       }
     }
 
-    const sizeStock = trackStockPerSize
+    const sizeStock = hasSizes
       ? stockedSizePricing.map((entry) => ({
           size: entry.size,
-          qty: Math.max(0, entry.stockQty),
+          qty: Math.max(0, entry.stockQty ?? 0),
         }))
       : undefined;
 
     // Per-kg mode: derive basePricePerKg from sale_price so formula engine keeps working
     const payload = {
       ...values,
+      stock: hasSizes ? derivedStock : values.stock,
       sizePricing: hasSizes ? stockedSizePricing : values.sizePricing,
       sizeStock,
       basePricePerKg: (selectedProduct.sizes || []).length === 0 ? values.sale_price : undefined,
@@ -295,7 +310,7 @@ const Page = () => {
                 />
               </div>
               <div className="space-y-3 p-5">
-                <div>
+                <div key="flat-stock">
                   <div className="mb-2 flex items-start justify-between gap-3">
                     <h3 className="text-lg font-semibold text-white">
                       {product.title}
@@ -390,8 +405,8 @@ const Page = () => {
               className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
               onSubmit={handleSubmit(onSubmit)}
             >
-              {!selectedProduct.trackStockPerSize && (
-                <div>
+              {selectedSizePricing.length === 0 && (
+                <div key="derived-size-stock">
                   <label className="mb-1 block text-sm text-slate-300">
                     Stock (kg)
                     <span className="ml-2 text-xs text-slate-500">— how many kg you have available</span>
@@ -402,6 +417,20 @@ const Page = () => {
                     min="0.5"
                     {...register("stock", { valueAsNumber: true, min: { value: 0.5, message: "Stock must be at least 0.5 kg" } })}
                     className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
+                  />
+                </div>
+              )}
+
+              {selectedSizePricing.length > 0 && (
+                <div>
+                  <label className="mb-1 block text-sm text-slate-300">
+                    Total Stock
+                    <span className="ml-2 text-xs text-slate-500">(auto)</span>
+                  </label>
+                  <input
+                    value={derivedStock}
+                    readOnly
+                    className="w-full cursor-not-allowed rounded-md border border-slate-800 bg-slate-900/50 px-3 py-2 text-slate-400 outline-none"
                   />
                 </div>
               )}
@@ -444,107 +473,13 @@ const Page = () => {
                     Size-Based Pricing
                     <span className="ml-2 text-xs text-slate-500">— leave a size at ₹0 to skip stocking it</span>
                   </label>
-                  <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                    {selectedSizePricing.map((entry, index) => (
-                      <div
-                        key={entry.size}
-                        className={`grid gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 ${
-                          selectedProduct.trackStockPerSize
-                            ? "md:grid-cols-[1.2fr_0.8fr_1fr_1fr_0.8fr]"
-                            : "md:grid-cols-[1.2fr_0.8fr_1fr_1fr]"
-                        }`}
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-white">{entry.size}</p>
-                          <p className="text-xs text-slate-500">
-                            {entry.weightGrams || "—"} gm
-                          </p>
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs text-slate-400">
-                            Weight (gm)
-                          </label>
-                          <input
-                            type="number"
-                            value={entry.weightGrams ?? 0}
-                            onChange={(event) => {
-                              const nextRows = [...selectedSizePricing];
-                              const weightGrams = Number(event.target.value || 0);
-                              nextRows[index] = {
-                                ...entry,
-                                weightGrams,
-                                stockQty: deriveStockQty(weightGrams, entry.totalInventoryGrams),
-                              };
-                              setValue("sizePricing", nextRows, { shouldDirty: true });
-                            }}
-                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs text-slate-400">
-                            Regular Price
-                          </label>
-                          <input
-                            type="number"
-                            value={entry.regularPrice ?? 0}
-                            onChange={(event) => {
-                              const nextRows = [...selectedSizePricing];
-                              nextRows[index] = {
-                                ...entry,
-                                regularPrice: Number(event.target.value || 0),
-                              };
-                              setValue("sizePricing", nextRows, { shouldDirty: true });
-                            }}
-                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-1 block text-xs text-slate-400">
-                            Sale Price
-                          </label>
-                          <input
-                            type="number"
-                            value={entry.salePrice ?? 0}
-                            onChange={(event) => {
-                              const nextRows = [...selectedSizePricing];
-                              nextRows[index] = {
-                                ...entry,
-                                salePrice: Number(event.target.value || 0),
-                              };
-                              setValue("sizePricing", nextRows, { shouldDirty: true });
-                            }}
-                            className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                          />
-                        </div>
-                        {selectedProduct.trackStockPerSize && (
-                          <div>
-                            <label className="mb-1 block text-xs text-slate-400">
-                              Total Inventory (g)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={entry.totalInventoryGrams ?? 0}
-                              onChange={(event) => {
-                                const nextRows = [...selectedSizePricing];
-                                const totalInventoryGrams = Number(event.target.value || 0);
-                                nextRows[index] = {
-                                  ...entry,
-                                  totalInventoryGrams,
-                                  stockQty: deriveStockQty(entry.weightGrams, totalInventoryGrams),
-                                };
-                                setValue("sizePricing", nextRows, { shouldDirty: true });
-                              }}
-                              className="w-full rounded-md border border-slate-700 bg-transparent px-3 py-2 text-white outline-none"
-                            />
-                            <p className="mt-1 text-xs text-slate-500">
-                              = {entry.stockQty} unit{entry.stockQty === 1 ? "" : "s"} at {entry.weightGrams || 0}g each
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <SizePricingEditor
+                    rows={selectedSizePricing}
+                    trackStockPerSize
+                    onChange={(nextRows) =>
+                      setValue("sizePricing", nextRows, { shouldDirty: true })
+                    }
+                  />
                 </div>
               ) : (
                 <>
