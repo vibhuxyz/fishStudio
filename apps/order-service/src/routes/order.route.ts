@@ -25,6 +25,8 @@ import {
   getMyRiderOrders,
   getMyCuttingOrders,
 } from "../controllers/order/staff-workflow.controller.js";
+import { bulkUpdateOrderStatus } from "../controllers/order/bulk-status.controller.js";
+import { getOrderInvoice } from "../controllers/order/invoice.controller.js";
 import { getSellerStats, getAdminStats, getAdminSellerOrders } from "../controllers/order/stats.controller.js";
 import { getAdminOrderList, getAdminOrderDetail, updateAdminOrderStatus, getAdminOrderPincodes } from "../controllers/order/admin.controller.js";
 import { allowRoles, isAuthenticated, isApprovedSeller, isSellerOrStaff, hasStaffRole } from "@repo/middlewares";
@@ -47,6 +49,15 @@ router.get("/user-orders", isAuthenticated, allowRoles("user"), getUserOrders);
 router.get("/user-order-stats", isAuthenticated, allowRoles("user"), getUserOrderStats);
 // getOrderById enforces role-based ownership inside the controller.
 router.get("/get-order/:orderId", isAuthenticated, allowRoles("user", "seller", "staff", "admin"), getOrderById);
+// GST tax invoice. Ownership is enforced inside the controller with the same
+// rules as get-order — an invoice carries the customer's name, phone and full
+// address, so it must not be reachable by guessing an id.
+router.get(
+  "/invoice/:orderId",
+  isAuthenticated,
+  allowRoles("user", "seller", "staff", "admin"),
+  getOrderInvoice,
+);
 // User can cancel their own order only while it's still PENDING
 router.put("/cancel/:orderId", isAuthenticated, allowRoles("user"), cancelOrder);
 
@@ -55,6 +66,9 @@ router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, isApprovedSel
 router.get("/get-order-details/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, getOrderById);
 router.put("/accept-reject/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, acceptOrRejectOrder);
 router.put("/update-status/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, updateOrderStatus);
+// Checkbox multi-select on the seller order dashboard. Forward workflow
+// transitions only — cancellation stays on the single-order route above.
+router.put("/bulk-update-status", isAuthenticated, isSellerOrStaff, isApprovedSeller, bulkUpdateOrderStatus);
 
 // ── Rider Assignment ─────────────────────────────────────────────────────────
 router.get("/eligible-riders/:orderId", isAuthenticated, isSellerOrStaff, isApprovedSeller, getEligibleRiders);

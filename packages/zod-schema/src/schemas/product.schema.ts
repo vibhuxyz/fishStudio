@@ -45,6 +45,20 @@ export const productSchema = z.object({
   category: wrapValue(z.string().min(1, "Category is required")),
   subCategory: wrapValue(z.string().min(1, "SubCategory is required")),
   short_description: z.string().min(1, "Short description is required"),
+  // Printed on the GST tax invoice. Optional because most of the catalog
+  // predates it, but an invoice line without one shows "—" rather than a
+  // guessed code — a wrong HSN is a tax misclassification, not a cosmetic gap.
+  hsnCode: z
+    .string()
+    .regex(/^[0-9]{4,8}$/, "HSN code is 4 to 8 digits")
+    .optional()
+    .or(z.literal("")),
+  // Overrides the store's blanket rate for this product, as a percentage.
+  // Fresh fish is 0; other goods may be 5/12/18.
+  gstRatePercent: z.preprocess(
+    (val) => (val === "" || val == null ? null : Number(val)),
+    z.number().min(0).max(28).nullable().optional(),
+  ),
   images: z.array(productImageSchema),
   tags: z.preprocess((val) => {
     if (typeof val === "string") return val.split(",").map((t) => t.trim());

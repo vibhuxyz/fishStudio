@@ -124,6 +124,9 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 
 exports.Prisma.OrderScalarFieldEnum = {
   id: 'id',
+  orderNumber: 'orderNumber',
+  invoiceNumber: 'invoiceNumber',
+  invoicedAt: 'invoicedAt',
   userId: 'userId',
   storeId: 'storeId',
   totalAmount: 'totalAmount',
@@ -163,6 +166,20 @@ exports.Prisma.OrderScalarFieldEnum = {
   refundFailureReason: 'refundFailureReason',
   refundFailedAt: 'refundFailedAt',
   createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InvoiceSequenceScalarFieldEnum = {
+  locationCode: 'locationCode',
+  financialYear: 'financialYear',
+  lastSeq: 'lastSeq',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderNumberSequenceScalarFieldEnum = {
+  locationCode: 'locationCode',
+  dateKey: 'dateKey',
+  lastSeq: 'lastSeq',
   updatedAt: 'updatedAt'
 };
 
@@ -384,6 +401,8 @@ exports.StockReservationStatus = exports.$Enums.StockReservationStatus = {
 
 exports.Prisma.ModelName = {
   Order: 'Order',
+  InvoiceSequence: 'InvoiceSequence',
+  OrderNumberSequence: 'OrderNumberSequence',
   OrderItem: 'OrderItem',
   Payment: 'Payment',
   CouponUsage: 'CouponUsage',

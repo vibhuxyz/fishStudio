@@ -118,8 +118,8 @@ model users {
 
   // Set from the notification-permissions onboarding screen. Null means the
   // user was never asked (older accounts, or they dismissed the prompt).
-  expoPushToken              String?
-  emailNotificationsEnabled  Boolean?
+  expoPushToken             String?
+  emailNotificationsEnabled Boolean?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -133,16 +133,16 @@ model users {
 }
 
 model discount_codes {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
-  public_name   String
-  discountType  String // "percentage" | "fixed" | "free_delivery"
-  discountValue Float
+  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  public_name       String
+  discountType      String // "percentage" | "fixed" | "free_delivery"
+  discountValue     Float
   // Ceiling on the rupee amount a percentage coupon can knock off — without
   // this, "20% off" on a large order has no upper bound. Ignored for fixed
   // (already capped at order value) and free_delivery (no rupee value).
   maxDiscountAmount Float?
-  minOrderValue Float  @default(0)
-  discountCode  String @unique
+  minOrderValue     Float  @default(0)
+  discountCode      String @unique
 
   // New fields for better control
   expiresAt      DateTime? // null = never expires
@@ -241,16 +241,16 @@ model staffs {
   store   stores? @relation(fields: [storeId], references: [id])
 
   // Rider-only fields (role: RIDER). Ported from the retired `riders` model.
-  vehicleType   RiderVehicleType?
-  vehicleNumber String?
-  deliveryZone  String?
-  riderStatus   RiderStatus? @default(AVAILABLE)
+  vehicleType         RiderVehicleType?
+  vehicleNumber       String?
+  deliveryZone        String?
+  riderStatus         RiderStatus?      @default(AVAILABLE)
   // Single-active-delivery-per-rider is the assumed business rule: the
   // assignment eligibility query only ever returns AVAILABLE riders, so this
   // count should only ever be 0 or 1 in practice today — kept as an Int
   // rather than a Boolean so a future multi-delivery relaxation doesn't need
   // a schema change.
-  activeDeliveryCount Int? @default(0)
+  activeDeliveryCount Int?              @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -289,10 +289,44 @@ model stores {
   // Bill Settings — packaging/GST/delivery are seller-configured per store so
   // the amount quoted pre-checkout and the amount order-service charges can
   // never disagree; see computeCartSummary in packages/shared/src/pricing.
-  gst_rate                 Float @default(0)
-  packaging_charge         Float @default(0)
-  base_delivery_charge     Float @default(49)
-  free_delivery_threshold  Float @default(500)
+  gst_rate                Float @default(0)
+  packaging_charge        Float @default(0)
+  base_delivery_charge    Float @default(49)
+  free_delivery_threshold Float @default(500)
+
+  // ── Tax invoice identity ────────────────────────────────────────────
+  // What a GST invoice must show about the supplier. These are the operating
+  // company's details, which are not the same as the customer-facing store
+  // name/address above — a shop trading as "Fish Studio Noida" still invoices
+  // as its registered legal entity.
+  //
+  // All nullable: a store that has not been given them yet simply cannot have
+  // an invoice raised (invoiceForOrder refuses rather than printing a document
+  // with a blank GSTIN, which would be worse than none at all).
+  legalName           String?
+  gstin               String?
+  fssaiLicenseNumber  String?
+  registeredAddress   String?
+  // City named in the "SUBJECT TO <CITY> JURISDICTION" footer. Usually, but
+  // not always, the store's own city — jurisdiction follows the registered
+  // office, not the delivery hub.
+  invoiceJurisdiction String?
+
+  // Short location code for this store's human-facing order numbers, e.g.
+  // "NOI" for Noida — the middle segment of FS-NOI-30082026-001. Set by the
+  // admin rather than derived from `city`, because two cities can shorten to
+  // the same three letters and because a city rename must not silently change
+  // the numbers already printed on customers' invoices.
+  //
+  // Null until an admin sets it: orders at such a store still go through, they
+  // just carry no orderNumber (see the note on Order.orderNumber in the
+  // Postgres schema).
+  locationCode       String?
+  // Cap above which a COD order needs the seller to phone the customer before
+  // accepting. At or below it, and for any order already paid online, the
+  // order is auto-accepted — the seller's Accept button exists for the risky
+  // tail, not for every order. Null falls back to DEFAULT_COD_AUTO_ACCEPT_LIMIT.
+  codAutoAcceptLimit Float?
 
   availableCities   String[] // Areas/localities served by this store, e.g. ["Sector 20", "Tugal Pur"]
   cityDeliveryTimes Json? // Map of area name -> delivery minutes e.g. {"Sector 20": 40, "Tugal Pur": 13}
@@ -300,14 +334,14 @@ model stores {
   // different real delivery times, so each area is pinned to the pincode it
   // actually falls under — this is what lets checkPincode/resolvePreferredStore
   // match a customer's raw pincode even though delivery time is looked up by area.
-  areaPincodes    Json? // Map of area name -> pincode e.g. {"Sector 20": "201301", "Tugal Pur": "201306"}
+  areaPincodes      Json? // Map of area name -> pincode e.g. {"Sector 20": "201301", "Tugal Pur": "201306"}
   // A pincode's areas can sit in different actual cities (e.g. "Kavi Nagar"
   // under 201001 is Ghaziabad, not the store's own base city) — without this,
   // the address form always showed the store's single base city regardless
   // of which area/pincode the customer actually picked.
-  areaCities      Json? // Map of area name -> its real city e.g. {"Kavi Nagar": "Ghaziabad", "Sector 20": "Noida"}
-  servicePincodes String[] @default([]) // Distinct pincodes derived from areaPincodes, used for fast "does this store serve X" lookups
-  state           String? // State of the store location
+  areaCities        Json? // Map of area name -> its real city e.g. {"Kavi Nagar": "Ghaziabad", "Sector 20": "Noida"}
+  servicePincodes   String[] @default([]) // Distinct pincodes derived from areaPincodes, used for fast "does this store serve X" lookups
+  state             String? // State of the store location
 
   // Support / Contact Configuration — surfaced to customers on order-detail
   // screens (Call Support / Chat on WhatsApp). All optional: a store with
@@ -408,6 +442,20 @@ model products {
   subCategory       String
   short_description String
 
+  // HSN code for the tax invoice, e.g. "3025900" for fresh fish. Authored on
+  // the catalog root and inherited by every store variant — the code describes
+  // the goods, not who is selling them, so holding it per variant would let
+  // one product be classified two ways.
+  //
+  // Null on products predating this field; the invoice prints "—" rather than
+  // guessing a code, since a wrong HSN is a tax misclassification.
+  hsnCode        String?
+  // Overrides the store's blanket gst_rate for this product, as a percentage
+  // (0 for exempt fresh fish, 5, 12, 18). Null falls back to the store rate.
+  // A percentage here, unlike stores.gst_rate which is a fraction — the two
+  // are never mixed: computeInvoice converts before use.
+  gstRatePercent Float?
+
   images images[]
 
   tags               String[]
@@ -421,7 +469,7 @@ model products {
   // Weight-based pricing configuration
   basePricePerKg   Float?
   basePricePerUnit Float?
-  pricingMethod    String?  // "per_kg", "per_piece", "fixed"
+  pricingMethod    String? // "per_kg", "per_piece", "fixed"
 
   // Whole-fish style products: admin flags the catalog product as sold by
   // exact weight, so stock is tracked per size instead of one shared pool.
@@ -480,18 +528,17 @@ model products {
   // written on every stock decrement, each redundant index is pure write cost.
   // [totalSold] alone went too — bestseller sort is always scoped by
   // adminId+isDeleted and is served by the compound further down.
-  @@index([storeId, status, isDeleted])       // storefront store-product queries
-  @@index([adminId, isDeleted, status])        // catalog root product queries
+  @@index([storeId, status, isDeleted]) // storefront store-product queries
+  @@index([adminId, isDeleted, status]) // catalog root product queries
   @@index([catalogProductId, status, isDeleted]) // variant lookup by catalog ID
-  @@index([category, status])                 // category browse
-  @@index([status, isDeleted])                // admin product listing
-
+  @@index([category, status]) // category browse
+  @@index([status, isDeleted]) // admin product listing
   // getStoreProducts (storefront.controller.ts) filters catalogWhere on
   // adminId+isDeleted and sorts by these — without a matching compound
   // index Mongo can only use adminId/isDeleted as a filter and falls back to
   // an in-memory sort over the whole filtered set on every cache miss.
   @@index([adminId, isDeleted, totalSold, createdAt]) // homepage sort (isHomepage: true)
-  @@index([adminId, isDeleted, createdAt])            // default listing sort
+  @@index([adminId, isDeleted, createdAt]) // default listing sort
 }
 
 model banners {
@@ -560,7 +607,7 @@ model seller_events {
 // when left null the shopper picks it themselves at add-to-cart time (same
 // options the underlying product itself offers).
 model combos {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
   images      String[] // Cloudinary URLs
@@ -604,20 +651,32 @@ model SignupAccessCode {
   @@map("signup_access_codes")
 }
 
-
 //////////////////////////////////////////////////////
-// ABANDONED CART
+// CART
 //////////////////////////////////////////////////////
 
-model abandoned_carts {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @db.ObjectId
+// The user's live cart, and the single source of truth for cart state across
+// web and Android. Written on every cart mutation by validateCart (the one
+// server touchpoint both clients already go through) and read back by
+// GET /product/api/cart when a user signs in on another device.
+//
+// Lines are stored in the platform-neutral shape validateCartSchema defines
+// ({ productId, quantity, cuttingType?, pieceSize?, size?, comboId? }) — ids
+// and names only, never a product snapshot. Price, stock, title and image are
+// rehydrated through validateCart on read, so a cart restored a week later
+// can never show a stale price.
+//
+// It doubles as the abandoned-cart reminder record (isConverted/notifyStage),
+// which is what this collection was originally built for.
+model carts {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
   items       Json[]
-  storeId     String?  @db.ObjectId
+  storeId     String?   @db.ObjectId
   storeName   String?
-  totalAmount Float    @default(0)
+  totalAmount Float     @default(0)
   notifiedAt  DateTime?
-  isConverted Boolean  @default(false)
+  isConverted Boolean   @default(false)
 
   // Index into the reminder schedule in checkAbandonedCarts (1h, 3h, 1d, 3d,
   // 1w) — how many of those have already fired since lastUpdatedAt. Reset to
@@ -631,7 +690,7 @@ model abandoned_carts {
   // One open cart per user — validateCart upserts on every cart change.
   @@unique([userId])
   @@index([isConverted, notifyStage, lastUpdatedAt])
-  @@map("abandoned_carts")
+  @@map("carts")
 }
 
 //////////////////////////////////////////////////////

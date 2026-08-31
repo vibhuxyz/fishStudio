@@ -48,6 +48,10 @@ export function CheckoutClient() {
   const appliedCoupon = appliedCoupons[0] ?? null;
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  // Set when an online payment was started but never completed. While it holds
+  // an id, Place Order retries THAT order instead of creating another one —
+  // this is what keeps one purchase to one Order id across payment retries.
+  const [retryOrderId, setRetryOrderId] = useState<string | null>(null);
   const [deliveryMetadata, setDeliveryMetadata] = useState<{
     availableSlots: string[];
     instantFee: number;
@@ -198,12 +202,13 @@ export function CheckoutClient() {
       document.body.appendChild(script);
     });
 
-  // Roll back an unpaid online order when the user cancels or payment fails,
-  // so it doesn't linger as a "placed" order and its reserved stock is freed.
-  const cancelUnpaidOrder = (orderId: string) =>
-    axiosInstance
-      .put(`/order/api/cancel/${orderId}`)
-      .catch(() => {/* webhook / cleanup job will reconcile if this fails */});
+  // A saved unpaid order is only worth retrying while it still describes what
+  // the customer is looking at. Change the basket, the address or the slot and
+  // the retry handle is dropped, so the next tap builds a fresh order rather
+  // than charging them for the previous one's contents.
+  useEffect(() => {
+    setRetryOrderId(null);
+  }, [grandTotal, items.length, selectedAddress?.id, selectedSlot, paymentMethod]);
 
   const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -264,6 +269,7 @@ export function CheckoutClient() {
           });
           if (verified.success) {
             paymentSettled = true;
+            setRetryOrderId(null);
             toast.success("Payment successful!");
             clearCart();
             clearAllCoupons();
@@ -286,6 +292,7 @@ export function CheckoutClient() {
           }
 
           if (status === "COMPLETED") {
+            setRetryOrderId(null);
             toast.success("Payment successful!");
             clearCart();
             clearAllCoupons();
@@ -302,12 +309,16 @@ export function CheckoutClient() {
       },
       modal: {
         ondismiss: () => {
-          // Modal closed without a verified payment. Only roll back if no
-          // payment was ever handed to us — otherwise the order may be paid
-          // and the server will settle it.
+          // Modal closed without a verified payment. The order is deliberately
+          // NOT cancelled: one customer purchase is one Order id, and a retry
+          // must reuse it rather than mint a second. Held here so the Place
+          // Order button becomes Retry Payment against this same order.
+          //
+          // Nothing leaks if they never retry — cancelStaleUnpaidOrders sweeps
+          // unpaid online orders after 30 minutes and releases the stock.
           if (!paymentSettled && !paymentAttempted) {
-            cancelUnpaidOrder(orderId);
-            toast.info("Payment cancelled. Your order was not placed.");
+            setRetryOrderId(orderId);
+            toast.info("Payment not completed. Your order is saved — tap Retry Payment to try again.");
           }
           setIsPlacingOrder(false);
         },
@@ -338,6 +349,27 @@ export function CheckoutClient() {
     }
 
     setIsPlacingOrder(true);
+
+    // A previous attempt on this same basket failed or was dismissed. Pay
+    // against that order again — create-razorpay-order opens a fresh payment
+    // attempt bound to it, so the customer keeps one Order id no matter how
+    // many times they retry.
+    if (retryOrderId) {
+      try {
+        await startRazorpayPayment(retryOrderId);
+      } catch (error: any) {
+        // The saved order is no longer payable (swept as stale, or cancelled).
+        // Drop it and let the next tap build a fresh one.
+        setRetryOrderId(null);
+        setIsPlacingOrder(false);
+        toast.error(
+          error.response?.data?.message ||
+            "That order expired. Please place it again.",
+        );
+      }
+      return;
+    }
+
     try {
       const orderData = {
         storeId: selectedLocation.storeId,
@@ -737,8 +769,13 @@ export function CheckoutClient() {
         </div>
 
         {/* Right Column: Bill Summary */}
+        {/* Not `self-start`: the column must stay stretched to the row height,
+            or the sticky child would only have its own short box to travel in
+            and would scroll away again once past it. */}
         <div className="lg:col-span-1">
-           <div className="sticky top-24">
+           {/* Scrolls internally on short viewports so a tall bill summary
+               stays fully reachable instead of having its footer cut off. */}
+           <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
              <BillSummary
                 itemTotal={totalPrice}
                 deliveryCharge={deliveryCharge}
@@ -749,6 +786,7 @@ export function CheckoutClient() {
                 discount={discount}
                 discountBreakdown={discountBreakdown}
                 onPlaceOrder={handlePlaceOrder}
+                actionLabel={retryOrderId ? "Retry Payment" : "Place Order"}
                 isLoading={isPlacingOrder}
                 disabled={!selectedAddress || !selectedLocation?.storeId || !selectedSlot}
              />

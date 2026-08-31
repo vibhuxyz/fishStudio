@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowLeft, Phone, MapPin, Navigation, Package, Camera, CheckCircle2, Loader2, Bike, RotateCcw, X } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { toast } from "sonner";
 import { AxiosError } from "axios";
 import useStaffRequestConfig from "@/hooks/useStaffRequestConfig";
@@ -127,7 +127,7 @@ const RiderOrderDetailPage = () => {
 
       <div className="bg-[#0f1117] border border-gray-800 rounded-xl p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-white font-semibold">Order {formatOrderId(order.id)}</p>
+          <p className="text-white font-semibold">Order {displayOrderNumber(order)}</p>
           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300">
             {STATUS_LABELS[order.status] || order.status}
           </span>

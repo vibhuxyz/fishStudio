@@ -7,10 +7,10 @@ import { useParams } from "next/navigation";
 import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, IndianRupee, Mail, MapPin, Package, Phone, RefreshCw, ShoppingCart, Store, TicketPercent, TrendingDown, Trophy, Search } from "lucide-react";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
-import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, useAdminSellerOrders, StatsPeriod, DetailedProductRow, SellerOrder } from "@/hooks/useAdminQueries";
+import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, useAdminSellerOrders, useUpdateAdminStoreSettings, StatsPeriod, DetailedProductRow, SellerOrder } from "@/hooks/useAdminQueries";
 import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender } from "@tanstack/react-table";
 import ProductDetailModal from "@/shared/components/analytics/ProductDetailModal";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
@@ -39,6 +39,74 @@ const SellerDetailPage = () => {
   const { data: ordersData, isLoading: isLoadingOrders } = useAdminSellerOrders(sellerId);
   const stats = statsData?.stats;
   const orders = ordersData?.orders || [];
+
+  // Seeded from the store once it loads, then owned by the form. `??` not `||`
+  // so a deliberate 0 limit (every COD order needs a call) isn't read as unset.
+  const storeLocationCode = seller?.store?.locationCode ?? "";
+  const storeCodLimit = seller?.store?.codAutoAcceptLimit;
+  const [locationCodeInput, setLocationCodeInput] = useState<string | null>(null);
+  const [codLimitInput, setCodLimitInput] = useState<string | null>(null);
+  const storeSettingsMutation = useUpdateAdminStoreSettings();
+
+  const locationCodeValue = locationCodeInput ?? storeLocationCode;
+  const codLimitValue = codLimitInput ?? (storeCodLimit != null ? String(storeCodLimit) : "");
+  const storeSettingsDirty =
+    locationCodeValue !== storeLocationCode ||
+    codLimitValue !== (storeCodLimit != null ? String(storeCodLimit) : "");
+
+  // Tax invoice identity. Same seed-from-server-then-own-it pattern as the
+  // two fields above: null means "not edited", so an unsaved form never
+  // fights a refetch.
+  const invoiceFields = ["legalName", "gstin", "fssaiLicenseNumber", "registeredAddress", "invoiceJurisdiction"] as const;
+  type InvoiceField = (typeof invoiceFields)[number];
+  const [invoiceEdits, setInvoiceEdits] = useState<Partial<Record<InvoiceField, string>>>({});
+
+  const invoiceValue = (key: InvoiceField) =>
+    invoiceEdits[key] ?? (seller?.store?.[key] ?? "");
+  const invoiceDirty = invoiceFields.some(
+    (key) => invoiceValue(key) !== (seller?.store?.[key] ?? ""),
+  );
+
+  const handleSaveInvoiceIdentity = () => {
+    const storeId = seller?.store?.id;
+    if (!storeId) return;
+    storeSettingsMutation.mutate(
+      {
+        storeId,
+        sellerId,
+        legalName: invoiceValue("legalName").trim() || null,
+        gstin: invoiceValue("gstin").trim().toUpperCase() || null,
+        fssaiLicenseNumber: invoiceValue("fssaiLicenseNumber").trim() || null,
+        registeredAddress: invoiceValue("registeredAddress").trim() || null,
+        invoiceJurisdiction: invoiceValue("invoiceJurisdiction").trim() || null,
+      },
+      { onSuccess: () => setInvoiceEdits({}) },
+    );
+  };
+
+  const handleSaveStoreSettings = () => {
+    const storeId = seller?.store?.id;
+    if (!storeId) return;
+    const trimmedLimit = codLimitValue.trim();
+    storeSettingsMutation.mutate(
+      {
+        storeId,
+        sellerId,
+        // Empty clears the code rather than being skipped — that is how an
+        // admin removes one they set by mistake.
+        locationCode: locationCodeValue.trim() || null,
+        codAutoAcceptLimit: trimmedLimit === "" ? null : Number(trimmedLimit),
+      },
+      {
+        onSuccess: () => {
+          // Hand ownership back to the server copy so the form reflects what
+          // was actually stored (the code is normalised server-side).
+          setLocationCodeInput(null);
+          setCodLimitInput(null);
+        },
+      },
+    );
+  };
 
   const handleToggleApproval = () => {
     if (!seller) return;
@@ -90,7 +158,7 @@ const SellerDetailPage = () => {
         header: "Order ID",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-[10px] font-mono tracking-tighter">
-            {formatOrderId(row.original.id)}
+            {displayOrderNumber(row.original)}
           </span>
         ),
       },
@@ -277,6 +345,130 @@ const SellerDetailPage = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Order numbering & COD policy — admin-only store settings */}
+              {seller.store?.id && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <h4 className="mb-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                    Order Numbering &amp; COD
+                  </h4>
+                  <div className="bg-slate-950/50 p-4 rounded-lg border border-gray-800 space-y-4">
+                    <div>
+                      <label htmlFor="locationCode" className="block text-sm font-medium text-white">
+                        Location code
+                      </label>
+                      <p className="mt-1 text-xs text-slate-400">
+                        Used in this store&apos;s order numbers, e.g.{" "}
+                        <span className="font-mono text-slate-300">
+                          FS-{locationCodeValue.toUpperCase() || "NOI"}-30082026-001
+                        </span>
+                        . Letters only. Existing orders keep the number they were issued.
+                      </p>
+                      <input
+                        id="locationCode"
+                        value={locationCodeValue}
+                        onChange={(e) => setLocationCodeInput(e.target.value.replace(/[^A-Za-z]/g, "").slice(0, 4))}
+                        placeholder="NOI"
+                        className="mt-2 w-32 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 font-mono uppercase text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="codLimit" className="block text-sm font-medium text-white">
+                        COD auto-accept limit (₹)
+                      </label>
+                      <p className="mt-1 text-xs text-slate-400">
+                        COD orders at or below this are accepted automatically. Above it, the
+                        seller confirms with the customer first. Leave blank to use the default
+                        of ₹3,000.
+                      </p>
+                      <input
+                        id="codLimit"
+                        type="number"
+                        min={0}
+                        value={codLimitValue}
+                        onChange={(e) => setCodLimitInput(e.target.value)}
+                        placeholder="3000"
+                        className="mt-2 w-40 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveStoreSettings}
+                      disabled={storeSettingsMutation.isPending || !storeSettingsDirty}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                    >
+                      {storeSettingsMutation.isPending ? "Saving..." : "Save settings"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tax invoice identity — what a GST invoice must show about the supplier */}
+              {seller.store?.id && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <h4 className="mb-1 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                    Tax Invoice Identity
+                  </h4>
+                  <p className="mb-4 text-xs text-slate-400">
+                    The registered entity, not the shop name. Until the legal name, GSTIN and
+                    location code are all set, this store cannot issue a tax invoice — the
+                    server refuses rather than printing one with a blank registration.
+                  </p>
+
+                  <div className="space-y-4 rounded-lg border border-gray-800 bg-slate-950/50 p-4">
+                    {[
+                      { key: "legalName" as const, label: "Registered legal name", placeholder: "Pacific Retail Private Limited" },
+                      { key: "gstin" as const, label: "GSTIN", placeholder: "19AANCP6073E1Z2", mono: true },
+                      { key: "fssaiLicenseNumber" as const, label: "FSSAI licence number", placeholder: "12824013000121", mono: true },
+                      { key: "invoiceJurisdiction" as const, label: "Jurisdiction city", placeholder: "Kolkata" },
+                    ].map((f) => (
+                      <div key={f.key}>
+                        <label htmlFor={f.key} className="block text-sm font-medium text-white">
+                          {f.label}
+                        </label>
+                        <input
+                          id={f.key}
+                          value={invoiceValue(f.key)}
+                          onChange={(e) =>
+                            setInvoiceEdits((prev) => ({ ...prev, [f.key]: e.target.value }))
+                          }
+                          placeholder={f.placeholder}
+                          className={`mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white outline-none focus:border-blue-500 ${
+                            f.mono ? "font-mono uppercase" : ""
+                          }`}
+                        />
+                      </div>
+                    ))}
+
+                    <div>
+                      <label htmlFor="registeredAddress" className="block text-sm font-medium text-white">
+                        Registered address
+                      </label>
+                      <textarea
+                        id="registeredAddress"
+                        rows={3}
+                        value={invoiceValue("registeredAddress")}
+                        onChange={(e) =>
+                          setInvoiceEdits((prev) => ({ ...prev, registeredAddress: e.target.value }))
+                        }
+                        placeholder="36, Kalindi Housing Estate, Kalindi, Kolkata, West Bengal - 700089"
+                        className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveInvoiceIdentity}
+                      disabled={storeSettingsMutation.isPending || !invoiceDirty}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:opacity-50"
+                    >
+                      {storeSettingsMutation.isPending ? "Saving..." : "Save invoice identity"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

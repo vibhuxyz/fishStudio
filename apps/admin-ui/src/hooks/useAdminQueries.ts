@@ -12,6 +12,7 @@ import type {
   SellerOrder,
   SlugValidationResponse,
   DiscountCodePayload,
+  UpdateDiscountCodePayload,
   UpdateProductPayload,
   AdminBanner,
   StatsPeriod,
@@ -35,6 +36,7 @@ export type {
   SellerOrder,
   SlugValidationResponse,
   DiscountCodePayload,
+  UpdateDiscountCodePayload,
   UpdateProductPayload,
   AdminBanner,
   StatsPeriod,
@@ -176,6 +178,35 @@ export const fetchDiscountCodes = async (): Promise<DiscountCode[]> => {
 
 export const createDiscountCode = async (payload: DiscountCodePayload) => {
   await axiosInstance.post("/product/api/create-discount-code", payload, isProtected);
+};
+
+/** Admin may edit any coupon, including one a seller created. */
+export const updateDiscountCode = async ({
+  discountId,
+  payload,
+}: {
+  discountId: string;
+  payload: UpdateDiscountCodePayload;
+}) => {
+  await axiosInstance.put(
+    `/product/api/update-discount-code/${discountId}`,
+    payload,
+    isProtected,
+  );
+};
+
+export const toggleDiscountCode = async ({
+  discountId,
+  isActive,
+}: {
+  discountId: string;
+  isActive: boolean;
+}) => {
+  await axiosInstance.patch(
+    `/product/api/toggle-discount-code/${discountId}`,
+    { isActive },
+    isProtected,
+  );
 };
 
 export const deleteDiscountCode = async (discountId: string) => {
@@ -394,6 +425,46 @@ export const useUpdateSellerApproval = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.sellers });
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.sellerDetail(variables.sellerId) });
+    },
+  });
+};
+
+/** Store settings only an admin controls — see adminStoreSettingsSchema. */
+export type AdminStoreSettingsPayload = {
+  storeId: string;
+  sellerId: string;
+  locationCode?: string | null;
+  codAutoAcceptLimit?: number | null;
+  legalName?: string | null;
+  gstin?: string | null;
+  fssaiLicenseNumber?: string | null;
+  registeredAddress?: string | null;
+  invoiceJurisdiction?: string | null;
+};
+
+export const updateAdminStoreSettings = async ({
+  storeId,
+  sellerId: _sellerId,
+  ...settings
+}: AdminStoreSettingsPayload) => {
+  // Only the keys actually present are sent, so a form that edits one section
+  // never blanks a field it wasn't showing.
+  const res = await axiosInstance.put(
+    `/auth/api/admin/stores/${storeId}/settings`,
+    settings,
+    isProtected,
+  );
+  return res.data;
+};
+
+export const useUpdateAdminStoreSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateAdminStoreSettings,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: adminQueryKeys.sellerDetail(variables.sellerId),
+      });
     },
   });
 };

@@ -22,7 +22,7 @@ export async function checkAbandonedCarts() {
   const now = new Date();
 
   try {
-    const candidateCarts = await prismaMongo.abandoned_carts.findMany({
+    const candidateCarts = await prismaMongo.carts.findMany({
       where: {
         isConverted: false,
         notifyStage: { lt: REMINDER_SCHEDULE_HOURS.length },
@@ -31,6 +31,10 @@ export async function checkAbandonedCarts() {
     });
 
     const dueCarts = candidateCarts.filter((cart) => {
+      // A cart can be open but empty — the customer removed the last line
+      // rather than ordering. Reminding someone about an empty basket is
+      // worse than saying nothing.
+      if (!Array.isArray(cart.items) || cart.items.length === 0) return false;
       const thresholdHours = REMINDER_SCHEDULE_HOURS[cart.notifyStage]!;
       const dueAt = new Date(cart.lastUpdatedAt.getTime() + thresholdHours * 60 * 60 * 1000);
       return dueAt <= now;
@@ -94,7 +98,7 @@ export async function checkAbandonedCarts() {
     }
 
     if (notifiedIds.length > 0) {
-      await prismaMongo.abandoned_carts.updateMany({
+      await prismaMongo.carts.updateMany({
         where: { id: { in: notifiedIds } },
         data: { notifiedAt: now, notifyStage: { increment: 1 } },
       });

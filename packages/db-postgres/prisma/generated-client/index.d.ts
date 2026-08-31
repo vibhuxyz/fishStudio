@@ -19,6 +19,16 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
  */
 export type Order = $Result.DefaultSelection<Prisma.$OrderPayload>
 /**
+ * Model InvoiceSequence
+ * 
+ */
+export type InvoiceSequence = $Result.DefaultSelection<Prisma.$InvoiceSequencePayload>
+/**
+ * Model OrderNumberSequence
+ * 
+ */
+export type OrderNumberSequence = $Result.DefaultSelection<Prisma.$OrderNumberSequencePayload>
+/**
  * Model OrderItem
  * 
  */
@@ -357,6 +367,26 @@ export class PrismaClient<
     * ```
     */
   get order(): Prisma.OrderDelegate<ExtArgs>;
+
+  /**
+   * `prisma.invoiceSequence`: Exposes CRUD operations for the **InvoiceSequence** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more InvoiceSequences
+    * const invoiceSequences = await prisma.invoiceSequence.findMany()
+    * ```
+    */
+  get invoiceSequence(): Prisma.InvoiceSequenceDelegate<ExtArgs>;
+
+  /**
+   * `prisma.orderNumberSequence`: Exposes CRUD operations for the **OrderNumberSequence** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more OrderNumberSequences
+    * const orderNumberSequences = await prisma.orderNumberSequence.findMany()
+    * ```
+    */
+  get orderNumberSequence(): Prisma.OrderNumberSequenceDelegate<ExtArgs>;
 
   /**
    * `prisma.orderItem`: Exposes CRUD operations for the **OrderItem** model.
@@ -909,6 +939,8 @@ export namespace Prisma {
 
   export const ModelName: {
     Order: 'Order',
+    InvoiceSequence: 'InvoiceSequence',
+    OrderNumberSequence: 'OrderNumberSequence',
     OrderItem: 'OrderItem',
     Payment: 'Payment',
     CouponUsage: 'CouponUsage',
@@ -935,7 +967,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "order" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
+      modelProps: "order" | "invoiceSequence" | "orderNumberSequence" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1006,6 +1038,146 @@ export namespace Prisma {
           count: {
             args: Prisma.OrderCountArgs<ExtArgs>
             result: $Utils.Optional<OrderCountAggregateOutputType> | number
+          }
+        }
+      }
+      InvoiceSequence: {
+        payload: Prisma.$InvoiceSequencePayload<ExtArgs>
+        fields: Prisma.InvoiceSequenceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.InvoiceSequenceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.InvoiceSequenceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          findFirst: {
+            args: Prisma.InvoiceSequenceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.InvoiceSequenceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          findMany: {
+            args: Prisma.InvoiceSequenceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>[]
+          }
+          create: {
+            args: Prisma.InvoiceSequenceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          createMany: {
+            args: Prisma.InvoiceSequenceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.InvoiceSequenceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>[]
+          }
+          delete: {
+            args: Prisma.InvoiceSequenceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          update: {
+            args: Prisma.InvoiceSequenceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          deleteMany: {
+            args: Prisma.InvoiceSequenceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.InvoiceSequenceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.InvoiceSequenceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InvoiceSequencePayload>
+          }
+          aggregate: {
+            args: Prisma.InvoiceSequenceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInvoiceSequence>
+          }
+          groupBy: {
+            args: Prisma.InvoiceSequenceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InvoiceSequenceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.InvoiceSequenceCountArgs<ExtArgs>
+            result: $Utils.Optional<InvoiceSequenceCountAggregateOutputType> | number
+          }
+        }
+      }
+      OrderNumberSequence: {
+        payload: Prisma.$OrderNumberSequencePayload<ExtArgs>
+        fields: Prisma.OrderNumberSequenceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.OrderNumberSequenceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.OrderNumberSequenceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          findFirst: {
+            args: Prisma.OrderNumberSequenceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.OrderNumberSequenceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          findMany: {
+            args: Prisma.OrderNumberSequenceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>[]
+          }
+          create: {
+            args: Prisma.OrderNumberSequenceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          createMany: {
+            args: Prisma.OrderNumberSequenceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.OrderNumberSequenceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>[]
+          }
+          delete: {
+            args: Prisma.OrderNumberSequenceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          update: {
+            args: Prisma.OrderNumberSequenceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          deleteMany: {
+            args: Prisma.OrderNumberSequenceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.OrderNumberSequenceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.OrderNumberSequenceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OrderNumberSequencePayload>
+          }
+          aggregate: {
+            args: Prisma.OrderNumberSequenceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateOrderNumberSequence>
+          }
+          groupBy: {
+            args: Prisma.OrderNumberSequenceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<OrderNumberSequenceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.OrderNumberSequenceCountArgs<ExtArgs>
+            result: $Utils.Optional<OrderNumberSequenceCountAggregateOutputType> | number
           }
         }
       }
@@ -2018,6 +2190,9 @@ export namespace Prisma {
 
   export type OrderMinAggregateOutputType = {
     id: string | null
+    orderNumber: string | null
+    invoiceNumber: string | null
+    invoicedAt: Date | null
     userId: string | null
     storeId: string | null
     totalAmount: Decimal | null
@@ -2060,6 +2235,9 @@ export namespace Prisma {
 
   export type OrderMaxAggregateOutputType = {
     id: string | null
+    orderNumber: string | null
+    invoiceNumber: string | null
+    invoicedAt: Date | null
     userId: string | null
     storeId: string | null
     totalAmount: Decimal | null
@@ -2102,6 +2280,9 @@ export namespace Prisma {
 
   export type OrderCountAggregateOutputType = {
     id: number
+    orderNumber: number
+    invoiceNumber: number
+    invoicedAt: number
     userId: number
     storeId: number
     totalAmount: number
@@ -2164,6 +2345,9 @@ export namespace Prisma {
 
   export type OrderMinAggregateInputType = {
     id?: true
+    orderNumber?: true
+    invoiceNumber?: true
+    invoicedAt?: true
     userId?: true
     storeId?: true
     totalAmount?: true
@@ -2206,6 +2390,9 @@ export namespace Prisma {
 
   export type OrderMaxAggregateInputType = {
     id?: true
+    orderNumber?: true
+    invoiceNumber?: true
+    invoicedAt?: true
     userId?: true
     storeId?: true
     totalAmount?: true
@@ -2248,6 +2435,9 @@ export namespace Prisma {
 
   export type OrderCountAggregateInputType = {
     id?: true
+    orderNumber?: true
+    invoiceNumber?: true
+    invoicedAt?: true
     userId?: true
     storeId?: true
     totalAmount?: true
@@ -2379,6 +2569,9 @@ export namespace Prisma {
 
   export type OrderGroupByOutputType = {
     id: string
+    orderNumber: string | null
+    invoiceNumber: string | null
+    invoicedAt: Date | null
     userId: string
     storeId: string
     totalAmount: Decimal
@@ -2442,6 +2635,9 @@ export namespace Prisma {
 
   export type OrderSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    orderNumber?: boolean
+    invoiceNumber?: boolean
+    invoicedAt?: boolean
     userId?: boolean
     storeId?: boolean
     totalAmount?: boolean
@@ -2490,6 +2686,9 @@ export namespace Prisma {
 
   export type OrderSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    orderNumber?: boolean
+    invoiceNumber?: boolean
+    invoicedAt?: boolean
     userId?: boolean
     storeId?: boolean
     totalAmount?: boolean
@@ -2534,6 +2733,9 @@ export namespace Prisma {
 
   export type OrderSelectScalar = {
     id?: boolean
+    orderNumber?: boolean
+    invoiceNumber?: boolean
+    invoicedAt?: boolean
     userId?: boolean
     storeId?: boolean
     totalAmount?: boolean
@@ -2593,6 +2795,9 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
+      orderNumber: string | null
+      invoiceNumber: string | null
+      invoicedAt: Date | null
       userId: string
       storeId: string
       totalAmount: Prisma.Decimal
@@ -3030,6 +3235,9 @@ export namespace Prisma {
    */ 
   interface OrderFieldRefs {
     readonly id: FieldRef<"Order", 'String'>
+    readonly orderNumber: FieldRef<"Order", 'String'>
+    readonly invoiceNumber: FieldRef<"Order", 'String'>
+    readonly invoicedAt: FieldRef<"Order", 'DateTime'>
     readonly userId: FieldRef<"Order", 'String'>
     readonly storeId: FieldRef<"Order", 'String'>
     readonly totalAmount: FieldRef<"Order", 'Decimal'>
@@ -3455,6 +3663,1806 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: OrderInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model InvoiceSequence
+   */
+
+  export type AggregateInvoiceSequence = {
+    _count: InvoiceSequenceCountAggregateOutputType | null
+    _avg: InvoiceSequenceAvgAggregateOutputType | null
+    _sum: InvoiceSequenceSumAggregateOutputType | null
+    _min: InvoiceSequenceMinAggregateOutputType | null
+    _max: InvoiceSequenceMaxAggregateOutputType | null
+  }
+
+  export type InvoiceSequenceAvgAggregateOutputType = {
+    lastSeq: number | null
+  }
+
+  export type InvoiceSequenceSumAggregateOutputType = {
+    lastSeq: number | null
+  }
+
+  export type InvoiceSequenceMinAggregateOutputType = {
+    locationCode: string | null
+    financialYear: string | null
+    lastSeq: number | null
+    updatedAt: Date | null
+  }
+
+  export type InvoiceSequenceMaxAggregateOutputType = {
+    locationCode: string | null
+    financialYear: string | null
+    lastSeq: number | null
+    updatedAt: Date | null
+  }
+
+  export type InvoiceSequenceCountAggregateOutputType = {
+    locationCode: number
+    financialYear: number
+    lastSeq: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type InvoiceSequenceAvgAggregateInputType = {
+    lastSeq?: true
+  }
+
+  export type InvoiceSequenceSumAggregateInputType = {
+    lastSeq?: true
+  }
+
+  export type InvoiceSequenceMinAggregateInputType = {
+    locationCode?: true
+    financialYear?: true
+    lastSeq?: true
+    updatedAt?: true
+  }
+
+  export type InvoiceSequenceMaxAggregateInputType = {
+    locationCode?: true
+    financialYear?: true
+    lastSeq?: true
+    updatedAt?: true
+  }
+
+  export type InvoiceSequenceCountAggregateInputType = {
+    locationCode?: true
+    financialYear?: true
+    lastSeq?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type InvoiceSequenceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InvoiceSequence to aggregate.
+     */
+    where?: InvoiceSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InvoiceSequences to fetch.
+     */
+    orderBy?: InvoiceSequenceOrderByWithRelationInput | InvoiceSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: InvoiceSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InvoiceSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InvoiceSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned InvoiceSequences
+    **/
+    _count?: true | InvoiceSequenceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: InvoiceSequenceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: InvoiceSequenceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: InvoiceSequenceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: InvoiceSequenceMaxAggregateInputType
+  }
+
+  export type GetInvoiceSequenceAggregateType<T extends InvoiceSequenceAggregateArgs> = {
+        [P in keyof T & keyof AggregateInvoiceSequence]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateInvoiceSequence[P]>
+      : GetScalarType<T[P], AggregateInvoiceSequence[P]>
+  }
+
+
+
+
+  export type InvoiceSequenceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InvoiceSequenceWhereInput
+    orderBy?: InvoiceSequenceOrderByWithAggregationInput | InvoiceSequenceOrderByWithAggregationInput[]
+    by: InvoiceSequenceScalarFieldEnum[] | InvoiceSequenceScalarFieldEnum
+    having?: InvoiceSequenceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: InvoiceSequenceCountAggregateInputType | true
+    _avg?: InvoiceSequenceAvgAggregateInputType
+    _sum?: InvoiceSequenceSumAggregateInputType
+    _min?: InvoiceSequenceMinAggregateInputType
+    _max?: InvoiceSequenceMaxAggregateInputType
+  }
+
+  export type InvoiceSequenceGroupByOutputType = {
+    locationCode: string
+    financialYear: string
+    lastSeq: number
+    updatedAt: Date
+    _count: InvoiceSequenceCountAggregateOutputType | null
+    _avg: InvoiceSequenceAvgAggregateOutputType | null
+    _sum: InvoiceSequenceSumAggregateOutputType | null
+    _min: InvoiceSequenceMinAggregateOutputType | null
+    _max: InvoiceSequenceMaxAggregateOutputType | null
+  }
+
+  type GetInvoiceSequenceGroupByPayload<T extends InvoiceSequenceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<InvoiceSequenceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof InvoiceSequenceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], InvoiceSequenceGroupByOutputType[P]>
+            : GetScalarType<T[P], InvoiceSequenceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type InvoiceSequenceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    locationCode?: boolean
+    financialYear?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["invoiceSequence"]>
+
+  export type InvoiceSequenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    locationCode?: boolean
+    financialYear?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["invoiceSequence"]>
+
+  export type InvoiceSequenceSelectScalar = {
+    locationCode?: boolean
+    financialYear?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $InvoiceSequencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "InvoiceSequence"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      locationCode: string
+      financialYear: string
+      lastSeq: number
+      updatedAt: Date
+    }, ExtArgs["result"]["invoiceSequence"]>
+    composites: {}
+  }
+
+  type InvoiceSequenceGetPayload<S extends boolean | null | undefined | InvoiceSequenceDefaultArgs> = $Result.GetResult<Prisma.$InvoiceSequencePayload, S>
+
+  type InvoiceSequenceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<InvoiceSequenceFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: InvoiceSequenceCountAggregateInputType | true
+    }
+
+  export interface InvoiceSequenceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['InvoiceSequence'], meta: { name: 'InvoiceSequence' } }
+    /**
+     * Find zero or one InvoiceSequence that matches the filter.
+     * @param {InvoiceSequenceFindUniqueArgs} args - Arguments to find a InvoiceSequence
+     * @example
+     * // Get one InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends InvoiceSequenceFindUniqueArgs>(args: SelectSubset<T, InvoiceSequenceFindUniqueArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one InvoiceSequence that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {InvoiceSequenceFindUniqueOrThrowArgs} args - Arguments to find a InvoiceSequence
+     * @example
+     * // Get one InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends InvoiceSequenceFindUniqueOrThrowArgs>(args: SelectSubset<T, InvoiceSequenceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first InvoiceSequence that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceFindFirstArgs} args - Arguments to find a InvoiceSequence
+     * @example
+     * // Get one InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends InvoiceSequenceFindFirstArgs>(args?: SelectSubset<T, InvoiceSequenceFindFirstArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first InvoiceSequence that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceFindFirstOrThrowArgs} args - Arguments to find a InvoiceSequence
+     * @example
+     * // Get one InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends InvoiceSequenceFindFirstOrThrowArgs>(args?: SelectSubset<T, InvoiceSequenceFindFirstOrThrowArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more InvoiceSequences that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all InvoiceSequences
+     * const invoiceSequences = await prisma.invoiceSequence.findMany()
+     * 
+     * // Get first 10 InvoiceSequences
+     * const invoiceSequences = await prisma.invoiceSequence.findMany({ take: 10 })
+     * 
+     * // Only select the `locationCode`
+     * const invoiceSequenceWithLocationCodeOnly = await prisma.invoiceSequence.findMany({ select: { locationCode: true } })
+     * 
+     */
+    findMany<T extends InvoiceSequenceFindManyArgs>(args?: SelectSubset<T, InvoiceSequenceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a InvoiceSequence.
+     * @param {InvoiceSequenceCreateArgs} args - Arguments to create a InvoiceSequence.
+     * @example
+     * // Create one InvoiceSequence
+     * const InvoiceSequence = await prisma.invoiceSequence.create({
+     *   data: {
+     *     // ... data to create a InvoiceSequence
+     *   }
+     * })
+     * 
+     */
+    create<T extends InvoiceSequenceCreateArgs>(args: SelectSubset<T, InvoiceSequenceCreateArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many InvoiceSequences.
+     * @param {InvoiceSequenceCreateManyArgs} args - Arguments to create many InvoiceSequences.
+     * @example
+     * // Create many InvoiceSequences
+     * const invoiceSequence = await prisma.invoiceSequence.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends InvoiceSequenceCreateManyArgs>(args?: SelectSubset<T, InvoiceSequenceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many InvoiceSequences and returns the data saved in the database.
+     * @param {InvoiceSequenceCreateManyAndReturnArgs} args - Arguments to create many InvoiceSequences.
+     * @example
+     * // Create many InvoiceSequences
+     * const invoiceSequence = await prisma.invoiceSequence.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many InvoiceSequences and only return the `locationCode`
+     * const invoiceSequenceWithLocationCodeOnly = await prisma.invoiceSequence.createManyAndReturn({ 
+     *   select: { locationCode: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends InvoiceSequenceCreateManyAndReturnArgs>(args?: SelectSubset<T, InvoiceSequenceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a InvoiceSequence.
+     * @param {InvoiceSequenceDeleteArgs} args - Arguments to delete one InvoiceSequence.
+     * @example
+     * // Delete one InvoiceSequence
+     * const InvoiceSequence = await prisma.invoiceSequence.delete({
+     *   where: {
+     *     // ... filter to delete one InvoiceSequence
+     *   }
+     * })
+     * 
+     */
+    delete<T extends InvoiceSequenceDeleteArgs>(args: SelectSubset<T, InvoiceSequenceDeleteArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one InvoiceSequence.
+     * @param {InvoiceSequenceUpdateArgs} args - Arguments to update one InvoiceSequence.
+     * @example
+     * // Update one InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends InvoiceSequenceUpdateArgs>(args: SelectSubset<T, InvoiceSequenceUpdateArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more InvoiceSequences.
+     * @param {InvoiceSequenceDeleteManyArgs} args - Arguments to filter InvoiceSequences to delete.
+     * @example
+     * // Delete a few InvoiceSequences
+     * const { count } = await prisma.invoiceSequence.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends InvoiceSequenceDeleteManyArgs>(args?: SelectSubset<T, InvoiceSequenceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more InvoiceSequences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many InvoiceSequences
+     * const invoiceSequence = await prisma.invoiceSequence.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends InvoiceSequenceUpdateManyArgs>(args: SelectSubset<T, InvoiceSequenceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one InvoiceSequence.
+     * @param {InvoiceSequenceUpsertArgs} args - Arguments to update or create a InvoiceSequence.
+     * @example
+     * // Update or create a InvoiceSequence
+     * const invoiceSequence = await prisma.invoiceSequence.upsert({
+     *   create: {
+     *     // ... data to create a InvoiceSequence
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the InvoiceSequence we want to update
+     *   }
+     * })
+     */
+    upsert<T extends InvoiceSequenceUpsertArgs>(args: SelectSubset<T, InvoiceSequenceUpsertArgs<ExtArgs>>): Prisma__InvoiceSequenceClient<$Result.GetResult<Prisma.$InvoiceSequencePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of InvoiceSequences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceCountArgs} args - Arguments to filter InvoiceSequences to count.
+     * @example
+     * // Count the number of InvoiceSequences
+     * const count = await prisma.invoiceSequence.count({
+     *   where: {
+     *     // ... the filter for the InvoiceSequences we want to count
+     *   }
+     * })
+    **/
+    count<T extends InvoiceSequenceCountArgs>(
+      args?: Subset<T, InvoiceSequenceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], InvoiceSequenceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a InvoiceSequence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends InvoiceSequenceAggregateArgs>(args: Subset<T, InvoiceSequenceAggregateArgs>): Prisma.PrismaPromise<GetInvoiceSequenceAggregateType<T>>
+
+    /**
+     * Group by InvoiceSequence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InvoiceSequenceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends InvoiceSequenceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: InvoiceSequenceGroupByArgs['orderBy'] }
+        : { orderBy?: InvoiceSequenceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, InvoiceSequenceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInvoiceSequenceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the InvoiceSequence model
+   */
+  readonly fields: InvoiceSequenceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for InvoiceSequence.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__InvoiceSequenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the InvoiceSequence model
+   */ 
+  interface InvoiceSequenceFieldRefs {
+    readonly locationCode: FieldRef<"InvoiceSequence", 'String'>
+    readonly financialYear: FieldRef<"InvoiceSequence", 'String'>
+    readonly lastSeq: FieldRef<"InvoiceSequence", 'Int'>
+    readonly updatedAt: FieldRef<"InvoiceSequence", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * InvoiceSequence findUnique
+   */
+  export type InvoiceSequenceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which InvoiceSequence to fetch.
+     */
+    where: InvoiceSequenceWhereUniqueInput
+  }
+
+  /**
+   * InvoiceSequence findUniqueOrThrow
+   */
+  export type InvoiceSequenceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which InvoiceSequence to fetch.
+     */
+    where: InvoiceSequenceWhereUniqueInput
+  }
+
+  /**
+   * InvoiceSequence findFirst
+   */
+  export type InvoiceSequenceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which InvoiceSequence to fetch.
+     */
+    where?: InvoiceSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InvoiceSequences to fetch.
+     */
+    orderBy?: InvoiceSequenceOrderByWithRelationInput | InvoiceSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InvoiceSequences.
+     */
+    cursor?: InvoiceSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InvoiceSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InvoiceSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InvoiceSequences.
+     */
+    distinct?: InvoiceSequenceScalarFieldEnum | InvoiceSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * InvoiceSequence findFirstOrThrow
+   */
+  export type InvoiceSequenceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which InvoiceSequence to fetch.
+     */
+    where?: InvoiceSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InvoiceSequences to fetch.
+     */
+    orderBy?: InvoiceSequenceOrderByWithRelationInput | InvoiceSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for InvoiceSequences.
+     */
+    cursor?: InvoiceSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InvoiceSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InvoiceSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of InvoiceSequences.
+     */
+    distinct?: InvoiceSequenceScalarFieldEnum | InvoiceSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * InvoiceSequence findMany
+   */
+  export type InvoiceSequenceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which InvoiceSequences to fetch.
+     */
+    where?: InvoiceSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of InvoiceSequences to fetch.
+     */
+    orderBy?: InvoiceSequenceOrderByWithRelationInput | InvoiceSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing InvoiceSequences.
+     */
+    cursor?: InvoiceSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` InvoiceSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` InvoiceSequences.
+     */
+    skip?: number
+    distinct?: InvoiceSequenceScalarFieldEnum | InvoiceSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * InvoiceSequence create
+   */
+  export type InvoiceSequenceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * The data needed to create a InvoiceSequence.
+     */
+    data: XOR<InvoiceSequenceCreateInput, InvoiceSequenceUncheckedCreateInput>
+  }
+
+  /**
+   * InvoiceSequence createMany
+   */
+  export type InvoiceSequenceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many InvoiceSequences.
+     */
+    data: InvoiceSequenceCreateManyInput | InvoiceSequenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * InvoiceSequence createManyAndReturn
+   */
+  export type InvoiceSequenceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many InvoiceSequences.
+     */
+    data: InvoiceSequenceCreateManyInput | InvoiceSequenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * InvoiceSequence update
+   */
+  export type InvoiceSequenceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * The data needed to update a InvoiceSequence.
+     */
+    data: XOR<InvoiceSequenceUpdateInput, InvoiceSequenceUncheckedUpdateInput>
+    /**
+     * Choose, which InvoiceSequence to update.
+     */
+    where: InvoiceSequenceWhereUniqueInput
+  }
+
+  /**
+   * InvoiceSequence updateMany
+   */
+  export type InvoiceSequenceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update InvoiceSequences.
+     */
+    data: XOR<InvoiceSequenceUpdateManyMutationInput, InvoiceSequenceUncheckedUpdateManyInput>
+    /**
+     * Filter which InvoiceSequences to update
+     */
+    where?: InvoiceSequenceWhereInput
+  }
+
+  /**
+   * InvoiceSequence upsert
+   */
+  export type InvoiceSequenceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * The filter to search for the InvoiceSequence to update in case it exists.
+     */
+    where: InvoiceSequenceWhereUniqueInput
+    /**
+     * In case the InvoiceSequence found by the `where` argument doesn't exist, create a new InvoiceSequence with this data.
+     */
+    create: XOR<InvoiceSequenceCreateInput, InvoiceSequenceUncheckedCreateInput>
+    /**
+     * In case the InvoiceSequence was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<InvoiceSequenceUpdateInput, InvoiceSequenceUncheckedUpdateInput>
+  }
+
+  /**
+   * InvoiceSequence delete
+   */
+  export type InvoiceSequenceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+    /**
+     * Filter which InvoiceSequence to delete.
+     */
+    where: InvoiceSequenceWhereUniqueInput
+  }
+
+  /**
+   * InvoiceSequence deleteMany
+   */
+  export type InvoiceSequenceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which InvoiceSequences to delete
+     */
+    where?: InvoiceSequenceWhereInput
+  }
+
+  /**
+   * InvoiceSequence without action
+   */
+  export type InvoiceSequenceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the InvoiceSequence
+     */
+    select?: InvoiceSequenceSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model OrderNumberSequence
+   */
+
+  export type AggregateOrderNumberSequence = {
+    _count: OrderNumberSequenceCountAggregateOutputType | null
+    _avg: OrderNumberSequenceAvgAggregateOutputType | null
+    _sum: OrderNumberSequenceSumAggregateOutputType | null
+    _min: OrderNumberSequenceMinAggregateOutputType | null
+    _max: OrderNumberSequenceMaxAggregateOutputType | null
+  }
+
+  export type OrderNumberSequenceAvgAggregateOutputType = {
+    lastSeq: number | null
+  }
+
+  export type OrderNumberSequenceSumAggregateOutputType = {
+    lastSeq: number | null
+  }
+
+  export type OrderNumberSequenceMinAggregateOutputType = {
+    locationCode: string | null
+    dateKey: string | null
+    lastSeq: number | null
+    updatedAt: Date | null
+  }
+
+  export type OrderNumberSequenceMaxAggregateOutputType = {
+    locationCode: string | null
+    dateKey: string | null
+    lastSeq: number | null
+    updatedAt: Date | null
+  }
+
+  export type OrderNumberSequenceCountAggregateOutputType = {
+    locationCode: number
+    dateKey: number
+    lastSeq: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type OrderNumberSequenceAvgAggregateInputType = {
+    lastSeq?: true
+  }
+
+  export type OrderNumberSequenceSumAggregateInputType = {
+    lastSeq?: true
+  }
+
+  export type OrderNumberSequenceMinAggregateInputType = {
+    locationCode?: true
+    dateKey?: true
+    lastSeq?: true
+    updatedAt?: true
+  }
+
+  export type OrderNumberSequenceMaxAggregateInputType = {
+    locationCode?: true
+    dateKey?: true
+    lastSeq?: true
+    updatedAt?: true
+  }
+
+  export type OrderNumberSequenceCountAggregateInputType = {
+    locationCode?: true
+    dateKey?: true
+    lastSeq?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type OrderNumberSequenceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OrderNumberSequence to aggregate.
+     */
+    where?: OrderNumberSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OrderNumberSequences to fetch.
+     */
+    orderBy?: OrderNumberSequenceOrderByWithRelationInput | OrderNumberSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: OrderNumberSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OrderNumberSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OrderNumberSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned OrderNumberSequences
+    **/
+    _count?: true | OrderNumberSequenceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: OrderNumberSequenceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: OrderNumberSequenceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: OrderNumberSequenceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: OrderNumberSequenceMaxAggregateInputType
+  }
+
+  export type GetOrderNumberSequenceAggregateType<T extends OrderNumberSequenceAggregateArgs> = {
+        [P in keyof T & keyof AggregateOrderNumberSequence]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateOrderNumberSequence[P]>
+      : GetScalarType<T[P], AggregateOrderNumberSequence[P]>
+  }
+
+
+
+
+  export type OrderNumberSequenceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OrderNumberSequenceWhereInput
+    orderBy?: OrderNumberSequenceOrderByWithAggregationInput | OrderNumberSequenceOrderByWithAggregationInput[]
+    by: OrderNumberSequenceScalarFieldEnum[] | OrderNumberSequenceScalarFieldEnum
+    having?: OrderNumberSequenceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: OrderNumberSequenceCountAggregateInputType | true
+    _avg?: OrderNumberSequenceAvgAggregateInputType
+    _sum?: OrderNumberSequenceSumAggregateInputType
+    _min?: OrderNumberSequenceMinAggregateInputType
+    _max?: OrderNumberSequenceMaxAggregateInputType
+  }
+
+  export type OrderNumberSequenceGroupByOutputType = {
+    locationCode: string
+    dateKey: string
+    lastSeq: number
+    updatedAt: Date
+    _count: OrderNumberSequenceCountAggregateOutputType | null
+    _avg: OrderNumberSequenceAvgAggregateOutputType | null
+    _sum: OrderNumberSequenceSumAggregateOutputType | null
+    _min: OrderNumberSequenceMinAggregateOutputType | null
+    _max: OrderNumberSequenceMaxAggregateOutputType | null
+  }
+
+  type GetOrderNumberSequenceGroupByPayload<T extends OrderNumberSequenceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<OrderNumberSequenceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof OrderNumberSequenceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], OrderNumberSequenceGroupByOutputType[P]>
+            : GetScalarType<T[P], OrderNumberSequenceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type OrderNumberSequenceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    locationCode?: boolean
+    dateKey?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["orderNumberSequence"]>
+
+  export type OrderNumberSequenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    locationCode?: boolean
+    dateKey?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["orderNumberSequence"]>
+
+  export type OrderNumberSequenceSelectScalar = {
+    locationCode?: boolean
+    dateKey?: boolean
+    lastSeq?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $OrderNumberSequencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "OrderNumberSequence"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      locationCode: string
+      dateKey: string
+      lastSeq: number
+      updatedAt: Date
+    }, ExtArgs["result"]["orderNumberSequence"]>
+    composites: {}
+  }
+
+  type OrderNumberSequenceGetPayload<S extends boolean | null | undefined | OrderNumberSequenceDefaultArgs> = $Result.GetResult<Prisma.$OrderNumberSequencePayload, S>
+
+  type OrderNumberSequenceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<OrderNumberSequenceFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: OrderNumberSequenceCountAggregateInputType | true
+    }
+
+  export interface OrderNumberSequenceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['OrderNumberSequence'], meta: { name: 'OrderNumberSequence' } }
+    /**
+     * Find zero or one OrderNumberSequence that matches the filter.
+     * @param {OrderNumberSequenceFindUniqueArgs} args - Arguments to find a OrderNumberSequence
+     * @example
+     * // Get one OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends OrderNumberSequenceFindUniqueArgs>(args: SelectSubset<T, OrderNumberSequenceFindUniqueArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one OrderNumberSequence that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {OrderNumberSequenceFindUniqueOrThrowArgs} args - Arguments to find a OrderNumberSequence
+     * @example
+     * // Get one OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends OrderNumberSequenceFindUniqueOrThrowArgs>(args: SelectSubset<T, OrderNumberSequenceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first OrderNumberSequence that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceFindFirstArgs} args - Arguments to find a OrderNumberSequence
+     * @example
+     * // Get one OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends OrderNumberSequenceFindFirstArgs>(args?: SelectSubset<T, OrderNumberSequenceFindFirstArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first OrderNumberSequence that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceFindFirstOrThrowArgs} args - Arguments to find a OrderNumberSequence
+     * @example
+     * // Get one OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends OrderNumberSequenceFindFirstOrThrowArgs>(args?: SelectSubset<T, OrderNumberSequenceFindFirstOrThrowArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more OrderNumberSequences that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all OrderNumberSequences
+     * const orderNumberSequences = await prisma.orderNumberSequence.findMany()
+     * 
+     * // Get first 10 OrderNumberSequences
+     * const orderNumberSequences = await prisma.orderNumberSequence.findMany({ take: 10 })
+     * 
+     * // Only select the `locationCode`
+     * const orderNumberSequenceWithLocationCodeOnly = await prisma.orderNumberSequence.findMany({ select: { locationCode: true } })
+     * 
+     */
+    findMany<T extends OrderNumberSequenceFindManyArgs>(args?: SelectSubset<T, OrderNumberSequenceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a OrderNumberSequence.
+     * @param {OrderNumberSequenceCreateArgs} args - Arguments to create a OrderNumberSequence.
+     * @example
+     * // Create one OrderNumberSequence
+     * const OrderNumberSequence = await prisma.orderNumberSequence.create({
+     *   data: {
+     *     // ... data to create a OrderNumberSequence
+     *   }
+     * })
+     * 
+     */
+    create<T extends OrderNumberSequenceCreateArgs>(args: SelectSubset<T, OrderNumberSequenceCreateArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many OrderNumberSequences.
+     * @param {OrderNumberSequenceCreateManyArgs} args - Arguments to create many OrderNumberSequences.
+     * @example
+     * // Create many OrderNumberSequences
+     * const orderNumberSequence = await prisma.orderNumberSequence.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends OrderNumberSequenceCreateManyArgs>(args?: SelectSubset<T, OrderNumberSequenceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many OrderNumberSequences and returns the data saved in the database.
+     * @param {OrderNumberSequenceCreateManyAndReturnArgs} args - Arguments to create many OrderNumberSequences.
+     * @example
+     * // Create many OrderNumberSequences
+     * const orderNumberSequence = await prisma.orderNumberSequence.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many OrderNumberSequences and only return the `locationCode`
+     * const orderNumberSequenceWithLocationCodeOnly = await prisma.orderNumberSequence.createManyAndReturn({ 
+     *   select: { locationCode: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends OrderNumberSequenceCreateManyAndReturnArgs>(args?: SelectSubset<T, OrderNumberSequenceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a OrderNumberSequence.
+     * @param {OrderNumberSequenceDeleteArgs} args - Arguments to delete one OrderNumberSequence.
+     * @example
+     * // Delete one OrderNumberSequence
+     * const OrderNumberSequence = await prisma.orderNumberSequence.delete({
+     *   where: {
+     *     // ... filter to delete one OrderNumberSequence
+     *   }
+     * })
+     * 
+     */
+    delete<T extends OrderNumberSequenceDeleteArgs>(args: SelectSubset<T, OrderNumberSequenceDeleteArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one OrderNumberSequence.
+     * @param {OrderNumberSequenceUpdateArgs} args - Arguments to update one OrderNumberSequence.
+     * @example
+     * // Update one OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends OrderNumberSequenceUpdateArgs>(args: SelectSubset<T, OrderNumberSequenceUpdateArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more OrderNumberSequences.
+     * @param {OrderNumberSequenceDeleteManyArgs} args - Arguments to filter OrderNumberSequences to delete.
+     * @example
+     * // Delete a few OrderNumberSequences
+     * const { count } = await prisma.orderNumberSequence.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends OrderNumberSequenceDeleteManyArgs>(args?: SelectSubset<T, OrderNumberSequenceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more OrderNumberSequences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many OrderNumberSequences
+     * const orderNumberSequence = await prisma.orderNumberSequence.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends OrderNumberSequenceUpdateManyArgs>(args: SelectSubset<T, OrderNumberSequenceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one OrderNumberSequence.
+     * @param {OrderNumberSequenceUpsertArgs} args - Arguments to update or create a OrderNumberSequence.
+     * @example
+     * // Update or create a OrderNumberSequence
+     * const orderNumberSequence = await prisma.orderNumberSequence.upsert({
+     *   create: {
+     *     // ... data to create a OrderNumberSequence
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the OrderNumberSequence we want to update
+     *   }
+     * })
+     */
+    upsert<T extends OrderNumberSequenceUpsertArgs>(args: SelectSubset<T, OrderNumberSequenceUpsertArgs<ExtArgs>>): Prisma__OrderNumberSequenceClient<$Result.GetResult<Prisma.$OrderNumberSequencePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of OrderNumberSequences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceCountArgs} args - Arguments to filter OrderNumberSequences to count.
+     * @example
+     * // Count the number of OrderNumberSequences
+     * const count = await prisma.orderNumberSequence.count({
+     *   where: {
+     *     // ... the filter for the OrderNumberSequences we want to count
+     *   }
+     * })
+    **/
+    count<T extends OrderNumberSequenceCountArgs>(
+      args?: Subset<T, OrderNumberSequenceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], OrderNumberSequenceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a OrderNumberSequence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends OrderNumberSequenceAggregateArgs>(args: Subset<T, OrderNumberSequenceAggregateArgs>): Prisma.PrismaPromise<GetOrderNumberSequenceAggregateType<T>>
+
+    /**
+     * Group by OrderNumberSequence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OrderNumberSequenceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends OrderNumberSequenceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: OrderNumberSequenceGroupByArgs['orderBy'] }
+        : { orderBy?: OrderNumberSequenceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, OrderNumberSequenceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetOrderNumberSequenceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the OrderNumberSequence model
+   */
+  readonly fields: OrderNumberSequenceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for OrderNumberSequence.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__OrderNumberSequenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the OrderNumberSequence model
+   */ 
+  interface OrderNumberSequenceFieldRefs {
+    readonly locationCode: FieldRef<"OrderNumberSequence", 'String'>
+    readonly dateKey: FieldRef<"OrderNumberSequence", 'String'>
+    readonly lastSeq: FieldRef<"OrderNumberSequence", 'Int'>
+    readonly updatedAt: FieldRef<"OrderNumberSequence", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * OrderNumberSequence findUnique
+   */
+  export type OrderNumberSequenceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which OrderNumberSequence to fetch.
+     */
+    where: OrderNumberSequenceWhereUniqueInput
+  }
+
+  /**
+   * OrderNumberSequence findUniqueOrThrow
+   */
+  export type OrderNumberSequenceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which OrderNumberSequence to fetch.
+     */
+    where: OrderNumberSequenceWhereUniqueInput
+  }
+
+  /**
+   * OrderNumberSequence findFirst
+   */
+  export type OrderNumberSequenceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which OrderNumberSequence to fetch.
+     */
+    where?: OrderNumberSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OrderNumberSequences to fetch.
+     */
+    orderBy?: OrderNumberSequenceOrderByWithRelationInput | OrderNumberSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OrderNumberSequences.
+     */
+    cursor?: OrderNumberSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OrderNumberSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OrderNumberSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OrderNumberSequences.
+     */
+    distinct?: OrderNumberSequenceScalarFieldEnum | OrderNumberSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * OrderNumberSequence findFirstOrThrow
+   */
+  export type OrderNumberSequenceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which OrderNumberSequence to fetch.
+     */
+    where?: OrderNumberSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OrderNumberSequences to fetch.
+     */
+    orderBy?: OrderNumberSequenceOrderByWithRelationInput | OrderNumberSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OrderNumberSequences.
+     */
+    cursor?: OrderNumberSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OrderNumberSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OrderNumberSequences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OrderNumberSequences.
+     */
+    distinct?: OrderNumberSequenceScalarFieldEnum | OrderNumberSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * OrderNumberSequence findMany
+   */
+  export type OrderNumberSequenceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter, which OrderNumberSequences to fetch.
+     */
+    where?: OrderNumberSequenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OrderNumberSequences to fetch.
+     */
+    orderBy?: OrderNumberSequenceOrderByWithRelationInput | OrderNumberSequenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing OrderNumberSequences.
+     */
+    cursor?: OrderNumberSequenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OrderNumberSequences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OrderNumberSequences.
+     */
+    skip?: number
+    distinct?: OrderNumberSequenceScalarFieldEnum | OrderNumberSequenceScalarFieldEnum[]
+  }
+
+  /**
+   * OrderNumberSequence create
+   */
+  export type OrderNumberSequenceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * The data needed to create a OrderNumberSequence.
+     */
+    data: XOR<OrderNumberSequenceCreateInput, OrderNumberSequenceUncheckedCreateInput>
+  }
+
+  /**
+   * OrderNumberSequence createMany
+   */
+  export type OrderNumberSequenceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many OrderNumberSequences.
+     */
+    data: OrderNumberSequenceCreateManyInput | OrderNumberSequenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OrderNumberSequence createManyAndReturn
+   */
+  export type OrderNumberSequenceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many OrderNumberSequences.
+     */
+    data: OrderNumberSequenceCreateManyInput | OrderNumberSequenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OrderNumberSequence update
+   */
+  export type OrderNumberSequenceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * The data needed to update a OrderNumberSequence.
+     */
+    data: XOR<OrderNumberSequenceUpdateInput, OrderNumberSequenceUncheckedUpdateInput>
+    /**
+     * Choose, which OrderNumberSequence to update.
+     */
+    where: OrderNumberSequenceWhereUniqueInput
+  }
+
+  /**
+   * OrderNumberSequence updateMany
+   */
+  export type OrderNumberSequenceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update OrderNumberSequences.
+     */
+    data: XOR<OrderNumberSequenceUpdateManyMutationInput, OrderNumberSequenceUncheckedUpdateManyInput>
+    /**
+     * Filter which OrderNumberSequences to update
+     */
+    where?: OrderNumberSequenceWhereInput
+  }
+
+  /**
+   * OrderNumberSequence upsert
+   */
+  export type OrderNumberSequenceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * The filter to search for the OrderNumberSequence to update in case it exists.
+     */
+    where: OrderNumberSequenceWhereUniqueInput
+    /**
+     * In case the OrderNumberSequence found by the `where` argument doesn't exist, create a new OrderNumberSequence with this data.
+     */
+    create: XOR<OrderNumberSequenceCreateInput, OrderNumberSequenceUncheckedCreateInput>
+    /**
+     * In case the OrderNumberSequence was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<OrderNumberSequenceUpdateInput, OrderNumberSequenceUncheckedUpdateInput>
+  }
+
+  /**
+   * OrderNumberSequence delete
+   */
+  export type OrderNumberSequenceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
+    /**
+     * Filter which OrderNumberSequence to delete.
+     */
+    where: OrderNumberSequenceWhereUniqueInput
+  }
+
+  /**
+   * OrderNumberSequence deleteMany
+   */
+  export type OrderNumberSequenceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OrderNumberSequences to delete
+     */
+    where?: OrderNumberSequenceWhereInput
+  }
+
+  /**
+   * OrderNumberSequence without action
+   */
+  export type OrderNumberSequenceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OrderNumberSequence
+     */
+    select?: OrderNumberSequenceSelect<ExtArgs> | null
   }
 
 
@@ -13753,6 +15761,9 @@ export namespace Prisma {
 
   export const OrderScalarFieldEnum: {
     id: 'id',
+    orderNumber: 'orderNumber',
+    invoiceNumber: 'invoiceNumber',
+    invoicedAt: 'invoicedAt',
     userId: 'userId',
     storeId: 'storeId',
     totalAmount: 'totalAmount',
@@ -13796,6 +15807,26 @@ export namespace Prisma {
   };
 
   export type OrderScalarFieldEnum = (typeof OrderScalarFieldEnum)[keyof typeof OrderScalarFieldEnum]
+
+
+  export const InvoiceSequenceScalarFieldEnum: {
+    locationCode: 'locationCode',
+    financialYear: 'financialYear',
+    lastSeq: 'lastSeq',
+    updatedAt: 'updatedAt'
+  };
+
+  export type InvoiceSequenceScalarFieldEnum = (typeof InvoiceSequenceScalarFieldEnum)[keyof typeof InvoiceSequenceScalarFieldEnum]
+
+
+  export const OrderNumberSequenceScalarFieldEnum: {
+    locationCode: 'locationCode',
+    dateKey: 'dateKey',
+    lastSeq: 'lastSeq',
+    updatedAt: 'updatedAt'
+  };
+
+  export type OrderNumberSequenceScalarFieldEnum = (typeof OrderNumberSequenceScalarFieldEnum)[keyof typeof OrderNumberSequenceScalarFieldEnum]
 
 
   export const OrderItemScalarFieldEnum: {
@@ -14010,6 +16041,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'DateTime'
+   */
+  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+  /**
+   * Reference to a field of type 'DateTime[]'
+   */
+  export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+  /**
    * Reference to a field of type 'Decimal'
    */
   export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
@@ -14083,20 +16128,6 @@ export namespace Prisma {
    * Reference to a field of type 'OrderRiderStatus[]'
    */
   export type ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OrderRiderStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'DateTime'
-   */
-  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-  /**
-   * Reference to a field of type 'DateTime[]'
-   */
-  export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -14227,6 +16258,9 @@ export namespace Prisma {
     OR?: OrderWhereInput[]
     NOT?: OrderWhereInput | OrderWhereInput[]
     id?: StringFilter<"Order"> | string
+    orderNumber?: StringNullableFilter<"Order"> | string | null
+    invoiceNumber?: StringNullableFilter<"Order"> | string | null
+    invoicedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     userId?: StringFilter<"Order"> | string
     storeId?: StringFilter<"Order"> | string
     totalAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
@@ -14274,6 +16308,9 @@ export namespace Prisma {
 
   export type OrderOrderByWithRelationInput = {
     id?: SortOrder
+    orderNumber?: SortOrderInput | SortOrder
+    invoiceNumber?: SortOrderInput | SortOrder
+    invoicedAt?: SortOrderInput | SortOrder
     userId?: SortOrder
     storeId?: SortOrder
     totalAmount?: SortOrder
@@ -14324,6 +16361,9 @@ export namespace Prisma {
     AND?: OrderWhereInput | OrderWhereInput[]
     OR?: OrderWhereInput[]
     NOT?: OrderWhereInput | OrderWhereInput[]
+    orderNumber?: StringNullableFilter<"Order"> | string | null
+    invoiceNumber?: StringNullableFilter<"Order"> | string | null
+    invoicedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     userId?: StringFilter<"Order"> | string
     storeId?: StringFilter<"Order"> | string
     totalAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
@@ -14371,6 +16411,9 @@ export namespace Prisma {
 
   export type OrderOrderByWithAggregationInput = {
     id?: SortOrder
+    orderNumber?: SortOrderInput | SortOrder
+    invoiceNumber?: SortOrderInput | SortOrder
+    invoicedAt?: SortOrderInput | SortOrder
     userId?: SortOrder
     storeId?: SortOrder
     totalAmount?: SortOrder
@@ -14423,6 +16466,9 @@ export namespace Prisma {
     OR?: OrderScalarWhereWithAggregatesInput[]
     NOT?: OrderScalarWhereWithAggregatesInput | OrderScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Order"> | string
+    orderNumber?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    invoiceNumber?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    invoicedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     userId?: StringWithAggregatesFilter<"Order"> | string
     storeId?: StringWithAggregatesFilter<"Order"> | string
     totalAmount?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
@@ -14463,6 +16509,106 @@ export namespace Prisma {
     refundFailedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Order"> | Date | string
+  }
+
+  export type InvoiceSequenceWhereInput = {
+    AND?: InvoiceSequenceWhereInput | InvoiceSequenceWhereInput[]
+    OR?: InvoiceSequenceWhereInput[]
+    NOT?: InvoiceSequenceWhereInput | InvoiceSequenceWhereInput[]
+    locationCode?: StringFilter<"InvoiceSequence"> | string
+    financialYear?: StringFilter<"InvoiceSequence"> | string
+    lastSeq?: IntFilter<"InvoiceSequence"> | number
+    updatedAt?: DateTimeFilter<"InvoiceSequence"> | Date | string
+  }
+
+  export type InvoiceSequenceOrderByWithRelationInput = {
+    locationCode?: SortOrder
+    financialYear?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InvoiceSequenceWhereUniqueInput = Prisma.AtLeast<{
+    locationCode_financialYear?: InvoiceSequenceLocationCodeFinancialYearCompoundUniqueInput
+    AND?: InvoiceSequenceWhereInput | InvoiceSequenceWhereInput[]
+    OR?: InvoiceSequenceWhereInput[]
+    NOT?: InvoiceSequenceWhereInput | InvoiceSequenceWhereInput[]
+    locationCode?: StringFilter<"InvoiceSequence"> | string
+    financialYear?: StringFilter<"InvoiceSequence"> | string
+    lastSeq?: IntFilter<"InvoiceSequence"> | number
+    updatedAt?: DateTimeFilter<"InvoiceSequence"> | Date | string
+  }, "locationCode_financialYear">
+
+  export type InvoiceSequenceOrderByWithAggregationInput = {
+    locationCode?: SortOrder
+    financialYear?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+    _count?: InvoiceSequenceCountOrderByAggregateInput
+    _avg?: InvoiceSequenceAvgOrderByAggregateInput
+    _max?: InvoiceSequenceMaxOrderByAggregateInput
+    _min?: InvoiceSequenceMinOrderByAggregateInput
+    _sum?: InvoiceSequenceSumOrderByAggregateInput
+  }
+
+  export type InvoiceSequenceScalarWhereWithAggregatesInput = {
+    AND?: InvoiceSequenceScalarWhereWithAggregatesInput | InvoiceSequenceScalarWhereWithAggregatesInput[]
+    OR?: InvoiceSequenceScalarWhereWithAggregatesInput[]
+    NOT?: InvoiceSequenceScalarWhereWithAggregatesInput | InvoiceSequenceScalarWhereWithAggregatesInput[]
+    locationCode?: StringWithAggregatesFilter<"InvoiceSequence"> | string
+    financialYear?: StringWithAggregatesFilter<"InvoiceSequence"> | string
+    lastSeq?: IntWithAggregatesFilter<"InvoiceSequence"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"InvoiceSequence"> | Date | string
+  }
+
+  export type OrderNumberSequenceWhereInput = {
+    AND?: OrderNumberSequenceWhereInput | OrderNumberSequenceWhereInput[]
+    OR?: OrderNumberSequenceWhereInput[]
+    NOT?: OrderNumberSequenceWhereInput | OrderNumberSequenceWhereInput[]
+    locationCode?: StringFilter<"OrderNumberSequence"> | string
+    dateKey?: StringFilter<"OrderNumberSequence"> | string
+    lastSeq?: IntFilter<"OrderNumberSequence"> | number
+    updatedAt?: DateTimeFilter<"OrderNumberSequence"> | Date | string
+  }
+
+  export type OrderNumberSequenceOrderByWithRelationInput = {
+    locationCode?: SortOrder
+    dateKey?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type OrderNumberSequenceWhereUniqueInput = Prisma.AtLeast<{
+    locationCode_dateKey?: OrderNumberSequenceLocationCodeDateKeyCompoundUniqueInput
+    AND?: OrderNumberSequenceWhereInput | OrderNumberSequenceWhereInput[]
+    OR?: OrderNumberSequenceWhereInput[]
+    NOT?: OrderNumberSequenceWhereInput | OrderNumberSequenceWhereInput[]
+    locationCode?: StringFilter<"OrderNumberSequence"> | string
+    dateKey?: StringFilter<"OrderNumberSequence"> | string
+    lastSeq?: IntFilter<"OrderNumberSequence"> | number
+    updatedAt?: DateTimeFilter<"OrderNumberSequence"> | Date | string
+  }, "locationCode_dateKey">
+
+  export type OrderNumberSequenceOrderByWithAggregationInput = {
+    locationCode?: SortOrder
+    dateKey?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+    _count?: OrderNumberSequenceCountOrderByAggregateInput
+    _avg?: OrderNumberSequenceAvgOrderByAggregateInput
+    _max?: OrderNumberSequenceMaxOrderByAggregateInput
+    _min?: OrderNumberSequenceMinOrderByAggregateInput
+    _sum?: OrderNumberSequenceSumOrderByAggregateInput
+  }
+
+  export type OrderNumberSequenceScalarWhereWithAggregatesInput = {
+    AND?: OrderNumberSequenceScalarWhereWithAggregatesInput | OrderNumberSequenceScalarWhereWithAggregatesInput[]
+    OR?: OrderNumberSequenceScalarWhereWithAggregatesInput[]
+    NOT?: OrderNumberSequenceScalarWhereWithAggregatesInput | OrderNumberSequenceScalarWhereWithAggregatesInput[]
+    locationCode?: StringWithAggregatesFilter<"OrderNumberSequence"> | string
+    dateKey?: StringWithAggregatesFilter<"OrderNumberSequence"> | string
+    lastSeq?: IntWithAggregatesFilter<"OrderNumberSequence"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"OrderNumberSequence"> | Date | string
   }
 
   export type OrderItemWhereInput = {
@@ -15177,6 +17323,9 @@ export namespace Prisma {
 
   export type OrderCreateInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -15224,6 +17373,9 @@ export namespace Prisma {
 
   export type OrderUncheckedCreateInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -15271,6 +17423,9 @@ export namespace Prisma {
 
   export type OrderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -15318,6 +17473,9 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -15365,6 +17523,9 @@ export namespace Prisma {
 
   export type OrderCreateManyInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -15409,6 +17570,9 @@ export namespace Prisma {
 
   export type OrderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -15453,6 +17617,9 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -15492,6 +17659,104 @@ export namespace Prisma {
     refundFailureReason?: NullableStringFieldUpdateOperationsInput | string | null
     refundFailedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InvoiceSequenceCreateInput = {
+    locationCode: string
+    financialYear: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type InvoiceSequenceUncheckedCreateInput = {
+    locationCode: string
+    financialYear: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type InvoiceSequenceUpdateInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    financialYear?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InvoiceSequenceUncheckedUpdateInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    financialYear?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InvoiceSequenceCreateManyInput = {
+    locationCode: string
+    financialYear: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type InvoiceSequenceUpdateManyMutationInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    financialYear?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InvoiceSequenceUncheckedUpdateManyInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    financialYear?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderNumberSequenceCreateInput = {
+    locationCode: string
+    dateKey: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type OrderNumberSequenceUncheckedCreateInput = {
+    locationCode: string
+    dateKey: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type OrderNumberSequenceUpdateInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    dateKey?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderNumberSequenceUncheckedUpdateInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    dateKey?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderNumberSequenceCreateManyInput = {
+    locationCode: string
+    dateKey: string
+    lastSeq?: number
+    updatedAt?: Date | string
+  }
+
+  export type OrderNumberSequenceUpdateManyMutationInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    dateKey?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type OrderNumberSequenceUncheckedUpdateManyInput = {
+    locationCode?: StringFieldUpdateOperationsInput | string
+    dateKey?: StringFieldUpdateOperationsInput | string
+    lastSeq?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -16284,17 +18549,6 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type DecimalFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-  }
-
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -16308,6 +18562,28 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type DecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -16369,17 +18645,6 @@ export namespace Prisma {
     in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
     notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
     not?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
-  }
-
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type EnumCancelledByNullableFilter<$PrismaModel = never> = {
@@ -16444,6 +18709,9 @@ export namespace Prisma {
 
   export type OrderCountOrderByAggregateInput = {
     id?: SortOrder
+    orderNumber?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicedAt?: SortOrder
     userId?: SortOrder
     storeId?: SortOrder
     totalAmount?: SortOrder
@@ -16496,6 +18764,9 @@ export namespace Prisma {
 
   export type OrderMaxOrderByAggregateInput = {
     id?: SortOrder
+    orderNumber?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicedAt?: SortOrder
     userId?: SortOrder
     storeId?: SortOrder
     totalAmount?: SortOrder
@@ -16538,6 +18809,9 @@ export namespace Prisma {
 
   export type OrderMinOrderByAggregateInput = {
     id?: SortOrder
+    orderNumber?: SortOrder
+    invoiceNumber?: SortOrder
+    invoicedAt?: SortOrder
     userId?: SortOrder
     storeId?: SortOrder
     totalAmount?: SortOrder
@@ -16604,22 +18878,6 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
-  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedDecimalFilter<$PrismaModel>
-    _sum?: NestedDecimalFilter<$PrismaModel>
-    _min?: NestedDecimalFilter<$PrismaModel>
-    _max?: NestedDecimalFilter<$PrismaModel>
-  }
-
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -16636,6 +18894,36 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -16719,20 +19007,6 @@ export namespace Prisma {
     _max?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
-  }
-
   export type EnumCancelledByNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.CancelledBy | EnumCancelledByFieldRefInput<$PrismaModel> | null
     in?: $Enums.CancelledBy[] | ListEnumCancelledByFieldRefInput<$PrismaModel> | null
@@ -16778,6 +19052,90 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type InvoiceSequenceLocationCodeFinancialYearCompoundUniqueInput = {
+    locationCode: string
+    financialYear: string
+  }
+
+  export type InvoiceSequenceCountOrderByAggregateInput = {
+    locationCode?: SortOrder
+    financialYear?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InvoiceSequenceAvgOrderByAggregateInput = {
+    lastSeq?: SortOrder
+  }
+
+  export type InvoiceSequenceMaxOrderByAggregateInput = {
+    locationCode?: SortOrder
+    financialYear?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InvoiceSequenceMinOrderByAggregateInput = {
+    locationCode?: SortOrder
+    financialYear?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InvoiceSequenceSumOrderByAggregateInput = {
+    lastSeq?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type OrderNumberSequenceLocationCodeDateKeyCompoundUniqueInput = {
+    locationCode: string
+    dateKey: string
+  }
+
+  export type OrderNumberSequenceCountOrderByAggregateInput = {
+    locationCode?: SortOrder
+    dateKey?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type OrderNumberSequenceAvgOrderByAggregateInput = {
+    lastSeq?: SortOrder
+  }
+
+  export type OrderNumberSequenceMaxOrderByAggregateInput = {
+    locationCode?: SortOrder
+    dateKey?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type OrderNumberSequenceMinOrderByAggregateInput = {
+    locationCode?: SortOrder
+    dateKey?: SortOrder
+    lastSeq?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type OrderNumberSequenceSumOrderByAggregateInput = {
+    lastSeq?: SortOrder
+  }
+
   export type OrderRelationFilter = {
     is?: OrderWhereInput
     isNot?: OrderWhereInput
@@ -16819,22 +19177,6 @@ export namespace Prisma {
   export type OrderItemSumOrderByAggregateInput = {
     quantity?: SortOrder
     price?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type EnumPaymentMethodFilter<$PrismaModel = never> = {
@@ -17369,16 +19711,20 @@ export namespace Prisma {
     set?: string
   }
 
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
   export type DecimalFieldUpdateOperationsInput = {
     set?: Decimal | DecimalJsLike | number | string
     increment?: Decimal | DecimalJsLike | number | string
     decrement?: Decimal | DecimalJsLike | number | string
     multiply?: Decimal | DecimalJsLike | number | string
     divide?: Decimal | DecimalJsLike | number | string
-  }
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
   }
 
   export type NullableDecimalFieldUpdateOperationsInput = {
@@ -17403,10 +19749,6 @@ export namespace Prisma {
 
   export type NullableEnumOrderRiderStatusFieldUpdateOperationsInput = {
     set?: $Enums.OrderRiderStatus | null
-  }
-
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
   }
 
   export type NullableEnumCancelledByFieldUpdateOperationsInput = {
@@ -17505,18 +19847,18 @@ export namespace Prisma {
     deleteMany?: CouponUsageScalarWhereInput | CouponUsageScalarWhereInput[]
   }
 
-  export type OrderCreateNestedOneWithoutOrderItemsInput = {
-    create?: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
-    connectOrCreate?: OrderCreateOrConnectWithoutOrderItemsInput
-    connect?: OrderWhereUniqueInput
-  }
-
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
     decrement?: number
     multiply?: number
     divide?: number
+  }
+
+  export type OrderCreateNestedOneWithoutOrderItemsInput = {
+    create?: XOR<OrderCreateWithoutOrderItemsInput, OrderUncheckedCreateWithoutOrderItemsInput>
+    connectOrCreate?: OrderCreateOrConnectWithoutOrderItemsInput
+    connect?: OrderWhereUniqueInput
   }
 
   export type OrderUpdateOneRequiredWithoutOrderItemsNestedInput = {
@@ -17593,17 +19935,6 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type NestedDecimalFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-  }
-
   export type NestedStringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -17616,6 +19947,28 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedDecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
   export type NestedDecimalNullableFilter<$PrismaModel = never> = {
@@ -17655,17 +20008,6 @@ export namespace Prisma {
     in?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
     notIn?: $Enums.OrderRiderStatus[] | ListEnumOrderRiderStatusFieldRefInput<$PrismaModel> | null
     not?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel> | $Enums.OrderRiderStatus | null
-  }
-
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type NestedEnumCancelledByNullableFilter<$PrismaModel = never> = {
@@ -17721,22 +20063,6 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedDecimalFilter<$PrismaModel>
-    _sum?: NestedDecimalFilter<$PrismaModel>
-    _min?: NestedDecimalFilter<$PrismaModel>
-    _max?: NestedDecimalFilter<$PrismaModel>
-  }
-
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -17763,6 +20089,36 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -17841,20 +20197,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
     _max?: NestedEnumOrderRiderStatusNullableFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumCancelledByNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -18214,6 +20556,9 @@ export namespace Prisma {
 
   export type OrderCreateWithoutOrderItemsInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18260,6 +20605,9 @@ export namespace Prisma {
 
   export type OrderUncheckedCreateWithoutOrderItemsInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18322,6 +20670,9 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18368,6 +20719,9 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateWithoutOrderItemsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18414,6 +20768,9 @@ export namespace Prisma {
 
   export type OrderCreateWithoutPaymentsInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18460,6 +20817,9 @@ export namespace Prisma {
 
   export type OrderUncheckedCreateWithoutPaymentsInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18522,6 +20882,9 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutPaymentsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18568,6 +20931,9 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateWithoutPaymentsInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18614,6 +20980,9 @@ export namespace Prisma {
 
   export type OrderCreateWithoutCouponUsagesInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18660,6 +21029,9 @@ export namespace Prisma {
 
   export type OrderUncheckedCreateWithoutCouponUsagesInput = {
     id?: string
+    orderNumber?: string | null
+    invoiceNumber?: string | null
+    invoicedAt?: Date | string | null
     userId: string
     storeId: string
     totalAmount: Decimal | DecimalJsLike | number | string
@@ -18722,6 +21094,9 @@ export namespace Prisma {
 
   export type OrderUpdateWithoutCouponUsagesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18768,6 +21143,9 @@ export namespace Prisma {
 
   export type OrderUncheckedUpdateWithoutCouponUsagesInput = {
     id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    invoicedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     userId?: StringFieldUpdateOperationsInput | string
     storeId?: StringFieldUpdateOperationsInput | string
     totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -18937,6 +21315,14 @@ export namespace Prisma {
      * @deprecated Use OrderDefaultArgs instead
      */
     export type OrderArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = OrderDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use InvoiceSequenceDefaultArgs instead
+     */
+    export type InvoiceSequenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InvoiceSequenceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use OrderNumberSequenceDefaultArgs instead
+     */
+    export type OrderNumberSequenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = OrderNumberSequenceDefaultArgs<ExtArgs>
     /**
      * @deprecated Use OrderItemDefaultArgs instead
      */

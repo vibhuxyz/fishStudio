@@ -294,6 +294,40 @@ model stores {
   base_delivery_charge    Float @default(49)
   free_delivery_threshold Float @default(500)
 
+  // ── Tax invoice identity ────────────────────────────────────────────
+  // What a GST invoice must show about the supplier. These are the operating
+  // company's details, which are not the same as the customer-facing store
+  // name/address above — a shop trading as "Fish Studio Noida" still invoices
+  // as its registered legal entity.
+  //
+  // All nullable: a store that has not been given them yet simply cannot have
+  // an invoice raised (invoiceForOrder refuses rather than printing a document
+  // with a blank GSTIN, which would be worse than none at all).
+  legalName           String?
+  gstin               String?
+  fssaiLicenseNumber  String?
+  registeredAddress   String?
+  // City named in the "SUBJECT TO <CITY> JURISDICTION" footer. Usually, but
+  // not always, the store's own city — jurisdiction follows the registered
+  // office, not the delivery hub.
+  invoiceJurisdiction String?
+
+  // Short location code for this store's human-facing order numbers, e.g.
+  // "NOI" for Noida — the middle segment of FS-NOI-30082026-001. Set by the
+  // admin rather than derived from `city`, because two cities can shorten to
+  // the same three letters and because a city rename must not silently change
+  // the numbers already printed on customers' invoices.
+  //
+  // Null until an admin sets it: orders at such a store still go through, they
+  // just carry no orderNumber (see the note on Order.orderNumber in the
+  // Postgres schema).
+  locationCode       String?
+  // Cap above which a COD order needs the seller to phone the customer before
+  // accepting. At or below it, and for any order already paid online, the
+  // order is auto-accepted — the seller's Accept button exists for the risky
+  // tail, not for every order. Null falls back to DEFAULT_COD_AUTO_ACCEPT_LIMIT.
+  codAutoAcceptLimit Float?
+
   availableCities   String[] // Areas/localities served by this store, e.g. ["Sector 20", "Tugal Pur"]
   cityDeliveryTimes Json? // Map of area name -> delivery minutes e.g. {"Sector 20": 40, "Tugal Pur": 13}
   // A single pincode (e.g. 201301) can span several localities with very
@@ -407,6 +441,20 @@ model products {
   category          String
   subCategory       String
   short_description String
+
+  // HSN code for the tax invoice, e.g. "3025900" for fresh fish. Authored on
+  // the catalog root and inherited by every store variant — the code describes
+  // the goods, not who is selling them, so holding it per variant would let
+  // one product be classified two ways.
+  //
+  // Null on products predating this field; the invoice prints "—" rather than
+  // guessing a code, since a wrong HSN is a tax misclassification.
+  hsnCode        String?
+  // Overrides the store's blanket gst_rate for this product, as a percentage
+  // (0 for exempt fresh fish, 5, 12, 18). Null falls back to the store rate.
+  // A percentage here, unlike stores.gst_rate which is a fraction — the two
+  // are never mixed: computeInvoice converts before use.
+  gstRatePercent Float?
 
   images images[]
 
@@ -604,10 +652,23 @@ model SignupAccessCode {
 }
 
 //////////////////////////////////////////////////////
-// ABANDONED CART
+// CART
 //////////////////////////////////////////////////////
 
-model abandoned_carts {
+// The user's live cart, and the single source of truth for cart state across
+// web and Android. Written on every cart mutation by validateCart (the one
+// server touchpoint both clients already go through) and read back by
+// GET /product/api/cart when a user signs in on another device.
+//
+// Lines are stored in the platform-neutral shape validateCartSchema defines
+// ({ productId, quantity, cuttingType?, pieceSize?, size?, comboId? }) — ids
+// and names only, never a product snapshot. Price, stock, title and image are
+// rehydrated through validateCart on read, so a cart restored a week later
+// can never show a stale price.
+//
+// It doubles as the abandoned-cart reminder record (isConverted/notifyStage),
+// which is what this collection was originally built for.
+model carts {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   userId      String    @db.ObjectId
   items       Json[]
@@ -629,7 +690,7 @@ model abandoned_carts {
   // One open cart per user — validateCart upserts on every cart change.
   @@unique([userId])
   @@index([isConverted, notifyStage, lastUpdatedAt])
-  @@map("abandoned_carts")
+  @@map("carts")
 }
 
 //////////////////////////////////////////////////////

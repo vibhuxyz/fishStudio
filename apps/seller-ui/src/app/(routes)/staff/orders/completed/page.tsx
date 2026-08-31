@@ -13,7 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import Link from "next/link";
 
@@ -143,7 +143,7 @@ const CompletedOrdersPage = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-white font-semibold">
-                      Order {formatOrderId(order.id)}
+                      Order {displayOrderNumber(order)}
                     </p>
                     <p className="text-gray-500 text-xs">
                       {new Date(order.createdAt).toLocaleDateString()}

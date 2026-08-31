@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { ArrowLeft, CheckCircle, XCircle, Package, MapPin, User, CreditCard, Phone, Copy, AlertCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 
 const StaffOrderDetailPage = () => {
   const params = useParams();
@@ -72,7 +72,7 @@ const StaffOrderDetailPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Order {formatOrderId(order.id)}</h1>
+          <h1 className="text-3xl font-bold text-white">Order {displayOrderNumber(order)}</h1>
           <p className="text-gray-400 text-sm mt-1">
             Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </p>
@@ -264,7 +264,7 @@ const StaffOrderDetailPage = () => {
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-[#0f1117] border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="text-lg font-semibold text-white mb-4">Reject Order {formatOrderId(order.id)}</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Reject Order {displayOrderNumber(order)}</h3>
             <p className="text-gray-400 text-sm mb-4">Provide reason for rejection (will be shown to customer with refund):</p>
             <textarea
               rows={4}

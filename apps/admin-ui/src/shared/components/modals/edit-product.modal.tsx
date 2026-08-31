@@ -70,6 +70,10 @@ const buildDefaults = (product: AdminProduct): EditProductFormValues => ({
   category: product.category,
   subCategory: product.subCategory || "",
   short_description: product.short_description || "",
+  hsnCode: product.hsnCode || "",
+  // `??` not `||` — a real 0% rate must survive the round trip, since fresh
+  // fish is genuinely zero-rated and `0 || ""` would blank it.
+  gstRatePercent: product.gstRatePercent != null ? String(product.gstRatePercent) : "",
   tags: product.tags?.join(", ") || "",
   status: product.status === "NonActive" ? "NonActive" : "Active",
   origin: product.origin || "",
@@ -279,6 +283,33 @@ const EditProductModal = ({
                 <div className="md:col-span-2">
                   <label className={labelClass}>Short Description</label>
                   <textarea rows={3} {...register("short_description")} className={fieldClass} />
+                </div>
+
+                {/* Tax classification — printed on the GST invoice */}
+                <div>
+                  <label className={labelClass}>HSN Code</label>
+                  <input
+                    {...register("hsnCode")}
+                    placeholder="3025900"
+                    className={fieldClass}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Shown on the tax invoice; blank prints “—”.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>GST Rate (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={28}
+                    {...register("gstRatePercent")}
+                    placeholder="0"
+                    className={fieldClass}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Overrides the store rate. Fresh fish is 0.
+                  </p>
                 </div>
               </div>
             </Section>

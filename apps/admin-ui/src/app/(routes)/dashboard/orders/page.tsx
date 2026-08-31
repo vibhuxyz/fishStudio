@@ -11,7 +11,7 @@ import { Eye } from "lucide-react";
 import Link from "next/link";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { type AdminOrder, useAdminOrderList, useAdminOrderPincodes } from "@/hooks/useAdminQueries";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
 
 const PAY_TONE_CLASS: Record<PaymentTone, string> = {
@@ -54,7 +54,7 @@ const OrdersTable = () => {
         header: "Order ID",
         cell: ({ row }: { row: { original: AdminOrder } }) => (
           <span className="text-white text-sm font-mono">
-            {formatOrderId(row.original.id)}
+            {displayOrderNumber(row.original)}
           </span>
         ),
       },

@@ -60,6 +60,7 @@ import {
   getAllSellersForAdmin,
   getSellerDetailsForAdmin,
   updateSellerApproval,
+  updateAdminStoreSettings,
 } from "../modules/admin/seller-admin.controller.js";
 import { issueWsTicket } from "../modules/auth/wsTicket.controller.js";
 
@@ -146,6 +147,15 @@ router.put(
   isAuthenticated,
   isAdmin,
   updateSellerApproval,
+);
+
+// Order-number location code and COD auto-accept ceiling. Admin-only: the
+// location code determines how this store's invoices are numbered.
+router.put(
+  "/admin/stores/:storeId/settings",
+  isAuthenticated,
+  isAdmin,
+  updateAdminStoreSettings,
 );
 
 // seller/store Routes

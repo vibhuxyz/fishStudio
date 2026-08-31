@@ -94,10 +94,10 @@ export type combos = $Result.DefaultSelection<Prisma.$combosPayload>
  */
 export type SignupAccessCode = $Result.DefaultSelection<Prisma.$SignupAccessCodePayload>
 /**
- * Model abandoned_carts
+ * Model carts
  * 
  */
-export type abandoned_carts = $Result.DefaultSelection<Prisma.$abandoned_cartsPayload>
+export type carts = $Result.DefaultSelection<Prisma.$cartsPayload>
 /**
  * Model product_views
  * 
@@ -440,14 +440,14 @@ export class PrismaClient<
   get signupAccessCode(): Prisma.SignupAccessCodeDelegate<ExtArgs>;
 
   /**
-   * `prisma.abandoned_carts`: Exposes CRUD operations for the **abandoned_carts** model.
+   * `prisma.carts`: Exposes CRUD operations for the **carts** model.
     * Example usage:
     * ```ts
-    * // Fetch zero or more Abandoned_carts
-    * const abandoned_carts = await prisma.abandoned_carts.findMany()
+    * // Fetch zero or more Carts
+    * const carts = await prisma.carts.findMany()
     * ```
     */
-  get abandoned_carts(): Prisma.abandoned_cartsDelegate<ExtArgs>;
+  get carts(): Prisma.cartsDelegate<ExtArgs>;
 
   /**
    * `prisma.product_views`: Exposes CRUD operations for the **product_views** model.
@@ -915,7 +915,7 @@ export namespace Prisma {
     seller_events: 'seller_events',
     combos: 'combos',
     SignupAccessCode: 'SignupAccessCode',
-    abandoned_carts: 'abandoned_carts',
+    carts: 'carts',
     product_views: 'product_views'
   };
 
@@ -932,7 +932,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "favorites" | "reviews" | "site_config" | "products" | "banners" | "seller_events" | "combos" | "signupAccessCode" | "abandoned_carts" | "product_views"
+      modelProps: "admins" | "images" | "users" | "discount_codes" | "coupon_usages" | "sellers" | "staffs" | "stores" | "favorites" | "reviews" | "site_config" | "products" | "banners" | "seller_events" | "combos" | "signupAccessCode" | "carts" | "product_views"
       txIsolationLevel: never
     }
     model: {
@@ -2120,77 +2120,77 @@ export namespace Prisma {
           }
         }
       }
-      abandoned_carts: {
-        payload: Prisma.$abandoned_cartsPayload<ExtArgs>
-        fields: Prisma.abandoned_cartsFieldRefs
+      carts: {
+        payload: Prisma.$cartsPayload<ExtArgs>
+        fields: Prisma.cartsFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.abandoned_cartsFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload> | null
+            args: Prisma.cartsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.abandoned_cartsFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           findFirst: {
-            args: Prisma.abandoned_cartsFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload> | null
+            args: Prisma.cartsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.abandoned_cartsFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           findMany: {
-            args: Prisma.abandoned_cartsFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>[]
+            args: Prisma.cartsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>[]
           }
           create: {
-            args: Prisma.abandoned_cartsCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           createMany: {
-            args: Prisma.abandoned_cartsCreateManyArgs<ExtArgs>
+            args: Prisma.cartsCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           delete: {
-            args: Prisma.abandoned_cartsDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           update: {
-            args: Prisma.abandoned_cartsUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           deleteMany: {
-            args: Prisma.abandoned_cartsDeleteManyArgs<ExtArgs>
+            args: Prisma.cartsDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.abandoned_cartsUpdateManyArgs<ExtArgs>
+            args: Prisma.cartsUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           upsert: {
-            args: Prisma.abandoned_cartsUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$abandoned_cartsPayload>
+            args: Prisma.cartsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$cartsPayload>
           }
           aggregate: {
-            args: Prisma.Abandoned_cartsAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateAbandoned_carts>
+            args: Prisma.CartsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCarts>
           }
           groupBy: {
-            args: Prisma.abandoned_cartsGroupByArgs<ExtArgs>
-            result: $Utils.Optional<Abandoned_cartsGroupByOutputType>[]
+            args: Prisma.cartsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CartsGroupByOutputType>[]
           }
           findRaw: {
-            args: Prisma.abandoned_cartsFindRawArgs<ExtArgs>
+            args: Prisma.cartsFindRawArgs<ExtArgs>
             result: JsonObject
           }
           aggregateRaw: {
-            args: Prisma.abandoned_cartsAggregateRawArgs<ExtArgs>
+            args: Prisma.cartsAggregateRawArgs<ExtArgs>
             result: JsonObject
           }
           count: {
-            args: Prisma.abandoned_cartsCountArgs<ExtArgs>
-            result: $Utils.Optional<Abandoned_cartsCountAggregateOutputType> | number
+            args: Prisma.cartsCountArgs<ExtArgs>
+            result: $Utils.Optional<CartsCountAggregateOutputType> | number
           }
         }
       }
@@ -10254,6 +10254,7 @@ export namespace Prisma {
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
+    codAutoAcceptLimit: number | null
   }
 
   export type StoresSumAggregateOutputType = {
@@ -10262,6 +10263,7 @@ export namespace Prisma {
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
+    codAutoAcceptLimit: number | null
   }
 
   export type StoresMinAggregateOutputType = {
@@ -10282,6 +10284,13 @@ export namespace Prisma {
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
+    legalName: string | null
+    gstin: string | null
+    fssaiLicenseNumber: string | null
+    registeredAddress: string | null
+    invoiceJurisdiction: string | null
+    locationCode: string | null
+    codAutoAcceptLimit: number | null
     state: string | null
     supportPhone: string | null
     whatsappNumber: string | null
@@ -10314,6 +10323,13 @@ export namespace Prisma {
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
+    legalName: string | null
+    gstin: string | null
+    fssaiLicenseNumber: string | null
+    registeredAddress: string | null
+    invoiceJurisdiction: string | null
+    locationCode: string | null
+    codAutoAcceptLimit: number | null
     state: string | null
     supportPhone: string | null
     whatsappNumber: string | null
@@ -10346,6 +10362,13 @@ export namespace Prisma {
     packaging_charge: number
     base_delivery_charge: number
     free_delivery_threshold: number
+    legalName: number
+    gstin: number
+    fssaiLicenseNumber: number
+    registeredAddress: number
+    invoiceJurisdiction: number
+    locationCode: number
+    codAutoAcceptLimit: number
     availableCities: number
     cityDeliveryTimes: number
     areaPincodes: number
@@ -10373,6 +10396,7 @@ export namespace Prisma {
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
+    codAutoAcceptLimit?: true
   }
 
   export type StoresSumAggregateInputType = {
@@ -10381,6 +10405,7 @@ export namespace Prisma {
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
+    codAutoAcceptLimit?: true
   }
 
   export type StoresMinAggregateInputType = {
@@ -10401,6 +10426,13 @@ export namespace Prisma {
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
+    legalName?: true
+    gstin?: true
+    fssaiLicenseNumber?: true
+    registeredAddress?: true
+    invoiceJurisdiction?: true
+    locationCode?: true
+    codAutoAcceptLimit?: true
     state?: true
     supportPhone?: true
     whatsappNumber?: true
@@ -10433,6 +10465,13 @@ export namespace Prisma {
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
+    legalName?: true
+    gstin?: true
+    fssaiLicenseNumber?: true
+    registeredAddress?: true
+    invoiceJurisdiction?: true
+    locationCode?: true
+    codAutoAcceptLimit?: true
     state?: true
     supportPhone?: true
     whatsappNumber?: true
@@ -10465,6 +10504,13 @@ export namespace Prisma {
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
+    legalName?: true
+    gstin?: true
+    fssaiLicenseNumber?: true
+    registeredAddress?: true
+    invoiceJurisdiction?: true
+    locationCode?: true
+    codAutoAcceptLimit?: true
     availableCities?: true
     cityDeliveryTimes?: true
     areaPincodes?: true
@@ -10589,6 +10635,13 @@ export namespace Prisma {
     packaging_charge: number
     base_delivery_charge: number
     free_delivery_threshold: number
+    legalName: string | null
+    gstin: string | null
+    fssaiLicenseNumber: string | null
+    registeredAddress: string | null
+    invoiceJurisdiction: string | null
+    locationCode: string | null
+    codAutoAcceptLimit: number | null
     availableCities: string[]
     cityDeliveryTimes: JsonValue | null
     areaPincodes: JsonValue | null
@@ -10645,6 +10698,13 @@ export namespace Prisma {
     packaging_charge?: boolean
     base_delivery_charge?: boolean
     free_delivery_threshold?: boolean
+    legalName?: boolean
+    gstin?: boolean
+    fssaiLicenseNumber?: boolean
+    registeredAddress?: boolean
+    invoiceJurisdiction?: boolean
+    locationCode?: boolean
+    codAutoAcceptLimit?: boolean
     availableCities?: boolean
     cityDeliveryTimes?: boolean
     areaPincodes?: boolean
@@ -10689,6 +10749,13 @@ export namespace Prisma {
     packaging_charge?: boolean
     base_delivery_charge?: boolean
     free_delivery_threshold?: boolean
+    legalName?: boolean
+    gstin?: boolean
+    fssaiLicenseNumber?: boolean
+    registeredAddress?: boolean
+    invoiceJurisdiction?: boolean
+    locationCode?: boolean
+    codAutoAcceptLimit?: boolean
     availableCities?: boolean
     cityDeliveryTimes?: boolean
     areaPincodes?: boolean
@@ -10744,6 +10811,13 @@ export namespace Prisma {
       packaging_charge: number
       base_delivery_charge: number
       free_delivery_threshold: number
+      legalName: string | null
+      gstin: string | null
+      fssaiLicenseNumber: string | null
+      registeredAddress: string | null
+      invoiceJurisdiction: string | null
+      locationCode: string | null
+      codAutoAcceptLimit: number | null
       availableCities: string[]
       cityDeliveryTimes: Prisma.JsonValue | null
       areaPincodes: Prisma.JsonValue | null
@@ -11175,6 +11249,13 @@ export namespace Prisma {
     readonly packaging_charge: FieldRef<"stores", 'Float'>
     readonly base_delivery_charge: FieldRef<"stores", 'Float'>
     readonly free_delivery_threshold: FieldRef<"stores", 'Float'>
+    readonly legalName: FieldRef<"stores", 'String'>
+    readonly gstin: FieldRef<"stores", 'String'>
+    readonly fssaiLicenseNumber: FieldRef<"stores", 'String'>
+    readonly registeredAddress: FieldRef<"stores", 'String'>
+    readonly invoiceJurisdiction: FieldRef<"stores", 'String'>
+    readonly locationCode: FieldRef<"stores", 'String'>
+    readonly codAutoAcceptLimit: FieldRef<"stores", 'Float'>
     readonly availableCities: FieldRef<"stores", 'String[]'>
     readonly cityDeliveryTimes: FieldRef<"stores", 'Json'>
     readonly areaPincodes: FieldRef<"stores", 'Json'>
@@ -14433,6 +14514,7 @@ export namespace Prisma {
   }
 
   export type ProductsAvgAggregateOutputType = {
+    gstRatePercent: number | null
     basePricePerKg: number | null
     basePricePerUnit: number | null
     stock: number | null
@@ -14443,6 +14525,7 @@ export namespace Prisma {
   }
 
   export type ProductsSumAggregateOutputType = {
+    gstRatePercent: number | null
     basePricePerKg: number | null
     basePricePerUnit: number | null
     stock: number | null
@@ -14460,6 +14543,8 @@ export namespace Prisma {
     category: string | null
     subCategory: string | null
     short_description: string | null
+    hsnCode: string | null
+    gstRatePercent: number | null
     basePricePerKg: number | null
     basePricePerUnit: number | null
     pricingMethod: string | null
@@ -14497,6 +14582,8 @@ export namespace Prisma {
     category: string | null
     subCategory: string | null
     short_description: string | null
+    hsnCode: string | null
+    gstRatePercent: number | null
     basePricePerKg: number | null
     basePricePerUnit: number | null
     pricingMethod: string | null
@@ -14534,6 +14621,8 @@ export namespace Prisma {
     category: number
     subCategory: number
     short_description: number
+    hsnCode: number
+    gstRatePercent: number
     tags: number
     sizes: number
     sizePricing: number
@@ -14576,6 +14665,7 @@ export namespace Prisma {
 
 
   export type ProductsAvgAggregateInputType = {
+    gstRatePercent?: true
     basePricePerKg?: true
     basePricePerUnit?: true
     stock?: true
@@ -14586,6 +14676,7 @@ export namespace Prisma {
   }
 
   export type ProductsSumAggregateInputType = {
+    gstRatePercent?: true
     basePricePerKg?: true
     basePricePerUnit?: true
     stock?: true
@@ -14603,6 +14694,8 @@ export namespace Prisma {
     category?: true
     subCategory?: true
     short_description?: true
+    hsnCode?: true
+    gstRatePercent?: true
     basePricePerKg?: true
     basePricePerUnit?: true
     pricingMethod?: true
@@ -14640,6 +14733,8 @@ export namespace Prisma {
     category?: true
     subCategory?: true
     short_description?: true
+    hsnCode?: true
+    gstRatePercent?: true
     basePricePerKg?: true
     basePricePerUnit?: true
     pricingMethod?: true
@@ -14677,6 +14772,8 @@ export namespace Prisma {
     category?: true
     subCategory?: true
     short_description?: true
+    hsnCode?: true
+    gstRatePercent?: true
     tags?: true
     sizes?: true
     sizePricing?: true
@@ -14811,6 +14908,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode: string | null
+    gstRatePercent: number | null
     tags: string[]
     sizes: string[]
     sizePricing: JsonValue | null
@@ -14877,6 +14976,8 @@ export namespace Prisma {
     category?: boolean
     subCategory?: boolean
     short_description?: boolean
+    hsnCode?: boolean
+    gstRatePercent?: boolean
     tags?: boolean
     sizes?: boolean
     sizePricing?: boolean
@@ -14933,6 +15034,8 @@ export namespace Prisma {
     category?: boolean
     subCategory?: boolean
     short_description?: boolean
+    hsnCode?: boolean
+    gstRatePercent?: boolean
     tags?: boolean
     sizes?: boolean
     sizePricing?: boolean
@@ -15002,6 +15105,8 @@ export namespace Prisma {
       category: string
       subCategory: string
       short_description: string
+      hsnCode: string | null
+      gstRatePercent: number | null
       tags: string[]
       sizes: string[]
       sizePricing: Prisma.JsonValue | null
@@ -15445,6 +15550,8 @@ export namespace Prisma {
     readonly category: FieldRef<"products", 'String'>
     readonly subCategory: FieldRef<"products", 'String'>
     readonly short_description: FieldRef<"products", 'String'>
+    readonly hsnCode: FieldRef<"products", 'String'>
+    readonly gstRatePercent: FieldRef<"products", 'Float'>
     readonly tags: FieldRef<"products", 'String[]'>
     readonly sizes: FieldRef<"products", 'String[]'>
     readonly sizePricing: FieldRef<"products", 'Json'>
@@ -20005,28 +20112,28 @@ export namespace Prisma {
 
 
   /**
-   * Model abandoned_carts
+   * Model carts
    */
 
-  export type AggregateAbandoned_carts = {
-    _count: Abandoned_cartsCountAggregateOutputType | null
-    _avg: Abandoned_cartsAvgAggregateOutputType | null
-    _sum: Abandoned_cartsSumAggregateOutputType | null
-    _min: Abandoned_cartsMinAggregateOutputType | null
-    _max: Abandoned_cartsMaxAggregateOutputType | null
+  export type AggregateCarts = {
+    _count: CartsCountAggregateOutputType | null
+    _avg: CartsAvgAggregateOutputType | null
+    _sum: CartsSumAggregateOutputType | null
+    _min: CartsMinAggregateOutputType | null
+    _max: CartsMaxAggregateOutputType | null
   }
 
-  export type Abandoned_cartsAvgAggregateOutputType = {
+  export type CartsAvgAggregateOutputType = {
     totalAmount: number | null
     notifyStage: number | null
   }
 
-  export type Abandoned_cartsSumAggregateOutputType = {
+  export type CartsSumAggregateOutputType = {
     totalAmount: number | null
     notifyStage: number | null
   }
 
-  export type Abandoned_cartsMinAggregateOutputType = {
+  export type CartsMinAggregateOutputType = {
     id: string | null
     userId: string | null
     storeId: string | null
@@ -20039,7 +20146,7 @@ export namespace Prisma {
     createdAt: Date | null
   }
 
-  export type Abandoned_cartsMaxAggregateOutputType = {
+  export type CartsMaxAggregateOutputType = {
     id: string | null
     userId: string | null
     storeId: string | null
@@ -20052,7 +20159,7 @@ export namespace Prisma {
     createdAt: Date | null
   }
 
-  export type Abandoned_cartsCountAggregateOutputType = {
+  export type CartsCountAggregateOutputType = {
     id: number
     userId: number
     items: number
@@ -20068,17 +20175,17 @@ export namespace Prisma {
   }
 
 
-  export type Abandoned_cartsAvgAggregateInputType = {
+  export type CartsAvgAggregateInputType = {
     totalAmount?: true
     notifyStage?: true
   }
 
-  export type Abandoned_cartsSumAggregateInputType = {
+  export type CartsSumAggregateInputType = {
     totalAmount?: true
     notifyStage?: true
   }
 
-  export type Abandoned_cartsMinAggregateInputType = {
+  export type CartsMinAggregateInputType = {
     id?: true
     userId?: true
     storeId?: true
@@ -20091,7 +20198,7 @@ export namespace Prisma {
     createdAt?: true
   }
 
-  export type Abandoned_cartsMaxAggregateInputType = {
+  export type CartsMaxAggregateInputType = {
     id?: true
     userId?: true
     storeId?: true
@@ -20104,7 +20211,7 @@ export namespace Prisma {
     createdAt?: true
   }
 
-  export type Abandoned_cartsCountAggregateInputType = {
+  export type CartsCountAggregateInputType = {
     id?: true
     userId?: true
     items?: true
@@ -20119,93 +20226,93 @@ export namespace Prisma {
     _all?: true
   }
 
-  export type Abandoned_cartsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type CartsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which abandoned_carts to aggregate.
+     * Filter which carts to aggregate.
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of abandoned_carts to fetch.
+     * Determine the order of carts to fetch.
      */
-    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    orderBy?: cartsOrderByWithRelationInput | cartsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
      * Sets the start position
      */
-    cursor?: abandoned_cartsWhereUniqueInput
+    cursor?: cartsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` abandoned_carts from the position of the cursor.
+     * Take `±n` carts from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` abandoned_carts.
+     * Skip the first `n` carts.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
-     * Count returned abandoned_carts
+     * Count returned carts
     **/
-    _count?: true | Abandoned_cartsCountAggregateInputType
+    _count?: true | CartsCountAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to average
     **/
-    _avg?: Abandoned_cartsAvgAggregateInputType
+    _avg?: CartsAvgAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to sum
     **/
-    _sum?: Abandoned_cartsSumAggregateInputType
+    _sum?: CartsSumAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the minimum value
     **/
-    _min?: Abandoned_cartsMinAggregateInputType
+    _min?: CartsMinAggregateInputType
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
      * Select which fields to find the maximum value
     **/
-    _max?: Abandoned_cartsMaxAggregateInputType
+    _max?: CartsMaxAggregateInputType
   }
 
-  export type GetAbandoned_cartsAggregateType<T extends Abandoned_cartsAggregateArgs> = {
-        [P in keyof T & keyof AggregateAbandoned_carts]: P extends '_count' | 'count'
+  export type GetCartsAggregateType<T extends CartsAggregateArgs> = {
+        [P in keyof T & keyof AggregateCarts]: P extends '_count' | 'count'
       ? T[P] extends true
         ? number
-        : GetScalarType<T[P], AggregateAbandoned_carts[P]>
-      : GetScalarType<T[P], AggregateAbandoned_carts[P]>
+        : GetScalarType<T[P], AggregateCarts[P]>
+      : GetScalarType<T[P], AggregateCarts[P]>
   }
 
 
 
 
-  export type abandoned_cartsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: abandoned_cartsWhereInput
-    orderBy?: abandoned_cartsOrderByWithAggregationInput | abandoned_cartsOrderByWithAggregationInput[]
-    by: Abandoned_cartsScalarFieldEnum[] | Abandoned_cartsScalarFieldEnum
-    having?: abandoned_cartsScalarWhereWithAggregatesInput
+  export type cartsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: cartsWhereInput
+    orderBy?: cartsOrderByWithAggregationInput | cartsOrderByWithAggregationInput[]
+    by: CartsScalarFieldEnum[] | CartsScalarFieldEnum
+    having?: cartsScalarWhereWithAggregatesInput
     take?: number
     skip?: number
-    _count?: Abandoned_cartsCountAggregateInputType | true
-    _avg?: Abandoned_cartsAvgAggregateInputType
-    _sum?: Abandoned_cartsSumAggregateInputType
-    _min?: Abandoned_cartsMinAggregateInputType
-    _max?: Abandoned_cartsMaxAggregateInputType
+    _count?: CartsCountAggregateInputType | true
+    _avg?: CartsAvgAggregateInputType
+    _sum?: CartsSumAggregateInputType
+    _min?: CartsMinAggregateInputType
+    _max?: CartsMaxAggregateInputType
   }
 
-  export type Abandoned_cartsGroupByOutputType = {
+  export type CartsGroupByOutputType = {
     id: string
     userId: string
     items: JsonValue[]
@@ -20217,28 +20324,28 @@ export namespace Prisma {
     notifyStage: number
     lastUpdatedAt: Date
     createdAt: Date
-    _count: Abandoned_cartsCountAggregateOutputType | null
-    _avg: Abandoned_cartsAvgAggregateOutputType | null
-    _sum: Abandoned_cartsSumAggregateOutputType | null
-    _min: Abandoned_cartsMinAggregateOutputType | null
-    _max: Abandoned_cartsMaxAggregateOutputType | null
+    _count: CartsCountAggregateOutputType | null
+    _avg: CartsAvgAggregateOutputType | null
+    _sum: CartsSumAggregateOutputType | null
+    _min: CartsMinAggregateOutputType | null
+    _max: CartsMaxAggregateOutputType | null
   }
 
-  type GetAbandoned_cartsGroupByPayload<T extends abandoned_cartsGroupByArgs> = Prisma.PrismaPromise<
+  type GetCartsGroupByPayload<T extends cartsGroupByArgs> = Prisma.PrismaPromise<
     Array<
-      PickEnumerable<Abandoned_cartsGroupByOutputType, T['by']> &
+      PickEnumerable<CartsGroupByOutputType, T['by']> &
         {
-          [P in ((keyof T) & (keyof Abandoned_cartsGroupByOutputType))]: P extends '_count'
+          [P in ((keyof T) & (keyof CartsGroupByOutputType))]: P extends '_count'
             ? T[P] extends boolean
               ? number
-              : GetScalarType<T[P], Abandoned_cartsGroupByOutputType[P]>
-            : GetScalarType<T[P], Abandoned_cartsGroupByOutputType[P]>
+              : GetScalarType<T[P], CartsGroupByOutputType[P]>
+            : GetScalarType<T[P], CartsGroupByOutputType[P]>
         }
       >
     >
 
 
-  export type abandoned_cartsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+  export type cartsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     userId?: boolean
     items?: boolean
@@ -20250,10 +20357,10 @@ export namespace Prisma {
     notifyStage?: boolean
     lastUpdatedAt?: boolean
     createdAt?: boolean
-  }, ExtArgs["result"]["abandoned_carts"]>
+  }, ExtArgs["result"]["carts"]>
 
 
-  export type abandoned_cartsSelectScalar = {
+  export type cartsSelectScalar = {
     id?: boolean
     userId?: boolean
     items?: boolean
@@ -20268,8 +20375,8 @@ export namespace Prisma {
   }
 
 
-  export type $abandoned_cartsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "abandoned_carts"
+  export type $cartsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "carts"
     objects: {}
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -20283,143 +20390,143 @@ export namespace Prisma {
       notifyStage: number
       lastUpdatedAt: Date
       createdAt: Date
-    }, ExtArgs["result"]["abandoned_carts"]>
+    }, ExtArgs["result"]["carts"]>
     composites: {}
   }
 
-  type abandoned_cartsGetPayload<S extends boolean | null | undefined | abandoned_cartsDefaultArgs> = $Result.GetResult<Prisma.$abandoned_cartsPayload, S>
+  type cartsGetPayload<S extends boolean | null | undefined | cartsDefaultArgs> = $Result.GetResult<Prisma.$cartsPayload, S>
 
-  type abandoned_cartsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<abandoned_cartsFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: Abandoned_cartsCountAggregateInputType | true
+  type cartsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<cartsFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CartsCountAggregateInputType | true
     }
 
-  export interface abandoned_cartsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['abandoned_carts'], meta: { name: 'abandoned_carts' } }
+  export interface cartsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['carts'], meta: { name: 'carts' } }
     /**
-     * Find zero or one Abandoned_carts that matches the filter.
-     * @param {abandoned_cartsFindUniqueArgs} args - Arguments to find a Abandoned_carts
+     * Find zero or one Carts that matches the filter.
+     * @param {cartsFindUniqueArgs} args - Arguments to find a Carts
      * @example
-     * // Get one Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findUnique({
+     * // Get one Carts
+     * const carts = await prisma.carts.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUnique<T extends abandoned_cartsFindUniqueArgs>(args: SelectSubset<T, abandoned_cartsFindUniqueArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+    findUnique<T extends cartsFindUniqueArgs>(args: SelectSubset<T, cartsFindUniqueArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
 
     /**
-     * Find one Abandoned_carts that matches the filter or throw an error with `error.code='P2025'` 
+     * Find one Carts that matches the filter or throw an error with `error.code='P2025'` 
      * if no matches were found.
-     * @param {abandoned_cartsFindUniqueOrThrowArgs} args - Arguments to find a Abandoned_carts
+     * @param {cartsFindUniqueOrThrowArgs} args - Arguments to find a Carts
      * @example
-     * // Get one Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findUniqueOrThrow({
+     * // Get one Carts
+     * const carts = await prisma.carts.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findUniqueOrThrow<T extends abandoned_cartsFindUniqueOrThrowArgs>(args: SelectSubset<T, abandoned_cartsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+    findUniqueOrThrow<T extends cartsFindUniqueOrThrowArgs>(args: SelectSubset<T, cartsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
 
     /**
-     * Find the first Abandoned_carts that matches the filter.
+     * Find the first Carts that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsFindFirstArgs} args - Arguments to find a Abandoned_carts
+     * @param {cartsFindFirstArgs} args - Arguments to find a Carts
      * @example
-     * // Get one Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findFirst({
+     * // Get one Carts
+     * const carts = await prisma.carts.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirst<T extends abandoned_cartsFindFirstArgs>(args?: SelectSubset<T, abandoned_cartsFindFirstArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+    findFirst<T extends cartsFindFirstArgs>(args?: SelectSubset<T, cartsFindFirstArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
 
     /**
-     * Find the first Abandoned_carts that matches the filter or
+     * Find the first Carts that matches the filter or
      * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsFindFirstOrThrowArgs} args - Arguments to find a Abandoned_carts
+     * @param {cartsFindFirstOrThrowArgs} args - Arguments to find a Carts
      * @example
-     * // Get one Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findFirstOrThrow({
+     * // Get one Carts
+     * const carts = await prisma.carts.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      */
-    findFirstOrThrow<T extends abandoned_cartsFindFirstOrThrowArgs>(args?: SelectSubset<T, abandoned_cartsFindFirstOrThrowArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+    findFirstOrThrow<T extends cartsFindFirstOrThrowArgs>(args?: SelectSubset<T, cartsFindFirstOrThrowArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
 
     /**
-     * Find zero or more Abandoned_carts that matches the filter.
+     * Find zero or more Carts that matches the filter.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @param {cartsFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
-     * // Get all Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findMany()
+     * // Get all Carts
+     * const carts = await prisma.carts.findMany()
      * 
-     * // Get first 10 Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.findMany({ take: 10 })
+     * // Get first 10 Carts
+     * const carts = await prisma.carts.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const abandoned_cartsWithIdOnly = await prisma.abandoned_carts.findMany({ select: { id: true } })
+     * const cartsWithIdOnly = await prisma.carts.findMany({ select: { id: true } })
      * 
      */
-    findMany<T extends abandoned_cartsFindManyArgs>(args?: SelectSubset<T, abandoned_cartsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "findMany">>
+    findMany<T extends cartsFindManyArgs>(args?: SelectSubset<T, cartsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "findMany">>
 
     /**
-     * Create a Abandoned_carts.
-     * @param {abandoned_cartsCreateArgs} args - Arguments to create a Abandoned_carts.
+     * Create a Carts.
+     * @param {cartsCreateArgs} args - Arguments to create a Carts.
      * @example
-     * // Create one Abandoned_carts
-     * const Abandoned_carts = await prisma.abandoned_carts.create({
+     * // Create one Carts
+     * const Carts = await prisma.carts.create({
      *   data: {
-     *     // ... data to create a Abandoned_carts
+     *     // ... data to create a Carts
      *   }
      * })
      * 
      */
-    create<T extends abandoned_cartsCreateArgs>(args: SelectSubset<T, abandoned_cartsCreateArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "create">, never, ExtArgs>
+    create<T extends cartsCreateArgs>(args: SelectSubset<T, cartsCreateArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "create">, never, ExtArgs>
 
     /**
-     * Create many Abandoned_carts.
-     * @param {abandoned_cartsCreateManyArgs} args - Arguments to create many Abandoned_carts.
+     * Create many Carts.
+     * @param {cartsCreateManyArgs} args - Arguments to create many Carts.
      * @example
-     * // Create many Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.createMany({
+     * // Create many Carts
+     * const carts = await prisma.carts.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      *     
      */
-    createMany<T extends abandoned_cartsCreateManyArgs>(args?: SelectSubset<T, abandoned_cartsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    createMany<T extends cartsCreateManyArgs>(args?: SelectSubset<T, cartsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Delete a Abandoned_carts.
-     * @param {abandoned_cartsDeleteArgs} args - Arguments to delete one Abandoned_carts.
+     * Delete a Carts.
+     * @param {cartsDeleteArgs} args - Arguments to delete one Carts.
      * @example
-     * // Delete one Abandoned_carts
-     * const Abandoned_carts = await prisma.abandoned_carts.delete({
+     * // Delete one Carts
+     * const Carts = await prisma.carts.delete({
      *   where: {
-     *     // ... filter to delete one Abandoned_carts
+     *     // ... filter to delete one Carts
      *   }
      * })
      * 
      */
-    delete<T extends abandoned_cartsDeleteArgs>(args: SelectSubset<T, abandoned_cartsDeleteArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+    delete<T extends cartsDeleteArgs>(args: SelectSubset<T, cartsDeleteArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "delete">, never, ExtArgs>
 
     /**
-     * Update one Abandoned_carts.
-     * @param {abandoned_cartsUpdateArgs} args - Arguments to update one Abandoned_carts.
+     * Update one Carts.
+     * @param {cartsUpdateArgs} args - Arguments to update one Carts.
      * @example
-     * // Update one Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.update({
+     * // Update one Carts
+     * const carts = await prisma.carts.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -20429,30 +20536,30 @@ export namespace Prisma {
      * })
      * 
      */
-    update<T extends abandoned_cartsUpdateArgs>(args: SelectSubset<T, abandoned_cartsUpdateArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "update">, never, ExtArgs>
+    update<T extends cartsUpdateArgs>(args: SelectSubset<T, cartsUpdateArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "update">, never, ExtArgs>
 
     /**
-     * Delete zero or more Abandoned_carts.
-     * @param {abandoned_cartsDeleteManyArgs} args - Arguments to filter Abandoned_carts to delete.
+     * Delete zero or more Carts.
+     * @param {cartsDeleteManyArgs} args - Arguments to filter Carts to delete.
      * @example
-     * // Delete a few Abandoned_carts
-     * const { count } = await prisma.abandoned_carts.deleteMany({
+     * // Delete a few Carts
+     * const { count } = await prisma.carts.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
      * })
      * 
      */
-    deleteMany<T extends abandoned_cartsDeleteManyArgs>(args?: SelectSubset<T, abandoned_cartsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    deleteMany<T extends cartsDeleteManyArgs>(args?: SelectSubset<T, cartsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Abandoned_carts.
+     * Update zero or more Carts.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @param {cartsUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
-     * // Update many Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.updateMany({
+     * // Update many Carts
+     * const carts = await prisma.carts.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -20462,79 +20569,79 @@ export namespace Prisma {
      * })
      * 
      */
-    updateMany<T extends abandoned_cartsUpdateManyArgs>(args: SelectSubset<T, abandoned_cartsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+    updateMany<T extends cartsUpdateManyArgs>(args: SelectSubset<T, cartsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create or update one Abandoned_carts.
-     * @param {abandoned_cartsUpsertArgs} args - Arguments to update or create a Abandoned_carts.
+     * Create or update one Carts.
+     * @param {cartsUpsertArgs} args - Arguments to update or create a Carts.
      * @example
-     * // Update or create a Abandoned_carts
-     * const abandoned_carts = await prisma.abandoned_carts.upsert({
+     * // Update or create a Carts
+     * const carts = await prisma.carts.upsert({
      *   create: {
-     *     // ... data to create a Abandoned_carts
+     *     // ... data to create a Carts
      *   },
      *   update: {
      *     // ... in case it already exists, update
      *   },
      *   where: {
-     *     // ... the filter for the Abandoned_carts we want to update
+     *     // ... the filter for the Carts we want to update
      *   }
      * })
      */
-    upsert<T extends abandoned_cartsUpsertArgs>(args: SelectSubset<T, abandoned_cartsUpsertArgs<ExtArgs>>): Prisma__abandoned_cartsClient<$Result.GetResult<Prisma.$abandoned_cartsPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+    upsert<T extends cartsUpsertArgs>(args: SelectSubset<T, cartsUpsertArgs<ExtArgs>>): Prisma__cartsClient<$Result.GetResult<Prisma.$cartsPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
 
     /**
-     * Find zero or more Abandoned_carts that matches the filter.
-     * @param {abandoned_cartsFindRawArgs} args - Select which filters you would like to apply.
+     * Find zero or more Carts that matches the filter.
+     * @param {cartsFindRawArgs} args - Select which filters you would like to apply.
      * @example
-     * const abandoned_carts = await prisma.abandoned_carts.findRaw({
+     * const carts = await prisma.carts.findRaw({
      *   filter: { age: { $gt: 25 } } 
      * })
      */
-    findRaw(args?: abandoned_cartsFindRawArgs): Prisma.PrismaPromise<JsonObject>
+    findRaw(args?: cartsFindRawArgs): Prisma.PrismaPromise<JsonObject>
 
     /**
-     * Perform aggregation operations on a Abandoned_carts.
-     * @param {abandoned_cartsAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * Perform aggregation operations on a Carts.
+     * @param {cartsAggregateRawArgs} args - Select which aggregations you would like to apply.
      * @example
-     * const abandoned_carts = await prisma.abandoned_carts.aggregateRaw({
+     * const carts = await prisma.carts.aggregateRaw({
      *   pipeline: [
      *     { $match: { status: "registered" } },
      *     { $group: { _id: "$country", total: { $sum: 1 } } }
      *   ]
      * })
      */
-    aggregateRaw(args?: abandoned_cartsAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
+    aggregateRaw(args?: cartsAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
-     * Count the number of Abandoned_carts.
+     * Count the number of Carts.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsCountArgs} args - Arguments to filter Abandoned_carts to count.
+     * @param {cartsCountArgs} args - Arguments to filter Carts to count.
      * @example
-     * // Count the number of Abandoned_carts
-     * const count = await prisma.abandoned_carts.count({
+     * // Count the number of Carts
+     * const count = await prisma.carts.count({
      *   where: {
-     *     // ... the filter for the Abandoned_carts we want to count
+     *     // ... the filter for the Carts we want to count
      *   }
      * })
     **/
-    count<T extends abandoned_cartsCountArgs>(
-      args?: Subset<T, abandoned_cartsCountArgs>,
+    count<T extends cartsCountArgs>(
+      args?: Subset<T, cartsCountArgs>,
     ): Prisma.PrismaPromise<
       T extends $Utils.Record<'select', any>
         ? T['select'] extends true
           ? number
-          : GetScalarType<T['select'], Abandoned_cartsCountAggregateOutputType>
+          : GetScalarType<T['select'], CartsCountAggregateOutputType>
         : number
     >
 
     /**
-     * Allows you to perform aggregations operations on a Abandoned_carts.
+     * Allows you to perform aggregations operations on a Carts.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {Abandoned_cartsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @param {CartsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
      * @example
      * // Ordered by age ascending
      * // Where email contains prisma.io
@@ -20554,13 +20661,13 @@ export namespace Prisma {
      *   take: 10,
      * })
     **/
-    aggregate<T extends Abandoned_cartsAggregateArgs>(args: Subset<T, Abandoned_cartsAggregateArgs>): Prisma.PrismaPromise<GetAbandoned_cartsAggregateType<T>>
+    aggregate<T extends CartsAggregateArgs>(args: Subset<T, CartsAggregateArgs>): Prisma.PrismaPromise<GetCartsAggregateType<T>>
 
     /**
-     * Group by Abandoned_carts.
+     * Group by Carts.
      * Note, that providing `undefined` is treated as the value not being there.
      * Read more here: https://pris.ly/d/null-undefined
-     * @param {abandoned_cartsGroupByArgs} args - Group by arguments.
+     * @param {cartsGroupByArgs} args - Group by arguments.
      * @example
      * // Group by city, order by createdAt, get count
      * const result = await prisma.user.groupBy({
@@ -20575,14 +20682,14 @@ export namespace Prisma {
      * 
     **/
     groupBy<
-      T extends abandoned_cartsGroupByArgs,
+      T extends cartsGroupByArgs,
       HasSelectOrTake extends Or<
         Extends<'skip', Keys<T>>,
         Extends<'take', Keys<T>>
       >,
       OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: abandoned_cartsGroupByArgs['orderBy'] }
-        : { orderBy?: abandoned_cartsGroupByArgs['orderBy'] },
+        ? { orderBy: cartsGroupByArgs['orderBy'] }
+        : { orderBy?: cartsGroupByArgs['orderBy'] },
       OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
       ByFields extends MaybeTupleToUnion<T['by']>,
       ByValid extends Has<ByFields, OrderFields>,
@@ -20631,20 +20738,20 @@ export namespace Prisma {
             ? never
             : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
         }[OrderFields]
-    >(args: SubsetIntersection<T, abandoned_cartsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAbandoned_cartsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+    >(args: SubsetIntersection<T, cartsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCartsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
   /**
-   * Fields of the abandoned_carts model
+   * Fields of the carts model
    */
-  readonly fields: abandoned_cartsFieldRefs;
+  readonly fields: cartsFieldRefs;
   }
 
   /**
-   * The delegate class that acts as a "Promise-like" for abandoned_carts.
+   * The delegate class that acts as a "Promise-like" for carts.
    * Why is this prefixed with `Prisma__`?
    * Because we want to prevent naming conflicts as mentioned in
    * https://github.com/prisma/prisma-client-js/issues/707
    */
-  export interface Prisma__abandoned_cartsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+  export interface Prisma__cartsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -20672,285 +20779,285 @@ export namespace Prisma {
 
 
   /**
-   * Fields of the abandoned_carts model
+   * Fields of the carts model
    */ 
-  interface abandoned_cartsFieldRefs {
-    readonly id: FieldRef<"abandoned_carts", 'String'>
-    readonly userId: FieldRef<"abandoned_carts", 'String'>
-    readonly items: FieldRef<"abandoned_carts", 'Json[]'>
-    readonly storeId: FieldRef<"abandoned_carts", 'String'>
-    readonly storeName: FieldRef<"abandoned_carts", 'String'>
-    readonly totalAmount: FieldRef<"abandoned_carts", 'Float'>
-    readonly notifiedAt: FieldRef<"abandoned_carts", 'DateTime'>
-    readonly isConverted: FieldRef<"abandoned_carts", 'Boolean'>
-    readonly notifyStage: FieldRef<"abandoned_carts", 'Int'>
-    readonly lastUpdatedAt: FieldRef<"abandoned_carts", 'DateTime'>
-    readonly createdAt: FieldRef<"abandoned_carts", 'DateTime'>
+  interface cartsFieldRefs {
+    readonly id: FieldRef<"carts", 'String'>
+    readonly userId: FieldRef<"carts", 'String'>
+    readonly items: FieldRef<"carts", 'Json[]'>
+    readonly storeId: FieldRef<"carts", 'String'>
+    readonly storeName: FieldRef<"carts", 'String'>
+    readonly totalAmount: FieldRef<"carts", 'Float'>
+    readonly notifiedAt: FieldRef<"carts", 'DateTime'>
+    readonly isConverted: FieldRef<"carts", 'Boolean'>
+    readonly notifyStage: FieldRef<"carts", 'Int'>
+    readonly lastUpdatedAt: FieldRef<"carts", 'DateTime'>
+    readonly createdAt: FieldRef<"carts", 'DateTime'>
   }
     
 
   // Custom InputTypes
   /**
-   * abandoned_carts findUnique
+   * carts findUnique
    */
-  export type abandoned_cartsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter, which abandoned_carts to fetch.
+     * Filter, which carts to fetch.
      */
-    where: abandoned_cartsWhereUniqueInput
+    where: cartsWhereUniqueInput
   }
 
   /**
-   * abandoned_carts findUniqueOrThrow
+   * carts findUniqueOrThrow
    */
-  export type abandoned_cartsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter, which abandoned_carts to fetch.
+     * Filter, which carts to fetch.
      */
-    where: abandoned_cartsWhereUniqueInput
+    where: cartsWhereUniqueInput
   }
 
   /**
-   * abandoned_carts findFirst
+   * carts findFirst
    */
-  export type abandoned_cartsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter, which abandoned_carts to fetch.
+     * Filter, which carts to fetch.
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of abandoned_carts to fetch.
+     * Determine the order of carts to fetch.
      */
-    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    orderBy?: cartsOrderByWithRelationInput | cartsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for abandoned_carts.
+     * Sets the position for searching for carts.
      */
-    cursor?: abandoned_cartsWhereUniqueInput
+    cursor?: cartsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` abandoned_carts from the position of the cursor.
+     * Take `±n` carts from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` abandoned_carts.
+     * Skip the first `n` carts.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of abandoned_carts.
+     * Filter by unique combinations of carts.
      */
-    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+    distinct?: CartsScalarFieldEnum | CartsScalarFieldEnum[]
   }
 
   /**
-   * abandoned_carts findFirstOrThrow
+   * carts findFirstOrThrow
    */
-  export type abandoned_cartsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter, which abandoned_carts to fetch.
+     * Filter, which carts to fetch.
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of abandoned_carts to fetch.
+     * Determine the order of carts to fetch.
      */
-    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    orderBy?: cartsOrderByWithRelationInput | cartsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for searching for abandoned_carts.
+     * Sets the position for searching for carts.
      */
-    cursor?: abandoned_cartsWhereUniqueInput
+    cursor?: cartsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` abandoned_carts from the position of the cursor.
+     * Take `±n` carts from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` abandoned_carts.
+     * Skip the first `n` carts.
      */
     skip?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
      * 
-     * Filter by unique combinations of abandoned_carts.
+     * Filter by unique combinations of carts.
      */
-    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+    distinct?: CartsScalarFieldEnum | CartsScalarFieldEnum[]
   }
 
   /**
-   * abandoned_carts findMany
+   * carts findMany
    */
-  export type abandoned_cartsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter, which abandoned_carts to fetch.
+     * Filter, which carts to fetch.
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
      * 
-     * Determine the order of abandoned_carts to fetch.
+     * Determine the order of carts to fetch.
      */
-    orderBy?: abandoned_cartsOrderByWithRelationInput | abandoned_cartsOrderByWithRelationInput[]
+    orderBy?: cartsOrderByWithRelationInput | cartsOrderByWithRelationInput[]
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
      * 
-     * Sets the position for listing abandoned_carts.
+     * Sets the position for listing carts.
      */
-    cursor?: abandoned_cartsWhereUniqueInput
+    cursor?: cartsWhereUniqueInput
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Take `±n` abandoned_carts from the position of the cursor.
+     * Take `±n` carts from the position of the cursor.
      */
     take?: number
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
      * 
-     * Skip the first `n` abandoned_carts.
+     * Skip the first `n` carts.
      */
     skip?: number
-    distinct?: Abandoned_cartsScalarFieldEnum | Abandoned_cartsScalarFieldEnum[]
+    distinct?: CartsScalarFieldEnum | CartsScalarFieldEnum[]
   }
 
   /**
-   * abandoned_carts create
+   * carts create
    */
-  export type abandoned_cartsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * The data needed to create a abandoned_carts.
+     * The data needed to create a carts.
      */
-    data: XOR<abandoned_cartsCreateInput, abandoned_cartsUncheckedCreateInput>
+    data: XOR<cartsCreateInput, cartsUncheckedCreateInput>
   }
 
   /**
-   * abandoned_carts createMany
+   * carts createMany
    */
-  export type abandoned_cartsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to create many abandoned_carts.
+     * The data used to create many carts.
      */
-    data: abandoned_cartsCreateManyInput | abandoned_cartsCreateManyInput[]
+    data: cartsCreateManyInput | cartsCreateManyInput[]
   }
 
   /**
-   * abandoned_carts update
+   * carts update
    */
-  export type abandoned_cartsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * The data needed to update a abandoned_carts.
+     * The data needed to update a carts.
      */
-    data: XOR<abandoned_cartsUpdateInput, abandoned_cartsUncheckedUpdateInput>
+    data: XOR<cartsUpdateInput, cartsUncheckedUpdateInput>
     /**
-     * Choose, which abandoned_carts to update.
+     * Choose, which carts to update.
      */
-    where: abandoned_cartsWhereUniqueInput
+    where: cartsWhereUniqueInput
   }
 
   /**
-   * abandoned_carts updateMany
+   * carts updateMany
    */
-  export type abandoned_cartsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * The data used to update abandoned_carts.
+     * The data used to update carts.
      */
-    data: XOR<abandoned_cartsUpdateManyMutationInput, abandoned_cartsUncheckedUpdateManyInput>
+    data: XOR<cartsUpdateManyMutationInput, cartsUncheckedUpdateManyInput>
     /**
-     * Filter which abandoned_carts to update
+     * Filter which carts to update
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
   }
 
   /**
-   * abandoned_carts upsert
+   * carts upsert
    */
-  export type abandoned_cartsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * The filter to search for the abandoned_carts to update in case it exists.
+     * The filter to search for the carts to update in case it exists.
      */
-    where: abandoned_cartsWhereUniqueInput
+    where: cartsWhereUniqueInput
     /**
-     * In case the abandoned_carts found by the `where` argument doesn't exist, create a new abandoned_carts with this data.
+     * In case the carts found by the `where` argument doesn't exist, create a new carts with this data.
      */
-    create: XOR<abandoned_cartsCreateInput, abandoned_cartsUncheckedCreateInput>
+    create: XOR<cartsCreateInput, cartsUncheckedCreateInput>
     /**
-     * In case the abandoned_carts was found with the provided `where` argument, update it with this data.
+     * In case the carts was found with the provided `where` argument, update it with this data.
      */
-    update: XOR<abandoned_cartsUpdateInput, abandoned_cartsUncheckedUpdateInput>
+    update: XOR<cartsUpdateInput, cartsUncheckedUpdateInput>
   }
 
   /**
-   * abandoned_carts delete
+   * carts delete
    */
-  export type abandoned_cartsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
     /**
-     * Filter which abandoned_carts to delete.
+     * Filter which carts to delete.
      */
-    where: abandoned_cartsWhereUniqueInput
+    where: cartsWhereUniqueInput
   }
 
   /**
-   * abandoned_carts deleteMany
+   * carts deleteMany
    */
-  export type abandoned_cartsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Filter which abandoned_carts to delete
+     * Filter which carts to delete
      */
-    where?: abandoned_cartsWhereInput
+    where?: cartsWhereInput
   }
 
   /**
-   * abandoned_carts findRaw
+   * carts findRaw
    */
-  export type abandoned_cartsFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
      */
@@ -20962,9 +21069,9 @@ export namespace Prisma {
   }
 
   /**
-   * abandoned_carts aggregateRaw
+   * carts aggregateRaw
    */
-  export type abandoned_cartsAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
      */
@@ -20976,13 +21083,13 @@ export namespace Prisma {
   }
 
   /**
-   * abandoned_carts without action
+   * carts without action
    */
-  export type abandoned_cartsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+  export type cartsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
-     * Select specific fields to fetch from the abandoned_carts
+     * Select specific fields to fetch from the carts
      */
-    select?: abandoned_cartsSelect<ExtArgs> | null
+    select?: cartsSelect<ExtArgs> | null
   }
 
 
@@ -22053,6 +22160,13 @@ export namespace Prisma {
     packaging_charge: 'packaging_charge',
     base_delivery_charge: 'base_delivery_charge',
     free_delivery_threshold: 'free_delivery_threshold',
+    legalName: 'legalName',
+    gstin: 'gstin',
+    fssaiLicenseNumber: 'fssaiLicenseNumber',
+    registeredAddress: 'registeredAddress',
+    invoiceJurisdiction: 'invoiceJurisdiction',
+    locationCode: 'locationCode',
+    codAutoAcceptLimit: 'codAutoAcceptLimit',
     availableCities: 'availableCities',
     cityDeliveryTimes: 'cityDeliveryTimes',
     areaPincodes: 'areaPincodes',
@@ -22121,6 +22235,8 @@ export namespace Prisma {
     category: 'category',
     subCategory: 'subCategory',
     short_description: 'short_description',
+    hsnCode: 'hsnCode',
+    gstRatePercent: 'gstRatePercent',
     tags: 'tags',
     sizes: 'sizes',
     sizePricing: 'sizePricing',
@@ -22233,7 +22349,7 @@ export namespace Prisma {
   export type SignupAccessCodeScalarFieldEnum = (typeof SignupAccessCodeScalarFieldEnum)[keyof typeof SignupAccessCodeScalarFieldEnum]
 
 
-  export const Abandoned_cartsScalarFieldEnum: {
+  export const CartsScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
     items: 'items',
@@ -22247,7 +22363,7 @@ export namespace Prisma {
     createdAt: 'createdAt'
   };
 
-  export type Abandoned_cartsScalarFieldEnum = (typeof Abandoned_cartsScalarFieldEnum)[keyof typeof Abandoned_cartsScalarFieldEnum]
+  export type CartsScalarFieldEnum = (typeof CartsScalarFieldEnum)[keyof typeof CartsScalarFieldEnum]
 
 
   export const Product_viewsScalarFieldEnum: {
@@ -23116,6 +23232,13 @@ export namespace Prisma {
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
     free_delivery_threshold?: FloatFilter<"stores"> | number
+    legalName?: StringNullableFilter<"stores"> | string | null
+    gstin?: StringNullableFilter<"stores"> | string | null
+    fssaiLicenseNumber?: StringNullableFilter<"stores"> | string | null
+    registeredAddress?: StringNullableFilter<"stores"> | string | null
+    invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
+    locationCode?: StringNullableFilter<"stores"> | string | null
+    codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -23158,6 +23281,13 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    legalName?: SortOrder
+    gstin?: SortOrder
+    fssaiLicenseNumber?: SortOrder
+    registeredAddress?: SortOrder
+    invoiceJurisdiction?: SortOrder
+    locationCode?: SortOrder
+    codAutoAcceptLimit?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -23204,6 +23334,13 @@ export namespace Prisma {
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
     free_delivery_threshold?: FloatFilter<"stores"> | number
+    legalName?: StringNullableFilter<"stores"> | string | null
+    gstin?: StringNullableFilter<"stores"> | string | null
+    fssaiLicenseNumber?: StringNullableFilter<"stores"> | string | null
+    registeredAddress?: StringNullableFilter<"stores"> | string | null
+    invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
+    locationCode?: StringNullableFilter<"stores"> | string | null
+    codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -23245,6 +23382,13 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    legalName?: SortOrder
+    gstin?: SortOrder
+    fssaiLicenseNumber?: SortOrder
+    registeredAddress?: SortOrder
+    invoiceJurisdiction?: SortOrder
+    locationCode?: SortOrder
+    codAutoAcceptLimit?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -23290,6 +23434,13 @@ export namespace Prisma {
     packaging_charge?: FloatWithAggregatesFilter<"stores"> | number
     base_delivery_charge?: FloatWithAggregatesFilter<"stores"> | number
     free_delivery_threshold?: FloatWithAggregatesFilter<"stores"> | number
+    legalName?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    gstin?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    fssaiLicenseNumber?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    registeredAddress?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    invoiceJurisdiction?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    locationCode?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    codAutoAcceptLimit?: FloatNullableWithAggregatesFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableWithAggregatesFilter<"stores">
     areaPincodes?: JsonNullableWithAggregatesFilter<"stores">
@@ -23517,6 +23668,8 @@ export namespace Prisma {
     category?: StringFilter<"products"> | string
     subCategory?: StringFilter<"products"> | string
     short_description?: StringFilter<"products"> | string
+    hsnCode?: StringNullableFilter<"products"> | string | null
+    gstRatePercent?: FloatNullableFilter<"products"> | number | null
     tags?: StringNullableListFilter<"products">
     sizes?: StringNullableListFilter<"products">
     sizePricing?: JsonNullableFilter<"products">
@@ -23571,6 +23724,8 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    hsnCode?: SortOrder
+    gstRatePercent?: SortOrder
     tags?: SortOrder
     sizes?: SortOrder
     sizePricing?: SortOrder
@@ -23628,6 +23783,8 @@ export namespace Prisma {
     category?: StringFilter<"products"> | string
     subCategory?: StringFilter<"products"> | string
     short_description?: StringFilter<"products"> | string
+    hsnCode?: StringNullableFilter<"products"> | string | null
+    gstRatePercent?: FloatNullableFilter<"products"> | number | null
     tags?: StringNullableListFilter<"products">
     sizes?: StringNullableListFilter<"products">
     sizePricing?: JsonNullableFilter<"products">
@@ -23682,6 +23839,8 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    hsnCode?: SortOrder
+    gstRatePercent?: SortOrder
     tags?: SortOrder
     sizes?: SortOrder
     sizePricing?: SortOrder
@@ -23737,6 +23896,8 @@ export namespace Prisma {
     category?: StringWithAggregatesFilter<"products"> | string
     subCategory?: StringWithAggregatesFilter<"products"> | string
     short_description?: StringWithAggregatesFilter<"products"> | string
+    hsnCode?: StringNullableWithAggregatesFilter<"products"> | string | null
+    gstRatePercent?: FloatNullableWithAggregatesFilter<"products"> | number | null
     tags?: StringNullableListFilter<"products">
     sizes?: StringNullableListFilter<"products">
     sizePricing?: JsonNullableWithAggregatesFilter<"products">
@@ -24130,24 +24291,24 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"SignupAccessCode"> | Date | string
   }
 
-  export type abandoned_cartsWhereInput = {
-    AND?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
-    OR?: abandoned_cartsWhereInput[]
-    NOT?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
-    id?: StringFilter<"abandoned_carts"> | string
-    userId?: StringFilter<"abandoned_carts"> | string
-    items?: JsonNullableListFilter<"abandoned_carts">
-    storeId?: StringNullableFilter<"abandoned_carts"> | string | null
-    storeName?: StringNullableFilter<"abandoned_carts"> | string | null
-    totalAmount?: FloatFilter<"abandoned_carts"> | number
-    notifiedAt?: DateTimeNullableFilter<"abandoned_carts"> | Date | string | null
-    isConverted?: BoolFilter<"abandoned_carts"> | boolean
-    notifyStage?: IntFilter<"abandoned_carts"> | number
-    lastUpdatedAt?: DateTimeFilter<"abandoned_carts"> | Date | string
-    createdAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+  export type cartsWhereInput = {
+    AND?: cartsWhereInput | cartsWhereInput[]
+    OR?: cartsWhereInput[]
+    NOT?: cartsWhereInput | cartsWhereInput[]
+    id?: StringFilter<"carts"> | string
+    userId?: StringFilter<"carts"> | string
+    items?: JsonNullableListFilter<"carts">
+    storeId?: StringNullableFilter<"carts"> | string | null
+    storeName?: StringNullableFilter<"carts"> | string | null
+    totalAmount?: FloatFilter<"carts"> | number
+    notifiedAt?: DateTimeNullableFilter<"carts"> | Date | string | null
+    isConverted?: BoolFilter<"carts"> | boolean
+    notifyStage?: IntFilter<"carts"> | number
+    lastUpdatedAt?: DateTimeFilter<"carts"> | Date | string
+    createdAt?: DateTimeFilter<"carts"> | Date | string
   }
 
-  export type abandoned_cartsOrderByWithRelationInput = {
+  export type cartsOrderByWithRelationInput = {
     id?: SortOrder
     userId?: SortOrder
     items?: SortOrder
@@ -24161,24 +24322,24 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type abandoned_cartsWhereUniqueInput = Prisma.AtLeast<{
+  export type cartsWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     userId?: string
-    AND?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
-    OR?: abandoned_cartsWhereInput[]
-    NOT?: abandoned_cartsWhereInput | abandoned_cartsWhereInput[]
-    items?: JsonNullableListFilter<"abandoned_carts">
-    storeId?: StringNullableFilter<"abandoned_carts"> | string | null
-    storeName?: StringNullableFilter<"abandoned_carts"> | string | null
-    totalAmount?: FloatFilter<"abandoned_carts"> | number
-    notifiedAt?: DateTimeNullableFilter<"abandoned_carts"> | Date | string | null
-    isConverted?: BoolFilter<"abandoned_carts"> | boolean
-    notifyStage?: IntFilter<"abandoned_carts"> | number
-    lastUpdatedAt?: DateTimeFilter<"abandoned_carts"> | Date | string
-    createdAt?: DateTimeFilter<"abandoned_carts"> | Date | string
+    AND?: cartsWhereInput | cartsWhereInput[]
+    OR?: cartsWhereInput[]
+    NOT?: cartsWhereInput | cartsWhereInput[]
+    items?: JsonNullableListFilter<"carts">
+    storeId?: StringNullableFilter<"carts"> | string | null
+    storeName?: StringNullableFilter<"carts"> | string | null
+    totalAmount?: FloatFilter<"carts"> | number
+    notifiedAt?: DateTimeNullableFilter<"carts"> | Date | string | null
+    isConverted?: BoolFilter<"carts"> | boolean
+    notifyStage?: IntFilter<"carts"> | number
+    lastUpdatedAt?: DateTimeFilter<"carts"> | Date | string
+    createdAt?: DateTimeFilter<"carts"> | Date | string
   }, "id" | "userId">
 
-  export type abandoned_cartsOrderByWithAggregationInput = {
+  export type cartsOrderByWithAggregationInput = {
     id?: SortOrder
     userId?: SortOrder
     items?: SortOrder
@@ -24190,28 +24351,28 @@ export namespace Prisma {
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
-    _count?: abandoned_cartsCountOrderByAggregateInput
-    _avg?: abandoned_cartsAvgOrderByAggregateInput
-    _max?: abandoned_cartsMaxOrderByAggregateInput
-    _min?: abandoned_cartsMinOrderByAggregateInput
-    _sum?: abandoned_cartsSumOrderByAggregateInput
+    _count?: cartsCountOrderByAggregateInput
+    _avg?: cartsAvgOrderByAggregateInput
+    _max?: cartsMaxOrderByAggregateInput
+    _min?: cartsMinOrderByAggregateInput
+    _sum?: cartsSumOrderByAggregateInput
   }
 
-  export type abandoned_cartsScalarWhereWithAggregatesInput = {
-    AND?: abandoned_cartsScalarWhereWithAggregatesInput | abandoned_cartsScalarWhereWithAggregatesInput[]
-    OR?: abandoned_cartsScalarWhereWithAggregatesInput[]
-    NOT?: abandoned_cartsScalarWhereWithAggregatesInput | abandoned_cartsScalarWhereWithAggregatesInput[]
-    id?: StringWithAggregatesFilter<"abandoned_carts"> | string
-    userId?: StringWithAggregatesFilter<"abandoned_carts"> | string
-    items?: JsonNullableListFilter<"abandoned_carts">
-    storeId?: StringNullableWithAggregatesFilter<"abandoned_carts"> | string | null
-    storeName?: StringNullableWithAggregatesFilter<"abandoned_carts"> | string | null
-    totalAmount?: FloatWithAggregatesFilter<"abandoned_carts"> | number
-    notifiedAt?: DateTimeNullableWithAggregatesFilter<"abandoned_carts"> | Date | string | null
-    isConverted?: BoolWithAggregatesFilter<"abandoned_carts"> | boolean
-    notifyStage?: IntWithAggregatesFilter<"abandoned_carts"> | number
-    lastUpdatedAt?: DateTimeWithAggregatesFilter<"abandoned_carts"> | Date | string
-    createdAt?: DateTimeWithAggregatesFilter<"abandoned_carts"> | Date | string
+  export type cartsScalarWhereWithAggregatesInput = {
+    AND?: cartsScalarWhereWithAggregatesInput | cartsScalarWhereWithAggregatesInput[]
+    OR?: cartsScalarWhereWithAggregatesInput[]
+    NOT?: cartsScalarWhereWithAggregatesInput | cartsScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"carts"> | string
+    userId?: StringWithAggregatesFilter<"carts"> | string
+    items?: JsonNullableListFilter<"carts">
+    storeId?: StringNullableWithAggregatesFilter<"carts"> | string | null
+    storeName?: StringNullableWithAggregatesFilter<"carts"> | string | null
+    totalAmount?: FloatWithAggregatesFilter<"carts"> | number
+    notifiedAt?: DateTimeNullableWithAggregatesFilter<"carts"> | Date | string | null
+    isConverted?: BoolWithAggregatesFilter<"carts"> | boolean
+    notifyStage?: IntWithAggregatesFilter<"carts"> | number
+    lastUpdatedAt?: DateTimeWithAggregatesFilter<"carts"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"carts"> | Date | string
   }
 
   export type product_viewsWhereInput = {
@@ -25009,6 +25170,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25050,6 +25218,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25088,6 +25263,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25128,6 +25310,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25168,6 +25357,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25203,6 +25399,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25238,6 +25441,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25452,6 +25662,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -25503,6 +25715,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -25553,6 +25767,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -25603,6 +25819,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -25654,6 +25872,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -25700,6 +25920,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -25743,6 +25965,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -26168,10 +26392,10 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type abandoned_cartsCreateInput = {
+  export type cartsCreateInput = {
     id?: string
     userId: string
-    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    items?: cartsCreateitemsInput | InputJsonValue[]
     storeId?: string | null
     storeName?: string | null
     totalAmount?: number
@@ -26182,10 +26406,10 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
-  export type abandoned_cartsUncheckedCreateInput = {
+  export type cartsUncheckedCreateInput = {
     id?: string
     userId: string
-    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    items?: cartsCreateitemsInput | InputJsonValue[]
     storeId?: string | null
     storeName?: string | null
     totalAmount?: number
@@ -26196,9 +26420,9 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
-  export type abandoned_cartsUpdateInput = {
+  export type cartsUpdateInput = {
     userId?: StringFieldUpdateOperationsInput | string
-    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    items?: cartsUpdateitemsInput | InputJsonValue[]
     storeId?: NullableStringFieldUpdateOperationsInput | string | null
     storeName?: NullableStringFieldUpdateOperationsInput | string | null
     totalAmount?: FloatFieldUpdateOperationsInput | number
@@ -26209,9 +26433,9 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type abandoned_cartsUncheckedUpdateInput = {
+  export type cartsUncheckedUpdateInput = {
     userId?: StringFieldUpdateOperationsInput | string
-    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    items?: cartsUpdateitemsInput | InputJsonValue[]
     storeId?: NullableStringFieldUpdateOperationsInput | string | null
     storeName?: NullableStringFieldUpdateOperationsInput | string | null
     totalAmount?: FloatFieldUpdateOperationsInput | number
@@ -26222,10 +26446,10 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type abandoned_cartsCreateManyInput = {
+  export type cartsCreateManyInput = {
     id?: string
     userId: string
-    items?: abandoned_cartsCreateitemsInput | InputJsonValue[]
+    items?: cartsCreateitemsInput | InputJsonValue[]
     storeId?: string | null
     storeName?: string | null
     totalAmount?: number
@@ -26236,9 +26460,9 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
-  export type abandoned_cartsUpdateManyMutationInput = {
+  export type cartsUpdateManyMutationInput = {
     userId?: StringFieldUpdateOperationsInput | string
-    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    items?: cartsUpdateitemsInput | InputJsonValue[]
     storeId?: NullableStringFieldUpdateOperationsInput | string | null
     storeName?: NullableStringFieldUpdateOperationsInput | string | null
     totalAmount?: FloatFieldUpdateOperationsInput | number
@@ -26249,9 +26473,9 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type abandoned_cartsUncheckedUpdateManyInput = {
+  export type cartsUncheckedUpdateManyInput = {
     userId?: StringFieldUpdateOperationsInput | string
-    items?: abandoned_cartsUpdateitemsInput | InputJsonValue[]
+    items?: cartsUpdateitemsInput | InputJsonValue[]
     storeId?: NullableStringFieldUpdateOperationsInput | string | null
     storeName?: NullableStringFieldUpdateOperationsInput | string | null
     totalAmount?: FloatFieldUpdateOperationsInput | number
@@ -27203,6 +27427,13 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    legalName?: SortOrder
+    gstin?: SortOrder
+    fssaiLicenseNumber?: SortOrder
+    registeredAddress?: SortOrder
+    invoiceJurisdiction?: SortOrder
+    locationCode?: SortOrder
+    codAutoAcceptLimit?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -27228,6 +27459,7 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    codAutoAcceptLimit?: SortOrder
   }
 
   export type storesMaxOrderByAggregateInput = {
@@ -27248,6 +27480,13 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    legalName?: SortOrder
+    gstin?: SortOrder
+    fssaiLicenseNumber?: SortOrder
+    registeredAddress?: SortOrder
+    invoiceJurisdiction?: SortOrder
+    locationCode?: SortOrder
+    codAutoAcceptLimit?: SortOrder
     state?: SortOrder
     supportPhone?: SortOrder
     whatsappNumber?: SortOrder
@@ -27280,6 +27519,13 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    legalName?: SortOrder
+    gstin?: SortOrder
+    fssaiLicenseNumber?: SortOrder
+    registeredAddress?: SortOrder
+    invoiceJurisdiction?: SortOrder
+    locationCode?: SortOrder
+    codAutoAcceptLimit?: SortOrder
     state?: SortOrder
     supportPhone?: SortOrder
     whatsappNumber?: SortOrder
@@ -27300,6 +27546,7 @@ export namespace Prisma {
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
+    codAutoAcceptLimit?: SortOrder
   }
 
   export type UsersRelationFilter = {
@@ -27455,6 +27702,8 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    hsnCode?: SortOrder
+    gstRatePercent?: SortOrder
     tags?: SortOrder
     sizes?: SortOrder
     sizePricing?: SortOrder
@@ -27495,6 +27744,7 @@ export namespace Prisma {
   }
 
   export type productsAvgOrderByAggregateInput = {
+    gstRatePercent?: SortOrder
     basePricePerKg?: SortOrder
     basePricePerUnit?: SortOrder
     stock?: SortOrder
@@ -27512,6 +27762,8 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    hsnCode?: SortOrder
+    gstRatePercent?: SortOrder
     basePricePerKg?: SortOrder
     basePricePerUnit?: SortOrder
     pricingMethod?: SortOrder
@@ -27549,6 +27801,8 @@ export namespace Prisma {
     category?: SortOrder
     subCategory?: SortOrder
     short_description?: SortOrder
+    hsnCode?: SortOrder
+    gstRatePercent?: SortOrder
     basePricePerKg?: SortOrder
     basePricePerUnit?: SortOrder
     pricingMethod?: SortOrder
@@ -27579,6 +27833,7 @@ export namespace Prisma {
   }
 
   export type productsSumOrderByAggregateInput = {
+    gstRatePercent?: SortOrder
     basePricePerKg?: SortOrder
     basePricePerUnit?: SortOrder
     stock?: SortOrder
@@ -27810,7 +28065,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type abandoned_cartsCountOrderByAggregateInput = {
+  export type cartsCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     items?: SortOrder
@@ -27824,12 +28079,12 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type abandoned_cartsAvgOrderByAggregateInput = {
+  export type cartsAvgOrderByAggregateInput = {
     totalAmount?: SortOrder
     notifyStage?: SortOrder
   }
 
-  export type abandoned_cartsMaxOrderByAggregateInput = {
+  export type cartsMaxOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     storeId?: SortOrder
@@ -27842,7 +28097,7 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type abandoned_cartsMinOrderByAggregateInput = {
+  export type cartsMinOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     storeId?: SortOrder
@@ -27855,7 +28110,7 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type abandoned_cartsSumOrderByAggregateInput = {
+  export type cartsSumOrderByAggregateInput = {
     totalAmount?: SortOrder
     notifyStage?: SortOrder
   }
@@ -29301,11 +29556,11 @@ export namespace Prisma {
     update?: XOR<XOR<storesUpdateToOneWithWhereWithoutCombosInput, storesUpdateWithoutCombosInput>, storesUncheckedUpdateWithoutCombosInput>
   }
 
-  export type abandoned_cartsCreateitemsInput = {
+  export type cartsCreateitemsInput = {
     set: InputJsonValue[]
   }
 
-  export type abandoned_cartsUpdateitemsInput = {
+  export type cartsUpdateitemsInput = {
     set?: InputJsonValue[]
     push?: InputJsonValue | InputJsonValue[]
   }
@@ -29703,6 +29958,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -29753,6 +30010,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -29925,6 +30184,8 @@ export namespace Prisma {
     category?: StringFilter<"products"> | string
     subCategory?: StringFilter<"products"> | string
     short_description?: StringFilter<"products"> | string
+    hsnCode?: StringNullableFilter<"products"> | string | null
+    gstRatePercent?: FloatNullableFilter<"products"> | number | null
     tags?: StringNullableListFilter<"products">
     sizes?: StringNullableListFilter<"products">
     sizePricing?: JsonNullableFilter<"products">
@@ -30049,6 +30310,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -30099,6 +30362,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -30206,6 +30471,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -30245,6 +30517,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -30343,6 +30622,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -30392,6 +30673,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -30506,6 +30789,13 @@ export namespace Prisma {
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
     free_delivery_threshold?: FloatFilter<"stores"> | number
+    legalName?: StringNullableFilter<"stores"> | string | null
+    gstin?: StringNullableFilter<"stores"> | string | null
+    fssaiLicenseNumber?: StringNullableFilter<"stores"> | string | null
+    registeredAddress?: StringNullableFilter<"stores"> | string | null
+    invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
+    locationCode?: StringNullableFilter<"stores"> | string | null
+    codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -31118,6 +31408,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31158,6 +31455,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31361,6 +31665,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31400,6 +31711,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31538,6 +31856,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31578,6 +31903,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31707,6 +32039,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31746,6 +32085,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31843,6 +32189,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -31893,6 +32241,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -32216,6 +32566,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -32266,6 +32618,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -32374,6 +32728,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -32423,6 +32779,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -32512,6 +32870,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -32562,6 +32922,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -32670,6 +33032,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -32719,6 +33083,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -32859,6 +33225,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -32899,6 +33272,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -32960,6 +33340,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -33010,6 +33392,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -33065,6 +33449,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -33115,6 +33501,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -33253,6 +33641,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33292,6 +33687,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33362,6 +33764,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -33411,6 +33815,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -33716,6 +34122,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -33756,6 +34169,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -33809,6 +34229,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33848,6 +34275,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33877,6 +34311,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -33959,6 +34395,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -34008,6 +34446,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -34057,6 +34497,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -34234,6 +34676,13 @@ export namespace Prisma {
     packaging_charge?: number
     base_delivery_charge?: number
     free_delivery_threshold?: number
+    legalName?: string | null
+    gstin?: string | null
+    fssaiLicenseNumber?: string | null
+    registeredAddress?: string | null
+    invoiceJurisdiction?: string | null
+    locationCode?: string | null
+    codAutoAcceptLimit?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -34335,6 +34784,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34373,6 +34829,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34411,6 +34874,13 @@ export namespace Prisma {
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
     free_delivery_threshold?: FloatFieldUpdateOperationsInput | number
+    legalName?: NullableStringFieldUpdateOperationsInput | string | null
+    gstin?: NullableStringFieldUpdateOperationsInput | string | null
+    fssaiLicenseNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
+    invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
+    locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34852,6 +35322,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -34930,6 +35402,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -34979,6 +35453,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -35028,6 +35504,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -35191,6 +35669,8 @@ export namespace Prisma {
     category: string
     subCategory: string
     short_description: string
+    hsnCode?: string | null
+    gstRatePercent?: number | null
     tags?: productsCreatetagsInput | string[]
     sizes?: productsCreatesizesInput | string[]
     sizePricing?: InputJsonValue | null
@@ -35305,6 +35785,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -35354,6 +35836,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -35403,6 +35887,8 @@ export namespace Prisma {
     category?: StringFieldUpdateOperationsInput | string
     subCategory?: StringFieldUpdateOperationsInput | string
     short_description?: StringFieldUpdateOperationsInput | string
+    hsnCode?: NullableStringFieldUpdateOperationsInput | string | null
+    gstRatePercent?: NullableFloatFieldUpdateOperationsInput | number | null
     tags?: productsUpdatetagsInput | string[]
     sizes?: productsUpdatesizesInput | string[]
     sizePricing?: InputJsonValue | InputJsonValue | null
@@ -35539,9 +36025,9 @@ export namespace Prisma {
      */
     export type SignupAccessCodeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SignupAccessCodeDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use abandoned_cartsDefaultArgs instead
+     * @deprecated Use cartsDefaultArgs instead
      */
-    export type abandoned_cartsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = abandoned_cartsDefaultArgs<ExtArgs>
+    export type cartsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = cartsDefaultArgs<ExtArgs>
     /**
      * @deprecated Use product_viewsDefaultArgs instead
      */

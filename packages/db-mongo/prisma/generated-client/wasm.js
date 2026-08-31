@@ -231,6 +231,13 @@ exports.Prisma.StoresScalarFieldEnum = {
   packaging_charge: 'packaging_charge',
   base_delivery_charge: 'base_delivery_charge',
   free_delivery_threshold: 'free_delivery_threshold',
+  legalName: 'legalName',
+  gstin: 'gstin',
+  fssaiLicenseNumber: 'fssaiLicenseNumber',
+  registeredAddress: 'registeredAddress',
+  invoiceJurisdiction: 'invoiceJurisdiction',
+  locationCode: 'locationCode',
+  codAutoAcceptLimit: 'codAutoAcceptLimit',
   availableCities: 'availableCities',
   cityDeliveryTimes: 'cityDeliveryTimes',
   areaPincodes: 'areaPincodes',
@@ -287,6 +294,8 @@ exports.Prisma.ProductsScalarFieldEnum = {
   category: 'category',
   subCategory: 'subCategory',
   short_description: 'short_description',
+  hsnCode: 'hsnCode',
+  gstRatePercent: 'gstRatePercent',
   tags: 'tags',
   sizes: 'sizes',
   sizePricing: 'sizePricing',
@@ -384,7 +393,7 @@ exports.Prisma.SignupAccessCodeScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.Abandoned_cartsScalarFieldEnum = {
+exports.Prisma.CartsScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   items: 'items',
@@ -474,7 +483,7 @@ exports.Prisma.ModelName = {
   seller_events: 'seller_events',
   combos: 'combos',
   SignupAccessCode: 'SignupAccessCode',
-  abandoned_carts: 'abandoned_carts',
+  carts: 'carts',
   product_views: 'product_views'
 };
 

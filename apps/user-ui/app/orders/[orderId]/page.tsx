@@ -50,7 +50,7 @@ import { SLOT_LABELS, getDeliveryEtaMinutes } from "./_components/delivery-eta";
 import { SupportMessageModal } from "@/components/shared/support-message-modal";
 import type { Order } from "@/lib/orders-api";
 import { toast } from "sonner";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
 import { resolvePaymentState } from "@repo/shared/payment-state";
 import { buildTelUrl, buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 import { CUSTOMER_CANCEL_REASONS } from "@repo/zod-schema";
@@ -164,7 +164,7 @@ export default function OrderDetailsPage({
     );
   }
 
-  const orderNumber = formatOrderId(order.id);
+  const orderNumber = displayOrderNumber(order);
   const orderStatus = (order.status || "PENDING").toUpperCase();
   const paymentState = resolvePaymentState({
     paymentMethod: order.paymentMethod,

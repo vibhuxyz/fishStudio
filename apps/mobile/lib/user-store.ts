@@ -26,6 +26,28 @@ interface UserStore {
   clearUser: () => Promise<void>;
 }
 
+// Which user id we have already pulled the server cart for. Both loadUser
+// (app start) and updateUser (sign-in, profile refresh) can put the same user
+// in scope repeatedly; the cart should only be merged in once per session or
+// a line the user just deleted would keep reappearing.
+let serverCartLoadedFor: string | null = null;
+
+/**
+ * Merge the account's server-saved cart into the local one, once per user.
+ * Imported lazily so this module keeps no load-time edge to the cart store,
+ * which imports the User type from here.
+ */
+async function restoreServerCartOnce(userId: string | undefined) {
+  if (!userId || serverCartLoadedFor === userId) return;
+  serverCartLoadedFor = userId;
+  try {
+    const { useStore } = await import("../store");
+    await useStore.getState().loadServerCart();
+  } catch {
+    // Non-critical — the local cart is still intact.
+  }
+}
+
 export const useUserStore = create<UserStore>((set) => ({
   user: undefined,
   loaded: false,
@@ -36,6 +58,7 @@ export const useUserStore = create<UserStore>((set) => ({
       if (userString) {
         const user = JSON.parse(userString);
         set({ user, loaded: true });
+        void restoreServerCartOnce(user?.id);
         return user;
       }
       set({ loaded: true });
@@ -51,6 +74,7 @@ export const useUserStore = create<UserStore>((set) => ({
     try {
       await SecureStore.setItemAsync("user", JSON.stringify(user));
       set({ user, loaded: true });
+      void restoreServerCartOnce(user?.id);
     } catch (error) {
       console.error("Error updating user data:", error);
     }
@@ -58,6 +82,9 @@ export const useUserStore = create<UserStore>((set) => ({
 
   clearUser: async () => {
     await SecureStore.deleteItemAsync("user").catch(() => {});
+    // Cleared so signing back in — as the same user or a different one —
+    // pulls the server cart again.
+    serverCartLoadedFor = null;
     set({ user: undefined });
   },
 }));

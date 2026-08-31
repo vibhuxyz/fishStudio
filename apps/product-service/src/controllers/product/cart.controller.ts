@@ -5,10 +5,90 @@ import { distributeComboPrice, comboItemsMatchDefinition, ComboDefinitionItem } 
 import { isStoreOpenNow, isInstantDeliveryAvailableNow } from "@repo/shared/store-hours";
 import { optionalUserId, resolvePreferredStore } from "./storefront.utils.js";
 
-// Keeps the abandoned-cart reminder flow (see checkAbandonedCarts) in sync
-// with the client-held cart. validateCart is the only server touchpoint every
-// cart mutation already goes through, so it doubles as the write path here
-// instead of adding a dedicated endpoint.
+/**
+ * The user's saved cart, for a client that has just signed in on a new device.
+ *
+ * Returns only the stored line identities — product id, quantity, and the
+ * cutting/size options. It deliberately does not resolve titles, prices,
+ * images or stock: the caller merges these lines into its local cart and then
+ * runs its normal validate-cart pass, which is the one place that pricing
+ * lives. Rehydrating here would duplicate that logic and let a restored cart
+ * show a price checkout would not honour.
+ */
+export const getCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = optionalUserId(req);
+    // Not a 401: this is called opportunistically on sign-in, and a guest (or
+    // an expired access token mid-refresh) simply has no server cart to
+    // restore. An error here would surface as a spurious toast.
+    if (!userId) {
+      return res.status(200).json({ success: true, items: [], storeId: null });
+    }
+
+    const cart = await prisma.carts.findUnique({ where: { userId } });
+
+    // isConverted means the cart was checked out; the row is kept only so the
+    // reminder job can tell "ordered" from "still open". Restoring it would
+    // put an already-purchased basket back in front of the customer.
+    if (!cart || cart.isConverted || !Array.isArray(cart.items)) {
+      return res.status(200).json({ success: true, items: [], storeId: null });
+    }
+
+    return res.status(200).json({
+      success: true,
+      items: cart.items,
+      storeId: cart.storeId ?? null,
+      storeName: cart.storeName ?? null,
+      updatedAt: cart.lastUpdatedAt,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Empty the user's saved cart.
+ *
+ * Needed because validateCart — the normal write path — requires at least one
+ * item, so a cart the customer emptied by hand has no way to reach the server
+ * and would otherwise sit there until the reminder job nagged them about a
+ * basket they had already cleared.
+ *
+ * Marks the row converted as well as empty: `isConverted` is what the reminder
+ * job reads, and "the customer deliberately emptied this" is as good a reason
+ * to stop reminding as "they ordered it".
+ */
+export const clearCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = optionalUserId(req);
+    if (!userId) {
+      return res.status(200).json({ success: true });
+    }
+
+    await prisma.carts.updateMany({
+      where: { userId },
+      data: { items: [], totalAmount: 0, isConverted: true },
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Persists the cart on every mutation, and keeps the abandoned-cart reminder
+// flow (see checkAbandonedCarts) in step with it. validateCart is the only
+// server touchpoint every cart mutation on either platform already goes
+// through, so it doubles as the write path here instead of adding a dedicated
+// endpoint the two clients would have to remember to call.
 async function syncAbandonedCart(params: {
   userId: string;
   cartItems: Prisma.InputJsonValue[];
@@ -18,11 +98,11 @@ async function syncAbandonedCart(params: {
 }) {
   const { userId, cartItems, storeId, storeName, totalAmount } = params;
 
-  const existing = await prisma.abandoned_carts.findUnique({ where: { userId } });
+  const existing = await prisma.carts.findUnique({ where: { userId } });
   const itemsChanged =
     !existing || JSON.stringify(existing.items) !== JSON.stringify(cartItems);
 
-  await prisma.abandoned_carts.upsert({
+  await prisma.carts.upsert({
     where: { userId },
     create: { userId, items: cartItems, storeId, storeName, totalAmount },
     update: {

@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -242,7 +242,7 @@ function RejectModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <XCircle size={18} className="text-red-400" />
-            <h3 className="text-white font-semibold text-base">Reject Order {formatOrderId(order.id)}</h3>
+            <h3 className="text-white font-semibold text-base">Reject Order {displayOrderNumber(order)}</h3>
           </div>
           <button
             type="button"
@@ -459,7 +459,7 @@ function OrderDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-900 sticky top-0 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
           <div>
-            <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order {formatOrderId(order.id)}</h2>
+            <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order {displayOrderNumber(order)}</h2>
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
               Placed on {new Date(order.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
@@ -683,7 +683,7 @@ export function OrderCard({
       <div className="flex items-end justify-between mb-5">
         <div>
           <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest mb-0.5">Order Token</p>
-          <p className="text-white font-mono text-sm font-bold tracking-tight">{formatOrderId(order.id)}</p>
+          <p className="text-white font-mono text-sm font-bold tracking-tight">{displayOrderNumber(order)}</p>
         </div>
         <div className="text-right">
           <p className="text-white font-black text-xl italic tracking-tighter">{formatINR(order.total)}</p>
@@ -1110,7 +1110,7 @@ const StaffOrdersPage = () => {
       setDetailTarget(newOrder);
 
       toast.info("New Order Received!", {
-        description: `Order ${raw.id ? formatOrderId(raw.id) : ""} is waiting for review.`,
+        description: `Order ${raw.id ? displayOrderNumber(raw) : ""} is waiting for review.`,
         icon: <Bell className="h-4 w-4 text-blue-500" />,
         duration: 8000,
         position: "top-center",

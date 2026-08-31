@@ -50,6 +50,17 @@ export type CartLineKey = {
   comboId?: string;
 };
 
+/** One line of the server-side cart, as stored by validate-cart. Identities
+ *  and options only — never a product snapshot. */
+type ServerCartLine = {
+  productId: string;
+  quantity?: number;
+  cuttingType?: string;
+  pieceSize?: string;
+  size?: string;
+  comboId?: string;
+};
+
 const matchesLine = (item: CartItem, key: CartLineKey) =>
   item.id === key.id &&
   item.cuttingType === key.cuttingType &&
@@ -68,6 +79,13 @@ type Store = {
   removeComboGroup: (comboId: string, user: User | null | undefined, location: Address | null, deviceInfo: string) => void;
   /** Update quantity for one specific cart line. Removes the line if qty <= 0. */
   updateQuantity: (line: CartLineKey, quantity: number) => void;
+  /**
+   * Pull the account's server-saved cart and merge it into the local one.
+   * Called on sign-in so a cart built on the website follows the user here.
+   * Restored lines carry identity and options only — title, price, image and
+   * stock are filled in by the cart screen's normal validate-cart pass.
+   */
+  loadServerCart: () => Promise<void>;
   /**
    * Async + tap: fetches live stock from the backend before incrementing.
    * Returns { ok: boolean; message?: string } so the UI can show feedback.
@@ -223,8 +241,59 @@ export const useStore = create<Store>()(
         }
       },
 
+      // ── Cross-device restore ──────────────────────────────────────────────
+      loadServerCart: async () => {
+        try {
+          const { data } = await axiosInstance.get("/product/api/cart");
+          const lines: ServerCartLine[] = Array.isArray(data?.items) ? data.items : [];
+          if (!data?.success || lines.length === 0) return;
+
+          set((state) => {
+            const merged = [...state.cart];
+            for (const line of lines) {
+              if (!line?.productId) continue;
+              const key: CartLineKey = {
+                id: line.productId,
+                cuttingType: line.cuttingType,
+                pieceSize: line.pieceSize,
+                selectedSize: line.size,
+                comboId: line.comboId,
+              };
+              // A line the user already has on this device is more current
+              // than the stored copy — leave it alone.
+              if (merged.some((item) => matchesLine(item, key))) continue;
+              merged.push({
+                id: line.productId,
+                // Empty rather than guessed: the cart screen's validate-cart
+                // pass overwrites these, and a blank row reads as loading
+                // where a made-up title would read as wrong.
+                slug: "",
+                title: "",
+                price: 0,
+                image: "",
+                shopId: data.storeId ?? "",
+                quantity: typeof line.quantity === "number" && line.quantity > 0 ? line.quantity : 1,
+                cuttingType: line.cuttingType,
+                pieceSize: line.pieceSize,
+                selectedSize: line.size,
+                ...(line.comboId ? { comboId: line.comboId } : {}),
+              });
+            }
+            return { cart: merged };
+          });
+        } catch {
+          // Non-critical — fall back to whatever AsyncStorage already holds.
+        }
+      },
+
       // ── Clear cart ────────────────────────────────────────────────────────
-      clearCart: () => set({ cart: [] }),
+      clearCart: () => {
+        set({ cart: [] });
+        // validate-cart cannot express an empty cart (it requires >= 1 item),
+        // so without this the server would keep the last non-empty snapshot
+        // and push it back to the web on next sign-in.
+        axiosInstance.post("/product/api/cart/clear", {}).catch(() => {});
+      },
 
       // ── Wishlist ──────────────────────────────────────────────────────────
       addToWishlist: (product, user, location, deviceInfo) => {

@@ -22,7 +22,7 @@ import {
   getStoreProducts,
   getStorePublicOffers,
 } from "../controllers/product/storefront.controller.js";
-import { validateCart } from "../controllers/product/cart.controller.js";
+import { validateCart, getCart, clearCart } from "../controllers/product/cart.controller.js";
 import {
   getHomepageSections,
   getSectionProducts,
@@ -43,6 +43,7 @@ import {
 import {
   createDiscountCodes,
   deleteDiscountCode,
+  updateDiscountCode,
   getDiscountCodes,
   toggleCouponStatus,
   validateCoupon,
@@ -143,6 +144,15 @@ router.put(
   isAuthenticated,
   allowRoles("seller"),
   updateSellerEvent,
+);
+// Admin may edit any coupon including a seller's own; a seller only their own.
+// Ownership is enforced in the controller, which is the only place that knows
+// who the coupon belongs to.
+router.put(
+  "/update-discount-code/:id",
+  isAuthenticated,
+  allowRoles("admin", "seller"),
+  updateDiscountCode,
 );
 router.delete(
   "/delete-discount-code/:id",
@@ -332,6 +342,11 @@ router.get("/recently-viewed", getRecentlyViewed);
 router.get("/for-you", getForYou);
 router.post("/merge-activity", mergeActivity);
 router.post("/validate-cart", validateCart);
+// Cross-device cart restore. Auth is resolved inside the controller via
+// optionalUserId — same as validate-cart — so a signed-out caller gets an
+// empty cart rather than a 401 it would have to special-case.
+router.get("/cart", getCart);
+router.post("/cart/clear", clearCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
 router.get("/get-product-reviews/:productId", getProductReviews);
 router.get("/get-my-reviews", isAuthenticated, getMyReviews);

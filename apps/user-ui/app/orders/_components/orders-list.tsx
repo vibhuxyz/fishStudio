@@ -7,7 +7,7 @@ import { Package, Clock, CheckCircle2, Truck, XCircle, ChevronRight, ShoppingBag
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/lib/orders-api";
 import { OrdersSkeleton } from "./orders-skeleton";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { resolvePaymentState } from "@repo/shared/payment-state";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -90,12 +90,12 @@ export function OrdersList({ orders, isLoading }: { orders: Order[]; isLoading?:
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-bold text-foreground text-sm line-clamp-1">
-                    {primaryItem?.product?.title || `Order ${order.id ? formatOrderId(order.id) : ""}`}
+                    {primaryItem?.product?.title || `Order ${order.id ? displayOrderNumber(order) : ""}`}
                     {itemCount > 1 && ` + ${itemCount - 1} more`}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      {order.id ? formatOrderId(order.id) : ""}
+                      {order.id ? displayOrderNumber(order) : ""}
                     </p>
                     {order.store?.name && (
                       <>

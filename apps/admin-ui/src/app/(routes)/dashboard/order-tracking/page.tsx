@@ -32,7 +32,7 @@ import {
   type AdminOrder,
   type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 
 /* ── Status badge helper ────────────────────────────────────────────────── */
 const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
@@ -339,7 +339,7 @@ export default function OrderTrackingPage() {
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-800/50 transition group">
                   <td className="px-4 py-3 font-mono text-xs text-blue-400">
-                    {formatOrderId(order.id)}
+                    {displayOrderNumber(order)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-white truncate max-w-[120px]">
@@ -465,7 +465,7 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
         {/* Header */}
         <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-white">Order {formatOrderId(order.id)}</h3>
+            <h3 className="text-lg font-bold text-white">Order {displayOrderNumber(order)}</h3>
             <p className="text-xs text-gray-400 mt-0.5">
               {new Date(order.createdAt).toLocaleString("en-IN")}
             </p>

@@ -5,10 +5,12 @@ import { ENV } from "@repo/env-config";
 // silently rather than loudly.
 import { hashToken } from "@repo/libs/auth-tokens";
 import { redis } from "@repo/libs/redis";
+import { MAX_REFRESH_TTL_SECONDS } from "./roleCookies.js";
 
-// Longest access-token lifetime in the system (user: 7d). We keep blocklist
-// entries for this long so revoked tokens can't be replayed until they expire.
-const MAX_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+// Fallback blocklist lifetime for a token whose own `exp` could not be read.
+// It must cover the longest-lived token in circulation (a customer refresh
+// token, 30d) or a revoked token would outlive the entry that revokes it.
+const MAX_TOKEN_TTL_SECONDS = MAX_REFRESH_TTL_SECONDS;
 
 const computeSecondsUntilExpiry = (token: string): number => {
   try {
@@ -70,7 +72,10 @@ export const getRefreshFamily = async (role: string, id: string): Promise<number
 export const bumpRefreshFamily = async (role: string, id: string): Promise<number> => {
   try {
     const v = await redis.incr(refreshFamilyKey(role, id));
-    await redis.expire(refreshFamilyKey(role, id), MAX_TOKEN_TTL_SECONDS);
+    // Refreshed on every bump, and never shorter than the longest refresh
+    // token: if this key expired first, getRefreshFamily would fall back to 0
+    // and a token revoked at logout would start validating again.
+    await redis.expire(refreshFamilyKey(role, id), MAX_REFRESH_TTL_SECONDS);
     return v;
   } catch {
     return 0;

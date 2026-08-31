@@ -17,6 +17,9 @@ interface BillSummaryProps {
   onPlaceOrder: () => void;
   isLoading?: boolean;
   disabled?: boolean;
+  /** Label for the action button. Checkout switches this to "Retry Payment"
+   *  when a previous attempt on the same order did not complete. */
+  actionLabel?: string;
 }
 
 export function BillSummary({
@@ -31,6 +34,7 @@ export function BillSummary({
   onPlaceOrder,
   isLoading,
   disabled,
+  actionLabel = "Place Order",
 }: BillSummaryProps) {
   const totalPayable = itemTotal + deliveryCharge + extraCharge + packagingCharge + gstAmount - discount;
 
@@ -127,7 +131,7 @@ export function BillSummary({
             <span>Processing...</span>
           </div>
         ) : (
-          "Place Order"
+          actionLabel
         )}
       </Button>
     </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Package, User, Loader2, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import useStaffRequestConfig from "@/hooks/useStaffRequestConfig";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import { ItemThumbnails, itemsSummary } from "@/shared/components/staff/item-thumbnails";
@@ -60,7 +60,7 @@ const CuttingOrdersPage = () => {
               className="block bg-[#0f1117] border border-gray-800 rounded-xl p-4 active:border-emerald-700/60 transition"
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-white font-semibold text-sm">Order {formatOrderId(order.id)}</p>
+                <p className="text-white font-semibold text-sm">Order {displayOrderNumber(order)}</p>
                 <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/50 text-emerald-300">
                   {order.status === "PREPARING" ? "Preparing" : "Accepted"}
                 </span>

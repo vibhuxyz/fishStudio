@@ -3,6 +3,7 @@ import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { redis } from "@repo/libs/redis";
 import { cached as cachedRead } from "@repo/libs/cache";
+import { logger } from "@repo/libs/logger";
 import { AuthRequest, getCategoryConfigKey } from "./utils.js";
 import {
   categorySchema,
@@ -22,8 +23,19 @@ const SITE_CONFIG_TTL = 600; // 10 minutes
 // Read and write of this key now go through `cachedRead` in getCategories,
 // which stores its own envelope format — a hand-rolled get/set here would
 // write a shape it can't read back.
-const invalidateSiteConfigCache = () => {
-  redis.del(SITE_CONFIG_CACHE_KEY).catch(() => {});
+// Must be awaited before the write responds. Fire-and-forget raced the admin
+// UI's refetch, which invalidates its React Query cache the moment the mutation
+// resolves — the refetch could reach getCategories before the DEL landed and
+// re-populate Redis with the pre-edit document, so a changed category image
+// appeared not to save until the 10-minute TTL lapsed.
+const invalidateSiteConfigCache = async () => {
+  try {
+    await redis.del(SITE_CONFIG_CACHE_KEY);
+  } catch (err) {
+    // A stale category list self-heals at the TTL, so this must not fail the
+    // write that already committed — but it is never silent.
+    logger.error("[category] failed to invalidate site config cache", { err });
+  }
 };
 
 // Storefront callers pass ?activeOnly=true to hide inactive categories/subcategories;
@@ -168,7 +180,7 @@ export const createCategory = async (
         categoryImages,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(201).json({
       success: true,
       message: "Category created successfully",
@@ -222,7 +234,7 @@ export const createSubCategory = async (
         subCategories,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(201).json({
       success: true,
       message: "Subcategory created successfully",
@@ -285,7 +297,7 @@ export const deleteCategory = async (
         categoryImages,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(200).json({
       success: true,
       message: "Category deleted successfully",
@@ -351,7 +363,7 @@ export const deleteSubCategory = async (
         subCategories,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(200).json({
       success: true,
       message: "Subcategory deleted successfully",
@@ -471,7 +483,7 @@ export const updateCategory = async (
         subCategoryStatus,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(200).json({
       success: true,
       message: "Category updated successfully",
@@ -566,7 +578,7 @@ export const updateSubCategory = async (
         subCategoryStatus,
       },
     });
-    invalidateSiteConfigCache();
+    await invalidateSiteConfigCache();
     return res.status(200).json({
       success: true,
       message: "Subcategory updated successfully",

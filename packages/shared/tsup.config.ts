@@ -5,6 +5,7 @@ export default defineConfig((options) => ({
     "pricing/index": "src/pricing/index.ts",
     "slug/index": "src/slug/index.ts",
     "order-id/index": "src/order-id/index.ts",
+    "invoice/index": "src/invoice/index.ts",
     "payment-id/index": "src/payment-id/index.ts",
     "payment-state/index": "src/payment-state/index.ts",
     "whatsapp/index": "src/whatsapp/index.ts",

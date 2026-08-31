@@ -11,6 +11,7 @@ import {
   createCouponSchema,
   validateCouponSchema,
   toggleCouponStatusSchema,
+  updateCouponSchema,
   validate,
 } from "@repo/zod-schema";
 import { PLACED_ORDER_STATUSES } from "@repo/shared/pricing";
@@ -131,6 +132,87 @@ export const deleteDiscountCode = async (
     res
       .status(200)
       .json({ success: true, message: "Discount code deleted successfully!" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ─── Update ──────────────────────────────────────────────────────────────── */
+/**
+ * Edit an existing coupon.
+ *
+ * An admin may edit any coupon, including one a seller created — that is the
+ * "master admin can do everything a seller can, with more rights" requirement.
+ * A seller may only edit their own.
+ *
+ * `discountCode` and `sellerId` are not editable; see the note on
+ * updateCouponSchema for why.
+ */
+export const updateDiscountCode = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const id = getRequiredParam(req.params.id, "Discount code id");
+    const patch = validate(updateCouponSchema, req.body);
+
+    const code = await prisma.discount_codes.findUnique({
+      where: { id },
+      select: { id: true, sellerId: true, adminId: true, discountType: true, discountValue: true },
+    });
+    if (!code) return next(new NotFoundError("Discount code not found!"));
+
+    const hasAccess =
+      req.role === "admin" ||
+      (req.role === "seller" && code.sellerId === req.seller?.id);
+    if (!hasAccess) return next(new ValidationError("Unauthorized access"));
+
+    // The schema can only compare the two when both are sent. Re-check against
+    // whatever the coupon will actually end up being, so switching an existing
+    // 500-off coupon to "percentage" without also lowering the value is caught
+    // rather than saved as 500%.
+    const nextType = patch.discountType ?? code.discountType;
+    const nextValue = patch.discountValue ?? code.discountValue;
+    if (nextType !== "free_delivery" && nextValue <= 0) {
+      return next(new ValidationError("Discount value must be greater than 0"));
+    }
+    if (nextType === "percentage" && nextValue > 100) {
+      return next(new ValidationError("Percentage discount can't exceed 100%"));
+    }
+
+    const updated = await prisma.discount_codes.update({
+      where: { id },
+      data: {
+        ...(patch.public_name !== undefined ? { public_name: patch.public_name } : {}),
+        ...(patch.discountType !== undefined ? { discountType: patch.discountType } : {}),
+        ...(patch.discountValue !== undefined ? { discountValue: patch.discountValue } : {}),
+        ...(patch.minOrderValue !== undefined ? { minOrderValue: patch.minOrderValue } : {}),
+        ...(patch.maxUses !== undefined ? { maxUses: patch.maxUses } : {}),
+        ...(patch.isActive !== undefined ? { isActive: patch.isActive } : {}),
+        // Only percentage coupons have a cap to apply — clear it whenever the
+        // coupon is (or becomes) a type where "percent of order" is meaningless.
+        ...(patch.maxDiscountAmount !== undefined || patch.discountType !== undefined
+          ? {
+              maxDiscountAmount:
+                nextType === "percentage" ? (patch.maxDiscountAmount ?? null) : null,
+            }
+          : {}),
+        ...(patch.expiresAt !== undefined
+          ? { expiresAt: patch.expiresAt ? new Date(patch.expiresAt) : null }
+          : {}),
+        // A first-order coupon is once per lifetime by definition, so it pins
+        // maxUsesPerUser to 1 — same rule createDiscountCodes applies.
+        ...(patch.isFirstOrder !== undefined ? { isFirstOrder: patch.isFirstOrder } : {}),
+        ...(patch.isFirstOrder
+          ? { maxUsesPerUser: 1 }
+          : patch.maxUsesPerUser !== undefined
+            ? { maxUsesPerUser: patch.maxUsesPerUser }
+            : {}),
+      },
+    });
+
+    res.status(200).json({ success: true, discount_code: updated });
   } catch (error) {
     next(error);
   }

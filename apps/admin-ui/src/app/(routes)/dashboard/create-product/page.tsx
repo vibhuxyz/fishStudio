@@ -35,6 +35,8 @@ type ProductFormValues = {
   category?: string;
   subCategory?: string;
   short_description?: string;
+  hsnCode?: string;
+  gstRatePercent?: string;
   tags?: string;
   sizes?: unknown;
   trackStockPerSize?: boolean;
@@ -365,6 +367,49 @@ const Page = () => {
                     {errors.short_description.message as string}
                   </p>
                 )}
+              </div>
+
+              {/* Tax classification — printed on the GST invoice */}
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    label="HSN Code"
+                    placeholder="3025900"
+                    {...register("hsnCode", {
+                      pattern: {
+                        value: /^[0-9]{4,8}$/,
+                        message: "HSN code is 4 to 8 digits",
+                      },
+                    })}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Shown on the tax invoice. Leave blank and the line prints “—”.
+                  </p>
+                  {errors.hsnCode && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.hsnCode.message as string}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    type="number"
+                    label="GST Rate (%)"
+                    placeholder="0"
+                    {...register("gstRatePercent", {
+                      min: { value: 0, message: "Rate cannot be negative" },
+                      max: { value: 28, message: "Rate cannot exceed 28%" },
+                    })}
+                  />
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Overrides the store rate for this product. Fresh fish is 0.
+                  </p>
+                  {errors.gstRatePercent && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.gstRatePercent.message as string}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="mt-2">

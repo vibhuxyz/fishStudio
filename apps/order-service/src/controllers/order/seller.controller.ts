@@ -9,6 +9,7 @@ import {
   releaseRiderIfNoOtherDeliveries,
   hydrateOrders,
   releaseCouponUsage,
+  parseSellerOrderFilters,
 } from "./utils.js";
 import { formatOrderId } from "@repo/shared/order-id";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
@@ -33,11 +34,19 @@ export const getSellerOrders = async (
     const skip = (page - 1) * limit;
     const search = (req.query.search as string) || undefined;
 
+    const filters = parseSellerOrderFilters(req.query);
+
     const where: any = {
       storeId,
+      // Every filter is ANDed with the others, so date + slot + status narrow
+      // together rather than one replacing another.
+      ...filters,
       ...(search
         ? {
             OR: [
+              // Sequential numbers are what sellers actually read out and
+              // search by, so match them before the raw cuid.
+              { orderNumber:   { contains: search.trim(), mode: "insensitive" } },
               { id:            { contains: normalizeOrderIdFragment(search), mode: "insensitive" } },
               { deliveryPhone: { contains: search, mode: "insensitive" } },
               { deliveryPincode: { contains: search, mode: "insensitive" } },

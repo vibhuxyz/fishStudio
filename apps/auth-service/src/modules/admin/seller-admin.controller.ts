@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
-import { ValidationError } from "@repo/error-handlers";
-import { updateSellerApprovalSchema, validate } from "@repo/zod-schema";
+import { NotFoundError, ValidationError } from "@repo/error-handlers";
+import { adminStoreSettingsSchema, updateSellerApprovalSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { redis } from "@repo/libs/redis";
@@ -9,6 +9,7 @@ import { logger } from "@repo/libs/logger";
 
 import { runBestEffort } from "../../utils/runBestEffort.js";
 import { bumpRefreshFamily } from "../../utils/tokenRevocation.js";
+import { normalizeLocationCode } from "@repo/shared/order-id";
 
 export const getAllSellersForAdmin = async (
   req: Request,
@@ -252,5 +253,73 @@ export const updateSellerApproval = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+/**
+ * Set the store settings only an admin controls.
+ *
+ * `locationCode` is the middle segment of every order number the store issues
+ * (FS-NOI-30082026-001), so it is set centrally rather than by the seller —
+ * see the note on adminStoreSettingsSchema.
+ *
+ * Changing it does not renumber existing orders: those carry the number they
+ * were issued, which is the point of storing it rather than deriving it.
+ */
+export const updateAdminStoreSettings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const storeId = typeof req.params.storeId === "string" ? req.params.storeId : "";
+    if (!storeId) return next(new ValidationError("Store id is required"));
+
+    const settings = validate(adminStoreSettingsSchema, req.body);
+
+    const store = await prisma.stores.findUnique({
+      where: { id: storeId },
+      select: { id: true },
+    });
+    if (!store) return next(new NotFoundError("Store not found"));
+
+    const updated = await prisma.stores.update({
+      where: { id: storeId },
+      data: {
+        ...(settings.locationCode !== undefined
+          ? { locationCode: normalizeLocationCode(settings.locationCode) }
+          : {}),
+        ...(settings.codAutoAcceptLimit !== undefined
+          ? { codAutoAcceptLimit: settings.codAutoAcceptLimit }
+          : {}),
+        // "" clears a field rather than storing an empty string, so an admin
+        // can undo an entry without it later printing as a blank line on an
+        // invoice. The zod schema allows "" precisely so this can happen.
+        ...(settings.legalName !== undefined
+          ? { legalName: settings.legalName || null }
+          : {}),
+        ...(settings.gstin !== undefined
+          ? { gstin: settings.gstin ? settings.gstin.toUpperCase() : null }
+          : {}),
+        ...(settings.fssaiLicenseNumber !== undefined
+          ? { fssaiLicenseNumber: settings.fssaiLicenseNumber || null }
+          : {}),
+        ...(settings.registeredAddress !== undefined
+          ? { registeredAddress: settings.registeredAddress || null }
+          : {}),
+        ...(settings.invoiceJurisdiction !== undefined
+          ? { invoiceJurisdiction: settings.invoiceJurisdiction || null }
+          : {}),
+      },
+      select: {
+        id: true, name: true, city: true, locationCode: true, codAutoAcceptLimit: true,
+        legalName: true, gstin: true, fssaiLicenseNumber: true,
+        registeredAddress: true, invoiceJurisdiction: true,
+      },
+    });
+
+    res.status(200).json({ success: true, store: updated });
+  } catch (error) {
+    next(error);
   }
 };

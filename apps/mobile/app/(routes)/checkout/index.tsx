@@ -215,6 +215,12 @@ export default function CheckoutScreen() {
         productId: item.id,
         quantity: item.quantity || 1,
         size: item.selectedSize || undefined,
+        // Sent on every line, not just combo members: this array is also what
+        // gets persisted as the server-side cart, and a line restored on the
+        // web without its cutting type and size is not the same line.
+        cuttingType: item.cuttingType || undefined,
+        pieceSize: item.pieceSize || undefined,
+        ...(item.comboId ? { comboId: item.comboId } : {}),
       }));
       axiosInstance
         .post("/product/api/validate-cart", {

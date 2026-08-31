@@ -24,7 +24,7 @@ import {
   ProductPieceSizePricing,
   PLACED_ORDER_STATUSES,
 } from "@repo/shared/pricing";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
 import {
   isInstantDeliveryAvailableNow,
   StoreHours,
@@ -41,6 +41,8 @@ import {
   orderItemMoneyFields,
   releaseRiderIfNoOtherDeliveries,
   releaseCouponUsage,
+  allocateOrderNumber,
+  shouldAutoAcceptOnCreate,
 } from "./utils.js";
 
 // Populated by @repo/middlewares' isAuthenticated from the verified JWT.
@@ -754,6 +756,8 @@ export const createOrder = async (
           packaging_charge: true,
           base_delivery_charge: true,
           free_delivery_threshold: true,
+          locationCode: true,
+          codAutoAcceptLimit: true,
           seller: { select: { name: true } },
         },
       }),
@@ -1010,10 +1014,16 @@ export const createOrder = async (
           }
         }
 
+        // Allocated inside the order transaction so a rolled-back checkout
+        // never burns a number, leaving a visible gap in the day's sequence
+        // that a seller would have to explain.
+        const orderNumber = await allocateOrderNumber(tx, store.locationCode);
+
         const newOrder = await tx.order.create({
           data: {
             userId,
             storeId,
+            orderNumber,
             totalAmount,
             discountAmount: totalDiscount,
             // Events have no real code — eventDiscountCode is the same
@@ -1043,6 +1053,17 @@ export const createOrder = async (
             },
             deliverySlot: deliverySlot ?? "evening",
             paymentMethod: paymentMethod ?? "COD",
+            // A small COD order goes straight to ACCEPTED — the Accept button
+            // is for the tail worth a phone call, not for every order. Online
+            // orders stay PENDING here and are accepted by payment-service
+            // once the money actually lands.
+            status: shouldAutoAcceptOnCreate({
+              paymentMethod: paymentMethod ?? "COD",
+              totalAmount: Number(totalAmount),
+              codAutoAcceptLimit: store.codAutoAcceptLimit,
+            })
+              ? "ACCEPTED"
+              : "PENDING",
             // Every order starts PENDING regardless of method — there's no
             // online payment gateway callback in this service yet to move
             // RAZORPAY/ONLINE orders to COMPLETED automatically. Until that
@@ -1064,7 +1085,7 @@ export const createOrder = async (
               })),
             },
           },
-          select: { id: true, deliverySlot: true, paymentMethod: true, totalAmount: true },
+          select: { id: true, orderNumber: true, deliverySlot: true, paymentMethod: true, totalAmount: true },
         });
 
         // Record coupon usage inside the same transaction
@@ -1105,7 +1126,7 @@ export const createOrder = async (
             userId,
             title: "Order Placed Successfully",
             message:
-              `Hi ${orderUser?.name || "there"}! Your FishStudio order ${formatOrderId(newOrder.id)} has been placed. ` +
+              `Hi ${orderUser?.name || "there"}! Your FishStudio order ${displayOrderNumber(newOrder)} has been placed. ` +
               `Total: ₹${toMoney(newOrder.totalAmount)}${totalDiscount > 0 ? ` (saved ₹${totalDiscount})` : ""} | ` +
               `Slot: ${slotLabel} | Payment: ${newOrder.paymentMethod}.`,
             type: "SUCCESS",
@@ -1152,7 +1173,7 @@ export const createOrder = async (
 
     // Stop the abandoned-cart reminder sequence for this cart — the next
     // add-to-cart upserts a fresh (unconverted) record and starts it over.
-    prismaMongo.abandoned_carts
+    prismaMongo.carts
       .update({ where: { userId }, data: { isConverted: true } })
       .catch(() => {}); // no open cart tracked for this user — nothing to stop
 
@@ -1221,7 +1242,7 @@ export const createOrder = async (
     // transaction. What follows is seller-facing dashboard fan-out: useful,
     // but the dashboard refetches anyway, so best-effort is acceptable here.
     const user = orderUser;
-    const shortId = formatOrderId(order.id);
+    const shortId = displayOrderNumber(order);
 
     Promise.resolve()
       .then(() =>

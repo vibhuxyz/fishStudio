@@ -4,36 +4,24 @@ import type { Product } from "@repo/zod-schema";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "sonner";
 
-/* ── Server-side cart persistence (abandoned cart detection) ──────────────
-   Debounced: fires 5 seconds after the last cart mutation.
-   Only runs when a user is logged in (the endpoint requires auth).
-   Silently ignores errors — this is non-critical.
+/* ── Server-side cart persistence ─────────────────────────────────────────
+   There is exactly one server write path for the cart: validate-cart, which
+   syncItems() calls. It already receives every line and persists it against
+   the authenticated user, so persisting here means debouncing a syncItems()
+   rather than POSTing a second, competing copy of the cart.
+
+   site-header re-syncs every 60s anyway; this just makes a change show up on
+   the user's other device in seconds instead of up to a minute.
 ─────────────────────────────────────────────────────────────────────────── */
 let _saveCartTimer: ReturnType<typeof setTimeout> | null = null;
 
-function scheduleSaveCart(
-  items: CartItem[],
-  storeId?: string | null,
-  storeName?: string | null,
-  totalAmount?: number,
-) {
+function schedulePersistCart(syncItems: () => Promise<unknown>) {
   if (_saveCartTimer) clearTimeout(_saveCartTimer);
-  _saveCartTimer = setTimeout(async () => {
-    try {
-      // Persist the FULL cart line (options, size, price breakdown, product)
-      // so it can be restored exactly on another device / after re-login —
-      // not just a lite snapshot. The abandoned-cart reminder only reads
-      // items.length, so the richer shape is safe.
-      await axiosInstance.post("/auth/api/save-cart", {
-        items,
-        storeId,
-        storeName,
-        totalAmount,
-      });
-    } catch {
-      // Silently ignore — this is background persistence only
-    }
-  }, 5_000); // 5-second debounce
+  _saveCartTimer = setTimeout(() => {
+    // Errors are swallowed inside syncItems, which already treats a failed
+    // sync as non-fatal; the 60s interval retries it regardless.
+    void syncItems();
+  }, 2_000);
 }
 
 /** Stable signature for a cart line so the same product+options dedupes.
@@ -58,9 +46,13 @@ function mergeCartItems(local: CartItem[], incoming: CartItem[]): CartItem[] {
 
 async function clearServerCart() {
   try {
-    await axiosInstance.post("/auth/api/clear-cart", {});
+    // validate-cart cannot express an empty cart (it requires >= 1 item), so
+    // clearing needs its own endpoint or the server would keep the last
+    // non-empty snapshot forever.
+    await axiosInstance.post("/product/api/cart/clear", {});
   } catch {
-    // Non-critical
+    // Non-critical — an order-placed clear is also handled server-side by
+    // createOrder, and the reminder job skips empty carts.
   }
 }
 
@@ -174,6 +166,48 @@ const DEFAULT_PIECE_SIZE: PieceSize = {
 
 const DEFAULT_SIZE = "500 gm - 1 Kg";
 
+/** One line of the server-side cart, as stored by validate-cart. Identities
+ *  and options only — never a product snapshot. */
+type ServerCartLine = {
+  productId: string;
+  quantity?: number;
+  cuttingType?: string;
+  pieceSize?: string;
+  size?: string;
+  comboId?: string;
+};
+
+/** A stand-in product for a line restored from the server, before
+ *  validate-cart has resolved what it actually is. Every descriptive field is
+ *  empty on purpose: syncItems overwrites them a moment later, and an empty
+ *  title is a visible "still loading" rather than a plausible wrong one. */
+const placeholderProduct = (id: string, storeId: string | null): Product => ({
+  id,
+  name: "",
+  slug: "",
+  description: "",
+  image: "",
+  images: [],
+  price: 0,
+  weight: "",
+  sizes: [],
+  sizePricing: [],
+  cuttingTypePricing: [],
+  pieceSizePricing: [],
+  rating: 0,
+  totalSold: 0,
+  stock: 0,
+  subCategory: "",
+  category: "",
+  ...(storeId ? { storeId } : {}),
+  cuttingTypes: [],
+  pieceSizes: [],
+  processingWeightLoss: null,
+  status: "Active",
+  isBestseller: false,
+  isFavorite: false,
+});
+
 const normalizeOption = (
   option: CuttingType | PieceSize | string,
   fallbackId: string,
@@ -239,9 +273,7 @@ export const useCartStore = create<CartState>()(
           quantity: newQty,
           totalPayable: newQty * product.price,
         };
-        const nextItems = updated;
-        const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-        scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+        schedulePersistCart(get().syncItems);
         return { items: updated };
       }
 
@@ -262,8 +294,7 @@ export const useCartStore = create<CartState>()(
           priceBreakdown,
         },
       ];
-      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      schedulePersistCart(get().syncItems);
       return { items: nextItems };
     });
   },
@@ -301,8 +332,7 @@ export const useCartStore = create<CartState>()(
           },
         ];
       }
-      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      schedulePersistCart(get().syncItems);
       return { items: nextItems };
     });
   },
@@ -310,8 +340,7 @@ export const useCartStore = create<CartState>()(
   removeItem: (index) => {
     set((state) => {
       const nextItems = state.items.filter((_, i) => i !== index);
-      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      schedulePersistCart(get().syncItems);
       return { items: nextItems };
     });
   },
@@ -319,8 +348,7 @@ export const useCartStore = create<CartState>()(
   removeComboGroup: (comboId) => {
     set((state) => {
       const nextItems = state.items.filter((it) => it.comboId !== comboId);
-      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      schedulePersistCart(get().syncItems);
       return { items: nextItems };
     });
   },
@@ -349,8 +377,7 @@ export const useCartStore = create<CartState>()(
           ? { ...it, quantity, totalPayable: quantity * it.product.price }
           : it
       );
-      const total = nextItems.reduce((s, i) => s + i.totalPayable, 0);
-      scheduleSaveCart(nextItems, state.cartStoreId, state.deliveryMetadata.storeName, total);
+      schedulePersistCart(get().syncItems);
       return { items: nextItems };
     });
   },
@@ -496,27 +523,37 @@ export const useCartStore = create<CartState>()(
 
   loadServerCart: async () => {
     try {
-      const { data } = await axiosInstance.get("/auth/api/get-cart");
-      if (!data?.success || !Array.isArray(data.items) || data.items.length === 0) {
-        return;
-      }
-      // Only accept the rich cart shape — legacy lite snapshots (productId only,
-      // no full product/options) can't rebuild a valid line, so ignore them.
-      const restorable: CartItem[] = data.items.filter(
-        (i: any) => i?.product?.id && i?.cuttingType && i?.pieceSize,
-      );
-      if (restorable.length === 0) return;
+      const { data } = await axiosInstance.get("/product/api/cart");
+      const lines: ServerCartLine[] = Array.isArray(data?.items) ? data.items : [];
+      if (!data?.success || lines.length === 0) return;
 
-      set((state) => {
-        const merged = mergeCartItems(state.items, restorable);
-        const total = merged.reduce((sum, i) => sum + (i.totalPayable ?? 0), 0);
-        // Keep the server copy in sync with the merged result.
-        scheduleSaveCart(merged, data.storeId ?? state.cartStoreId, state.deliveryMetadata.storeName, total);
-        return {
-          items: merged,
-          cartStoreId: data.storeId ?? state.cartStoreId,
-        };
-      });
+      // Lines are stored as identities only — no price, title or image. Build
+      // placeholder products here and let syncItems() below fill them in from
+      // validate-cart, which is the single source of pricing. A restored cart
+      // therefore never shows a price the checkout wouldn't honour.
+      const restored: CartItem[] = lines
+        .filter((line) => typeof line?.productId === "string" && line.productId)
+        .map((line) => ({
+          product: placeholderProduct(line.productId, data.storeId ?? null),
+          quantity: typeof line.quantity === "number" && line.quantity > 0 ? line.quantity : 1,
+          cuttingType: normalizeOption(line.cuttingType ?? DEFAULT_CUTTING, "cutting-type"),
+          pieceSize: normalizeOption(line.pieceSize ?? DEFAULT_PIECE_SIZE, "piece-size"),
+          size: line.size ?? DEFAULT_SIZE,
+          totalPayable: 0,
+          ...(line.comboId ? { comboId: line.comboId } : {}),
+        }));
+      if (restored.length === 0) return;
+
+      set((state) => ({
+        // Local lines win on a signature clash: whatever the customer just
+        // did on this device is more current than the stored copy.
+        items: mergeCartItems(state.items, restored),
+        cartStoreId: data.storeId ?? state.cartStoreId,
+      }));
+
+      // Prices, titles, images and stock all arrive here. Without it the
+      // restored lines would render as blank ₹0 rows.
+      await get().syncItems();
     } catch {
       // Non-critical — fall back to whatever is in local storage.
     }
@@ -536,12 +573,19 @@ export const useCartStore = create<CartState>()(
     if (!pincode) return;
 
     try {
+      // Every field here is also what gets persisted as the server-side cart
+      // (validateCart writes exactly this array), so the options must be sent
+      // on every line, not just combo members — a line restored on another
+      // device without its cutting type and size is not the same line.
       const cartItems = items.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
+        cuttingType: item.cuttingType?.name,
+        pieceSize: item.pieceSize?.name,
+        size: item.size,
         // Lets the backend identify combo bundle members and reprice the
         // whole group to the bundle price instead of catalog price.
-        ...(item.comboId ? { comboId: item.comboId, cuttingType: item.cuttingType?.name, pieceSize: item.pieceSize?.name } : {}),
+        ...(item.comboId ? { comboId: item.comboId } : {}),
       }));
 
       const { data } = await axiosInstance.post("/product/api/validate-cart", {
@@ -582,6 +626,10 @@ export const useCartStore = create<CartState>()(
                   storeId: data.storeId || item.product.storeId,
                   stock: fresh.availableQty,
                   price: fresh.price,
+                  // Also the hydration path for a cart restored from another
+                  // device, whose lines start as empty placeholders.
+                  name: fresh.title || item.product.name,
+                  slug: fresh.slug || item.product.slug,
                   // Mark as inactive if not in stock or not enough qty
                   status: fresh.inStock ? "Active" : "NonActive",
                   image: fresh.image || item.product.image,

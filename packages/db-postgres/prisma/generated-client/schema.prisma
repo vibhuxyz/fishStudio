@@ -108,9 +108,28 @@ enum ActorType {
 }
 
 model Order {
-  id      String @id @default(cuid())
-  userId  String // Reference to Mongo User ID
-  storeId String // Reference to Mongo Store ID
+  id            String    @id @default(cuid())
+  // The human-facing identifier: FS-NOI-30082026-001 — FS, the store's
+  // location code, the IST date, and a per-location counter that restarts
+  // daily. `id` above stays the key every relation and URL uses; this exists
+  // because "FS-NOI-30082026-001" is what a seller reads out over the phone
+  // and what backend console search is done by.
+  //
+  // Nullable: every order placed before this column existed has none, and a
+  // store whose locationCode has not been set yet must still be able to trade.
+  // Uniqueness is a partial index (see migration 20260831090000) so those
+  // NULLs cost nothing.
+  orderNumber   String?
+  // The statutory GST invoice number, e.g. FS/NOI/2026-27/00042. Separate from
+  // orderNumber because the two obey different rules: an order number is an
+  // operational handle that may be issued for an order later cancelled, while
+  // an invoice number must be consecutive within a financial year and is never
+  // reused. Allocated once, the first time an invoice is actually issued —
+  // which is why it is null on every order nobody has downloaded one for.
+  invoiceNumber String?
+  invoicedAt    DateTime? @db.Timestamptz(3)
+  userId        String // Reference to Mongo User ID
+  storeId       String // Reference to Mongo Store ID
 
   // Money is Decimal, never Float: binary floating point cannot represent
   // values like 20.35 exactly, so float totals drift against Razorpay (which
@@ -152,10 +171,10 @@ model Order {
   // collection (role: RIDER), same cross-DB convention as storeId/userId above.
   riderId         String?
   riderStatus     OrderRiderStatus?
-  assignedAt      DateTime?
+  assignedAt      DateTime?         @db.Timestamptz(3)
   assignedBy      String? // sellerId or staffId (Mongo ObjectId) who assigned the rider
-  pickupStartedAt DateTime? // set when status flips to SHIPPED (rider left the store)
-  deliveredAt     DateTime? // set when status flips to DELIVERED
+  pickupStartedAt DateTime?         @db.Timestamptz(3) // set when status flips to SHIPPED (rider left the store)
+  deliveredAt     DateTime?         @db.Timestamptz(3) // set when status flips to DELIVERED
 
   // Cutting Staff prep photos — set when a CUTTING_STAFF staff member marks
   // preparation complete (status flips to READY_FOR_PICKUP). Array of
@@ -167,7 +186,7 @@ model Order {
   // 5 days after upload by a scheduled job.
   deliveryProofPhotoUrl      String?
   deliveryProofPhotoPublicId String?
-  deliveryProofUploadedAt    DateTime?
+  deliveryProofUploadedAt    DateTime? @db.Timestamptz(3)
 
   rejectionReason     String?
   // Who/why/when an order was cancelled — set on any path that flips status
@@ -176,7 +195,7 @@ model Order {
   // list from a customer (see cancelOrderSchema).
   cancellationReason  String?
   cancelledBy         CancelledBy?
-  cancelledAt         DateTime?
+  cancelledAt         DateTime?    @db.Timestamptz(3)
   // NONE until a refund is actually requested — most cancelled orders (COD,
   // or paid orders cancelled while still unpaid) never touch this.
   refundStatus        RefundStatus @default(NONE)
@@ -184,10 +203,10 @@ model Order {
   // knows whether to retry at all. Written only on the FAILED transitions and
   // cleared whenever a new attempt claims the order.
   refundFailureReason String?
-  refundFailedAt      DateTime?
+  refundFailedAt      DateTime?    @db.Timestamptz(3)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   orderItems   OrderItem[]
   payments     Payment[]
@@ -202,6 +221,51 @@ model Order {
   // deliveredAt scan is served the same way (migration 20260810000000).
   @@index([userId, createdAt(sort: Desc)]) // user order history with recent-first sort
   @@index([storeId, createdAt(sort: Desc)]) // seller order dashboard + stats range scans
+  // Backend console search is by orderNumber, so it has to stand alone rather
+  // than ride a prefix of either compound index above. Uniqueness is enforced
+  // separately by a partial index (migration 20260831090000) that Prisma
+  // cannot express, which is why this is a plain @@index.
+  @@index([orderNumber])
+  @@index([invoiceNumber])
+}
+
+// Per-location, per-financial-year counter behind Order.invoiceNumber.
+//
+// Separate from OrderNumberSequence below because the periods differ and the
+// guarantees differ: order numbers restart daily and may be issued for orders
+// that never complete, while GST requires invoice numbers to run consecutively
+// through a financial year (April–March). Sharing one counter would satisfy
+// neither rule.
+//
+// Advanced with the same atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING.
+model InvoiceSequence {
+  locationCode  String
+  // "2026-27" — the Indian financial year, computed in IST.
+  financialYear String
+  lastSeq       Int      @default(0)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([locationCode, financialYear])
+}
+
+// Per-location, per-day counter behind Order.orderNumber's last segment.
+//
+// Advanced with a single INSERT ... ON CONFLICT DO UPDATE ... RETURNING, which
+// is atomic: two checkouts in the same millisecond take 001 and 002 rather than
+// both reading 000. Deriving the next number from MAX(orderNumber) instead
+// would race, and would scan.
+//
+// Rows are never deleted — a day's final count is a business record, and the
+// table grows by one row per active location per day.
+model OrderNumberSequence {
+  locationCode String
+  // The date the sequence belongs to, ddMMyyyy, in IST — the store's own
+  // calendar day, not UTC's, or the counter would roll over at 05:30 local.
+  dateKey      String
+  lastSeq      Int      @default(0)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([locationCode, dateKey])
 }
 
 model OrderItem {
@@ -242,8 +306,8 @@ model Payment {
 
   metadata Json?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   @@index([orderId])
   @@index([status, createdAt]) // reconciliation sweep over stale PENDING rows
@@ -255,7 +319,7 @@ model CouponUsage {
   userId    String // Reference to Mongo User ID
   orderId   String
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([couponId, userId])
   @@index([orderId])
@@ -270,8 +334,8 @@ model Notification {
   category  String? // "ORDER", "SYSTEM", "PROMO", etc.
   isRead    Boolean  @default(false)
   metadata  Json? // For deep linking, e.g., { orderId: "..." }
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   // The unread badge queries { userId, isRead: false }. It is served by a
   // partial index on (userId, createdAt) WHERE is_read = false, created in
@@ -293,7 +357,7 @@ model AuditLog {
   actorId    String? // userId, sellerId, adminId — null means system
   actorType  ActorType?
   metadata   Json? // snapshot of relevant data at the time of the event
-  createdAt  DateTime        @default(now())
+  createdAt  DateTime        @default(now()) @db.Timestamptz(3)
 
   // entityId is an id and therefore selective on its own; a compound
   // [entityType, entityId] would narrow almost nothing on top of it. actorId
@@ -313,11 +377,11 @@ model WebhookEvent {
   eventType String
   payload   Json
 
-  receivedAt  DateTime  @default(now())
+  receivedAt  DateTime  @default(now()) @db.Timestamptz(3)
   // Null means received but not yet applied — either in flight or it failed
   // and the gateway's retry will pick it up. Dedupe keys off this, not mere
   // row existence, so a failed attempt doesn't block the retry.
-  processedAt DateTime?
+  processedAt DateTime? @db.Timestamptz(3)
 
   // The unprocessed set is tiny and the processed set grows without bound, so
   // the sweeper is served by a partial index on (received_at) WHERE
@@ -341,13 +405,13 @@ model OutboxEvent {
   status      OutboxStatus @default(PENDING)
   attempts    Int          @default(0)
   lastError   String?
-  createdAt   DateTime     @default(now())
-  publishedAt DateTime?
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  publishedAt DateTime?    @db.Timestamptz(3)
 
   // Claimed by the relay so two instances can't publish the same row. Rows are
   // selected FOR UPDATE SKIP LOCKED and stamped; a claim older than the lease
   // window is treated as abandoned and retried.
-  lockedAt DateTime?
+  lockedAt DateTime? @db.Timestamptz(3)
   lockedBy String?
 
   // The relay only ever reads PENDING rows and the retention job only ever
@@ -367,8 +431,8 @@ model StockReservation {
   userId    String
   items     Json // [{ productId, quantity }]
   status    StockReservationStatus @default(HELD)
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
+  createdAt DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime               @updatedAt @db.Timestamptz(3)
 
   // Like the outbox, the sweeper only reads HELD rows — partial index in
   // migration 20260807000001.
@@ -392,7 +456,7 @@ model ProductCoPurchase {
   catalogA   String
   catalogB   String
   orderCount Int      @default(0)
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
 
   @@id([catalogA, catalogB])
   @@index([catalogA, orderCount(sort: Desc)])
@@ -405,7 +469,7 @@ model ProductCoPurchase {
 model ProductOrderStat {
   catalogProductId String   @id
   orderCount       Int      @default(0)
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 }
 
 // Single-row aggregation cursor. lastDeliveredAt is the high-water mark over
@@ -416,7 +480,7 @@ model ProductOrderStat {
 // (truncate the two tables above first, or the counts will double).
 model CoPurchaseState {
   id              String    @id @default("singleton")
-  lastDeliveredAt DateTime?
+  lastDeliveredAt DateTime? @db.Timestamptz(3)
   totalOrders     Int       @default(0)
-  updatedAt       DateTime  @updatedAt
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
 }

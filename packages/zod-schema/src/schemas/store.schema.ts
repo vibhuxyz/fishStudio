@@ -18,6 +18,10 @@ export const storeSchema = z.object({
   packaging_charge: z.number().min(0).optional(),
   base_delivery_charge: z.number().min(0).optional(),
   free_delivery_threshold: z.number().min(0).optional(),
+  // COD orders at or below this are auto-accepted; above it the seller phones
+  // the customer first. The store's own risk appetite, so the seller sets it.
+  // Omitted entirely falls back to DEFAULT_COD_AUTO_ACCEPT_LIMIT server-side.
+  codAutoAcceptLimit: z.number().min(0).nullable().optional(),
   availableCities: z.array(z.string()).min(1, "At least one serviceable area is required"),
   cityDeliveryTimes: z.record(z.string(), z.string().or(z.number())).optional(),
   // Every serviceable area must be pinned to the pincode it falls under —
@@ -43,3 +47,46 @@ export const storeSchema = z.object({
 });
 
 export const updateStoreSchema = storeSchema.partial();
+
+/**
+ * Store settings only an admin may change.
+ *
+ * `locationCode` is deliberately not in storeSchema above: it is the middle
+ * segment of every order number this store issues (FS-NOI-30082026-001), so a
+ * seller editing it would renumber their own invoices. It is set once, centrally.
+ */
+export const adminStoreSettingsSchema = z.object({
+  locationCode: z
+    .string()
+    .max(4, "Location code max 4 letters")
+    .regex(/^[A-Za-z]*$/, "Letters only")
+    .nullable()
+    .optional(),
+  codAutoAcceptLimit: z.number().min(0).nullable().optional(),
+
+  // ── Tax invoice identity ──────────────────────────────────────────────
+  // Compliance data rather than shop settings, which is why it lives on the
+  // admin-only surface: a wrong GSTIN on an issued invoice is the platform's
+  // problem, not something to leave editable from the seller dashboard.
+  legalName: z.string().max(200).nullable().optional(),
+  gstin: z
+    .string()
+    // 2-digit state code, 10-char PAN, entity digit, "Z", checksum. Validated
+    // because an invoice carrying a malformed GSTIN is invalid, and the error
+    // is far cheaper to catch here than after a month of issued invoices.
+    .regex(
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+      "Not a valid GSTIN",
+    )
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  fssaiLicenseNumber: z
+    .string()
+    .regex(/^[0-9]{14}$/, "FSSAI licence is 14 digits")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
+  registeredAddress: z.string().max(500).nullable().optional(),
+  invoiceJurisdiction: z.string().max(100).nullable().optional(),
+});

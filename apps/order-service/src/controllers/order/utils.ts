@@ -2,6 +2,7 @@ import { redis } from "@repo/libs/redis";
 import { prismaMongo } from "@repo/db-mongo";
 import { prismaPostgres, toMoney, toMoneyOrNull, type Prisma } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
+import { buildOrderNumber, normalizeLocationCode, orderDateKey } from "@repo/shared/order-id";
 
 export const STATS_CACHE_TTL = 120; // 2 minutes
 
@@ -15,6 +16,153 @@ export const STATS_CACHE_TTL = 120; // 2 minutes
  */
 export function normalizeOrderIdFragment(raw: string): string {
   return raw.trim().replace(/^#/, "").replace(/^FS/i, "");
+}
+
+const ORDER_STATUSES = [
+  "PENDING", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP",
+  "ASSIGNED_TO_RIDER", "REJECTED", "SHIPPED", "DELIVERED", "CANCELLED",
+] as const;
+
+export type OrderStatusValue = (typeof ORDER_STATUSES)[number];
+
+export const isOrderStatus = (v: unknown): v is OrderStatusValue =>
+  typeof v === "string" && (ORDER_STATUSES as readonly string[]).includes(v);
+
+/** Accepts "a" or "a,b,c" or ?x=a&x=b, and drops anything unrecognised. */
+const parseList = (raw: unknown): string[] => {
+  const flat = Array.isArray(raw) ? raw : [raw];
+  return flat
+    .filter((v): v is string => typeof v === "string")
+    .flatMap((v) => v.split(","))
+    .map((v) => v.trim())
+    .filter(Boolean);
+};
+
+/**
+ * Build the Prisma `where` fragment for the seller order dashboard's filters.
+ *
+ * Status, delivery slot and date range are independent and combine with AND, so
+ * "yesterday's instant-delivery orders that are still PREPARING" is one query.
+ * Anything unparseable is dropped rather than rejected: a filter the UI has not
+ * caught up with should narrow nothing, not 400 the whole dashboard.
+ *
+ * `dateFrom`/`dateTo` are IST calendar days (YYYY-MM-DD). They are converted to
+ * the UTC instants that bound that local day — filtering on the raw date would
+ * silently shift every boundary by 5h30m and put early-morning orders in the
+ * wrong day.
+ */
+export function parseSellerOrderFilters(query: Record<string, unknown>): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+
+  const statuses = parseList(query.status).map((s) => s.toUpperCase()).filter(isOrderStatus);
+  if (statuses.length > 0) {
+    where.status = { in: statuses };
+  }
+
+  // Slots are stored lowercase ("instant" | "morning" | "evening") — see the
+  // note on Order.deliverySlot about why that case is load-bearing.
+  const slots = parseList(query.slot).map((s) => s.toLowerCase());
+  if (slots.length > 0) {
+    where.deliverySlot = { in: slots };
+  }
+
+  const createdAt: { gte?: Date; lt?: Date } = {};
+  const from = istDayStart(query.dateFrom);
+  if (from) createdAt.gte = from;
+  const to = istDayStart(query.dateTo);
+  // Exclusive upper bound on the *next* day's start, so `dateTo` includes
+  // everything that happened on that day rather than only its first instant.
+  if (to) createdAt.lt = new Date(to.getTime() + 24 * 60 * 60 * 1000);
+  if (createdAt.gte || createdAt.lt) {
+    where.createdAt = createdAt;
+  }
+
+  return where;
+}
+
+/** The UTC instant at which an IST calendar day (YYYY-MM-DD) begins. */
+function istDayStart(raw: unknown): Date | null {
+  if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) return null;
+  // Midnight IST is 18:30 UTC on the previous day.
+  const parsed = new Date(`${raw.trim()}T00:00:00.000+05:30`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * COD ceiling above which the seller must phone the customer before accepting,
+ * for stores that have not set their own `codAutoAcceptLimit`.
+ *
+ * A large cash order is the one case worth a human check — it is the store's
+ * money at risk if nobody is home. Everything at or below this, and everything
+ * already paid online, is accepted automatically.
+ */
+export const DEFAULT_COD_AUTO_ACCEPT_LIMIT = 3000;
+
+/**
+ * Whether a newly created order can skip the seller's Accept step.
+ *
+ * Online orders are never auto-accepted here: at creation the money has not
+ * moved yet. They are accepted by payment-service the moment the payment
+ * verifies or the capture webhook lands.
+ */
+export function shouldAutoAcceptOnCreate(params: {
+  paymentMethod: string | null | undefined;
+  totalAmount: number;
+  codAutoAcceptLimit: number | null | undefined;
+}): boolean {
+  const { paymentMethod, totalAmount, codAutoAcceptLimit } = params;
+  if (paymentMethod !== "COD") return false;
+  const limit =
+    typeof codAutoAcceptLimit === "number" && codAutoAcceptLimit >= 0
+      ? codAutoAcceptLimit
+      : DEFAULT_COD_AUTO_ACCEPT_LIMIT;
+  return totalAmount <= limit;
+}
+
+/**
+ * Claim the next sequential order number for a store's location, for today.
+ *
+ * Returns null when the store has no location code — such a store still trades,
+ * its orders just fall back to the id-derived display form (see
+ * displayOrderNumber). Better than blocking checkout on a config field an
+ * admin may not have filled in yet.
+ *
+ * Must be called inside the order's own transaction: the counter and the order
+ * commit together, so a checkout that rolls back does not burn a number and
+ * leave a gap in the day's sequence.
+ *
+ * The increment is a single INSERT ... ON CONFLICT DO UPDATE ... RETURNING —
+ * atomic even under concurrent checkouts at the same store, where a
+ * read-then-write (or a MAX(orderNumber) + 1) would hand two orders the same
+ * number.
+ */
+export async function allocateOrderNumber(
+  tx: Prisma.TransactionClient,
+  rawLocationCode: string | null | undefined,
+): Promise<string | null> {
+  const locationCode = normalizeLocationCode(rawLocationCode);
+  if (!locationCode) return null;
+
+  const dateKey = orderDateKey();
+
+  const rows = await tx.$queryRaw<Array<{ lastSeq: number }>>`
+    INSERT INTO "OrderNumberSequence" ("locationCode", "dateKey", "lastSeq", "updatedAt")
+    VALUES (${locationCode}, ${dateKey}, 1, NOW())
+    ON CONFLICT ("locationCode", "dateKey")
+    DO UPDATE SET "lastSeq" = "OrderNumberSequence"."lastSeq" + 1, "updatedAt" = NOW()
+    RETURNING "lastSeq"
+  `;
+
+  const seq = rows[0]?.lastSeq;
+  if (!seq) {
+    // Should be unreachable — the statement always returns the row it wrote.
+    // Fall back to no number rather than failing a paid-for checkout over a
+    // cosmetic identifier.
+    logger.error("[allocateOrderNumber] sequence returned no row", { locationCode, dateKey });
+    return null;
+  }
+
+  return buildOrderNumber({ locationCode, dateKey, seq });
 }
 
 // Shared Mongo `select` shapes for admin order endpoints — identical fields

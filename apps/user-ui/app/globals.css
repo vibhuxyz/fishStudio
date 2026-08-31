@@ -47,12 +47,17 @@
     @apply border-border;
   }
   html {
-    /* Prevent horizontal overflow on all screens */
-    overflow-x: hidden;
+    /* `clip`, not `hidden`: both stop horizontal overflow, but `hidden` makes
+       the element a scroll container, and a `position: sticky` descendant then
+       sticks to *that* box instead of the viewport — which is why the checkout
+       bill summary scrolled away with the page. `clip` has no such side effect.
+       Safari gained support in 16; older Safari falls back to a horizontal
+       scrollbar, which is the lesser bug. */
+    overflow-x: clip;
   }
   body {
     @apply bg-background text-foreground;
-    overflow-x: hidden;
+    overflow-x: clip;
     /* Full-height safe-area on iOS notch devices */
     padding-bottom: env(safe-area-inset-bottom);
   }

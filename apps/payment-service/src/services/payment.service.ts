@@ -58,11 +58,55 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
     where: { orderId, status: "PENDING" },
     select: { gatewayOrderId: true },
   });
+
   if (!pendingPayment) {
-    // Order creation always writes a PENDING payment row; without one the
-    // verify step has nothing to bind against, so refuse early.
-    throw new ValidationError("Order has no pending payment to pay against", {
-      code: "PAYMENT_RECORD_MISSING",
+    // No live attempt. Either every previous attempt failed — a retry, which
+    // must reuse this order rather than mint a new one — or the order was
+    // built without a payment row at all, which is a bug worth surfacing.
+    //
+    // One customer purchase is one Order id; each retry is a new Payment row
+    // against it, so the failed attempts survive as an audit trail instead of
+    // being overwritten.
+    const failedAttempts = await prismaPostgres.payment.count({ where: { orderId } });
+    if (failedAttempts === 0) {
+      throw new ValidationError("Order has no pending payment to pay against", {
+        code: "PAYMENT_RECORD_MISSING",
+      });
+    }
+    if (!order.paymentMethod) {
+      throw new ValidationError("Order has no payment method to retry with", {
+        code: "PAYMENT_RECORD_MISSING",
+      });
+    }
+
+    const retryAttempt = await prismaPostgres.payment.create({
+      data: {
+        orderId,
+        amount: order.totalAmount,
+        status: "PENDING",
+        method: order.paymentMethod,
+      },
+      select: { id: true },
+    });
+
+    // Back to PENDING for the duration of this attempt. The payment.failed
+    // webhook only moves an order PENDING → FAILED, so leaving it FAILED here
+    // would silently discard the outcome of the retry.
+    await prismaPostgres.order.updateMany({
+      where: { id: orderId, paymentStatus: "FAILED" },
+      data: { paymentStatus: "PENDING" },
+    });
+
+    return createAndBindGatewayOrder({
+      orderId: order.id,
+      userId,
+      amountInPaise,
+      totalAmount: order.totalAmount,
+      actorType: "USER",
+      // Bound by id, not by "whichever row is PENDING": two tabs retrying at
+      // once would otherwise try to write one gateway order id onto two rows
+      // and trip the unique index.
+      paymentId: retryAttempt.id,
     });
   }
 
@@ -106,8 +150,11 @@ async function createAndBindGatewayOrder(params: {
   amountInPaise: number;
   totalAmount: Prisma.Decimal;
   actorType: "USER" | "SYSTEM";
+  /** Bind this specific payment row instead of whichever one is PENDING.
+   *  Used by the retry path, which has just created the row it means. */
+  paymentId?: string;
 }): Promise<GatewayOrder> {
-  const { orderId, userId, amountInPaise, totalAmount, actorType } = params;
+  const { orderId, userId, amountInPaise, totalAmount, actorType, paymentId } = params;
 
   const gwOrder = await gateway.createOrder({
     orderId,
@@ -117,7 +164,9 @@ async function createAndBindGatewayOrder(params: {
   });
 
   const bound = await prismaPostgres.payment.updateMany({
-    where: { orderId, status: "PENDING" },
+    where: paymentId
+      ? { id: paymentId, status: "PENDING" }
+      : { orderId, status: "PENDING" },
     data: { gatewayOrderId: gwOrder.gatewayOrderId },
   });
   if (bound.count === 0) {
@@ -257,6 +306,14 @@ export async function verifyPayment(
       where: { id: orderId },
       data: { paymentStatus: "COMPLETED", paymentMethod: "RAZORPAY", paymentRef: razorpayPaymentId },
     }),
+    // A paid order needs no human gate — the seller's Accept button exists for
+    // the risky tail (large COD), not for money already in the account.
+    // Conditional on PENDING so it can never resurrect an order the seller
+    // rejected or the customer cancelled while the payment was in flight.
+    prismaPostgres.order.updateMany({
+      where: { id: orderId, status: "PENDING" },
+      data: { status: "ACCEPTED" },
+    }),
     prismaPostgres.payment.updateMany({
       where: { orderId, status: "PENDING" },
       data: {
@@ -390,6 +447,14 @@ export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<vo
         prismaPostgres.order.update({
           where: { id: orderId },
           data: { paymentStatus: "COMPLETED", paymentRef: evt.gatewayPaymentId },
+        }),
+        // A paid order needs no human gate — the seller's Accept button exists for
+        // the risky tail (large COD), not for money already in the account.
+        // Conditional on PENDING so it can never resurrect an order the seller
+        // rejected or the customer cancelled while the payment was in flight.
+        prismaPostgres.order.updateMany({
+          where: { id: orderId, status: "PENDING" },
+          data: { status: "ACCEPTED" },
         }),
         prismaPostgres.payment.updateMany({
           where: { orderId, status: "PENDING" },

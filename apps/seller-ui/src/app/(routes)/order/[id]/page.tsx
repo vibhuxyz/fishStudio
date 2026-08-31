@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { useParams, useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import RiderAssignmentPanel from "./_components/rider-assignment-panel";
 import OrderDetailsView from "@/shared/components/orders/order-details-view";
 
@@ -143,7 +143,7 @@ const Page = () => {
       </div>
 
       <h1 className="text-2xl font-bold text-gray-200 mb-4">
-        Order {formatOrderId(order.id)}
+        Order {displayOrderNumber(order)}
       </h1>
 
       {/* Status Control */}

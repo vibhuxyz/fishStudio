@@ -30,7 +30,7 @@ import {
   type SellerOrder,
   type StatsPeriod,
 } from "@/hooks/useAdminQueries";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
@@ -88,7 +88,7 @@ function OrderDetailModal({ order, onClose }: { order: SellerOrder; onClose: () 
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 sticky top-0 bg-[#0f1117] z-10">
           <div>
             <p className="text-white font-bold text-base">
-              Order {formatOrderId(order.id)}
+              Order {displayOrderNumber(order)}
             </p>
             <p className="text-gray-500 text-xs mt-0.5">
               {date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -469,7 +469,7 @@ const SellerPaymentDetail = () => {
                     <tr key={order.id} className="border-b border-gray-800/60 hover:bg-gray-800/30 transition">
                       <td className="py-3 pl-2">
                         <span className="text-white font-mono text-xs">
-                          {formatOrderId(order.id)}
+                          {displayOrderNumber(order)}
                         </span>
                       </td>
                       <td className="py-3">

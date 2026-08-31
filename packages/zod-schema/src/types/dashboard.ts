@@ -28,6 +28,11 @@ export type AdminProduct = {
   title: string;
   slug: string;
   short_description?: string | null;
+  // Tax classification, printed on the GST invoice. Authored on the catalog
+  // root and inherited by store variants — the code describes the goods, not
+  // who sells them.
+  hsnCode?: string | null;
+  gstRatePercent?: number | null;
   detailed_description?: string | null;
   sale_price: number;
   regular_price?: number | null;
@@ -78,11 +83,36 @@ export type DiscountCode = {
   discountValue: number;
   maxDiscountAmount?: number | null;
   discountCode: string;
+  // Returned by get-discount-codes (which selects the whole row) and needed to
+  // prefill the edit form — an edit that silently dropped these would reset
+  // limits the seller had set.
+  minOrderValue?: number;
+  expiresAt?: string | null;
+  maxUses?: number | null;
+  maxUsesPerUser?: number;
+  usedCount?: number;
+  isFirstOrder?: boolean;
+  isActive?: boolean;
   seller?: {
     id: string;
     name: string;
     email: string;
   } | null;
+};
+
+/** Partial edit of an existing coupon — see updateCouponSchema. `discountCode`
+ *  and `sellerId` are absent because neither can be changed after creation. */
+export type UpdateDiscountCodePayload = {
+  public_name?: string;
+  discountType?: string;
+  discountValue?: number;
+  maxDiscountAmount?: number | null;
+  minOrderValue?: number;
+  expiresAt?: string | null;
+  maxUses?: number | null;
+  maxUsesPerUser?: number;
+  isFirstOrder?: boolean;
+  isActive?: boolean;
 };
 
 export type CategoriesResponse = {
@@ -132,6 +162,19 @@ export type AdminSellerDetail = AdminSellerSummary & {
     address?: string;
     pincode?: string;
     opening_hours?: string;
+    // Admin-only store settings — see adminStoreSettingsSchema. Null when the
+    // admin has not set them: the store then issues no sequential order
+    // numbers and falls back to the default COD auto-accept ceiling.
+    locationCode?: string | null;
+    codAutoAcceptLimit?: number | null;
+    // Tax invoice identity. Without legalName + gstin + locationCode the
+    // invoice endpoint refuses to issue, rather than printing a document with
+    // a blank registration.
+    legalName?: string | null;
+    gstin?: string | null;
+    fssaiLicenseNumber?: string | null;
+    registeredAddress?: string | null;
+    invoiceJurisdiction?: string | null;
     products: AdminProduct[];
     storeReviews: Array<{
       id: string;
@@ -362,6 +405,8 @@ export type UpdateProductPayload = {
   category?: string;
   subCategory?: string;
   short_description?: string;
+  hsnCode?: string;
+  gstRatePercent?: string | number | null;
   regular_price?: number;
   sale_price?: number;
   stock?: number;

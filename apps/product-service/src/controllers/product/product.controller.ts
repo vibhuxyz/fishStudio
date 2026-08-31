@@ -112,6 +112,8 @@ export const createProduct = async (
     const {
       title,
       short_description,
+      hsnCode,
+      gstRatePercent,
       sizes,
       trackStockPerSize,
       cuttingTypes,
@@ -165,6 +167,11 @@ export const createProduct = async (
       data: {
         title,
         short_description,
+        // Tax classification for the GST invoice. Stored as null rather than
+        // "" when unset, so an invoice can tell "no code recorded" apart from
+        // a code that happens to be blank.
+        hsnCode: hsnCode?.trim() || null,
+        gstRatePercent: typeof gstRatePercent === "number" ? gstRatePercent : null,
         category,
         subCategory,
         sizes: normalizedSizes,
@@ -599,6 +606,8 @@ export const updateProduct = async (
     const {
       title,
       short_description,
+      hsnCode,
+      gstRatePercent,
       tags,
       category,
       subCategory,
@@ -660,6 +669,12 @@ export const updateProduct = async (
     if (typeof title === "string" && title.trim()) updateData.title = title;
     if (typeof short_description === "string" && short_description.trim())
       updateData.short_description = short_description;
+    // Written whenever the key is present, including as "" / null: clearing a
+    // wrong HSN or rate must be possible, and the invoice distinguishes
+    // "no code recorded" from a blank one.
+    if (hsnCode !== undefined) updateData.hsnCode = hsnCode?.trim() || null;
+    if (gstRatePercent !== undefined)
+      updateData.gstRatePercent = typeof gstRatePercent === "number" ? gstRatePercent : null;
     if (typeof category === "string" && category.trim())
       updateData.category = category;
     if (typeof subCategory === "string" && subCategory.trim())

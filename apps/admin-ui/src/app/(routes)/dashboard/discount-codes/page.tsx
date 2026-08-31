@@ -3,9 +3,10 @@
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
-import { Plus, Trash, X } from "lucide-react";
+import { Pencil, Plus, Trash, X } from "lucide-react";
 import { Input, Button } from "@repo/ui";
 import DeleteDiscountCodeModal from "@/shared/components/modals/delete.discount-codes";
+import EditDiscountCodeModal from "@/shared/components/modals/edit-discount-code.modal";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import {
   adminQueryKeys,
@@ -13,6 +14,9 @@ import {
   deleteDiscountCode,
   type DiscountCode,
   type DiscountCodePayload,
+  type UpdateDiscountCodePayload,
+  toggleDiscountCode,
+  updateDiscountCode,
   useAdminSellers,
   useDiscountCodes,
 } from "@/hooks/useAdminQueries";
@@ -34,6 +38,7 @@ interface CreateFormValues {
 const Page = () => {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<DiscountCode | null>(null);
   const [selectedDiscount, setSelectedDiscount] = useState<DiscountCode | null>(null);
   const queryClient = useQueryClient();
 
@@ -96,6 +101,25 @@ const Page = () => {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (payload: UpdateDiscountCodePayload) =>
+      updateDiscountCode({ discountId: editTarget!.id, payload }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.discounts });
+      setEditTarget(null);
+    },
+  });
+
+  // Kept separate from the edit form: activating or pausing a coupon is a
+  // one-click decision a seller/admin makes from the list, not something to
+  // bury behind opening and saving a form.
+  const toggleMutation = useMutation({
+    mutationFn: toggleDiscountCode,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.discounts });
+    },
+  });
+
   const deleteDiscountCodeMutation = useMutation({
     mutationFn: deleteDiscountCode,
     onSuccess: () => {
@@ -133,6 +157,7 @@ const Page = () => {
                 <th className="p-3 text-left">Value</th>
                 <th className="p-3 text-left">Code</th>
                 <th className="p-3 text-left">Store</th>
+                <th className="p-3 text-left">Active</th>
                 <th className="p-3 text-left">Actions</th>
               </tr>
             </thead>
@@ -171,14 +196,53 @@ const Page = () => {
                   </td>
                   <td className="p-3">
                     <button
-                      onClick={() => {
-                        setSelectedDiscount(discount);
-                        setShowDeleteModal(true);
-                      }}
-                      className="text-red-400 hover:text-red-300 transition"
+                      type="button"
+                      role="switch"
+                      aria-checked={discount.isActive !== false}
+                      aria-label={`${discount.isActive !== false ? "Deactivate" : "Activate"} ${discount.discountCode}`}
+                      disabled={
+                        toggleMutation.isPending &&
+                        toggleMutation.variables?.discountId === discount.id
+                      }
+                      onClick={() =>
+                        toggleMutation.mutate({
+                          discountId: discount.id,
+                          // Absent means active — the column defaults to true
+                          // server-side, so only an explicit false is inactive.
+                          isActive: discount.isActive === false,
+                        })
+                      }
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition disabled:opacity-50 ${
+                        discount.isActive !== false ? "bg-green-500" : "bg-gray-600"
+                      }`}
                     >
-                      <Trash size={18} />
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                          discount.isActive !== false ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
                     </button>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        title="Edit discount code"
+                        onClick={() => setEditTarget(discount)}
+                        className="text-blue-400 hover:text-blue-300 transition"
+                      >
+                        <Pencil size={17} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedDiscount(discount);
+                          setShowDeleteModal(true);
+                        }}
+                        className="text-red-400 hover:text-red-300 transition"
+                      >
+                        <Trash size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -192,6 +256,18 @@ const Page = () => {
           </p>
         )}
       </div>
+
+      {editTarget && (
+        <EditDiscountCodeModal
+          // Remounts per coupon so the form re-seeds its defaults from the row
+          // being edited rather than keeping the previous one's values.
+          key={editTarget.id}
+          discount={editTarget}
+          isSaving={updateMutation.isPending}
+          onClose={() => setEditTarget(null)}
+          onSave={(payload) => updateMutation.mutate(payload)}
+        />
+      )}
 
       {/* ── Create modal ───────────────────────────────────────────────────── */}
       {showModal && (

@@ -13,6 +13,10 @@
       "types": "./dist/slug/index.d.ts",
       "default": "./dist/slug/index.js"
     },
+    "./invoice": {
+      "types": "./dist/invoice/index.d.ts",
+      "default": "./dist/invoice/index.js"
+    },
     "./order-id": {
       "types": "./dist/order-id/index.d.ts",
       "default": "./dist/order-id/index.js"

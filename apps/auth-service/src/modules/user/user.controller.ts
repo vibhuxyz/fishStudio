@@ -28,7 +28,12 @@ import {
   hashToken,
 } from "../../utils/tokenRevocation.js";
 import type { AuthenticatedRequest } from "../../types/auth-request.js";
-import { ROLE_COOKIES, REFRESH_TTL_BY_ROLE, type AuthRole } from "../../utils/roleCookies.js";
+import {
+  ROLE_COOKIES,
+  REFRESH_TTL_BY_ROLE,
+  REFRESH_COOKIE_MAX_AGE_BY_ROLE,
+  type AuthRole,
+} from "../../utils/roleCookies.js";
 import {
   STAFF_SCOPE_HEADER,
   allStaffRefreshCookieNames,
@@ -171,10 +176,16 @@ export const verifyOtpAndLogin = async (
     // Fix #11: access/refresh tokens carry a jti and refresh tokens carry a
     // family generation so they can be revoked.
     const accessToken = signAccessToken({ id: user.id, role: "user" }, "15m");
-    const refreshToken = await signRefreshToken({ id: user.id, role: "user" }, "7d");
+    const refreshToken = await signRefreshToken(
+      { id: user.id, role: "user" },
+      REFRESH_TTL_BY_ROLE.user,
+    );
 
-    setCookie(res, "access_token", accessToken);
-    setCookie(res, "refresh_token", refreshToken);
+    // The access cookie may safely outlive the 15m token inside it — the
+    // client refreshes off the refresh cookie, and a cookie that vanished
+    // first would strand a session the server would still have renewed.
+    setCookie(res, "access_token", accessToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
+    setCookie(res, "refresh_token", refreshToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
 
     // Include tokens in response body for mobile clients (Bearer token auth).
     // Web clients use the httpOnly cookies above; mobile stores these in
@@ -318,8 +329,9 @@ export const refreshToken = async (
       decoded.role === "staff"
         ? staffCookieNames(staffScope ?? staffScopeOf(staffOperationalRole))
         : ROLE_COOKIES[decoded.role];
-    setCookie(res, cookieNames.access, newAccessToken);
-    setCookie(res, cookieNames.refresh, newRefreshToken);
+    const cookieMaxAge = REFRESH_COOKIE_MAX_AGE_BY_ROLE[decoded.role];
+    setCookie(res, cookieNames.access, newAccessToken, cookieMaxAge);
+    setCookie(res, cookieNames.refresh, newRefreshToken, cookieMaxAge);
 
     return res.status(200).json({
       success: true,
@@ -805,7 +817,7 @@ export const deleteUser = async (
     await prisma.favorites
       .deleteMany({ where: { userId } })
       .catch(() => {});
-    await (prisma as any).abandoned_carts
+    await (prisma as any).carts
       ?.deleteMany({ where: { userId } })
       .catch(() => {});
     await (prisma as any).product_views

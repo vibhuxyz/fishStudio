@@ -158,6 +158,10 @@ export const updateStore = async (
       where: { id: store.id },
       data: {
         ...validatedData,
+        // Never seller-settable, even if a client sends it: it is the middle
+        // segment of this store's order numbers. Admin-only, via
+        // updateAdminStoreSettings.
+        locationCode: undefined,
         name: validatedData.name || store.name,
         bio: validatedData.bio || store.bio,
         address: validatedData.address || store.address,

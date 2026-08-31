@@ -116,6 +116,22 @@ export const updateOrderStatusSchema = z.object({
   cancellationReason: z.string().max(500, "Reason max 500 characters").optional(),
 });
 
+// Bulk status change from the seller dashboard's checkbox selection.
+//
+// A narrower status set than updateOrderStatusSchema above: CANCELLED is
+// deliberately absent, because cancelling carries refunds, stock restoration
+// and coupon release per order — not something to trigger for a whole page of
+// orders behind one checkbox. Cancellation stays a single-order action.
+export const bulkUpdateOrderStatusSchema = z.object({
+  // Capped so one request can't fan out into an unbounded number of
+  // notification publishes. A seller page shows at most 100 rows anyway.
+  orderIds: z
+    .array(z.string().min(1))
+    .min(1, "Select at least one order")
+    .max(100, "You can update at most 100 orders at once"),
+  status: z.enum(["PREPARING", "READY_FOR_PICKUP", "SHIPPED", "DELIVERED"]),
+});
+
 // Cutting Staff: base64 data-URI photos, validated further (size/type) by
 // assertSafeImageSource in @repo/libs/cloudinary before upload.
 export const markPreparationCompleteSchema = z.object({

@@ -25,7 +25,8 @@ import { useUserSession } from "@/hooks/useUserSession";
 import { useWs } from "@/context/ws-context";
 import { toast } from "sonner";
 import type { Order } from "@/lib/orders-api";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
+import { renderInvoiceHtml, type Invoice } from "@/lib/invoice-template";
 import { OrderConfirmationSkeleton } from "./order-confirmation-skeleton";
 
 interface OrderConfirmationDetailProps {
@@ -175,74 +176,53 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
 
   const billDetails = order.billDetails as Record<string, number> | null;
   const statusCfg = getStatusConfig(order.status);
-  const shortId = formatOrderId(order.id);
+  const shortId = displayOrderNumber(order);
 
-  // Download Invoice — opens a print-ready invoice in a new window. Dependency
-  // free: the user can print or "Save as PDF" from the browser dialog.
-  const handleDownloadInvoice = () => {
-    const rows = (order.items || [])
-      .map(
-        (item) =>
-          `<tr>
-            <td>${item.product?.title || "Product"}</td>
-            <td style="text-align:center">${item.quantity}</td>
-            <td style="text-align:right">₹${(item.price * item.quantity).toFixed(0)}</td>
-          </tr>`,
-      )
-      .join("");
+  // Download Invoice — fetches the GST tax invoice from order-service and
+  // opens it print-ready. Dependency free: the user prints or "Saves as PDF"
+  // from the browser dialog.
+  //
+  // The figures are deliberately NOT derived here. An invoice is a statutory
+  // document, so its numbering, per-line HSN and GST breakdown, and totals all
+  // come from the server, which computes them from the stored order.
+  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
 
-    const html = `<!doctype html><html><head><meta charset="utf-8" />
-      <title>Invoice ${shortId}</title>
-      <style>
-        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1C1C1C;padding:32px;max-width:640px;margin:auto}
-        h1{color:#5A2C96;margin:0 0 4px}
-        .muted{color:#8E8E93;font-size:12px}
-        table{width:100%;border-collapse:collapse;margin-top:16px}
-        th,td{padding:8px 4px;border-bottom:1px solid #eee;font-size:13px}
-        th{text-align:left;color:#8E8E93;text-transform:uppercase;font-size:11px}
-        .total{display:flex;justify-content:space-between;margin-top:16px;font-weight:700;font-size:18px;color:#5A2C96}
-        .box{margin-top:20px;font-size:13px;line-height:1.6}
-      </style></head><body>
-      <h1>Fish Studio</h1>
-      <div class="muted">Tax Invoice</div>
-      <div class="box">
-        <strong>Invoice ${shortId}</strong><br/>
-        Date: ${new Date(order.createdAt).toLocaleString("en-IN")}<br/>
-        Payment: ${order.paymentMethod === "COD" ? "Pay on Delivery" : order.paymentMethod || "—"}
-      </div>
-      <div class="box">
-        <strong>Deliver to</strong><br/>
-        ${order.deliveryName || ""}<br/>
-        ${order.deliveryAddress || ""}<br/>
-        ${order.deliveryCity || ""} – ${order.deliveryPincode || ""}
-      </div>
-      <table>
-        <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <table style="margin-top:8px">
-        <tbody>
-          <tr><td>Item Subtotal</td><td style="text-align:right">₹${(billDetails?.itemTotal ?? 0).toFixed(2)}</td></tr>
-          ${(billDetails?.discount ?? 0) > 0 ? `<tr><td>Discount</td><td style="text-align:right">-₹${(billDetails?.discount ?? 0).toFixed(2)}</td></tr>` : ""}
-          <tr><td>Delivery Charge</td><td style="text-align:right">₹${((billDetails?.deliveryCharge ?? 0) + (billDetails?.slotExtraCharge ?? 0)).toFixed(2)}</td></tr>
-          ${(billDetails?.packagingCharge ?? 0) > 0 ? `<tr><td>Packaging Charge</td><td style="text-align:right">₹${(billDetails?.packagingCharge ?? 0).toFixed(2)}</td></tr>` : ""}
-          <tr><td>CGST</td><td style="text-align:right">₹${((billDetails?.gstAmount ?? 0) / 2).toFixed(2)}</td></tr>
-          <tr><td>SGST</td><td style="text-align:right">₹${((billDetails?.gstAmount ?? 0) / 2).toFixed(2)}</td></tr>
-        </tbody>
-      </table>
-      <div class="total"><span>Total Paid</span><span>₹${order.totalAmount}</span></div>
-      <p class="muted" style="margin-top:32px">Thank you for shopping with Fish Studio.</p>
-      </body></html>`;
+  const handleDownloadInvoice = async () => {
+    if (isPreparingInvoice) return;
+    setIsPreparingInvoice(true);
 
-    const w = window.open("", "_blank", "width=720,height=900");
+    // Opened before the await: a popup blocked because it was not opened in
+    // the click's own task is indistinguishable, to the user, from a broken
+    // button. Opening first means the only failure left is a real blocker.
+    const w = window.open("", "_blank", "width=900,height=1000");
     if (!w) {
+      setIsPreparingInvoice(false);
       toast.error("Allow pop-ups to download the invoice");
       return;
     }
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 300);
+    w.document.write("<p style='font-family:sans-serif;padding:24px'>Preparing invoice…</p>");
+
+    try {
+      const { data } = await axiosInstance.get(`/order/api/invoice/${order.id}`);
+      if (!data?.success || !data.invoice) throw new Error("No invoice returned");
+
+      w.document.open();
+      w.document.write(renderInvoiceHtml(data.invoice as Invoice));
+      w.document.close();
+      w.focus();
+      setTimeout(() => w.print(), 300);
+    } catch (error: unknown) {
+      w.close();
+      const message =
+        typeof error === "object" && error !== null
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      // The server refuses when the store has no GSTIN configured yet, and says
+      // so — that reason is far more actionable than a generic failure.
+      toast.error(message || "Couldn't prepare the invoice. Please try again.");
+    } finally {
+      setIsPreparingInvoice(false);
+    }
   };
 
   // Share Order — native share where available, otherwise copy the link.
@@ -507,9 +487,10 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
             variant="outline"
             className="h-12 px-6 rounded-full font-bold"
             onClick={handleDownloadInvoice}
+            disabled={isPreparingInvoice}
           >
             <Download className="mr-2 h-4 w-4" />
-            Download Invoice
+            {isPreparingInvoice ? "Preparing…" : "Download Invoice"}
           </Button>
           <Button
             variant="outline"

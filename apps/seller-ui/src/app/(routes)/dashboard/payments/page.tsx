@@ -14,7 +14,7 @@ import Link from "next/link";
 
 import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
@@ -45,7 +45,7 @@ const SellerPayments = () => {
         header: "Order ID",
         cell: ({ row }: any) => (
           <span className="text-white text-sm">
-            {formatOrderId(row.original.id)}
+            {displayOrderNumber(row.original)}
           </span>
         ),
       },

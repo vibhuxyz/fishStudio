@@ -65,6 +65,64 @@ export const validateCouponSchema = z.object({
   storeId: z.string().min(1, "Store ID required"),
 });
 
+/**
+ * Edit an existing coupon.
+ *
+ * Every field is optional — a PATCH-style partial update, so the caller sends
+ * only what changed. Two fields from createCouponSchema are deliberately
+ * absent and cannot be edited:
+ *
+ * - `discountCode`, because it is the identity customers have already been
+ *   given. Renaming it would silently break every share of the old code and
+ *   orphan the CouponUsage rows recorded against it. Delete and re-create to
+ *   change a code.
+ * - `sellerId`, because moving a coupon between stores would rewrite the
+ *   ownership that past redemptions were authorised under.
+ */
+export const updateCouponSchema = z
+  .object({
+    public_name: z.string().min(1, "Title is required").optional(),
+    discountType: z.enum(["percentage", "fixed", "free_delivery"], {
+      errorMap: () => ({ message: "Type must be percentage, fixed, or free_delivery" }),
+    }).optional(),
+    discountValue: z.preprocess(
+      (val) => (val === "" || val == null ? undefined : Number(val)),
+      z.number().min(0, "Value must be >= 0").optional(),
+    ),
+    maxDiscountAmount: z.preprocess(
+      (val) => (val === "" || val == null ? null : Number(val)),
+      z.number().positive("Cap must be greater than 0").nullable().optional(),
+    ),
+    minOrderValue: z.preprocess(
+      (val) => (val === "" || val == null ? undefined : Number(val)),
+      z.number().min(0).optional(),
+    ),
+    expiresAt: z
+      .string()
+      .datetime({ offset: true, message: "Invalid expiry date" })
+      .optional()
+      .nullable(),
+    maxUses: z.preprocess(
+      (val) => (val === "" || val == null ? null : Number(val)),
+      z.number().int().positive().nullable().optional(),
+    ),
+    maxUsesPerUser: z.preprocess(
+      (val) => (val === "" || val == null ? undefined : Number(val)),
+      z.number().int().min(1).optional(),
+    ),
+    isFirstOrder: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    // Only checkable when both arrive together; the controller re-checks
+    // against the stored type when only one of the pair is being changed.
+    (data) =>
+      data.discountType !== "percentage" ||
+      data.discountValue === undefined ||
+      data.discountValue <= 100,
+    { message: "Percentage discount can't exceed 100%", path: ["discountValue"] },
+  );
+
 /** Toggle active/inactive on a coupon */
 export const toggleCouponStatusSchema = z.object({
   isActive: z.boolean(),

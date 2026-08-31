@@ -12,7 +12,7 @@ import {
   type AdminOrder,
   type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import RefundPanel from "@/shared/components/orders/refund-panel";
 import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
 
@@ -155,7 +155,7 @@ const Page = () => {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-100">
-            Order {formatOrderId(order.id)}
+            Order {displayOrderNumber(order)}
           </h1>
           <p className="text-xs text-gray-500 mt-1">
             {new Date(order.createdAt).toLocaleString("en-IN")}

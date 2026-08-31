@@ -16,18 +16,34 @@ import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { SellerOrder } from "@repo/zod-schema";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 import OrderDetailDrawer from "./_components/order-detail-drawer";
+import OrderFiltersBar, {
+  EMPTY_FILTERS,
+  filtersToParams,
+  type OrderFilters,
+} from "./_components/order-filters";
+import BulkStatusBar from "./_components/bulk-status-bar";
 import { paymentStateLabel, resolvePaymentState } from "@repo/shared/payment-state";
+
+/** The server's own reason for a failure, when it sent one. */
+const errorMessage = (err: unknown): string | null => {
+  if (typeof err !== "object" || err === null) return null;
+  const response = (err as { response?: { data?: { message?: unknown } } }).response;
+  if (typeof response?.data?.message === "string") return response.data.message;
+  const message = (err as { message?: unknown }).message;
+  return typeof message === "string" ? message : null;
+};
 
 // Strip leading "#" so searching "#3W5KYD" works the same as "3W5KYD"
 const cleanOrderIdSearch = (value: string) =>
   value.startsWith("#") ? value.slice(1) : value;
 
-const fetchOrders = async (page: number, search: string) => {
+const fetchOrders = async (page: number, search: string, filters: OrderFilters) => {
   const params = new URLSearchParams({ page: String(page), limit: "20" });
   if (search) params.set("search", search);
+  filtersToParams(filters, params);
   const res = await axiosInstance.get(`/order/api/get-seller-orders?${params.toString()}`);
   return { orders: res.data.orders ?? [], pagination: res.data.pagination };
 };
@@ -36,6 +52,10 @@ const OrdersTable = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<OrderFilters>(EMPTY_FILTERS);
+  // Ids only, so a row scrolling out of the fetched page doesn't strand a
+  // stale order object in state.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
   const { seller } = useSeller();
   // Shared persistent WS connection — no new socket created per page.
@@ -44,8 +64,8 @@ const OrdersTable = () => {
   const cleanSearch = cleanOrderIdSearch(search);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["seller-orders", page, cleanSearch],
-    queryFn: () => fetchOrders(page, cleanSearch),
+    queryKey: ["seller-orders", page, cleanSearch, filters],
+    queryFn: () => fetchOrders(page, cleanSearch, filters),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -74,6 +94,74 @@ const OrdersTable = () => {
     },
   });
 
+  const orderIdsOnPage = (data?.orders ?? []).map((o: SellerOrder) => o.id);
+
+  // Selection is per fetched page: changing page or filters replaces the rows
+  // on screen, and keeping ticks for orders the seller can no longer see would
+  // make "12 selected" mean something they can't verify before applying it.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, cleanSearch, filters]);
+
+  const toggleRow = (orderId: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+
+  const allOnPageSelected =
+    orderIdsOnPage.length > 0 && orderIdsOnPage.every((id: string) => selectedIds.has(id));
+
+  const toggleAllOnPage = () =>
+    setSelectedIds(allOnPageSelected ? new Set() : new Set(orderIdsOnPage));
+
+  const bulkMutation = useMutation({
+    mutationFn: async ({ orderIds, status }: { orderIds: string[]; status: string }) => {
+      const res = await axiosInstance.put("/order/api/bulk-update-status", {
+        orderIds,
+        status,
+      });
+      return res.data as {
+        updated: string[];
+        skipped: { orderId: string; reason: string }[];
+        message: string;
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["seller-orders"] });
+      setSelectedIds(new Set());
+
+      // Partial success is the normal case, so it is reported rather than
+      // hidden behind a blanket "done" — the seller needs to know which of
+      // their ticks did not take effect, and why.
+      if (result.updated.length === 0) {
+        toast.error(
+          result.skipped[0]?.reason
+            ? `No orders updated — ${result.skipped[0].reason.toLowerCase()}`
+            : "No orders were updated",
+        );
+        return;
+      }
+      if (result.skipped.length > 0) {
+        toast.warning(`${result.message} ${result.skipped.length} skipped.`, {
+          description: result.skipped
+            .slice(0, 3)
+            .map((s) => s.reason)
+            .join(" · "),
+        });
+        return;
+      }
+      toast.success(result.message);
+    },
+    onError: (err: unknown) => {
+      toast.error(
+        errorMessage(err) ? `Bulk update failed: ${errorMessage(err)}` : "Bulk update failed",
+      );
+    },
+  });
+
   // Subscribe to NEW_ORDER events via the shared connection.
   // This runs once on mount and cleans up on unmount — no connect/disconnect.
   useEffect(() => {
@@ -90,11 +178,32 @@ const OrdersTable = () => {
   const columns = useMemo(
     () => [
       {
+        id: "select",
+        header: () => (
+          <input
+            type="checkbox"
+            aria-label="Select all orders on this page"
+            className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+            checked={allOnPageSelected}
+            onChange={toggleAllOnPage}
+          />
+        ),
+        cell: ({ row }: { row: { original: SellerOrder } }) => (
+          <input
+            type="checkbox"
+            aria-label={`Select order ${displayOrderNumber(row.original)}`}
+            className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+            checked={selectedIds.has(row.original.id)}
+            onChange={() => toggleRow(row.original.id)}
+          />
+        ),
+      },
+      {
         accessorKey: "id",
         header: "Order ID",
         cell: ({ row }: { row: { original: SellerOrder } }) => (
           <span className="text-white text-sm truncate">
-            {formatOrderId(row.original.id)}
+            {displayOrderNumber(row.original)}
           </span>
         ),
       },
@@ -196,7 +305,9 @@ const OrdersTable = () => {
         ),
       },
     ],
-    [recheckMutation],
+    // selectedIds/allOnPageSelected are read by the selection column, so the
+    // column defs must be rebuilt when they change or the ticks never render.
+    [recheckMutation, selectedIds, allOnPageSelected],
   );
 
   const table = useReactTable({
@@ -226,6 +337,23 @@ const OrdersTable = () => {
           }}
         />
       </div>
+
+      <OrderFiltersBar
+        value={filters}
+        onChange={(next) => {
+          setFilters(next);
+          setPage(1);
+        }}
+      />
+
+      <BulkStatusBar
+        selectedCount={selectedIds.size}
+        isPending={bulkMutation.isPending}
+        onApply={(status) =>
+          bulkMutation.mutate({ orderIds: [...selectedIds], status })
+        }
+        onClear={() => setSelectedIds(new Set())}
+      />
 
       {/* Table */}
       <div className="overflow-x-auto bg-gray-900 rounded-lg p-4">

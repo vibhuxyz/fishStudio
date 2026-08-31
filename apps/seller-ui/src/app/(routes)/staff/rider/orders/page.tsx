@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import useStaffRequestConfig from "@/hooks/useStaffRequestConfig";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
@@ -144,7 +144,7 @@ const RiderOrdersPage = () => {
               <div key={order.id} className="bg-[#0f1117] border border-gray-800 rounded-xl overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-white font-semibold text-sm">Order {formatOrderId(order.id)}</p>
+                    <p className="text-white font-semibold text-sm">Order {displayOrderNumber(order)}</p>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[order.status] ?? "bg-gray-700 text-gray-300"}`}>
                       {STATUS_LABELS[order.status] || order.status}
                     </span>
