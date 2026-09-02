@@ -1,0 +1,81 @@
+# Production scrape config.
+#
+# Targets are the compose service aliases from prod.docker-compose.yml, so this
+# Prometheus must be attached to the `fish-studio-net` network — see
+# prod.docker-compose.observability.yml. The services publish no host ports in
+# production, which is the point: /metrics is reachable from inside the network
+# and nowhere else.
+#
+# The gateway is the one service Nginx exposes publicly, so its /metrics is
+# additionally protected by METRICS_AUTH_TOKEN. Every job sends the token
+# anyway — the services all read the same variable, and a config that differs
+# per target is a config that drifts.
+
+global:
+  # 15s rather than the local 10s: on a single droplet the extra samples buy
+  # little and cost disk. Alerting rules would need to know this number.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: production
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: api-gateway
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["api-gateway:8080"]
+        labels: { stack: fishstudio }
+
+  - job_name: auth-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["auth-service:6001"]
+        labels: { stack: fishstudio }
+
+  - job_name: product-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      # Must match PRODUCT_SERVICE_PORT in .env.prod. The default in
+      # packages/env-config is 6003, but the local .env overrides it to 6002 —
+      # check before trusting this line on a new environment.
+      - targets: ["product-service:6003"]
+        labels: { stack: fishstudio }
+
+  - job_name: order-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["order-service:6004"]
+        labels: { stack: fishstudio }
+
+  - job_name: notification-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["notification-service:6005"]
+        labels: { stack: fishstudio }
+
+  - job_name: worker-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["worker-service:6006"]
+        labels: { stack: fishstudio }
+
+  - job_name: payment-service
+    authorization:
+      credentials_file: /etc/prometheus/metrics-token
+    static_configs:
+      - targets: ["payment-service:6007"]
+        labels: { stack: fishstudio }

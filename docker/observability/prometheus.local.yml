@@ -1,0 +1,62 @@
+# Scrape config for the FishStudio Engineering Control Center.
+#
+# Targets point at host.docker.internal, i.e. the services started by `bun dev`
+# on the host, because that is how the stack runs locally. To scrape the
+# containerised stack instead, swap each target for the compose service alias
+# (`order-service:6004`) and attach this file's compose service to
+# `fish-studio-net`.
+#
+# One job per service, named after the service, so `up{job="order-service"}`
+# answers "is it alive?" without depending on the process being healthy enough
+# to report anything about itself.
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: api-gateway
+    static_configs:
+      - targets: ["host.docker.internal:8080"]
+        labels: { stack: fishstudio }
+
+  - job_name: auth-service
+    static_configs:
+      - targets: ["host.docker.internal:6001"]
+        labels: { stack: fishstudio }
+
+  - job_name: product-service
+    static_configs:
+      # 6002, not the 6003 that packages/env-config defaults to: the local .env
+      # overrides PRODUCT_SERVICE_PORT. Prometheus has no way to discover that,
+      # so this line has to track whatever .env actually says.
+      - targets: ["host.docker.internal:6002"]
+        labels: { stack: fishstudio }
+
+  - job_name: order-service
+    static_configs:
+      - targets: ["host.docker.internal:6004"]
+        labels: { stack: fishstudio }
+
+  - job_name: notification-service
+    static_configs:
+      - targets: ["host.docker.internal:6005"]
+        labels: { stack: fishstudio }
+
+  - job_name: worker-service
+    static_configs:
+      - targets: ["host.docker.internal:6006"]
+        labels: { stack: fishstudio }
+
+  - job_name: payment-service
+    static_configs:
+      - targets: ["host.docker.internal:6007"]
+        labels: { stack: fishstudio }

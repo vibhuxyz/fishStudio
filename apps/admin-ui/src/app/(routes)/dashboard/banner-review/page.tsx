@@ -5,6 +5,7 @@ import { Check, X, Loader2, Store, Mail, Calendar, Grid, AlertCircle, Info } fro
 import { toast } from "sonner";
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import { formatIstDate } from "@repo/shared/datetime";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
@@ -178,7 +179,7 @@ const CategoryBannerReviewPage = () => {
                         </div>
                         <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
                           <Calendar size={12} />
-                          <span>{new Date(banner.createdAt).toLocaleDateString()}</span>
+                          <span>{formatIstDate(banner.createdAt)}</span>
                         </div>
                         
                         {banner.status === 'PENDING' ? (

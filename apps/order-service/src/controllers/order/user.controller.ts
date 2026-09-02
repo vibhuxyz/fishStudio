@@ -1738,3 +1738,147 @@ export const cancelOrder = async (
     return next(error);
   }
 };
+
+/**
+ * Customer asks to pay cash for an order whose online payment failed.
+ *
+ * Scenario 4 of the order-accept matrix: the checkout was online, the payment
+ * did not go through, and rather than retry the card the customer wants COD.
+ * We flip the order to cash and hand it to the seller — deliberately *not*
+ * auto-accepted even for a small amount, because a failed payment plus a
+ * payment-method switch is exactly the case that warrants a human confirming
+ * with the customer before the store commits.
+ */
+export const requestCodConversion = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    const { orderId } = req.params as { orderId: string };
+
+    const order = await prismaPostgres.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        userId: true,
+        storeId: true,
+        status: true,
+        paymentMethod: true,
+        paymentStatus: true,
+      },
+    });
+
+    if (!order) return next(new NotFoundError("Order not found"));
+    if (order.userId !== userId) {
+      return next(new ValidationError("You can only change your own orders"));
+    }
+
+    // Already cash — the customer tapped twice, or a previous request landed.
+    // Idempotent: report success without touching anything or re-notifying.
+    if (order.paymentMethod === "COD") {
+      return res.status(200).json({
+        success: true,
+        message: "This order is already set to Cash on Delivery.",
+        order,
+      });
+    }
+
+    // Only offer this while the order is still waiting and the online payment
+    // has actually failed. A paid order, or one the seller already accepted or
+    // rejected, is out of the customer's hands.
+    if (order.status !== "PENDING" || order.paymentStatus !== "FAILED") {
+      return next(
+        new ValidationError(
+          "Cash on Delivery can only be requested for a pending order whose online payment failed.",
+        ),
+      );
+    }
+
+    const updated = await prismaPostgres.order.update({
+      where: { id: orderId },
+      data: {
+        paymentMethod: "COD",
+        // Back to PENDING (from FAILED): there is no online payment to chase
+        // any more, the cash is collected on delivery.
+        paymentStatus: "PENDING",
+        updatedAt: new Date(),
+      },
+    });
+
+    writeAuditLog("ORDER", orderId, "ORDER_COD_CONVERSION_REQUESTED", userId, "USER", {
+      previousPaymentStatus: order.paymentStatus,
+    });
+
+    // Refresh the seller's order board — the order was already sitting in their
+    // PENDING list, but the payment column just changed under them.
+    publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
+      type: "ORDER_STATUS_UPDATE",
+      userId,
+      storeId: order.storeId,
+      orderId,
+      status: "PENDING",
+    }).catch((err) =>
+      logger.error("Failed to publish COD conversion event", { orderId, err }),
+    );
+
+    try {
+      await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
+        userId,
+        title: "Switched to Cash on Delivery",
+        message:
+          `Order ${formatOrderId(orderId)} will now be paid in cash on delivery. ` +
+          "The store will confirm and accept it shortly.",
+        type: "INFO",
+        category: "ORDER",
+        metadata: { orderId },
+        channels: ["IN_APP", "PUSH"],
+      });
+    } catch {
+      /* non-critical */
+    }
+
+    // Tell the seller/staff a human check is needed — same fan-out shape as a
+    // customer cancellation, and for the same reason (don't block the response
+    // on Mongo lookups).
+    (async () => {
+      try {
+        const shortId = formatOrderId(orderId);
+        const store = await prismaMongo.stores.findUnique({
+          where: { id: order.storeId },
+          select: { sellerId: true },
+        });
+        if (!store?.sellerId) return;
+        const staffs = await prismaMongo.staffs.findMany({
+          where: { sellerId: store.sellerId, isActive: true },
+          select: { id: true },
+        });
+        const notifyTargets = [{ id: store.sellerId }, ...staffs];
+        await Promise.all(
+          notifyTargets.map((target) =>
+            publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
+              userId: target.id,
+              title: "Order switched to Cash on Delivery",
+              message: `Online payment failed on order ${shortId}; the customer wants to pay cash. Please confirm and accept.`,
+              type: "WARNING",
+              category: "ORDER",
+              metadata: { orderId },
+              channels: ["IN_APP"],
+            }),
+          ),
+        );
+      } catch (err) {
+        logger.error("Failed to notify seller of COD conversion", { orderId, err });
+      }
+    })();
+
+    return res.status(200).json({
+      success: true,
+      message: "Order switched to Cash on Delivery. The store will confirm it shortly.",
+      order: updated,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

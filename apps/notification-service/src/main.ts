@@ -3,11 +3,21 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
-import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { ENV } from "@repo/env-config";
 import { errorMiddleware } from "@repo/error-handlers";
-import { connectRabbitMQ } from "@repo/libs/rabbitmq";
+import { connectRabbitMQ, isRabbitMQHealthy } from "@repo/libs/rabbitmq";
+import {
+  buildHealthHandler,
+  correlationId,
+  httpLogging,
+  httpMetrics,
+  httpTracing,
+  initMetrics,
+  initTracing,
+  metricsRoute,
+} from "@repo/observability";
+import { prismaPostgres } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
 import notificationRouter from "./routes/notification.router.js";
 import { startNotificationConsumer } from "./consumers/notification.consumer.js";
@@ -20,9 +30,22 @@ process.on("unhandledRejection", (reason) => {
   logger.error("[Notification Service] Unhandled Rejection", reason);
 });
 
+initMetrics({ serviceName: "notification-service" });
+initTracing({ serviceName: "notification-service" });
+
 const app = express();
 // Trust gateway's X-Forwarded-* so req.ip is the real client IP
 app.set("trust proxy", 1);
+
+// All four sit above the rate limiter on purpose. A burst of 429s is exactly
+// the shape the dashboard needs to show, and a request the limiter rejects
+// still deserves a correlation id, a span and a log line — signals that only
+// cover successful requests go missing precisely when they are needed.
+app.use(correlationId());
+app.use(httpTracing());
+app.use(httpMetrics());
+app.use(httpLogging());
+app.use(metricsRoute());
 const port = Number(ENV.NOTIFICATION_SERVICE_PORT) || 6005;
 
 const defaultLocalOrigins = [
@@ -60,7 +83,6 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(express.json({ limit: "512kb" }));
-app.use(morgan(ENV.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(cookieParser());
 app.use(cors({
   origin: (origin, callback) => {
@@ -76,6 +98,20 @@ app.use(cors({
 app.get("/", (req, res) => {
     res.json({ message: "Notification Service is running" });
 });
+
+app.get(
+  "/internal/health",
+  buildHealthHandler({
+    service: "notification-service",
+    checks: {
+      postgres: async () => {
+        await prismaPostgres.$queryRaw`SELECT 1`;
+        return true;
+      },
+      rabbitmq: async () => isRabbitMQHealthy(),
+    },
+  }),
+);
 
 app.use("/api/notifications", notificationRouter);
 

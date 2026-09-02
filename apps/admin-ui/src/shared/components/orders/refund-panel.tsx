@@ -8,6 +8,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import type { AdminOrder } from "@/hooks/useAdminQueries";
 import { resolvePaymentState } from "@repo/shared/payment-state";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 const formatCurrency = (value: number) =>
   `₹${Number(value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -122,14 +123,14 @@ const RefundPanel: React.FC<RefundPanelProps> = ({ order, onRefunded }) => {
               Cancelled by {String(order.cancelledBy ?? "—").toLowerCase()}
               {order.cancellationReason ? ` — ${order.cancellationReason}` : ""}
               {order.cancelledAt
-                ? ` · ${new Date(order.cancelledAt).toLocaleString("en-IN")}`
+                ? ` · ${formatIstDateTime(order.cancelledAt)}`
                 : ""}
             </p>
           )}
 
           {refundStatus === "FAILED" && order.refundFailedAt && (
             <p className="mt-1 text-xs opacity-70">
-              Last attempt {new Date(order.refundFailedAt).toLocaleString("en-IN")}
+              Last attempt {formatIstDateTime(order.refundFailedAt)}
             </p>
           )}
         </div>

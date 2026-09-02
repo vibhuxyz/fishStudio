@@ -1,0 +1,56 @@
+# Single-binary Loki. Everything runs in one process writing to a local volume,
+# which is the right shape for one droplet — the microservices deployment mode
+# exists for clusters storing terabytes, and adopting it here would be all the
+# operational cost with none of the benefit.
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Logs are far more voluminous than metrics and far less useful once cold.
+  # 14 days is about two sprints of "when did this start?" and is a few hundred
+  # megabytes at this system's volume.
+  retention_period: 336h
+  # A burst of errors is exactly when logs matter most, so the ingestion limit
+  # is set well above steady state rather than at it.
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+  # Guards against a stream-per-request mistake — the same cardinality trap the
+  # `route` label solves on the Prometheus side.
+  max_streams_per_user: 5000
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+compactor:
+  working_directory: /loki/compactor
+  delete_request_store: filesystem
+  retention_enabled: true
+
+analytics:
+  reporting_enabled: false

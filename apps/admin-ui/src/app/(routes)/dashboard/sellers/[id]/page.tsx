@@ -12,6 +12,7 @@ import { useReactTable, getCoreRowModel, getFilteredRowModel, flexRender } from 
 import ProductDetailModal from "@/shared/components/analytics/ProductDetailModal";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { formatIstDate } from "@repo/shared/datetime";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
@@ -205,9 +206,8 @@ const SellerDetailPage = () => {
         accessorKey: "createdAt",
         header: "Date",
         cell: ({ row }: { row: { original: SellerOrder } }) => {
-          const date = new Date(row.original.createdAt);
           return (
-            <span className="text-gray-400 text-[9px] whitespace-nowrap">{date.toLocaleDateString()}</span>
+            <span className="text-gray-400 text-[9px] whitespace-nowrap">{formatIstDate(row.original.createdAt)}</span>
           );
         },
       },

@@ -7,6 +7,9 @@ services:
       # Bound to 127.0.0.1 so ONLY Nginx can talk to it from the outside
       - "127.0.0.1:8080:8080"
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - auth-service
       - product-service
@@ -21,6 +24,9 @@ services:
     image: 10xdevian134/auth-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - rabbitmq-service
     networks:
@@ -31,6 +37,9 @@ services:
     image: 10xdevian134/product-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - meilisearch
     networks:
@@ -41,6 +50,9 @@ services:
     image: 10xdevian134/order-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - rabbitmq-service
     networks:
@@ -51,6 +63,9 @@ services:
     image: 10xdevian134/notification-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - rabbitmq-service
     networks:
@@ -61,6 +76,9 @@ services:
     image: 10xdevian134/worker-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     depends_on:
       - rabbitmq-service
     networks:
@@ -71,6 +89,31 @@ services:
     image: 10xdevian134/payment-service:prod
     restart: always
     env_file: .env.prod
+    environment:
+      LOKI_URL: http://loki:3100
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
+    networks:
+      - fish-studio-net
+
+  control-center:
+    container_name: control-center
+    image: 10xdevian134/control-center:prod
+    restart: always
+    ports:
+      # Bound to 127.0.0.1 like the gateway: Nginx terminates TLS and proxies
+      # to it. Nothing here is a public listener.
+      - "127.0.0.1:3003:3003"
+    env_file: .env.prod
+    environment:
+      # Prometheus lives on this network, reached by its compose alias. The
+      # dashboard queries it server-side, so Prometheus itself stays private.
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      # Flips the header badge from "Local stack · synthetic load" to
+      # "Production traffic". The numbers are measured either way; this says
+      # which they are.
+      CONTROL_CENTER_ENVIRONMENT: production
     networks:
       - fish-studio-net
 

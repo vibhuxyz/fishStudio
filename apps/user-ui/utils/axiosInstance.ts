@@ -72,11 +72,22 @@ axiosInstance.interceptors.response.use(
         onRefreshSuccess();
 
         return axiosInstance(originalRequest);
-      } catch (error) {
+      } catch (refreshError) {
         isRefreshing = false;
         refreshSubscribers = [];
-        handleLogout();
-        return Promise.reject(error);
+
+        // Only tear down the session when the server actually rejected the
+        // refresh token (expired / revoked / rotated family). A 429, a 503
+        // from a Redis hiccup, or a network drop means "couldn't refresh right
+        // now" — not "signed out". Logging the user out on those just burns an
+        // OTP on their next visit for no reason.
+        const refreshStatus = axios.isAxiosError(refreshError)
+          ? refreshError.response?.status
+          : undefined;
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          handleLogout();
+        }
+        return Promise.reject(refreshError);
       }
     }
     return Promise.reject(error);

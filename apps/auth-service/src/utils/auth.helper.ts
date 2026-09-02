@@ -113,7 +113,14 @@ export const sendOtp = async (
     });
 
     if (process.env.NODE_ENV !== "production") {
-      logger.info(`[DEV] OTP ${otp} published to ${QUEUE_NAMES.OTP_QUEUE} for ${identifier}`);
+      // The otp goes in a field, not into the message string. The logger
+      // redacts a field named `otp`; it cannot reach inside an interpolated
+      // sentence, and this line ships to Loki like every other one.
+      logger.info("[DEV] OTP published", {
+        otp,
+        queue: QUEUE_NAMES.OTP_QUEUE,
+        identifier,
+      });
     }
 
     return { success: true, message: "OTP request queued" };

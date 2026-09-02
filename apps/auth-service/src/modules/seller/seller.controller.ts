@@ -410,6 +410,9 @@ export const resetPasswordSeller = async (
         where: { email },
         data: { password: hashedPassword },
       });
+      // A password reset is a security event: kill every existing session so a
+      // stolen token can't outlive the credential it was riding on.
+      await bumpRefreshFamily("seller", seller.id).catch(() => {});
       return res.status(200).json({ success: true, message: "Password reset successfully." });
     }
 
@@ -419,6 +422,7 @@ export const resetPasswordSeller = async (
         where: { id: staff.id },
         data: { password: hashedPassword },
       });
+      await bumpRefreshFamily("staff", staff.id).catch(() => {});
       return res.status(200).json({ success: true, message: "Password reset successfully." });
     }
 

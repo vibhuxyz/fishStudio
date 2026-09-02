@@ -32,6 +32,7 @@ import {
 } from "@/hooks/useAdminQueries";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const PERIODS: { label: string; value: StatsPeriod }[] = [
@@ -91,7 +92,7 @@ function OrderDetailModal({ order, onClose }: { order: SellerOrder; onClose: () 
               Order {displayOrderNumber(order)}
             </p>
             <p className="text-gray-500 text-xs mt-0.5">
-              {date.toLocaleDateString()} · {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {formatIstDate(date)} · {formatIstDateTime(date, { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
           <button
@@ -532,9 +533,9 @@ const SellerPaymentDetail = () => {
                       <td className="py-3">{statusBadge(order)}</td>
                       <td className="py-3">
                         <div className="text-xs">
-                          <p className="text-white font-medium">{date.toLocaleDateString()}</p>
+                          <p className="text-white font-medium">{formatIstDate(date)}</p>
                           <p className="text-gray-500 text-[10px]">
-                            {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            {formatIstDateTime(date, { hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                       </td>

@@ -65,6 +65,7 @@ export const adminQueryKeys = {
   seller: ["admin", "account"] as const,
   sellerCodes: ["admin", "sellerCodes"] as const,
   banners: ["admin", "banners"] as const,
+  sellerEvents: (sellerId: string) => ["admin", "seller-events", sellerId] as const,
 };
 
 export const getCategoryConfigKey = (category: string) =>
@@ -213,8 +214,80 @@ export const deleteDiscountCode = async (discountId: string) => {
   await axiosInstance.delete(`/product/api/delete-discount-code/${discountId}`, isProtected);
 };
 
+// ── Seller Events (Master Admin acts on a chosen seller's store) ──────────
+
+export type AdminSellerEventType = "FREE_DELIVERY" | "DISCOUNT" | "FLASH_SALE";
+
+export interface AdminSellerEvent {
+  id: string;
+  sellerId: string;
+  title: string;
+  description?: string | null;
+  type: AdminSellerEventType;
+  minOrder?: number | null;
+  discount?: number | null;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
+export interface AdminSellerEventPayload {
+  sellerId: string;
+  title: string;
+  description?: string;
+  type: AdminSellerEventType;
+  minOrder?: number | null;
+  discount?: number | null;
+  startTime: string;
+  endTime: string;
+}
+
+export const fetchAdminSellerEvents = async (
+  sellerId: string,
+): Promise<AdminSellerEvent[]> => {
+  const response = await axiosInstance.get(
+    `/product/api/get-seller-events?sellerId=${encodeURIComponent(sellerId)}`,
+    isProtected,
+  );
+  return Array.isArray(response.data.events) ? response.data.events : [];
+};
+
+export const createAdminSellerEvent = async (payload: AdminSellerEventPayload) => {
+  await axiosInstance.post("/product/api/create-event", payload, isProtected);
+};
+
+export const updateAdminSellerEvent = async ({
+  eventId,
+  payload,
+}: {
+  eventId: string;
+  payload: Partial<AdminSellerEventPayload> & { isActive?: boolean };
+}) => {
+  await axiosInstance.put(`/product/api/update-event/${eventId}`, payload, isProtected);
+};
+
+export const deleteAdminSellerEvent = async (eventId: string) => {
+  await axiosInstance.delete(`/product/api/delete-event/${eventId}`, isProtected);
+};
+
+export const useAdminSellerEvents = (sellerId?: string) =>
+  useQuery({
+    queryKey: sellerId
+      ? adminQueryKeys.sellerEvents(sellerId)
+      : ["admin", "seller-events", "none"],
+    queryFn: () => fetchAdminSellerEvents(sellerId as string),
+    enabled: Boolean(sellerId),
+  });
+
 export const fetchCategories = async (): Promise<CategoriesResponse> => {
-  const response = await axiosInstance.get("/product/api/get-categories");
+  // /get-categories is sent with `Cache-Control: public, max-age=300,
+  // stale-while-revalidate=600` for the storefront. That HTTP cache is why a
+  // just-saved category image kept showing the old one here for minutes — the
+  // browser answered React Query's refetch from disk without hitting the
+  // server. The admin panel edits this data, so it must always read through.
+  const response = await axiosInstance.get("/product/api/get-categories", {
+    params: { _ts: Date.now() },
+  });
   return {
     categories: Array.isArray(response.data.categories) ? response.data.categories : [],
     subCategories:

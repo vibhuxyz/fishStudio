@@ -81,7 +81,7 @@ export function parseSellerOrderFilters(query: Record<string, unknown>): Record<
 }
 
 /** The UTC instant at which an IST calendar day (YYYY-MM-DD) begins. */
-function istDayStart(raw: unknown): Date | null {
+export function istDayStart(raw: unknown): Date | null {
   if (typeof raw !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) return null;
   // Midnight IST is 18:30 UTC on the previous day.
   const parsed = new Date(`${raw.trim()}T00:00:00.000+05:30`);

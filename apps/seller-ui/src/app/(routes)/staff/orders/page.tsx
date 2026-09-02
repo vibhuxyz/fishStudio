@@ -37,6 +37,7 @@ import { useWorkerWS } from "@/context/worker-ws-context";
 import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -461,7 +462,7 @@ function OrderDetailModal({
           <div>
             <h2 className="text-white font-black text-2xl tracking-tighter uppercase italic">Order {displayOrderNumber(order)}</h2>
             <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
-              Placed on {new Date(order.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              Placed on {formatIstDateTime(order.createdAt, { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
           <div className="flex items-center gap-4">

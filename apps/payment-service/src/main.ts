@@ -19,6 +19,17 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleware } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
+import {
+  buildHealthHandler,
+  correlationId,
+  httpLogging,
+  httpMetrics,
+  httpTracing,
+  initMetrics,
+  initTracing,
+  metricsRoute,
+} from "@repo/observability";
+import { prismaPostgres } from "@repo/db-postgres";
 import paymentRouter from "./routes/payment.routes.js";
 import { paymentReconciliationTask } from "./jobs/payment.reconciliation.job.js";
 import { paymentPrewarmConsumer } from "./consumers/payment-prewarm.consumer.js";
@@ -28,9 +39,22 @@ const RATE_LIMIT_MAX = 200;
 const JSON_BODY_LIMIT = "2mb";
 const DEFAULT_PORT = 6007;
 
+initMetrics({ serviceName: "payment-service" });
+initTracing({ serviceName: "payment-service" });
+
 const app = express();
 // Trust the gateway's X-Forwarded-* so req.ip is the real client IP.
 app.set("trust proxy", 1);
+
+// All four sit above the rate limiter on purpose. A burst of 429s is exactly
+// the shape the dashboard needs to show, and a request the limiter rejects
+// still deserves a correlation id, a span and a log line — signals that only
+// cover successful requests go missing precisely when they are needed.
+app.use(correlationId());
+app.use(httpTracing());
+app.use(httpMetrics());
+app.use(httpLogging());
+app.use(metricsRoute());
 
 const allowedOrigins = ENV.CORS_ORIGINS
   ? ENV.CORS_ORIGINS.split(",").map((o: string) => o.trim())
@@ -79,6 +103,22 @@ app.use(cookieParser());
 app.get("/", (_req, res) => {
   res.json({ message: "Payment service is running" });
 });
+
+app.get(
+  "/internal/health",
+  buildHealthHandler({
+    service: "payment-service",
+    checks: {
+      postgres: async () => {
+        await prismaPostgres.$queryRaw`SELECT 1`;
+        return true;
+      },
+      // No RabbitMQ check: the prewarm consumer is an optimisation and the
+      // interactive path creates gateway orders without it, so a missing
+      // channel is not degradation.
+    },
+  }),
+);
 
 app.use("/api", paymentRouter);
 app.use(errorMiddleware);

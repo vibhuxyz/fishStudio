@@ -1,7 +1,12 @@
 import { Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
-import { AuthRequest, getRequiredParam } from "./utils.js";
+import {
+  AuthRequest,
+  getRequiredParam,
+  resolveEventOwnerSellerId,
+  assertEventManageAccess,
+} from "./utils.js";
 import { createEventSchema, updateEventSchema, validate } from "@repo/zod-schema";
 
 export const createSellerEvent = async (
@@ -10,9 +15,12 @@ export const createSellerEvent = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can create events!"));
-    }
+    // Seller acts on their own store; admin names the seller in the body,
+    // same as create-discount-code.
+    const ownerSellerId = await resolveEventOwnerSellerId(
+      req,
+      typeof req.body?.sellerId === "string" ? req.body.sellerId : undefined,
+    );
     const { title, description, type, minOrder, discount, startTime, endTime, firstOrderCoupon } =
       validate(createEventSchema, req.body) as any;
     const startDate = new Date(startTime);
@@ -41,14 +49,15 @@ export const createSellerEvent = async (
           expiresAt: firstOrderCoupon.expiresAt ? new Date(firstOrderCoupon.expiresAt) : null,
           maxUsesPerUser: 1, // always once per user
           isFirstOrder: true,
-          sellerId: req.seller.id,
+          sellerId: ownerSellerId,
+          ...(req.role === "admin" && req.admin?.id ? { adminId: req.admin.id } : {}),
         },
       });
     }
 
     const event = await prisma.seller_events.create({
       data: {
-        sellerId: req.seller.id,
+        sellerId: ownerSellerId,
         title: String(title).trim(),
         description:
           typeof description === "string" && description.trim()
@@ -86,12 +95,22 @@ export const getSellerEvents = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can view events!"));
+    // Admin lists a chosen seller's events (?sellerId=); a seller lists own.
+    let sellerId: string;
+    if (req.role === "admin" && req.admin?.id) {
+      const picked = req.query.sellerId;
+      if (typeof picked !== "string" || !picked.trim()) {
+        return next(new ValidationError("Select a seller to view their events"));
+      }
+      sellerId = picked.trim();
+    } else if (req.role === "seller" && req.seller?.id) {
+      sellerId = req.seller.id;
+    } else {
+      return next(new ValidationError("Only seller or admin can view events!"));
     }
     const events = await prisma.seller_events.findMany({
       where: {
-        sellerId: req.seller.id,
+        sellerId,
       },
       orderBy: {
         startTime: "desc",
@@ -112,9 +131,6 @@ export const updateSellerEvent = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can update events!"));
-    }
     const eventId = getRequiredParam(req.params.eventId, "Event id");
     const existingEvent = await prisma.seller_events.findUnique({
       where: { id: eventId },
@@ -123,11 +139,7 @@ export const updateSellerEvent = async (
     if (!existingEvent) {
       return next(new NotFoundError("Event not found!"));
     }
-    if (existingEvent.sellerId !== req.seller.id) {
-      return next(
-        new ValidationError("You are not authorized to update this event!"),
-      );
-    }
+    assertEventManageAccess(existingEvent, req);
     const updateData = validate(updateEventSchema, req.body);
     if (updateData.startTime) {
       (updateData as any).startTime = new Date(updateData.startTime);
@@ -155,9 +167,6 @@ export const deleteSellerEvent = async (
   next: NextFunction,
 ) => {
   try {
-    if (req.role !== "seller" || !req.seller?.id) {
-      return next(new ValidationError("Only seller can delete events!"));
-    }
     const eventId = getRequiredParam(req.params.eventId, "Event id");
     const event = await prisma.seller_events.findUnique({
       where: { id: eventId },
@@ -166,11 +175,7 @@ export const deleteSellerEvent = async (
     if (!event) {
       return next(new NotFoundError("Event not found!"));
     }
-    if (event.sellerId !== req.seller.id) {
-      return next(
-        new ValidationError("You are not authorized to delete this event!"),
-      );
-    }
+    assertEventManageAccess(event, req);
     await prisma.seller_events.delete({
       where: { id: eventId },
     });

@@ -17,6 +17,7 @@ import { SellerOrder } from "@repo/zod-schema";
 import useSeller from "@/hooks/useSeller";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate } from "@repo/shared/datetime";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 import OrderDetailDrawer from "./_components/order-detail-drawer";
 import OrderFiltersBar, {
@@ -287,7 +288,7 @@ const OrdersTable = () => {
         accessorKey: "createdAt",
         header: "Date",
         cell: ({ row }: { row: { original: SellerOrder } }) => {
-          const date = new Date(row.original.createdAt).toLocaleDateString();
+          const date = formatIstDate(row.original.createdAt);
           return <span className="text-white text-sm">{date}</span>;
         },
       },

@@ -151,6 +151,25 @@ export const ENV = {
   MEILISEARCH_HOST: process.env.MEILISEARCH_HOST || "http://localhost:7700",
   MEILISEARCH_API_KEY: process.env.MEILISEARCH_API_KEY || "",
 
+  // Observability
+  //
+  // METRICS_AUTH_TOKEN deliberately skips logEnv: it is unset locally on
+  // purpose — the services bind to loopback, so /metrics needs no guard — and a
+  // red "ENV MISSING" line on every boot would train people to ignore the log.
+  // In production it is set, and /metrics answers 404 without it.
+  METRICS_AUTH_TOKEN: process.env.METRICS_AUTH_TOKEN || "",
+  // Both are read directly by @repo/observability rather than through ENV, so
+  // these entries exist to document them and to give one place to look. Unset
+  // means "that signal is off": no LOKI_URL logs to stdout only, no OTLP
+  // endpoint exports no spans. Neither is an error — a developer with no
+  // observability stack running should not be blocked by it.
+  LOKI_URL: process.env.LOKI_URL || "",
+  OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || "",
+  LOG_LEVEL: process.env.LOG_LEVEL || "",
+  CONTROL_CENTER_PORT: process.env.CONTROL_CENTER_PORT || "3003",
+  CONTROL_CENTER_ENVIRONMENT: process.env.CONTROL_CENTER_ENVIRONMENT || "local",
+  PROMETHEUS_URL: process.env.PROMETHEUS_URL || "http://127.0.0.1:9090",
+
   // Organization Details
   ORG_NAME: process.env.ORG_NAME || "FishStudio",
   ORG_SUPPORT_EMAIL: process.env.ORG_SUPPORT_EMAIL || "support@fishstudio.dev",

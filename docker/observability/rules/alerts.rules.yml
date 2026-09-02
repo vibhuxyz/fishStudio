@@ -1,0 +1,111 @@
+# Alert rules.
+#
+# Two principles decide everything here.
+#
+# **Alert on symptoms, not causes.** "Checkout is failing for users" is worth
+# waking someone for. "CPU is at 80%" is not — it might be fine, and if it is
+# not, the symptom alert will fire anyway and the CPU graph will be right there.
+# Cause-based alerts are how a pager becomes noise nobody reads.
+#
+# **Every alert has a `for` clause.** Without one, a single failed scrape or a
+# two-second blip pages a human. The duration is what separates "something is
+# wrong" from "something was briefly odd".
+
+groups:
+  - name: fishstudio-availability
+    rules:
+      - alert: ServiceDown
+        expr: max by (job) (up{stack="fishstudio"}) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} has not answered a scrape for 2 minutes"
+          description: >-
+            Prometheus cannot reach {{ $labels.job }}. This is measured from
+            outside the process, so it is also true when the service is alive
+            but wedged.
+
+      - alert: AllServicesDown
+        expr: count(max by (job) (up{stack="fishstudio"}) == 1) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No FishStudio service is answering scrapes"
+          description: >-
+            Either the whole stack is down or Prometheus itself has lost its
+            network. Check Prometheus first — a monitoring failure that looks
+            like a total outage is the more common of the two.
+
+  - name: fishstudio-slo-burn
+    rules:
+      # Multi-window, multi-burn-rate. The fast window catches an outage in
+      # minutes; the slow window catches a bleed that would otherwise never
+      # cross a threshold. Requiring both to fire is what removes the false
+      # alarm from a brief spike: the 1h window will not have moved.
+      - alert: CheckoutErrorBudgetBurningFast
+        expr: slo:checkout:burn_rate5m > 14.4 and slo:checkout:burn_rate1h > 14.4
+        for: 2m
+        labels:
+          severity: critical
+          journey: checkout
+        annotations:
+          summary: "Checkout is burning its error budget 14x too fast"
+          description: >-
+            At this rate the 30-day budget is gone in about two days. Checkout
+            writes orders and takes payments, so this is the one alert in this
+            file that is always worth interrupting someone for.
+
+      - alert: CheckoutErrorBudgetBurningSlow
+        expr: slo:checkout:burn_rate1h > 6
+        for: 15m
+        labels:
+          severity: warning
+          journey: checkout
+        annotations:
+          summary: "Checkout error budget burning faster than sustainable"
+          description: >-
+            Not an emergency. It becomes one if nobody looks before the budget
+            runs out, which is the point of catching it here.
+
+      - alert: CatalogueErrorBudgetBurningFast
+        expr: slo:catalogue:burn_rate5m > 14.4 and slo:catalogue:burn_rate1h > 14.4
+        for: 5m
+        labels:
+          severity: warning
+          journey: catalogue
+        annotations:
+          summary: "Catalogue reads are burning their error budget 14x too fast"
+          description: >-
+            Browsing is broken or degraded. Warning rather than critical because
+            a failed catalogue read loses a page view, not an order.
+
+  - name: fishstudio-saturation
+    rules:
+      # The exception to "symptoms not causes": this one predicts a symptom
+      # that has not happened yet, and there is a clear action to take.
+      - alert: EventLoopBlocked
+        expr: nodejs_eventloop_lag_p99_seconds{stack="fishstudio"} > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} event loop is blocked for over 500ms"
+          description: >-
+            Node handles one thing at a time. A p99 lag this high means requests
+            are queueing behind CPU work, and every latency number for this
+            service is about to get worse.
+
+      - alert: RequestsPilingUp
+        expr: http_requests_in_flight{stack="fishstudio"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          annotations_note: "cause-based, kept because the recovery is specific"
+        annotations:
+          summary: "{{ $labels.job }} is holding over 100 concurrent requests"
+          description: >-
+            In-flight climbing while throughput stays flat is the signature of a
+            dependency that has stopped answering — usually a database or an
+            upstream API — rather than of extra traffic.

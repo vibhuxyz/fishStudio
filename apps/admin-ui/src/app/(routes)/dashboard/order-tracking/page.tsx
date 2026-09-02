@@ -33,6 +33,7 @@ import {
   type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 
 /* ── Status badge helper ────────────────────────────────────────────────── */
 const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
@@ -375,7 +376,7 @@ export default function OrderTrackingPage() {
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-400 capitalize">{order.deliverySlot ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-400">
-                    {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+                    {formatIstDate(order.createdAt, { day: "2-digit", month: "short", year: "2-digit" })}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <button
@@ -467,7 +468,7 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
           <div>
             <h3 className="text-lg font-bold text-white">Order {displayOrderNumber(order)}</h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              {new Date(order.createdAt).toLocaleString("en-IN")}
+              {formatIstDateTime(order.createdAt)}
             </p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition">
@@ -501,7 +502,7 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
             <Row label="Name"    value={order.customer?.name} />
             <Row label="Email"   value={order.customer?.email} />
             <Row label="Phone"   value={order.customer?.phone} />
-            <Row label="Member since" value={order.customer?.memberSince ? new Date(order.customer.memberSince).toLocaleDateString("en-IN") : undefined} />
+            <Row label="Member since" value={order.customer?.memberSince ? formatIstDate(order.customer.memberSince) : undefined} />
           </Section>
 
           {/* Delivery */}
@@ -539,7 +540,7 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
               </div>
               <Row label="Phone"   value={order.rider.phone} />
               <Row label="Vehicle" value={`${order.rider.vehicleType} · ${order.rider.vehicleNumber}`} />
-              <Row label="Assigned At" value={order.assignedAt ? new Date(order.assignedAt).toLocaleString("en-IN") : undefined} />
+              <Row label="Assigned At" value={order.assignedAt ? formatIstDateTime(order.assignedAt) : undefined} />
             </Section>
           )}
 
@@ -609,7 +610,7 @@ function OrderDetailDrawer({ order: initialOrder, onClose }: { order: AdminOrder
                 {order.auditTrail.map((log: any) => (
                   <div key={log.id} className="flex items-start gap-2 text-xs">
                     <span className="text-gray-500 shrink-0 w-32">
-                      {new Date(log.timestamp).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
+                      {formatIstDateTime(log.timestamp, { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
                     </span>
                     <span className="text-blue-400 font-mono shrink-0">{log.action}</span>
                     <span className="text-gray-500 capitalize">{log.actorType?.toLowerCase()}</span>

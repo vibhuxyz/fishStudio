@@ -22,7 +22,9 @@
     "@repo/jobs": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/libs": "workspace:*",
-    "@repo/db-postgres": "workspace:*"
+    "@repo/db-postgres": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "prom-client": "^15.1.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

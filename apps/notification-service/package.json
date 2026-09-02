@@ -21,14 +21,14 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
-    "morgan": "^1.10.1",
     "@repo/db-mongo": "workspace:*",
     "@repo/db-postgres": "workspace:*",
     "@repo/env-config": "workspace:*",
     "@repo/error-handlers": "workspace:*",
     "@repo/libs": "workspace:*",
     "@repo/middlewares": "workspace:*",
-    "@repo/zod-schema": "workspace:*"
+    "@repo/zod-schema": "workspace:*",
+    "@repo/observability": "workspace:*"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
@@ -38,7 +38,6 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/morgan": "^1.9.10",
     "tsup": "^8.5.0",
     "tsx": "^4.21.0"
   },

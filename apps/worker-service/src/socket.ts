@@ -215,6 +215,21 @@ export class SocketManager {
     decrement(this.connectionsPerIdentity, ws.identityKey);
   }
 
+  /**
+   * Live connection counts, keyed by role ("anonymous" for sockets that carry
+   * no JWT). Read at Prometheus scrape time rather than maintained by
+   * inc/dec calls on connect and disconnect — a gauge derived from the set
+   * that actually holds the sockets cannot drift out of step with it.
+   */
+  public getConnectionCountsByRole(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    this.clients.forEach((ws) => {
+      const role = ws.identity?.role ?? "anonymous";
+      counts[role] = (counts[role] ?? 0) + 1;
+    });
+    return counts;
+  }
+
   public static getInstance(server?: Server): SocketManager {
     if (!SocketManager.instance && server) {
       SocketManager.instance = new SocketManager(server);

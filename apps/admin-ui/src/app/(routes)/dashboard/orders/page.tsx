@@ -12,6 +12,7 @@ import Link from "next/link";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { type AdminOrder, useAdminOrderList, useAdminOrderPincodes } from "@/hooks/useAdminQueries";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate } from "@repo/shared/datetime";
 import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
 
 const PAY_TONE_CLASS: Record<PaymentTone, string> = {
@@ -106,7 +107,7 @@ const OrdersTable = () => {
         header: "Date",
         cell: ({ row }: { row: { original: AdminOrder } }) => (
           <span className="text-white text-sm">
-            {new Date(row.original.createdAt).toLocaleDateString("en-IN")}
+            {formatIstDate(row.original.createdAt)}
           </span>
         ),
       },

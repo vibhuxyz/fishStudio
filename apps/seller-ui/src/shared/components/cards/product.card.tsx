@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { frontendEnv } from "@/config/env";
+import { formatIstDate } from "@repo/shared/datetime";
 
 const ProductCard = ({ product }: { product: any }) => {
   const images = (Array.isArray(product?.images) && product.images.length > 0)
@@ -24,10 +25,10 @@ const ProductCard = ({ product }: { product: any }) => {
 
   // Format the starting and ending dates
   const startingDate = product?.starting_date
-    ? new Date(product.starting_date).toLocaleDateString()
+    ? formatIstDate(product.starting_date)
     : null;
   const endingDate = product?.ending_date
-    ? new Date(product.ending_date).toLocaleDateString()
+    ? formatIstDate(product.ending_date)
     : null;
 
   return (

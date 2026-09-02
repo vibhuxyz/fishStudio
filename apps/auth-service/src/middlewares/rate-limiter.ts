@@ -113,10 +113,17 @@ export const registrationRateLimiter = createRateLimiter({
 });
 
 // Refresh-token rate limiter: prevent abuse of the refresh endpoint.
+//
+// Fails OPEN, unlike login/OTP: the caller already holds a valid signed refresh
+// token, so there is no brute-force surface here — the token is the secret. A
+// Redis blip that blocked refresh would log every active shopper out and cost
+// each of them an OTP on the next visit, which is the exact problem this app
+// keeps hitting. The ceiling is generous because a returning customer with a
+// few open tabs legitimately fires several refreshes in a burst on resume.
 export const refreshRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 120,
   message: "Too many token refresh attempts. Please sign in again.",
   keyPrefix: "rl:refresh",
-  failClosed: true,
+  failClosed: false,
 });

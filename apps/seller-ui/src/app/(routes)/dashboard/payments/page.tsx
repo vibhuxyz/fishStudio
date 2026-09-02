@@ -16,6 +16,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatPaymentRef } from "@repo/shared/payment-id";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
 const fetchOrders = async () => {
@@ -110,11 +111,11 @@ const SellerPayments = () => {
         accessorKey: "createdAt",
         header: "Date & Time",
         cell: ({ row }: any) => {
-          const date = new Date(row.original.createdAt);
+          const createdAt = row.original.createdAt;
           return (
             <div className="flex flex-col leading-tight text-xs">
-              <span className="text-white font-bold">{date.toLocaleDateString()}</span>
-              <span className="text-gray-500 text-[9px]">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="text-white font-bold">{formatIstDate(createdAt)}</span>
+              <span className="text-gray-500 text-[9px]">{formatIstDateTime(createdAt, { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
           );
         },

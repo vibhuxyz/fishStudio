@@ -75,6 +75,7 @@
     "nodemailer": "^7.0.13",
     "slugify": "^1.6.6",
     "@repo/env-config": "workspace:*",
-    "@repo/error-handlers": "workspace:*"
+    "@repo/error-handlers": "workspace:*",
+    "@repo/observability": "workspace:*"
   }
 }

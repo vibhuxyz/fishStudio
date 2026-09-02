@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate } from "@repo/shared/datetime";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import Link from "next/link";
 
@@ -146,7 +147,7 @@ const CompletedOrdersPage = () => {
                       Order {displayOrderNumber(order)}
                     </p>
                     <p className="text-gray-500 text-xs">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {formatIstDate(order.createdAt)}
                     </p>
                   </div>
                   <span className="px-2.5 py-1 bg-green-600/20 text-green-300 rounded-full text-xs font-medium border border-green-700/50">

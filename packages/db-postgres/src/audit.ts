@@ -14,6 +14,8 @@ import { prismaPostgres } from "./client.js";
 export type AuditAction =
   | "ORDER_CREATED"
   | "ORDER_CANCELLED_BY_USER"
+  // Customer chose Cash on Delivery after their online payment failed.
+  | "ORDER_COD_CONVERSION_REQUESTED"
   | "COUPON_APPLIED"
   | "STOCK_RESERVED"
   | "PAYMENT_INITIATED"

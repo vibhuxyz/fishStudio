@@ -7,10 +7,25 @@ import {
   restoreOrderStock,
   queueStalePaymentFix,
   normalizeOrderIdFragment,
+  istDayStart,
   ADMIN_ORDER_CUSTOMER_SELECT,
   ADMIN_ORDER_SELLER_SELECT,
   releaseCouponUsage,
 } from "./utils.js";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// `from`/`to` are calendar dates the operator picked in IST. A bare
+// `new Date("2026-08-30")` is UTC midnight, so an order placed at 02:00 IST on
+// the 30th (20:30 UTC on the 29th) fell outside a "30th" filter. Anchor both
+// bounds to IST day boundaries; `to` is inclusive of its whole day.
+const parseOrderDateRange = (from?: string, to?: string) => {
+  const gte = istDayStart(from) ?? undefined;
+  const toStart = istDayStart(to);
+  const lt = toStart ? new Date(toStart.getTime() + DAY_MS) : undefined;
+  if (!gte && !lt) return undefined;
+  return { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) };
+};
 
 /* ─────────────────────────────────────────────────────────────────────────
    GET /api/admin/orders
@@ -77,17 +92,22 @@ export const getAdminOrderList = async (
     }
 
     /* ── 3. Build Postgres WHERE clause ──────────────────────────────────── */
+    const createdAt = parseOrderDateRange(from, to);
     const where: any = {
       ...(status        ? { status }                                            : {}),
       ...(paymentStatus ? { paymentStatus }                                     : {}),
       ...(paymentMethod ? { paymentMethod }                                     : {}),
       ...(storeIdFilter ? { storeId: storeIdFilter }                            : {}),
       ...(pincode       ? { deliveryPincode: { contains: pincode, mode: "insensitive" } } : {}),
-      ...(from || to    ? { createdAt: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(to) } : {}) } } : {}),
+      ...(createdAt     ? { createdAt }                                         : {}),
       ...((minAmt !== undefined || maxAmt !== undefined) ? { totalAmount: { ...(minAmt !== undefined ? { gte: minAmt } : {}), ...(maxAmt !== undefined ? { lte: maxAmt } : {}) } } : {}),
       ...(search
         ? {
             OR: [
+              // Sequential numbers (FS-NOI-…) are what the console operator
+              // reads off an invoice or hears from a customer — match them
+              // before the raw cuid.
+              { orderNumber:     { contains: search.trim(), mode: "insensitive" } },
               { id:              { contains: normalizeOrderIdFragment(search), mode: "insensitive" } },
               { userId:          { contains: search, mode: "insensitive" } },
               { storeId:         { contains: search, mode: "insensitive" } },

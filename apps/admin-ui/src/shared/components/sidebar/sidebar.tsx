@@ -26,6 +26,7 @@ import {
   ClipboardCheck,
   ShoppingBag,
   Warehouse,
+  CalendarRange,
 } from "lucide-react";
 
 import useSidebar from "@/hooks/useSidebar";
@@ -214,6 +215,17 @@ const SidebarBarWrapper = () => {
                   <TicketPercent
                     size={22}
                     color={getIconColor("/dashboard/discount-codes")}
+                  />
+                }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/dashboard/events"}
+                title="Seller Events"
+                href="/dashboard/events"
+                icon={
+                  <CalendarRange
+                    size={22}
+                    color={getIconColor("/dashboard/events")}
                   />
                 }
               />

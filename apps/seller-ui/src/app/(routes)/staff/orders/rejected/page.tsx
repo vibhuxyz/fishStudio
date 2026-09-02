@@ -7,6 +7,7 @@ import axiosInstance from "@/utils/axiosInstance";
 import useRequireStaff from "@/hooks/useRequireStaff";
 import Link from "next/link";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate } from "@repo/shared/datetime";
 
 const RejectedOrdersPage = () => {
   const router = useRouter();
@@ -119,7 +120,7 @@ const RejectedOrdersPage = () => {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-white font-semibold">Order {displayOrderNumber(order)}</p>
-                    <p className="text-gray-500 text-xs">{new Date(order.createdAt).toLocaleDateString()}</p>
+                    <p className="text-gray-500 text-xs">{formatIstDate(order.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="px-2.5 py-1 bg-red-600/20 text-red-300 rounded-full text-xs font-medium border border-red-700/50">

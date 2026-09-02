@@ -6,6 +6,7 @@ import { Eye, Store, TicketPercent, IndianRupee } from "lucide-react";
 import { Button } from "@repo/ui";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 import { useAdminSellers, useSellerAccessCodes } from "@/hooks/useAdminQueries";
 import GiveAccessModal from "./GiveAccessModal";
 import GiveSignupAccessModal from "./GiveSignupAccessModal";
@@ -93,9 +94,7 @@ const SellersPage = () => {
                     </div>
                   </td>
                   <td className="p-3">
-                    {seller.createdAt
-                      ? new Date(seller.createdAt).toLocaleDateString()
-                      : "-"}
+                    {seller.createdAt ? formatIstDate(seller.createdAt) : "-"}
                   </td>
                   <td className="p-3">
                     {seller.isApprovedByAdmin ? (
@@ -162,9 +161,7 @@ const SellersPage = () => {
                     </div>
                   </td>
                   <td className="p-3">
-                    {invite.expiresAt
-                      ? new Date(invite.expiresAt).toLocaleString()
-                      : "-"}
+                    {invite.expiresAt ? formatIstDateTime(invite.expiresAt) : "-"}
                   </td>
                   <td className="p-3">
                     <Button

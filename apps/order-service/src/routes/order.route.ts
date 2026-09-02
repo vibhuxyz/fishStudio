@@ -10,6 +10,7 @@ import {
   getUserOrderStats,
   getOrderById,
   cancelOrder,
+  requestCodConversion,
 } from "../controllers/order/user.controller.js";
 import {
   getEligibleRiders,
@@ -60,6 +61,8 @@ router.get(
 );
 // User can cancel their own order only while it's still PENDING
 router.put("/cancel/:orderId", isAuthenticated, allowRoles("user"), cancelOrder);
+// Failed online payment -> customer opts for Cash on Delivery instead of retrying.
+router.put("/request-cod/:orderId", isAuthenticated, allowRoles("user"), requestCodConversion);
 
 // ── Seller Orders ──────────────────────────────────────────────────────────
 router.get("/get-seller-orders", isAuthenticated, isSellerOrStaff, isApprovedSeller, getSellerOrders);

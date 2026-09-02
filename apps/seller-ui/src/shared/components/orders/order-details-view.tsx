@@ -2,6 +2,7 @@
 
 import React from "react";
 
+import { formatIstDateTime } from "@repo/shared/datetime";
 import RefundPanel from "./refund-panel";
 import { PaymentBadge } from "./payment-badge";
 import PaymentRecheck from "./payment-recheck";
@@ -107,7 +108,7 @@ const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ order, onRefunded }
             {order.cancelledAt && (
               <p>
                 <span className="font-semibold">Time:</span>{" "}
-                {new Date(order.cancelledAt).toLocaleString("en-IN", {
+                {formatIstDateTime(order.cancelledAt, {
                   day: "numeric",
                   month: "short",
                   year: "numeric",
@@ -137,12 +138,20 @@ const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ order, onRefunded }
             />
           </Row>
           {order.paymentMethod && <Row label="Method">{order.paymentMethod}</Row>}
+          {order.paymentMethod === "COD" &&
+            Array.isArray(order.payments) &&
+            order.payments.some((p: any) => p.status === "FAILED") && (
+              <p className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+                Customer switched to Cash on Delivery after an online payment
+                failed. Confirm with them before you accept this order.
+              </p>
+            )}
           {order.paymentRef && (
             <Row label="Payment ref">
               <span className="break-all font-mono text-xs">{order.paymentRef}</span>
             </Row>
           )}
-          <Row label="Placed">{new Date(order.createdAt).toLocaleString()}</Row>
+          <Row label="Placed">{formatIstDateTime(order.createdAt)}</Row>
         </Section>
 
         <Section title="Charges">
@@ -279,7 +288,7 @@ const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ order, onRefunded }
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  {new Date(payment.createdAt).toLocaleString()}
+                  {formatIstDateTime(payment.createdAt)}
                 </p>
               </div>
             ))}
@@ -342,7 +351,7 @@ const OrderDetailsView: React.FC<OrderDetailsViewProps> = ({ order, onRefunded }
                 </a>
                 {order.deliveryProofUploadedAt && (
                   <p className="mt-2 text-xs text-gray-500">
-                    Taken {new Date(order.deliveryProofUploadedAt).toLocaleString()}
+                    Taken {formatIstDateTime(order.deliveryProofUploadedAt)}
                   </p>
                 )}
               </div>

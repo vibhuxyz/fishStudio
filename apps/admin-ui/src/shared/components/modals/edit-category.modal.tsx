@@ -74,7 +74,12 @@ const EditCategoryModal = ({
         { images: [base64], folder: "categriy" },
         isProtected,
       );
-      setImageUrl(res.data.images[0].file_url);
+      const uploadedUrl = res.data.images[0].file_url;
+      setImageUrl(uploadedUrl);
+      // Swap the local object-URL preview for the hosted one — the blob URL is
+      // revoked when this component unmounts, so leaving it would blank the
+      // thumbnail if the modal is reopened.
+      setImagePreview(uploadedUrl);
     } catch {
       toast.error("Image upload failed");
       setImagePreview(target.imageUrl || null);

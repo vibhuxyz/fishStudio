@@ -1,0 +1,117 @@
+# The observability plane, kept separate from docker-compose.yml so it can be
+# brought up against whichever stack is running — `bun dev` on the host, or the
+# containerised services — without restarting the application itself.
+#
+#   docker compose -f docker-compose.observability.yml up -d
+#
+# Grafana here is a debugging tool, not the deliverable. It exists so the
+# Control Center's PromQL can be checked against a second opinion; the
+# recruiter-facing UI is apps/control-center.
+
+# Its own Compose project, not the application's. Sharing one would make each
+# stack see the other's containers as orphans — and `up --remove-orphans` on the
+# app stack would then delete Prometheus and Grafana.
+name: fishstudio-observability
+
+services:
+  prometheus:
+    container_name: fishstudio-prometheus
+    image: prom/prometheus:v3.1.0
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      # 15d is the default and is plenty for the live dashboards. Benchmark
+      # history needs months, which is why those runs are written to Postgres
+      # as rows rather than read back out of here.
+      - "--storage.tsdb.retention.time=15d"
+    ports:
+      # Bound to localhost: the Control Center reaches Prometheus from its own
+      # server-side route handler, so nothing else needs to.
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./docker/observability/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/observability/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      # Docker Desktop resolves host.docker.internal already; this makes the
+      # same config work on Linux.
+      - "host.docker.internal:host-gateway"
+    networks:
+      - fishstudio-observability
+
+  grafana:
+    container_name: fishstudio-grafana
+    image: grafana/grafana:11.5.1
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      # Local debugging tool on a loopback-bound port — not an auth boundary.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "127.0.0.1:3100:3000"
+    volumes:
+      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - fishstudio-observability
+
+  loki:
+    container_name: fishstudio-loki
+    image: grafana/loki:3.3.2
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      # 3101 on the host, not 3100: Grafana already owns that one locally. The
+      # services reach Loki through LOKI_URL, so only this file knows.
+      - "127.0.0.1:3101:3100"
+    volumes:
+      - ./docker/observability/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    networks:
+      - fishstudio-observability
+
+  tempo:
+    container_name: fishstudio-tempo
+    image: grafana/tempo:2.7.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "127.0.0.1:3200:3200"
+      # The OTLP receiver. Services running on the host under `bun dev` export
+      # here, which is why it is published at all.
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./docker/observability/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - fishstudio-observability
+
+  alertmanager:
+    container_name: fishstudio-alertmanager
+    image: prom/alertmanager:v0.28.0
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./docker/observability/alertmanager.local.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - fishstudio-observability
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  tempo-data:
+  alertmanager-data:
+
+networks:
+  fishstudio-observability:
+    driver: bridge

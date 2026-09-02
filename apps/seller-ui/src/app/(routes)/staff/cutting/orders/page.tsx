@@ -5,6 +5,7 @@ import { Package, User, Loader2, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDateTime } from "@repo/shared/datetime";
 import useStaffRequestConfig from "@/hooks/useStaffRequestConfig";
 import { useWorkerWS } from "@/context/worker-ws-context";
 import { ItemThumbnails, itemsSummary } from "@/shared/components/staff/item-thumbnails";
@@ -71,7 +72,7 @@ const CuttingOrdersPage = () => {
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
                 <Clock size={13} className="text-gray-500 shrink-0" />
-                {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {formatIstDateTime(order.createdAt, { hour: "2-digit", minute: "2-digit" })}
               </div>
               <div className="flex items-center gap-3 border-t border-gray-800 pt-3">
                 <ItemThumbnails items={order.items} />

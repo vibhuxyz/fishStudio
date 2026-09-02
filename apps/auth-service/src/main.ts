@@ -8,6 +8,17 @@ import { connectRabbitMQ } from "@repo/libs/rabbitmq";
 import { logger } from "@repo/libs/logger";
 import cors from "cors";
 import { ENV } from "@repo/env-config";
+import {
+  buildHealthHandler,
+  correlationId,
+  httpLogging,
+  httpMetrics,
+  httpTracing,
+  initMetrics,
+  initTracing,
+  metricsRoute,
+} from "@repo/observability";
+import { isRabbitMQHealthy } from "@repo/libs/rabbitmq";
 
 // Prevent silent crashes — log the error and keep the process alive
 process.on("uncaughtException", (err) => {
@@ -17,6 +28,9 @@ process.on("unhandledRejection", (reason) => {
   logger.error("[Auth Service] Unhandled Rejection", reason);
 });
 
+initMetrics({ serviceName: "auth-service" });
+initTracing({ serviceName: "auth-service" });
+
 const port = Number(ENV.AUTH_SERVICE_PORT) || 6001;
 const app = express();
 
@@ -24,6 +38,16 @@ const app = express();
 // real client IP for rate-limiting and audit logs. Without this every request
 // appears to come from the gateway's IP.
 app.set("trust proxy", 1);
+
+// All four sit above the rate limiter on purpose. A burst of 429s is exactly
+// the shape the dashboard needs to show, and a request the limiter rejects
+// still deserves a correlation id, a span and a log line — signals that only
+// cover successful requests go missing precisely when they are needed.
+app.use(correlationId());
+app.use(httpTracing());
+app.use(httpMetrics());
+app.use(httpLogging());
+app.use(metricsRoute());
 
 const defaultLocalOrigins = [
   "http://localhost:3000",
@@ -79,6 +103,21 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send({ message: "Hello API I am auth service" });
 });
+
+app.get(
+  "/internal/health",
+  buildHealthHandler({
+    service: "auth-service",
+    checks: {
+      mongo: async () => {
+        await prisma.$runCommandRaw({ ping: 1 });
+        return true;
+      },
+      redis: async () => (await redis.ping()) === "PONG",
+      rabbitmq: async () => isRabbitMQHealthy(),
+    },
+  }),
+);
 
 // IMPORTANT: This matches what your gateway expects
 app.use("/api", router);

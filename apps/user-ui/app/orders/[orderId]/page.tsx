@@ -19,6 +19,7 @@ import {
   Bike,
   XCircle,
   Scissors,
+  Banknote,
 } from "lucide-react";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
@@ -98,6 +99,17 @@ export default function OrderDetailsPage({
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Could not cancel order");
+    },
+  });
+
+  const { mutate: switchToCod, isPending: isSwitchingToCod } = useMutation({
+    mutationFn: () => axiosInstance.put(`/order/api/request-cod/${orderId}`),
+    onSuccess: () => {
+      toast.success("Switched to Cash on Delivery. The store will confirm your order.");
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Could not switch to Cash on Delivery");
     },
   });
 
@@ -185,6 +197,12 @@ export default function OrderDetailsPage({
   // before cancellation — COD never charged anything, and an incomplete
   // online payment is the separate isUnpaidOnline case above.
   const wasPaidOnline = order.paymentMethod === "RAZORPAY" && order.paymentStatus === "COMPLETED";
+  // Online payment failed and the order is still waiting — offer cash instead of
+  // leaving the customer with a dead order (order-service /request-cod guard).
+  const canSwitchToCod =
+    orderStatus === "PENDING" &&
+    order.paymentStatus === "FAILED" &&
+    order.paymentMethod !== "COD";
   const slotLabel = SLOT_LABELS[order.deliverySlot ?? ""] ?? "Standard Delivery";
   const deliveryEtaMinutes = getDeliveryEtaMinutes(
     order,
@@ -555,6 +573,28 @@ export default function OrderDetailsPage({
         {/* The delivery-proof photo is deliberately not shown here — it exists to
             settle "it never arrived" disputes, so the seller dashboard is where
             it belongs, not the customer's own copy of the order. */}
+
+        {/* ── Online payment failed → pay cash instead ── */}
+        {canSwitchToCod && (
+          <div className="rounded-2xl border border-border bg-card px-6 py-4">
+            <p className="text-sm font-semibold text-foreground">
+              Payment didn&apos;t go through
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              You can pay in cash when the order is delivered. The store will
+              confirm and accept it.
+            </p>
+            <button
+              type="button"
+              disabled={isSwitchingToCod}
+              onClick={() => switchToCod()}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 py-3.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Banknote className="h-4 w-4" />
+              {isSwitchingToCod ? "Switching…" : "Pay with Cash on Delivery"}
+            </button>
+          </div>
+        )}
 
         {/* ── Cancel order — disabled + explained once PREPARING starts ── */}
         {!isTerminal && !isUnpaidOnline && (

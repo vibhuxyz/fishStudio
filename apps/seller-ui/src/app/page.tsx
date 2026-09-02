@@ -26,6 +26,7 @@ import useSeller from "../hooks/useSeller";
 import YoutubeIcon from "../assets/icons/youtube-icons";
 import ComingSoon from "@/shared/components/ComingSoon";
 import { isProtected } from "@/utils/protected";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 
 const TABS = ["Products", "Offers", "Reviews"];
 
@@ -193,7 +194,7 @@ const SellerProfile = () => {
                 <Calendar size={18} />
                 <span>
                   Joined At:{" "}
-                  {new Date(seller?.shop?.createdAt).toLocaleDateString()}
+                  {formatIstDate(seller?.shop?.createdAt)}
                 </span>
               </div>
 
@@ -287,8 +288,8 @@ const SellerProfile = () => {
                       ) : null}
                       <div className="space-y-2 text-sm text-slate-400">
                         <p>
-                          {new Date(event.startTime).toLocaleString()} to{" "}
-                          {new Date(event.endTime).toLocaleString()}
+                          {formatIstDateTime(event.startTime)} to{" "}
+                          {formatIstDateTime(event.endTime)}
                         </p>
                         {event.minOrder ? (
                           <p>Minimum order: Rs{event.minOrder}</p>

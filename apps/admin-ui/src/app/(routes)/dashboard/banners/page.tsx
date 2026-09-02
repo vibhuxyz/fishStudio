@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import ImagePlaceHolder from "@/shared/components/image-placeholder";
+import { formatIstDate } from "@repo/shared/datetime";
 import { useAdminBanners, adminQueryKeys } from "@/hooks/useAdminQueries";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
@@ -156,7 +157,7 @@ const BannersPage = () => {
                     )}
                   </div>
                   <div className="p-3 flex justify-between items-center text-xs text-gray-400">
-                    <span>Uploaded on {new Date(banner.createdAt).toLocaleDateString()}</span>
+                    <span>Uploaded on {formatIstDate(banner.createdAt)}</span>
                     <span className={`px-2 py-0.5 rounded-full ${banner.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                       {banner.isActive ? 'Active' : 'Inactive'}
                     </span>

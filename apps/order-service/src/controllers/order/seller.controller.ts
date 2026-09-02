@@ -108,6 +108,17 @@ export const acceptOrRejectOrder = async (
       return next(new ValidationError("You can only manage orders for your own store"));
     }
 
+    // Accept/Reject is only the first gate. Once an order has moved past PENDING
+    // (auto-accepted at checkout, or already actioned) this endpoint must not
+    // silently drag it back — later transitions go through update-status/cancel.
+    if (existingOrder.status !== "PENDING") {
+      return next(
+        new ValidationError(
+          `Order is already ${existingOrder.status.toLowerCase()} and can no longer be accepted or rejected here.`,
+        ),
+      );
+    }
+
     let updatedOrder;
     if (action === "accept") {
       updatedOrder = await prismaPostgres.order.update({

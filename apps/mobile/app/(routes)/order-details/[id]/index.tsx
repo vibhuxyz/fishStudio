@@ -142,6 +142,18 @@ export default function OrderDetailsScreen() {
     },
   });
 
+  const { mutate: switchToCod, isPending: isSwitchingToCod } = useMutation({
+    mutationFn: () => axiosInstance.put(`/order/api/request-cod/${id}`),
+    onSuccess: () => {
+      toast.success("Switched to Cash on Delivery. The store will confirm your order.");
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["user-orders"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Could not switch to Cash on Delivery");
+    },
+  });
+
   if (isLoading) {
     return (
       <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
@@ -192,6 +204,12 @@ export default function OrderDetailsScreen() {
   // before cancellation — COD never charged anything, and an incomplete
   // online payment is the separate isUnpaidOnline case handled below.
   const wasPaidOnline = order.paymentMethod === "RAZORPAY" && order.paymentStatus === "COMPLETED";
+  // Online payment failed and the order is still waiting — offer cash instead of
+  // leaving the customer stuck (matches order-service's /request-cod guard).
+  const canSwitchToCod =
+    rawStatus === "PENDING" &&
+    order.paymentStatus === "FAILED" &&
+    order.paymentMethod !== "COD";
   const hero = isUnpaidOnline
     ? {
         ...HERO_CONTENT.CANCELLED,
@@ -459,6 +477,60 @@ export default function OrderDetailsScreen() {
           />
           <InfoChip icon="shield-checkmark-outline" label="100% Safe Delivery" value="Hygiene followed" tint={colors.successSurface} iconColor={colors.success} />
         </View>
+
+        {/* ── Online payment failed → pay cash instead ── */}
+        {canSwitchToCod && (
+          <View
+            style={{
+              backgroundColor: colors.white,
+              borderWidth: 1,
+              borderColor: "#F3F4F6",
+              borderRadius: 16,
+              padding: 16,
+              marginTop: 12,
+            }}
+          >
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 14, color: colors.textPrimary }}>
+              Payment didn&apos;t go through
+            </Text>
+            <Text style={{ fontFamily: "Inter-Regular", fontSize: 13, color: colors.textMuted, marginTop: 4 }}>
+              You can pay in cash when the order is delivered. The store will confirm and accept it.
+            </Text>
+            <TouchableOpacity
+              disabled={isSwitchingToCod}
+              onPress={() => switchToCod()}
+              activeOpacity={0.85}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 12,
+                paddingVertical: 13,
+                borderRadius: 12,
+                backgroundColor: colors.successSurface,
+                opacity: isSwitchingToCod ? 0.6 : 1,
+              }}
+            >
+              {isSwitchingToCod ? (
+                <ActivityIndicator size="small" color={colors.success} />
+              ) : (
+                <>
+                  <Ionicons name="cash-outline" size={17} color={colors.success} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter-SemiBold",
+                      fontSize: 13,
+                      color: colors.success,
+                      marginLeft: 8,
+                    }}
+                  >
+                    Pay with Cash on Delivery
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ── Cancel order — disabled + explained once PREPARING starts ── */}
         {!isTerminal && !isUnpaidOnline && (

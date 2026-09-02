@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Dark by default. A control centre is read at a glance and often on a second
+ * monitor, and dark keeps the coloured status signals — the only saturated
+ * things on the page — doing the work.
+ */
+:root {
+  --background: 222 24% 7%;
+  --foreground: 210 20% 94%;
+  --muted: 222 18% 14%;
+  --muted-foreground: 215 14% 60%;
+  --card: 222 22% 10%;
+  --card-foreground: 210 20% 94%;
+  --border: 220 16% 18%;
+  --accent: 199 89% 55%;
+  --ok: 152 62% 45%;
+  --warn: 38 92% 55%;
+  --danger: 0 72% 58%;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --background: 210 20% 98%;
+    --foreground: 222 30% 12%;
+    --muted: 214 20% 94%;
+    --muted-foreground: 215 16% 42%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 12%;
+    --border: 214 20% 88%;
+    --accent: 199 89% 42%;
+    --ok: 152 62% 34%;
+    --warn: 32 85% 42%;
+    --danger: 0 72% 48%;
+  }
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "tnum" 1;
+}

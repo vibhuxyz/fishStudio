@@ -1,0 +1,39 @@
+# Tempo, single binary, local storage.
+#
+# Only the OTLP HTTP receiver is enabled. gRPC would be the faster transport,
+# but every service here exports over HTTP and an unused open port on the
+# observability plane is a liability rather than a feature.
+
+server:
+  http_listen_port: 3200
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  # Flush quickly. On a busy cluster you would batch far longer, but here the
+  # difference between "my trace appears in 10 seconds" and "in 5 minutes" is
+  # the difference between the Traces page being usable and not.
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # Traces are the shortest-lived of the three signals: they answer "why was
+    # this one request slow", a question nobody asks about last week.
+    block_retention: 72h
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+usage_report:
+  reporting_enabled: false

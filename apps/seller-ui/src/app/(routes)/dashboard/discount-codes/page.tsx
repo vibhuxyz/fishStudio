@@ -8,6 +8,7 @@ import useRequireAuth from "@/hooks/useRequiredAuth";
 import { AxiosError } from "axios";
 import { BadgeCheck, BadgeX, Plus, ToggleLeft, ToggleRight, Trash, X } from "lucide-react";
 import { Input, Button } from "@repo/ui";
+import { formatIstDate } from "@repo/shared/datetime";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -213,7 +214,7 @@ const Page = () => {
                       <td className="p-3">
                         {discount.expiresAt ? (
                           <span className={expired ? "text-red-400" : "text-green-400"}>
-                            {new Date(discount.expiresAt).toLocaleDateString("en-IN", {
+                            {formatIstDate(discount.expiresAt, {
                               day: "2-digit",
                               month: "short",
                               year: "numeric",

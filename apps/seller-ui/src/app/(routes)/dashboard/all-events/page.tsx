@@ -11,6 +11,7 @@ import BreadCrumbs from "@/shared/components/breadcrumbs";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 type SellerEvent = {
   id: string;
@@ -149,8 +150,8 @@ const Page = () => {
                   <div className="flex items-center gap-2">
                     <CalendarRange size={16} className="text-slate-500" />
                     <span>
-                      {new Date(event.startTime).toLocaleString()} to{" "}
-                      {new Date(event.endTime).toLocaleString()}
+                      {formatIstDateTime(event.startTime)} to{" "}
+                      {formatIstDateTime(event.endTime)}
                     </span>
                   </div>
                   {event.minOrder ? <p>Minimum order: Rs{event.minOrder}</p> : null}

@@ -1,0 +1,26 @@
+# Alertmanager, local.
+#
+# Nothing is delivered anywhere. Locally the point is to see an alert reach the
+# firing state and to check that grouping and inhibition behave — not to get
+# an email every time you stop a service on purpose.
+#
+# Open http://127.0.0.1:9093 to watch what is firing.
+
+route:
+  # Alerts about the same journey arrive together rather than as five separate
+  # notifications, which is what makes an incident readable.
+  group_by: ["alertname", "job", "journey"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: devnull
+
+receivers:
+  - name: devnull
+
+inhibit_rules:
+  # A service that is down will also breach its latency and burn-rate alerts.
+  # Sending all three says nothing the first one did not.
+  - source_matchers: ["severity = critical"]
+    target_matchers: ["severity = warning"]
+    equal: ["job"]

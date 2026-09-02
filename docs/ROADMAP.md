@@ -12,8 +12,11 @@
 ## Phase 2: Production Readiness
 - [ ] Put domains behind Cloudflare for DDoS protection
 - [ ] Set up an Application Load Balancer
-- [ ] Implement OpenTelemetry for Distributed Tracing across microservices
-- [ ] Deploy Prometheus (Metrics Storage) and Grafana (Dashboards) stack
+- [x] Replace the `console.log` shim with pino + correlation IDs, shipped to Loki
+- [x] Implement OpenTelemetry for Distributed Tracing across microservices (Tempo) — including across the RabbitMQ hop
+- [x] Define SLIs and SLOs for checkout, catalogue read and login — with error budgets
+- [x] Alertmanager rules on symptoms and error-budget burn, not on raw thresholds
+- [x] Deploy Prometheus (Metrics Storage) and Grafana (Dashboards) stack — plus `apps/control-center`, the custom dashboard on top (see DECISIONS.md #3)
 - [ ] Set up UptimeRobot for Heartbeats on `/gateway-health`
 
 ## Phase 3: Advanced Features

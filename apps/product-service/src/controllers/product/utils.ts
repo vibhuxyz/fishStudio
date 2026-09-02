@@ -50,6 +50,43 @@ export const getSellerDiscountOwnerData = async (
   throw new ValidationError("Only seller or admin can manage discount codes!");
 };
 
+// Same shape as getSellerDiscountOwnerData: a seller acts on their own store,
+// an admin acts on a seller they name explicitly. seller_events has no adminId
+// column, so the pick is only recorded as the event's sellerId.
+export const resolveEventOwnerSellerId = async (
+  req: AuthRequest,
+  adminPickedSellerId?: string,
+): Promise<string> => {
+  if (req.role === "seller" && req.seller?.id) {
+    return req.seller.id;
+  }
+  if (req.role === "admin" && req.admin?.id) {
+    if (!adminPickedSellerId) {
+      throw new ValidationError("Select a seller for this event");
+    }
+    const seller = await prisma.sellers.findUnique({
+      where: { id: adminPickedSellerId },
+      select: { id: true },
+    });
+    if (!seller) {
+      throw new ValidationError("Selected seller does not exist");
+    }
+    return adminPickedSellerId;
+  }
+  throw new ValidationError("Only seller or admin can manage events!");
+};
+
+// An admin may act on any seller's event (same rule as coupons); a seller only
+// on their own.
+export const assertEventManageAccess = (
+  event: { sellerId: string },
+  req: AuthRequest,
+) => {
+  if (req.role === "admin") return;
+  if (req.role === "seller" && req.seller?.id === event.sellerId) return;
+  throw new ValidationError("You are not authorized to manage this event!");
+};
+
 export const getOwnedProductFilter = (req: AuthRequest) => {
   if (req.role === "admin" && req.admin?.id) {
     return { adminId: req.admin.id, isDeleted: false };

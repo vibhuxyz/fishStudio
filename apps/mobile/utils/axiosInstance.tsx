@@ -229,12 +229,26 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
         refreshSubscribers = [];
 
-        // Clear tokens and redirect to login
-        await removeAccessToken();
-        await SecureStore.deleteItemAsync("refresh_token");
-        await SecureStore.deleteItemAsync("user");
-
-        handleLogout();
+        // Only sign the user out when the server actually rejected the refresh
+        // token (expired / revoked / rotated family). A 429, a 503 from a Redis
+        // hiccup, or a dropped connection means "couldn't refresh right now" —
+        // the session is still valid and the next request will retry. Wiping
+        // tokens on those just forces a fresh OTP login for nothing.
+        const refreshStatus = axios.isAxiosError(refreshError)
+          ? refreshError.response?.status
+          : undefined;
+        // No stored refresh token at all is a genuine signed-out state, same as
+        // a 401/403 from the server.
+        const noRefreshToken =
+          !axios.isAxiosError(refreshError) &&
+          refreshError instanceof Error &&
+          refreshError.message === "No refresh token available";
+        if (refreshStatus === 401 || refreshStatus === 403 || noRefreshToken) {
+          await removeAccessToken();
+          await SecureStore.deleteItemAsync("refresh_token");
+          await SecureStore.deleteItemAsync("user");
+          handleLogout();
+        }
         return Promise.reject(refreshError);
       }
     }

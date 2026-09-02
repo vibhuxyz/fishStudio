@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, XCircle, Package, MapPin, User, CreditCard, Pho
 import { useParams, useRouter } from "next/navigation";
 import { MOCK_ORDERS } from "@/shared/mocks/staffMockData";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 const StaffOrderDetailPage = () => {
   const params = useParams();
@@ -74,7 +75,7 @@ const StaffOrderDetailPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-white">Order {displayOrderNumber(order)}</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Placed on {new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+            Placed on {formatIstDateTime(order.createdAt, { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
         <span className={`px-4 py-2 rounded-full text-sm font-bold border ${statusColorMap[order.status]}`}>

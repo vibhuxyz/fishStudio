@@ -44,6 +44,7 @@
     "@repo/libs": "workspace:*",
     "@repo/zod-schema": "workspace:*",
     "@repo/error-handlers": "workspace:*",
-    "@repo/shared": "workspace:*"
+    "@repo/shared": "workspace:*",
+    "@repo/observability": "workspace:*"
   }
 }

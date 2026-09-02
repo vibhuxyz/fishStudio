@@ -1,0 +1,106 @@
+# SLI recording rules.
+#
+# An SLI is the measurement; an SLO is the target for it; the gap between the
+# target and 100% is the error budget — the amount of failure the service is
+# allowed to spend before shipping stops being the priority.
+#
+# These are recorded rather than computed on read for two reasons. Prometheus
+# evaluates them once per interval instead of once per dashboard refresh, and —
+# more importantly — a burn-rate alert has to compare the same expression over
+# five different windows. Written inline that is five copies of one query that
+# can drift apart; recorded, it is one definition with five lookbacks.
+#
+# Journeys, not endpoints. "Checkout works" is what a user cares about; the
+# latency of /api/get-banners is not a thing anyone has an opinion about.
+
+groups:
+  - name: fishstudio-sli
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------- events
+      # Every SLI here is a ratio of good events to valid events, measured at
+      # the gateway — the single place that sees what the user actually got.
+
+      - record: sli:checkout:requests:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/order"}[5m]))
+
+      - record: sli:checkout:errors:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/order",status_code=~"5.."}[5m]))
+          or (sli:checkout:requests:rate5m * 0)
+
+      - record: sli:catalogue:requests:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/product"}[5m]))
+
+      - record: sli:catalogue:errors:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/product",status_code=~"5.."}[5m]))
+          or (sli:catalogue:requests:rate5m * 0)
+
+      - record: sli:login:requests:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/auth"}[5m]))
+
+      - record: sli:login:errors:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/auth",status_code=~"5.."}[5m]))
+          or (sli:login:requests:rate5m * 0)
+
+      # ------------------------------------------------------------- latency
+      # A latency SLI counts requests served *fast enough*, not the p95. A
+      # percentile cannot be averaged across windows or across services, and it
+      # hides how many users were affected: "p95 = 900ms" and "one request in
+      # twenty was slow" are the same fact, but only the second one can be
+      # budgeted.
+      #
+      # Thresholds come from the histogram's own bucket boundaries, so `le` is
+      # exact rather than interpolated: 1s for checkout, which runs a
+      # serializable transaction, and 250ms for a cached catalogue read.
+
+      - record: sli:checkout:fast:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_bucket{stack="fishstudio",job="api-gateway",route="/order",le="1"}[5m]))
+          or (sli:checkout:requests:rate5m * 0)
+
+      - record: sli:catalogue:fast:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_bucket{stack="fishstudio",job="api-gateway",route="/product",le="0.25"}[5m]))
+          or (sli:catalogue:requests:rate5m * 0)
+
+  # ------------------------------------------------------------------ burn rate
+  #
+  # Burn rate is how fast the error budget is being spent, as a multiple of the
+  # sustainable pace. A burn rate of 1 spends the whole budget in exactly the
+  # SLO window; 14.4 spends it in a day.
+  #
+  # Alerting on burn rate rather than on an error-rate threshold is what stops
+  # the pager firing for a thirty-second blip that costs almost nothing, while
+  # still catching a slow bleed that will exhaust the month.
+  - name: fishstudio-burn-rate
+    interval: 30s
+    rules:
+      - record: slo:checkout:burn_rate5m
+        expr: |
+          (sli:checkout:errors:rate5m / sli:checkout:requests:rate5m) / 0.01
+
+      - record: slo:checkout:burn_rate1h
+        expr: |
+          (
+            sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/order",status_code=~"5.."}[1h]))
+            /
+            sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/order"}[1h]))
+          ) / 0.01
+
+      - record: slo:catalogue:burn_rate5m
+        expr: |
+          (sli:catalogue:errors:rate5m / sli:catalogue:requests:rate5m) / 0.005
+
+      - record: slo:catalogue:burn_rate1h
+        expr: |
+          (
+            sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/product",status_code=~"5.."}[1h]))
+            /
+            sum(rate(http_request_duration_seconds_count{stack="fishstudio",job="api-gateway",route="/product"}[1h]))
+          ) / 0.005

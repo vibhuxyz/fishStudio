@@ -1,11 +1,31 @@
 import { Router } from "express";
 import proxy from "express-http-proxy";
+import { injectTraceContext, REQUEST_ID_HEADER } from "@repo/observability";
 import { isProduction, upstreamServices } from "../config/env.js";
 import { authRateLimiter, paymentRateLimiter } from "../middleware/rate-limiter.js";
 
 const proxyOptions: proxy.ProxyOptions = {
   parseReqBody: false,
   proxyReqPathResolver: (req) => req.url,
+  // The gateway is where a request first gets an identity, and this is the only
+  // place that identity can be handed to the upstream. Without these two
+  // headers every service starts its own trace and its own correlation id, and
+  // the seven services produce seven unrelated stories about one request.
+  proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+    const headers = (proxyReqOpts.headers ?? {}) as Record<string, unknown>;
+
+    const requestId = srcReq.headers[REQUEST_ID_HEADER];
+    if (typeof requestId === "string") {
+      headers[REQUEST_ID_HEADER] = requestId;
+    }
+
+    // Writes `traceparent` from the span opened by httpTracing(), so the
+    // upstream's server span becomes a child of the gateway's.
+    injectTraceContext(headers);
+
+    proxyReqOpts.headers = headers as typeof proxyReqOpts.headers;
+    return proxyReqOpts;
+  },
   userResHeaderDecorator: (headers, _userReq, userRes, _proxyReq, proxyRes) => {
     // Forward Set-Cookie headers without merging (prevents cookie loss)
     if (proxyRes.headers["set-cookie"]) {

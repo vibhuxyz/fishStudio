@@ -21,6 +21,7 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import type { Staff } from "@repo/zod-schema";
+import { formatIstDate } from "@repo/shared/datetime";
 
 type StaffSearchResult = Staff & { isInAnotherShop?: boolean };
 
@@ -451,7 +452,7 @@ const StaffManagementPage = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-sm">
-                      {new Date(staff.createdAt).toLocaleDateString()}
+                      {formatIstDate(staff.createdAt)}
                     </td>
                     <td className="px-4 py-3">
                       {/* Legacy self-registered staff (email, no username)

@@ -123,8 +123,8 @@ router.post(
 router.post(
   "/create-event",
   isAuthenticated,
-  allowRoles("seller"),
-  isApprovedSeller,
+  allowRoles("seller", "admin"),
+  allowAdminOrApprovedSeller,
   createSellerEvent,
 );
 router.get(
@@ -136,13 +136,13 @@ router.get(
 router.get(
   "/get-seller-events",
   isAuthenticated,
-  allowRoles("seller"),
+  allowRoles("seller", "admin"),
   getSellerEvents,
 );
 router.put(
   "/update-event/:eventId",
   isAuthenticated,
-  allowRoles("seller"),
+  allowRoles("seller", "admin"),
   updateSellerEvent,
 );
 // Admin may edit any coupon including a seller's own; a seller only their own.
@@ -174,7 +174,7 @@ router.post("/validate-coupon", optionalAuth, validateCoupon);
 router.delete(
   "/delete-event/:eventId",
   isAuthenticated,
-  allowRoles("seller"),
+  allowRoles("seller", "admin"),
   deleteSellerEvent,
 );
 

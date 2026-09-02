@@ -7,14 +7,39 @@ import { errorMiddleware } from "@repo/error-handlers";
 import cookieParser from "cookie-parser";
 import router from "./routes/product.routes.js";
 import { ENV } from "@repo/env-config";
+import {
+  buildHealthHandler,
+  correlationId,
+  httpLogging,
+  httpMetrics,
+  httpTracing,
+  initMetrics,
+  initTracing,
+  metricsRoute,
+} from "@repo/observability";
+import { prismaMongo } from "@repo/db-mongo";
+import { redis } from "@repo/libs/redis";
 import { initMeilisearchIndex } from "./lib/meilisearch.js";
 import { productSyncWorker } from "./workers/productSync.worker.js";
+
+initMetrics({ serviceName: "product-service" });
+initTracing({ serviceName: "product-service" });
 
 const port = Number(ENV.PRODUCT_SERVICE_PORT) || 6003;
 
 const app = express();
 // Fix #21: trust gateway's X-Forwarded-* so req.ip is the real client IP.
 app.set("trust proxy", 1);
+
+// All four sit above the rate limiter on purpose. A burst of 429s is exactly
+// the shape the dashboard needs to show, and a request the limiter rejects
+// still deserves a correlation id, a span and a log line — signals that only
+// cover successful requests go missing precisely when they are needed.
+app.use(correlationId());
+app.use(httpTracing());
+app.use(httpMetrics());
+app.use(httpLogging());
+app.use(metricsRoute());
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -37,6 +62,20 @@ app.use(rateLimit({
 app.get("/", (req, res) => {
   res.send({ message: "Hello API I am product services" });
 });
+
+app.get(
+  "/internal/health",
+  buildHealthHandler({
+    service: "product-service",
+    checks: {
+      mongo: async () => {
+        await prismaMongo.$runCommandRaw({ ping: 1 });
+        return true;
+      },
+      redis: async () => (await redis.ping()) === "PONG",
+    },
+  }),
+);
 
 app.use("/api", router);
 

@@ -10,6 +10,7 @@ export default defineConfig((options) => ({
     "payment-state/index": "src/payment-state/index.ts",
     "whatsapp/index": "src/whatsapp/index.ts",
     "store-hours/index": "src/store-hours/index.ts",
+    "datetime/index": "src/datetime/index.ts",
     "data/index": "src/data/index.ts",
   },
   format: ["esm"],

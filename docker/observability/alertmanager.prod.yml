@@ -1,0 +1,50 @@
+# Alertmanager, production.
+#
+# Email over the SMTP credentials the platform already has. Deliberately *not*
+# through notification-service: an alerting path that depends on the system it
+# watches goes quiet exactly when it is needed. Alertmanager talks to the SMTP
+# provider directly, so the only shared thing is the account.
+#
+# Every value comes from the environment. Alertmanager expands $() from its own
+# environment at load, so .env.prod supplies them and no secret is committed.
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: "${SMTP_HOST}:${SMTP_PORT}"
+  smtp_from: "${ALERT_EMAIL_FROM}"
+  smtp_auth_username: "${SMTP_USER}"
+  smtp_auth_password: "${SMTP_PASS}"
+
+route:
+  group_by: ["alertname", "job", "journey"]
+  group_wait: 30s
+  group_interval: 5m
+  # Four hours between repeats of an unresolved alert. Shorter and it becomes
+  # background noise; longer and a problem nobody acknowledged goes quiet.
+  repeat_interval: 4h
+  receiver: email-warnings
+  routes:
+    # Critical alerts skip the grouping delay — waiting 30 seconds to batch a
+    # total outage with something else helps nobody.
+    - matchers: ["severity = critical"]
+      receiver: email-critical
+      group_wait: 10s
+      repeat_interval: 1h
+
+receivers:
+  - name: email-warnings
+    email_configs:
+      - to: "${ALERT_EMAIL_TO}"
+        send_resolved: true
+
+  - name: email-critical
+    email_configs:
+      - to: "${ALERT_EMAIL_TO}"
+        send_resolved: true
+        headers:
+          Subject: "[CRITICAL] {{ .CommonLabels.alertname }} — FishStudio"
+
+inhibit_rules:
+  - source_matchers: ["severity = critical"]
+    target_matchers: ["severity = warning"]
+    equal: ["job"]

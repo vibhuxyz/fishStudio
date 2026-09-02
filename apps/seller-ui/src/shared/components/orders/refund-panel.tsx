@@ -6,12 +6,13 @@ import { toast } from "sonner";
 
 import axiosInstance from "@/utils/axiosInstance";
 import { resolvePaymentState } from "@repo/shared/payment-state";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 const formatCurrency = (value: number) =>
   `₹${Number(value ?? 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
 const formatMoment = (value: string) =>
-  new Date(value).toLocaleString("en-IN", {
+  formatIstDateTime(value, {
     day: "numeric",
     month: "short",
     year: "numeric",

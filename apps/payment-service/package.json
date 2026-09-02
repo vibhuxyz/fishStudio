@@ -41,6 +41,7 @@
     "@repo/libs": "workspace:*",
     "@repo/error-handlers": "workspace:*",
     "@repo/zod-schema": "workspace:*",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "@repo/observability": "workspace:*"
   }
 }

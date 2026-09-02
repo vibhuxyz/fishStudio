@@ -12,6 +12,7 @@ import { isProtected } from "@/utils/protected";
 import useRequireAuth from "@/hooks/useRequiredAuth";
 import useSeller from "@/hooks/useSeller";
 import DeleteConfirmationModal from "@/shared/components/modals/delete.confirmation.modal";
+import { formatIstDate } from "@repo/shared/datetime";
 
 
 type BannerTab = "category" | "announcement";
@@ -584,7 +585,7 @@ function BannerCard({
       </div>
       <div className="p-3 flex justify-between items-center bg-gray-950/80">
         <span className="text-[10px] text-gray-500">
-          {new Date(banner.createdAt).toLocaleDateString()}
+          {formatIstDate(banner.createdAt)}
         </span>
         <div className="flex items-center gap-2">
           <StatusBadge status={banner.status} />
@@ -633,7 +634,7 @@ function AnnouncementBannerCard({
 
       <div className="p-3 flex justify-between items-center bg-gray-950/80">
         <span className="text-[10px] text-gray-500">
-          {new Date(banner.createdAt).toLocaleDateString()}
+          {formatIstDate(banner.createdAt)}
         </span>
         <div className="flex items-center gap-2">
           <StatusBadge status={banner.status} />

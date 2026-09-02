@@ -37,3 +37,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 fishstudio.apk
+
+# Prometheus scrape credential, written by the deploy step
+docker/observability/metrics-token

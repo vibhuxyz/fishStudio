@@ -13,6 +13,7 @@ import {
   type AdminOrderPayment,
 } from "@/hooks/useAdminQueries";
 import { displayOrderNumber } from "@repo/shared/order-id";
+import { formatIstDate, formatIstDateTime } from "@repo/shared/datetime";
 import RefundPanel from "@/shared/components/orders/refund-panel";
 import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
 
@@ -158,7 +159,7 @@ const Page = () => {
             Order {displayOrderNumber(order)}
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            {new Date(order.createdAt).toLocaleString("en-IN")}
+            {formatIstDateTime(order.createdAt)}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -251,7 +252,7 @@ const Page = () => {
           <Row label="Name"         value={order.customer?.name} />
           <Row label="Email"        value={order.customer?.email} />
           <Row label="Phone"        value={order.customer?.phone} />
-          <Row label="Member since" value={order.customer?.memberSince ? new Date(order.customer.memberSince).toLocaleDateString("en-IN") : undefined} />
+          <Row label="Member since" value={order.customer?.memberSince ? formatIstDate(order.customer.memberSince) : undefined} />
         </Section>
 
         {/* Seller & Store */}
@@ -302,7 +303,7 @@ const Page = () => {
             </div>
             <Row label="Phone"   value={order.rider.phone} />
             <Row label="Vehicle" value={`${order.rider.vehicleType} · ${order.rider.vehicleNumber}`} />
-            <Row label="Assigned At" value={order.assignedAt ? new Date(order.assignedAt).toLocaleString("en-IN") : undefined} />
+            <Row label="Assigned At" value={order.assignedAt ? formatIstDateTime(order.assignedAt) : undefined} />
           </Section>
         )}
       </div>
@@ -384,7 +385,7 @@ const Page = () => {
             {((order as any).auditTrail as any[]).map((log: any) => (
               <div key={log.id} className="flex items-start gap-3 text-xs">
                 <span className="text-gray-500 shrink-0 w-36">
-                  {new Date(log.timestamp).toLocaleString("en-IN", {
+                  {formatIstDateTime(log.timestamp, {
                     hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short",
                   })}
                 </span>

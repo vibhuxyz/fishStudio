@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import React from "react";
+import { formatIstDateTime } from "@repo/shared/datetime";
 
 const DeleteConfirmationModal = ({
   product,
@@ -57,7 +58,7 @@ const DeleteConfirmationModal = ({
             )}
             {product?.deletedAt && (
               <p className="text-xs text-yellow-400">
-                Scheduled delete at {new Date(product.deletedAt).toLocaleString()}
+                Scheduled delete at {formatIstDateTime(product.deletedAt)}
               </p>
             )}
           </div>
