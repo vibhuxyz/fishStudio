@@ -247,7 +247,7 @@ jobs:
         notification-service,
         worker-service,
         payment-service,
-        control-center,
+
       ]
     # Ensure deployment ONLY runs if at least one build ran and succeeded.
     if: |
