@@ -38,6 +38,7 @@ import { isProtected } from "@/utils/protected";
 import { Button } from "@repo/ui";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatIstDateTime } from "@repo/shared/datetime";
+import { BulkRiderAssignBar } from "@/shared/components/orders/bulk-rider-assign-bar";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -648,6 +649,9 @@ export function OrderCard({
   onAssignRider,
   onViewDetails,
   pendingAction,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: {
   order: MockOrder;
   onAccept: (o: MockOrder) => void;
@@ -658,6 +662,10 @@ export function OrderCard({
   onAssignRider: (o: MockOrder) => void;
   onViewDetails: (o: MockOrder) => void;
   pendingAction?: string | null;
+  /** Only ready-for-pickup orders can be batched to a rider. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const [mounted, setMounted] = useState(false);
   React.useEffect(() => {
@@ -673,6 +681,15 @@ export function OrderCard({
       
       {/* Top row */}
       <div className="flex items-center justify-between mb-4">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect?.(order.id)}
+            aria-label={`Select order ${displayOrderNumber(order)} for rider assignment`}
+            className="mr-2 h-4 w-4 shrink-0 accent-indigo-500"
+          />
+        )}
         <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color} border ${cfg.border}`}>
           <span className={`w-1 h-1 rounded-full ${cfg.dot} animate-pulse`} />
           {cfg.label}
@@ -1190,6 +1207,9 @@ const StaffOrdersPage = () => {
   const [rejectTarget, setRejectTarget] = useState<MockOrder | null>(null);
   const [detailTarget, setDetailTarget] = useState<MockOrder | null>(null);
   const [assignRiderTarget, setAssignRiderTarget] = useState<MockOrder | null>(null);
+  // Batch dispatch. Only ready-for-pickup orders are selectable, so this holds
+  // ids rather than orders and is reconciled against the list on every render.
+  const [selectedForDispatch, setSelectedForDispatch] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<OrderStatus | "All">("All");
   const [optimisticOrders, setOptimisticOrders] = useState<Record<string, Partial<MockOrder>>>({});
   const [pendingActions, setPendingActions] = useState<Record<string, string | null>>({});
@@ -1372,6 +1392,46 @@ const StaffOrdersPage = () => {
       toast.error(error?.response?.data?.message || "Failed to assign rider");
     }
   });
+
+  const bulkAssignRiderMutation = useMutation({
+    mutationFn: async ({ orderIds, riderId }: { orderIds: string[]; riderId: string }) => {
+      const res = await axiosInstance.post(
+        "/order/api/bulk-assign-rider",
+        { orderIds, riderId },
+        orderRequestConfig,
+      );
+      return res.data as { assigned: string[]; skipped: { orderId: string; reason: string }[] };
+    },
+    onSuccess: (data) => {
+      for (const orderId of data.assigned) {
+        syncOrderInCache(orderId, { status: "Ready", rawStatus: "ASSIGNED_TO_RIDER" });
+        clearOrderUiState(orderId);
+      }
+      setSelectedForDispatch([]);
+      queryClient.invalidateQueries({ queryKey: ["staff-orders"] });
+
+      // Partial success is the normal case here — a dispatcher selects a
+      // screenful and some will have moved on since. Say which, rather than
+      // reporting a flat success and letting them notice later.
+      if (data.assigned.length > 0) {
+        toast.success(
+          `Assigned ${data.assigned.length} order${data.assigned.length === 1 ? "" : "s"}` +
+            (data.skipped.length > 0 ? ` · ${data.skipped.length} skipped` : ""),
+        );
+      } else {
+        toast.error(data.skipped[0]?.reason || "No orders could be assigned");
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to assign orders");
+    },
+  });
+
+  const toggleDispatchSelection = (orderId: string) => {
+    setSelectedForDispatch((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId],
+    );
+  };
 
   const handleAcceptConfirm = () => {
     if (!acceptTarget) return;
@@ -1602,10 +1662,26 @@ const StaffOrdersPage = () => {
                 onAssignRider={setAssignRiderTarget}
                 onViewDetails={setDetailTarget}
                 pendingAction={pendingActions[o.id] ?? null}
+                // Batching only makes sense for orders waiting on a rider.
+                selectable={o.rawStatus === "READY_FOR_PICKUP" && !o.riderId}
+                selected={selectedForDispatch.includes(o.id)}
+                onToggleSelect={toggleDispatchSelection}
               />
             ))
           )}
         </div>
+      )}
+
+      {selectedForDispatch.length > 0 && (
+        <BulkRiderAssignBar
+          selectedIds={selectedForDispatch}
+          sampleOrderId={selectedForDispatch[0]!}
+          isAssigning={bulkAssignRiderMutation.isPending}
+          onClear={() => setSelectedForDispatch([])}
+          onAssign={(riderId) =>
+            bulkAssignRiderMutation.mutate({ orderIds: selectedForDispatch, riderId })
+          }
+        />
       )}
 
       {/* Modals */}

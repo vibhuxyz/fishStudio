@@ -122,6 +122,17 @@ export const ENV = {
   RAZORPAY_KEY_SECRET: logEnv("RAZORPAY_KEY_SECRET", process.env.RAZORPAY_KEY_SECRET),
   RAZORPAY_WEBHOOK_SECRET: logEnv("RAZORPAY_WEBHOOK_SECRET", process.env.RAZORPAY_WEBHOOK_SECRET),
 
+  // Google Maps — server-side only, deliberately not NEXT_PUBLIC/EXPO_PUBLIC.
+  //
+  // Google's Geocoding and Places *web service* endpoints can only be locked
+  // down by IP address; the "Android apps" and "HTTP referrer" restrictions
+  // apply to the native SDKs and the browser JS SDK, not to these. A key
+  // shipped inside the Android bundle to call them would therefore have to be
+  // left unrestricted, and is trivially extractable from the APK. Keeping it
+  // here means it never leaves the server and the IP allow-list actually
+  // covers the calls we make. See apps/auth-service/.../geocoding.controller.
+  GOOGLE_MAPS_API_KEY: logEnv("GOOGLE_MAPS_API_KEY", process.env.GOOGLE_MAPS_API_KEY),
+
   // Payment Service
   PAYMENT_SERVICE_PORT: process.env.PAYMENT_SERVICE_PORT || "6007",
   PAYMENT_SERVICE_URL: logEnv(

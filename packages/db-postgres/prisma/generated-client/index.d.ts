@@ -24,6 +24,11 @@ export type Order = $Result.DefaultSelection<Prisma.$OrderPayload>
  */
 export type InvoiceSequence = $Result.DefaultSelection<Prisma.$InvoiceSequencePayload>
 /**
+ * Model DeliverySlotBooking
+ * 
+ */
+export type DeliverySlotBooking = $Result.DefaultSelection<Prisma.$DeliverySlotBookingPayload>
+/**
  * Model OrderNumberSequence
  * 
  */
@@ -68,6 +73,21 @@ export type OutboxEvent = $Result.DefaultSelection<Prisma.$OutboxEventPayload>
  * 
  */
 export type StockReservation = $Result.DefaultSelection<Prisma.$StockReservationPayload>
+/**
+ * Model CodCollection
+ * 
+ */
+export type CodCollection = $Result.DefaultSelection<Prisma.$CodCollectionPayload>
+/**
+ * Model CodSettlement
+ * 
+ */
+export type CodSettlement = $Result.DefaultSelection<Prisma.$CodSettlementPayload>
+/**
+ * Model StaffAttendance
+ * 
+ */
+export type StaffAttendance = $Result.DefaultSelection<Prisma.$StaffAttendancePayload>
 /**
  * Model ProductCoPurchase
  * 
@@ -160,7 +180,8 @@ export const AuditEntityType: {
   COUPON: 'COUPON',
   STOCK: 'STOCK',
   REFUND: 'REFUND',
-  REFERRAL: 'REFERRAL'
+  REFERRAL: 'REFERRAL',
+  COD: 'COD'
 };
 
 export type AuditEntityType = (typeof AuditEntityType)[keyof typeof AuditEntityType]
@@ -379,6 +400,16 @@ export class PrismaClient<
   get invoiceSequence(): Prisma.InvoiceSequenceDelegate<ExtArgs>;
 
   /**
+   * `prisma.deliverySlotBooking`: Exposes CRUD operations for the **DeliverySlotBooking** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DeliverySlotBookings
+    * const deliverySlotBookings = await prisma.deliverySlotBooking.findMany()
+    * ```
+    */
+  get deliverySlotBooking(): Prisma.DeliverySlotBookingDelegate<ExtArgs>;
+
+  /**
    * `prisma.orderNumberSequence`: Exposes CRUD operations for the **OrderNumberSequence** model.
     * Example usage:
     * ```ts
@@ -467,6 +498,36 @@ export class PrismaClient<
     * ```
     */
   get stockReservation(): Prisma.StockReservationDelegate<ExtArgs>;
+
+  /**
+   * `prisma.codCollection`: Exposes CRUD operations for the **CodCollection** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CodCollections
+    * const codCollections = await prisma.codCollection.findMany()
+    * ```
+    */
+  get codCollection(): Prisma.CodCollectionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.codSettlement`: Exposes CRUD operations for the **CodSettlement** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CodSettlements
+    * const codSettlements = await prisma.codSettlement.findMany()
+    * ```
+    */
+  get codSettlement(): Prisma.CodSettlementDelegate<ExtArgs>;
+
+  /**
+   * `prisma.staffAttendance`: Exposes CRUD operations for the **StaffAttendance** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StaffAttendances
+    * const staffAttendances = await prisma.staffAttendance.findMany()
+    * ```
+    */
+  get staffAttendance(): Prisma.StaffAttendanceDelegate<ExtArgs>;
 
   /**
    * `prisma.productCoPurchase`: Exposes CRUD operations for the **ProductCoPurchase** model.
@@ -940,6 +1001,7 @@ export namespace Prisma {
   export const ModelName: {
     Order: 'Order',
     InvoiceSequence: 'InvoiceSequence',
+    DeliverySlotBooking: 'DeliverySlotBooking',
     OrderNumberSequence: 'OrderNumberSequence',
     OrderItem: 'OrderItem',
     Payment: 'Payment',
@@ -949,6 +1011,9 @@ export namespace Prisma {
     WebhookEvent: 'WebhookEvent',
     OutboxEvent: 'OutboxEvent',
     StockReservation: 'StockReservation',
+    CodCollection: 'CodCollection',
+    CodSettlement: 'CodSettlement',
+    StaffAttendance: 'StaffAttendance',
     ProductCoPurchase: 'ProductCoPurchase',
     ProductOrderStat: 'ProductOrderStat',
     CoPurchaseState: 'CoPurchaseState'
@@ -967,7 +1032,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "order" | "invoiceSequence" | "orderNumberSequence" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
+      modelProps: "order" | "invoiceSequence" | "deliverySlotBooking" | "orderNumberSequence" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "codCollection" | "codSettlement" | "staffAttendance" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1108,6 +1173,76 @@ export namespace Prisma {
           count: {
             args: Prisma.InvoiceSequenceCountArgs<ExtArgs>
             result: $Utils.Optional<InvoiceSequenceCountAggregateOutputType> | number
+          }
+        }
+      }
+      DeliverySlotBooking: {
+        payload: Prisma.$DeliverySlotBookingPayload<ExtArgs>
+        fields: Prisma.DeliverySlotBookingFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DeliverySlotBookingFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DeliverySlotBookingFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          findFirst: {
+            args: Prisma.DeliverySlotBookingFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DeliverySlotBookingFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          findMany: {
+            args: Prisma.DeliverySlotBookingFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>[]
+          }
+          create: {
+            args: Prisma.DeliverySlotBookingCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          createMany: {
+            args: Prisma.DeliverySlotBookingCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DeliverySlotBookingCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>[]
+          }
+          delete: {
+            args: Prisma.DeliverySlotBookingDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          update: {
+            args: Prisma.DeliverySlotBookingUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          deleteMany: {
+            args: Prisma.DeliverySlotBookingDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DeliverySlotBookingUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.DeliverySlotBookingUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DeliverySlotBookingPayload>
+          }
+          aggregate: {
+            args: Prisma.DeliverySlotBookingAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDeliverySlotBooking>
+          }
+          groupBy: {
+            args: Prisma.DeliverySlotBookingGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DeliverySlotBookingGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DeliverySlotBookingCountArgs<ExtArgs>
+            result: $Utils.Optional<DeliverySlotBookingCountAggregateOutputType> | number
           }
         }
       }
@@ -1741,6 +1876,216 @@ export namespace Prisma {
           }
         }
       }
+      CodCollection: {
+        payload: Prisma.$CodCollectionPayload<ExtArgs>
+        fields: Prisma.CodCollectionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CodCollectionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CodCollectionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          findFirst: {
+            args: Prisma.CodCollectionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CodCollectionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          findMany: {
+            args: Prisma.CodCollectionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>[]
+          }
+          create: {
+            args: Prisma.CodCollectionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          createMany: {
+            args: Prisma.CodCollectionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CodCollectionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>[]
+          }
+          delete: {
+            args: Prisma.CodCollectionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          update: {
+            args: Prisma.CodCollectionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          deleteMany: {
+            args: Prisma.CodCollectionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CodCollectionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CodCollectionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodCollectionPayload>
+          }
+          aggregate: {
+            args: Prisma.CodCollectionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCodCollection>
+          }
+          groupBy: {
+            args: Prisma.CodCollectionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CodCollectionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CodCollectionCountArgs<ExtArgs>
+            result: $Utils.Optional<CodCollectionCountAggregateOutputType> | number
+          }
+        }
+      }
+      CodSettlement: {
+        payload: Prisma.$CodSettlementPayload<ExtArgs>
+        fields: Prisma.CodSettlementFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CodSettlementFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CodSettlementFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          findFirst: {
+            args: Prisma.CodSettlementFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CodSettlementFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          findMany: {
+            args: Prisma.CodSettlementFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>[]
+          }
+          create: {
+            args: Prisma.CodSettlementCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          createMany: {
+            args: Prisma.CodSettlementCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CodSettlementCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>[]
+          }
+          delete: {
+            args: Prisma.CodSettlementDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          update: {
+            args: Prisma.CodSettlementUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          deleteMany: {
+            args: Prisma.CodSettlementDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CodSettlementUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CodSettlementUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CodSettlementPayload>
+          }
+          aggregate: {
+            args: Prisma.CodSettlementAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCodSettlement>
+          }
+          groupBy: {
+            args: Prisma.CodSettlementGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CodSettlementGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CodSettlementCountArgs<ExtArgs>
+            result: $Utils.Optional<CodSettlementCountAggregateOutputType> | number
+          }
+        }
+      }
+      StaffAttendance: {
+        payload: Prisma.$StaffAttendancePayload<ExtArgs>
+        fields: Prisma.StaffAttendanceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.StaffAttendanceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.StaffAttendanceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          findFirst: {
+            args: Prisma.StaffAttendanceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.StaffAttendanceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          findMany: {
+            args: Prisma.StaffAttendanceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>[]
+          }
+          create: {
+            args: Prisma.StaffAttendanceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          createMany: {
+            args: Prisma.StaffAttendanceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.StaffAttendanceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>[]
+          }
+          delete: {
+            args: Prisma.StaffAttendanceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          update: {
+            args: Prisma.StaffAttendanceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          deleteMany: {
+            args: Prisma.StaffAttendanceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.StaffAttendanceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.StaffAttendanceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffAttendancePayload>
+          }
+          aggregate: {
+            args: Prisma.StaffAttendanceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateStaffAttendance>
+          }
+          groupBy: {
+            args: Prisma.StaffAttendanceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<StaffAttendanceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.StaffAttendanceCountArgs<ExtArgs>
+            result: $Utils.Optional<StaffAttendanceCountAggregateOutputType> | number
+          }
+        }
+      }
       ProductCoPurchase: {
         payload: Prisma.$ProductCoPurchasePayload<ExtArgs>
         fields: Prisma.ProductCoPurchaseFieldRefs
@@ -2157,6 +2502,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type CodSettlementCountOutputType
+   */
+
+  export type CodSettlementCountOutputType = {
+    collections: number
+  }
+
+  export type CodSettlementCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    collections?: boolean | CodSettlementCountOutputTypeCountCollectionsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * CodSettlementCountOutputType without action
+   */
+  export type CodSettlementCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlementCountOutputType
+     */
+    select?: CodSettlementCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * CodSettlementCountOutputType without action
+   */
+  export type CodSettlementCountOutputTypeCountCollectionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CodCollectionWhereInput
+  }
+
+
+  /**
    * Models
    */
 
@@ -2178,6 +2554,7 @@ export namespace Prisma {
     deliveryLatitude: Decimal | null
     deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
+    deliveryDistanceKm: Decimal | null
   }
 
   export type OrderSumAggregateOutputType = {
@@ -2186,6 +2563,7 @@ export namespace Prisma {
     deliveryLatitude: Decimal | null
     deliveryLongitude: Decimal | null
     deliveryCharge: Decimal | null
+    deliveryDistanceKm: Decimal | null
   }
 
   export type OrderMinAggregateOutputType = {
@@ -2199,6 +2577,7 @@ export namespace Prisma {
     discountAmount: Decimal | null
     couponCode: string | null
     deliverySlot: string | null
+    deliveryDate: string | null
     deliveryName: string | null
     deliveryPhone: string | null
     deliveryAddress: string | null
@@ -2219,6 +2598,7 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    deliveryDistanceKm: Decimal | null
     deliveryProofPhotoUrl: string | null
     deliveryProofPhotoPublicId: string | null
     deliveryProofUploadedAt: Date | null
@@ -2244,6 +2624,7 @@ export namespace Prisma {
     discountAmount: Decimal | null
     couponCode: string | null
     deliverySlot: string | null
+    deliveryDate: string | null
     deliveryName: string | null
     deliveryPhone: string | null
     deliveryAddress: string | null
@@ -2264,6 +2645,7 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    deliveryDistanceKm: Decimal | null
     deliveryProofPhotoUrl: string | null
     deliveryProofPhotoPublicId: string | null
     deliveryProofUploadedAt: Date | null
@@ -2289,6 +2671,7 @@ export namespace Prisma {
     discountAmount: number
     couponCode: number
     deliverySlot: number
+    deliveryDate: number
     deliveryName: number
     deliveryPhone: number
     deliveryAddress: number
@@ -2310,6 +2693,7 @@ export namespace Prisma {
     assignedBy: number
     pickupStartedAt: number
     deliveredAt: number
+    deliveryDistanceKm: number
     preparationPhotos: number
     deliveryProofPhotoUrl: number
     deliveryProofPhotoPublicId: number
@@ -2333,6 +2717,7 @@ export namespace Prisma {
     deliveryLatitude?: true
     deliveryLongitude?: true
     deliveryCharge?: true
+    deliveryDistanceKm?: true
   }
 
   export type OrderSumAggregateInputType = {
@@ -2341,6 +2726,7 @@ export namespace Prisma {
     deliveryLatitude?: true
     deliveryLongitude?: true
     deliveryCharge?: true
+    deliveryDistanceKm?: true
   }
 
   export type OrderMinAggregateInputType = {
@@ -2354,6 +2740,7 @@ export namespace Prisma {
     discountAmount?: true
     couponCode?: true
     deliverySlot?: true
+    deliveryDate?: true
     deliveryName?: true
     deliveryPhone?: true
     deliveryAddress?: true
@@ -2374,6 +2761,7 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    deliveryDistanceKm?: true
     deliveryProofPhotoUrl?: true
     deliveryProofPhotoPublicId?: true
     deliveryProofUploadedAt?: true
@@ -2399,6 +2787,7 @@ export namespace Prisma {
     discountAmount?: true
     couponCode?: true
     deliverySlot?: true
+    deliveryDate?: true
     deliveryName?: true
     deliveryPhone?: true
     deliveryAddress?: true
@@ -2419,6 +2808,7 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    deliveryDistanceKm?: true
     deliveryProofPhotoUrl?: true
     deliveryProofPhotoPublicId?: true
     deliveryProofUploadedAt?: true
@@ -2444,6 +2834,7 @@ export namespace Prisma {
     discountAmount?: true
     couponCode?: true
     deliverySlot?: true
+    deliveryDate?: true
     deliveryName?: true
     deliveryPhone?: true
     deliveryAddress?: true
@@ -2465,6 +2856,7 @@ export namespace Prisma {
     assignedBy?: true
     pickupStartedAt?: true
     deliveredAt?: true
+    deliveryDistanceKm?: true
     preparationPhotos?: true
     deliveryProofPhotoUrl?: true
     deliveryProofPhotoPublicId?: true
@@ -2578,6 +2970,7 @@ export namespace Prisma {
     discountAmount: Decimal
     couponCode: string | null
     deliverySlot: string | null
+    deliveryDate: string | null
     deliveryName: string | null
     deliveryPhone: string | null
     deliveryAddress: string | null
@@ -2599,6 +2992,7 @@ export namespace Prisma {
     assignedBy: string | null
     pickupStartedAt: Date | null
     deliveredAt: Date | null
+    deliveryDistanceKm: Decimal | null
     preparationPhotos: JsonValue | null
     deliveryProofPhotoUrl: string | null
     deliveryProofPhotoPublicId: string | null
@@ -2644,6 +3038,7 @@ export namespace Prisma {
     discountAmount?: boolean
     couponCode?: boolean
     deliverySlot?: boolean
+    deliveryDate?: boolean
     deliveryName?: boolean
     deliveryPhone?: boolean
     deliveryAddress?: boolean
@@ -2665,6 +3060,7 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    deliveryDistanceKm?: boolean
     preparationPhotos?: boolean
     deliveryProofPhotoUrl?: boolean
     deliveryProofPhotoPublicId?: boolean
@@ -2695,6 +3091,7 @@ export namespace Prisma {
     discountAmount?: boolean
     couponCode?: boolean
     deliverySlot?: boolean
+    deliveryDate?: boolean
     deliveryName?: boolean
     deliveryPhone?: boolean
     deliveryAddress?: boolean
@@ -2716,6 +3113,7 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    deliveryDistanceKm?: boolean
     preparationPhotos?: boolean
     deliveryProofPhotoUrl?: boolean
     deliveryProofPhotoPublicId?: boolean
@@ -2742,6 +3140,7 @@ export namespace Prisma {
     discountAmount?: boolean
     couponCode?: boolean
     deliverySlot?: boolean
+    deliveryDate?: boolean
     deliveryName?: boolean
     deliveryPhone?: boolean
     deliveryAddress?: boolean
@@ -2763,6 +3162,7 @@ export namespace Prisma {
     assignedBy?: boolean
     pickupStartedAt?: boolean
     deliveredAt?: boolean
+    deliveryDistanceKm?: boolean
     preparationPhotos?: boolean
     deliveryProofPhotoUrl?: boolean
     deliveryProofPhotoPublicId?: boolean
@@ -2804,6 +3204,7 @@ export namespace Prisma {
       discountAmount: Prisma.Decimal
       couponCode: string | null
       deliverySlot: string | null
+      deliveryDate: string | null
       deliveryName: string | null
       deliveryPhone: string | null
       deliveryAddress: string | null
@@ -2825,6 +3226,7 @@ export namespace Prisma {
       assignedBy: string | null
       pickupStartedAt: Date | null
       deliveredAt: Date | null
+      deliveryDistanceKm: Prisma.Decimal | null
       preparationPhotos: Prisma.JsonValue | null
       deliveryProofPhotoUrl: string | null
       deliveryProofPhotoPublicId: string | null
@@ -3244,6 +3646,7 @@ export namespace Prisma {
     readonly discountAmount: FieldRef<"Order", 'Decimal'>
     readonly couponCode: FieldRef<"Order", 'String'>
     readonly deliverySlot: FieldRef<"Order", 'String'>
+    readonly deliveryDate: FieldRef<"Order", 'String'>
     readonly deliveryName: FieldRef<"Order", 'String'>
     readonly deliveryPhone: FieldRef<"Order", 'String'>
     readonly deliveryAddress: FieldRef<"Order", 'String'>
@@ -3265,6 +3668,7 @@ export namespace Prisma {
     readonly assignedBy: FieldRef<"Order", 'String'>
     readonly pickupStartedAt: FieldRef<"Order", 'DateTime'>
     readonly deliveredAt: FieldRef<"Order", 'DateTime'>
+    readonly deliveryDistanceKm: FieldRef<"Order", 'Decimal'>
     readonly preparationPhotos: FieldRef<"Order", 'Json'>
     readonly deliveryProofPhotoUrl: FieldRef<"Order", 'String'>
     readonly deliveryProofPhotoPublicId: FieldRef<"Order", 'String'>
@@ -4563,6 +4967,934 @@ export namespace Prisma {
      * Select specific fields to fetch from the InvoiceSequence
      */
     select?: InvoiceSequenceSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model DeliverySlotBooking
+   */
+
+  export type AggregateDeliverySlotBooking = {
+    _count: DeliverySlotBookingCountAggregateOutputType | null
+    _avg: DeliverySlotBookingAvgAggregateOutputType | null
+    _sum: DeliverySlotBookingSumAggregateOutputType | null
+    _min: DeliverySlotBookingMinAggregateOutputType | null
+    _max: DeliverySlotBookingMaxAggregateOutputType | null
+  }
+
+  export type DeliverySlotBookingAvgAggregateOutputType = {
+    booked: number | null
+    capacity: number | null
+  }
+
+  export type DeliverySlotBookingSumAggregateOutputType = {
+    booked: number | null
+    capacity: number | null
+  }
+
+  export type DeliverySlotBookingMinAggregateOutputType = {
+    storeId: string | null
+    deliveryDate: string | null
+    slotKey: string | null
+    booked: number | null
+    capacity: number | null
+    updatedAt: Date | null
+  }
+
+  export type DeliverySlotBookingMaxAggregateOutputType = {
+    storeId: string | null
+    deliveryDate: string | null
+    slotKey: string | null
+    booked: number | null
+    capacity: number | null
+    updatedAt: Date | null
+  }
+
+  export type DeliverySlotBookingCountAggregateOutputType = {
+    storeId: number
+    deliveryDate: number
+    slotKey: number
+    booked: number
+    capacity: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DeliverySlotBookingAvgAggregateInputType = {
+    booked?: true
+    capacity?: true
+  }
+
+  export type DeliverySlotBookingSumAggregateInputType = {
+    booked?: true
+    capacity?: true
+  }
+
+  export type DeliverySlotBookingMinAggregateInputType = {
+    storeId?: true
+    deliveryDate?: true
+    slotKey?: true
+    booked?: true
+    capacity?: true
+    updatedAt?: true
+  }
+
+  export type DeliverySlotBookingMaxAggregateInputType = {
+    storeId?: true
+    deliveryDate?: true
+    slotKey?: true
+    booked?: true
+    capacity?: true
+    updatedAt?: true
+  }
+
+  export type DeliverySlotBookingCountAggregateInputType = {
+    storeId?: true
+    deliveryDate?: true
+    slotKey?: true
+    booked?: true
+    capacity?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DeliverySlotBookingAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DeliverySlotBooking to aggregate.
+     */
+    where?: DeliverySlotBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DeliverySlotBookings to fetch.
+     */
+    orderBy?: DeliverySlotBookingOrderByWithRelationInput | DeliverySlotBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DeliverySlotBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DeliverySlotBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DeliverySlotBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DeliverySlotBookings
+    **/
+    _count?: true | DeliverySlotBookingCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DeliverySlotBookingAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DeliverySlotBookingSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DeliverySlotBookingMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DeliverySlotBookingMaxAggregateInputType
+  }
+
+  export type GetDeliverySlotBookingAggregateType<T extends DeliverySlotBookingAggregateArgs> = {
+        [P in keyof T & keyof AggregateDeliverySlotBooking]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDeliverySlotBooking[P]>
+      : GetScalarType<T[P], AggregateDeliverySlotBooking[P]>
+  }
+
+
+
+
+  export type DeliverySlotBookingGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeliverySlotBookingWhereInput
+    orderBy?: DeliverySlotBookingOrderByWithAggregationInput | DeliverySlotBookingOrderByWithAggregationInput[]
+    by: DeliverySlotBookingScalarFieldEnum[] | DeliverySlotBookingScalarFieldEnum
+    having?: DeliverySlotBookingScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DeliverySlotBookingCountAggregateInputType | true
+    _avg?: DeliverySlotBookingAvgAggregateInputType
+    _sum?: DeliverySlotBookingSumAggregateInputType
+    _min?: DeliverySlotBookingMinAggregateInputType
+    _max?: DeliverySlotBookingMaxAggregateInputType
+  }
+
+  export type DeliverySlotBookingGroupByOutputType = {
+    storeId: string
+    deliveryDate: string
+    slotKey: string
+    booked: number
+    capacity: number
+    updatedAt: Date
+    _count: DeliverySlotBookingCountAggregateOutputType | null
+    _avg: DeliverySlotBookingAvgAggregateOutputType | null
+    _sum: DeliverySlotBookingSumAggregateOutputType | null
+    _min: DeliverySlotBookingMinAggregateOutputType | null
+    _max: DeliverySlotBookingMaxAggregateOutputType | null
+  }
+
+  type GetDeliverySlotBookingGroupByPayload<T extends DeliverySlotBookingGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DeliverySlotBookingGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DeliverySlotBookingGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DeliverySlotBookingGroupByOutputType[P]>
+            : GetScalarType<T[P], DeliverySlotBookingGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DeliverySlotBookingSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    storeId?: boolean
+    deliveryDate?: boolean
+    slotKey?: boolean
+    booked?: boolean
+    capacity?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["deliverySlotBooking"]>
+
+  export type DeliverySlotBookingSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    storeId?: boolean
+    deliveryDate?: boolean
+    slotKey?: boolean
+    booked?: boolean
+    capacity?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["deliverySlotBooking"]>
+
+  export type DeliverySlotBookingSelectScalar = {
+    storeId?: boolean
+    deliveryDate?: boolean
+    slotKey?: boolean
+    booked?: boolean
+    capacity?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $DeliverySlotBookingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DeliverySlotBooking"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      storeId: string
+      deliveryDate: string
+      slotKey: string
+      booked: number
+      capacity: number
+      updatedAt: Date
+    }, ExtArgs["result"]["deliverySlotBooking"]>
+    composites: {}
+  }
+
+  type DeliverySlotBookingGetPayload<S extends boolean | null | undefined | DeliverySlotBookingDefaultArgs> = $Result.GetResult<Prisma.$DeliverySlotBookingPayload, S>
+
+  type DeliverySlotBookingCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<DeliverySlotBookingFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: DeliverySlotBookingCountAggregateInputType | true
+    }
+
+  export interface DeliverySlotBookingDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DeliverySlotBooking'], meta: { name: 'DeliverySlotBooking' } }
+    /**
+     * Find zero or one DeliverySlotBooking that matches the filter.
+     * @param {DeliverySlotBookingFindUniqueArgs} args - Arguments to find a DeliverySlotBooking
+     * @example
+     * // Get one DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DeliverySlotBookingFindUniqueArgs>(args: SelectSubset<T, DeliverySlotBookingFindUniqueArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one DeliverySlotBooking that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {DeliverySlotBookingFindUniqueOrThrowArgs} args - Arguments to find a DeliverySlotBooking
+     * @example
+     * // Get one DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DeliverySlotBookingFindUniqueOrThrowArgs>(args: SelectSubset<T, DeliverySlotBookingFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first DeliverySlotBooking that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingFindFirstArgs} args - Arguments to find a DeliverySlotBooking
+     * @example
+     * // Get one DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DeliverySlotBookingFindFirstArgs>(args?: SelectSubset<T, DeliverySlotBookingFindFirstArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first DeliverySlotBooking that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingFindFirstOrThrowArgs} args - Arguments to find a DeliverySlotBooking
+     * @example
+     * // Get one DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DeliverySlotBookingFindFirstOrThrowArgs>(args?: SelectSubset<T, DeliverySlotBookingFindFirstOrThrowArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more DeliverySlotBookings that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DeliverySlotBookings
+     * const deliverySlotBookings = await prisma.deliverySlotBooking.findMany()
+     * 
+     * // Get first 10 DeliverySlotBookings
+     * const deliverySlotBookings = await prisma.deliverySlotBooking.findMany({ take: 10 })
+     * 
+     * // Only select the `storeId`
+     * const deliverySlotBookingWithStoreIdOnly = await prisma.deliverySlotBooking.findMany({ select: { storeId: true } })
+     * 
+     */
+    findMany<T extends DeliverySlotBookingFindManyArgs>(args?: SelectSubset<T, DeliverySlotBookingFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a DeliverySlotBooking.
+     * @param {DeliverySlotBookingCreateArgs} args - Arguments to create a DeliverySlotBooking.
+     * @example
+     * // Create one DeliverySlotBooking
+     * const DeliverySlotBooking = await prisma.deliverySlotBooking.create({
+     *   data: {
+     *     // ... data to create a DeliverySlotBooking
+     *   }
+     * })
+     * 
+     */
+    create<T extends DeliverySlotBookingCreateArgs>(args: SelectSubset<T, DeliverySlotBookingCreateArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many DeliverySlotBookings.
+     * @param {DeliverySlotBookingCreateManyArgs} args - Arguments to create many DeliverySlotBookings.
+     * @example
+     * // Create many DeliverySlotBookings
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DeliverySlotBookingCreateManyArgs>(args?: SelectSubset<T, DeliverySlotBookingCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DeliverySlotBookings and returns the data saved in the database.
+     * @param {DeliverySlotBookingCreateManyAndReturnArgs} args - Arguments to create many DeliverySlotBookings.
+     * @example
+     * // Create many DeliverySlotBookings
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DeliverySlotBookings and only return the `storeId`
+     * const deliverySlotBookingWithStoreIdOnly = await prisma.deliverySlotBooking.createManyAndReturn({ 
+     *   select: { storeId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DeliverySlotBookingCreateManyAndReturnArgs>(args?: SelectSubset<T, DeliverySlotBookingCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a DeliverySlotBooking.
+     * @param {DeliverySlotBookingDeleteArgs} args - Arguments to delete one DeliverySlotBooking.
+     * @example
+     * // Delete one DeliverySlotBooking
+     * const DeliverySlotBooking = await prisma.deliverySlotBooking.delete({
+     *   where: {
+     *     // ... filter to delete one DeliverySlotBooking
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DeliverySlotBookingDeleteArgs>(args: SelectSubset<T, DeliverySlotBookingDeleteArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one DeliverySlotBooking.
+     * @param {DeliverySlotBookingUpdateArgs} args - Arguments to update one DeliverySlotBooking.
+     * @example
+     * // Update one DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DeliverySlotBookingUpdateArgs>(args: SelectSubset<T, DeliverySlotBookingUpdateArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more DeliverySlotBookings.
+     * @param {DeliverySlotBookingDeleteManyArgs} args - Arguments to filter DeliverySlotBookings to delete.
+     * @example
+     * // Delete a few DeliverySlotBookings
+     * const { count } = await prisma.deliverySlotBooking.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DeliverySlotBookingDeleteManyArgs>(args?: SelectSubset<T, DeliverySlotBookingDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DeliverySlotBookings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DeliverySlotBookings
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DeliverySlotBookingUpdateManyArgs>(args: SelectSubset<T, DeliverySlotBookingUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one DeliverySlotBooking.
+     * @param {DeliverySlotBookingUpsertArgs} args - Arguments to update or create a DeliverySlotBooking.
+     * @example
+     * // Update or create a DeliverySlotBooking
+     * const deliverySlotBooking = await prisma.deliverySlotBooking.upsert({
+     *   create: {
+     *     // ... data to create a DeliverySlotBooking
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DeliverySlotBooking we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DeliverySlotBookingUpsertArgs>(args: SelectSubset<T, DeliverySlotBookingUpsertArgs<ExtArgs>>): Prisma__DeliverySlotBookingClient<$Result.GetResult<Prisma.$DeliverySlotBookingPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of DeliverySlotBookings.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingCountArgs} args - Arguments to filter DeliverySlotBookings to count.
+     * @example
+     * // Count the number of DeliverySlotBookings
+     * const count = await prisma.deliverySlotBooking.count({
+     *   where: {
+     *     // ... the filter for the DeliverySlotBookings we want to count
+     *   }
+     * })
+    **/
+    count<T extends DeliverySlotBookingCountArgs>(
+      args?: Subset<T, DeliverySlotBookingCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DeliverySlotBookingCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DeliverySlotBooking.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DeliverySlotBookingAggregateArgs>(args: Subset<T, DeliverySlotBookingAggregateArgs>): Prisma.PrismaPromise<GetDeliverySlotBookingAggregateType<T>>
+
+    /**
+     * Group by DeliverySlotBooking.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeliverySlotBookingGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DeliverySlotBookingGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DeliverySlotBookingGroupByArgs['orderBy'] }
+        : { orderBy?: DeliverySlotBookingGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DeliverySlotBookingGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDeliverySlotBookingGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DeliverySlotBooking model
+   */
+  readonly fields: DeliverySlotBookingFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DeliverySlotBooking.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DeliverySlotBookingClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DeliverySlotBooking model
+   */ 
+  interface DeliverySlotBookingFieldRefs {
+    readonly storeId: FieldRef<"DeliverySlotBooking", 'String'>
+    readonly deliveryDate: FieldRef<"DeliverySlotBooking", 'String'>
+    readonly slotKey: FieldRef<"DeliverySlotBooking", 'String'>
+    readonly booked: FieldRef<"DeliverySlotBooking", 'Int'>
+    readonly capacity: FieldRef<"DeliverySlotBooking", 'Int'>
+    readonly updatedAt: FieldRef<"DeliverySlotBooking", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DeliverySlotBooking findUnique
+   */
+  export type DeliverySlotBookingFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter, which DeliverySlotBooking to fetch.
+     */
+    where: DeliverySlotBookingWhereUniqueInput
+  }
+
+  /**
+   * DeliverySlotBooking findUniqueOrThrow
+   */
+  export type DeliverySlotBookingFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter, which DeliverySlotBooking to fetch.
+     */
+    where: DeliverySlotBookingWhereUniqueInput
+  }
+
+  /**
+   * DeliverySlotBooking findFirst
+   */
+  export type DeliverySlotBookingFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter, which DeliverySlotBooking to fetch.
+     */
+    where?: DeliverySlotBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DeliverySlotBookings to fetch.
+     */
+    orderBy?: DeliverySlotBookingOrderByWithRelationInput | DeliverySlotBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DeliverySlotBookings.
+     */
+    cursor?: DeliverySlotBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DeliverySlotBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DeliverySlotBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DeliverySlotBookings.
+     */
+    distinct?: DeliverySlotBookingScalarFieldEnum | DeliverySlotBookingScalarFieldEnum[]
+  }
+
+  /**
+   * DeliverySlotBooking findFirstOrThrow
+   */
+  export type DeliverySlotBookingFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter, which DeliverySlotBooking to fetch.
+     */
+    where?: DeliverySlotBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DeliverySlotBookings to fetch.
+     */
+    orderBy?: DeliverySlotBookingOrderByWithRelationInput | DeliverySlotBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DeliverySlotBookings.
+     */
+    cursor?: DeliverySlotBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DeliverySlotBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DeliverySlotBookings.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DeliverySlotBookings.
+     */
+    distinct?: DeliverySlotBookingScalarFieldEnum | DeliverySlotBookingScalarFieldEnum[]
+  }
+
+  /**
+   * DeliverySlotBooking findMany
+   */
+  export type DeliverySlotBookingFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter, which DeliverySlotBookings to fetch.
+     */
+    where?: DeliverySlotBookingWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DeliverySlotBookings to fetch.
+     */
+    orderBy?: DeliverySlotBookingOrderByWithRelationInput | DeliverySlotBookingOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DeliverySlotBookings.
+     */
+    cursor?: DeliverySlotBookingWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DeliverySlotBookings from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DeliverySlotBookings.
+     */
+    skip?: number
+    distinct?: DeliverySlotBookingScalarFieldEnum | DeliverySlotBookingScalarFieldEnum[]
+  }
+
+  /**
+   * DeliverySlotBooking create
+   */
+  export type DeliverySlotBookingCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * The data needed to create a DeliverySlotBooking.
+     */
+    data: XOR<DeliverySlotBookingCreateInput, DeliverySlotBookingUncheckedCreateInput>
+  }
+
+  /**
+   * DeliverySlotBooking createMany
+   */
+  export type DeliverySlotBookingCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DeliverySlotBookings.
+     */
+    data: DeliverySlotBookingCreateManyInput | DeliverySlotBookingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DeliverySlotBooking createManyAndReturn
+   */
+  export type DeliverySlotBookingCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many DeliverySlotBookings.
+     */
+    data: DeliverySlotBookingCreateManyInput | DeliverySlotBookingCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DeliverySlotBooking update
+   */
+  export type DeliverySlotBookingUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * The data needed to update a DeliverySlotBooking.
+     */
+    data: XOR<DeliverySlotBookingUpdateInput, DeliverySlotBookingUncheckedUpdateInput>
+    /**
+     * Choose, which DeliverySlotBooking to update.
+     */
+    where: DeliverySlotBookingWhereUniqueInput
+  }
+
+  /**
+   * DeliverySlotBooking updateMany
+   */
+  export type DeliverySlotBookingUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DeliverySlotBookings.
+     */
+    data: XOR<DeliverySlotBookingUpdateManyMutationInput, DeliverySlotBookingUncheckedUpdateManyInput>
+    /**
+     * Filter which DeliverySlotBookings to update
+     */
+    where?: DeliverySlotBookingWhereInput
+  }
+
+  /**
+   * DeliverySlotBooking upsert
+   */
+  export type DeliverySlotBookingUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * The filter to search for the DeliverySlotBooking to update in case it exists.
+     */
+    where: DeliverySlotBookingWhereUniqueInput
+    /**
+     * In case the DeliverySlotBooking found by the `where` argument doesn't exist, create a new DeliverySlotBooking with this data.
+     */
+    create: XOR<DeliverySlotBookingCreateInput, DeliverySlotBookingUncheckedCreateInput>
+    /**
+     * In case the DeliverySlotBooking was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DeliverySlotBookingUpdateInput, DeliverySlotBookingUncheckedUpdateInput>
+  }
+
+  /**
+   * DeliverySlotBooking delete
+   */
+  export type DeliverySlotBookingDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
+    /**
+     * Filter which DeliverySlotBooking to delete.
+     */
+    where: DeliverySlotBookingWhereUniqueInput
+  }
+
+  /**
+   * DeliverySlotBooking deleteMany
+   */
+  export type DeliverySlotBookingDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DeliverySlotBookings to delete
+     */
+    where?: DeliverySlotBookingWhereInput
+  }
+
+  /**
+   * DeliverySlotBooking without action
+   */
+  export type DeliverySlotBookingDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliverySlotBooking
+     */
+    select?: DeliverySlotBookingSelect<ExtArgs> | null
   }
 
 
@@ -13058,6 +14390,3050 @@ export namespace Prisma {
 
 
   /**
+   * Model CodCollection
+   */
+
+  export type AggregateCodCollection = {
+    _count: CodCollectionCountAggregateOutputType | null
+    _avg: CodCollectionAvgAggregateOutputType | null
+    _sum: CodCollectionSumAggregateOutputType | null
+    _min: CodCollectionMinAggregateOutputType | null
+    _max: CodCollectionMaxAggregateOutputType | null
+  }
+
+  export type CodCollectionAvgAggregateOutputType = {
+    amount: Decimal | null
+  }
+
+  export type CodCollectionSumAggregateOutputType = {
+    amount: Decimal | null
+  }
+
+  export type CodCollectionMinAggregateOutputType = {
+    id: string | null
+    orderId: string | null
+    riderId: string | null
+    storeId: string | null
+    amount: Decimal | null
+    collectedAt: Date | null
+    settlementId: string | null
+    createdAt: Date | null
+  }
+
+  export type CodCollectionMaxAggregateOutputType = {
+    id: string | null
+    orderId: string | null
+    riderId: string | null
+    storeId: string | null
+    amount: Decimal | null
+    collectedAt: Date | null
+    settlementId: string | null
+    createdAt: Date | null
+  }
+
+  export type CodCollectionCountAggregateOutputType = {
+    id: number
+    orderId: number
+    riderId: number
+    storeId: number
+    amount: number
+    collectedAt: number
+    settlementId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CodCollectionAvgAggregateInputType = {
+    amount?: true
+  }
+
+  export type CodCollectionSumAggregateInputType = {
+    amount?: true
+  }
+
+  export type CodCollectionMinAggregateInputType = {
+    id?: true
+    orderId?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    collectedAt?: true
+    settlementId?: true
+    createdAt?: true
+  }
+
+  export type CodCollectionMaxAggregateInputType = {
+    id?: true
+    orderId?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    collectedAt?: true
+    settlementId?: true
+    createdAt?: true
+  }
+
+  export type CodCollectionCountAggregateInputType = {
+    id?: true
+    orderId?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    collectedAt?: true
+    settlementId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CodCollectionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CodCollection to aggregate.
+     */
+    where?: CodCollectionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodCollections to fetch.
+     */
+    orderBy?: CodCollectionOrderByWithRelationInput | CodCollectionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CodCollectionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodCollections from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodCollections.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CodCollections
+    **/
+    _count?: true | CodCollectionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CodCollectionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CodCollectionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CodCollectionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CodCollectionMaxAggregateInputType
+  }
+
+  export type GetCodCollectionAggregateType<T extends CodCollectionAggregateArgs> = {
+        [P in keyof T & keyof AggregateCodCollection]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCodCollection[P]>
+      : GetScalarType<T[P], AggregateCodCollection[P]>
+  }
+
+
+
+
+  export type CodCollectionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CodCollectionWhereInput
+    orderBy?: CodCollectionOrderByWithAggregationInput | CodCollectionOrderByWithAggregationInput[]
+    by: CodCollectionScalarFieldEnum[] | CodCollectionScalarFieldEnum
+    having?: CodCollectionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CodCollectionCountAggregateInputType | true
+    _avg?: CodCollectionAvgAggregateInputType
+    _sum?: CodCollectionSumAggregateInputType
+    _min?: CodCollectionMinAggregateInputType
+    _max?: CodCollectionMaxAggregateInputType
+  }
+
+  export type CodCollectionGroupByOutputType = {
+    id: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal
+    collectedAt: Date
+    settlementId: string | null
+    createdAt: Date
+    _count: CodCollectionCountAggregateOutputType | null
+    _avg: CodCollectionAvgAggregateOutputType | null
+    _sum: CodCollectionSumAggregateOutputType | null
+    _min: CodCollectionMinAggregateOutputType | null
+    _max: CodCollectionMaxAggregateOutputType | null
+  }
+
+  type GetCodCollectionGroupByPayload<T extends CodCollectionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CodCollectionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CodCollectionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CodCollectionGroupByOutputType[P]>
+            : GetScalarType<T[P], CodCollectionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CodCollectionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    orderId?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    collectedAt?: boolean
+    settlementId?: boolean
+    createdAt?: boolean
+    settlement?: boolean | CodCollection$settlementArgs<ExtArgs>
+  }, ExtArgs["result"]["codCollection"]>
+
+  export type CodCollectionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    orderId?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    collectedAt?: boolean
+    settlementId?: boolean
+    createdAt?: boolean
+    settlement?: boolean | CodCollection$settlementArgs<ExtArgs>
+  }, ExtArgs["result"]["codCollection"]>
+
+  export type CodCollectionSelectScalar = {
+    id?: boolean
+    orderId?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    collectedAt?: boolean
+    settlementId?: boolean
+    createdAt?: boolean
+  }
+
+  export type CodCollectionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    settlement?: boolean | CodCollection$settlementArgs<ExtArgs>
+  }
+  export type CodCollectionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    settlement?: boolean | CodCollection$settlementArgs<ExtArgs>
+  }
+
+  export type $CodCollectionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CodCollection"
+    objects: {
+      settlement: Prisma.$CodSettlementPayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      orderId: string
+      riderId: string
+      storeId: string
+      amount: Prisma.Decimal
+      collectedAt: Date
+      settlementId: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["codCollection"]>
+    composites: {}
+  }
+
+  type CodCollectionGetPayload<S extends boolean | null | undefined | CodCollectionDefaultArgs> = $Result.GetResult<Prisma.$CodCollectionPayload, S>
+
+  type CodCollectionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CodCollectionFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CodCollectionCountAggregateInputType | true
+    }
+
+  export interface CodCollectionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CodCollection'], meta: { name: 'CodCollection' } }
+    /**
+     * Find zero or one CodCollection that matches the filter.
+     * @param {CodCollectionFindUniqueArgs} args - Arguments to find a CodCollection
+     * @example
+     * // Get one CodCollection
+     * const codCollection = await prisma.codCollection.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CodCollectionFindUniqueArgs>(args: SelectSubset<T, CodCollectionFindUniqueArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CodCollection that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CodCollectionFindUniqueOrThrowArgs} args - Arguments to find a CodCollection
+     * @example
+     * // Get one CodCollection
+     * const codCollection = await prisma.codCollection.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CodCollectionFindUniqueOrThrowArgs>(args: SelectSubset<T, CodCollectionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CodCollection that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionFindFirstArgs} args - Arguments to find a CodCollection
+     * @example
+     * // Get one CodCollection
+     * const codCollection = await prisma.codCollection.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CodCollectionFindFirstArgs>(args?: SelectSubset<T, CodCollectionFindFirstArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CodCollection that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionFindFirstOrThrowArgs} args - Arguments to find a CodCollection
+     * @example
+     * // Get one CodCollection
+     * const codCollection = await prisma.codCollection.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CodCollectionFindFirstOrThrowArgs>(args?: SelectSubset<T, CodCollectionFindFirstOrThrowArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CodCollections that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CodCollections
+     * const codCollections = await prisma.codCollection.findMany()
+     * 
+     * // Get first 10 CodCollections
+     * const codCollections = await prisma.codCollection.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const codCollectionWithIdOnly = await prisma.codCollection.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CodCollectionFindManyArgs>(args?: SelectSubset<T, CodCollectionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CodCollection.
+     * @param {CodCollectionCreateArgs} args - Arguments to create a CodCollection.
+     * @example
+     * // Create one CodCollection
+     * const CodCollection = await prisma.codCollection.create({
+     *   data: {
+     *     // ... data to create a CodCollection
+     *   }
+     * })
+     * 
+     */
+    create<T extends CodCollectionCreateArgs>(args: SelectSubset<T, CodCollectionCreateArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CodCollections.
+     * @param {CodCollectionCreateManyArgs} args - Arguments to create many CodCollections.
+     * @example
+     * // Create many CodCollections
+     * const codCollection = await prisma.codCollection.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CodCollectionCreateManyArgs>(args?: SelectSubset<T, CodCollectionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CodCollections and returns the data saved in the database.
+     * @param {CodCollectionCreateManyAndReturnArgs} args - Arguments to create many CodCollections.
+     * @example
+     * // Create many CodCollections
+     * const codCollection = await prisma.codCollection.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CodCollections and only return the `id`
+     * const codCollectionWithIdOnly = await prisma.codCollection.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CodCollectionCreateManyAndReturnArgs>(args?: SelectSubset<T, CodCollectionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CodCollection.
+     * @param {CodCollectionDeleteArgs} args - Arguments to delete one CodCollection.
+     * @example
+     * // Delete one CodCollection
+     * const CodCollection = await prisma.codCollection.delete({
+     *   where: {
+     *     // ... filter to delete one CodCollection
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CodCollectionDeleteArgs>(args: SelectSubset<T, CodCollectionDeleteArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CodCollection.
+     * @param {CodCollectionUpdateArgs} args - Arguments to update one CodCollection.
+     * @example
+     * // Update one CodCollection
+     * const codCollection = await prisma.codCollection.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CodCollectionUpdateArgs>(args: SelectSubset<T, CodCollectionUpdateArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CodCollections.
+     * @param {CodCollectionDeleteManyArgs} args - Arguments to filter CodCollections to delete.
+     * @example
+     * // Delete a few CodCollections
+     * const { count } = await prisma.codCollection.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CodCollectionDeleteManyArgs>(args?: SelectSubset<T, CodCollectionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CodCollections.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CodCollections
+     * const codCollection = await prisma.codCollection.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CodCollectionUpdateManyArgs>(args: SelectSubset<T, CodCollectionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CodCollection.
+     * @param {CodCollectionUpsertArgs} args - Arguments to update or create a CodCollection.
+     * @example
+     * // Update or create a CodCollection
+     * const codCollection = await prisma.codCollection.upsert({
+     *   create: {
+     *     // ... data to create a CodCollection
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CodCollection we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CodCollectionUpsertArgs>(args: SelectSubset<T, CodCollectionUpsertArgs<ExtArgs>>): Prisma__CodCollectionClient<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CodCollections.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionCountArgs} args - Arguments to filter CodCollections to count.
+     * @example
+     * // Count the number of CodCollections
+     * const count = await prisma.codCollection.count({
+     *   where: {
+     *     // ... the filter for the CodCollections we want to count
+     *   }
+     * })
+    **/
+    count<T extends CodCollectionCountArgs>(
+      args?: Subset<T, CodCollectionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CodCollectionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CodCollection.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CodCollectionAggregateArgs>(args: Subset<T, CodCollectionAggregateArgs>): Prisma.PrismaPromise<GetCodCollectionAggregateType<T>>
+
+    /**
+     * Group by CodCollection.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodCollectionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CodCollectionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CodCollectionGroupByArgs['orderBy'] }
+        : { orderBy?: CodCollectionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CodCollectionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCodCollectionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CodCollection model
+   */
+  readonly fields: CodCollectionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CodCollection.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CodCollectionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    settlement<T extends CodCollection$settlementArgs<ExtArgs> = {}>(args?: Subset<T, CodCollection$settlementArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CodCollection model
+   */ 
+  interface CodCollectionFieldRefs {
+    readonly id: FieldRef<"CodCollection", 'String'>
+    readonly orderId: FieldRef<"CodCollection", 'String'>
+    readonly riderId: FieldRef<"CodCollection", 'String'>
+    readonly storeId: FieldRef<"CodCollection", 'String'>
+    readonly amount: FieldRef<"CodCollection", 'Decimal'>
+    readonly collectedAt: FieldRef<"CodCollection", 'DateTime'>
+    readonly settlementId: FieldRef<"CodCollection", 'String'>
+    readonly createdAt: FieldRef<"CodCollection", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CodCollection findUnique
+   */
+  export type CodCollectionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter, which CodCollection to fetch.
+     */
+    where: CodCollectionWhereUniqueInput
+  }
+
+  /**
+   * CodCollection findUniqueOrThrow
+   */
+  export type CodCollectionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter, which CodCollection to fetch.
+     */
+    where: CodCollectionWhereUniqueInput
+  }
+
+  /**
+   * CodCollection findFirst
+   */
+  export type CodCollectionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter, which CodCollection to fetch.
+     */
+    where?: CodCollectionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodCollections to fetch.
+     */
+    orderBy?: CodCollectionOrderByWithRelationInput | CodCollectionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CodCollections.
+     */
+    cursor?: CodCollectionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodCollections from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodCollections.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CodCollections.
+     */
+    distinct?: CodCollectionScalarFieldEnum | CodCollectionScalarFieldEnum[]
+  }
+
+  /**
+   * CodCollection findFirstOrThrow
+   */
+  export type CodCollectionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter, which CodCollection to fetch.
+     */
+    where?: CodCollectionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodCollections to fetch.
+     */
+    orderBy?: CodCollectionOrderByWithRelationInput | CodCollectionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CodCollections.
+     */
+    cursor?: CodCollectionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodCollections from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodCollections.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CodCollections.
+     */
+    distinct?: CodCollectionScalarFieldEnum | CodCollectionScalarFieldEnum[]
+  }
+
+  /**
+   * CodCollection findMany
+   */
+  export type CodCollectionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter, which CodCollections to fetch.
+     */
+    where?: CodCollectionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodCollections to fetch.
+     */
+    orderBy?: CodCollectionOrderByWithRelationInput | CodCollectionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CodCollections.
+     */
+    cursor?: CodCollectionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodCollections from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodCollections.
+     */
+    skip?: number
+    distinct?: CodCollectionScalarFieldEnum | CodCollectionScalarFieldEnum[]
+  }
+
+  /**
+   * CodCollection create
+   */
+  export type CodCollectionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CodCollection.
+     */
+    data: XOR<CodCollectionCreateInput, CodCollectionUncheckedCreateInput>
+  }
+
+  /**
+   * CodCollection createMany
+   */
+  export type CodCollectionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CodCollections.
+     */
+    data: CodCollectionCreateManyInput | CodCollectionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CodCollection createManyAndReturn
+   */
+  export type CodCollectionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CodCollections.
+     */
+    data: CodCollectionCreateManyInput | CodCollectionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CodCollection update
+   */
+  export type CodCollectionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CodCollection.
+     */
+    data: XOR<CodCollectionUpdateInput, CodCollectionUncheckedUpdateInput>
+    /**
+     * Choose, which CodCollection to update.
+     */
+    where: CodCollectionWhereUniqueInput
+  }
+
+  /**
+   * CodCollection updateMany
+   */
+  export type CodCollectionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CodCollections.
+     */
+    data: XOR<CodCollectionUpdateManyMutationInput, CodCollectionUncheckedUpdateManyInput>
+    /**
+     * Filter which CodCollections to update
+     */
+    where?: CodCollectionWhereInput
+  }
+
+  /**
+   * CodCollection upsert
+   */
+  export type CodCollectionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CodCollection to update in case it exists.
+     */
+    where: CodCollectionWhereUniqueInput
+    /**
+     * In case the CodCollection found by the `where` argument doesn't exist, create a new CodCollection with this data.
+     */
+    create: XOR<CodCollectionCreateInput, CodCollectionUncheckedCreateInput>
+    /**
+     * In case the CodCollection was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CodCollectionUpdateInput, CodCollectionUncheckedUpdateInput>
+  }
+
+  /**
+   * CodCollection delete
+   */
+  export type CodCollectionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    /**
+     * Filter which CodCollection to delete.
+     */
+    where: CodCollectionWhereUniqueInput
+  }
+
+  /**
+   * CodCollection deleteMany
+   */
+  export type CodCollectionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CodCollections to delete
+     */
+    where?: CodCollectionWhereInput
+  }
+
+  /**
+   * CodCollection.settlement
+   */
+  export type CodCollection$settlementArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    where?: CodSettlementWhereInput
+  }
+
+  /**
+   * CodCollection without action
+   */
+  export type CodCollectionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model CodSettlement
+   */
+
+  export type AggregateCodSettlement = {
+    _count: CodSettlementCountAggregateOutputType | null
+    _avg: CodSettlementAvgAggregateOutputType | null
+    _sum: CodSettlementSumAggregateOutputType | null
+    _min: CodSettlementMinAggregateOutputType | null
+    _max: CodSettlementMaxAggregateOutputType | null
+  }
+
+  export type CodSettlementAvgAggregateOutputType = {
+    amount: Decimal | null
+    orderCount: number | null
+  }
+
+  export type CodSettlementSumAggregateOutputType = {
+    amount: Decimal | null
+    orderCount: number | null
+  }
+
+  export type CodSettlementMinAggregateOutputType = {
+    id: string | null
+    riderId: string | null
+    storeId: string | null
+    amount: Decimal | null
+    orderCount: number | null
+    settledBy: string | null
+    notes: string | null
+    createdAt: Date | null
+  }
+
+  export type CodSettlementMaxAggregateOutputType = {
+    id: string | null
+    riderId: string | null
+    storeId: string | null
+    amount: Decimal | null
+    orderCount: number | null
+    settledBy: string | null
+    notes: string | null
+    createdAt: Date | null
+  }
+
+  export type CodSettlementCountAggregateOutputType = {
+    id: number
+    riderId: number
+    storeId: number
+    amount: number
+    orderCount: number
+    settledBy: number
+    notes: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CodSettlementAvgAggregateInputType = {
+    amount?: true
+    orderCount?: true
+  }
+
+  export type CodSettlementSumAggregateInputType = {
+    amount?: true
+    orderCount?: true
+  }
+
+  export type CodSettlementMinAggregateInputType = {
+    id?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    orderCount?: true
+    settledBy?: true
+    notes?: true
+    createdAt?: true
+  }
+
+  export type CodSettlementMaxAggregateInputType = {
+    id?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    orderCount?: true
+    settledBy?: true
+    notes?: true
+    createdAt?: true
+  }
+
+  export type CodSettlementCountAggregateInputType = {
+    id?: true
+    riderId?: true
+    storeId?: true
+    amount?: true
+    orderCount?: true
+    settledBy?: true
+    notes?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CodSettlementAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CodSettlement to aggregate.
+     */
+    where?: CodSettlementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodSettlements to fetch.
+     */
+    orderBy?: CodSettlementOrderByWithRelationInput | CodSettlementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CodSettlementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodSettlements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodSettlements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CodSettlements
+    **/
+    _count?: true | CodSettlementCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CodSettlementAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CodSettlementSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CodSettlementMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CodSettlementMaxAggregateInputType
+  }
+
+  export type GetCodSettlementAggregateType<T extends CodSettlementAggregateArgs> = {
+        [P in keyof T & keyof AggregateCodSettlement]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCodSettlement[P]>
+      : GetScalarType<T[P], AggregateCodSettlement[P]>
+  }
+
+
+
+
+  export type CodSettlementGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CodSettlementWhereInput
+    orderBy?: CodSettlementOrderByWithAggregationInput | CodSettlementOrderByWithAggregationInput[]
+    by: CodSettlementScalarFieldEnum[] | CodSettlementScalarFieldEnum
+    having?: CodSettlementScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CodSettlementCountAggregateInputType | true
+    _avg?: CodSettlementAvgAggregateInputType
+    _sum?: CodSettlementSumAggregateInputType
+    _min?: CodSettlementMinAggregateInputType
+    _max?: CodSettlementMaxAggregateInputType
+  }
+
+  export type CodSettlementGroupByOutputType = {
+    id: string
+    riderId: string
+    storeId: string
+    amount: Decimal
+    orderCount: number
+    settledBy: string
+    notes: string | null
+    createdAt: Date
+    _count: CodSettlementCountAggregateOutputType | null
+    _avg: CodSettlementAvgAggregateOutputType | null
+    _sum: CodSettlementSumAggregateOutputType | null
+    _min: CodSettlementMinAggregateOutputType | null
+    _max: CodSettlementMaxAggregateOutputType | null
+  }
+
+  type GetCodSettlementGroupByPayload<T extends CodSettlementGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CodSettlementGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CodSettlementGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CodSettlementGroupByOutputType[P]>
+            : GetScalarType<T[P], CodSettlementGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CodSettlementSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    orderCount?: boolean
+    settledBy?: boolean
+    notes?: boolean
+    createdAt?: boolean
+    collections?: boolean | CodSettlement$collectionsArgs<ExtArgs>
+    _count?: boolean | CodSettlementCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["codSettlement"]>
+
+  export type CodSettlementSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    orderCount?: boolean
+    settledBy?: boolean
+    notes?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["codSettlement"]>
+
+  export type CodSettlementSelectScalar = {
+    id?: boolean
+    riderId?: boolean
+    storeId?: boolean
+    amount?: boolean
+    orderCount?: boolean
+    settledBy?: boolean
+    notes?: boolean
+    createdAt?: boolean
+  }
+
+  export type CodSettlementInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    collections?: boolean | CodSettlement$collectionsArgs<ExtArgs>
+    _count?: boolean | CodSettlementCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type CodSettlementIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+
+  export type $CodSettlementPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CodSettlement"
+    objects: {
+      collections: Prisma.$CodCollectionPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      riderId: string
+      storeId: string
+      amount: Prisma.Decimal
+      orderCount: number
+      settledBy: string
+      notes: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["codSettlement"]>
+    composites: {}
+  }
+
+  type CodSettlementGetPayload<S extends boolean | null | undefined | CodSettlementDefaultArgs> = $Result.GetResult<Prisma.$CodSettlementPayload, S>
+
+  type CodSettlementCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CodSettlementFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CodSettlementCountAggregateInputType | true
+    }
+
+  export interface CodSettlementDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CodSettlement'], meta: { name: 'CodSettlement' } }
+    /**
+     * Find zero or one CodSettlement that matches the filter.
+     * @param {CodSettlementFindUniqueArgs} args - Arguments to find a CodSettlement
+     * @example
+     * // Get one CodSettlement
+     * const codSettlement = await prisma.codSettlement.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CodSettlementFindUniqueArgs>(args: SelectSubset<T, CodSettlementFindUniqueArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CodSettlement that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CodSettlementFindUniqueOrThrowArgs} args - Arguments to find a CodSettlement
+     * @example
+     * // Get one CodSettlement
+     * const codSettlement = await prisma.codSettlement.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CodSettlementFindUniqueOrThrowArgs>(args: SelectSubset<T, CodSettlementFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CodSettlement that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementFindFirstArgs} args - Arguments to find a CodSettlement
+     * @example
+     * // Get one CodSettlement
+     * const codSettlement = await prisma.codSettlement.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CodSettlementFindFirstArgs>(args?: SelectSubset<T, CodSettlementFindFirstArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CodSettlement that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementFindFirstOrThrowArgs} args - Arguments to find a CodSettlement
+     * @example
+     * // Get one CodSettlement
+     * const codSettlement = await prisma.codSettlement.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CodSettlementFindFirstOrThrowArgs>(args?: SelectSubset<T, CodSettlementFindFirstOrThrowArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CodSettlements that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CodSettlements
+     * const codSettlements = await prisma.codSettlement.findMany()
+     * 
+     * // Get first 10 CodSettlements
+     * const codSettlements = await prisma.codSettlement.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const codSettlementWithIdOnly = await prisma.codSettlement.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CodSettlementFindManyArgs>(args?: SelectSubset<T, CodSettlementFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CodSettlement.
+     * @param {CodSettlementCreateArgs} args - Arguments to create a CodSettlement.
+     * @example
+     * // Create one CodSettlement
+     * const CodSettlement = await prisma.codSettlement.create({
+     *   data: {
+     *     // ... data to create a CodSettlement
+     *   }
+     * })
+     * 
+     */
+    create<T extends CodSettlementCreateArgs>(args: SelectSubset<T, CodSettlementCreateArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CodSettlements.
+     * @param {CodSettlementCreateManyArgs} args - Arguments to create many CodSettlements.
+     * @example
+     * // Create many CodSettlements
+     * const codSettlement = await prisma.codSettlement.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CodSettlementCreateManyArgs>(args?: SelectSubset<T, CodSettlementCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CodSettlements and returns the data saved in the database.
+     * @param {CodSettlementCreateManyAndReturnArgs} args - Arguments to create many CodSettlements.
+     * @example
+     * // Create many CodSettlements
+     * const codSettlement = await prisma.codSettlement.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CodSettlements and only return the `id`
+     * const codSettlementWithIdOnly = await prisma.codSettlement.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CodSettlementCreateManyAndReturnArgs>(args?: SelectSubset<T, CodSettlementCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CodSettlement.
+     * @param {CodSettlementDeleteArgs} args - Arguments to delete one CodSettlement.
+     * @example
+     * // Delete one CodSettlement
+     * const CodSettlement = await prisma.codSettlement.delete({
+     *   where: {
+     *     // ... filter to delete one CodSettlement
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CodSettlementDeleteArgs>(args: SelectSubset<T, CodSettlementDeleteArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CodSettlement.
+     * @param {CodSettlementUpdateArgs} args - Arguments to update one CodSettlement.
+     * @example
+     * // Update one CodSettlement
+     * const codSettlement = await prisma.codSettlement.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CodSettlementUpdateArgs>(args: SelectSubset<T, CodSettlementUpdateArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CodSettlements.
+     * @param {CodSettlementDeleteManyArgs} args - Arguments to filter CodSettlements to delete.
+     * @example
+     * // Delete a few CodSettlements
+     * const { count } = await prisma.codSettlement.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CodSettlementDeleteManyArgs>(args?: SelectSubset<T, CodSettlementDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CodSettlements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CodSettlements
+     * const codSettlement = await prisma.codSettlement.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CodSettlementUpdateManyArgs>(args: SelectSubset<T, CodSettlementUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CodSettlement.
+     * @param {CodSettlementUpsertArgs} args - Arguments to update or create a CodSettlement.
+     * @example
+     * // Update or create a CodSettlement
+     * const codSettlement = await prisma.codSettlement.upsert({
+     *   create: {
+     *     // ... data to create a CodSettlement
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CodSettlement we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CodSettlementUpsertArgs>(args: SelectSubset<T, CodSettlementUpsertArgs<ExtArgs>>): Prisma__CodSettlementClient<$Result.GetResult<Prisma.$CodSettlementPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CodSettlements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementCountArgs} args - Arguments to filter CodSettlements to count.
+     * @example
+     * // Count the number of CodSettlements
+     * const count = await prisma.codSettlement.count({
+     *   where: {
+     *     // ... the filter for the CodSettlements we want to count
+     *   }
+     * })
+    **/
+    count<T extends CodSettlementCountArgs>(
+      args?: Subset<T, CodSettlementCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CodSettlementCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CodSettlement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CodSettlementAggregateArgs>(args: Subset<T, CodSettlementAggregateArgs>): Prisma.PrismaPromise<GetCodSettlementAggregateType<T>>
+
+    /**
+     * Group by CodSettlement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CodSettlementGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CodSettlementGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CodSettlementGroupByArgs['orderBy'] }
+        : { orderBy?: CodSettlementGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CodSettlementGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCodSettlementGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CodSettlement model
+   */
+  readonly fields: CodSettlementFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CodSettlement.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CodSettlementClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    collections<T extends CodSettlement$collectionsArgs<ExtArgs> = {}>(args?: Subset<T, CodSettlement$collectionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CodCollectionPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CodSettlement model
+   */ 
+  interface CodSettlementFieldRefs {
+    readonly id: FieldRef<"CodSettlement", 'String'>
+    readonly riderId: FieldRef<"CodSettlement", 'String'>
+    readonly storeId: FieldRef<"CodSettlement", 'String'>
+    readonly amount: FieldRef<"CodSettlement", 'Decimal'>
+    readonly orderCount: FieldRef<"CodSettlement", 'Int'>
+    readonly settledBy: FieldRef<"CodSettlement", 'String'>
+    readonly notes: FieldRef<"CodSettlement", 'String'>
+    readonly createdAt: FieldRef<"CodSettlement", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CodSettlement findUnique
+   */
+  export type CodSettlementFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter, which CodSettlement to fetch.
+     */
+    where: CodSettlementWhereUniqueInput
+  }
+
+  /**
+   * CodSettlement findUniqueOrThrow
+   */
+  export type CodSettlementFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter, which CodSettlement to fetch.
+     */
+    where: CodSettlementWhereUniqueInput
+  }
+
+  /**
+   * CodSettlement findFirst
+   */
+  export type CodSettlementFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter, which CodSettlement to fetch.
+     */
+    where?: CodSettlementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodSettlements to fetch.
+     */
+    orderBy?: CodSettlementOrderByWithRelationInput | CodSettlementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CodSettlements.
+     */
+    cursor?: CodSettlementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodSettlements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodSettlements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CodSettlements.
+     */
+    distinct?: CodSettlementScalarFieldEnum | CodSettlementScalarFieldEnum[]
+  }
+
+  /**
+   * CodSettlement findFirstOrThrow
+   */
+  export type CodSettlementFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter, which CodSettlement to fetch.
+     */
+    where?: CodSettlementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodSettlements to fetch.
+     */
+    orderBy?: CodSettlementOrderByWithRelationInput | CodSettlementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CodSettlements.
+     */
+    cursor?: CodSettlementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodSettlements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodSettlements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CodSettlements.
+     */
+    distinct?: CodSettlementScalarFieldEnum | CodSettlementScalarFieldEnum[]
+  }
+
+  /**
+   * CodSettlement findMany
+   */
+  export type CodSettlementFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter, which CodSettlements to fetch.
+     */
+    where?: CodSettlementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CodSettlements to fetch.
+     */
+    orderBy?: CodSettlementOrderByWithRelationInput | CodSettlementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CodSettlements.
+     */
+    cursor?: CodSettlementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CodSettlements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CodSettlements.
+     */
+    skip?: number
+    distinct?: CodSettlementScalarFieldEnum | CodSettlementScalarFieldEnum[]
+  }
+
+  /**
+   * CodSettlement create
+   */
+  export type CodSettlementCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CodSettlement.
+     */
+    data: XOR<CodSettlementCreateInput, CodSettlementUncheckedCreateInput>
+  }
+
+  /**
+   * CodSettlement createMany
+   */
+  export type CodSettlementCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CodSettlements.
+     */
+    data: CodSettlementCreateManyInput | CodSettlementCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CodSettlement createManyAndReturn
+   */
+  export type CodSettlementCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CodSettlements.
+     */
+    data: CodSettlementCreateManyInput | CodSettlementCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CodSettlement update
+   */
+  export type CodSettlementUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CodSettlement.
+     */
+    data: XOR<CodSettlementUpdateInput, CodSettlementUncheckedUpdateInput>
+    /**
+     * Choose, which CodSettlement to update.
+     */
+    where: CodSettlementWhereUniqueInput
+  }
+
+  /**
+   * CodSettlement updateMany
+   */
+  export type CodSettlementUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CodSettlements.
+     */
+    data: XOR<CodSettlementUpdateManyMutationInput, CodSettlementUncheckedUpdateManyInput>
+    /**
+     * Filter which CodSettlements to update
+     */
+    where?: CodSettlementWhereInput
+  }
+
+  /**
+   * CodSettlement upsert
+   */
+  export type CodSettlementUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CodSettlement to update in case it exists.
+     */
+    where: CodSettlementWhereUniqueInput
+    /**
+     * In case the CodSettlement found by the `where` argument doesn't exist, create a new CodSettlement with this data.
+     */
+    create: XOR<CodSettlementCreateInput, CodSettlementUncheckedCreateInput>
+    /**
+     * In case the CodSettlement was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CodSettlementUpdateInput, CodSettlementUncheckedUpdateInput>
+  }
+
+  /**
+   * CodSettlement delete
+   */
+  export type CodSettlementDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+    /**
+     * Filter which CodSettlement to delete.
+     */
+    where: CodSettlementWhereUniqueInput
+  }
+
+  /**
+   * CodSettlement deleteMany
+   */
+  export type CodSettlementDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CodSettlements to delete
+     */
+    where?: CodSettlementWhereInput
+  }
+
+  /**
+   * CodSettlement.collections
+   */
+  export type CodSettlement$collectionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodCollection
+     */
+    select?: CodCollectionSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodCollectionInclude<ExtArgs> | null
+    where?: CodCollectionWhereInput
+    orderBy?: CodCollectionOrderByWithRelationInput | CodCollectionOrderByWithRelationInput[]
+    cursor?: CodCollectionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CodCollectionScalarFieldEnum | CodCollectionScalarFieldEnum[]
+  }
+
+  /**
+   * CodSettlement without action
+   */
+  export type CodSettlementDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CodSettlement
+     */
+    select?: CodSettlementSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CodSettlementInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model StaffAttendance
+   */
+
+  export type AggregateStaffAttendance = {
+    _count: StaffAttendanceCountAggregateOutputType | null
+    _avg: StaffAttendanceAvgAggregateOutputType | null
+    _sum: StaffAttendanceSumAggregateOutputType | null
+    _min: StaffAttendanceMinAggregateOutputType | null
+    _max: StaffAttendanceMaxAggregateOutputType | null
+  }
+
+  export type StaffAttendanceAvgAggregateOutputType = {
+    latitude: Decimal | null
+    longitude: Decimal | null
+    distanceMeters: number | null
+  }
+
+  export type StaffAttendanceSumAggregateOutputType = {
+    latitude: Decimal | null
+    longitude: Decimal | null
+    distanceMeters: number | null
+  }
+
+  export type StaffAttendanceMinAggregateOutputType = {
+    id: string | null
+    staffId: string | null
+    storeId: string | null
+    checkInAt: Date | null
+    checkOutAt: Date | null
+    selfieUrl: string | null
+    selfiePublicId: string | null
+    latitude: Decimal | null
+    longitude: Decimal | null
+    distanceMeters: number | null
+    isWithinGeofence: boolean | null
+    createdAt: Date | null
+  }
+
+  export type StaffAttendanceMaxAggregateOutputType = {
+    id: string | null
+    staffId: string | null
+    storeId: string | null
+    checkInAt: Date | null
+    checkOutAt: Date | null
+    selfieUrl: string | null
+    selfiePublicId: string | null
+    latitude: Decimal | null
+    longitude: Decimal | null
+    distanceMeters: number | null
+    isWithinGeofence: boolean | null
+    createdAt: Date | null
+  }
+
+  export type StaffAttendanceCountAggregateOutputType = {
+    id: number
+    staffId: number
+    storeId: number
+    checkInAt: number
+    checkOutAt: number
+    selfieUrl: number
+    selfiePublicId: number
+    latitude: number
+    longitude: number
+    distanceMeters: number
+    isWithinGeofence: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type StaffAttendanceAvgAggregateInputType = {
+    latitude?: true
+    longitude?: true
+    distanceMeters?: true
+  }
+
+  export type StaffAttendanceSumAggregateInputType = {
+    latitude?: true
+    longitude?: true
+    distanceMeters?: true
+  }
+
+  export type StaffAttendanceMinAggregateInputType = {
+    id?: true
+    staffId?: true
+    storeId?: true
+    checkInAt?: true
+    checkOutAt?: true
+    selfieUrl?: true
+    selfiePublicId?: true
+    latitude?: true
+    longitude?: true
+    distanceMeters?: true
+    isWithinGeofence?: true
+    createdAt?: true
+  }
+
+  export type StaffAttendanceMaxAggregateInputType = {
+    id?: true
+    staffId?: true
+    storeId?: true
+    checkInAt?: true
+    checkOutAt?: true
+    selfieUrl?: true
+    selfiePublicId?: true
+    latitude?: true
+    longitude?: true
+    distanceMeters?: true
+    isWithinGeofence?: true
+    createdAt?: true
+  }
+
+  export type StaffAttendanceCountAggregateInputType = {
+    id?: true
+    staffId?: true
+    storeId?: true
+    checkInAt?: true
+    checkOutAt?: true
+    selfieUrl?: true
+    selfiePublicId?: true
+    latitude?: true
+    longitude?: true
+    distanceMeters?: true
+    isWithinGeofence?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type StaffAttendanceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StaffAttendance to aggregate.
+     */
+    where?: StaffAttendanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffAttendances to fetch.
+     */
+    orderBy?: StaffAttendanceOrderByWithRelationInput | StaffAttendanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: StaffAttendanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffAttendances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffAttendances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned StaffAttendances
+    **/
+    _count?: true | StaffAttendanceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: StaffAttendanceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: StaffAttendanceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: StaffAttendanceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: StaffAttendanceMaxAggregateInputType
+  }
+
+  export type GetStaffAttendanceAggregateType<T extends StaffAttendanceAggregateArgs> = {
+        [P in keyof T & keyof AggregateStaffAttendance]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateStaffAttendance[P]>
+      : GetScalarType<T[P], AggregateStaffAttendance[P]>
+  }
+
+
+
+
+  export type StaffAttendanceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StaffAttendanceWhereInput
+    orderBy?: StaffAttendanceOrderByWithAggregationInput | StaffAttendanceOrderByWithAggregationInput[]
+    by: StaffAttendanceScalarFieldEnum[] | StaffAttendanceScalarFieldEnum
+    having?: StaffAttendanceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: StaffAttendanceCountAggregateInputType | true
+    _avg?: StaffAttendanceAvgAggregateInputType
+    _sum?: StaffAttendanceSumAggregateInputType
+    _min?: StaffAttendanceMinAggregateInputType
+    _max?: StaffAttendanceMaxAggregateInputType
+  }
+
+  export type StaffAttendanceGroupByOutputType = {
+    id: string
+    staffId: string
+    storeId: string
+    checkInAt: Date
+    checkOutAt: Date | null
+    selfieUrl: string
+    selfiePublicId: string
+    latitude: Decimal
+    longitude: Decimal
+    distanceMeters: number
+    isWithinGeofence: boolean
+    createdAt: Date
+    _count: StaffAttendanceCountAggregateOutputType | null
+    _avg: StaffAttendanceAvgAggregateOutputType | null
+    _sum: StaffAttendanceSumAggregateOutputType | null
+    _min: StaffAttendanceMinAggregateOutputType | null
+    _max: StaffAttendanceMaxAggregateOutputType | null
+  }
+
+  type GetStaffAttendanceGroupByPayload<T extends StaffAttendanceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<StaffAttendanceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof StaffAttendanceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], StaffAttendanceGroupByOutputType[P]>
+            : GetScalarType<T[P], StaffAttendanceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type StaffAttendanceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    staffId?: boolean
+    storeId?: boolean
+    checkInAt?: boolean
+    checkOutAt?: boolean
+    selfieUrl?: boolean
+    selfiePublicId?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    distanceMeters?: boolean
+    isWithinGeofence?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["staffAttendance"]>
+
+  export type StaffAttendanceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    staffId?: boolean
+    storeId?: boolean
+    checkInAt?: boolean
+    checkOutAt?: boolean
+    selfieUrl?: boolean
+    selfiePublicId?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    distanceMeters?: boolean
+    isWithinGeofence?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["staffAttendance"]>
+
+  export type StaffAttendanceSelectScalar = {
+    id?: boolean
+    staffId?: boolean
+    storeId?: boolean
+    checkInAt?: boolean
+    checkOutAt?: boolean
+    selfieUrl?: boolean
+    selfiePublicId?: boolean
+    latitude?: boolean
+    longitude?: boolean
+    distanceMeters?: boolean
+    isWithinGeofence?: boolean
+    createdAt?: boolean
+  }
+
+
+  export type $StaffAttendancePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "StaffAttendance"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      staffId: string
+      storeId: string
+      checkInAt: Date
+      checkOutAt: Date | null
+      selfieUrl: string
+      selfiePublicId: string
+      latitude: Prisma.Decimal
+      longitude: Prisma.Decimal
+      distanceMeters: number
+      isWithinGeofence: boolean
+      createdAt: Date
+    }, ExtArgs["result"]["staffAttendance"]>
+    composites: {}
+  }
+
+  type StaffAttendanceGetPayload<S extends boolean | null | undefined | StaffAttendanceDefaultArgs> = $Result.GetResult<Prisma.$StaffAttendancePayload, S>
+
+  type StaffAttendanceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<StaffAttendanceFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: StaffAttendanceCountAggregateInputType | true
+    }
+
+  export interface StaffAttendanceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['StaffAttendance'], meta: { name: 'StaffAttendance' } }
+    /**
+     * Find zero or one StaffAttendance that matches the filter.
+     * @param {StaffAttendanceFindUniqueArgs} args - Arguments to find a StaffAttendance
+     * @example
+     * // Get one StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends StaffAttendanceFindUniqueArgs>(args: SelectSubset<T, StaffAttendanceFindUniqueArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one StaffAttendance that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {StaffAttendanceFindUniqueOrThrowArgs} args - Arguments to find a StaffAttendance
+     * @example
+     * // Get one StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends StaffAttendanceFindUniqueOrThrowArgs>(args: SelectSubset<T, StaffAttendanceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first StaffAttendance that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceFindFirstArgs} args - Arguments to find a StaffAttendance
+     * @example
+     * // Get one StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends StaffAttendanceFindFirstArgs>(args?: SelectSubset<T, StaffAttendanceFindFirstArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first StaffAttendance that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceFindFirstOrThrowArgs} args - Arguments to find a StaffAttendance
+     * @example
+     * // Get one StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends StaffAttendanceFindFirstOrThrowArgs>(args?: SelectSubset<T, StaffAttendanceFindFirstOrThrowArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more StaffAttendances that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all StaffAttendances
+     * const staffAttendances = await prisma.staffAttendance.findMany()
+     * 
+     * // Get first 10 StaffAttendances
+     * const staffAttendances = await prisma.staffAttendance.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const staffAttendanceWithIdOnly = await prisma.staffAttendance.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends StaffAttendanceFindManyArgs>(args?: SelectSubset<T, StaffAttendanceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a StaffAttendance.
+     * @param {StaffAttendanceCreateArgs} args - Arguments to create a StaffAttendance.
+     * @example
+     * // Create one StaffAttendance
+     * const StaffAttendance = await prisma.staffAttendance.create({
+     *   data: {
+     *     // ... data to create a StaffAttendance
+     *   }
+     * })
+     * 
+     */
+    create<T extends StaffAttendanceCreateArgs>(args: SelectSubset<T, StaffAttendanceCreateArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many StaffAttendances.
+     * @param {StaffAttendanceCreateManyArgs} args - Arguments to create many StaffAttendances.
+     * @example
+     * // Create many StaffAttendances
+     * const staffAttendance = await prisma.staffAttendance.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends StaffAttendanceCreateManyArgs>(args?: SelectSubset<T, StaffAttendanceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many StaffAttendances and returns the data saved in the database.
+     * @param {StaffAttendanceCreateManyAndReturnArgs} args - Arguments to create many StaffAttendances.
+     * @example
+     * // Create many StaffAttendances
+     * const staffAttendance = await prisma.staffAttendance.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many StaffAttendances and only return the `id`
+     * const staffAttendanceWithIdOnly = await prisma.staffAttendance.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends StaffAttendanceCreateManyAndReturnArgs>(args?: SelectSubset<T, StaffAttendanceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a StaffAttendance.
+     * @param {StaffAttendanceDeleteArgs} args - Arguments to delete one StaffAttendance.
+     * @example
+     * // Delete one StaffAttendance
+     * const StaffAttendance = await prisma.staffAttendance.delete({
+     *   where: {
+     *     // ... filter to delete one StaffAttendance
+     *   }
+     * })
+     * 
+     */
+    delete<T extends StaffAttendanceDeleteArgs>(args: SelectSubset<T, StaffAttendanceDeleteArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one StaffAttendance.
+     * @param {StaffAttendanceUpdateArgs} args - Arguments to update one StaffAttendance.
+     * @example
+     * // Update one StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends StaffAttendanceUpdateArgs>(args: SelectSubset<T, StaffAttendanceUpdateArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more StaffAttendances.
+     * @param {StaffAttendanceDeleteManyArgs} args - Arguments to filter StaffAttendances to delete.
+     * @example
+     * // Delete a few StaffAttendances
+     * const { count } = await prisma.staffAttendance.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends StaffAttendanceDeleteManyArgs>(args?: SelectSubset<T, StaffAttendanceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StaffAttendances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many StaffAttendances
+     * const staffAttendance = await prisma.staffAttendance.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends StaffAttendanceUpdateManyArgs>(args: SelectSubset<T, StaffAttendanceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one StaffAttendance.
+     * @param {StaffAttendanceUpsertArgs} args - Arguments to update or create a StaffAttendance.
+     * @example
+     * // Update or create a StaffAttendance
+     * const staffAttendance = await prisma.staffAttendance.upsert({
+     *   create: {
+     *     // ... data to create a StaffAttendance
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the StaffAttendance we want to update
+     *   }
+     * })
+     */
+    upsert<T extends StaffAttendanceUpsertArgs>(args: SelectSubset<T, StaffAttendanceUpsertArgs<ExtArgs>>): Prisma__StaffAttendanceClient<$Result.GetResult<Prisma.$StaffAttendancePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of StaffAttendances.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceCountArgs} args - Arguments to filter StaffAttendances to count.
+     * @example
+     * // Count the number of StaffAttendances
+     * const count = await prisma.staffAttendance.count({
+     *   where: {
+     *     // ... the filter for the StaffAttendances we want to count
+     *   }
+     * })
+    **/
+    count<T extends StaffAttendanceCountArgs>(
+      args?: Subset<T, StaffAttendanceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], StaffAttendanceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a StaffAttendance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends StaffAttendanceAggregateArgs>(args: Subset<T, StaffAttendanceAggregateArgs>): Prisma.PrismaPromise<GetStaffAttendanceAggregateType<T>>
+
+    /**
+     * Group by StaffAttendance.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffAttendanceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends StaffAttendanceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: StaffAttendanceGroupByArgs['orderBy'] }
+        : { orderBy?: StaffAttendanceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, StaffAttendanceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetStaffAttendanceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the StaffAttendance model
+   */
+  readonly fields: StaffAttendanceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for StaffAttendance.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__StaffAttendanceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the StaffAttendance model
+   */ 
+  interface StaffAttendanceFieldRefs {
+    readonly id: FieldRef<"StaffAttendance", 'String'>
+    readonly staffId: FieldRef<"StaffAttendance", 'String'>
+    readonly storeId: FieldRef<"StaffAttendance", 'String'>
+    readonly checkInAt: FieldRef<"StaffAttendance", 'DateTime'>
+    readonly checkOutAt: FieldRef<"StaffAttendance", 'DateTime'>
+    readonly selfieUrl: FieldRef<"StaffAttendance", 'String'>
+    readonly selfiePublicId: FieldRef<"StaffAttendance", 'String'>
+    readonly latitude: FieldRef<"StaffAttendance", 'Decimal'>
+    readonly longitude: FieldRef<"StaffAttendance", 'Decimal'>
+    readonly distanceMeters: FieldRef<"StaffAttendance", 'Int'>
+    readonly isWithinGeofence: FieldRef<"StaffAttendance", 'Boolean'>
+    readonly createdAt: FieldRef<"StaffAttendance", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * StaffAttendance findUnique
+   */
+  export type StaffAttendanceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter, which StaffAttendance to fetch.
+     */
+    where: StaffAttendanceWhereUniqueInput
+  }
+
+  /**
+   * StaffAttendance findUniqueOrThrow
+   */
+  export type StaffAttendanceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter, which StaffAttendance to fetch.
+     */
+    where: StaffAttendanceWhereUniqueInput
+  }
+
+  /**
+   * StaffAttendance findFirst
+   */
+  export type StaffAttendanceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter, which StaffAttendance to fetch.
+     */
+    where?: StaffAttendanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffAttendances to fetch.
+     */
+    orderBy?: StaffAttendanceOrderByWithRelationInput | StaffAttendanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StaffAttendances.
+     */
+    cursor?: StaffAttendanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffAttendances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffAttendances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StaffAttendances.
+     */
+    distinct?: StaffAttendanceScalarFieldEnum | StaffAttendanceScalarFieldEnum[]
+  }
+
+  /**
+   * StaffAttendance findFirstOrThrow
+   */
+  export type StaffAttendanceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter, which StaffAttendance to fetch.
+     */
+    where?: StaffAttendanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffAttendances to fetch.
+     */
+    orderBy?: StaffAttendanceOrderByWithRelationInput | StaffAttendanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StaffAttendances.
+     */
+    cursor?: StaffAttendanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffAttendances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffAttendances.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StaffAttendances.
+     */
+    distinct?: StaffAttendanceScalarFieldEnum | StaffAttendanceScalarFieldEnum[]
+  }
+
+  /**
+   * StaffAttendance findMany
+   */
+  export type StaffAttendanceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter, which StaffAttendances to fetch.
+     */
+    where?: StaffAttendanceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffAttendances to fetch.
+     */
+    orderBy?: StaffAttendanceOrderByWithRelationInput | StaffAttendanceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing StaffAttendances.
+     */
+    cursor?: StaffAttendanceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffAttendances from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffAttendances.
+     */
+    skip?: number
+    distinct?: StaffAttendanceScalarFieldEnum | StaffAttendanceScalarFieldEnum[]
+  }
+
+  /**
+   * StaffAttendance create
+   */
+  export type StaffAttendanceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * The data needed to create a StaffAttendance.
+     */
+    data: XOR<StaffAttendanceCreateInput, StaffAttendanceUncheckedCreateInput>
+  }
+
+  /**
+   * StaffAttendance createMany
+   */
+  export type StaffAttendanceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many StaffAttendances.
+     */
+    data: StaffAttendanceCreateManyInput | StaffAttendanceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * StaffAttendance createManyAndReturn
+   */
+  export type StaffAttendanceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many StaffAttendances.
+     */
+    data: StaffAttendanceCreateManyInput | StaffAttendanceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * StaffAttendance update
+   */
+  export type StaffAttendanceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * The data needed to update a StaffAttendance.
+     */
+    data: XOR<StaffAttendanceUpdateInput, StaffAttendanceUncheckedUpdateInput>
+    /**
+     * Choose, which StaffAttendance to update.
+     */
+    where: StaffAttendanceWhereUniqueInput
+  }
+
+  /**
+   * StaffAttendance updateMany
+   */
+  export type StaffAttendanceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update StaffAttendances.
+     */
+    data: XOR<StaffAttendanceUpdateManyMutationInput, StaffAttendanceUncheckedUpdateManyInput>
+    /**
+     * Filter which StaffAttendances to update
+     */
+    where?: StaffAttendanceWhereInput
+  }
+
+  /**
+   * StaffAttendance upsert
+   */
+  export type StaffAttendanceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * The filter to search for the StaffAttendance to update in case it exists.
+     */
+    where: StaffAttendanceWhereUniqueInput
+    /**
+     * In case the StaffAttendance found by the `where` argument doesn't exist, create a new StaffAttendance with this data.
+     */
+    create: XOR<StaffAttendanceCreateInput, StaffAttendanceUncheckedCreateInput>
+    /**
+     * In case the StaffAttendance was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<StaffAttendanceUpdateInput, StaffAttendanceUncheckedUpdateInput>
+  }
+
+  /**
+   * StaffAttendance delete
+   */
+  export type StaffAttendanceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+    /**
+     * Filter which StaffAttendance to delete.
+     */
+    where: StaffAttendanceWhereUniqueInput
+  }
+
+  /**
+   * StaffAttendance deleteMany
+   */
+  export type StaffAttendanceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StaffAttendances to delete
+     */
+    where?: StaffAttendanceWhereInput
+  }
+
+  /**
+   * StaffAttendance without action
+   */
+  export type StaffAttendanceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffAttendance
+     */
+    select?: StaffAttendanceSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Model ProductCoPurchase
    */
 
@@ -15770,6 +20146,7 @@ export namespace Prisma {
     discountAmount: 'discountAmount',
     couponCode: 'couponCode',
     deliverySlot: 'deliverySlot',
+    deliveryDate: 'deliveryDate',
     deliveryName: 'deliveryName',
     deliveryPhone: 'deliveryPhone',
     deliveryAddress: 'deliveryAddress',
@@ -15791,6 +20168,7 @@ export namespace Prisma {
     assignedBy: 'assignedBy',
     pickupStartedAt: 'pickupStartedAt',
     deliveredAt: 'deliveredAt',
+    deliveryDistanceKm: 'deliveryDistanceKm',
     preparationPhotos: 'preparationPhotos',
     deliveryProofPhotoUrl: 'deliveryProofPhotoUrl',
     deliveryProofPhotoPublicId: 'deliveryProofPhotoPublicId',
@@ -15817,6 +20195,18 @@ export namespace Prisma {
   };
 
   export type InvoiceSequenceScalarFieldEnum = (typeof InvoiceSequenceScalarFieldEnum)[keyof typeof InvoiceSequenceScalarFieldEnum]
+
+
+  export const DeliverySlotBookingScalarFieldEnum: {
+    storeId: 'storeId',
+    deliveryDate: 'deliveryDate',
+    slotKey: 'slotKey',
+    booked: 'booked',
+    capacity: 'capacity',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DeliverySlotBookingScalarFieldEnum = (typeof DeliverySlotBookingScalarFieldEnum)[keyof typeof DeliverySlotBookingScalarFieldEnum]
 
 
   export const OrderNumberSequenceScalarFieldEnum: {
@@ -15942,6 +20332,52 @@ export namespace Prisma {
   };
 
   export type StockReservationScalarFieldEnum = (typeof StockReservationScalarFieldEnum)[keyof typeof StockReservationScalarFieldEnum]
+
+
+  export const CodCollectionScalarFieldEnum: {
+    id: 'id',
+    orderId: 'orderId',
+    riderId: 'riderId',
+    storeId: 'storeId',
+    amount: 'amount',
+    collectedAt: 'collectedAt',
+    settlementId: 'settlementId',
+    createdAt: 'createdAt'
+  };
+
+  export type CodCollectionScalarFieldEnum = (typeof CodCollectionScalarFieldEnum)[keyof typeof CodCollectionScalarFieldEnum]
+
+
+  export const CodSettlementScalarFieldEnum: {
+    id: 'id',
+    riderId: 'riderId',
+    storeId: 'storeId',
+    amount: 'amount',
+    orderCount: 'orderCount',
+    settledBy: 'settledBy',
+    notes: 'notes',
+    createdAt: 'createdAt'
+  };
+
+  export type CodSettlementScalarFieldEnum = (typeof CodSettlementScalarFieldEnum)[keyof typeof CodSettlementScalarFieldEnum]
+
+
+  export const StaffAttendanceScalarFieldEnum: {
+    id: 'id',
+    staffId: 'staffId',
+    storeId: 'storeId',
+    checkInAt: 'checkInAt',
+    checkOutAt: 'checkOutAt',
+    selfieUrl: 'selfieUrl',
+    selfiePublicId: 'selfiePublicId',
+    latitude: 'latitude',
+    longitude: 'longitude',
+    distanceMeters: 'distanceMeters',
+    isWithinGeofence: 'isWithinGeofence',
+    createdAt: 'createdAt'
+  };
+
+  export type StaffAttendanceScalarFieldEnum = (typeof StaffAttendanceScalarFieldEnum)[keyof typeof StaffAttendanceScalarFieldEnum]
 
 
   export const ProductCoPurchaseScalarFieldEnum: {
@@ -16267,6 +20703,7 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableFilter<"Order"> | string | null
     deliverySlot?: StringNullableFilter<"Order"> | string | null
+    deliveryDate?: StringNullableFilter<"Order"> | string | null
     deliveryName?: StringNullableFilter<"Order"> | string | null
     deliveryPhone?: StringNullableFilter<"Order"> | string | null
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
@@ -16288,6 +20725,7 @@ export namespace Prisma {
     assignedBy?: StringNullableFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    deliveryDistanceKm?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: JsonNullableFilter<"Order">
     deliveryProofPhotoUrl?: StringNullableFilter<"Order"> | string | null
     deliveryProofPhotoPublicId?: StringNullableFilter<"Order"> | string | null
@@ -16317,6 +20755,7 @@ export namespace Prisma {
     discountAmount?: SortOrder
     couponCode?: SortOrderInput | SortOrder
     deliverySlot?: SortOrderInput | SortOrder
+    deliveryDate?: SortOrderInput | SortOrder
     deliveryName?: SortOrderInput | SortOrder
     deliveryPhone?: SortOrderInput | SortOrder
     deliveryAddress?: SortOrderInput | SortOrder
@@ -16338,6 +20777,7 @@ export namespace Prisma {
     assignedBy?: SortOrderInput | SortOrder
     pickupStartedAt?: SortOrderInput | SortOrder
     deliveredAt?: SortOrderInput | SortOrder
+    deliveryDistanceKm?: SortOrderInput | SortOrder
     preparationPhotos?: SortOrderInput | SortOrder
     deliveryProofPhotoUrl?: SortOrderInput | SortOrder
     deliveryProofPhotoPublicId?: SortOrderInput | SortOrder
@@ -16370,6 +20810,7 @@ export namespace Prisma {
     discountAmount?: DecimalFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableFilter<"Order"> | string | null
     deliverySlot?: StringNullableFilter<"Order"> | string | null
+    deliveryDate?: StringNullableFilter<"Order"> | string | null
     deliveryName?: StringNullableFilter<"Order"> | string | null
     deliveryPhone?: StringNullableFilter<"Order"> | string | null
     deliveryAddress?: StringNullableFilter<"Order"> | string | null
@@ -16391,6 +20832,7 @@ export namespace Prisma {
     assignedBy?: StringNullableFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableFilter<"Order"> | Date | string | null
+    deliveryDistanceKm?: DecimalNullableFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: JsonNullableFilter<"Order">
     deliveryProofPhotoUrl?: StringNullableFilter<"Order"> | string | null
     deliveryProofPhotoPublicId?: StringNullableFilter<"Order"> | string | null
@@ -16420,6 +20862,7 @@ export namespace Prisma {
     discountAmount?: SortOrder
     couponCode?: SortOrderInput | SortOrder
     deliverySlot?: SortOrderInput | SortOrder
+    deliveryDate?: SortOrderInput | SortOrder
     deliveryName?: SortOrderInput | SortOrder
     deliveryPhone?: SortOrderInput | SortOrder
     deliveryAddress?: SortOrderInput | SortOrder
@@ -16441,6 +20884,7 @@ export namespace Prisma {
     assignedBy?: SortOrderInput | SortOrder
     pickupStartedAt?: SortOrderInput | SortOrder
     deliveredAt?: SortOrderInput | SortOrder
+    deliveryDistanceKm?: SortOrderInput | SortOrder
     preparationPhotos?: SortOrderInput | SortOrder
     deliveryProofPhotoUrl?: SortOrderInput | SortOrder
     deliveryProofPhotoPublicId?: SortOrderInput | SortOrder
@@ -16475,6 +20919,7 @@ export namespace Prisma {
     discountAmount?: DecimalWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string
     couponCode?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliverySlot?: StringNullableWithAggregatesFilter<"Order"> | string | null
+    deliveryDate?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryName?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryPhone?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryAddress?: StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -16496,6 +20941,7 @@ export namespace Prisma {
     assignedBy?: StringNullableWithAggregatesFilter<"Order"> | string | null
     pickupStartedAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
     deliveredAt?: DateTimeNullableWithAggregatesFilter<"Order"> | Date | string | null
+    deliveryDistanceKm?: DecimalNullableWithAggregatesFilter<"Order"> | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: JsonNullableWithAggregatesFilter<"Order">
     deliveryProofPhotoUrl?: StringNullableWithAggregatesFilter<"Order"> | string | null
     deliveryProofPhotoPublicId?: StringNullableWithAggregatesFilter<"Order"> | string | null
@@ -16559,6 +21005,66 @@ export namespace Prisma {
     financialYear?: StringWithAggregatesFilter<"InvoiceSequence"> | string
     lastSeq?: IntWithAggregatesFilter<"InvoiceSequence"> | number
     updatedAt?: DateTimeWithAggregatesFilter<"InvoiceSequence"> | Date | string
+  }
+
+  export type DeliverySlotBookingWhereInput = {
+    AND?: DeliverySlotBookingWhereInput | DeliverySlotBookingWhereInput[]
+    OR?: DeliverySlotBookingWhereInput[]
+    NOT?: DeliverySlotBookingWhereInput | DeliverySlotBookingWhereInput[]
+    storeId?: StringFilter<"DeliverySlotBooking"> | string
+    deliveryDate?: StringFilter<"DeliverySlotBooking"> | string
+    slotKey?: StringFilter<"DeliverySlotBooking"> | string
+    booked?: IntFilter<"DeliverySlotBooking"> | number
+    capacity?: IntFilter<"DeliverySlotBooking"> | number
+    updatedAt?: DateTimeFilter<"DeliverySlotBooking"> | Date | string
+  }
+
+  export type DeliverySlotBookingOrderByWithRelationInput = {
+    storeId?: SortOrder
+    deliveryDate?: SortOrder
+    slotKey?: SortOrder
+    booked?: SortOrder
+    capacity?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DeliverySlotBookingWhereUniqueInput = Prisma.AtLeast<{
+    storeId_deliveryDate_slotKey?: DeliverySlotBookingStoreIdDeliveryDateSlotKeyCompoundUniqueInput
+    AND?: DeliverySlotBookingWhereInput | DeliverySlotBookingWhereInput[]
+    OR?: DeliverySlotBookingWhereInput[]
+    NOT?: DeliverySlotBookingWhereInput | DeliverySlotBookingWhereInput[]
+    storeId?: StringFilter<"DeliverySlotBooking"> | string
+    deliveryDate?: StringFilter<"DeliverySlotBooking"> | string
+    slotKey?: StringFilter<"DeliverySlotBooking"> | string
+    booked?: IntFilter<"DeliverySlotBooking"> | number
+    capacity?: IntFilter<"DeliverySlotBooking"> | number
+    updatedAt?: DateTimeFilter<"DeliverySlotBooking"> | Date | string
+  }, "storeId_deliveryDate_slotKey">
+
+  export type DeliverySlotBookingOrderByWithAggregationInput = {
+    storeId?: SortOrder
+    deliveryDate?: SortOrder
+    slotKey?: SortOrder
+    booked?: SortOrder
+    capacity?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DeliverySlotBookingCountOrderByAggregateInput
+    _avg?: DeliverySlotBookingAvgOrderByAggregateInput
+    _max?: DeliverySlotBookingMaxOrderByAggregateInput
+    _min?: DeliverySlotBookingMinOrderByAggregateInput
+    _sum?: DeliverySlotBookingSumOrderByAggregateInput
+  }
+
+  export type DeliverySlotBookingScalarWhereWithAggregatesInput = {
+    AND?: DeliverySlotBookingScalarWhereWithAggregatesInput | DeliverySlotBookingScalarWhereWithAggregatesInput[]
+    OR?: DeliverySlotBookingScalarWhereWithAggregatesInput[]
+    NOT?: DeliverySlotBookingScalarWhereWithAggregatesInput | DeliverySlotBookingScalarWhereWithAggregatesInput[]
+    storeId?: StringWithAggregatesFilter<"DeliverySlotBooking"> | string
+    deliveryDate?: StringWithAggregatesFilter<"DeliverySlotBooking"> | string
+    slotKey?: StringWithAggregatesFilter<"DeliverySlotBooking"> | string
+    booked?: IntWithAggregatesFilter<"DeliverySlotBooking"> | number
+    capacity?: IntWithAggregatesFilter<"DeliverySlotBooking"> | number
+    updatedAt?: DateTimeWithAggregatesFilter<"DeliverySlotBooking"> | Date | string
   }
 
   export type OrderNumberSequenceWhereInput = {
@@ -17178,6 +21684,239 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
   }
 
+  export type CodCollectionWhereInput = {
+    AND?: CodCollectionWhereInput | CodCollectionWhereInput[]
+    OR?: CodCollectionWhereInput[]
+    NOT?: CodCollectionWhereInput | CodCollectionWhereInput[]
+    id?: StringFilter<"CodCollection"> | string
+    orderId?: StringFilter<"CodCollection"> | string
+    riderId?: StringFilter<"CodCollection"> | string
+    storeId?: StringFilter<"CodCollection"> | string
+    amount?: DecimalFilter<"CodCollection"> | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFilter<"CodCollection"> | Date | string
+    settlementId?: StringNullableFilter<"CodCollection"> | string | null
+    createdAt?: DateTimeFilter<"CodCollection"> | Date | string
+    settlement?: XOR<CodSettlementNullableRelationFilter, CodSettlementWhereInput> | null
+  }
+
+  export type CodCollectionOrderByWithRelationInput = {
+    id?: SortOrder
+    orderId?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    collectedAt?: SortOrder
+    settlementId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    settlement?: CodSettlementOrderByWithRelationInput
+  }
+
+  export type CodCollectionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    orderId?: string
+    AND?: CodCollectionWhereInput | CodCollectionWhereInput[]
+    OR?: CodCollectionWhereInput[]
+    NOT?: CodCollectionWhereInput | CodCollectionWhereInput[]
+    riderId?: StringFilter<"CodCollection"> | string
+    storeId?: StringFilter<"CodCollection"> | string
+    amount?: DecimalFilter<"CodCollection"> | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFilter<"CodCollection"> | Date | string
+    settlementId?: StringNullableFilter<"CodCollection"> | string | null
+    createdAt?: DateTimeFilter<"CodCollection"> | Date | string
+    settlement?: XOR<CodSettlementNullableRelationFilter, CodSettlementWhereInput> | null
+  }, "id" | "orderId">
+
+  export type CodCollectionOrderByWithAggregationInput = {
+    id?: SortOrder
+    orderId?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    collectedAt?: SortOrder
+    settlementId?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: CodCollectionCountOrderByAggregateInput
+    _avg?: CodCollectionAvgOrderByAggregateInput
+    _max?: CodCollectionMaxOrderByAggregateInput
+    _min?: CodCollectionMinOrderByAggregateInput
+    _sum?: CodCollectionSumOrderByAggregateInput
+  }
+
+  export type CodCollectionScalarWhereWithAggregatesInput = {
+    AND?: CodCollectionScalarWhereWithAggregatesInput | CodCollectionScalarWhereWithAggregatesInput[]
+    OR?: CodCollectionScalarWhereWithAggregatesInput[]
+    NOT?: CodCollectionScalarWhereWithAggregatesInput | CodCollectionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CodCollection"> | string
+    orderId?: StringWithAggregatesFilter<"CodCollection"> | string
+    riderId?: StringWithAggregatesFilter<"CodCollection"> | string
+    storeId?: StringWithAggregatesFilter<"CodCollection"> | string
+    amount?: DecimalWithAggregatesFilter<"CodCollection"> | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeWithAggregatesFilter<"CodCollection"> | Date | string
+    settlementId?: StringNullableWithAggregatesFilter<"CodCollection"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"CodCollection"> | Date | string
+  }
+
+  export type CodSettlementWhereInput = {
+    AND?: CodSettlementWhereInput | CodSettlementWhereInput[]
+    OR?: CodSettlementWhereInput[]
+    NOT?: CodSettlementWhereInput | CodSettlementWhereInput[]
+    id?: StringFilter<"CodSettlement"> | string
+    riderId?: StringFilter<"CodSettlement"> | string
+    storeId?: StringFilter<"CodSettlement"> | string
+    amount?: DecimalFilter<"CodSettlement"> | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFilter<"CodSettlement"> | number
+    settledBy?: StringFilter<"CodSettlement"> | string
+    notes?: StringNullableFilter<"CodSettlement"> | string | null
+    createdAt?: DateTimeFilter<"CodSettlement"> | Date | string
+    collections?: CodCollectionListRelationFilter
+  }
+
+  export type CodSettlementOrderByWithRelationInput = {
+    id?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    orderCount?: SortOrder
+    settledBy?: SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    collections?: CodCollectionOrderByRelationAggregateInput
+  }
+
+  export type CodSettlementWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CodSettlementWhereInput | CodSettlementWhereInput[]
+    OR?: CodSettlementWhereInput[]
+    NOT?: CodSettlementWhereInput | CodSettlementWhereInput[]
+    riderId?: StringFilter<"CodSettlement"> | string
+    storeId?: StringFilter<"CodSettlement"> | string
+    amount?: DecimalFilter<"CodSettlement"> | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFilter<"CodSettlement"> | number
+    settledBy?: StringFilter<"CodSettlement"> | string
+    notes?: StringNullableFilter<"CodSettlement"> | string | null
+    createdAt?: DateTimeFilter<"CodSettlement"> | Date | string
+    collections?: CodCollectionListRelationFilter
+  }, "id">
+
+  export type CodSettlementOrderByWithAggregationInput = {
+    id?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    orderCount?: SortOrder
+    settledBy?: SortOrder
+    notes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: CodSettlementCountOrderByAggregateInput
+    _avg?: CodSettlementAvgOrderByAggregateInput
+    _max?: CodSettlementMaxOrderByAggregateInput
+    _min?: CodSettlementMinOrderByAggregateInput
+    _sum?: CodSettlementSumOrderByAggregateInput
+  }
+
+  export type CodSettlementScalarWhereWithAggregatesInput = {
+    AND?: CodSettlementScalarWhereWithAggregatesInput | CodSettlementScalarWhereWithAggregatesInput[]
+    OR?: CodSettlementScalarWhereWithAggregatesInput[]
+    NOT?: CodSettlementScalarWhereWithAggregatesInput | CodSettlementScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CodSettlement"> | string
+    riderId?: StringWithAggregatesFilter<"CodSettlement"> | string
+    storeId?: StringWithAggregatesFilter<"CodSettlement"> | string
+    amount?: DecimalWithAggregatesFilter<"CodSettlement"> | Decimal | DecimalJsLike | number | string
+    orderCount?: IntWithAggregatesFilter<"CodSettlement"> | number
+    settledBy?: StringWithAggregatesFilter<"CodSettlement"> | string
+    notes?: StringNullableWithAggregatesFilter<"CodSettlement"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"CodSettlement"> | Date | string
+  }
+
+  export type StaffAttendanceWhereInput = {
+    AND?: StaffAttendanceWhereInput | StaffAttendanceWhereInput[]
+    OR?: StaffAttendanceWhereInput[]
+    NOT?: StaffAttendanceWhereInput | StaffAttendanceWhereInput[]
+    id?: StringFilter<"StaffAttendance"> | string
+    staffId?: StringFilter<"StaffAttendance"> | string
+    storeId?: StringFilter<"StaffAttendance"> | string
+    checkInAt?: DateTimeFilter<"StaffAttendance"> | Date | string
+    checkOutAt?: DateTimeNullableFilter<"StaffAttendance"> | Date | string | null
+    selfieUrl?: StringFilter<"StaffAttendance"> | string
+    selfiePublicId?: StringFilter<"StaffAttendance"> | string
+    latitude?: DecimalFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFilter<"StaffAttendance"> | number
+    isWithinGeofence?: BoolFilter<"StaffAttendance"> | boolean
+    createdAt?: DateTimeFilter<"StaffAttendance"> | Date | string
+  }
+
+  export type StaffAttendanceOrderByWithRelationInput = {
+    id?: SortOrder
+    staffId?: SortOrder
+    storeId?: SortOrder
+    checkInAt?: SortOrder
+    checkOutAt?: SortOrderInput | SortOrder
+    selfieUrl?: SortOrder
+    selfiePublicId?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+    isWithinGeofence?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StaffAttendanceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: StaffAttendanceWhereInput | StaffAttendanceWhereInput[]
+    OR?: StaffAttendanceWhereInput[]
+    NOT?: StaffAttendanceWhereInput | StaffAttendanceWhereInput[]
+    staffId?: StringFilter<"StaffAttendance"> | string
+    storeId?: StringFilter<"StaffAttendance"> | string
+    checkInAt?: DateTimeFilter<"StaffAttendance"> | Date | string
+    checkOutAt?: DateTimeNullableFilter<"StaffAttendance"> | Date | string | null
+    selfieUrl?: StringFilter<"StaffAttendance"> | string
+    selfiePublicId?: StringFilter<"StaffAttendance"> | string
+    latitude?: DecimalFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFilter<"StaffAttendance"> | number
+    isWithinGeofence?: BoolFilter<"StaffAttendance"> | boolean
+    createdAt?: DateTimeFilter<"StaffAttendance"> | Date | string
+  }, "id">
+
+  export type StaffAttendanceOrderByWithAggregationInput = {
+    id?: SortOrder
+    staffId?: SortOrder
+    storeId?: SortOrder
+    checkInAt?: SortOrder
+    checkOutAt?: SortOrderInput | SortOrder
+    selfieUrl?: SortOrder
+    selfiePublicId?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+    isWithinGeofence?: SortOrder
+    createdAt?: SortOrder
+    _count?: StaffAttendanceCountOrderByAggregateInput
+    _avg?: StaffAttendanceAvgOrderByAggregateInput
+    _max?: StaffAttendanceMaxOrderByAggregateInput
+    _min?: StaffAttendanceMinOrderByAggregateInput
+    _sum?: StaffAttendanceSumOrderByAggregateInput
+  }
+
+  export type StaffAttendanceScalarWhereWithAggregatesInput = {
+    AND?: StaffAttendanceScalarWhereWithAggregatesInput | StaffAttendanceScalarWhereWithAggregatesInput[]
+    OR?: StaffAttendanceScalarWhereWithAggregatesInput[]
+    NOT?: StaffAttendanceScalarWhereWithAggregatesInput | StaffAttendanceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"StaffAttendance"> | string
+    staffId?: StringWithAggregatesFilter<"StaffAttendance"> | string
+    storeId?: StringWithAggregatesFilter<"StaffAttendance"> | string
+    checkInAt?: DateTimeWithAggregatesFilter<"StaffAttendance"> | Date | string
+    checkOutAt?: DateTimeNullableWithAggregatesFilter<"StaffAttendance"> | Date | string | null
+    selfieUrl?: StringWithAggregatesFilter<"StaffAttendance"> | string
+    selfiePublicId?: StringWithAggregatesFilter<"StaffAttendance"> | string
+    latitude?: DecimalWithAggregatesFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalWithAggregatesFilter<"StaffAttendance"> | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntWithAggregatesFilter<"StaffAttendance"> | number
+    isWithinGeofence?: BoolWithAggregatesFilter<"StaffAttendance"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"StaffAttendance"> | Date | string
+  }
+
   export type ProductCoPurchaseWhereInput = {
     AND?: ProductCoPurchaseWhereInput | ProductCoPurchaseWhereInput[]
     OR?: ProductCoPurchaseWhereInput[]
@@ -17332,6 +22071,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -17353,6 +22093,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -17382,6 +22123,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -17403,6 +22145,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -17432,6 +22175,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17453,6 +22197,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17482,6 +22227,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17503,6 +22249,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17532,6 +22279,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -17553,6 +22301,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -17579,6 +22328,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17600,6 +22350,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17626,6 +22377,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17647,6 +22399,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -17708,6 +22461,69 @@ export namespace Prisma {
     locationCode?: StringFieldUpdateOperationsInput | string
     financialYear?: StringFieldUpdateOperationsInput | string
     lastSeq?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliverySlotBookingCreateInput = {
+    storeId: string
+    deliveryDate: string
+    slotKey: string
+    booked?: number
+    capacity: number
+    updatedAt?: Date | string
+  }
+
+  export type DeliverySlotBookingUncheckedCreateInput = {
+    storeId: string
+    deliveryDate: string
+    slotKey: string
+    booked?: number
+    capacity: number
+    updatedAt?: Date | string
+  }
+
+  export type DeliverySlotBookingUpdateInput = {
+    storeId?: StringFieldUpdateOperationsInput | string
+    deliveryDate?: StringFieldUpdateOperationsInput | string
+    slotKey?: StringFieldUpdateOperationsInput | string
+    booked?: IntFieldUpdateOperationsInput | number
+    capacity?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliverySlotBookingUncheckedUpdateInput = {
+    storeId?: StringFieldUpdateOperationsInput | string
+    deliveryDate?: StringFieldUpdateOperationsInput | string
+    slotKey?: StringFieldUpdateOperationsInput | string
+    booked?: IntFieldUpdateOperationsInput | number
+    capacity?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliverySlotBookingCreateManyInput = {
+    storeId: string
+    deliveryDate: string
+    slotKey: string
+    booked?: number
+    capacity: number
+    updatedAt?: Date | string
+  }
+
+  export type DeliverySlotBookingUpdateManyMutationInput = {
+    storeId?: StringFieldUpdateOperationsInput | string
+    deliveryDate?: StringFieldUpdateOperationsInput | string
+    slotKey?: StringFieldUpdateOperationsInput | string
+    booked?: IntFieldUpdateOperationsInput | number
+    capacity?: IntFieldUpdateOperationsInput | number
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliverySlotBookingUncheckedUpdateManyInput = {
+    storeId?: StringFieldUpdateOperationsInput | string
+    deliveryDate?: StringFieldUpdateOperationsInput | string
+    slotKey?: StringFieldUpdateOperationsInput | string
+    booked?: IntFieldUpdateOperationsInput | number
+    capacity?: IntFieldUpdateOperationsInput | number
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -18394,6 +23210,268 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CodCollectionCreateInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    createdAt?: Date | string
+    settlement?: CodSettlementCreateNestedOneWithoutCollectionsInput
+  }
+
+  export type CodCollectionUncheckedCreateInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    settlementId?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CodCollectionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlement?: CodSettlementUpdateOneWithoutCollectionsNestedInput
+  }
+
+  export type CodCollectionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlementId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodCollectionCreateManyInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    settlementId?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CodCollectionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodCollectionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settlementId?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodSettlementCreateInput = {
+    id?: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    orderCount: number
+    settledBy: string
+    notes?: string | null
+    createdAt?: Date | string
+    collections?: CodCollectionCreateNestedManyWithoutSettlementInput
+  }
+
+  export type CodSettlementUncheckedCreateInput = {
+    id?: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    orderCount: number
+    settledBy: string
+    notes?: string | null
+    createdAt?: Date | string
+    collections?: CodCollectionUncheckedCreateNestedManyWithoutSettlementInput
+  }
+
+  export type CodSettlementUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    collections?: CodCollectionUpdateManyWithoutSettlementNestedInput
+  }
+
+  export type CodSettlementUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    collections?: CodCollectionUncheckedUpdateManyWithoutSettlementNestedInput
+  }
+
+  export type CodSettlementCreateManyInput = {
+    id?: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    orderCount: number
+    settledBy: string
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CodSettlementUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodSettlementUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffAttendanceCreateInput = {
+    id?: string
+    staffId: string
+    storeId: string
+    checkInAt: Date | string
+    checkOutAt?: Date | string | null
+    selfieUrl: string
+    selfiePublicId: string
+    latitude: Decimal | DecimalJsLike | number | string
+    longitude: Decimal | DecimalJsLike | number | string
+    distanceMeters: number
+    isWithinGeofence: boolean
+    createdAt?: Date | string
+  }
+
+  export type StaffAttendanceUncheckedCreateInput = {
+    id?: string
+    staffId: string
+    storeId: string
+    checkInAt: Date | string
+    checkOutAt?: Date | string | null
+    selfieUrl: string
+    selfiePublicId: string
+    latitude: Decimal | DecimalJsLike | number | string
+    longitude: Decimal | DecimalJsLike | number | string
+    distanceMeters: number
+    isWithinGeofence: boolean
+    createdAt?: Date | string
+  }
+
+  export type StaffAttendanceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    checkInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checkOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    selfieUrl?: StringFieldUpdateOperationsInput | string
+    selfiePublicId?: StringFieldUpdateOperationsInput | string
+    latitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFieldUpdateOperationsInput | number
+    isWithinGeofence?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffAttendanceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    checkInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checkOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    selfieUrl?: StringFieldUpdateOperationsInput | string
+    selfiePublicId?: StringFieldUpdateOperationsInput | string
+    latitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFieldUpdateOperationsInput | number
+    isWithinGeofence?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffAttendanceCreateManyInput = {
+    id?: string
+    staffId: string
+    storeId: string
+    checkInAt: Date | string
+    checkOutAt?: Date | string | null
+    selfieUrl: string
+    selfiePublicId: string
+    latitude: Decimal | DecimalJsLike | number | string
+    longitude: Decimal | DecimalJsLike | number | string
+    distanceMeters: number
+    isWithinGeofence: boolean
+    createdAt?: Date | string
+  }
+
+  export type StaffAttendanceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    checkInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checkOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    selfieUrl?: StringFieldUpdateOperationsInput | string
+    selfiePublicId?: StringFieldUpdateOperationsInput | string
+    latitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFieldUpdateOperationsInput | number
+    isWithinGeofence?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StaffAttendanceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    checkInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    checkOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    selfieUrl?: StringFieldUpdateOperationsInput | string
+    selfiePublicId?: StringFieldUpdateOperationsInput | string
+    latitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    longitude?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    distanceMeters?: IntFieldUpdateOperationsInput | number
+    isWithinGeofence?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ProductCoPurchaseCreateInput = {
     catalogA: string
     catalogB: string
@@ -18718,6 +23796,7 @@ export namespace Prisma {
     discountAmount?: SortOrder
     couponCode?: SortOrder
     deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
     deliveryName?: SortOrder
     deliveryPhone?: SortOrder
     deliveryAddress?: SortOrder
@@ -18739,6 +23818,7 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    deliveryDistanceKm?: SortOrder
     preparationPhotos?: SortOrder
     deliveryProofPhotoUrl?: SortOrder
     deliveryProofPhotoPublicId?: SortOrder
@@ -18760,6 +23840,7 @@ export namespace Prisma {
     deliveryLatitude?: SortOrder
     deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
+    deliveryDistanceKm?: SortOrder
   }
 
   export type OrderMaxOrderByAggregateInput = {
@@ -18773,6 +23854,7 @@ export namespace Prisma {
     discountAmount?: SortOrder
     couponCode?: SortOrder
     deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
     deliveryName?: SortOrder
     deliveryPhone?: SortOrder
     deliveryAddress?: SortOrder
@@ -18793,6 +23875,7 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    deliveryDistanceKm?: SortOrder
     deliveryProofPhotoUrl?: SortOrder
     deliveryProofPhotoPublicId?: SortOrder
     deliveryProofUploadedAt?: SortOrder
@@ -18818,6 +23901,7 @@ export namespace Prisma {
     discountAmount?: SortOrder
     couponCode?: SortOrder
     deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
     deliveryName?: SortOrder
     deliveryPhone?: SortOrder
     deliveryAddress?: SortOrder
@@ -18838,6 +23922,7 @@ export namespace Prisma {
     assignedBy?: SortOrder
     pickupStartedAt?: SortOrder
     deliveredAt?: SortOrder
+    deliveryDistanceKm?: SortOrder
     deliveryProofPhotoUrl?: SortOrder
     deliveryProofPhotoPublicId?: SortOrder
     deliveryProofUploadedAt?: SortOrder
@@ -18858,6 +23943,7 @@ export namespace Prisma {
     deliveryLatitude?: SortOrder
     deliveryLongitude?: SortOrder
     deliveryCharge?: SortOrder
+    deliveryDistanceKm?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -19100,6 +24186,49 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type DeliverySlotBookingStoreIdDeliveryDateSlotKeyCompoundUniqueInput = {
+    storeId: string
+    deliveryDate: string
+    slotKey: string
+  }
+
+  export type DeliverySlotBookingCountOrderByAggregateInput = {
+    storeId?: SortOrder
+    deliveryDate?: SortOrder
+    slotKey?: SortOrder
+    booked?: SortOrder
+    capacity?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DeliverySlotBookingAvgOrderByAggregateInput = {
+    booked?: SortOrder
+    capacity?: SortOrder
+  }
+
+  export type DeliverySlotBookingMaxOrderByAggregateInput = {
+    storeId?: SortOrder
+    deliveryDate?: SortOrder
+    slotKey?: SortOrder
+    booked?: SortOrder
+    capacity?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DeliverySlotBookingMinOrderByAggregateInput = {
+    storeId?: SortOrder
+    deliveryDate?: SortOrder
+    slotKey?: SortOrder
+    booked?: SortOrder
+    capacity?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DeliverySlotBookingSumOrderByAggregateInput = {
+    booked?: SortOrder
+    capacity?: SortOrder
   }
 
   export type OrderNumberSequenceLocationCodeDateKeyCompoundUniqueInput = {
@@ -19576,6 +24705,162 @@ export namespace Prisma {
     _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
   }
 
+  export type CodSettlementNullableRelationFilter = {
+    is?: CodSettlementWhereInput | null
+    isNot?: CodSettlementWhereInput | null
+  }
+
+  export type CodCollectionCountOrderByAggregateInput = {
+    id?: SortOrder
+    orderId?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    collectedAt?: SortOrder
+    settlementId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodCollectionAvgOrderByAggregateInput = {
+    amount?: SortOrder
+  }
+
+  export type CodCollectionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    orderId?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    collectedAt?: SortOrder
+    settlementId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodCollectionMinOrderByAggregateInput = {
+    id?: SortOrder
+    orderId?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    collectedAt?: SortOrder
+    settlementId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodCollectionSumOrderByAggregateInput = {
+    amount?: SortOrder
+  }
+
+  export type CodCollectionListRelationFilter = {
+    every?: CodCollectionWhereInput
+    some?: CodCollectionWhereInput
+    none?: CodCollectionWhereInput
+  }
+
+  export type CodCollectionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CodSettlementCountOrderByAggregateInput = {
+    id?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    orderCount?: SortOrder
+    settledBy?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodSettlementAvgOrderByAggregateInput = {
+    amount?: SortOrder
+    orderCount?: SortOrder
+  }
+
+  export type CodSettlementMaxOrderByAggregateInput = {
+    id?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    orderCount?: SortOrder
+    settledBy?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodSettlementMinOrderByAggregateInput = {
+    id?: SortOrder
+    riderId?: SortOrder
+    storeId?: SortOrder
+    amount?: SortOrder
+    orderCount?: SortOrder
+    settledBy?: SortOrder
+    notes?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CodSettlementSumOrderByAggregateInput = {
+    amount?: SortOrder
+    orderCount?: SortOrder
+  }
+
+  export type StaffAttendanceCountOrderByAggregateInput = {
+    id?: SortOrder
+    staffId?: SortOrder
+    storeId?: SortOrder
+    checkInAt?: SortOrder
+    checkOutAt?: SortOrder
+    selfieUrl?: SortOrder
+    selfiePublicId?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+    isWithinGeofence?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StaffAttendanceAvgOrderByAggregateInput = {
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+  }
+
+  export type StaffAttendanceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    staffId?: SortOrder
+    storeId?: SortOrder
+    checkInAt?: SortOrder
+    checkOutAt?: SortOrder
+    selfieUrl?: SortOrder
+    selfiePublicId?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+    isWithinGeofence?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StaffAttendanceMinOrderByAggregateInput = {
+    id?: SortOrder
+    staffId?: SortOrder
+    storeId?: SortOrder
+    checkInAt?: SortOrder
+    checkOutAt?: SortOrder
+    selfieUrl?: SortOrder
+    selfiePublicId?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+    isWithinGeofence?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StaffAttendanceSumOrderByAggregateInput = {
+    latitude?: SortOrder
+    longitude?: SortOrder
+    distanceMeters?: SortOrder
+  }
+
   export type ProductCoPurchaseCatalogACatalogBCompoundUniqueInput = {
     catalogA: string
     catalogB: string
@@ -19919,6 +25204,64 @@ export namespace Prisma {
 
   export type EnumStockReservationStatusFieldUpdateOperationsInput = {
     set?: $Enums.StockReservationStatus
+  }
+
+  export type CodSettlementCreateNestedOneWithoutCollectionsInput = {
+    create?: XOR<CodSettlementCreateWithoutCollectionsInput, CodSettlementUncheckedCreateWithoutCollectionsInput>
+    connectOrCreate?: CodSettlementCreateOrConnectWithoutCollectionsInput
+    connect?: CodSettlementWhereUniqueInput
+  }
+
+  export type CodSettlementUpdateOneWithoutCollectionsNestedInput = {
+    create?: XOR<CodSettlementCreateWithoutCollectionsInput, CodSettlementUncheckedCreateWithoutCollectionsInput>
+    connectOrCreate?: CodSettlementCreateOrConnectWithoutCollectionsInput
+    upsert?: CodSettlementUpsertWithoutCollectionsInput
+    disconnect?: CodSettlementWhereInput | boolean
+    delete?: CodSettlementWhereInput | boolean
+    connect?: CodSettlementWhereUniqueInput
+    update?: XOR<XOR<CodSettlementUpdateToOneWithWhereWithoutCollectionsInput, CodSettlementUpdateWithoutCollectionsInput>, CodSettlementUncheckedUpdateWithoutCollectionsInput>
+  }
+
+  export type CodCollectionCreateNestedManyWithoutSettlementInput = {
+    create?: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput> | CodCollectionCreateWithoutSettlementInput[] | CodCollectionUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: CodCollectionCreateOrConnectWithoutSettlementInput | CodCollectionCreateOrConnectWithoutSettlementInput[]
+    createMany?: CodCollectionCreateManySettlementInputEnvelope
+    connect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+  }
+
+  export type CodCollectionUncheckedCreateNestedManyWithoutSettlementInput = {
+    create?: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput> | CodCollectionCreateWithoutSettlementInput[] | CodCollectionUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: CodCollectionCreateOrConnectWithoutSettlementInput | CodCollectionCreateOrConnectWithoutSettlementInput[]
+    createMany?: CodCollectionCreateManySettlementInputEnvelope
+    connect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+  }
+
+  export type CodCollectionUpdateManyWithoutSettlementNestedInput = {
+    create?: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput> | CodCollectionCreateWithoutSettlementInput[] | CodCollectionUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: CodCollectionCreateOrConnectWithoutSettlementInput | CodCollectionCreateOrConnectWithoutSettlementInput[]
+    upsert?: CodCollectionUpsertWithWhereUniqueWithoutSettlementInput | CodCollectionUpsertWithWhereUniqueWithoutSettlementInput[]
+    createMany?: CodCollectionCreateManySettlementInputEnvelope
+    set?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    disconnect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    delete?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    connect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    update?: CodCollectionUpdateWithWhereUniqueWithoutSettlementInput | CodCollectionUpdateWithWhereUniqueWithoutSettlementInput[]
+    updateMany?: CodCollectionUpdateManyWithWhereWithoutSettlementInput | CodCollectionUpdateManyWithWhereWithoutSettlementInput[]
+    deleteMany?: CodCollectionScalarWhereInput | CodCollectionScalarWhereInput[]
+  }
+
+  export type CodCollectionUncheckedUpdateManyWithoutSettlementNestedInput = {
+    create?: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput> | CodCollectionCreateWithoutSettlementInput[] | CodCollectionUncheckedCreateWithoutSettlementInput[]
+    connectOrCreate?: CodCollectionCreateOrConnectWithoutSettlementInput | CodCollectionCreateOrConnectWithoutSettlementInput[]
+    upsert?: CodCollectionUpsertWithWhereUniqueWithoutSettlementInput | CodCollectionUpsertWithWhereUniqueWithoutSettlementInput[]
+    createMany?: CodCollectionCreateManySettlementInputEnvelope
+    set?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    disconnect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    delete?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    connect?: CodCollectionWhereUniqueInput | CodCollectionWhereUniqueInput[]
+    update?: CodCollectionUpdateWithWhereUniqueWithoutSettlementInput | CodCollectionUpdateWithWhereUniqueWithoutSettlementInput[]
+    updateMany?: CodCollectionUpdateManyWithWhereWithoutSettlementInput | CodCollectionUpdateManyWithWhereWithoutSettlementInput[]
+    deleteMany?: CodCollectionScalarWhereInput | CodCollectionScalarWhereInput[]
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -20565,6 +25908,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -20586,6 +25930,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -20614,6 +25959,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -20635,6 +25981,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -20679,6 +26026,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20700,6 +26048,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20728,6 +26077,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20749,6 +26099,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20777,6 +26128,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -20798,6 +26150,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -20826,6 +26179,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -20847,6 +26201,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -20891,6 +26246,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20912,6 +26268,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20940,6 +26297,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20961,6 +26319,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -20989,6 +26348,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -21010,6 +26370,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -21038,6 +26399,7 @@ export namespace Prisma {
     discountAmount?: Decimal | DecimalJsLike | number | string
     couponCode?: string | null
     deliverySlot?: string | null
+    deliveryDate?: string | null
     deliveryName?: string | null
     deliveryPhone?: string | null
     deliveryAddress?: string | null
@@ -21059,6 +26421,7 @@ export namespace Prisma {
     assignedBy?: string | null
     pickupStartedAt?: Date | string | null
     deliveredAt?: Date | string | null
+    deliveryDistanceKm?: Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: string | null
     deliveryProofPhotoPublicId?: string | null
@@ -21103,6 +26466,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21124,6 +26488,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21152,6 +26517,7 @@ export namespace Prisma {
     discountAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     couponCode?: NullableStringFieldUpdateOperationsInput | string | null
     deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryName?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryPhone?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryAddress?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21173,6 +26539,7 @@ export namespace Prisma {
     assignedBy?: NullableStringFieldUpdateOperationsInput | string | null
     pickupStartedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deliveryDistanceKm?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     preparationPhotos?: NullableJsonNullValueInput | InputJsonValue
     deliveryProofPhotoUrl?: NullableStringFieldUpdateOperationsInput | string | null
     deliveryProofPhotoPublicId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -21188,6 +26555,126 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     orderItems?: OrderItemUncheckedUpdateManyWithoutOrderNestedInput
     payments?: PaymentUncheckedUpdateManyWithoutOrderNestedInput
+  }
+
+  export type CodSettlementCreateWithoutCollectionsInput = {
+    id?: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    orderCount: number
+    settledBy: string
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CodSettlementUncheckedCreateWithoutCollectionsInput = {
+    id?: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    orderCount: number
+    settledBy: string
+    notes?: string | null
+    createdAt?: Date | string
+  }
+
+  export type CodSettlementCreateOrConnectWithoutCollectionsInput = {
+    where: CodSettlementWhereUniqueInput
+    create: XOR<CodSettlementCreateWithoutCollectionsInput, CodSettlementUncheckedCreateWithoutCollectionsInput>
+  }
+
+  export type CodSettlementUpsertWithoutCollectionsInput = {
+    update: XOR<CodSettlementUpdateWithoutCollectionsInput, CodSettlementUncheckedUpdateWithoutCollectionsInput>
+    create: XOR<CodSettlementCreateWithoutCollectionsInput, CodSettlementUncheckedCreateWithoutCollectionsInput>
+    where?: CodSettlementWhereInput
+  }
+
+  export type CodSettlementUpdateToOneWithWhereWithoutCollectionsInput = {
+    where?: CodSettlementWhereInput
+    data: XOR<CodSettlementUpdateWithoutCollectionsInput, CodSettlementUncheckedUpdateWithoutCollectionsInput>
+  }
+
+  export type CodSettlementUpdateWithoutCollectionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodSettlementUncheckedUpdateWithoutCollectionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    orderCount?: IntFieldUpdateOperationsInput | number
+    settledBy?: StringFieldUpdateOperationsInput | string
+    notes?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodCollectionCreateWithoutSettlementInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    createdAt?: Date | string
+  }
+
+  export type CodCollectionUncheckedCreateWithoutSettlementInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    createdAt?: Date | string
+  }
+
+  export type CodCollectionCreateOrConnectWithoutSettlementInput = {
+    where: CodCollectionWhereUniqueInput
+    create: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput>
+  }
+
+  export type CodCollectionCreateManySettlementInputEnvelope = {
+    data: CodCollectionCreateManySettlementInput | CodCollectionCreateManySettlementInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type CodCollectionUpsertWithWhereUniqueWithoutSettlementInput = {
+    where: CodCollectionWhereUniqueInput
+    update: XOR<CodCollectionUpdateWithoutSettlementInput, CodCollectionUncheckedUpdateWithoutSettlementInput>
+    create: XOR<CodCollectionCreateWithoutSettlementInput, CodCollectionUncheckedCreateWithoutSettlementInput>
+  }
+
+  export type CodCollectionUpdateWithWhereUniqueWithoutSettlementInput = {
+    where: CodCollectionWhereUniqueInput
+    data: XOR<CodCollectionUpdateWithoutSettlementInput, CodCollectionUncheckedUpdateWithoutSettlementInput>
+  }
+
+  export type CodCollectionUpdateManyWithWhereWithoutSettlementInput = {
+    where: CodCollectionScalarWhereInput
+    data: XOR<CodCollectionUpdateManyMutationInput, CodCollectionUncheckedUpdateManyWithoutSettlementInput>
+  }
+
+  export type CodCollectionScalarWhereInput = {
+    AND?: CodCollectionScalarWhereInput | CodCollectionScalarWhereInput[]
+    OR?: CodCollectionScalarWhereInput[]
+    NOT?: CodCollectionScalarWhereInput | CodCollectionScalarWhereInput[]
+    id?: StringFilter<"CodCollection"> | string
+    orderId?: StringFilter<"CodCollection"> | string
+    riderId?: StringFilter<"CodCollection"> | string
+    storeId?: StringFilter<"CodCollection"> | string
+    amount?: DecimalFilter<"CodCollection"> | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFilter<"CodCollection"> | Date | string
+    settlementId?: StringNullableFilter<"CodCollection"> | string | null
+    createdAt?: DateTimeFilter<"CodCollection"> | Date | string
   }
 
   export type OrderItemCreateManyOrderInput = {
@@ -21302,6 +26789,46 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CodCollectionCreateManySettlementInput = {
+    id?: string
+    orderId: string
+    riderId: string
+    storeId: string
+    amount: Decimal | DecimalJsLike | number | string
+    collectedAt: Date | string
+    createdAt?: Date | string
+  }
+
+  export type CodCollectionUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodCollectionUncheckedUpdateWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CodCollectionUncheckedUpdateManyWithoutSettlementInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderId?: StringFieldUpdateOperationsInput | string
+    riderId?: StringFieldUpdateOperationsInput | string
+    storeId?: StringFieldUpdateOperationsInput | string
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    collectedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
 
 
   /**
@@ -21312,6 +26839,10 @@ export namespace Prisma {
      */
     export type OrderCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = OrderCountOutputTypeDefaultArgs<ExtArgs>
     /**
+     * @deprecated Use CodSettlementCountOutputTypeDefaultArgs instead
+     */
+    export type CodSettlementCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CodSettlementCountOutputTypeDefaultArgs<ExtArgs>
+    /**
      * @deprecated Use OrderDefaultArgs instead
      */
     export type OrderArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = OrderDefaultArgs<ExtArgs>
@@ -21319,6 +26850,10 @@ export namespace Prisma {
      * @deprecated Use InvoiceSequenceDefaultArgs instead
      */
     export type InvoiceSequenceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InvoiceSequenceDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use DeliverySlotBookingDefaultArgs instead
+     */
+    export type DeliverySlotBookingArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = DeliverySlotBookingDefaultArgs<ExtArgs>
     /**
      * @deprecated Use OrderNumberSequenceDefaultArgs instead
      */
@@ -21355,6 +26890,18 @@ export namespace Prisma {
      * @deprecated Use StockReservationDefaultArgs instead
      */
     export type StockReservationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = StockReservationDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CodCollectionDefaultArgs instead
+     */
+    export type CodCollectionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CodCollectionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CodSettlementDefaultArgs instead
+     */
+    export type CodSettlementArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CodSettlementDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use StaffAttendanceDefaultArgs instead
+     */
+    export type StaffAttendanceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = StaffAttendanceDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ProductCoPurchaseDefaultArgs instead
      */

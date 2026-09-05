@@ -306,6 +306,10 @@ export const fetchCategories = async (): Promise<CategoriesResponse> => {
       response.data.subCategoryStatus && typeof response.data.subCategoryStatus === "object"
         ? response.data.subCategoryStatus
         : {},
+    mapProvider:
+      response.data.mapProvider === "google" || response.data.mapProvider === "osm"
+        ? response.data.mapProvider
+        : null,
   };
 };
 
@@ -344,6 +348,17 @@ export type UpdateCategoryPayload = {
   newName?: string;
   imageUrl?: string;
   isActive?: boolean;
+};
+
+/**
+ * Switch the map backend for the storefront and the app.
+ *
+ * "osm" needs no key and no billing, so it is the safe fallback if a Google key
+ * is revoked or a billing account lapses — which is the whole reason this is a
+ * setting rather than a build-time env var.
+ */
+export const updateMapProvider = async (mapProvider: "osm" | "google") => {
+  await axiosInstance.put("/product/api/update-map-provider", { mapProvider }, isProtected);
 };
 
 export const updateAdminCategory = async (payload: UpdateCategoryPayload) => {
@@ -573,6 +588,10 @@ export interface AdminOrderListParams {
   maxAmount?: number;
   sortBy?: "createdAt" | "totalAmount";
   sortDir?: "asc" | "desc";
+  // Multi-select equivalents of `status` above. Serialized comma-joined, which
+  // is one of the two shapes parseSellerOrderFilters accepts on the server.
+  statuses?: string[];
+  slot?: string[];
 }
 
 export interface AdminOrderCustomer {
@@ -705,6 +724,24 @@ export const fetchAdminOrderDetail = async (orderId: string): Promise<AdminOrder
 
 export const adminUpdateOrderStatus = async (orderId: string, status: string): Promise<void> => {
   await axiosInstance.put(`/order/api/admin/orders/${orderId}/status`, { status }, isProtected);
+};
+
+export interface BulkStatusResult {
+  updated: string[];
+  skipped: { orderId: string; reason: string }[];
+}
+
+/** Forward-only workflow moves across every store. Cancellation is not here. */
+export const adminBulkUpdateOrderStatus = async (
+  orderIds: string[],
+  status: string,
+): Promise<BulkStatusResult> => {
+  const res = await axiosInstance.put(
+    "/order/api/admin/orders/bulk-status",
+    { orderIds, status },
+    isProtected,
+  );
+  return res.data;
 };
 
 export const useAdminOrderList = (params: AdminOrderListParams = {}) =>

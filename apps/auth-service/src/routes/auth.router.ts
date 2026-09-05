@@ -1,6 +1,12 @@
 import express, { Router } from "express";
 
 import {
+  searchPlaces,
+  reverseGeocode,
+  geocodeAddress,
+  nearbyLandmarks,
+} from "../modules/user/geocoding.controller.js";
+import {
   isAdmin,
   isAuthenticated,
   isSeller,
@@ -13,6 +19,7 @@ import {
   otpRateLimiter,
   registrationRateLimiter,
   refreshRateLimiter,
+  geocodingRateLimiter,
 } from "../middlewares/rate-limiter.js";
 import {
   getAdmin,
@@ -111,6 +118,15 @@ router.delete(
   isUser,
   deleteUserAddress,
 );
+
+// Geocoding proxy — the Google key stays server-side (see geocoding.controller
+// for why a client-held key can't be restricted for these endpoints). Behind
+// isAuthenticated so the proxy isn't an open, billable relay for anyone who
+// finds the URL; a guest picks an address only after signing in.
+router.get("/geocode/search", isAuthenticated, geocodingRateLimiter, searchPlaces);
+router.get("/geocode/reverse", isAuthenticated, geocodingRateLimiter, reverseGeocode);
+router.get("/geocode/forward", isAuthenticated, geocodingRateLimiter, geocodeAddress);
+router.get("/geocode/nearby", isAuthenticated, geocodingRateLimiter, nearbyLandmarks);
 
 router.post("/refresh-token", refreshRateLimiter, refreshToken);
 router.get("/check-pincode", checkPincode);

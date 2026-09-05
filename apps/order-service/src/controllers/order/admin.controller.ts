@@ -11,6 +11,10 @@ import {
   ADMIN_ORDER_CUSTOMER_SELECT,
   ADMIN_ORDER_SELLER_SELECT,
   releaseCouponUsage,
+  releaseDeliverySlot,
+  parseSellerOrderFilters,
+  recordCodCollection,
+  recordDeliveryDistance,
 } from "./utils.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -93,6 +97,16 @@ export const getAdminOrderList = async (
 
     /* ── 3. Build Postgres WHERE clause ──────────────────────────────────── */
     const createdAt = parseOrderDateRange(from, to);
+
+    // Multi-select status and slot filters, shared with the seller dashboard so
+    // both consoles narrow a list the same way. `status` above stays for the
+    // single-value callers that already exist; when both are sent the
+    // multi-select wins, since it is the more specific request.
+    const multiSelect = parseSellerOrderFilters({
+      status: req.query.statuses,
+      slot: req.query.slot,
+    });
+
     const where: any = {
       ...(status        ? { status }                                            : {}),
       ...(paymentStatus ? { paymentStatus }                                     : {}),
@@ -117,6 +131,7 @@ export const getAdminOrderList = async (
             ],
           }
         : {}),
+      ...multiSelect,
     };
 
     /* ── 4. Fetch orders + total count in parallel ───────────────────────── */
@@ -555,11 +570,26 @@ export const updateAdminOrderStatus = async (
       },
     });
 
+    // The fourth path that can mark an order delivered, after the rider's own
+    // mark-delivered, the seller's status update, and the bulk action. Each one
+    // has to do the same bookkeeping or cash collected on those orders never
+    // reaches reconciliation — an admin correcting a status is exactly when
+    // that would go unnoticed.
+    if (status === "DELIVERED") {
+      void recordCodCollection({ ...existing, deliveredAt: new Date() });
+      void recordDeliveryDistance(existing);
+    }
+
     // Restore stock when admin cancels an order — mirrors the seller-side
     // CANCELLED path in updateOrderStatus, which this admin endpoint had
     // been missing (orders cancelled here previously left stock reserved).
     if (status === "CANCELLED") {
       restoreOrderStock(existing.orderItems, "updateAdminOrderStatus");
+      void releaseDeliverySlot({
+        storeId: existing.storeId,
+        deliveryDate: existing.deliveryDate,
+        slotKey: existing.deliverySlot,
+      });
     }
 
     // REJECTED belongs here too — stock restore is deliberately CANCELLED-only

@@ -65,7 +65,12 @@ export function AddToCartModal({
 
   useEffect(() => {
     if (open && product) {
-      setSelectedSize(product.sizes?.[0] || "");
+      // First *available* size, not simply the first — defaulting to a sold-out
+      // size means every open of this modal starts on a disabled option.
+      const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
+        .sizeAvailability;
+      const firstBuyable = availability?.find((entry) => entry.inStock)?.size;
+      setSelectedSize(firstBuyable ?? product.sizes?.[0] ?? "");
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
       setQuantity(1);
@@ -161,6 +166,16 @@ export function AddToCartModal({
   if (!product) return null;
 
   const hasSizes = product.sizes && product.sizes.length > 0;
+
+  // Per-size stock from the storefront response. Absent on an older cached
+  // payload, in which case nothing is treated as sold out and the existing
+  // whole-product stock check still applies.
+  const sizeIsSoldOut = (size: string) => {
+    const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
+      .sizeAvailability;
+    if (!availability) return false;
+    return availability.some((entry) => entry.size === size && !entry.inStock);
+  };
   const hasCuttingTypes =
     product.cuttingTypes && product.cuttingTypes.length > 0;
   const hasPieceSizes = product.pieceSizes && product.pieceSizes.length > 0;
@@ -422,16 +437,32 @@ export function AddToCartModal({
                         <SelectValue placeholder="Select size" />
                       </SelectTrigger>
                       <SelectContent>
-                        {normalizedSizePricing.map((entry) => (
-                          <SelectItem key={entry.size} value={entry.size}>
-                            {entry.size}
-                            {entry.salePrice > 0 && (
-                              <span className="ml-2 text-xs text-muted-foreground">
-                                — Rs. {entry.salePrice}
-                              </span>
-                            )}
-                          </SelectItem>
-                        ))}
+                        {normalizedSizePricing.map((entry) => {
+                          const soldOut = sizeIsSoldOut(entry.size);
+                          return (
+                            <SelectItem
+                              key={entry.size}
+                              value={entry.size}
+                              // Disabled, not hidden: a size that vanishes makes
+                              // the product look broken and hides the fact that
+                              // it normally exists.
+                              disabled={soldOut}
+                            >
+                              {entry.size}
+                              {soldOut ? (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  — Out of stock
+                                </span>
+                              ) : (
+                                entry.salePrice > 0 && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    — Rs. {entry.salePrice}
+                                  </span>
+                                )
+                              )}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

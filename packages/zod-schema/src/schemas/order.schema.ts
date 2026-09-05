@@ -19,7 +19,8 @@ export const cartQuoteSchema = z.object({
   storeId: z.string().min(1, "Store ID is required"),
   items: z.array(cartQuoteItemSchema).min(1, "At least one item is required"),
   couponCode: z.string().optional(),
-  deliverySlot: z.enum(["instant", "morning", "evening"]).optional(),
+  deliverySlot: z.string().regex(/^[a-z0-9_-]{1,32}$/).optional(),
+  deliveryDate: z.string().regex(/^\d{8}$/).optional(),
 });
 
 export const deliveryDetailsSchema = z.object({
@@ -72,7 +73,14 @@ export const createOrderSchema = z.object({
   // affect this order's own price, just whether the referrer earns a reward
   // coupon after it's placed (see createOrder's referral side-effect).
   referralCode: z.string().optional(),
-  deliverySlot: z.enum(["instant", "morning", "evening"]).default("evening"),
+  // Not an enum any more: a store configures its own slots, so the set of
+  // valid keys is per-store data rather than a constant. The shape is
+  // constrained here and the value is checked against that store's actual
+  // configured slots in order-service, which is the only place that knows them.
+  deliverySlot: z.string().regex(/^[a-z0-9_-]{1,32}$/, "Invalid delivery slot").default("evening"),
+  // ddMMyyyy in IST. Absent for "instant", which is always today, and for
+  // clients that predate dated slots — order-service defaults those to today.
+  deliveryDate: z.string().regex(/^\d{8}$/, "Invalid delivery date").optional(),
 });
 
 export const acceptOrRejectOrderSchema = z.object({

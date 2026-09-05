@@ -5,6 +5,12 @@ import { Plus, Trash2, Store, MapPin, Save, Loader2, Clock, X, ArrowRight, Heads
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/utils/axiosInstance";
+import { DeliverySlotEditor } from "@/shared/components/settings/delivery-slot-editor";
+import {
+  DEFAULT_DELIVERY_SLOTS,
+  parseDeliverySlotConfig,
+  type DeliverySlotDefinition,
+} from "@repo/shared/delivery-slots";
 import useSeller from "@/hooks/useSeller";
 import { isProtected } from "@/utils/protected";
 import BreadCrumbs from "@/shared/components/breadcrumbs";
@@ -56,6 +62,13 @@ type DiffRow = {
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+const slotsLabel = (slots: DeliverySlotDefinition[]) =>
+  slots.length === 0
+    ? "None"
+    : slots
+        .map((s) => `${s.label} (${s.startTime}–${s.endTime}, ${s.capacity}/day, closes ${s.cutoffMinutesBefore}m before)`)
+        .join("; ");
+
 function fmt24to12(t: string) {
   if (!t) return t;
   const [h, m] = t.split(":").map(Number);
@@ -220,6 +233,20 @@ export default function SettingsPage() {
   });
 
   const [cityDeliveries, setCityDeliveries] = useState<AreaDelivery[]>([]);
+  const [deliverySlots, setDeliverySlots] = useState<DeliverySlotDefinition[]>(DEFAULT_DELIVERY_SLOTS);
+  const savedSlotsRef = useRef<DeliverySlotDefinition[]>(DEFAULT_DELIVERY_SLOTS);
+  // How many orders one rider may carry at once. Kept out of formData because
+  // it is null-able (null = use the platform default) and FIELD_LABELS'
+  // formatter assumes a concrete value.
+  const [maxConcurrentDeliveries, setMaxConcurrentDeliveries] = useState<number>(3);
+  const savedMaxDeliveriesRef = useRef<number>(3);
+  // Kept out of formData: they are a nullable pair and the diff formatter
+  // assumes a concrete value per field.
+  const [attendanceGeofenceMeters, setAttendanceGeofenceMeters] = useState<number>(50);
+  const savedGeofenceRef = useRef<number>(50);
+  const [storeLatitude, setStoreLatitude] = useState<number | null>(null);
+  const [storeLongitude, setStoreLongitude] = useState<number | null>(null);
+  const savedCoordsRef = useRef<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
 
   // Step 1 — register the city+pincode combos this store delivers to.
   const [cityPincodes, setCityPincodes] = useState<CityPincode[]>([]);
@@ -298,8 +325,28 @@ export default function SettingsPage() {
       registry.push({ city: areaCity, pincode });
     });
 
+    // parseDeliverySlotConfig falls back to the defaults for a store that has
+    // never configured slots, so this form always opens on something valid.
+    const loadedSlots = parseDeliverySlotConfig(seller?.store?.deliverySlotConfig);
+
     setFormData(loaded);
     setCityDeliveries(cities);
+    setDeliverySlots(loadedSlots);
+    savedSlotsRef.current = loadedSlots;
+
+    const loadedMax = seller?.store?.maxConcurrentDeliveries ?? 3;
+    setMaxConcurrentDeliveries(loadedMax);
+    savedMaxDeliveriesRef.current = loadedMax;
+
+    const loadedGeofence = seller?.store?.attendanceGeofenceMeters ?? 50;
+    setAttendanceGeofenceMeters(loadedGeofence);
+    savedGeofenceRef.current = loadedGeofence;
+
+    const lat = seller?.store?.latitude ?? null;
+    const lng = seller?.store?.longitude ?? null;
+    setStoreLatitude(lat);
+    setStoreLongitude(lng);
+    savedCoordsRef.current = { lat, lng };
     setCityPincodes(registry);
     savedFormRef.current = loaded;
     savedCitiesRef.current = cities;
@@ -357,6 +404,39 @@ export default function SettingsPage() {
       if (before !== after) formDiff.push({ field: FIELD_LABELS[key], before, after });
     });
 
+    // Slots are an array, so they get one summary row rather than a row per
+    // field — the confirm modal is there to catch "I didn't mean to change
+    // that", and a per-field slot diff would bury the rest of the list.
+    const beforeSlots = slotsLabel(savedSlotsRef.current);
+    const afterSlots = slotsLabel(deliverySlots);
+    if (beforeSlots !== afterSlots) {
+      formDiff.push({ field: "Delivery Slots", before: beforeSlots, after: afterSlots });
+    }
+
+    const coordsLabel = (lat: number | null, lng: number | null) =>
+      lat === null || lng === null ? "Not set" : `${lat}, ${lng}`;
+    const beforeCoords = coordsLabel(savedCoordsRef.current.lat, savedCoordsRef.current.lng);
+    const afterCoords = coordsLabel(storeLatitude, storeLongitude);
+    if (beforeCoords !== afterCoords) {
+      formDiff.push({ field: "Store Map Location", before: beforeCoords, after: afterCoords });
+    }
+
+    if (savedGeofenceRef.current !== attendanceGeofenceMeters) {
+      formDiff.push({
+        field: "Attendance Radius",
+        before: `${savedGeofenceRef.current}m`,
+        after: `${attendanceGeofenceMeters}m`,
+      });
+    }
+
+    if (savedMaxDeliveriesRef.current !== maxConcurrentDeliveries) {
+      formDiff.push({
+        field: "Orders per Rider",
+        before: String(savedMaxDeliveriesRef.current),
+        after: String(maxConcurrentDeliveries),
+      });
+    }
+
     const beforeCities = citiesLabel(savedCitiesRef.current);
     const afterCities  = citiesLabel(cityDeliveries);
     const citiesDiff   = beforeCities !== afterCities ? { before: beforeCities, after: afterCities } : null;
@@ -388,6 +468,14 @@ export default function SettingsPage() {
         {
           ...formDataRest,
           gst_rate: gst_rate_percent / 100,
+          deliverySlotConfig: deliverySlots,
+          maxConcurrentDeliveries,
+          attendanceGeofenceMeters,
+          // Both or neither — the schema rejects a lone coordinate, and a
+          // half-set pin would silently break the attendance geofence.
+          ...(storeLatitude !== null && storeLongitude !== null
+            ? { latitude: storeLatitude, longitude: storeLongitude }
+            : {}),
           availableCities: cityDeliveries.map((c) => c.area),
           cityDeliveryTimes: cityDeliveryTimesMap,
           areaPincodes: areaPincodesMap,
@@ -397,6 +485,10 @@ export default function SettingsPage() {
       );
       if (data.success) {
         setShowModal(false);
+        savedSlotsRef.current = deliverySlots;
+        savedMaxDeliveriesRef.current = maxConcurrentDeliveries;
+        savedGeofenceRef.current = attendanceGeofenceMeters;
+        savedCoordsRef.current = { lat: storeLatitude, lng: storeLongitude };
         toast.success("Settings updated successfully!");
         // Refetch the full seller record so useEffect repopulates the form
         // with exactly what is stored in the DB (includes all fields).
@@ -502,6 +594,60 @@ export default function SettingsPage() {
                   placeholder="e.g. 12 Market Road"
                   className="w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Map pin. Serviceability is still decided by pincode and area
+                  lists — this is what distances get measured from: the rider
+                  attendance geofence, and delivery distance per order. */}
+              <div className="col-span-2 space-y-1">
+                <label className="text-sm font-medium text-gray-300">Store Map Location</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={storeLatitude ?? ""}
+                    onChange={(e) =>
+                      setStoreLatitude(e.target.value === "" ? null : Number(e.target.value))
+                    }
+                    placeholder="Latitude"
+                    className="w-40 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    step="0.000001"
+                    value={storeLongitude ?? ""}
+                    onChange={(e) =>
+                      setStoreLongitude(e.target.value === "" ? null : Number(e.target.value))
+                    }
+                    placeholder="Longitude"
+                    className="w-40 rounded-lg border border-gray-600 bg-gray-700 px-4 py-2.5 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.geolocation) {
+                        toast.error("This browser can't share a location");
+                        return;
+                      }
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setStoreLatitude(Number(pos.coords.latitude.toFixed(6)));
+                          setStoreLongitude(Number(pos.coords.longitude.toFixed(6)));
+                          toast.success("Location captured — save to apply");
+                        },
+                        () => toast.error("Could not read your location"),
+                        { enableHighAccuracy: true, timeout: 15000 },
+                      );
+                    }}
+                    className="rounded-lg border border-gray-600 px-4 py-2.5 text-sm text-gray-300 transition hover:border-blue-500 hover:text-white"
+                  >
+                    Use my current location
+                  </button>
+                </div>
+                <p className="text-[11px] italic text-gray-500">
+                  Set this from a device at the shop. Rider attendance check-in is measured
+                  against it, and without it riders can&apos;t check in at all.
+                </p>
               </div>
             </div>
           </div>
@@ -675,6 +821,63 @@ export default function SettingsPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Scheduled Delivery Slots */}
+          <div className="rounded-xl border border-gray-700 bg-gray-800/50 p-6">
+            <div className="mb-5 flex items-center gap-2 border-b border-gray-700 pb-4">
+              <Store className="h-5 w-5 text-blue-400" />
+              <h2 className="text-lg font-semibold">Scheduled Delivery Slots</h2>
+            </div>
+            <p className="mb-4 text-xs text-gray-400">
+              Slots customers can book ahead. Each one takes a fixed number of orders per day —
+              once it fills, it stops being offered for that day and customers see the next one.
+              Instant delivery is configured above and is not capped this way.
+            </p>
+            <DeliverySlotEditor slots={deliverySlots} onChange={setDeliverySlots} />
+
+            <div className="mt-6 border-t border-gray-700 pt-5">
+              <label className="text-sm font-medium text-gray-300">
+                Orders one rider can carry at once
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={maxConcurrentDeliveries}
+                onChange={(e) =>
+                  setMaxConcurrentDeliveries(
+                    Math.min(20, Math.max(1, Number(e.target.value) || 1)),
+                  )
+                }
+                className="mt-1 w-full max-w-xs rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+              />
+              <p className="mt-1 text-[11px] italic text-gray-500">
+                Lets a rider take several nearby drops in one trip. Set to 1 to go back to
+                one delivery at a time.
+              </p>
+
+              <label className="mt-5 block text-sm font-medium text-gray-300">
+                Attendance check-in radius (metres)
+              </label>
+              <input
+                type="number"
+                min={20}
+                max={2000}
+                value={attendanceGeofenceMeters}
+                onChange={(e) =>
+                  setAttendanceGeofenceMeters(
+                    Math.min(2000, Math.max(20, Number(e.target.value) || 20)),
+                  )
+                }
+                className="mt-1 w-full max-w-xs rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+              />
+              <p className="mt-1 text-[11px] italic text-gray-500">
+                How close to the store map pin a rider must be to start their shift. Phone
+                GPS is routinely 10–30m out, so set this from what your staff actually
+                record — the Attendance page shows the measured distances.
+              </p>
             </div>
           </div>
 

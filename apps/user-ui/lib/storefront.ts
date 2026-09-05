@@ -38,6 +38,8 @@ export interface StorefrontCategories {
   categories: string[];
   subCategories: Record<string, string[]>;
   categoryImages: Record<string, string>;
+  /** Admin-selected map backend. Null means "use the build's own default". */
+  mapProvider: "osm" | "google" | null;
 }
 
 export interface StorefrontPagination {
@@ -466,6 +468,7 @@ export async function fetchStorefrontCategories(): Promise<StorefrontCategories>
     categories?: string[];
     subCategories?: Record<string, string[]>;
     categoryImages?: Record<string, string>;
+    mapProvider?: string | null;
   }>(response);
 
   return {
@@ -478,5 +481,9 @@ export async function fetchStorefrontCategories(): Promise<StorefrontCategories>
       data.categoryImages && typeof data.categoryImages === "object"
         ? data.categoryImages
         : {},
+    mapProvider:
+      data.mapProvider === "google" || data.mapProvider === "osm"
+        ? data.mapProvider
+        : null,
   };
 }

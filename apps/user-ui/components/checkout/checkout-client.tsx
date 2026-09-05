@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MapPin, CheckCircle2, CreditCard, Phone, ArrowLeft, Ticket, Smartphone, Landmark, Wallet, Gift } from "lucide-react";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useCartStore } from "@/lib/cart-store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
+import type { AvailableSlot } from "@repo/shared/delivery-slots";
 
 // Which rail Razorpay opens on (`prefill.method`). Picking one here saves the
 // shopper a tap inside the gateway sheet; the order is still placed as
@@ -54,6 +55,7 @@ export function CheckoutClient() {
   const [retryOrderId, setRetryOrderId] = useState<string | null>(null);
   const [deliveryMetadata, setDeliveryMetadata] = useState<{
     availableSlots: string[];
+    deliverySlots: AvailableSlot[];
     instantFee: number;
     isStoreOpen: boolean;
     gstRate: number;
@@ -62,6 +64,7 @@ export function CheckoutClient() {
     freeDeliveryThreshold: number;
   }>({
     availableSlots: ["morning", "evening"],
+    deliverySlots: [],
     instantFee: 20,
     isStoreOpen: true,
     gstRate: 0,
@@ -73,6 +76,14 @@ export function CheckoutClient() {
   // Never defaulted — the shopper must actively pick a delivery slot every
   // checkout instead of silently inheriting an auto-picked one.
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  // Paired with selectedSlot: "morning" alone is ambiguous once slots are
+  // dated. Null for instant, which is always today.
+  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState<string | null>(null);
+  // The refresh effect below runs on a timer and would otherwise close over the
+  // date as it was when the timer was set, and re-clear a slot the shopper had
+  // since picked.
+  const selectedDeliveryDateRef = useRef<string | null>(null);
+  selectedDeliveryDateRef.current = selectedDeliveryDate;
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "RAZORPAY">("COD");
   const [onlineMethod, setOnlineMethod] = useState<OnlineMethod>("upi");
   // Only rewards the referrer, and only on the referee's genuine first
@@ -80,6 +91,19 @@ export function CheckoutClient() {
   // separate "invalid code" state to show here.
   const [referralCodeInput, setReferralCodeInput] = useState("");
   const isInstantAvailable = deliveryMetadata.availableSlots.includes("instant");
+
+  // Slots arrive as a flat list across the next few days; the picker shows them
+  // under a heading per day. Insertion order is already chronological, so a Map
+  // preserves it without a sort.
+  const scheduledSlotsByDate = React.useMemo(() => {
+    const byDate = new Map<string, AvailableSlot[]>();
+    for (const slot of deliveryMetadata.deliverySlots) {
+      const existing = byDate.get(slot.deliveryDate);
+      if (existing) existing.push(slot);
+      else byDate.set(slot.deliveryDate, [slot]);
+    }
+    return [...byDate.entries()];
+  }, [deliveryMetadata.deliverySlots]);
 
   // Sync cart data to get latest delivery slots and fees
   const { syncItems } = useCartStore();
@@ -89,8 +113,10 @@ export function CheckoutClient() {
     const refreshDelivery = () => {
       syncItems().then((res) => {
         if (res) {
+          const freshSlots: AvailableSlot[] = res.deliverySlots || [];
           setDeliveryMetadata({
             availableSlots: res.availableSlots || ["morning", "evening"],
+            deliverySlots: freshSlots,
             instantFee: res.instantFee || 20,
             isStoreOpen: res.isStoreOpen !== false,
             gstRate: res.gstRate ?? 0,
@@ -100,11 +126,23 @@ export function CheckoutClient() {
           });
 
           // Don't auto-pick a slot — only clear one that's gone stale (e.g.
-          // instant closed while checkout sat open), forcing a fresh choice
-          // rather than silently swapping in a different slot underneath them.
-          setSelectedSlot((prev) =>
-            prev && !(res.availableSlots || []).includes(prev) ? null : prev
-          );
+          // instant closed, or the slot filled up, while checkout sat open),
+          // forcing a fresh choice rather than silently swapping in a
+          // different slot underneath them.
+          setSelectedSlot((prev) => {
+            if (!prev) return prev;
+            if (prev === "instant") {
+              return (res.availableSlots || []).includes("instant") ? prev : null;
+            }
+            const stillBookable = freshSlots.some(
+              (slot) =>
+                slot.key === prev &&
+                slot.deliveryDate === selectedDeliveryDateRef.current &&
+                slot.isBookable,
+            );
+            if (!stillBookable) setSelectedDeliveryDate(null);
+            return stillBookable ? prev : null;
+          });
         }
       });
     };
@@ -343,7 +381,7 @@ export function CheckoutClient() {
       toast.error("Please set your delivery location first (open cart → change location)");
       return;
     }
-    if (!selectedSlot) {
+    if (!selectedSlot || (selectedSlot !== "instant" && !selectedDeliveryDate)) {
       toast.error("Please choose a delivery slot");
       return;
     }
@@ -420,6 +458,7 @@ export function CheckoutClient() {
         totalAmount: grandTotal,
         paymentMethod,
         deliverySlot: selectedSlot,
+        ...(selectedDeliveryDate ? { deliveryDate: selectedDeliveryDate } : {}),
         // Order-service's couponCode is a single exact-match lookup against
         // discount_codes — the old join(",") never matched a real
         // discountCode even for two real coupons, and event-derived offers
@@ -640,6 +679,9 @@ export function CheckoutClient() {
                 onClick={() => {
                   if (isInstantAvailable) {
                     setSelectedSlot("instant");
+                    // Instant is always today; a date left over from a
+                    // previously picked scheduled slot would be sent with it.
+                    setSelectedDeliveryDate(null);
                   }
                 }}
                 className={`rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
@@ -673,45 +715,70 @@ export function CheckoutClient() {
                 </div>
               </div>
 
-              {/* Morning */}
-              <div
-                onClick={() => setSelectedSlot("morning")}
-                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
-                  selectedSlot === "morning" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🌅</span>
-                  <div>
-                    <p className="font-bold text-sm">Morning Delivery (6 AM – 10 AM)</p>
-                    <p className="text-xs text-muted-foreground">Fresh delivery before you start your day</p>
-                  </div>
+              {/* Scheduled slots, grouped by day. Rendered from what the
+                  store actually offers rather than a fixed morning/evening
+                  pair, and a full or closed slot stays visible-but-disabled so
+                  the shopper can see why it isn't selectable. */}
+              {scheduledSlotsByDate.map(([deliveryDate, slots]) => (
+                <div key={deliveryDate} className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    {slots[0]?.dateLabel ?? deliveryDate}
+                  </p>
+                  {slots.map((slot) => {
+                    const isSelected =
+                      selectedSlot === slot.key && selectedDeliveryDate === slot.deliveryDate;
+                    return (
+                      <div
+                        key={`${slot.deliveryDate}-${slot.key}`}
+                        onClick={() => {
+                          if (!slot.isBookable) return;
+                          setSelectedSlot(slot.key);
+                          setSelectedDeliveryDate(slot.deliveryDate);
+                        }}
+                        className={`rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
+                          slot.isBookable
+                            ? `cursor-pointer ${isSelected ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"}`
+                            : "cursor-not-allowed border-border bg-muted/40 opacity-70"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{slot.key === "morning" ? "\u{1F305}" : "\u{1F306}"}</span>
+                          <div>
+                            <p className="font-bold text-sm">{slot.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {slot.isFull
+                                ? "Fully booked for this day"
+                                : slot.isPastCutoff
+                                  ? "Ordering has closed for this slot"
+                                  : slot.remaining <= 5
+                                    ? `Only ${slot.remaining} left for this slot`
+                                    : "Delivered within your chosen window"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {slot.isBookable ? (
+                            <>
+                              <p className="text-xs font-semibold text-offer-green">Lowest charge</p>
+                              {isSelected && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
+                            </>
+                          ) : (
+                            <p className="text-xs font-bold text-muted-foreground">
+                              {slot.isFull ? "Full" : "Closed"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-offer-green">Lowest charge</p>
-                  {selectedSlot === "morning" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
-                </div>
-              </div>
+              ))}
 
-              {/* Evening */}
-              <div
-                onClick={() => setSelectedSlot("evening")}
-                className={`cursor-pointer rounded-xl border-2 p-4 flex items-center justify-between transition-all ${
-                  selectedSlot === "evening" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🌆</span>
-                  <div>
-                    <p className="font-bold text-sm">Evening Delivery (5 PM – 9 PM)</p>
-                    <p className="text-xs text-muted-foreground">Delivered when you get home</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-offer-green">Lowest charge</p>
-                  {selectedSlot === "evening" && <CheckCircle2 className="h-5 w-5 text-primary ml-auto mt-1" />}
-                </div>
-              </div>
+              {scheduledSlotsByDate.length === 0 && (
+                <p className="rounded-xl border-2 border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                  No scheduled slots are available right now.
+                </p>
+              )}
             </div>
           </section>
 
@@ -788,7 +855,12 @@ export function CheckoutClient() {
                 onPlaceOrder={handlePlaceOrder}
                 actionLabel={retryOrderId ? "Retry Payment" : "Place Order"}
                 isLoading={isPlacingOrder}
-                disabled={!selectedAddress || !selectedLocation?.storeId || !selectedSlot}
+                disabled={
+                  !selectedAddress ||
+                  !selectedLocation?.storeId ||
+                  !selectedSlot ||
+                  (selectedSlot !== "instant" && !selectedDeliveryDate)
+                }
              />
 
              {/* Trusted Badges */}

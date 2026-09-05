@@ -27,3 +27,11 @@ export const updateSubCategorySchema = z.object({
   newName: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
 });
+
+/**
+ * Which map backend every client uses. "osm" needs no key and no billing, so it
+ * is the safe fallback whenever Google is unavailable or unaffordable.
+ */
+export const mapProviderSchema = z.object({
+  mapProvider: z.enum(["osm", "google"]),
+});

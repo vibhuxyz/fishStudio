@@ -3,6 +3,8 @@ import { prismaMongo } from "@repo/db-mongo";
 import { prismaPostgres, toMoney, toMoneyOrNull, type Prisma } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
 import { buildOrderNumber, normalizeLocationCode, orderDateKey } from "@repo/shared/order-id";
+import { parseDeliverySlotConfig, type DeliverySlotDefinition } from "@repo/shared/delivery-slots";
+import { distanceInKm } from "@repo/shared/geo";
 
 export const STATS_CACHE_TTL = 120; // 2 minutes
 
@@ -163,6 +165,174 @@ export async function allocateOrderNumber(
   }
 
   return buildOrderNumber({ locationCode, dateKey, seq });
+}
+
+/**
+ * Take one place in a store's delivery slot for a given day.
+ *
+ * Returns false when the slot is already full, which the caller turns into a
+ * "that slot just filled up" error rather than a failure — losing the last
+ * place to someone half a second earlier is an ordinary outcome, not a fault.
+ *
+ * Must run inside the order's transaction, so a checkout that rolls back for
+ * any later reason (payment, stock, coupon) gives the place back automatically
+ * instead of holding it against an order that never existed.
+ *
+ * The guard is in the statement, not around it. `WHERE booked < capacity` on
+ * the DO UPDATE means two concurrent checkouts for the last place produce one
+ * row and one empty result, with no lock taken and no window between reading
+ * the count and writing it. Checking first and then incrementing would let both
+ * through.
+ */
+export async function reserveDeliverySlot(
+  tx: Prisma.TransactionClient,
+  params: { storeId: string; deliveryDate: string; slotKey: string; capacity: number },
+): Promise<boolean> {
+  const { storeId, deliveryDate, slotKey, capacity } = params;
+
+  const rows = await tx.$queryRaw<Array<{ booked: number }>>`
+    INSERT INTO "DeliverySlotBooking" ("storeId", "deliveryDate", "slotKey", "booked", "capacity", "updatedAt")
+    VALUES (${storeId}, ${deliveryDate}, ${slotKey}, 1, ${capacity}, NOW())
+    ON CONFLICT ("storeId", "deliveryDate", "slotKey")
+    DO UPDATE SET "booked" = "DeliverySlotBooking"."booked" + 1, "updatedAt" = NOW()
+    WHERE "DeliverySlotBooking"."booked" < "DeliverySlotBooking"."capacity"
+    RETURNING "booked"
+  `;
+
+  return rows.length > 0;
+}
+
+/**
+ * Give a place back when an order is cancelled or rejected.
+ *
+ * Best-effort by design: it must never be the reason a cancellation fails. A
+ * place that leaks costs the store one delivery of headroom for one day, while
+ * a cancellation that throws leaves the customer stuck with an order they asked
+ * to cancel — and the row is gone by the next day either way.
+ *
+ * `GREATEST(booked - 1, 0)` rather than a bare decrement so a double release
+ * (a cancel racing the stale-order sweeper, say) cannot drive the count
+ * negative and hand out a free place.
+ */
+export async function releaseDeliverySlot(params: {
+  storeId: string;
+  deliveryDate: string | null;
+  slotKey: string | null;
+}): Promise<void> {
+  const { storeId, deliveryDate, slotKey } = params;
+  // Orders placed before slots were dated, and every "instant" order, have
+  // nothing booked against them.
+  if (!deliveryDate || !slotKey || slotKey === "instant") return;
+
+  try {
+    await prismaPostgres.$executeRaw`
+      UPDATE "DeliverySlotBooking"
+      SET "booked" = GREATEST("booked" - 1, 0), "updatedAt" = NOW()
+      WHERE "storeId" = ${storeId}
+        AND "deliveryDate" = ${deliveryDate}
+        AND "slotKey" = ${slotKey}
+    `;
+  } catch (error) {
+    logger.error("[releaseDeliverySlot] failed to return slot capacity", {
+      storeId, deliveryDate, slotKey,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Record the cash a rider took at the door, and how far they rode for it.
+ *
+ * Called on every path that marks an order delivered. Both writes are
+ * best-effort and neither may fail the delivery: a rider standing at a door
+ * with a signed-for order must not be blocked by a bookkeeping row, and both
+ * are recoverable afterwards from the order itself.
+ *
+ * Only COD orders create a collection — a prepaid order's money never passes
+ * through the rider's hands, so there is nothing to reconcile.
+ *
+ * Idempotent via the unique index on orderId: a retried mark-delivered adds
+ * nothing rather than double-counting what the rider is holding.
+ */
+export async function recordCodCollection(order: {
+  id: string;
+  storeId: string;
+  riderId: string | null;
+  paymentMethod: string | null;
+  totalAmount: Prisma.Decimal;
+  deliveredAt?: Date | null;
+}): Promise<void> {
+  if (order.paymentMethod !== "COD" || !order.riderId) return;
+
+  try {
+    await prismaPostgres.codCollection.create({
+      data: {
+        orderId: order.id,
+        riderId: order.riderId,
+        storeId: order.storeId,
+        amount: order.totalAmount,
+        collectedAt: order.deliveredAt ?? new Date(),
+      },
+    });
+  } catch (error) {
+    // P2002 is the unique index doing its job on a retry, which is the
+    // intended behaviour and not worth logging as a failure.
+    if ((error as { code?: string }).code === "P2002") return;
+    logger.error("[recordCodCollection] failed to record collected cash", {
+      orderId: order.id,
+      riderId: order.riderId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * Distance from the store to where the order actually went, stamped once at
+ * delivery.
+ *
+ * Straight-line, not routed. A routing call would be more accurate and costs a
+ * billed request per delivery; the honest description of this number is "how
+ * far apart the two points are", and any payout rule built on it should be
+ * calibrated to that rather than to road distance.
+ */
+export async function recordDeliveryDistance(order: {
+  id: string;
+  storeId: string;
+  deliveryLatitude: Prisma.Decimal | null;
+  deliveryLongitude: Prisma.Decimal | null;
+}): Promise<void> {
+  if (!order.deliveryLatitude || !order.deliveryLongitude) return;
+
+  try {
+    const store = await prismaMongo.stores.findUnique({
+      where: { id: order.storeId },
+      select: { latitude: true, longitude: true },
+    });
+    if (store?.latitude == null || store?.longitude == null) return;
+
+    const km = distanceInKm(
+      { latitude: store.latitude, longitude: store.longitude },
+      {
+        latitude: Number(order.deliveryLatitude),
+        longitude: Number(order.deliveryLongitude),
+      },
+    );
+
+    await prismaPostgres.order.update({
+      where: { id: order.id },
+      data: { deliveryDistanceKm: km },
+    });
+  } catch (error) {
+    logger.error("[recordDeliveryDistance] failed to stamp delivery distance", {
+      orderId: order.id,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/** A store's slots, honouring its own config and falling back to the defaults. */
+export function storeDeliverySlots(store: { deliverySlotConfig?: unknown }): DeliverySlotDefinition[] {
+  return parseDeliverySlotConfig(store.deliverySlotConfig);
 }
 
 // Shared Mongo `select` shapes for admin order endpoints — identical fields

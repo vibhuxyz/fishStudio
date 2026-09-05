@@ -193,6 +193,49 @@ const ProductList = () => {
           ]
         : []),
       {
+        id: "merchandising",
+        header: "Rank",
+        cell: ({ row }: { row: { original: AdminProduct } }) => {
+          const product = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                defaultValue={product.sortOrder ?? ""}
+                placeholder="—"
+                title="Display rank. Lower shows first; blank is unranked."
+                // Committed on blur rather than per keystroke: this writes to
+                // the product and triggers a Meilisearch reindex, which is not
+                // something to do on every digit typed.
+                onBlur={(e) => {
+                  const raw = e.target.value.trim();
+                  const next = raw === "" ? null : Number(raw);
+                  if (next === (product.sortOrder ?? null)) return;
+                  updateMutation.mutate({ productId: product.id, sortOrder: next });
+                }}
+                className="w-16 rounded border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white focus:border-blue-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                title={product.isFeatured ? "Featured — click to unfeature" : "Mark as featured"}
+                onClick={() =>
+                  updateMutation.mutate({
+                    productId: product.id,
+                    isFeatured: !product.isFeatured,
+                  })
+                }
+                className={`transition ${
+                  product.isFeatured ? "text-yellow-400" : "text-gray-600 hover:text-gray-400"
+                }`}
+              >
+                <Star fill={product.isFeatured ? "#facc15" : "none"} size={18} />
+              </button>
+            </div>
+          );
+        },
+      },
+      {
         accessorKey: "rating",
         header: "Rating",
         cell: ({ row }: { row: { original: AdminProduct } }) => (

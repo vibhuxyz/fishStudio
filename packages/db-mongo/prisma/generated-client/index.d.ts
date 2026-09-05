@@ -10249,21 +10249,29 @@ export namespace Prisma {
   }
 
   export type StoresAvgAggregateOutputType = {
+    latitude: number | null
+    longitude: number | null
     instant_delivery_fee: number | null
     gst_rate: number | null
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
     codAutoAcceptLimit: number | null
+    maxConcurrentDeliveries: number | null
+    attendanceGeofenceMeters: number | null
   }
 
   export type StoresSumAggregateOutputType = {
+    latitude: number | null
+    longitude: number | null
     instant_delivery_fee: number | null
     gst_rate: number | null
     packaging_charge: number | null
     base_delivery_charge: number | null
     free_delivery_threshold: number | null
     codAutoAcceptLimit: number | null
+    maxConcurrentDeliveries: number | null
+    attendanceGeofenceMeters: number | null
   }
 
   export type StoresMinAggregateOutputType = {
@@ -10274,6 +10282,8 @@ export namespace Prisma {
     address: string | null
     city: string | null
     pincode: string | null
+    latitude: number | null
+    longitude: number | null
     opening_hours: string | null
     closing_hours: string | null
     is_instant_delivery_enabled: boolean | null
@@ -10291,6 +10301,8 @@ export namespace Prisma {
     invoiceJurisdiction: string | null
     locationCode: string | null
     codAutoAcceptLimit: number | null
+    maxConcurrentDeliveries: number | null
+    attendanceGeofenceMeters: number | null
     state: string | null
     supportPhone: string | null
     whatsappNumber: string | null
@@ -10313,6 +10325,8 @@ export namespace Prisma {
     address: string | null
     city: string | null
     pincode: string | null
+    latitude: number | null
+    longitude: number | null
     opening_hours: string | null
     closing_hours: string | null
     is_instant_delivery_enabled: boolean | null
@@ -10330,6 +10344,8 @@ export namespace Prisma {
     invoiceJurisdiction: string | null
     locationCode: string | null
     codAutoAcceptLimit: number | null
+    maxConcurrentDeliveries: number | null
+    attendanceGeofenceMeters: number | null
     state: string | null
     supportPhone: string | null
     whatsappNumber: string | null
@@ -10352,12 +10368,15 @@ export namespace Prisma {
     address: number
     city: number
     pincode: number
+    latitude: number
+    longitude: number
     opening_hours: number
     closing_hours: number
     is_instant_delivery_enabled: number
     instant_delivery_fee: number
     instant_delivery_window_start: number
     instant_delivery_window_end: number
+    deliverySlotConfig: number
     gst_rate: number
     packaging_charge: number
     base_delivery_charge: number
@@ -10369,6 +10388,8 @@ export namespace Prisma {
     invoiceJurisdiction: number
     locationCode: number
     codAutoAcceptLimit: number
+    maxConcurrentDeliveries: number
+    attendanceGeofenceMeters: number
     availableCities: number
     cityDeliveryTimes: number
     areaPincodes: number
@@ -10391,21 +10412,29 @@ export namespace Prisma {
 
 
   export type StoresAvgAggregateInputType = {
+    latitude?: true
+    longitude?: true
     instant_delivery_fee?: true
     gst_rate?: true
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
     codAutoAcceptLimit?: true
+    maxConcurrentDeliveries?: true
+    attendanceGeofenceMeters?: true
   }
 
   export type StoresSumAggregateInputType = {
+    latitude?: true
+    longitude?: true
     instant_delivery_fee?: true
     gst_rate?: true
     packaging_charge?: true
     base_delivery_charge?: true
     free_delivery_threshold?: true
     codAutoAcceptLimit?: true
+    maxConcurrentDeliveries?: true
+    attendanceGeofenceMeters?: true
   }
 
   export type StoresMinAggregateInputType = {
@@ -10416,6 +10445,8 @@ export namespace Prisma {
     address?: true
     city?: true
     pincode?: true
+    latitude?: true
+    longitude?: true
     opening_hours?: true
     closing_hours?: true
     is_instant_delivery_enabled?: true
@@ -10433,6 +10464,8 @@ export namespace Prisma {
     invoiceJurisdiction?: true
     locationCode?: true
     codAutoAcceptLimit?: true
+    maxConcurrentDeliveries?: true
+    attendanceGeofenceMeters?: true
     state?: true
     supportPhone?: true
     whatsappNumber?: true
@@ -10455,6 +10488,8 @@ export namespace Prisma {
     address?: true
     city?: true
     pincode?: true
+    latitude?: true
+    longitude?: true
     opening_hours?: true
     closing_hours?: true
     is_instant_delivery_enabled?: true
@@ -10472,6 +10507,8 @@ export namespace Prisma {
     invoiceJurisdiction?: true
     locationCode?: true
     codAutoAcceptLimit?: true
+    maxConcurrentDeliveries?: true
+    attendanceGeofenceMeters?: true
     state?: true
     supportPhone?: true
     whatsappNumber?: true
@@ -10494,12 +10531,15 @@ export namespace Prisma {
     address?: true
     city?: true
     pincode?: true
+    latitude?: true
+    longitude?: true
     opening_hours?: true
     closing_hours?: true
     is_instant_delivery_enabled?: true
     instant_delivery_fee?: true
     instant_delivery_window_start?: true
     instant_delivery_window_end?: true
+    deliverySlotConfig?: true
     gst_rate?: true
     packaging_charge?: true
     base_delivery_charge?: true
@@ -10511,6 +10551,8 @@ export namespace Prisma {
     invoiceJurisdiction?: true
     locationCode?: true
     codAutoAcceptLimit?: true
+    maxConcurrentDeliveries?: true
+    attendanceGeofenceMeters?: true
     availableCities?: true
     cityDeliveryTimes?: true
     areaPincodes?: true
@@ -10625,12 +10667,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude: number | null
+    longitude: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled: boolean
     instant_delivery_fee: number
     instant_delivery_window_start: string
     instant_delivery_window_end: string
+    deliverySlotConfig: JsonValue | null
     gst_rate: number
     packaging_charge: number
     base_delivery_charge: number
@@ -10642,6 +10687,8 @@ export namespace Prisma {
     invoiceJurisdiction: string | null
     locationCode: string | null
     codAutoAcceptLimit: number | null
+    maxConcurrentDeliveries: number | null
+    attendanceGeofenceMeters: number | null
     availableCities: string[]
     cityDeliveryTimes: JsonValue | null
     areaPincodes: JsonValue | null
@@ -10688,12 +10735,15 @@ export namespace Prisma {
     address?: boolean
     city?: boolean
     pincode?: boolean
+    latitude?: boolean
+    longitude?: boolean
     opening_hours?: boolean
     closing_hours?: boolean
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: boolean
     instant_delivery_window_start?: boolean
     instant_delivery_window_end?: boolean
+    deliverySlotConfig?: boolean
     gst_rate?: boolean
     packaging_charge?: boolean
     base_delivery_charge?: boolean
@@ -10705,6 +10755,8 @@ export namespace Prisma {
     invoiceJurisdiction?: boolean
     locationCode?: boolean
     codAutoAcceptLimit?: boolean
+    maxConcurrentDeliveries?: boolean
+    attendanceGeofenceMeters?: boolean
     availableCities?: boolean
     cityDeliveryTimes?: boolean
     areaPincodes?: boolean
@@ -10739,12 +10791,15 @@ export namespace Prisma {
     address?: boolean
     city?: boolean
     pincode?: boolean
+    latitude?: boolean
+    longitude?: boolean
     opening_hours?: boolean
     closing_hours?: boolean
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: boolean
     instant_delivery_window_start?: boolean
     instant_delivery_window_end?: boolean
+    deliverySlotConfig?: boolean
     gst_rate?: boolean
     packaging_charge?: boolean
     base_delivery_charge?: boolean
@@ -10756,6 +10811,8 @@ export namespace Prisma {
     invoiceJurisdiction?: boolean
     locationCode?: boolean
     codAutoAcceptLimit?: boolean
+    maxConcurrentDeliveries?: boolean
+    attendanceGeofenceMeters?: boolean
     availableCities?: boolean
     cityDeliveryTimes?: boolean
     areaPincodes?: boolean
@@ -10801,12 +10858,15 @@ export namespace Prisma {
       address: string
       city: string
       pincode: string
+      latitude: number | null
+      longitude: number | null
       opening_hours: string
       closing_hours: string
       is_instant_delivery_enabled: boolean
       instant_delivery_fee: number
       instant_delivery_window_start: string
       instant_delivery_window_end: string
+      deliverySlotConfig: Prisma.JsonValue | null
       gst_rate: number
       packaging_charge: number
       base_delivery_charge: number
@@ -10818,6 +10878,8 @@ export namespace Prisma {
       invoiceJurisdiction: string | null
       locationCode: string | null
       codAutoAcceptLimit: number | null
+      maxConcurrentDeliveries: number | null
+      attendanceGeofenceMeters: number | null
       availableCities: string[]
       cityDeliveryTimes: Prisma.JsonValue | null
       areaPincodes: Prisma.JsonValue | null
@@ -11239,12 +11301,15 @@ export namespace Prisma {
     readonly address: FieldRef<"stores", 'String'>
     readonly city: FieldRef<"stores", 'String'>
     readonly pincode: FieldRef<"stores", 'String'>
+    readonly latitude: FieldRef<"stores", 'Float'>
+    readonly longitude: FieldRef<"stores", 'Float'>
     readonly opening_hours: FieldRef<"stores", 'String'>
     readonly closing_hours: FieldRef<"stores", 'String'>
     readonly is_instant_delivery_enabled: FieldRef<"stores", 'Boolean'>
     readonly instant_delivery_fee: FieldRef<"stores", 'Float'>
     readonly instant_delivery_window_start: FieldRef<"stores", 'String'>
     readonly instant_delivery_window_end: FieldRef<"stores", 'String'>
+    readonly deliverySlotConfig: FieldRef<"stores", 'Json'>
     readonly gst_rate: FieldRef<"stores", 'Float'>
     readonly packaging_charge: FieldRef<"stores", 'Float'>
     readonly base_delivery_charge: FieldRef<"stores", 'Float'>
@@ -11256,6 +11321,8 @@ export namespace Prisma {
     readonly invoiceJurisdiction: FieldRef<"stores", 'String'>
     readonly locationCode: FieldRef<"stores", 'String'>
     readonly codAutoAcceptLimit: FieldRef<"stores", 'Float'>
+    readonly maxConcurrentDeliveries: FieldRef<"stores", 'Int'>
+    readonly attendanceGeofenceMeters: FieldRef<"stores", 'Int'>
     readonly availableCities: FieldRef<"stores", 'String[]'>
     readonly cityDeliveryTimes: FieldRef<"stores", 'Json'>
     readonly areaPincodes: FieldRef<"stores", 'Json'>
@@ -13618,12 +13685,14 @@ export namespace Prisma {
 
   export type Site_configMinAggregateOutputType = {
     id: string | null
+    mapProvider: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
 
   export type Site_configMaxAggregateOutputType = {
     id: string | null
+    mapProvider: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -13635,6 +13704,7 @@ export namespace Prisma {
     categoryImages: number
     categoryStatus: number
     subCategoryStatus: number
+    mapProvider: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -13643,12 +13713,14 @@ export namespace Prisma {
 
   export type Site_configMinAggregateInputType = {
     id?: true
+    mapProvider?: true
     createdAt?: true
     updatedAt?: true
   }
 
   export type Site_configMaxAggregateInputType = {
     id?: true
+    mapProvider?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -13660,6 +13732,7 @@ export namespace Prisma {
     categoryImages?: true
     categoryStatus?: true
     subCategoryStatus?: true
+    mapProvider?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -13744,6 +13817,7 @@ export namespace Prisma {
     categoryImages: JsonValue
     categoryStatus: JsonValue
     subCategoryStatus: JsonValue
+    mapProvider: string | null
     createdAt: Date
     updatedAt: Date
     _count: Site_configCountAggregateOutputType | null
@@ -13772,6 +13846,7 @@ export namespace Prisma {
     categoryImages?: boolean
     categoryStatus?: boolean
     subCategoryStatus?: boolean
+    mapProvider?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["site_config"]>
@@ -13784,6 +13859,7 @@ export namespace Prisma {
     categoryImages?: boolean
     categoryStatus?: boolean
     subCategoryStatus?: boolean
+    mapProvider?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -13799,6 +13875,7 @@ export namespace Prisma {
       categoryImages: Prisma.JsonValue
       categoryStatus: Prisma.JsonValue
       subCategoryStatus: Prisma.JsonValue
+      mapProvider: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["site_config"]>
@@ -14199,6 +14276,7 @@ export namespace Prisma {
     readonly categoryImages: FieldRef<"site_config", 'Json'>
     readonly categoryStatus: FieldRef<"site_config", 'Json'>
     readonly subCategoryStatus: FieldRef<"site_config", 'Json'>
+    readonly mapProvider: FieldRef<"site_config", 'String'>
     readonly createdAt: FieldRef<"site_config", 'DateTime'>
     readonly updatedAt: FieldRef<"site_config", 'DateTime'>
   }
@@ -14521,6 +14599,7 @@ export namespace Prisma {
     sale_price: number | null
     regular_price: number | null
     totalSold: number | null
+    sortOrder: number | null
     ratings: number | null
   }
 
@@ -14532,6 +14611,7 @@ export namespace Prisma {
     sale_price: number | null
     regular_price: number | null
     totalSold: number | null
+    sortOrder: number | null
     ratings: number | null
   }
 
@@ -14554,6 +14634,8 @@ export namespace Prisma {
     sale_price: number | null
     regular_price: number | null
     totalSold: number | null
+    sortOrder: number | null
+    isFeatured: boolean | null
     ratings: number | null
     origin: string | null
     source: string | null
@@ -14593,6 +14675,8 @@ export namespace Prisma {
     sale_price: number | null
     regular_price: number | null
     totalSold: number | null
+    sortOrder: number | null
+    isFeatured: boolean | null
     ratings: number | null
     origin: string | null
     source: string | null
@@ -14640,6 +14724,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold: number
+    sortOrder: number
+    isFeatured: number
     ratings: number
     origin: number
     source: number
@@ -14672,6 +14758,7 @@ export namespace Prisma {
     sale_price?: true
     regular_price?: true
     totalSold?: true
+    sortOrder?: true
     ratings?: true
   }
 
@@ -14683,6 +14770,7 @@ export namespace Prisma {
     sale_price?: true
     regular_price?: true
     totalSold?: true
+    sortOrder?: true
     ratings?: true
   }
 
@@ -14705,6 +14793,8 @@ export namespace Prisma {
     sale_price?: true
     regular_price?: true
     totalSold?: true
+    sortOrder?: true
+    isFeatured?: true
     ratings?: true
     origin?: true
     source?: true
@@ -14744,6 +14834,8 @@ export namespace Prisma {
     sale_price?: true
     regular_price?: true
     totalSold?: true
+    sortOrder?: true
+    isFeatured?: true
     ratings?: true
     origin?: true
     source?: true
@@ -14791,6 +14883,8 @@ export namespace Prisma {
     sale_price?: true
     regular_price?: true
     totalSold?: true
+    sortOrder?: true
+    isFeatured?: true
     ratings?: true
     origin?: true
     source?: true
@@ -14927,6 +15021,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold: number
+    sortOrder: number | null
+    isFeatured: boolean
     ratings: number
     origin: string | null
     source: string | null
@@ -14995,6 +15091,8 @@ export namespace Prisma {
     sale_price?: boolean
     regular_price?: boolean
     totalSold?: boolean
+    sortOrder?: boolean
+    isFeatured?: boolean
     ratings?: boolean
     origin?: boolean
     source?: boolean
@@ -15053,6 +15151,8 @@ export namespace Prisma {
     sale_price?: boolean
     regular_price?: boolean
     totalSold?: boolean
+    sortOrder?: boolean
+    isFeatured?: boolean
     ratings?: boolean
     origin?: boolean
     source?: boolean
@@ -15124,6 +15224,8 @@ export namespace Prisma {
       sale_price: number
       regular_price: number
       totalSold: number
+      sortOrder: number | null
+      isFeatured: boolean
       ratings: number
       origin: string | null
       source: string | null
@@ -15569,6 +15671,8 @@ export namespace Prisma {
     readonly sale_price: FieldRef<"products", 'Float'>
     readonly regular_price: FieldRef<"products", 'Float'>
     readonly totalSold: FieldRef<"products", 'Int'>
+    readonly sortOrder: FieldRef<"products", 'Int'>
+    readonly isFeatured: FieldRef<"products", 'Boolean'>
     readonly ratings: FieldRef<"products", 'Float'>
     readonly origin: FieldRef<"products", 'String'>
     readonly source: FieldRef<"products", 'String'>
@@ -22150,12 +22254,15 @@ export namespace Prisma {
     address: 'address',
     city: 'city',
     pincode: 'pincode',
+    latitude: 'latitude',
+    longitude: 'longitude',
     opening_hours: 'opening_hours',
     closing_hours: 'closing_hours',
     is_instant_delivery_enabled: 'is_instant_delivery_enabled',
     instant_delivery_fee: 'instant_delivery_fee',
     instant_delivery_window_start: 'instant_delivery_window_start',
     instant_delivery_window_end: 'instant_delivery_window_end',
+    deliverySlotConfig: 'deliverySlotConfig',
     gst_rate: 'gst_rate',
     packaging_charge: 'packaging_charge',
     base_delivery_charge: 'base_delivery_charge',
@@ -22167,6 +22274,8 @@ export namespace Prisma {
     invoiceJurisdiction: 'invoiceJurisdiction',
     locationCode: 'locationCode',
     codAutoAcceptLimit: 'codAutoAcceptLimit',
+    maxConcurrentDeliveries: 'maxConcurrentDeliveries',
+    attendanceGeofenceMeters: 'attendanceGeofenceMeters',
     availableCities: 'availableCities',
     cityDeliveryTimes: 'cityDeliveryTimes',
     areaPincodes: 'areaPincodes',
@@ -22220,6 +22329,7 @@ export namespace Prisma {
     categoryImages: 'categoryImages',
     categoryStatus: 'categoryStatus',
     subCategoryStatus: 'subCategoryStatus',
+    mapProvider: 'mapProvider',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -22254,6 +22364,8 @@ export namespace Prisma {
     sale_price: 'sale_price',
     regular_price: 'regular_price',
     totalSold: 'totalSold',
+    sortOrder: 'sortOrder',
+    isFeatured: 'isFeatured',
     ratings: 'ratings',
     origin: 'origin',
     source: 'source',
@@ -23222,12 +23334,15 @@ export namespace Prisma {
     address?: StringFilter<"stores"> | string
     city?: StringFilter<"stores"> | string
     pincode?: StringFilter<"stores"> | string
+    latitude?: FloatNullableFilter<"stores"> | number | null
+    longitude?: FloatNullableFilter<"stores"> | number | null
     opening_hours?: StringFilter<"stores"> | string
     closing_hours?: StringFilter<"stores"> | string
     is_instant_delivery_enabled?: BoolFilter<"stores"> | boolean
     instant_delivery_fee?: FloatFilter<"stores"> | number
     instant_delivery_window_start?: StringFilter<"stores"> | string
     instant_delivery_window_end?: StringFilter<"stores"> | string
+    deliverySlotConfig?: JsonNullableFilter<"stores">
     gst_rate?: FloatFilter<"stores"> | number
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
@@ -23239,6 +23354,8 @@ export namespace Prisma {
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
+    maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
+    attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -23271,12 +23388,15 @@ export namespace Prisma {
     address?: SortOrder
     city?: SortOrder
     pincode?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     opening_hours?: SortOrder
     closing_hours?: SortOrder
     is_instant_delivery_enabled?: SortOrder
     instant_delivery_fee?: SortOrder
     instant_delivery_window_start?: SortOrder
     instant_delivery_window_end?: SortOrder
+    deliverySlotConfig?: SortOrder
     gst_rate?: SortOrder
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
@@ -23288,6 +23408,8 @@ export namespace Prisma {
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -23324,12 +23446,15 @@ export namespace Prisma {
     address?: StringFilter<"stores"> | string
     city?: StringFilter<"stores"> | string
     pincode?: StringFilter<"stores"> | string
+    latitude?: FloatNullableFilter<"stores"> | number | null
+    longitude?: FloatNullableFilter<"stores"> | number | null
     opening_hours?: StringFilter<"stores"> | string
     closing_hours?: StringFilter<"stores"> | string
     is_instant_delivery_enabled?: BoolFilter<"stores"> | boolean
     instant_delivery_fee?: FloatFilter<"stores"> | number
     instant_delivery_window_start?: StringFilter<"stores"> | string
     instant_delivery_window_end?: StringFilter<"stores"> | string
+    deliverySlotConfig?: JsonNullableFilter<"stores">
     gst_rate?: FloatFilter<"stores"> | number
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
@@ -23341,6 +23466,8 @@ export namespace Prisma {
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
+    maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
+    attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -23372,12 +23499,15 @@ export namespace Prisma {
     address?: SortOrder
     city?: SortOrder
     pincode?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     opening_hours?: SortOrder
     closing_hours?: SortOrder
     is_instant_delivery_enabled?: SortOrder
     instant_delivery_fee?: SortOrder
     instant_delivery_window_start?: SortOrder
     instant_delivery_window_end?: SortOrder
+    deliverySlotConfig?: SortOrder
     gst_rate?: SortOrder
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
@@ -23389,6 +23519,8 @@ export namespace Prisma {
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -23424,12 +23556,15 @@ export namespace Prisma {
     address?: StringWithAggregatesFilter<"stores"> | string
     city?: StringWithAggregatesFilter<"stores"> | string
     pincode?: StringWithAggregatesFilter<"stores"> | string
+    latitude?: FloatNullableWithAggregatesFilter<"stores"> | number | null
+    longitude?: FloatNullableWithAggregatesFilter<"stores"> | number | null
     opening_hours?: StringWithAggregatesFilter<"stores"> | string
     closing_hours?: StringWithAggregatesFilter<"stores"> | string
     is_instant_delivery_enabled?: BoolWithAggregatesFilter<"stores"> | boolean
     instant_delivery_fee?: FloatWithAggregatesFilter<"stores"> | number
     instant_delivery_window_start?: StringWithAggregatesFilter<"stores"> | string
     instant_delivery_window_end?: StringWithAggregatesFilter<"stores"> | string
+    deliverySlotConfig?: JsonNullableWithAggregatesFilter<"stores">
     gst_rate?: FloatWithAggregatesFilter<"stores"> | number
     packaging_charge?: FloatWithAggregatesFilter<"stores"> | number
     base_delivery_charge?: FloatWithAggregatesFilter<"stores"> | number
@@ -23441,6 +23576,8 @@ export namespace Prisma {
     invoiceJurisdiction?: StringNullableWithAggregatesFilter<"stores"> | string | null
     locationCode?: StringNullableWithAggregatesFilter<"stores"> | string | null
     codAutoAcceptLimit?: FloatNullableWithAggregatesFilter<"stores"> | number | null
+    maxConcurrentDeliveries?: IntNullableWithAggregatesFilter<"stores"> | number | null
+    attendanceGeofenceMeters?: IntNullableWithAggregatesFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableWithAggregatesFilter<"stores">
     areaPincodes?: JsonNullableWithAggregatesFilter<"stores">
@@ -23600,6 +23737,7 @@ export namespace Prisma {
     categoryImages?: JsonFilter<"site_config">
     categoryStatus?: JsonFilter<"site_config">
     subCategoryStatus?: JsonFilter<"site_config">
+    mapProvider?: StringNullableFilter<"site_config"> | string | null
     createdAt?: DateTimeFilter<"site_config"> | Date | string
     updatedAt?: DateTimeFilter<"site_config"> | Date | string
   }
@@ -23611,6 +23749,7 @@ export namespace Prisma {
     categoryImages?: SortOrder
     categoryStatus?: SortOrder
     subCategoryStatus?: SortOrder
+    mapProvider?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -23625,6 +23764,7 @@ export namespace Prisma {
     categoryImages?: JsonFilter<"site_config">
     categoryStatus?: JsonFilter<"site_config">
     subCategoryStatus?: JsonFilter<"site_config">
+    mapProvider?: StringNullableFilter<"site_config"> | string | null
     createdAt?: DateTimeFilter<"site_config"> | Date | string
     updatedAt?: DateTimeFilter<"site_config"> | Date | string
   }, "id">
@@ -23636,6 +23776,7 @@ export namespace Prisma {
     categoryImages?: SortOrder
     categoryStatus?: SortOrder
     subCategoryStatus?: SortOrder
+    mapProvider?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: site_configCountOrderByAggregateInput
@@ -23653,6 +23794,7 @@ export namespace Prisma {
     categoryImages?: JsonWithAggregatesFilter<"site_config">
     categoryStatus?: JsonWithAggregatesFilter<"site_config">
     subCategoryStatus?: JsonWithAggregatesFilter<"site_config">
+    mapProvider?: StringNullableWithAggregatesFilter<"site_config"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"site_config"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"site_config"> | Date | string
   }
@@ -23687,6 +23829,8 @@ export namespace Prisma {
     sale_price?: FloatFilter<"products"> | number
     regular_price?: FloatFilter<"products"> | number
     totalSold?: IntFilter<"products"> | number
+    sortOrder?: IntNullableFilter<"products"> | number | null
+    isFeatured?: BoolFilter<"products"> | boolean
     ratings?: FloatFilter<"products"> | number
     origin?: StringNullableFilter<"products"> | string | null
     source?: StringNullableFilter<"products"> | string | null
@@ -23743,6 +23887,8 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
+    isFeatured?: SortOrder
     ratings?: SortOrder
     origin?: SortOrder
     source?: SortOrder
@@ -23802,6 +23948,8 @@ export namespace Prisma {
     sale_price?: FloatFilter<"products"> | number
     regular_price?: FloatFilter<"products"> | number
     totalSold?: IntFilter<"products"> | number
+    sortOrder?: IntNullableFilter<"products"> | number | null
+    isFeatured?: BoolFilter<"products"> | boolean
     ratings?: FloatFilter<"products"> | number
     origin?: StringNullableFilter<"products"> | string | null
     source?: StringNullableFilter<"products"> | string | null
@@ -23858,6 +24006,8 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
+    isFeatured?: SortOrder
     ratings?: SortOrder
     origin?: SortOrder
     source?: SortOrder
@@ -23915,6 +24065,8 @@ export namespace Prisma {
     sale_price?: FloatWithAggregatesFilter<"products"> | number
     regular_price?: FloatWithAggregatesFilter<"products"> | number
     totalSold?: IntWithAggregatesFilter<"products"> | number
+    sortOrder?: IntNullableWithAggregatesFilter<"products"> | number | null
+    isFeatured?: BoolWithAggregatesFilter<"products"> | boolean
     ratings?: FloatWithAggregatesFilter<"products"> | number
     origin?: StringNullableWithAggregatesFilter<"products"> | string | null
     source?: StringNullableWithAggregatesFilter<"products"> | string | null
@@ -25160,12 +25312,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -25177,6 +25332,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25208,12 +25365,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -25225,6 +25385,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25253,12 +25415,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -25270,6 +25435,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25300,12 +25467,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -25317,6 +25487,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25347,12 +25519,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -25364,6 +25539,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -25389,12 +25566,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -25406,6 +25586,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25431,12 +25613,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -25448,6 +25633,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -25588,6 +25775,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue
     categoryStatus?: InputJsonValue
     subCategoryStatus?: InputJsonValue
+    mapProvider?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -25599,6 +25787,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue
     categoryStatus?: InputJsonValue
     subCategoryStatus?: InputJsonValue
+    mapProvider?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -25609,6 +25798,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue | InputJsonValue
     categoryStatus?: InputJsonValue | InputJsonValue
     subCategoryStatus?: InputJsonValue | InputJsonValue
+    mapProvider?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25619,6 +25809,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue | InputJsonValue
     categoryStatus?: InputJsonValue | InputJsonValue
     subCategoryStatus?: InputJsonValue | InputJsonValue
+    mapProvider?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25630,6 +25821,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue
     categoryStatus?: InputJsonValue
     subCategoryStatus?: InputJsonValue
+    mapProvider?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -25640,6 +25832,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue | InputJsonValue
     categoryStatus?: InputJsonValue | InputJsonValue
     subCategoryStatus?: InputJsonValue | InputJsonValue
+    mapProvider?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25650,6 +25843,7 @@ export namespace Prisma {
     categoryImages?: InputJsonValue | InputJsonValue
     categoryStatus?: InputJsonValue | InputJsonValue
     subCategoryStatus?: InputJsonValue | InputJsonValue
+    mapProvider?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -25681,6 +25875,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -25734,6 +25930,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -25786,6 +25984,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25838,6 +26038,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25891,6 +26093,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -25939,6 +26143,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -25984,6 +26190,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -27417,12 +27625,15 @@ export namespace Prisma {
     address?: SortOrder
     city?: SortOrder
     pincode?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     opening_hours?: SortOrder
     closing_hours?: SortOrder
     is_instant_delivery_enabled?: SortOrder
     instant_delivery_fee?: SortOrder
     instant_delivery_window_start?: SortOrder
     instant_delivery_window_end?: SortOrder
+    deliverySlotConfig?: SortOrder
     gst_rate?: SortOrder
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
@@ -27434,6 +27645,8 @@ export namespace Prisma {
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
     availableCities?: SortOrder
     cityDeliveryTimes?: SortOrder
     areaPincodes?: SortOrder
@@ -27454,12 +27667,16 @@ export namespace Prisma {
   }
 
   export type storesAvgOrderByAggregateInput = {
+    latitude?: SortOrder
+    longitude?: SortOrder
     instant_delivery_fee?: SortOrder
     gst_rate?: SortOrder
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
   }
 
   export type storesMaxOrderByAggregateInput = {
@@ -27470,6 +27687,8 @@ export namespace Prisma {
     address?: SortOrder
     city?: SortOrder
     pincode?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     opening_hours?: SortOrder
     closing_hours?: SortOrder
     is_instant_delivery_enabled?: SortOrder
@@ -27487,6 +27706,8 @@ export namespace Prisma {
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
     state?: SortOrder
     supportPhone?: SortOrder
     whatsappNumber?: SortOrder
@@ -27509,6 +27730,8 @@ export namespace Prisma {
     address?: SortOrder
     city?: SortOrder
     pincode?: SortOrder
+    latitude?: SortOrder
+    longitude?: SortOrder
     opening_hours?: SortOrder
     closing_hours?: SortOrder
     is_instant_delivery_enabled?: SortOrder
@@ -27526,6 +27749,8 @@ export namespace Prisma {
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
     state?: SortOrder
     supportPhone?: SortOrder
     whatsappNumber?: SortOrder
@@ -27541,12 +27766,16 @@ export namespace Prisma {
   }
 
   export type storesSumOrderByAggregateInput = {
+    latitude?: SortOrder
+    longitude?: SortOrder
     instant_delivery_fee?: SortOrder
     gst_rate?: SortOrder
     packaging_charge?: SortOrder
     base_delivery_charge?: SortOrder
     free_delivery_threshold?: SortOrder
     codAutoAcceptLimit?: SortOrder
+    maxConcurrentDeliveries?: SortOrder
+    attendanceGeofenceMeters?: SortOrder
   }
 
   export type UsersRelationFilter = {
@@ -27647,18 +27876,21 @@ export namespace Prisma {
     categoryImages?: SortOrder
     categoryStatus?: SortOrder
     subCategoryStatus?: SortOrder
+    mapProvider?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type site_configMaxOrderByAggregateInput = {
     id?: SortOrder
+    mapProvider?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type site_configMinOrderByAggregateInput = {
     id?: SortOrder
+    mapProvider?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -27721,6 +27953,8 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
+    isFeatured?: SortOrder
     ratings?: SortOrder
     origin?: SortOrder
     source?: SortOrder
@@ -27751,6 +27985,7 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
     ratings?: SortOrder
   }
 
@@ -27773,6 +28008,8 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
+    isFeatured?: SortOrder
     ratings?: SortOrder
     origin?: SortOrder
     source?: SortOrder
@@ -27812,6 +28049,8 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
+    isFeatured?: SortOrder
     ratings?: SortOrder
     origin?: SortOrder
     source?: SortOrder
@@ -27840,6 +28079,7 @@ export namespace Prisma {
     sale_price?: SortOrder
     regular_price?: SortOrder
     totalSold?: SortOrder
+    sortOrder?: SortOrder
     ratings?: SortOrder
   }
 
@@ -29977,6 +30217,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -30029,6 +30271,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -30203,6 +30447,8 @@ export namespace Prisma {
     sale_price?: FloatFilter<"products"> | number
     regular_price?: FloatFilter<"products"> | number
     totalSold?: IntFilter<"products"> | number
+    sortOrder?: IntNullableFilter<"products"> | number | null
+    isFeatured?: BoolFilter<"products"> | boolean
     ratings?: FloatFilter<"products"> | number
     origin?: StringNullableFilter<"products"> | string | null
     source?: StringNullableFilter<"products"> | string | null
@@ -30329,6 +30575,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -30381,6 +30629,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -30461,12 +30711,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -30478,6 +30731,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -30507,12 +30762,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -30524,6 +30782,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -30641,6 +30901,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30692,6 +30954,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30779,12 +31043,15 @@ export namespace Prisma {
     address?: StringFilter<"stores"> | string
     city?: StringFilter<"stores"> | string
     pincode?: StringFilter<"stores"> | string
+    latitude?: FloatNullableFilter<"stores"> | number | null
+    longitude?: FloatNullableFilter<"stores"> | number | null
     opening_hours?: StringFilter<"stores"> | string
     closing_hours?: StringFilter<"stores"> | string
     is_instant_delivery_enabled?: BoolFilter<"stores"> | boolean
     instant_delivery_fee?: FloatFilter<"stores"> | number
     instant_delivery_window_start?: StringFilter<"stores"> | string
     instant_delivery_window_end?: StringFilter<"stores"> | string
+    deliverySlotConfig?: JsonNullableFilter<"stores">
     gst_rate?: FloatFilter<"stores"> | number
     packaging_charge?: FloatFilter<"stores"> | number
     base_delivery_charge?: FloatFilter<"stores"> | number
@@ -30796,6 +31063,8 @@ export namespace Prisma {
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
+    maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
+    attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
     availableCities?: StringNullableListFilter<"stores">
     cityDeliveryTimes?: JsonNullableFilter<"stores">
     areaPincodes?: JsonNullableFilter<"stores">
@@ -31398,12 +31667,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -31415,6 +31687,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31445,12 +31719,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -31462,6 +31739,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31655,12 +31934,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -31672,6 +31954,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31701,12 +31985,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -31718,6 +32005,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -31846,12 +32135,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -31863,6 +32155,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -31893,12 +32187,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -31910,6 +32207,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -32029,12 +32328,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -32046,6 +32348,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -32075,12 +32379,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -32092,6 +32399,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -32208,6 +32517,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -32260,6 +32571,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -32585,6 +32898,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -32637,6 +32952,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -32747,6 +33064,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -32798,6 +33117,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -32889,6 +33210,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -32941,6 +33264,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -33051,6 +33376,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33102,6 +33429,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33215,12 +33544,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -33232,6 +33564,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -33262,12 +33596,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -33279,6 +33616,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -33359,6 +33698,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -33411,6 +33752,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -33468,6 +33811,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -33520,6 +33865,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -33631,12 +33978,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -33648,6 +33998,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33677,12 +34029,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -33694,6 +34049,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -33783,6 +34140,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33834,6 +34193,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34112,12 +34473,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -34129,6 +34493,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -34159,12 +34525,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -34176,6 +34545,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -34219,12 +34590,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -34236,6 +34610,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34265,12 +34641,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -34282,6 +34661,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34330,6 +34711,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -34414,6 +34797,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34465,6 +34850,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34516,6 +34903,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -34666,12 +35055,15 @@ export namespace Prisma {
     address: string
     city: string
     pincode: string
+    latitude?: number | null
+    longitude?: number | null
     opening_hours: string
     closing_hours: string
     is_instant_delivery_enabled?: boolean
     instant_delivery_fee?: number
     instant_delivery_window_start?: string
     instant_delivery_window_end?: string
+    deliverySlotConfig?: InputJsonValue | null
     gst_rate?: number
     packaging_charge?: number
     base_delivery_charge?: number
@@ -34683,6 +35075,8 @@ export namespace Prisma {
     invoiceJurisdiction?: string | null
     locationCode?: string | null
     codAutoAcceptLimit?: number | null
+    maxConcurrentDeliveries?: number | null
+    attendanceGeofenceMeters?: number | null
     availableCities?: storesCreateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | null
     areaPincodes?: InputJsonValue | null
@@ -34774,12 +35168,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -34791,6 +35188,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34819,12 +35218,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -34836,6 +35238,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -34864,12 +35268,15 @@ export namespace Prisma {
     address?: StringFieldUpdateOperationsInput | string
     city?: StringFieldUpdateOperationsInput | string
     pincode?: StringFieldUpdateOperationsInput | string
+    latitude?: NullableFloatFieldUpdateOperationsInput | number | null
+    longitude?: NullableFloatFieldUpdateOperationsInput | number | null
     opening_hours?: StringFieldUpdateOperationsInput | string
     closing_hours?: StringFieldUpdateOperationsInput | string
     is_instant_delivery_enabled?: BoolFieldUpdateOperationsInput | boolean
     instant_delivery_fee?: FloatFieldUpdateOperationsInput | number
     instant_delivery_window_start?: StringFieldUpdateOperationsInput | string
     instant_delivery_window_end?: StringFieldUpdateOperationsInput | string
+    deliverySlotConfig?: InputJsonValue | InputJsonValue | null
     gst_rate?: FloatFieldUpdateOperationsInput | number
     packaging_charge?: FloatFieldUpdateOperationsInput | number
     base_delivery_charge?: FloatFieldUpdateOperationsInput | number
@@ -34881,6 +35288,8 @@ export namespace Prisma {
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
+    maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
+    attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
     availableCities?: storesUpdateavailableCitiesInput | string[]
     cityDeliveryTimes?: InputJsonValue | InputJsonValue | null
     areaPincodes?: InputJsonValue | InputJsonValue | null
@@ -35341,6 +35750,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -35421,6 +35832,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35472,6 +35885,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35523,6 +35938,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35688,6 +36105,8 @@ export namespace Prisma {
     sale_price: number
     regular_price: number
     totalSold?: number
+    sortOrder?: number | null
+    isFeatured?: boolean
     ratings?: number
     origin?: string | null
     source?: string | null
@@ -35804,6 +36223,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35855,6 +36276,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null
@@ -35906,6 +36329,8 @@ export namespace Prisma {
     sale_price?: FloatFieldUpdateOperationsInput | number
     regular_price?: FloatFieldUpdateOperationsInput | number
     totalSold?: IntFieldUpdateOperationsInput | number
+    sortOrder?: NullableIntFieldUpdateOperationsInput | number | null
+    isFeatured?: BoolFieldUpdateOperationsInput | boolean
     ratings?: FloatFieldUpdateOperationsInput | number
     origin?: NullableStringFieldUpdateOperationsInput | string | null
     source?: NullableStringFieldUpdateOperationsInput | string | null

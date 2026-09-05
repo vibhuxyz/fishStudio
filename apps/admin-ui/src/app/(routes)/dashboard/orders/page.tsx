@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,7 +12,19 @@ import {
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
-import { type AdminOrder, useAdminOrderList, useAdminOrderPincodes } from "@/hooks/useAdminQueries";
+import {
+  type AdminOrder,
+  useAdminOrderList,
+  useAdminOrderPincodes,
+  adminBulkUpdateOrderStatus,
+} from "@/hooks/useAdminQueries";
+import {
+  OrderFiltersBar,
+  EMPTY_ORDER_FILTERS,
+  filtersToParams,
+  type AdminOrderFilters,
+} from "./_components/order-filters";
+import { BulkStatusBar } from "./_components/bulk-status-bar";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { formatIstDate } from "@repo/shared/datetime";
 import { resolvePaymentState, type PaymentTone } from "@repo/shared/payment-state";
@@ -37,6 +51,9 @@ const OrdersTable = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedPincode, setSelectedPincode] = useState("");
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<AdminOrderFilters>(EMPTY_ORDER_FILTERS);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const queryClient = useQueryClient();
   const { data: pincodeData } = useAdminOrderPincodes();
   const pincodes: string[] = pincodeData ?? [];
   const { data, isLoading, isFetching } = useAdminOrderList({
@@ -44,12 +61,72 @@ const OrdersTable = () => {
     limit: 50,
     search: globalFilter || undefined,
     pincode: selectedPincode || undefined,
+    ...filtersToParams(filters),
   });
   const orders: AdminOrder[] = data?.orders ?? [];
   const pagination = data?.pagination;
 
+  const bulkStatusMutation = useMutation({
+    mutationFn: ({ status }: { status: string }) =>
+      adminBulkUpdateOrderStatus(selectedIds, status),
+    onSuccess: (result) => {
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ["admin", "admin-orders"] });
+      // Partial success is normal: a selection made a minute ago will contain
+      // orders that have since moved on. Report both halves.
+      if (result.updated.length > 0) {
+        toast.success(
+          `Updated ${result.updated.length} order${result.updated.length === 1 ? "" : "s"}` +
+            (result.skipped.length > 0 ? ` · ${result.skipped.length} skipped` : ""),
+        );
+      } else {
+        toast.error(result.skipped[0]?.reason || "No orders could be updated");
+      }
+    },
+    onError: (error: any) =>
+      toast.error(error?.response?.data?.message || "Bulk update failed"),
+  });
+
+  const toggleSelection = (orderId: string) =>
+    setSelectedIds((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId],
+    );
+
   const columns = useMemo(
     () => [
+      {
+        id: "select",
+        header: () => {
+          // Header box selects only what is on this page — "select all" across
+          // pages would let one click move orders the operator never saw.
+          const pageIds = orders.map((order) => order.id);
+          const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+          return (
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={() =>
+                setSelectedIds((prev) =>
+                  allSelected
+                    ? prev.filter((id) => !pageIds.includes(id))
+                    : [...new Set([...prev, ...pageIds])],
+                )
+              }
+              aria-label="Select all orders on this page"
+              className="h-4 w-4 accent-blue-500"
+            />
+          );
+        },
+        cell: ({ row }: { row: { original: AdminOrder } }) => (
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(row.original.id)}
+            onChange={() => toggleSelection(row.original.id)}
+            aria-label={`Select order ${displayOrderNumber(row.original)}`}
+            className="h-4 w-4 accent-blue-500"
+          />
+        ),
+      },
       {
         accessorKey: "id",
         header: "Order ID",
@@ -120,7 +197,9 @@ const OrdersTable = () => {
         ),
       },
     ],
-    [],
+    // The select column reads both, so the memo has to see them change —
+    // otherwise ticking a box renders nothing.
+    [orders, selectedIds],
   );
 
   const table = useReactTable({
@@ -147,6 +226,17 @@ const OrdersTable = () => {
         placeholder: "Search orders...",
       }}
     >
+      <OrderFiltersBar filters={filters} onChange={(next) => { setFilters(next); setPage(1); }} />
+
+      {selectedIds.length > 0 && (
+        <BulkStatusBar
+          selectedCount={selectedIds.length}
+          isApplying={bulkStatusMutation.isPending}
+          onApply={(status) => bulkStatusMutation.mutate({ status })}
+          onClear={() => setSelectedIds([])}
+        />
+      )}
+
       <div className="mb-4 flex items-center gap-3">
           <label className="text-sm text-gray-400 whitespace-nowrap">Filter by Pincode:</label>
           <select

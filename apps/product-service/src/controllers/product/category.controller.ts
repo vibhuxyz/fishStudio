@@ -11,6 +11,7 @@ import {
   subCategorySchema,
   updateCategorySchema,
   updateSubCategorySchema,
+  mapProviderSchema,
   validate,
 } from "@repo/zod-schema";
 
@@ -47,6 +48,7 @@ const applyActiveOnlyFilter = (payload: {
   categoryImages: Record<string, string>;
   categoryStatus: Record<string, boolean>;
   subCategoryStatus: Record<string, boolean>;
+  mapProvider: string | null;
 }) => {
   const activeCategories = payload.categories.filter(
     (cat) => payload.categoryStatus[cat] ?? true,
@@ -88,6 +90,7 @@ export const getCategories = async (
           categoryImages: {},
           categoryStatus: {},
           subCategoryStatus: {},
+          mapProvider: null,
         };
       }
       const subCategories =
@@ -120,6 +123,10 @@ export const getCategories = async (
         categoryImages,
         categoryStatus,
         subCategoryStatus,
+        // Read by every client on boot to pick its map backend. Rides this
+        // endpoint rather than getting its own because it is already fetched
+        // on nearly every page and already cache-invalidated on write.
+        mapProvider: config.mapProvider ?? null,
       };
     }, { ttlSeconds: SITE_CONFIG_TTL });
 
@@ -584,6 +591,42 @@ export const updateSubCategory = async (
       message: "Subcategory updated successfully",
       config: updatedConfig,
     });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Switch the map/geocoding backend for every client, without a redeploy.
+ *
+ * Deliberately not an env var: Google Maps costs money per request and a key
+ * can be revoked or a billing account can lapse. When that happens the fix has
+ * to be one toggle away, not a rebuild and a deploy — OSM needs no key and is
+ * always available as a fallback.
+ */
+export const updateMapProvider = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { mapProvider } = validate(mapProviderSchema, req.body);
+
+    const config = await prisma.site_config.findFirst();
+    if (!config) {
+      return next(new ValidationError("Site config has not been created yet"));
+    }
+
+    await prisma.site_config.update({
+      where: { id: config.id },
+      data: { mapProvider },
+    });
+
+    // Awaited, not fire-and-forget: the admin UI refetches immediately after
+    // this resolves, and a racing DEL would serve it the old value back.
+    await invalidateSiteConfigCache();
+
+    return res.status(200).json({ success: true, mapProvider });
   } catch (error) {
     return next(error);
   }

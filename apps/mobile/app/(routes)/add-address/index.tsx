@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationPickerMap, { type LocationPickerMapHandle } from "@/components/location-picker-map";
+import { useMapProvider } from "@/hooks/useMapProvider";
 import { geocodingProvider, type GeoBounds, type PlaceResult } from "@/lib/geocoding-provider";
 
 const DEFAULT_MAP_CENTER = { lat: 28.6139, lng: 77.209 }; // New Delhi fallback
@@ -174,6 +175,8 @@ export default function AddAddressScreen() {
   const [nearbyLandmarks, setNearbyLandmarks] = useState<PlaceResult[]>([]);
   const [loadingLandmarks, setLoadingLandmarks] = useState(false);
   const mapRef = useRef<LocationPickerMapHandle>(null);
+  // Applies the admin's choice for this session and says which map to draw.
+  const mapProvider = useMapProvider();
   const mapSearchDebounce = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Approximate center of the pincode/area already chosen on the previous
@@ -707,6 +710,9 @@ export default function AddAddressScreen() {
                 initialLat={lat ?? areaCenter?.lat ?? DEFAULT_MAP_CENTER.lat}
                 initialLng={lng ?? areaCenter?.lng ?? DEFAULT_MAP_CENTER.lng}
                 onLocationSelected={handleMapLocationSelected}
+                // Tiles follow the geocoding backend — Google results may not
+                // be shown on a non-Google map.
+                provider={mapProvider}
               />
               {/* Rides just above the map's fixed center pin, matching where
                   it sits inside the WebView — shows what's actually there,

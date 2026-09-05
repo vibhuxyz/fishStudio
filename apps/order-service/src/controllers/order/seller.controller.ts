@@ -9,6 +9,9 @@ import {
   releaseRiderIfNoOtherDeliveries,
   hydrateOrders,
   releaseCouponUsage,
+  releaseDeliverySlot,
+  recordCodCollection,
+  recordDeliveryDistance,
   parseSellerOrderFilters,
 } from "./utils.js";
 import { formatOrderId } from "@repo/shared/order-id";
@@ -137,8 +140,14 @@ export const acceptOrRejectOrder = async (
       });
 
       restoreOrderStock(existingOrder.orderItems, "acceptOrRejectOrder");
-      // A rejected order was never fulfilled, so the customer keeps the coupon.
+      // A rejected order was never fulfilled, so the customer keeps the coupon,
+      // and the delivery place it was holding goes back to the pool.
       void releaseCouponUsage(orderId);
+      void releaseDeliverySlot({
+        storeId: existingOrder.storeId,
+        deliveryDate: existingOrder.deliveryDate,
+        slotKey: existingOrder.deliverySlot,
+      });
     }
 
     await invalidateSellerStatsCache(req.seller?.id);
@@ -234,10 +243,23 @@ export const updateOrderStatus = async (
       },
     });
 
+    // A seller can mark delivery on a rider's behalf, so the same bookkeeping
+    // the rider's own path does has to happen here too — otherwise cash
+    // collected on those orders never appears in reconciliation.
+    if (status === "DELIVERED") {
+      void recordCodCollection({ ...existing, deliveredAt: new Date() });
+      void recordDeliveryDistance(existing);
+    }
+
     // Restore stock when seller manually cancels an order
     if (status === "CANCELLED") {
       restoreOrderStock(existing.orderItems, "updateOrderStatus");
       void releaseCouponUsage(orderId);
+      void releaseDeliverySlot({
+        storeId: existing.storeId,
+        deliveryDate: existing.deliveryDate,
+        slotKey: existing.deliverySlot,
+      });
 
       // A customer who paid online but is only cancellable this late through
       // support gets refunded the same way self-cancel does — order-service

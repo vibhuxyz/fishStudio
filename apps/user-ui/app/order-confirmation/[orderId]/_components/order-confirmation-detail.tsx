@@ -26,6 +26,7 @@ import { useWs } from "@/context/ws-context";
 import { toast } from "sonner";
 import type { Order } from "@/lib/orders-api";
 import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
+import { formatDeliveryDateKey } from "@repo/shared/delivery-slots";
 import { renderInvoiceHtml, type Invoice } from "@/lib/invoice-template";
 import { OrderConfirmationSkeleton } from "./order-confirmation-skeleton";
 
@@ -37,9 +38,9 @@ interface OrderConfirmationDetailProps {
 export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirmationDetailProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  // useUserSession reads from TanStack Query cache — available synchronously on
-  // first render (no effect/store hop), so enabled is correct immediately.
-  const { user, isLoading: isSessionLoading } = useUserSession();
+  // Only used to scope the websocket subscription — the order fetch below
+  // deliberately does not wait on it.
+  const { user } = useUserSession();
   const { subscribe } = useWs();
   const [mounted, setMounted] = useState(false);
 
@@ -47,15 +48,30 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
     setMounted(true);
   }, []);
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, error } = useQuery({
     queryKey: ["order", orderId],
     queryFn: async () => {
       const { data } = await axiosInstance.get(`/order/api/get-order/${orderId}`);
       return data.order as Order;
     },
     initialData: initialOrder ?? undefined,
-    enabled: !!orderId && !!user,
+    // Deliberately not gated on the session. get-order is already behind
+    // isAuthenticated, so the cookie decides — and gating here as well meant a
+    // slow or failed session read showed "sign in" to someone who had just
+    // paid, which is the worst possible moment to imply the order didn't land.
+    enabled: !!orderId,
+    // An online payment is verified out-of-band, so the order can arrive still
+    // PENDING for a second or two after the gateway hands the customer back.
+    // Poll until it settles rather than leaving a paid order looking unpaid.
+    refetchInterval: (query) => {
+      const o = query.state.data;
+      if (!o) return false;
+      return o.paymentMethod !== "COD" && o.paymentStatus === "PENDING" ? 3_000 : false;
+    },
   });
+
+  const status = (error as { response?: { status?: number } } | null)?.response?.status;
+  const isAccessError = status === 401 || status === 403;
 
   // Refresh the order when its status changes, via the app's single shared WS connection.
   useEffect(() => {
@@ -103,11 +119,11 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
     }
   };
 
-  if (isSessionLoading) {
-    return null; // parent already shows skeleton while session loads
+  if (isLoading && !order) {
+    return <OrderConfirmationSkeleton />;
   }
 
-  if (!user) {
+  if (isAccessError) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-32 text-center">
         <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground mb-6">
@@ -128,10 +144,6 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
         </div>
       </div>
     );
-  }
-
-  if (isLoading && !order) {
-    return <OrderConfirmationSkeleton />;
   }
 
   if (!order) {
@@ -173,6 +185,10 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
         : order.deliverySlot === "evening"
           ? "🌆 Evening (5 PM – 9 PM)"
           : "Standard Delivery";
+
+  // A scheduled slot is meaningless without the day it falls on — "Morning"
+  // alone leaves the customer guessing whether that is today or tomorrow.
+  const slotDayLabel = formatDeliveryDateKey(order.deliveryDate);
 
   const billDetails = order.billDetails as Record<string, number> | null;
   const statusCfg = getStatusConfig(order.status);
@@ -296,7 +312,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
           transition={{ delay: 0.5 }}
         >
           <Clock className="h-4 w-4" />
-          {slotLabel}
+          {slotDayLabel ? `${slotDayLabel} · ${slotLabel}` : slotLabel}
         </motion.div>
       </div>
 
@@ -355,6 +371,9 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
                 Delivery Slot
               </p>
               <p className="font-bold text-sm">{slotLabel}</p>
+              {slotDayLabel && (
+                <p className="text-xs text-muted-foreground">{slotDayLabel}</p>
+              )}
             </div>
           </div>
 

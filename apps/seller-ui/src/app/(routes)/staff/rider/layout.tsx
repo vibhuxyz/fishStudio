@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
 import { LogOut, Bike, ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import useRequireStaffRole from "@/hooks/useRequireStaffRole";
 import axiosInstance from "@/utils/axiosInstance";
 import { isProtected } from "@/utils/protected";
@@ -13,6 +14,7 @@ const RiderLayout = ({ children }: { children: React.ReactNode }) => {
   const { staff, isLoading } = useRequireStaffRole("RIDER");
   useOrderAlerts("RIDER");
   const router = useRouter();
+  const pathname = usePathname();
   const { setLoggedIn, setRole } = useAuthStore();
   const isSellerViewing = staff?.role === "seller";
 
@@ -78,6 +80,24 @@ const RiderLayout = ({ children }: { children: React.ReactNode }) => {
           {isSellerViewing ? <ArrowLeft size={18} /> : <LogOut size={18} />}
         </button>
       </header>
+      <nav className="sticky top-[57px] z-10 flex border-b border-gray-800 bg-[#0d1117]">
+        {[
+          { href: "/staff/rider/orders", label: "Orders" },
+          { href: "/staff/rider/shift", label: "My Shift" },
+        ].map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`flex-1 py-3 text-center text-sm font-semibold transition ${
+              pathname === tab.href
+                ? "border-b-2 border-blue-500 text-white"
+                : "text-gray-500 hover:text-gray-300"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
       <main className="max-w-lg mx-auto pb-8">{children}</main>
     </div>
   );

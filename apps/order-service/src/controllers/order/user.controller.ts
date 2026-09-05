@@ -25,6 +25,7 @@ import {
   PLACED_ORDER_STATUSES,
 } from "@repo/shared/pricing";
 import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
+import { deliveryDateKey, isSlotStillOffered } from "@repo/shared/delivery-slots";
 import {
   isInstantDeliveryAvailableNow,
   StoreHours,
@@ -43,6 +44,9 @@ import {
   releaseCouponUsage,
   allocateOrderNumber,
   shouldAutoAcceptOnCreate,
+  reserveDeliverySlot,
+  releaseDeliverySlot,
+  storeDeliverySlots,
 } from "./utils.js";
 
 // Populated by @repo/middlewares' isAuthenticated from the verified JWT.
@@ -713,6 +717,7 @@ export const createOrder = async (
       eventId,
       referralCode,
       deliverySlot,
+      deliveryDate,
       totalAmount: clientTotalAmount,
     } = validate(createOrderSchema, req.body);
 
@@ -758,6 +763,7 @@ export const createOrder = async (
           free_delivery_threshold: true,
           locationCode: true,
           codAutoAcceptLimit: true,
+          deliverySlotConfig: true,
           seller: { select: { name: true } },
         },
       }),
@@ -861,8 +867,33 @@ export const createOrder = async (
       itemTotal += resolvedPrices[i]! * items[i]!.quantity;
     }
 
-    /* ── 3. Instant delivery slot validation ────────────────────────────── */
+    /* ── 3. Delivery slot validation ────────────────────────────────────── */
     assertInstantDeliveryAvailable(store, deliverySlot);
+
+    // "instant" is bounded by the window check above, not by a per-day count,
+    // so it books nothing. Everything else resolves to a concrete day and is
+    // re-checked against the store's own configuration — the client was shown
+    // a list, but the list it was shown is not the authority.
+    const slotDefinitions = storeDeliverySlots(store);
+    const bookedSlotKey = deliverySlot === "instant" ? null : deliverySlot;
+    // A client from before dated slots sends none; today is what it meant.
+    const bookedDeliveryDate = bookedSlotKey ? (deliveryDate ?? deliveryDateKey()) : null;
+
+    if (bookedSlotKey && bookedDeliveryDate) {
+      const definition = slotDefinitions.find((slot) => slot.key === bookedSlotKey);
+      if (!definition) {
+        return next(new ValidationError("That delivery slot is no longer offered by this store"));
+      }
+      if (!isSlotStillOffered({
+        slots: slotDefinitions,
+        slotKey: bookedSlotKey,
+        deliveryDate: bookedDeliveryDate,
+        })) {
+        return next(new ValidationError(
+          "That delivery slot has closed. Please choose another one.",
+        ));
+      }
+    }
 
     /* ── 4. Compute delivery + coupon totals ──────────────────────────────── */
     const {
@@ -1019,6 +1050,26 @@ export const createOrder = async (
         // that a seller would have to explain.
         const orderNumber = await allocateOrderNumber(tx, store.locationCode);
 
+        // Inside the transaction for the same reason the number is: if
+        // anything below fails, the place goes back on its own rather than
+        // being held against an order that never existed. Losing the last
+        // place to a checkout half a second earlier is an ordinary outcome,
+        // so it reads as a message the customer can act on, not an error.
+        if (bookedSlotKey && bookedDeliveryDate) {
+          const definition = slotDefinitions.find((slot) => slot.key === bookedSlotKey);
+          const reserved = await reserveDeliverySlot(tx, {
+            storeId,
+            deliveryDate: bookedDeliveryDate,
+            slotKey: bookedSlotKey,
+            capacity: definition?.capacity ?? 0,
+          });
+          if (!reserved) {
+            throw new ValidationError(
+              "That delivery slot just filled up. Please choose another one.",
+            );
+          }
+        }
+
         const newOrder = await tx.order.create({
           data: {
             userId,
@@ -1052,6 +1103,7 @@ export const createOrder = async (
               ...(eventId && eventDiscountCode ? { eventId } : {}),
             },
             deliverySlot: deliverySlot ?? "evening",
+            deliveryDate: bookedDeliveryDate,
             paymentMethod: paymentMethod ?? "COD",
             // A small COD order goes straight to ACCEPTED — the Accept button
             // is for the tail worth a phone call, not for every order. Online
@@ -1630,6 +1682,13 @@ export const cancelOrder = async (
     // The order never happened, so neither did the redemption — hand the
     // coupon back rather than charging the customer a use for a cancellation.
     void releaseCouponUsage(orderId);
+
+    // Same reasoning for the delivery slot: the place it took is free again.
+    void releaseDeliverySlot({
+      storeId: order.storeId,
+      deliveryDate: order.deliveryDate,
+      slotKey: order.deliverySlot,
+    });
 
     // A rider is never assigned this early (PENDING/ACCEPTED, well before
     // READY_FOR_PICKUP), but release defensively rather than assume.

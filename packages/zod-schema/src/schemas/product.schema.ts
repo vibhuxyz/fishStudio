@@ -157,7 +157,18 @@ export const validateCartSchema = z.object({
   storeId: z.string().optional(),
 });
 
-export const updateProductSchema = productSchema.partial();
+export const updateProductSchema = productSchema.partial().extend({
+  // Merchandising, set from the admin panel rather than by whoever creates the
+  // product — which is why these live on the update schema and not on
+  // productSchema itself.
+  //
+  // Null clears a rank. Ascending, so 1 shows before 2; unranked sorts last.
+  sortOrder: z.preprocess(
+    (val) => (val === "" || val == null ? null : Number(val)),
+    z.number().int().min(0).max(99_999).nullable().optional(),
+  ),
+  isFeatured: z.boolean().optional(),
+});
 
 export const createReviewSchema = z.object({
   productId: z.string().min(1, "Product id is required"),

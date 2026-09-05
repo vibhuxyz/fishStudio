@@ -139,7 +139,7 @@ export default function CartScreen() {
             });
             // Checkout also re-validates independently once it's open, but
             // starts from whatever this set most recently.
-            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20, data.deliverySlots || []);
             setBillConfig({
               gstRate: data.gstRate ?? 0,
               packagingCharge: data.packagingCharge ?? 0,

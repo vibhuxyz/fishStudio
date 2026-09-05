@@ -277,6 +277,12 @@ model stores {
   address       String
   city          String
   pincode       String
+  // The store's own map pin. Serviceability is still decided by pincode/area
+  // lists, not by radius — these exist so a distance can be measured from the
+  // store: the rider attendance geofence, and delivery distance per order.
+  // Null for a store whose pin has never been dropped.
+  latitude      Float?
+  longitude     Float?
   opening_hours String // e.g. "09:00"
   closing_hours String // e.g. "23:00"
 
@@ -285,6 +291,21 @@ model stores {
   instant_delivery_fee          Float   @default(20)
   instant_delivery_window_start String  @default("11:00")
   instant_delivery_window_end   String  @default("19:00")
+
+  // Scheduled Delivery Slots
+  //
+  // Array of { key, label, startTime, endTime, cutoffMinutesBefore, capacity }.
+  // Json rather than columns because a store may run two slots or five, and the
+  // set is edited as a whole in seller settings — the alternative is a second
+  // collection whose only reader is this one document.
+  //
+  // Null means "not configured", which falls back to DEFAULT_DELIVERY_SLOTS in
+  // packages/shared/src/delivery-slots so an existing store keeps trading on
+  // the morning/evening pair it already had.
+  //
+  // "instant" is deliberately not in here: it is bounded by the delivery window
+  // above and by whether the store is open, not by a per-day count.
+  deliverySlotConfig Json?
 
   // Bill Settings — packaging/GST/delivery are seller-configured per store so
   // the amount quoted pre-checkout and the amount order-service charges can
@@ -327,6 +348,20 @@ model stores {
   // order is auto-accepted — the seller's Accept button exists for the risky
   // tail, not for every order. Null falls back to DEFAULT_COD_AUTO_ACCEPT_LIMIT.
   codAutoAcceptLimit Float?
+
+  // How many orders one rider may carry at once. Batching nearby drops is the
+  // whole point; the cap is what stops a dispatcher handing one rider the
+  // entire evening. Null falls back to DEFAULT_MAX_CONCURRENT_DELIVERIES.
+  maxConcurrentDeliveries Int?
+
+  // How close to the store a rider must be to check in, in metres.
+  //
+  // Tunable per store because the right value is a property of the site, not of
+  // the platform: a standalone unit with the pin on its door is not a stall
+  // inside a market building where GPS bounces off everything. Null falls back
+  // to ATTENDANCE_GEOFENCE_METERS. The attendance dashboard reports the
+  // distances actually recorded, which is what this should be set from.
+  attendanceGeofenceMeters Int?
 
   availableCities   String[] // Areas/localities served by this store, e.g. ["Sector 20", "Tugal Pur"]
   cityDeliveryTimes Json? // Map of area name -> delivery minutes e.g. {"Sector 20": 40, "Tugal Pur": 13}
@@ -423,6 +458,14 @@ model site_config {
   // Keyed by "<category>::<subCategory>" -> isActive, same absent-is-active rule.
   subCategoryStatus Json     @default("{}")
 
+  // Which map/geocoding backend the storefront and app use: "osm" or "google".
+  //
+  // Config rather than an env var because switching it is a business decision
+  // with a bill attached, and it has to be reversible without a redeploy — if
+  // Google billing lapses or a key is revoked, an admin needs to fall back to
+  // OSM immediately. Null means "use whatever the build was configured with".
+  mapProvider       String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -489,6 +532,16 @@ model products {
   sale_price           Float
   regular_price        Float
   totalSold            Int         @default(0)
+
+  // Merchandising. Admin-controlled display order, independent of createdAt and
+  // totalSold — those describe what the catalogue *is*, these say what the
+  // business wants promoted.
+  //
+  // Ascending: 1 shows before 2. Null means unranked and sorts after everything
+  // ranked, so setting a rank on one product does not push every other product
+  // into an arbitrary order.
+  sortOrder  Int?
+  isFeatured Boolean @default(false)
   favorites            favorites[]
   ratings              Float       @default(5)
   reviews              reviews[]
@@ -532,6 +585,9 @@ model products {
   @@index([adminId, isDeleted, status]) // catalog root product queries
   @@index([catalogProductId, status, isDeleted]) // variant lookup by catalog ID
   @@index([category, status]) // category browse
+  // Featured rails: the homepage asks for one store's featured products in
+  // rank order, which no existing compound serves as a prefix.
+  @@index([storeId, isFeatured, sortOrder])
   @@index([status, isDeleted]) // admin product listing
   // getStoreProducts (storefront.controller.ts) filters catalogWhere on
   // adminId+isDeleted and sorts by these — without a matching compound

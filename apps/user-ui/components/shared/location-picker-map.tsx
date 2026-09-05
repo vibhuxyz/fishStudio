@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigation, Search, Loader2, X, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { geocodingProvider, type GeoBounds, type PlaceResult } from "@/lib/geocoding-provider";
+import { useMapProvider } from "@/hooks/useMapProvider";
 import { frontendEnv } from "@/lib/env";
 import LeafletMapView from "./location-picker-map-leaflet-view";
 import GoogleMapView from "./location-picker-map-google-view";
@@ -52,6 +53,11 @@ interface LocationPickerMapProps {
 }
 
 export default function LocationPickerMap({ value, onChange, areaCenter }: LocationPickerMapProps) {
+  // Applies the admin's choice and tells us which view to render. Google
+  // geocoding results must be shown on a Google map, so the picker's tiles and
+  // its search backend are deliberately the same decision, not two.
+  const mapProvider = useMapProvider();
+
   // Read once — both map views only honor this at creation, every later
   // move goes through `flyTarget` instead.
   const [initialCenter] = useState<[number, number]>(
@@ -248,7 +254,7 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
       </div>
 
       <div className="relative h-64 w-full overflow-hidden rounded-xl border border-border">
-        {frontendEnv.mapProvider === "google" && frontendEnv.googleMapsApiKey ? (
+        {mapProvider === "google" ? (
           <GoogleMapView
             initialCenter={initialCenter}
             zoom={value ? 16 : 12}

@@ -7,7 +7,13 @@ import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { logger } from "@repo/libs/logger";
 import { formatOrderId } from "@repo/shared/order-id";
-import { invalidateSellerStatsCache, releaseRiderIfNoOtherDeliveries, hydrateOrders } from "./utils.js";
+import {
+  invalidateSellerStatsCache,
+  releaseRiderIfNoOtherDeliveries,
+  hydrateOrders,
+  recordCodCollection,
+  recordDeliveryDistance,
+} from "./utils.js";
 
 // Once an order is DELIVERED, the rider has no further reason to hold the
 // customer's phone number or exact address — stripped server-side (not just
@@ -260,6 +266,11 @@ export const markDelivered = async (
         logger.error("Failed to release rider after delivery", { orderId, riderId: order.riderId, err }),
       );
     }
+
+    // The cash the rider is now holding, and how far they rode for it. Both are
+    // bookkeeping and neither may fail a completed delivery.
+    void recordCodCollection({ ...order, deliveredAt: uploadedAt });
+    void recordDeliveryDistance(order);
     invalidateSellerStatsCache(req.seller?.id).catch(() => {});
 
     const shortId = formatOrderId(orderId);

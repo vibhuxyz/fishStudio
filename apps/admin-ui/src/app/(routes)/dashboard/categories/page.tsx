@@ -25,6 +25,7 @@ import {
   updateAdminCategory,
   updateAdminSubCategory,
   useAdminCategories,
+  updateMapProvider,
   type UpdateCategoryPayload,
   type UpdateSubCategoryPayload,
 } from "@/hooks/useAdminQueries";
@@ -52,6 +53,18 @@ async function convertToBase64(file: File): Promise<string> {
 const CategoriesPage = () => {
   const queryClient = useQueryClient();
   const { data, isLoading } = useAdminCategories();
+
+  const mapProviderMutation = useMutation({
+    mutationFn: updateMapProvider,
+    onSuccess: (_res, provider) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.categories });
+      toast.success(
+        provider === "google" ? "Switched to Google Maps" : "Switched to OpenStreetMap",
+      );
+    },
+    onError: (error: any) =>
+      toast.error(error?.response?.data?.message || "Could not change the map provider"),
+  });
   const categories = data?.categories || [];
   const subCategories = data?.subCategories || {};
   const categoryImages = data?.categoryImages || {};
@@ -214,6 +227,41 @@ const CategoriesPage = () => {
       breadcrumbTitle="Category Manager"
       description="Manage the catalog categories and subcategories used in admin product forms."
     >
+      {/* Map backend. Lives here because this page already owns site_config,
+          and the setting rides the same cached payload the categories do. */}
+      <div className="mb-6 rounded-xl bg-gray-900 p-5">
+        <h3 className="mb-1 text-lg font-semibold text-white">Maps &amp; Location</h3>
+        <p className="mb-4 text-xs text-gray-400">
+          Which map and address-search backend the website and app use. Applies to
+          everyone within ten minutes, without a deploy — switch back to OpenStreetMap
+          if the Google key is revoked or billing lapses.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {(["osm", "google"] as const).map((option) => {
+            const isActive = (data?.mapProvider ?? "osm") === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                disabled={mapProviderMutation.isPending}
+                onClick={() => mapProviderMutation.mutate(option)}
+                className={`rounded-lg border px-4 py-2 text-sm font-semibold transition disabled:opacity-50 ${
+                  isActive
+                    ? "border-blue-500 bg-blue-600/20 text-blue-300"
+                    : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                }`}
+              >
+                {option === "osm" ? "OpenStreetMap (free)" : "Google Maps (billed)"}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-[11px] italic text-gray-500">
+          Google Maps needs a key configured in each client build. Where one is missing,
+          that client stays on OpenStreetMap rather than showing an empty map.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[420px,1fr]">
         {/* ── Left panel ── */}
         <div className="space-y-6">

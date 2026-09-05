@@ -120,6 +120,21 @@ export const registrationRateLimiter = createRateLimiter({
 // each of them an OTP on the next visit, which is the exact problem this app
 // keeps hitting. The ceiling is generous because a returning customer with a
 // few open tabs legitimately fires several refreshes in a burst on resume.
+/**
+ * Geocoding proxy. Every call costs money at Google, so the ceiling is about
+ * spend as much as abuse — an address picker debounces to a handful of lookups
+ * per address, and 60 in ten minutes is well clear of that.
+ *
+ * Fails open, unlike the auth limiters: Redis being down should degrade the
+ * address picker's rate limiting, not take address entry offline entirely.
+ */
+export const geocodingRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  message: "Too many location lookups, please try again shortly.",
+  keyPrefix: "rl:geo",
+});
+
 export const refreshRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 120,

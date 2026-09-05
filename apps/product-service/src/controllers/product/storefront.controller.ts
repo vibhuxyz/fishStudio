@@ -236,9 +236,24 @@ export const getStoreProducts = async (
         ...categoryFilter,
         ...subCategoryFilter,
       };
+      // Admin merchandising leads, then the previous ordering. sortOrder is
+      // nullable and Mongo sorts nulls first on ascending, which would put
+      // every unranked product ahead of every ranked one — exactly backwards —
+      // so `isFeatured desc` carries the intent and sortOrder only orders
+      // within the featured set. Unranked featured products fall back to the
+      // same tiebreakers everything else uses.
       const catalogOrderBy = isHomepage
-        ? [{ totalSold: "desc" as const }, { createdAt: "desc" as const }]
-        : [{ createdAt: "desc" as const }];
+        ? [
+            { isFeatured: "desc" as const },
+            { sortOrder: "asc" as const },
+            { totalSold: "desc" as const },
+            { createdAt: "desc" as const },
+          ]
+        : [
+            { isFeatured: "desc" as const },
+            { sortOrder: "asc" as const },
+            { createdAt: "desc" as const },
+          ];
 
       // Oversample so the JS catalog-root filter + in-stock priority sort
       // still return a full page even after dropping non-root entries.

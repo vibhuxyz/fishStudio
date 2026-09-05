@@ -7,7 +7,7 @@ import { Sidebar } from "../sidebar/sidebar.styles";
 import Link from "next/link";
 import SidebarItem from "../sidebar/sidebar.item";
 import SidebarMenu from "../sidebar/sidebar.menu";
-import { ListOrdered, LogOut, CheckCircle, XCircle, Boxes } from "lucide-react";
+import { ListOrdered, LogOut, CheckCircle, XCircle, Boxes, Wallet, CalendarCheck } from "lucide-react";
 import useSidebar from "@/hooks/useSidebar";
 import Logo from "@/assets/svgs/logo";
 import useRequireStaff from "@/hooks/useRequireStaff";
@@ -112,6 +112,18 @@ const StaffSidebar = () => {
                     color={getIconColor("/staff/inventory")}
                   />
                 }
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/staff/cod"}
+                title="COD Cash"
+                href="/staff/cod"
+                icon={<Wallet size={26} color={getIconColor("/staff/cod")} />}
+              />
+              <SidebarItem
+                isActive={activeSidebar === "/staff/attendance"}
+                title="Attendance"
+                href="/staff/attendance"
+                icon={<CalendarCheck size={26} color={getIconColor("/staff/attendance")} />}
               />
             </SidebarMenu>
             <SidebarMenu title="Account">

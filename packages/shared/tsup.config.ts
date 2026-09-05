@@ -12,6 +12,8 @@ export default defineConfig((options) => ({
     "store-hours/index": "src/store-hours/index.ts",
     "datetime/index": "src/datetime/index.ts",
     "data/index": "src/data/index.ts",
+    "delivery-slots/index": "src/delivery-slots/index.ts",
+    "geo/index": "src/geo/index.ts",
   },
   format: ["esm"],
   target: "node18",

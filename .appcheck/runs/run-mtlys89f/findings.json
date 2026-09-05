@@ -1,0 +1,43 @@
+{
+  "summary": {
+    "project": "fishStudio",
+    "runId": "run-mtlys89f",
+    "bootLevel": "L1",
+    "seed": "run-mtlys89f",
+    "profile": "boot only — the app did not become reachable",
+    "plan": {
+      "source": "planner-llm",
+      "modelCalls": 1,
+      "scenarios": [
+        "Customer Product Discovery and Checkout (65%)",
+        "Seller Order and Inventory Management (25%)",
+        "Delivery Staff Order Dispatch (10%)"
+      ],
+      "businessRules": [
+        "A product must be in stock before order creation via /create-razorpay-order",
+        "Seller must accept an order before rider assignment or delivery dispatch",
+        "Orders must be marked picked up via /staff/mark-picked-up/:orderId before being marked delivered via /staff/mark-delivered/:orderId"
+      ],
+      "docsIngested": []
+    },
+    "dataCounts": {},
+    "measured": {
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "requests": 0,
+      "errors": 0
+    },
+    "control": {
+      "p95": 0,
+      "flat": true
+    },
+    "proof": null,
+    "notMeasured": [
+      "everything that needs a running app — the app rejected its environment on boot — a required variable is missing. copy the missing keys from .env.example into a local .env, or set `env` in the config",
+      "missing-index / EXPLAIN / verified proof — Postgres-only in the MVP",
+      "data-volume findings — no Mongoose schema and the API seed did not populate anything."
+    ]
+  },
+  "findings": []
+}

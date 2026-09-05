@@ -245,7 +245,40 @@ const googleMapsProvider: GeocodingProvider = {
   },
 };
 
-export const geocodingProvider: GeocodingProvider =
-  frontendEnv.mapProvider === "google" && frontendEnv.googleMapsApiKey
-    ? googleMapsProvider
-    : nominatimProvider;
+/* ── Runtime provider selection ───────────────────────────────────────────
+   Which backend is live is an admin setting (site_config.mapProvider), not a
+   build-time constant. Google Maps costs money per request and a key can be
+   revoked or a billing account can lapse — when that happens the fix has to be
+   one toggle away, not a redeploy. OSM needs no key and is the fallback.
+
+   `geocodingProvider` stays a plain object so no call site changes: it just
+   delegates each call to whichever provider is active at the time.
+─────────────────────────────────────────────────────────────────────────── */
+let runtimeProvider: "osm" | "google" | null = null;
+
+/** Called once the site config lands. Null restores the build's own default. */
+export function setMapProvider(provider: string | null | undefined) {
+  runtimeProvider = provider === "google" || provider === "osm" ? provider : null;
+}
+
+/**
+ * The backend in force right now.
+ *
+ * Google is only honoured when a key is actually configured — an admin
+ * switching to Google on a build with no key would otherwise get a picker that
+ * silently returns nothing, which is worse than staying on OSM.
+ */
+export function activeMapProvider(): "osm" | "google" {
+  const choice = runtimeProvider ?? frontendEnv.mapProvider;
+  return choice === "google" && frontendEnv.googleMapsApiKey ? "google" : "osm";
+}
+
+const active = (): GeocodingProvider =>
+  activeMapProvider() === "google" ? googleMapsProvider : nominatimProvider;
+
+export const geocodingProvider: GeocodingProvider = {
+  search: (query, bounds) => active().search(query, bounds),
+  reverseGeocode: (point) => active().reverseGeocode(point),
+  geocode: (query) => active().geocode(query),
+  nearbyLandmarks: (center, bounds) => active().nearbyLandmarks(center, bounds),
+};

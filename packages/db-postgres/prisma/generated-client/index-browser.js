@@ -133,6 +133,7 @@ exports.Prisma.OrderScalarFieldEnum = {
   discountAmount: 'discountAmount',
   couponCode: 'couponCode',
   deliverySlot: 'deliverySlot',
+  deliveryDate: 'deliveryDate',
   deliveryName: 'deliveryName',
   deliveryPhone: 'deliveryPhone',
   deliveryAddress: 'deliveryAddress',
@@ -154,6 +155,7 @@ exports.Prisma.OrderScalarFieldEnum = {
   assignedBy: 'assignedBy',
   pickupStartedAt: 'pickupStartedAt',
   deliveredAt: 'deliveredAt',
+  deliveryDistanceKm: 'deliveryDistanceKm',
   preparationPhotos: 'preparationPhotos',
   deliveryProofPhotoUrl: 'deliveryProofPhotoUrl',
   deliveryProofPhotoPublicId: 'deliveryProofPhotoPublicId',
@@ -173,6 +175,15 @@ exports.Prisma.InvoiceSequenceScalarFieldEnum = {
   locationCode: 'locationCode',
   financialYear: 'financialYear',
   lastSeq: 'lastSeq',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DeliverySlotBookingScalarFieldEnum = {
+  storeId: 'storeId',
+  deliveryDate: 'deliveryDate',
+  slotKey: 'slotKey',
+  booked: 'booked',
+  capacity: 'capacity',
   updatedAt: 'updatedAt'
 };
 
@@ -272,6 +283,43 @@ exports.Prisma.StockReservationScalarFieldEnum = {
   status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CodCollectionScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  riderId: 'riderId',
+  storeId: 'storeId',
+  amount: 'amount',
+  collectedAt: 'collectedAt',
+  settlementId: 'settlementId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CodSettlementScalarFieldEnum = {
+  id: 'id',
+  riderId: 'riderId',
+  storeId: 'storeId',
+  amount: 'amount',
+  orderCount: 'orderCount',
+  settledBy: 'settledBy',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.StaffAttendanceScalarFieldEnum = {
+  id: 'id',
+  staffId: 'staffId',
+  storeId: 'storeId',
+  checkInAt: 'checkInAt',
+  checkOutAt: 'checkOutAt',
+  selfieUrl: 'selfieUrl',
+  selfiePublicId: 'selfiePublicId',
+  latitude: 'latitude',
+  longitude: 'longitude',
+  distanceMeters: 'distanceMeters',
+  isWithinGeofence: 'isWithinGeofence',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.ProductCoPurchaseScalarFieldEnum = {
@@ -377,7 +425,8 @@ exports.AuditEntityType = exports.$Enums.AuditEntityType = {
   COUPON: 'COUPON',
   STOCK: 'STOCK',
   REFUND: 'REFUND',
-  REFERRAL: 'REFERRAL'
+  REFERRAL: 'REFERRAL',
+  COD: 'COD'
 };
 
 exports.ActorType = exports.$Enums.ActorType = {
@@ -402,6 +451,7 @@ exports.StockReservationStatus = exports.$Enums.StockReservationStatus = {
 exports.Prisma.ModelName = {
   Order: 'Order',
   InvoiceSequence: 'InvoiceSequence',
+  DeliverySlotBooking: 'DeliverySlotBooking',
   OrderNumberSequence: 'OrderNumberSequence',
   OrderItem: 'OrderItem',
   Payment: 'Payment',
@@ -411,6 +461,9 @@ exports.Prisma.ModelName = {
   WebhookEvent: 'WebhookEvent',
   OutboxEvent: 'OutboxEvent',
   StockReservation: 'StockReservation',
+  CodCollection: 'CodCollection',
+  CodSettlement: 'CodSettlement',
+  StaffAttendance: 'StaffAttendance',
   ProductCoPurchase: 'ProductCoPurchase',
   ProductOrderStat: 'ProductOrderStat',
   CoPurchaseState: 'CoPurchaseState'

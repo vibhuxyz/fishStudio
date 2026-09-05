@@ -31,7 +31,10 @@ export type AuditAction =
   | "REFUND_INITIATED"
   | "REFUND_PROCESSED"
   | "REFUND_FAILED"
-  | "REFERRAL_REWARDED";
+  | "REFERRAL_REWARDED"
+  // A manager confirmed cash a rider handed over. The one action here that
+  // records a person taking responsibility for physical money.
+  | "COD_SETTLED";
 
 // Fire-and-forget: the audit trail must never block or fail the request that
 // produced it. Failures are logged with enough context to backfill manually.

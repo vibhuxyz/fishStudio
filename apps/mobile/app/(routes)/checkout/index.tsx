@@ -137,7 +137,7 @@ export default function CheckoutScreen() {
   } = useCouponStore();
 
   const {
-    selectedSlot, instantFee, setSlotAvailability,
+    selectedSlot, selectedDeliveryDate, deliverySlots, instantFee, setSlotAvailability,
     gstRate, packagingCharge, baseDeliveryCharge: sellerDeliveryCharge, freeDeliveryThreshold,
     setBillConfig,
   } = useDeliverySlotStore();
@@ -163,7 +163,18 @@ export default function CheckoutScreen() {
   const paymentIssueRef = useRef<PaymentIssue | null>(null);
 
   const selectedAddress = getSelectedAddress();
+  // Instant still comes from the static list (it has a fee and no date); a
+  // scheduled slot's label comes from the store's own configuration, which
+  // SLOT_OPTIONS can't know about.
   const slot = SLOT_OPTIONS.find((s) => s.key === selectedSlot);
+  const scheduledSlot = deliverySlots.find(
+    (s) => s.key === selectedSlot && s.deliveryDate === selectedDeliveryDate,
+  );
+  const slotSummary = scheduledSlot
+    ? `${scheduledSlot.dateLabel} · ${scheduledSlot.label}`
+    : slot
+      ? `${slot.name} · ${slot.time}`
+      : "Select a slot";
   const razorpayAvailable = isRazorpayAvailable();
 
   const subtotal = useMemo(
@@ -231,7 +242,7 @@ export default function CheckoutScreen() {
         })
         .then(({ data }) => {
           if (data.success) {
-            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20);
+            setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20, data.deliverySlots || []);
             setBillConfig({
               gstRate: data.gstRate ?? 0,
               packagingCharge: data.packagingCharge ?? 0,
@@ -598,6 +609,7 @@ export default function CheckoutScreen() {
         totalAmount: grandTotal,
         paymentMethod,
         deliverySlot: selectedSlot,
+        ...(selectedDeliveryDate ? { deliveryDate: selectedDeliveryDate } : {}),
         // Order-service's couponCode is a single exact-match lookup against
         // discount_codes — sending more than one code here (the old
         // join(",")) never matches a real discountCode and createOrder
@@ -732,7 +744,14 @@ export default function CheckoutScreen() {
   // above) — gating on it here made the button look stuck disabled for that
   // window even with address, slot and payment all chosen. It's still
   // required to submit, just checked at that point instead.
-  const canPlaceOrder = !isPlacingOrder && !!selectedAddress && !!selectedSlot && !!paymentMethod;
+  const canPlaceOrder =
+    !isPlacingOrder &&
+    !!selectedAddress &&
+    !!selectedSlot &&
+    // A scheduled slot without its day is ambiguous — order-service would have
+    // to guess which day the customer meant.
+    (selectedSlot === "instant" || !!selectedDeliveryDate) &&
+    !!paymentMethod;
 
   // COD isn't a payment happening now, so it keeps the neutral "Place Order";
   // every online rail is a real charge, so the CTA says what it does.
@@ -772,7 +791,7 @@ export default function CheckoutScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: "#1A1C1C" }}>
-                {slot ? `${slot.name} · ${slot.time}` : "Select a slot"}
+                {slotSummary}
               </Text>
               <Text style={{ fontFamily: "Inter-Regular", fontSize: 12, color: "#898B8A", marginTop: 2 }}>
                 Delivering to {selectedAddress.label} · {selectedAddress.city}

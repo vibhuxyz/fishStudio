@@ -34,6 +34,8 @@ export function toMeiliDoc(product: {
   catalogProductId?: string | null;
   stock?: number | null;
   updatedAt?: Date | string | null;
+  sortOrder?: number | null;
+  isFeatured?: boolean | null;
 }) {
   // Strict Image Fallback: Prefer variant image, then catalog image, then absolute placeholder
   const primaryImage =
@@ -80,6 +82,12 @@ export function toMeiliDoc(product: {
       : new Date().toISOString(),
     // true only for store variants (have both storeId and catalogProductId)
     isStoreVariant: !!(product.storeId && product.catalogProductId),
+    // Merchandising. Unranked products get a large sentinel rather than null:
+    // Meilisearch sorts null unpredictably relative to numbers, and the intent
+    // is "everything ranked first, everything else after", which only holds if
+    // unranked is a number bigger than any real rank.
+    sortOrder: product.sortOrder ?? 999_999,
+    isFeatured: product.isFeatured ?? false,
   };
 }
 
@@ -106,6 +114,7 @@ export async function initMeilisearchIndex() {
         "isCatalog",
         "priority",
         "available",
+        "isFeatured",
       ],
       sortableAttributes: [
         "sale_price",
@@ -113,6 +122,7 @@ export async function initMeilisearchIndex() {
         "priority",
         "updatedAt",
         "searchBoost",
+        "sortOrder",
       ],
       rankingRules: [
         "priority:asc",

@@ -98,6 +98,10 @@ enum AuditEntityType {
   STOCK
   REFUND
   REFERRAL
+  // Cash a rider collected and a manager signed off. Distinct from PAYMENT:
+  // that is money moving through the gateway, this is money moving hand to
+  // hand, and the two get reconciled against each other.
+  COD
 }
 
 enum ActorType {
@@ -142,6 +146,12 @@ model Order {
   // literals throughout user-ui and mobile, so uppercasing it would break the
   // response contract.
   deliverySlot   String? // "instant" | "morning" | "evening"
+  // The calendar day the slot belongs to, ddMMyyyy in IST — same convention as
+  // OrderNumberSequence.dateKey. Kept as the store's own day rather than a
+  // timestamp because that is what capacity is counted against, and a UTC day
+  // would roll over at 05:30 local. Null on orders placed before slots were
+  // dated, and on "instant", which is always today by definition.
+  deliveryDate   String?
 
   // Delivery details
   deliveryName         String?
@@ -169,12 +179,17 @@ model Order {
 
   // Rider assignment — riderId is a bare reference to the Mongo `staffs`
   // collection (role: RIDER), same cross-DB convention as storeId/userId above.
-  riderId         String?
-  riderStatus     OrderRiderStatus?
-  assignedAt      DateTime?         @db.Timestamptz(3)
-  assignedBy      String? // sellerId or staffId (Mongo ObjectId) who assigned the rider
-  pickupStartedAt DateTime?         @db.Timestamptz(3) // set when status flips to SHIPPED (rider left the store)
-  deliveredAt     DateTime?         @db.Timestamptz(3) // set when status flips to DELIVERED
+  riderId            String?
+  riderStatus        OrderRiderStatus?
+  assignedAt         DateTime?         @db.Timestamptz(3)
+  assignedBy         String? // sellerId or staffId (Mongo ObjectId) who assigned the rider
+  pickupStartedAt    DateTime?         @db.Timestamptz(3) // set when status flips to SHIPPED (rider left the store)
+  deliveredAt        DateTime?         @db.Timestamptz(3) // set when status flips to DELIVERED
+  // Store to delivery pin, captured once at delivery. Stored rather than
+  // derived on read so a rider's day still adds up after an address is edited
+  // or a store moves — and so the number a rider is measured on cannot change
+  // retroactively. Null when either end had no coordinates.
+  deliveryDistanceKm Decimal?          @db.Decimal(6, 2)
 
   // Cutting Staff prep photos — set when a CUTTING_STAFF staff member marks
   // preparation complete (status flips to READY_FOR_PICKUP). Array of
@@ -227,6 +242,10 @@ model Order {
   // cannot express, which is why this is a plain @@index.
   @@index([orderNumber])
   @@index([invoiceNumber])
+  // The staff/seller order board filters by the delivery day for a store, which
+  // is a different question from createdAt — an order placed yesterday can be
+  // due today. Neither existing compound index has this as a prefix.
+  @@index([storeId, deliveryDate])
 }
 
 // Per-location, per-financial-year counter behind Order.invoiceNumber.
@@ -246,6 +265,31 @@ model InvoiceSequence {
   updatedAt     DateTime @updatedAt @db.Timestamptz(3)
 
   @@id([locationCode, financialYear])
+}
+
+// How many orders are already committed to one store's slot on one day.
+//
+// Capacity lives on the row rather than being read from the store's config at
+// reserve time, so a seller lowering the cap mid-day cannot retroactively
+// invalidate orders already taken against the old one. The row is created with
+// whatever the cap was when the day's first order landed.
+//
+// Claimed with a single INSERT ... ON CONFLICT DO UPDATE ... WHERE booked <
+// capacity ... RETURNING. The WHERE is the double-booking guard: two checkouts
+// racing for the last place mean one gets a row back and the other gets none,
+// with no lock held and no read-then-write window between them.
+model DeliverySlotBooking {
+  storeId      String
+  // ddMMyyyy in IST, matching Order.deliveryDate and OrderNumberSequence.
+  deliveryDate String
+  // "morning" | "evening" — matches Order.deliverySlot. "instant" is never
+  // booked here: it is capped by the store's own delivery window, not a count.
+  slotKey      String
+  booked       Int      @default(0)
+  capacity     Int
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([storeId, deliveryDate, slotKey])
 }
 
 // Per-location, per-day counter behind Order.orderNumber's last segment.
@@ -452,6 +496,97 @@ model StockReservation {
 // delivered order. The pair is stored once with catalogA < catalogB so a pair
 // can never be double-counted under two orderings; reads must therefore look at
 // both columns, hence the two indexes.
+// Cash a rider took at the door, one row per delivered COD order.
+//
+// Written when the order flips to DELIVERED rather than derived from Order on
+// read: the amount owed is what was collected at that moment, and a later
+// refund or edit to the order must not silently change what a rider is holding.
+// Reconciliation is about the cash, not about the order's current state.
+model CodCollection {
+  id      String @id @default(cuid())
+  // One collection per order — a second delivery of the same order is a bug,
+  // and the unique index is what makes a retried mark-delivered idempotent.
+  orderId String @unique
+  // Bare references to the Mongo `staffs` and `stores` collections, the same
+  // cross-DB convention Order.riderId/storeId already use.
+  riderId String
+  storeId String
+
+  amount      Decimal  @db.Decimal(12, 2)
+  collectedAt DateTime @db.Timestamptz(3)
+
+  // Null until a manager marks the cash received. This is the outstanding
+  // balance: sum of amounts where this is null.
+  settlementId String?
+  settlement   CodSettlement? @relation(fields: [settlementId], references: [id])
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  // "What does this rider still owe" — the query the dashboard opens on.
+  @@index([riderId, settlementId])
+  @@index([storeId, collectedAt(sort: Desc)])
+}
+
+// A manager acknowledging cash handed over, covering one or more collections.
+//
+// Separate from CodCollection so a settlement can cover a partial set: a rider
+// who hands over some of what they hold gets the collections they settled
+// stamped, and the rest stay outstanding.
+model CodSettlement {
+  id      String @id @default(cuid())
+  riderId String
+  storeId String
+
+  amount     Decimal @db.Decimal(12, 2)
+  // Denormalised so the history list doesn't need a join per row to say
+  // "12 orders, ₹8,400".
+  orderCount Int
+
+  // The seller or staff Mongo id that signed off. Who took responsibility for
+  // the cash is the whole point of the record.
+  settledBy String
+  notes     String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  collections CodCollection[]
+
+  @@index([storeId, createdAt(sort: Desc)])
+  @@index([riderId, createdAt(sort: Desc)])
+}
+
+// A rider's shift check-in: a selfie and a location, taken at the store.
+//
+// The computed distance is stored alongside the raw coordinates rather than
+// only the pass/fail, so a disputed check-in can be re-examined against the
+// numbers that were actually used instead of re-derived against a store pin
+// that may have moved since.
+model StaffAttendance {
+  id      String @id @default(cuid())
+  staffId String
+  storeId String
+
+  checkInAt  DateTime  @db.Timestamptz(3)
+  checkOutAt DateTime? @db.Timestamptz(3)
+
+  selfieUrl      String
+  selfiePublicId String
+
+  latitude         Decimal @db.Decimal(9, 6)
+  longitude        Decimal @db.Decimal(9, 6)
+  // Metres from the store at check-in, and whether that was inside the fence.
+  // Out-of-range attempts are recorded, not discarded — "the rider tried to
+  // check in from 4km away" is exactly what a manager needs to see.
+  distanceMeters   Int
+  isWithinGeofence Boolean
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  // The manager's daily roster view, and one person's own history.
+  @@index([storeId, checkInAt(sort: Desc)])
+  @@index([staffId, checkInAt(sort: Desc)])
+}
+
 model ProductCoPurchase {
   catalogA   String
   catalogB   String

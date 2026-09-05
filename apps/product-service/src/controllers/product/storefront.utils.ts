@@ -45,6 +45,11 @@ export const storefrontVariantSelect = {
   id: true,
   catalogProductId: true,
   stock: true,
+  // Per-size stock, for products sold by weight tier. Without these the
+  // storefront has no way to know a single size is sold out and offers it
+  // anyway, which the customer only discovers at checkout.
+  trackStockPerSize: true,
+  sizeStock: true,
   sale_price: true,
   regular_price: true,
   sizePricing: true,
@@ -258,6 +263,34 @@ export const pickBestVariantPerCatalog = <
   return bestVariantMap;
 };
 
+/**
+ * One entry per size the product is sold in, with whether it can be bought.
+ *
+ * `sizeStock` is an array of {size, qty} rather than a map — size labels like
+ * "1.1 kg" contain dots, which Mongo would read as nested-path separators.
+ */
+const buildSizeAvailability = (catalog: any, variant: any) => {
+  const sizes: string[] = catalog.sizes ?? variant.sizes ?? [];
+  if (sizes.length === 0) return [];
+
+  if (!variant.trackStockPerSize) {
+    const inStock = (variant.stock ?? 0) > 0;
+    return sizes.map((size) => ({ size, qty: variant.stock ?? 0, inStock }));
+  }
+
+  const qtyBySize = new Map(
+    ((variant.sizeStock ?? []) as Array<{ size: string; qty: number }>).map(
+      (entry) => [entry.size, Number(entry.qty) || 0],
+    ),
+  );
+  // A size with no entry is treated as sold out, not as unlimited — the
+  // safe direction when the seller has opted into per-size tracking.
+  return sizes.map((size) => {
+    const qty = qtyBySize.get(size) ?? 0;
+    return { size, qty, inStock: qty > 0 };
+  });
+};
+
 export const mergeCatalogWithVariant = (
   catalog: any,
   variant: any,
@@ -269,6 +302,13 @@ export const mergeCatalogWithVariant = (
       catalogProductId: catalog.id,
       stock: 0,
       inStock: false,
+      // No variant means no store stocks it here, so every size is unavailable
+      // rather than unknown.
+      sizeAvailability: (catalog.sizes ?? []).map((size: string) => ({
+        size,
+        qty: 0,
+        inStock: false,
+      })),
       sale_price: null,
       regular_price: null,
       storeId: preferredStore?.id ?? null,
@@ -311,6 +351,14 @@ export const mergeCatalogWithVariant = (
     basePricePerKg: variant.basePricePerKg ?? catalog.basePricePerKg ?? null,
     storeId: variant.storeId,
     inStock: (variant.stock ?? 0) > 0,
+    // Per-size availability, so the picker can disable a sold-out weight
+    // instead of letting the customer choose it and fail at checkout.
+    //
+    // Disabled rather than hidden: a size that silently disappears makes the
+    // product look broken and throws away the signal that someone wanted it.
+    // When the seller does not track stock per size, every listed size follows
+    // the variant's single pool.
+    sizeAvailability: buildSizeAvailability(catalog, variant),
     discount_codes: variant.discount_codes ?? [],
     images: catalog.images?.length ? catalog.images : variant.images,
     activeEvents,

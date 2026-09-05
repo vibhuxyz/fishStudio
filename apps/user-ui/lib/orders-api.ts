@@ -59,6 +59,8 @@ export interface Order {
   paymentMethod: string;
   paymentStatus: string;
   deliverySlot?: string;
+  /** ddMMyyyy in IST. Absent for instant, and for orders placed before slots were dated. */
+  deliveryDate?: string | null;
   deliveryName?: string;
   deliveryPhone?: string;
   deliveryAddress?: string;

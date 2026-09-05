@@ -1,0 +1,1047 @@
+{
+  "runtime": "node",
+  "packageManager": "bun",
+  "framework": "unknown",
+  "entrypoint": "src/index.ts",
+  "devCommand": "bun dev",
+  "port": 80,
+  "orm": "prisma",
+  "schemaPath": "packages/db-mongo/prisma/generated-client/schema.prisma",
+  "services": [
+    "rabbitmq"
+  ],
+  "compose": "docker-compose.yml",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/auth-service/src/main.ts",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/notification-service/src/main.ts",
+      "line": 98
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/notification-service/src/routes/notification.router.ts",
+      "line": 9
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/order-service/src/main.ts",
+      "line": 72
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/payment-service/src/main.ts",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/product-service/src/main.ts",
+      "line": 62
+    },
+    {
+      "method": "PATCH",
+      "path": "/:id/read",
+      "file": "apps/notification-service/src/routes/notification.router.ts",
+      "line": 10
+    },
+    {
+      "method": "PUT",
+      "path": "/accept-reject/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 70
+    },
+    {
+      "method": "POST",
+      "path": "/add-address",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 101
+    },
+    {
+      "method": "POST",
+      "path": "/add-catalog-product-to-store/:catalogProductId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 362
+    },
+    {
+      "method": "GET",
+      "path": "/admin-orders/:sellerId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 132
+    },
+    {
+      "method": "POST",
+      "path": "/admin-registration",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 133
+    },
+    {
+      "method": "GET",
+      "path": "/admin-stats",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 130
+    },
+    {
+      "method": "GET",
+      "path": "/admin-stats/:sellerId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 131
+    },
+    {
+      "method": "GET",
+      "path": "/admin/attention",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 34
+    },
+    {
+      "method": "POST",
+      "path": "/admin/delete-cloudinary-image",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 234
+    },
+    {
+      "method": "POST",
+      "path": "/admin/generate-seller-code",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 121
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 143
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 145
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/orders/:orderId/status",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 147
+    },
+    {
+      "method": "GET",
+      "path": "/admin/orders/pincodes",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 141
+    },
+    {
+      "method": "POST",
+      "path": "/admin/reindex-search",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 318
+    },
+    {
+      "method": "GET",
+      "path": "/admin/seller-codes",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 127
+    },
+    {
+      "method": "GET",
+      "path": "/admin/seller-inventory",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 326
+    },
+    {
+      "method": "GET",
+      "path": "/admin/sellers",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 138
+    },
+    {
+      "method": "GET",
+      "path": "/admin/sellers/:sellerId",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 139
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/sellers/:sellerId/approval",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 145
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/stores/:storeId/settings",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 154
+    },
+    {
+      "method": "POST",
+      "path": "/admin/upload-cloudinary-image",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 228
+    },
+    {
+      "method": "POST",
+      "path": "/admin/verifycode",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 120
+    },
+    {
+      "method": "PUT",
+      "path": "/assign-rider/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 78
+    },
+    {
+      "method": "PUT",
+      "path": "/bulk-update-status",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 74
+    },
+    {
+      "method": "PUT",
+      "path": "/cancel/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 63
+    },
+    {
+      "method": "GET",
+      "path": "/cart",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 348
+    },
+    {
+      "method": "POST",
+      "path": "/cart/clear",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 349
+    },
+    {
+      "method": "PUT",
+      "path": "/change-rider/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 79
+    },
+    {
+      "method": "GET",
+      "path": "/check-pincode",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 116
+    },
+    {
+      "method": "POST",
+      "path": "/create",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 48
+    },
+    {
+      "method": "POST",
+      "path": "/create-category",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 183
+    },
+    {
+      "method": "POST",
+      "path": "/create-combo",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 413
+    },
+    {
+      "method": "POST",
+      "path": "/create-discount-code",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 116
+    },
+    {
+      "method": "POST",
+      "path": "/create-event",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 123
+    },
+    {
+      "method": "POST",
+      "path": "/create-product",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 308
+    },
+    {
+      "method": "POST",
+      "path": "/create-razorpay-order",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 16
+    },
+    {
+      "method": "POST",
+      "path": "/create-review",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 353
+    },
+    {
+      "method": "POST",
+      "path": "/create-store",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 168
+    },
+    {
+      "method": "POST",
+      "path": "/create-subcategory",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 189
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-address/:addressId",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 108
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-banner/:bannerId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 275
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-category",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 196
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-combo/:comboId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 427
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-discount-code/:id",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 157
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-event/:eventId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 174
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-product/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 397
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-review/:reviewId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 354
+    },
+    {
+      "method": "POST",
+      "path": "/delete-store-image",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 248
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-subcategory",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 202
+    },
+    {
+      "method": "DELETE",
+      "path": "/delete-user",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 98
+    },
+    {
+      "method": "GET",
+      "path": "/eligible-riders/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 77
+    },
+    {
+      "method": "GET",
+      "path": "/for-you",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 342
+    },
+    {
+      "method": "POST",
+      "path": "/forgot-password-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 166
+    },
+    {
+      "method": "GET",
+      "path": "/get-admin-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 281
+    },
+    {
+      "method": "GET",
+      "path": "/get-all-category-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 287
+    },
+    {
+      "method": "GET",
+      "path": "/get-all-products",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 336
+    },
+    {
+      "method": "GET",
+      "path": "/get-announcement-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 306
+    },
+    {
+      "method": "GET",
+      "path": "/get-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 305
+    },
+    {
+      "method": "GET",
+      "path": "/get-catalog-products",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 356
+    },
+    {
+      "method": "GET",
+      "path": "/get-categories",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 181
+    },
+    {
+      "method": "GET",
+      "path": "/get-combo/:comboId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 447
+    },
+    {
+      "method": "GET",
+      "path": "/get-combos",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 449
+    },
+    {
+      "method": "GET",
+      "path": "/get-discount-codes",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 130
+    },
+    {
+      "method": "GET",
+      "path": "/get-homepage-sections",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 338
+    },
+    {
+      "method": "GET",
+      "path": "/get-my-reviews",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 352
+    },
+    {
+      "method": "GET",
+      "path": "/get-order-details/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 69
+    },
+    {
+      "method": "GET",
+      "path": "/get-order/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 52
+    },
+    {
+      "method": "GET",
+      "path": "/get-owned-product/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 375
+    },
+    {
+      "method": "GET",
+      "path": "/get-owned-products",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 369
+    },
+    {
+      "method": "GET",
+      "path": "/get-pending-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 293
+    },
+    {
+      "method": "GET",
+      "path": "/get-product-reviews/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 351
+    },
+    {
+      "method": "GET",
+      "path": "/get-product/:slug",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 350
+    },
+    {
+      "method": "GET",
+      "path": "/get-section-products",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 339
+    },
+    {
+      "method": "GET",
+      "path": "/get-seller-banners",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 263
+    },
+    {
+      "method": "GET",
+      "path": "/get-seller-combos",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 441
+    },
+    {
+      "method": "GET",
+      "path": "/get-seller-events",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 136
+    },
+    {
+      "method": "GET",
+      "path": "/get-seller-orders",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 68
+    },
+    {
+      "method": "GET",
+      "path": "/get-store-combos/:storeId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 448
+    },
+    {
+      "method": "GET",
+      "path": "/home",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 84
+    },
+    {
+      "method": "GET",
+      "path": "/internal/health",
+      "file": "apps/auth-service/src/main.ts",
+      "line": 107
+    },
+    {
+      "method": "GET",
+      "path": "/internal/health",
+      "file": "apps/notification-service/src/main.ts",
+      "line": 102
+    },
+    {
+      "method": "GET",
+      "path": "/internal/health",
+      "file": "apps/order-service/src/main.ts",
+      "line": 76
+    },
+    {
+      "method": "GET",
+      "path": "/internal/health",
+      "file": "apps/payment-service/src/main.ts",
+      "line": 107
+    },
+    {
+      "method": "GET",
+      "path": "/internal/health",
+      "file": "apps/product-service/src/main.ts",
+      "line": 66
+    },
+    {
+      "method": "GET",
+      "path": "/invoice/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 56
+    },
+    {
+      "method": "GET",
+      "path": "/logged-in-admin",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 136
+    },
+    {
+      "method": "GET",
+      "path": "/logged-in-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 169
+    },
+    {
+      "method": "GET",
+      "path": "/logged-in-staff",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 176
+    },
+    {
+      "method": "GET",
+      "path": "/logged-in-user",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "path": "/login-admin",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 135
+    },
+    {
+      "method": "POST",
+      "path": "/login-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 165
+    },
+    {
+      "method": "POST",
+      "path": "/logout-admin",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "path": "/logout-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 171
+    },
+    {
+      "method": "POST",
+      "path": "/logout-staff",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 183
+    },
+    {
+      "method": "POST",
+      "path": "/logout-user",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 88
+    },
+    {
+      "method": "POST",
+      "path": "/merge-activity",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 343
+    },
+    {
+      "method": "GET",
+      "path": "/public/store-offers/:storeId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 355
+    },
+    {
+      "method": "PATCH",
+      "path": "/read-all",
+      "file": "apps/notification-service/src/routes/notification.router.ts",
+      "line": 11
+    },
+    {
+      "method": "GET",
+      "path": "/recently-viewed",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 341
+    },
+    {
+      "method": "GET",
+      "path": "/recheck-payment/:orderId",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "path": "/refresh-token",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 115
+    },
+    {
+      "method": "POST",
+      "path": "/refund",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 28
+    },
+    {
+      "method": "PUT",
+      "path": "/remove-rider/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 80
+    },
+    {
+      "method": "PUT",
+      "path": "/request-cod/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 65
+    },
+    {
+      "method": "POST",
+      "path": "/reset-password-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 167
+    },
+    {
+      "method": "PUT",
+      "path": "/restore-product/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 404
+    },
+    {
+      "method": "POST",
+      "path": "/review-banner",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 299
+    },
+    {
+      "method": "GET",
+      "path": "/search",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 316
+    },
+    {
+      "method": "GET",
+      "path": "/search/suggestions",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 317
+    },
+    {
+      "method": "POST",
+      "path": "/seller-registration",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 163
+    },
+    {
+      "method": "GET",
+      "path": "/seller-stats",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "path": "/seller/staff",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 204
+    },
+    {
+      "method": "DELETE",
+      "path": "/seller/staff/:staffId",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 229
+    },
+    {
+      "method": "PUT",
+      "path": "/seller/staff/:staffId",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 205
+    },
+    {
+      "method": "POST",
+      "path": "/seller/staff/:staffId/reset-password",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 211
+    },
+    {
+      "method": "PUT",
+      "path": "/seller/staff/:staffId/status",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 217
+    },
+    {
+      "method": "PUT",
+      "path": "/seller/staff/:staffId/toggle-active",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 223
+    },
+    {
+      "method": "PUT",
+      "path": "/seller/staff/access",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 196
+    },
+    {
+      "method": "GET",
+      "path": "/seller/staff/search",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 190
+    },
+    {
+      "method": "GET",
+      "path": "/seller/staffs",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 189
+    },
+    {
+      "method": "POST",
+      "path": "/send-otp",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 85
+    },
+    {
+      "method": "GET",
+      "path": "/serviceable-areas",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 117
+    },
+    {
+      "method": "POST",
+      "path": "/slug-validator",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 109
+    },
+    {
+      "method": "POST",
+      "path": "/staff/login",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 186
+    },
+    {
+      "method": "PUT",
+      "path": "/staff/mark-delivered/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 106
+    },
+    {
+      "method": "PUT",
+      "path": "/staff/mark-picked-up/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 99
+    },
+    {
+      "method": "GET",
+      "path": "/staff/my-cutting-orders",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 120
+    },
+    {
+      "method": "GET",
+      "path": "/staff/my-rider-orders",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 113
+    },
+    {
+      "method": "PUT",
+      "path": "/staff/prepare-complete/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 92
+    },
+    {
+      "method": "PUT",
+      "path": "/staff/start-preparing/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 85
+    },
+    {
+      "method": "GET",
+      "path": "/stock/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 334
+    },
+    {
+      "method": "PATCH",
+      "path": "/toggle-combo/:comboId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 434
+    },
+    {
+      "method": "PATCH",
+      "path": "/toggle-discount-code/:id",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 163
+    },
+    {
+      "method": "POST",
+      "path": "/track-view",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 340
+    },
+    {
+      "method": "PUT",
+      "path": "/update-address/:addressId",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 102
+    },
+    {
+      "method": "PUT",
+      "path": "/update-avatar",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 91
+    },
+    {
+      "method": "PUT",
+      "path": "/update-banner/:bannerId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 269
+    },
+    {
+      "method": "PUT",
+      "path": "/update-category",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 208
+    },
+    {
+      "method": "PUT",
+      "path": "/update-combo/:comboId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 420
+    },
+    {
+      "method": "PUT",
+      "path": "/update-discount-code/:id",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 151
+    },
+    {
+      "method": "PUT",
+      "path": "/update-event/:eventId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 142
+    },
+    {
+      "method": "PUT",
+      "path": "/update-notification-preferences",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 92
+    },
+    {
+      "method": "PUT",
+      "path": "/update-product-stock/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 388
+    },
+    {
+      "method": "PUT",
+      "path": "/update-product/:productId",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 381
+    },
+    {
+      "method": "PUT",
+      "path": "/update-status/:orderId",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 71
+    },
+    {
+      "method": "POST",
+      "path": "/update-store",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 170
+    },
+    {
+      "method": "PUT",
+      "path": "/update-subcategory",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 214
+    },
+    {
+      "method": "PUT",
+      "path": "/update-user-profile",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 89
+    },
+    {
+      "method": "POST",
+      "path": "/upload-avatar-image",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 90
+    },
+    {
+      "method": "POST",
+      "path": "/upload-banner",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 255
+    },
+    {
+      "method": "POST",
+      "path": "/upload-product-image",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 221
+    },
+    {
+      "method": "POST",
+      "path": "/upload-store-image",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 241
+    },
+    {
+      "method": "GET",
+      "path": "/user-order-stats",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 50
+    },
+    {
+      "method": "GET",
+      "path": "/user-orders",
+      "file": "apps/order-service/src/routes/order.route.ts",
+      "line": 49
+    },
+    {
+      "method": "POST",
+      "path": "/validate-cart",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 344
+    },
+    {
+      "method": "POST",
+      "path": "/validate-coupon",
+      "file": "apps/product-service/src/routes/product.routes.ts",
+      "line": 173
+    },
+    {
+      "method": "POST",
+      "path": "/verify",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 19
+    },
+    {
+      "method": "POST",
+      "path": "/verify-admin",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 134
+    },
+    {
+      "method": "POST",
+      "path": "/verify-otp",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 86
+    },
+    {
+      "method": "POST",
+      "path": "/verify-seller",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 164
+    },
+    {
+      "method": "POST",
+      "path": "/verify-seller-code",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 162
+    },
+    {
+      "method": "POST",
+      "path": "/webhook",
+      "file": "apps/payment-service/src/routes/payment.routes.ts",
+      "line": 23
+    },
+    {
+      "method": "GET",
+      "path": "/ws-ticket",
+      "file": "apps/auth-service/src/routes/auth.router.ts",
+      "line": 182
+    }
+  ],
+  "websocket": false,
+  "scaleHint": "startup",
+  "scaleSignals": [
+    "queue or cache in compose"
+  ]
+}

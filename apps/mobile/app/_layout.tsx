@@ -11,7 +11,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { LogBox } from "react-native";
+import { AppState, LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Toast from "react-native-toast-message";
 import "./globals.css";
@@ -46,6 +46,18 @@ export default function RootLayout() {
     registerForceLogoutHandler(() => {
       clearStoredAuth();
     });
+  }, []);
+
+  useEffect(() => {
+    // The cart is only pulled at sign-in, so a basket edited on the website
+    // would otherwise stay invisible here for the whole session.
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      void import("@/store").then(({ useStore }) =>
+        useStore.getState().syncCartOnForeground(),
+      );
+    });
+    return () => sub.remove();
   }, []);
   const [splashVisible, setSplashVisible] = useState(true);
   const [loaded, fontError] = useFonts({

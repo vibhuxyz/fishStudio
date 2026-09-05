@@ -52,6 +52,19 @@ export async function cancelStaleUnpaidOrders() {
         data: { status: "FAILED" },
       });
 
+      // The slot this order was holding is free again. Raw SQL rather than the
+      // order-service helper because packages/jobs must not depend on a
+      // service; GREATEST guards against a double release racing a cancel.
+      if (order.deliveryDate && order.deliverySlot && order.deliverySlot !== "instant") {
+        await prismaPostgres.$executeRaw`
+          UPDATE "DeliverySlotBooking"
+          SET "booked" = GREATEST("booked" - 1, 0), "updatedAt" = NOW()
+          WHERE "storeId" = ${order.storeId}
+            AND "deliveryDate" = ${order.deliveryDate}
+            AND "slotKey" = ${order.deliverySlot}
+        `;
+      }
+
       // Release the reserved Mongo stock
       await Promise.allSettled(
         order.orderItems.map((item) =>

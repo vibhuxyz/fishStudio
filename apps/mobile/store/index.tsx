@@ -61,6 +61,89 @@ type ServerCartLine = {
   comboId?: string;
 };
 
+/* ── Server-side cart persistence ─────────────────────────────────────────
+   validate-cart is the only server write path for the cart, so persisting
+   means debouncing a call to it rather than POSTing a second, competing copy.
+   The cart screen calls it too, for pricing — but only while that screen is
+   mounted and only when the line count changes, so without this a cart built
+   here never reaches the account and never shows up on the website.
+─────────────────────────────────────────────────────────────────────────── */
+let _saveCartTimer: ReturnType<typeof setTimeout> | null = null;
+// True from the moment a line changes until that change reaches the server.
+// syncCartOnForeground reads it to decide which copy is authoritative.
+let _cartDirty = false;
+
+async function persistCart(cart: CartItem[]) {
+  // validate-cart requires at least one item, so emptying the cart by removing
+  // its last line has to go to the clear endpoint instead — otherwise the
+  // server keeps the last non-empty snapshot and pushes it back on next sync.
+  if (cart.length === 0) {
+    try {
+      await axiosInstance.post("/product/api/cart/clear", {});
+      _cartDirty = false;
+    } catch {
+      // Stays dirty; the next foreground retries.
+    }
+    return;
+  }
+
+  // Dynamic so the address store isn't pulled into this module's import graph
+  // just for a pincode — the same shape user-ui's syncItems uses.
+  const { useAddressStore } = await import("../lib/address-store");
+  const { selectedLocation, getSelectedAddress } = useAddressStore.getState();
+  const selectedAddress = getSelectedAddress();
+  const pincode = selectedLocation?.pincode || selectedAddress?.pincode;
+  if (!pincode) return;
+
+  try {
+    await axiosInstance.post("/product/api/validate-cart", {
+      cartItems: cart.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity || 1,
+        size: item.selectedSize || undefined,
+        cuttingType: item.cuttingType || undefined,
+        pieceSize: item.pieceSize || undefined,
+        ...(item.comboId ? { comboId: item.comboId } : {}),
+      })),
+      pincode,
+      city: selectedLocation?.city || selectedAddress?.city,
+      area: selectedLocation?.area || selectedAddress?.area,
+      storeId: selectedLocation?.storeId || undefined,
+    });
+    _cartDirty = false;
+  } catch {
+    // Stays dirty on failure, so the next foreground pushes this copy up
+    // instead of overwriting it with the server's older one.
+  }
+}
+
+function schedulePersistCart(getCart: () => CartItem[]) {
+  _cartDirty = true;
+  if (_saveCartTimer) clearTimeout(_saveCartTimer);
+  _saveCartTimer = setTimeout(() => {
+    void persistCart(getCart());
+  }, 2_000);
+}
+
+/** A stored cart line as this store represents it. Title/price/image are left
+ *  blank deliberately — the cart screen's validate-cart pass fills them in,
+ *  and a blank row reads as loading where a guessed one reads as wrong. */
+function serverLineToCartItem(line: ServerCartLine, storeId: string): CartItem {
+  return {
+    id: line.productId,
+    slug: "",
+    title: "",
+    price: 0,
+    image: "",
+    shopId: storeId,
+    quantity: typeof line.quantity === "number" && line.quantity > 0 ? line.quantity : 1,
+    cuttingType: line.cuttingType,
+    pieceSize: line.pieceSize,
+    selectedSize: line.size,
+    ...(line.comboId ? { comboId: line.comboId } : {}),
+  };
+}
+
 const matchesLine = (item: CartItem, key: CartLineKey) =>
   item.id === key.id &&
   item.cuttingType === key.cuttingType &&
@@ -86,6 +169,13 @@ type Store = {
    * stock are filled in by the cart screen's normal validate-cart pass.
    */
   loadServerCart: () => Promise<void>;
+  /**
+   * Reconcile with the account's cart when the app comes back to the
+   * foreground, so a change made on the website shows up without a re-login.
+   * Unlike loadServerCart this can remove lines, which is why it only runs
+   * when nothing local is pending — see the implementation.
+   */
+  syncCartOnForeground: () => Promise<void>;
   /**
    * Async + tap: fetches live stock from the backend before incrementing.
    * Returns { ok: boolean; message?: string } so the UI can show feedback.
@@ -127,6 +217,7 @@ export const useStore = create<Store>()(
             cart: [...state.cart, { ...product, quantity: product.quantity ?? 1 }],
           };
         });
+        schedulePersistCart(() => get().cart);
 
         if (user?.id && location && deviceInfo) {
           sendKafkaEvent({
@@ -145,6 +236,7 @@ export const useStore = create<Store>()(
       removeFromCart: (line, user, location, deviceInfo) => {
         const removeProduct = get().cart.find((item) => matchesLine(item, line));
         set((state) => ({ cart: state.cart.filter((item) => !matchesLine(item, line)) }));
+        schedulePersistCart(() => get().cart);
 
         if (user?.id && location && deviceInfo && removeProduct) {
           sendKafkaEvent({
@@ -163,6 +255,7 @@ export const useStore = create<Store>()(
       removeComboGroup: (comboId, user, location, deviceInfo) => {
         const removed = get().cart.filter((item) => item.comboId === comboId);
         set((state) => ({ cart: state.cart.filter((item) => item.comboId !== comboId) }));
+        schedulePersistCart(() => get().cart);
 
         if (user?.id && location && deviceInfo) {
           removed.forEach((item) => {
@@ -183,6 +276,7 @@ export const useStore = create<Store>()(
       updateQuantity: (line, quantity) => {
         if (quantity <= 0) {
           set((state) => ({ cart: state.cart.filter((item) => !matchesLine(item, line)) }));
+        schedulePersistCart(() => get().cart);
           return;
         }
         set((state) => ({
@@ -190,6 +284,7 @@ export const useStore = create<Store>()(
             matchesLine(item, line) ? { ...item, quantity } : item
           ),
         }));
+        schedulePersistCart(() => get().cart);
       },
 
       // ── checkAndIncrement: live stock check before + tap ─────────────────
@@ -262,22 +357,7 @@ export const useStore = create<Store>()(
               // A line the user already has on this device is more current
               // than the stored copy — leave it alone.
               if (merged.some((item) => matchesLine(item, key))) continue;
-              merged.push({
-                id: line.productId,
-                // Empty rather than guessed: the cart screen's validate-cart
-                // pass overwrites these, and a blank row reads as loading
-                // where a made-up title would read as wrong.
-                slug: "",
-                title: "",
-                price: 0,
-                image: "",
-                shopId: data.storeId ?? "",
-                quantity: typeof line.quantity === "number" && line.quantity > 0 ? line.quantity : 1,
-                cuttingType: line.cuttingType,
-                pieceSize: line.pieceSize,
-                selectedSize: line.size,
-                ...(line.comboId ? { comboId: line.comboId } : {}),
-              });
+              merged.push(serverLineToCartItem(line, data.storeId ?? ""));
             }
             return { cart: merged };
           });
@@ -286,8 +366,44 @@ export const useStore = create<Store>()(
         }
       },
 
+      syncCartOnForeground: async () => {
+        // A guest has no server cart, and getCart answers an empty list for
+        // one — replacing on that would wipe a basket built before sign-in.
+        const { useUserStore } = await import("../lib/user-store");
+        if (!useUserStore.getState().user?.id) return;
+
+        // Something changed here and hasn't landed yet, so this device holds
+        // the newer copy. Push it up rather than pulling an older one down.
+        if (_cartDirty) {
+          if (_saveCartTimer) { clearTimeout(_saveCartTimer); _saveCartTimer = null; }
+          await persistCart(get().cart);
+          return;
+        }
+
+        try {
+          const { data } = await axiosInstance.get("/product/api/cart");
+          if (!data?.success) return;
+          const lines: ServerCartLine[] = Array.isArray(data.items) ? data.items : [];
+
+          // Replace rather than merge. Nothing is pending locally, so the
+          // local cart is exactly what this device last uploaded — anything
+          // that differs on the server was written by another device since,
+          // and that includes lines removed there. Merging would resurrect
+          // them; this is the one place a pull is allowed to delete.
+          set({
+            cart: lines
+              .filter((line) => Boolean(line?.productId))
+              .map((line) => serverLineToCartItem(line, data.storeId ?? "")),
+          });
+        } catch {
+          // Offline or a transient failure — the local cart stands.
+        }
+      },
+
       // ── Clear cart ────────────────────────────────────────────────────────
       clearCart: () => {
+        // A queued persist would re-upload the cart we're about to clear.
+        if (_saveCartTimer) { clearTimeout(_saveCartTimer); _saveCartTimer = null; }
         set({ cart: [] });
         // validate-cart cannot express an empty cart (it requires >= 1 item),
         // so without this the server would keep the last non-empty snapshot

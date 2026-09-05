@@ -56,11 +56,14 @@ function InlineDropdown({
   value,
   options,
   onSelect,
+  disabledOptions = [],
 }: {
   label: string;
   value: string;
   options: string[];
   onSelect: (v: string) => void;
+  /** Rendered greyed out and not selectable — e.g. a sold-out size. */
+  disabledOptions?: string[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -87,32 +90,40 @@ function InlineDropdown({
 
       {open && (
         <View className="mt-1 border border-border rounded-xl bg-white overflow-hidden">
-          {options.map((opt, i) => (
-            <TouchableOpacity
-              key={opt}
-              className={`flex-row items-center justify-between px-4 py-3 ${
-                i < options.length - 1 ? "border-b border-border/50" : ""
-              } ${opt === value ? "bg-primary/5" : ""}`}
-              onPress={() => {
-                onSelect(opt);
-                setOpen(false);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                className={`font-poppins text-sm flex-1 mr-2 ${
-                  opt === value
-                    ? "text-primary font-poppins-semibold"
-                    : "text-foreground"
-                }`}
+          {options.map((opt, i) => {
+            const isDisabled = disabledOptions.includes(opt);
+            return (
+              <TouchableOpacity
+                key={opt}
+                disabled={isDisabled}
+                className={`flex-row items-center justify-between px-4 py-3 ${
+                  i < options.length - 1 ? "border-b border-border/50" : ""
+                } ${opt === value ? "bg-primary/5" : ""} ${isDisabled ? "opacity-40" : ""}`}
+                onPress={() => {
+                  onSelect(opt);
+                  setOpen(false);
+                }}
+                activeOpacity={0.7}
               >
-                {opt}
-              </Text>
-              {opt === value && (
-                <Ionicons name="checkmark" size={17} color="#5A2C96" />
-              )}
-            </TouchableOpacity>
-          ))}
+                <Text
+                  className={`font-poppins text-sm flex-1 mr-2 ${
+                    opt === value
+                      ? "text-primary font-poppins-semibold"
+                      : "text-foreground"
+                  }`}
+                >
+                  {opt}
+                </Text>
+                {isDisabled ? (
+                  <Text className="font-poppins text-xs text-muted-foreground">
+                    Out of stock
+                  </Text>
+                ) : (
+                  opt === value && <Ionicons name="checkmark" size={17} color="#5A2C96" />
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
     </View>
@@ -147,7 +158,12 @@ export default function AddToCartModal({
     if (visible && product) {
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
-      setSelectedSize(product.weight || product.sizes?.[0] || "");
+      // Prefer a size that can actually be bought — defaulting to a sold-out
+      // one starts every open of this sheet on a disabled option.
+      const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
+        .sizeAvailability;
+      const firstBuyable = availability?.find((entry) => entry.inStock)?.size;
+      setSelectedSize(product.weight || firstBuyable || product.sizes?.[0] || "");
       setQuantity(1);
       setPerKgWeightGrams(PER_KG_DEFAULT);
       setSelectedImageIndex(0);
@@ -155,6 +171,15 @@ export default function AddToCartModal({
   }, [visible, product]);
 
   const hasSizes = (product?.sizes?.length ?? 0) > 0;
+
+  // Per-size stock from the storefront response. Absent on an older cached
+  // payload, in which case nothing is marked sold out and the whole-product
+  // stock check still applies.
+  const soldOutSizes = useMemo(() => {
+    const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> } | null)
+      ?.sizeAvailability;
+    return (availability ?? []).filter((entry) => !entry.inStock).map((entry) => entry.size);
+  }, [product]);
   const hasCuttingTypes = (product?.cuttingTypes?.length ?? 0) > 0;
   const hasPieceSizes = (product?.pieceSizes?.length ?? 0) > 0;
 
@@ -446,6 +471,11 @@ export default function AddToCartModal({
               options={normalizedSizePricing.map((e) => {
                 return e.salePrice > 0 ? `${e.size} — Rs. ${e.salePrice}` : e.size;
               })}
+              // The option label carries the price, so match on the size the
+              // same way onSelect parses it back out.
+              disabledOptions={normalizedSizePricing
+                .filter((e) => soldOutSizes.includes(e.size))
+                .map((e) => (e.salePrice > 0 ? `${e.size} — Rs. ${e.salePrice}` : e.size))}
               onSelect={(v) => setSelectedSize(v.split(" — ")[0])}
             />
           )}

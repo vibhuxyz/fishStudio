@@ -39,6 +39,7 @@ import {
   getCategories,
   updateCategory,
   updateSubCategory,
+  updateMapProvider,
 } from "../controllers/product/category.controller.js";
 import {
   createDiscountCodes,
@@ -216,6 +217,15 @@ router.put(
   isAuthenticated,
   allowRoles("admin"),
   updateSubCategory,
+);
+// Map backend switch. Read by every client through get-categories, which is
+// why it lives on the site-config surface rather than getting its own route
+// family.
+router.put(
+  "/update-map-provider",
+  isAuthenticated,
+  allowRoles("admin"),
+  updateMapProvider,
 );
 
 router.post(

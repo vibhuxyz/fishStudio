@@ -3,6 +3,12 @@ import { prismaMongo as prisma, Prisma } from "@repo/db-mongo";
 import { validateCartSchema, validate } from "@repo/zod-schema";
 import { distributeComboPrice, comboItemsMatchDefinition, ComboDefinitionItem } from "@repo/shared/pricing";
 import { isStoreOpenNow, isInstantDeliveryAvailableNow } from "@repo/shared/store-hours";
+import {
+  buildAvailableSlots,
+  parseDeliverySlotConfig,
+  type AvailableSlot,
+} from "@repo/shared/delivery-slots";
+import { prismaPostgres } from "@repo/db-postgres";
 import { optionalUserId, resolvePreferredStore } from "./storefront.utils.js";
 
 /**
@@ -319,10 +325,41 @@ export const validateCart = async (
     const isStoreOpen = isStoreOpenNow(store);
     const isInstantAvailable = isInstantDeliveryAvailableNow(store);
 
-    // Define Available Slots
+    // Scheduled slots are capacity-limited per store per day, so what's on
+    // offer depends on what's already booked. Orders live in Postgres and the
+    // catalogue in Mongo, so this is a second hop by construction — cheap
+    // enough (one indexed range scan on a table with a row per store/day/slot)
+    // and it keeps the cart screen from offering a slot checkout would refuse.
+    const slotDefinitions = parseDeliverySlotConfig(store.deliverySlotConfig);
+    let deliverySlots: AvailableSlot[] = [];
+    try {
+      const bookings = await prismaPostgres.deliverySlotBooking.findMany({
+        where: { storeId: store.id },
+        select: { deliveryDate: true, slotKey: true, booked: true },
+      });
+      deliverySlots = buildAvailableSlots({
+        slots: slotDefinitions,
+        bookedCounts: new Map(
+          bookings.map((b) => [`${b.deliveryDate}:${b.slotKey}`, b.booked]),
+        ),
+      });
+    } catch (error) {
+      // Showing every slot as open is the safer failure: checkout re-checks
+      // capacity atomically anyway, so the worst case is one customer being
+      // told at the last step. Hiding all slots would block checkout outright.
+      console.error("[validateCart] slot availability unavailable", error);
+      deliverySlots = buildAvailableSlots({ slots: slotDefinitions, bookedCounts: new Map() });
+    }
+
+    // The existing string[] contract, kept as-is — user-ui and mobile both
+    // compare against these literals. `deliverySlots` below is the dated,
+    // capacity-aware view; clients move over to it as they're updated.
+    const bookableSlotKeys = [...new Set(
+      deliverySlots.filter((slot) => slot.isBookable).map((slot) => slot.key),
+    )];
     const availableSlots = isInstantAvailable
-      ? ["instant", "morning", "evening"]
-      : ["morning", "evening"];
+      ? ["instant", ...bookableSlotKeys]
+      : bookableSlotKeys;
 
     const userId = optionalUserId(req);
     if (userId) {
@@ -359,6 +396,7 @@ export const validateCart = async (
       isServiceable: true,
       hasCartChanged,
       availableSlots,
+      deliverySlots,
       isInstantAvailable,
       instantFee: store.instant_delivery_fee || 20,
       // Seller-set bill config (Store settings in seller-ui) — the cart/checkout

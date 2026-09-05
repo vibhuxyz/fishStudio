@@ -1,3 +1,5 @@
+import axiosInstance from "@/utils/axiosInstance";
+
 /**
  * All map search/geocoding goes through this interface — the address picker
  * screen and the map component only ever call `geocodingProvider.*`, never
@@ -132,4 +134,104 @@ const nominatimProvider: GeocodingProvider = {
   },
 };
 
-export const geocodingProvider: GeocodingProvider = nominatimProvider;
+// ─── Google Maps implementation ─────────────────────────────────────────────
+// Goes through our own backend, not maps.googleapis.com directly.
+//
+// Google's Geocoding and Places *web service* endpoints can only be restricted
+// by IP address — the "Android apps" restriction applies to the native SDKs,
+// not to these — so a key bundled into the APK to call them would have to be
+// left unrestricted, and it is trivially extractable from the binary. The proxy
+// keeps the key on a known server IP; see the auth-service geocoding
+// controller. The response shapes below are already this interface's shapes,
+// so nothing here has to know what Google's own JSON looks like.
+
+const googleMapsProvider: GeocodingProvider = {
+  async search(query, bounds) {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/geocode/search", {
+        params: {
+          query,
+          ...(bounds
+            ? { bounds: `${bounds.south},${bounds.west},${bounds.north},${bounds.east}` }
+            : {}),
+        },
+      });
+      return Array.isArray(data?.results) ? data.results : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async reverseGeocode(point) {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/geocode/reverse", {
+        params: { lat: point.lat, lng: point.lng },
+      });
+      return data?.address ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async geocode(query) {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/geocode/forward", {
+        params: { query },
+      });
+      return data?.point ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async nearbyLandmarks(center) {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/geocode/nearby", {
+        params: { lat: center.lat, lng: center.lng },
+      });
+      return Array.isArray(data?.results) ? data.results : [];
+    } catch {
+      return [];
+    }
+  },
+};
+
+/* ── Runtime provider selection ───────────────────────────────────────────
+   Which backend is live is an admin setting (site_config.mapProvider), not a
+   build-time constant — and on a shipped app a build-time constant would mean
+   waiting for an app-store release to turn Google off. Google Maps bills per
+   request and a key can be revoked, so the fallback has to be one toggle away.
+
+   `geocodingProvider` stays a plain object so no call site changes: it just
+   delegates each call to whichever provider is active at the time.
+─────────────────────────────────────────────────────────────────────────── */
+let runtimeProvider: "osm" | "google" | null = null;
+
+/** Called once the site config lands. Null restores the build's own default. */
+export function setMapProvider(provider: string | null | undefined) {
+  runtimeProvider = provider === "google" || provider === "osm" ? provider : null;
+}
+
+/**
+ * The backend in force right now.
+ *
+ * Google is only honoured when a key is actually present in this build — an
+ * admin switching to Google on a build without one would otherwise get a
+ * picker that silently returns nothing, which is worse than staying on OSM.
+ */
+export function activeMapProvider(): "osm" | "google" {
+  const choice = runtimeProvider ?? process.env.EXPO_PUBLIC_MAP_PROVIDER;
+  return choice === "google" && process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+    ? "google"
+    : "osm";
+}
+
+const active = (): GeocodingProvider =>
+  activeMapProvider() === "google" ? googleMapsProvider : nominatimProvider;
+
+export const geocodingProvider: GeocodingProvider = {
+  search: (query, bounds) => active().search(query, bounds),
+  reverseGeocode: (point) => active().reverseGeocode(point),
+  geocode: (query) => active().geocode(query),
+  nearbyLandmarks: (center, bounds) => active().nearbyLandmarks(center, bounds),
+};

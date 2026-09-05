@@ -638,6 +638,8 @@ export const updateProduct = async (
       nutritionProtein,
       nutritionOmega3,
       nutritionCalories,
+      sortOrder,
+      isFeatured,
     } = validated;
 
     let resolvedSlug: string | null = null;
@@ -700,6 +702,15 @@ export const updateProduct = async (
       updateData.nutritionOmega3 = nutritionOmega3;
     if (typeof nutritionCalories === "string")
       updateData.nutritionCalories = nutritionCalories;
+
+    // Merchandising is a platform decision, not a seller one — a seller able to
+    // feature their own products would make the rail a race rather than a
+    // curation. `sortOrder: null` is a real value here (it clears a rank), so
+    // this checks for the key being present rather than for truthiness.
+    if (req.role === "admin") {
+      if (typeof sortOrder !== "undefined") updateData.sortOrder = sortOrder;
+      if (typeof isFeatured !== "undefined") updateData.isFeatured = Boolean(isFeatured);
+    }
 
     if (req.role === "seller") {
       if (typeof stock !== "undefined") updateData.stock = Number(stock);

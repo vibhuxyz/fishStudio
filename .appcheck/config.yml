@@ -1,0 +1,6 @@
+version: 1
+devCommand: bun dev
+port: 80
+schemaPath: packages/db-mongo/prisma/generated-client/schema.prisma
+services:
+  - rabbitmq

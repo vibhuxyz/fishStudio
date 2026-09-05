@@ -9,6 +9,8 @@ import { bulkUpdateOrderStatusSchema, validate } from "@repo/zod-schema";
 import {
   invalidateSellerStatsCache,
   releaseRiderIfNoOtherDeliveries,
+  recordCodCollection,
+  recordDeliveryDistance,
 } from "./utils.js";
 
 /**
@@ -65,6 +67,9 @@ const STATUS_MESSAGE: Record<string, { title: string; message: (ref: string) => 
  */
 interface SellerRequest extends Request {
   seller?: { id?: string; store?: { id?: string } };
+  // An admin caller has no seller/store context — the handler widens its scope
+  // to every store rather than refusing.
+  role?: string;
 }
 
 export const bulkUpdateOrderStatus = async (
@@ -73,19 +78,28 @@ export const bulkUpdateOrderStatus = async (
   next: NextFunction,
 ) => {
   try {
+    // An admin console operates across every store, so it has no store scope
+    // to apply. A seller or staff caller must have one — without it the query
+    // below would silently widen to the whole platform.
+    const isAdmin = req.role === "admin";
     const storeId = req.seller?.store?.id;
-    if (!storeId) {
+    if (!isAdmin && !storeId) {
       return next(new ValidationError("You can only manage orders for your own store"));
     }
 
     const { orderIds, status } = validate(bulkUpdateOrderStatusSchema, req.body);
     const uniqueIds = [...new Set(orderIds)];
 
-    // Scoped to the store in the query itself, so an id belonging to someone
-    // else's store simply isn't found rather than being checked afterwards.
+    // Scoped in the query itself, so an id belonging to someone else's store
+    // simply isn't found rather than being checked afterwards.
     const orders = await prismaPostgres.order.findMany({
-      where: { id: { in: uniqueIds }, storeId },
-      select: { id: true, orderNumber: true, status: true, userId: true, riderId: true },
+      where: { id: { in: uniqueIds }, ...(storeId ? { storeId } : {}) },
+      select: {
+        id: true, orderNumber: true, status: true, userId: true, riderId: true,
+        // Needed by the COD/distance bookkeeping on the DELIVERED path below.
+        storeId: true, paymentMethod: true, totalAmount: true,
+        deliveryLatitude: true, deliveryLongitude: true,
+      },
     });
 
     const found = new Map(orders.map((o) => [o.id, o]));
@@ -96,7 +110,7 @@ export const bulkUpdateOrderStatus = async (
     for (const id of uniqueIds) {
       const order = found.get(id);
       if (!order) {
-        skipped.push({ orderId: id, reason: "Not found in your store" });
+        skipped.push({ orderId: id, reason: isAdmin ? "Order not found" : "Not found in your store" });
         continue;
       }
       if (order.status === "CANCELLED" || order.status === "REJECTED") {
@@ -172,6 +186,14 @@ export const bulkUpdateOrderStatus = async (
         releaseRiderIfNoOtherDeliveries(riderId).catch((err) =>
           logger.error("[bulkUpdateOrderStatus] failed to release rider", { riderId, err }),
         );
+      }
+
+      // The same bookkeeping the single-order delivery paths do. Marking fifty
+      // orders delivered in one action must not be the way cash collected on
+      // them silently escapes reconciliation.
+      for (const order of eligible) {
+        void recordCodCollection({ ...order, deliveredAt: now });
+        void recordDeliveryDistance(order);
       }
     }
 

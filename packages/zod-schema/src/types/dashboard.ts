@@ -28,6 +28,10 @@ export type AdminProduct = {
   title: string;
   slug: string;
   short_description?: string | null;
+  // Admin display order. Ascending, lower first; null is unranked and sorts
+  // after everything ranked.
+  sortOrder?: number | null;
+  isFeatured?: boolean;
   // Tax classification, printed on the GST invoice. Authored on the catalog
   // root and inherited by store variants — the code describes the goods, not
   // who sells them.
@@ -123,6 +127,9 @@ export type CategoriesResponse = {
   categoryStatus: Record<string, boolean>;
   // Keyed by "<category>::<subCategory>". Absent means active.
   subCategoryStatus: Record<string, boolean>;
+  // Which map backend the storefront and app use. Null means the client falls
+  // back to whatever its own build was configured with.
+  mapProvider?: "osm" | "google" | null;
 };
 
 export type AdminSellerSummary = {
@@ -422,6 +429,10 @@ export type UpdateProductPayload = {
   nutritionProtein?: string;
   nutritionOmega3?: string;
   nutritionCalories?: string;
+  // Merchandising, admin-only. `null` clears a rank, so this is deliberately
+  // nullable rather than merely optional.
+  sortOrder?: number | null;
+  isFeatured?: boolean;
   cuttingTypes?: Array<{ value: string }>;
   pieceSizes?: Array<{ value: string }>;
   sizes?: Array<{ value: string }>;
