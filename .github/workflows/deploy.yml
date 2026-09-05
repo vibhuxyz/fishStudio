@@ -232,35 +232,6 @@ jobs:
 
   # ==========================================
   # 8. CONTROL CENTER
-  # ==========================================
-  control-center:
-    if: contains(github.event.head_commit.message, '[all]') || contains(github.event.head_commit.message, '[control-center]')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and Push Control Center
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/control-center/Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/control-center:prod
-          cache-from: type=gha,scope=control-center
-          cache-to: type=gha,scope=control-center,mode=max
 
   # ==========================================
   # 9. DEPLOY TO AWS EC2
