@@ -54,10 +54,20 @@ const nearbySchema = z.object({
 
 interface PlaceResult {
   id: string;
+  /** What the client's results list shows — the place's own name when it has one. */
   label: string;
+  /** Postal address, for prefilling an address form. */
+  address: string;
   lat: number;
   lng: number;
 }
+
+// Google has no street address for a great many POIs and returns an Open
+// Location Code ("FFCH+Q79, Knowledge Park III, ...") as the formatted address
+// instead. It encodes the coordinate correctly but means nothing to a delivery
+// partner, so the prediction's own description is the better prefill when one
+// of these shows up.
+const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}(,|$)/i;
 
 /**
  * Google returns HTTP 200 with a `status` field for business-level failures, so
@@ -159,15 +169,21 @@ export const searchPlaces = async (req: Request, res: Response, next: NextFuncti
             };
           }>(
             "/place/details/json",
-            { place_id: prediction.place_id, fields: "geometry,formatted_address,name" },
+            { place_id: prediction.place_id, fields: "geometry,formatted_address" },
             "search:details",
           );
 
           const location = details?.result?.geometry?.location;
           if (!location) return null;
+          const formatted = details?.result?.formatted_address;
           return {
             id: prediction.place_id,
-            label: details?.result?.formatted_address || details?.result?.name || prediction.description,
+            // The description leads with the place's own name ("100xSchool,
+            // Knowledge Park III, ..."); formatted_address leads with the
+            // street, which for a named POI is the one part nobody searching
+            // for it would recognize.
+            label: prediction.description,
+            address: formatted && !PLUS_CODE.test(formatted) ? formatted : prediction.description,
             lat: location.lat,
             lng: location.lng,
           };
@@ -249,6 +265,9 @@ export const nearbyLandmarks = async (req: Request, res: Response, next: NextFun
       return (data?.results ?? []).slice(0, 4).map((place, index) => ({
         id: place.place_id ?? `${place.name ?? "landmark"}-${index}`,
         label: place.name ?? place.vicinity ?? "",
+        // nearbysearch returns `vicinity` rather than a full address — coarser
+        // than formatted_address, but it is the street-level part.
+        address: place.vicinity ?? place.name ?? "",
         lat: place.geometry?.location?.lat ?? lat,
         lng: place.geometry?.location?.lng ?? lng,
       }));

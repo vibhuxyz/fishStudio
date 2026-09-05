@@ -813,7 +813,7 @@ export function AddressModal({
                             lng: loc.lng,
                             // Only prefill street from the pin if the shopper
                             // hasn't already typed one — never clobber input.
-                            street: f.street ? f.street : (loc.label?.split(",")[0] ?? f.street),
+                            street: f.street ? f.street : (loc.address?.split(",")[0] ?? f.street),
                           }))
                         }
                       />

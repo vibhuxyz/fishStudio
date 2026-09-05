@@ -24,7 +24,13 @@ export interface GeoBounds {
 
 export interface PlaceResult {
   id: string | number;
+  /** What the results list shows — the place's own name when it has one. */
   label: string;
+  /**
+   * Postal address, for prefilling the address form. Equal to `label` on
+   * providers that only ever return one string for a place.
+   */
+  address: string;
   lat: number;
   lng: number;
 }
@@ -50,7 +56,15 @@ interface NominatimResult {
 }
 
 function toPlaceResult(r: NominatimResult): PlaceResult {
-  return { id: r.place_id, label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
+  // Nominatim has a single display string per place, so the list label and the
+  // form prefill are necessarily the same value here.
+  return {
+    id: r.place_id,
+    label: r.display_name,
+    address: r.display_name,
+    lat: parseFloat(r.lat),
+    lng: parseFloat(r.lon),
+  };
 }
 
 function viewboxParam(bounds?: GeoBounds): string {
@@ -147,6 +161,13 @@ async function ensureGoogleMaps(): Promise<boolean> {
   return loadGoogleMapsScript(frontendEnv.googleMapsApiKey);
 }
 
+// Google has no street address for a great many POIs and returns an Open
+// Location Code ("FFCH+Q79, Knowledge Park III, ...") as the formatted address
+// instead. It encodes the coordinate correctly but means nothing to a delivery
+// partner, so the prediction's own description is the better prefill when one
+// of these shows up.
+const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}(,|$)/i;
+
 function toLatLngBounds(bounds?: GeoBounds): google.maps.LatLngBounds | undefined {
   if (!bounds) return undefined;
   return new google.maps.LatLngBounds(
@@ -182,15 +203,21 @@ const googleMapsProvider: GeocodingProvider = {
         (prediction) =>
           new Promise<PlaceResult | null>((resolve) => {
             service.getDetails(
-              { placeId: prediction.place_id, fields: ["geometry", "formatted_address", "name"] },
+              { placeId: prediction.place_id, fields: ["geometry", "formatted_address"] },
               (place, status) => {
                 if (status !== google.maps.places.PlacesServiceStatus.OK || !place?.geometry?.location) {
                   resolve(null);
                   return;
                 }
+                const formatted = place.formatted_address;
                 resolve({
                   id: prediction.place_id,
-                  label: place.formatted_address || place.name || prediction.description,
+                  // The description leads with the place's own name
+                  // ("100xSchool, Knowledge Park III, ..."); formatted_address
+                  // leads with the street, which for a named POI is the one
+                  // part nobody searching for it would recognize.
+                  label: prediction.description,
+                  address: formatted && !PLUS_CODE.test(formatted) ? formatted : prediction.description,
                   lat: place.geometry.location.lat(),
                   lng: place.geometry.location.lng(),
                 });
@@ -236,6 +263,9 @@ const googleMapsProvider: GeocodingProvider = {
           results.slice(0, 4).map((r, i) => ({
             id: r.place_id ?? `${r.name ?? "landmark"}-${i}`,
             label: r.name ?? r.vicinity ?? "",
+            // nearbySearch returns `vicinity` rather than a full address —
+            // coarser than formatted_address, but it is the street-level part.
+            address: r.vicinity ?? r.name ?? "",
             lat: r.geometry?.location?.lat() ?? center.lat,
             lng: r.geometry?.location?.lng() ?? center.lng,
           })),

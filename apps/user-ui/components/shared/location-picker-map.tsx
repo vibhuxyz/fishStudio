@@ -40,7 +40,10 @@ function shortLabel(label: string): string {
 export interface LocationPickerValue {
   lat: number;
   lng: number;
+  /** Caption shown above the pin. */
   label?: string;
+  /** Postal address for the form, which is not always what the pin is captioned with. */
+  address?: string;
 }
 
 interface LocationPickerMapProps {
@@ -101,7 +104,9 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
     try {
       const label = await geocodingProvider.reverseGeocode({ lat, lng });
       setReverseLabel(label ?? "");
-      onChange({ lat, lng, label: label ?? undefined });
+      // A dragged pin resolves to an address and nothing else, so the caption
+      // and the form prefill are the same string.
+      onChange({ lat, lng, label: label ?? undefined, address: label ?? undefined });
     } finally {
       setResolvingLabel(false);
     }
@@ -168,7 +173,7 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
     setReverseLabel(result.label);
     setQuery("");
     setResults([]);
-    onChange({ lat: result.lat, lng: result.lng, label: result.label });
+    onChange({ lat: result.lat, lng: result.lng, label: result.label, address: result.address });
   };
 
   return (

@@ -11,8 +11,10 @@
     "base-production-env": {
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.fishstudio.in",
-        "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
-        "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/"
+          "EXPO_PUBLIC_SERVER_URI": "https://api.fishstudio.in",
+          "EXPO_PUBLIC_CHATTING_WEBSOCKET_URI": "wss://api.fishstudio.in/",
+          "EXPO_PUBLIC_MAP_PROVIDER": "google",
+          "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyC1Wy3gDlBeapt2zLvYsra3vs0ERHK6SBw"
       }
     },
     "preview": {

@@ -24,7 +24,13 @@ export interface GeoBounds {
 
 export interface PlaceResult {
   id: string | number;
+  /** What the results list shows — the place's own name when it has one. */
   label: string;
+  /**
+   * Postal address, for prefilling an address form. Equal to `label` on
+   * providers that only ever return one string for a place.
+   */
+  address: string;
   lat: number;
   lng: number;
 }
@@ -56,7 +62,15 @@ interface NominatimResult {
 }
 
 function toPlaceResult(r: NominatimResult): PlaceResult {
-  return { id: r.place_id, label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) };
+  // Nominatim has a single display string per place, so the list label and the
+  // form prefill are necessarily the same value here.
+  return {
+    id: r.place_id,
+    label: r.display_name,
+    address: r.display_name,
+    lat: parseFloat(r.lat),
+    lng: parseFloat(r.lon),
+  };
 }
 
 function viewboxParam(bounds?: GeoBounds): string {
