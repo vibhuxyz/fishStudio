@@ -12,4 +12,14 @@ export const QUEUE_NAMES = {
   // one is consumed by worker-service's socket fan-out, and RabbitMQ
   // round-robins consumers on a shared queue.
   PAYMENT_EVENTS: "PAYMENT_EVENTS",
+  // Work order-service has to do once an order exists but which the service
+  // that created it cannot: under the checkout-session lifecycle the Order is
+  // written by payment-service, in a package with no access to Mongo, while
+  // referral rewards live in order-service and are Mongo-only.
+  //
+  // Its own queue for the same reason PAYMENT_EVENTS is: ORDER_EVENTS already
+  // has worker-service's socket fan-out on it, and RabbitMQ round-robins a
+  // queue's consumers — a second consumer there would silently take half the
+  // dashboard's events.
+  ORDER_FOLLOWUP_EVENTS: "ORDER_FOLLOWUP_EVENTS",
 } as const;

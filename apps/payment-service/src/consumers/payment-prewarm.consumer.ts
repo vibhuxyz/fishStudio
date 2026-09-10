@@ -1,7 +1,11 @@
 import { consumeQueue, connectRabbitMQ } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { logger } from "@repo/libs/logger";
-import { prewarmGatewayOrder, initiateRefund } from "../services/payment.service.js";
+import {
+  prewarmGatewayOrder,
+  prewarmSessionGatewayOrder,
+  initiateRefund,
+} from "../services/payment.service.js";
 
 /**
  * order-service publishes two kinds of events here; RabbitMQ round-robins a
@@ -22,7 +26,10 @@ import { prewarmGatewayOrder, initiateRefund } from "../services/payment.service
 
 interface PaymentPrewarmEvent {
   type: "PAYMENT_PREWARM";
-  orderId: string;
+  /** Set under the order lifecycle (CHECKOUT_SESSIONS_ENABLED off). */
+  orderId?: string;
+  /** Set under the session lifecycle, where no Order exists yet. */
+  sessionId?: string;
 }
 
 interface RefundRequestedEvent {
@@ -37,7 +44,10 @@ type PaymentEvent = PaymentPrewarmEvent | RefundRequestedEvent;
 function parsePaymentEvent(value: unknown): PaymentEvent | null {
   if (typeof value !== "object" || value === null) return null;
   const event = value as Record<string, unknown>;
-  if (event.type === "PAYMENT_PREWARM" && typeof event.orderId === "string") {
+  if (
+    event.type === "PAYMENT_PREWARM" &&
+    (typeof event.orderId === "string" || typeof event.sessionId === "string")
+  ) {
     return event as unknown as PaymentPrewarmEvent;
   }
   if (event.type === "REFUND_REQUESTED" && typeof event.orderId === "string") {
@@ -62,7 +72,10 @@ export const paymentPrewarmConsumer = async () => {
       }
 
       if (event.type === "PAYMENT_PREWARM") {
-        await prewarmGatewayOrder(event.orderId);
+        // Both lifecycles publish to this queue; which one produced the event
+        // is carried by which id it has, so no flag is read here.
+        if (event.sessionId) await prewarmSessionGatewayOrder(event.sessionId);
+        else if (event.orderId) await prewarmGatewayOrder(event.orderId);
       } else {
         await initiateRefund({
           input: { orderId: event.orderId, reason: event.reason },

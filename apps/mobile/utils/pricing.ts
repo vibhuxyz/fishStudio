@@ -6,19 +6,25 @@
 
 import {
   computePerKgSalePrice,
+  firstBuyableSize,
+  isSizeSoldOut,
   normalizeSizePricing,
   parseWeightToGrams,
   resolvePerKgPricing,
   resolvePriceFromSizePricing,
   resolveSizePricing,
+  type ProductSizeAvailability,
   type ProductSizePricing,
 } from "@repo/shared/pricing";
 
 export {
   computePerKgSalePrice,
+  firstBuyableSize,
+  isSizeSoldOut,
   normalizeSizePricing,
   parseWeightToGrams,
   resolvePerKgPricing,
+  type ProductSizeAvailability,
   type ProductSizePricing,
 };
 export type { PerKgPricing } from "@repo/shared/pricing";

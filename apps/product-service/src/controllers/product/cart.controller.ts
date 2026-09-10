@@ -98,9 +98,9 @@ export const clearCart = async (
 async function syncAbandonedCart(params: {
   userId: string;
   cartItems: Prisma.InputJsonValue[];
-  storeId: string;
-  storeName: string;
-  totalAmount: number;
+  storeId?: string;
+  storeName?: string;
+  totalAmount?: number;
 }) {
   const { userId, cartItems, storeId, storeName, totalAmount } = params;
 
@@ -108,20 +108,59 @@ async function syncAbandonedCart(params: {
   const itemsChanged =
     !existing || JSON.stringify(existing.items) !== JSON.stringify(cartItems);
 
-  await prisma.carts.upsert({
+  // Store and pricing are only known once a serviceable store resolves. When
+  // it doesn't, the lines still have to be saved, so those fields keep
+  // whatever the last priced validate wrote rather than being zeroed.
+  const pricing = storeId
+    ? { storeId, storeName, totalAmount }
+    : {};
+
+  const saved = await prisma.carts.upsert({
     where: { userId },
-    create: { userId, items: cartItems, storeId, storeName, totalAmount },
+    create: { userId, items: cartItems, ...pricing },
     update: {
       items: cartItems,
-      storeId,
-      storeName,
-      totalAmount,
       isConverted: false,
+      ...pricing,
       // Only a real edit restarts the reminder sequence — re-validating an
       // unchanged cart (e.g. reopening the cart screen) shouldn't reset it.
-      ...(itemsChanged && { notifyStage: 0, notifiedAt: null }),
+      // The version moves on the same condition and for the same reason: a
+      // checkout quote is invalidated by a cart that changed, not by a cart
+      // that was merely looked at again.
+      ...(itemsChanged && { notifyStage: 0, notifiedAt: null, version: { increment: 1 } }),
     },
+    select: { version: true },
   });
+
+  return saved.version;
+}
+
+/**
+ * Best-effort cart persistence for a validate-cart request.
+ *
+ * validate-cart is the client's only write path for a non-empty cart, so every
+ * exit path the client reads as "my change was saved" has to attempt this one.
+ * Missing it on the unserviceable-store branch silently dropped every add and
+ * remove for a customer outside the delivery area, and the next page load then
+ * restored the stale server copy over their edit.
+ */
+async function persistCartForRequest(
+  req: Request,
+  params: Omit<Parameters<typeof syncAbandonedCart>[0], "userId">,
+) {
+  const userId = optionalUserId(req);
+  if (!userId) return null;
+
+  try {
+    return await syncAbandonedCart({ userId, ...params });
+  } catch (error) {
+    // A reminder-tracking failure must not fail cart validation.
+    console.error("[AbandonedCart] Failed to sync cart state", error);
+    // Null, not 0: "we could not establish the version" is not "version zero",
+    // and a client that recorded 0 here would carry a wrong claim into its
+    // next quote. Clients treat null as "no version to assert".
+    return null;
+  }
 }
 
 export const validateCart = async (
@@ -162,9 +201,13 @@ export const validateCart = async (
         select: { name: true, city: true },
       });
 
+      // Unpriced, but saved — see persistCartForRequest.
+      const cartVersion = await persistCartForRequest(req, { cartItems });
+
       return res.status(200).json({
         success: false,
         message: "We don't deliver to this location yet",
+        cartVersion,
         isServiceable: false,
         cartDeliveryTime: null,
         store: null,
@@ -361,24 +404,19 @@ export const validateCart = async (
       ? ["instant", ...bookableSlotKeys]
       : bookableSlotKeys;
 
-    const userId = optionalUserId(req);
-    if (userId) {
-      try {
-        await syncAbandonedCart({
-          userId,
-          cartItems,
-          storeId: store.id,
-          storeName: store.name,
-          totalAmount: subtotal,
-        });
-      } catch (error) {
-        // Best-effort — a reminder-tracking failure must not fail cart validation.
-        console.error("[AbandonedCart] Failed to sync cart state", error);
-      }
-    }
+    const cartVersion = await persistCartForRequest(req, {
+      cartItems,
+      storeId: store.id,
+      storeName: store.name,
+      totalAmount: subtotal,
+    });
 
     return res.status(200).json({
       success: true,
+      // The saved cart's content version. Clients hold it and quote against
+      // it, so a cart changed from another device between reading the bill
+      // and tapping Pay is caught instead of charged at the old total.
+      cartVersion,
       items: validatedItems,
       store: {
         id: store.id,

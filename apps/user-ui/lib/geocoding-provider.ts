@@ -33,6 +33,18 @@ export interface PlaceResult {
   address: string;
   lat: number;
   lng: number;
+  /** Structured pieces, when the provider exposes them. */
+  city?: string;
+  state?: string;
+  postalCode?: string;
+}
+
+/** Reverse-geocode result broken into the fields the address form needs. */
+export interface ReverseGeocodeResult {
+  formattedAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
 }
 
 export interface GeocodingProvider {
@@ -40,6 +52,12 @@ export interface GeocodingProvider {
   search(query: string, bounds?: GeoBounds): Promise<PlaceResult[]>;
   /** Human-readable label for a coordinate — a convenience display string only. */
   reverseGeocode(point: GeoPoint): Promise<string | null>;
+  /**
+   * Like `reverseGeocode`, but split into city/state/pincode for prefilling the
+   * address form. The seller store's own free-text state is unreliable, so the
+   * form derives these from the pinned coordinate instead.
+   */
+  reverseGeocodeDetailed(point: GeoPoint): Promise<ReverseGeocodeResult | null>;
   /** Resolve a coarse query (e.g. "Sector 45, Gurgaon, 122003") to a point. */
   geocode(query: string): Promise<GeoPoint | null>;
   /** A handful of well-known nearby places, for when `search` finds nothing. */
@@ -48,22 +66,49 @@ export interface GeocodingProvider {
 
 // ─── Nominatim / OpenStreetMap implementation ───────────────────────────────
 
+interface NominatimAddress {
+  state?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  county?: string;
+  postcode?: string;
+}
+
 interface NominatimResult {
   place_id: number;
   display_name: string;
   lat: string;
   lon: string;
+  address?: NominatimAddress;
+}
+
+function parseNominatimAddress(a: NominatimAddress = {}): {
+  city: string;
+  state: string;
+  postalCode: string;
+} {
+  return {
+    state: a.state ?? "",
+    city: a.city || a.town || a.village || a.municipality || a.county || "",
+    postalCode: a.postcode ?? "",
+  };
 }
 
 function toPlaceResult(r: NominatimResult): PlaceResult {
   // Nominatim has a single display string per place, so the list label and the
   // form prefill are necessarily the same value here.
+  const parts = parseNominatimAddress(r.address);
   return {
     id: r.place_id,
     label: r.display_name,
     address: r.display_name,
     lat: parseFloat(r.lat),
     lng: parseFloat(r.lon),
+    city: parts.city,
+    state: parts.state,
+    postalCode: parts.postalCode,
   };
 }
 
@@ -74,7 +119,7 @@ function viewboxParam(bounds?: GeoBounds): string {
 
 async function nominatimSearch(query: string, extraParams = ""): Promise<NominatimResult[]> {
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=${encodeURIComponent(query)}${extraParams}`,
+    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=in&q=${encodeURIComponent(query)}${extraParams}`,
   );
   const data = await res.json();
   return Array.isArray(data) ? data : [];
@@ -110,6 +155,22 @@ const nominatimProvider: GeocodingProvider = {
       );
       const data = await res.json();
       return data?.display_name ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async reverseGeocodeDetailed(point) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${point.lat}&lon=${point.lng}`,
+      );
+      const data = await res.json();
+      if (!data?.display_name) return null;
+      return {
+        formattedAddress: data.display_name,
+        ...parseNominatimAddress(data.address),
+      };
     } catch {
       return null;
     }
@@ -168,6 +229,24 @@ async function ensureGoogleMaps(): Promise<boolean> {
 // of these shows up.
 const PLUS_CODE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,3}(,|$)/i;
 
+// `administrative_area_level_1` is the state; the "city" line varies by how
+// Google models the place, so several levels are tried in order of specificity.
+function pickComponents(
+  components: google.maps.GeocoderAddressComponent[] = [],
+): { city: string; state: string; postalCode: string } {
+  const pick = (type: string) =>
+    components.find((c) => c.types.includes(type))?.long_name ?? "";
+  return {
+    state: pick("administrative_area_level_1"),
+    city:
+      pick("locality") ||
+      pick("postal_town") ||
+      pick("administrative_area_level_3") ||
+      pick("administrative_area_level_2"),
+    postalCode: pick("postal_code"),
+  };
+}
+
 function toLatLngBounds(bounds?: GeoBounds): google.maps.LatLngBounds | undefined {
   if (!bounds) return undefined;
   return new google.maps.LatLngBounds(
@@ -203,13 +282,17 @@ const googleMapsProvider: GeocodingProvider = {
         (prediction) =>
           new Promise<PlaceResult | null>((resolve) => {
             service.getDetails(
-              { placeId: prediction.place_id, fields: ["geometry", "formatted_address"] },
+              {
+                placeId: prediction.place_id,
+                fields: ["geometry", "formatted_address", "address_components"],
+              },
               (place, status) => {
                 if (status !== google.maps.places.PlacesServiceStatus.OK || !place?.geometry?.location) {
                   resolve(null);
                   return;
                 }
                 const formatted = place.formatted_address;
+                const parts = pickComponents(place.address_components);
                 resolve({
                   id: prediction.place_id,
                   // The description leads with the place's own name
@@ -220,6 +303,9 @@ const googleMapsProvider: GeocodingProvider = {
                   address: formatted && !PLUS_CODE.test(formatted) ? formatted : prediction.description,
                   lat: place.geometry.location.lat(),
                   lng: place.geometry.location.lng(),
+                  city: parts.city,
+                  state: parts.state,
+                  postalCode: parts.postalCode,
                 });
               },
             );
@@ -235,6 +321,24 @@ const googleMapsProvider: GeocodingProvider = {
     return new Promise((resolve) => {
       geocoder.geocode({ location: point }, (results, status) => {
         resolve(status === google.maps.GeocoderStatus.OK && results?.[0] ? results[0].formatted_address : null);
+      });
+    });
+  },
+
+  async reverseGeocodeDetailed(point) {
+    if (!(await ensureGoogleMaps())) return null;
+    const geocoder = new google.maps.Geocoder();
+    return new Promise((resolve) => {
+      geocoder.geocode({ location: point }, (results, status) => {
+        const top = status === google.maps.GeocoderStatus.OK ? results?.[0] : null;
+        if (!top) {
+          resolve(null);
+          return;
+        }
+        resolve({
+          formattedAddress: top.formatted_address,
+          ...pickComponents(top.address_components),
+        });
       });
     });
   },
@@ -309,6 +413,7 @@ const active = (): GeocodingProvider =>
 export const geocodingProvider: GeocodingProvider = {
   search: (query, bounds) => active().search(query, bounds),
   reverseGeocode: (point) => active().reverseGeocode(point),
+  reverseGeocodeDetailed: (point) => active().reverseGeocodeDetailed(point),
   geocode: (query) => active().geocode(query),
   nearbyLandmarks: (center, bounds) => active().nearbyLandmarks(center, bounds),
 };

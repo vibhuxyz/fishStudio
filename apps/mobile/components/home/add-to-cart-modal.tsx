@@ -3,6 +3,7 @@ import { useAddressStore } from "@/lib/address-store";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
 import {
   computePerKgSalePrice,
+  firstBuyableSize,
   normalizeSizePricing,
   resolvePerKgPricing,
   resolvePrice,
@@ -159,11 +160,15 @@ export default function AddToCartModal({
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
       // Prefer a size that can actually be bought — defaulting to a sold-out
-      // one starts every open of this sheet on a disabled option.
-      const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
-        .sizeAvailability;
-      const firstBuyable = availability?.find((entry) => entry.inStock)?.size;
-      setSelectedSize(product.weight || firstBuyable || product.sizes?.[0] || "");
+      // one starts every open of this sheet on a disabled option. This has to
+      // come before product.weight, which is just the first configured size
+      // and is as likely to be sold out as any other.
+      setSelectedSize(
+        firstBuyableSize(product.sizeAvailability) ||
+          product.weight ||
+          product.sizes?.[0] ||
+          "",
+      );
       setQuantity(1);
       setPerKgWeightGrams(PER_KG_DEFAULT);
       setSelectedImageIndex(0);
@@ -175,11 +180,13 @@ export default function AddToCartModal({
   // Per-size stock from the storefront response. Absent on an older cached
   // payload, in which case nothing is marked sold out and the whole-product
   // stock check still applies.
-  const soldOutSizes = useMemo(() => {
-    const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> } | null)
-      ?.sizeAvailability;
-    return (availability ?? []).filter((entry) => !entry.inStock).map((entry) => entry.size);
-  }, [product]);
+  const soldOutSizes = useMemo(
+    () =>
+      (product?.sizeAvailability ?? [])
+        .filter((entry) => !entry.inStock)
+        .map((entry) => entry.size),
+    [product],
+  );
   const hasCuttingTypes = (product?.cuttingTypes?.length ?? 0) > 0;
   const hasPieceSizes = (product?.pieceSizes?.length ?? 0) > 0;
 

@@ -91,6 +91,24 @@ enum StockReservationStatus {
   RELEASED
 }
 
+// Lifecycle of one attempt to pay for a basket.
+//
+// The point of the state machine is that only COMPLETED produces an Order. An
+// abandoned online checkout ends EXPIRED, holding nothing: no order number is
+// burnt, no delivery slot stays booked, and no PENDING row sits on a seller's
+// dashboard for half an hour looking like a sale.
+enum CheckoutSessionStatus {
+  // Resources are held and the snapshot is priced. Waiting on the customer.
+  PENDING
+  // Payment verified and the Order materialised. Terminal.
+  COMPLETED
+  // Ran past expiresAt without payment; reservations released. Terminal.
+  EXPIRED
+  // Customer abandoned it explicitly (backed out of the sheet). Terminal, and
+  // distinct from EXPIRED so the two are tellable apart in funnel analysis.
+  ABANDONED
+}
+
 enum AuditEntityType {
   ORDER
   PAYMENT
@@ -481,6 +499,88 @@ model StockReservation {
   // Like the outbox, the sweeper only reads HELD rows — partial index in
   // migration 20260807000001.
   @@index([orderId])
+}
+
+/// One customer's in-flight attempt to buy a basket, before any Order exists.
+///
+/// The durability boundary of checkout. Everything a purchase needs is decided
+/// and held here — the priced snapshot, the stock reservation, the delivery
+/// slot, the gateway order — and an Order is written only once money has
+/// actually moved. That inverts the previous arrangement, where tapping Pay
+/// committed a real Order, took its stock, booked its slot and burnt an order
+/// number, and an abandoned checkout left all four stranded until a sweeper
+/// noticed thirty minutes later.
+///
+/// Lives in Postgres alongside Order because both services already write here
+/// directly, and because a session and the order it becomes must commit or
+/// roll back together.
+model CheckoutSession {
+  id     String                @id @default(cuid())
+  userId String
+  status CheckoutSessionStatus @default(PENDING)
+
+  // Reference to Mongo Store ID, same convention as Order.storeId.
+  storeId String
+
+  /// The full priced basket this session is committed to: items with resolved
+  /// unit prices, the bill breakdown, delivery details, slot, coupon/event.
+  /// Finalisation materialises the Order from this and never re-prices — the
+  /// amount the customer agreed to is the amount charged, and a catalogue
+  /// change mid-payment cannot move it.
+  snapshot Json
+
+  /// Denormalised out of `snapshot` so the gateway can be charged, and the
+  /// capture amount checked, without parsing JSON on the payment path.
+  totalAmount Decimal @db.Decimal(12, 2)
+
+  /// Mirrors the quote this session was built from. Retained for audit: it is
+  /// how a disputed charge is traced back to the bill the customer was shown.
+  quoteId     String?
+  cartVersion Int?
+
+  /// The coupon this checkout is holding a redemption of, denormalised out of
+  /// `snapshot` so it can be counted.
+  ///
+  /// A held session reserves a coupon use exactly as it reserves stock: the
+  /// limit check at creation counts committed CouponUsage rows AND live
+  /// sessions, because otherwise two customers could each hold the last
+  /// remaining use and both would be entitled to it by the time they paid —
+  /// and at that point the money has moved and neither can be refused.
+  couponId String?
+
+  /// The Razorpay order bound to this session. Unique for the same reason
+  /// Payment.gatewayOrderId is — one gateway order can only ever settle one
+  /// thing, and a duplicate binding is money that can never be reconciled.
+  gatewayOrderId String? @unique
+
+  /// Set once finalisation succeeds. Also the idempotency guard: a webhook and
+  /// a client verify racing each other both find this populated and return the
+  /// same order instead of writing a second one.
+  orderId String? @unique
+
+  /// The stock hold taken when this session was created, released on expiry.
+  stockReservationId String? @unique
+
+  /// The slot place taken when this session was created, if any. Stored so
+  /// expiry can give back exactly what was taken.
+  deliverySlot String?
+  deliveryDate String?
+
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  // The expiry sweep reads PENDING rows past their deadline, and is served by a
+  // PARTIAL index declared in the migration, not here. Prisma cannot express a
+  // WHERE clause on an index, so declaring the full one as well would leave two
+  // indexes covering the same query — and `migrate dev` would keep trying to
+  // create the one it can model. Same convention as OutboxEvent_pending_idx and
+  // StockReservation_held_idx; see migration 20260807000001.
+
+  // "Does this customer already have a checkout open" — asked on every create.
+  @@index([userId, status])
+  // Counting live holds on a coupon, at creation time.
+  @@index([couponId, status])
 }
 
 // ── Co-purchase intelligence ─────────────────────────────────────────────────

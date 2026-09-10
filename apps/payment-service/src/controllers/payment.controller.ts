@@ -27,9 +27,15 @@ export const createRazorpayOrder = async (
   try {
     const userId = req.user?.id;
     if (!userId) return next(new AuthError());
-    const { orderId } = validate(createRazorpayOrderSchema, req.body);
+    const { orderId, sessionId } = validate(createRazorpayOrderSchema, req.body);
 
-    const gwOrder = await paymentService.createPaymentOrder(userId, orderId);
+    // Which lifecycle this checkout is on is decided by what the client holds,
+    // not by a flag read here: with sessions on, order-service handed it a
+    // sessionId and no Order exists yet; with them off, it handed back an
+    // orderId. The schema guarantees exactly one is present.
+    const gwOrder = sessionId
+      ? await paymentService.createPaymentOrderForSession(userId, sessionId)
+      : await paymentService.createPaymentOrder(userId, orderId!);
 
     return res.status(200).json({
       success: true,
@@ -55,7 +61,12 @@ export const verifyPayment = async (
     if (!userId) return next(new AuthError());
     const input = validate(verifyPaymentSchema, req.body);
 
-    const result = await paymentService.verifyPayment(userId, input);
+    const result = input.sessionId
+      ? await paymentService.verifySessionPayment(userId, {
+          ...input,
+          sessionId: input.sessionId,
+        })
+      : await paymentService.verifyPayment(userId, { ...input, orderId: input.orderId! });
 
     return res.status(200).json({ success: true, ...result });
   } catch (error) {

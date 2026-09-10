@@ -734,6 +734,16 @@ model carts {
   notifiedAt  DateTime?
   isConverted Boolean   @default(false)
 
+  // Monotonic counter, bumped only when the saved lines actually change (see
+  // syncAbandonedCart). A checkout quote records the version it was priced
+  // against, so a cart edited from another device between reading the bill and
+  // tapping Pay is caught rather than charged at the old total.
+  //
+  // Counts content changes, not writes: validate-cart upserts on every cart
+  // screen open, and a version that moved on those would invalidate quotes for
+  // carts nobody touched.
+  version     Int       @default(0)
+
   // Index into the reminder schedule in checkAbandonedCarts (1h, 3h, 1d, 3d,
   // 1w) — how many of those have already fired since lastUpdatedAt. Reset to
   // 0 whenever the cart's items actually change, so a fresh edit restarts

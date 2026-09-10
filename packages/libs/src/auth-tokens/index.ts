@@ -31,3 +31,25 @@ export const isTokenRevoked = async (token: string, jti?: string): Promise<boole
     return false;
   }
 };
+
+/**
+ * The blocklist keys for a token, for callers that want to fold this check
+ * into a pipeline they are already issuing.
+ *
+ * `isTokenRevoked` above costs a Redis round trip of its own. On the
+ * authentication hot path that round trip is pure overhead, because the caller
+ * is about to make one anyway — and against a managed Redis it is a full
+ * network hop per request, on every request, in every service. Exposing the
+ * keys lets `isAuthenticated` read the session cache and the blocklist in a
+ * single pipeline instead of two sequential calls, while keeping the key
+ * naming in one place so the two can't drift apart.
+ */
+export const revocationKeys = (token: string, jti?: string): string[] => {
+  const keys = [`auth:revoked:${hashToken(token)}`];
+  if (jti) keys.push(`auth:revoked:jti:${jti}`);
+  return keys;
+};
+
+/** Interprets the EXISTS replies produced for `revocationKeys`. */
+export const isRevokedFromExists = (replies: Array<number | null>): boolean =>
+  replies.some((n) => (n ?? 0) > 0);

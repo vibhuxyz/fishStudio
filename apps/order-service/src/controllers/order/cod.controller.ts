@@ -4,7 +4,7 @@ import { prismaMongo } from "@repo/db-mongo";
 import { NotFoundError, ValidationError } from "@repo/error-handlers";
 import { settleCodSchema, validate } from "@repo/zod-schema";
 import { logger } from "@repo/libs/logger";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 
 /**
  * Cash-on-delivery reconciliation.
@@ -101,7 +101,7 @@ export const getRiderCodDetail = async (req: any, res: Response, next: NextFunct
         return {
           id: collection.id,
           orderId: collection.orderId,
-          orderNumber: order?.orderNumber ?? formatOrderId(collection.orderId),
+          orderNumber: displayOrderNumber(order ?? { id: collection.orderId }),
           customerName: order?.deliveryName ?? null,
           amount: toMoney(collection.amount),
           collectedAt: collection.collectedAt,

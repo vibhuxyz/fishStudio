@@ -6,6 +6,9 @@ import {
 } from "../controllers/order/seller.controller.js";
 import {
   createOrder,
+  getCartQuote,
+  getCheckoutSessionStatus,
+  abandonCheckoutSession,
   getUserOrders,
   getUserOrderStats,
   getOrderById,
@@ -58,8 +61,40 @@ const orderCreationLimit = perUserRateLimit({
   message: "You are placing orders too quickly. Please wait a moment.",
 });
 
+// Quoting is a read: it prices a cart and parks the result, touching no stock
+// and creating nothing. The limit is well above /create's because the checkout
+// screen re-quotes as the customer changes address, slot and coupon, and a
+// customer who cannot get a quote cannot check out at all.
+const quoteLimit = perUserRateLimit({
+  max: 60,
+  windowMs: 60_000,
+  keyFn: (req) => (req.user?.id ? `order_quote:${req.user.id}` : null),
+  message: "Too many pricing requests. Please wait a moment.",
+});
+
 // ── User Orders ─────────────────────────────────────────────────────────────
+// Authoritative price for a cart, and the snapshot /create validates against.
+// Distinct from product-service's /validate-cart, which answers "can we
+// deliver this and is it in stock" — this answers "what will you be charged",
+// using the same computeOrderTotals that /create bills with.
+router.post("/quote", isAuthenticated, allowRoles("user"), quoteLimit, getCartQuote);
 router.post("/create", isAuthenticated, allowRoles("user"), orderCreationLimit, createOrder);
+// Where a held checkout got to. Polled only on the payment-recovery path, when
+// Razorpay handed the client a payment but verify did not land.
+router.get(
+  "/checkout-session/:sessionId",
+  isAuthenticated,
+  allowRoles("user"),
+  getCheckoutSessionStatus,
+);
+// Customer walked away from the payment sheet. Releases the held stock and
+// delivery slot immediately rather than waiting for the expiry sweep.
+router.put(
+  "/checkout-session/:sessionId/abandon",
+  isAuthenticated,
+  allowRoles("user"),
+  abandonCheckoutSession,
+);
 router.get("/user-orders", isAuthenticated, allowRoles("user"), getUserOrders);
 router.get("/user-order-stats", isAuthenticated, allowRoles("user"), getUserOrderStats);
 // getOrderById enforces role-based ownership inside the controller.

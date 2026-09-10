@@ -6,7 +6,7 @@ import { ExternalLink, Loader2, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import axiosInstance from "@/utils/axiosInstance";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import OrderDetailsView from "@/shared/components/orders/order-details-view";
 
 const fetchOrderDetails = async (orderId: string) => {
@@ -36,6 +36,10 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({ orderId, onClose 
     staleTime: 1000 * 60,
   });
 
+  // Falls back to the id-derived form only while the fetch is in flight, so
+  // the heading doesn't change identifier shape once the order lands.
+  const heading = displayOrderNumber(order ?? { id: orderId });
+
   // Escape closes, and the page behind must not scroll while the panel is open.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -61,13 +65,13 @@ const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({ orderId, onClose 
       <aside
         role="dialog"
         aria-modal="true"
-        aria-label={`Order ${formatOrderId(orderId)} details`}
+        aria-label={`Order ${heading} details`}
         className="relative flex h-full w-full max-w-2xl flex-col border-l border-gray-800 bg-[#111827] shadow-2xl animate-slide-in-right"
       >
         <header className="flex items-center justify-between gap-3 border-b border-gray-800 p-5">
           <div>
             <h2 className="text-lg font-bold leading-tight text-white">
-              Order {formatOrderId(orderId)}
+              Order {heading}
             </h2>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
               Order details

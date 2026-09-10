@@ -60,6 +60,43 @@ interface PlaceResult {
   address: string;
   lat: number;
   lng: number;
+  /** Structured pieces, parsed from Google's address_components when present. */
+  city?: string;
+  state?: string;
+  postalCode?: string;
+}
+
+interface GoogleAddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
+/**
+ * Pull city / state / postcode out of Google's `address_components`. The seller
+ * store record's own free-text `state` is unreliable (it can literally be a
+ * city name), so the address form derives these from the pinned coordinate
+ * instead — this is that parse.
+ *
+ * `administrative_area_level_1` is the state; the "city" line varies by how
+ * Google models the place, so several levels are tried in order of specificity.
+ */
+function parseAddressComponents(components: GoogleAddressComponent[] = []): {
+  city: string;
+  state: string;
+  postalCode: string;
+} {
+  const pick = (type: string) =>
+    components.find((c) => c.types?.includes(type))?.long_name ?? "";
+  return {
+    state: pick("administrative_area_level_1"),
+    city:
+      pick("locality") ||
+      pick("postal_town") ||
+      pick("administrative_area_level_3") ||
+      pick("administrative_area_level_2"),
+    postalCode: pick("postal_code"),
+  };
 }
 
 // Google has no street address for a great many POIs and returns an Open
@@ -133,7 +170,7 @@ export const searchPlaces = async (req: Request, res: Response, next: NextFuncti
   try {
     const { query, bounds } = validate(searchSchema, req.query);
 
-    const results = await cached(`geo:search:${bounds ?? "-"}:${query.toLowerCase()}`, async () => {
+    const results = await cached(`geo:search:v2:${bounds ?? "-"}:${query.toLowerCase()}`, async () => {
       const params: Record<string, string> = {
         input: query,
         components: `country:${REGION}`,
@@ -166,16 +203,21 @@ export const searchPlaces = async (req: Request, res: Response, next: NextFuncti
               formatted_address?: string;
               name?: string;
               geometry?: { location?: { lat: number; lng: number } };
+              address_components?: GoogleAddressComponent[];
             };
           }>(
             "/place/details/json",
-            { place_id: prediction.place_id, fields: "geometry,formatted_address" },
+            {
+              place_id: prediction.place_id,
+              fields: "geometry,formatted_address,address_components",
+            },
             "search:details",
           );
 
           const location = details?.result?.geometry?.location;
           if (!location) return null;
           const formatted = details?.result?.formatted_address;
+          const parts = parseAddressComponents(details?.result?.address_components);
           return {
             id: prediction.place_id,
             // The description leads with the place's own name ("100xSchool,
@@ -186,6 +228,9 @@ export const searchPlaces = async (req: Request, res: Response, next: NextFuncti
             address: formatted && !PLUS_CODE.test(formatted) ? formatted : prediction.description,
             lat: location.lat,
             lng: location.lng,
+            city: parts.city,
+            state: parts.state,
+            postalCode: parts.postalCode,
           };
         }),
       );
@@ -204,18 +249,33 @@ export const reverseGeocode = async (req: Request, res: Response, next: NextFunc
     const { lat, lng } = validate(reverseSchema, req.query);
 
     // Six decimal places is roughly 0.1m — far finer than a dropped pin needs,
-    // and rounding here is what makes the cache key hit at all.
-    const address = await cached(`geo:reverse:${lat.toFixed(5)},${lng.toFixed(5)}`, async () => {
+    // and rounding here is what makes the cache key hit at all. `v2` bump: the
+    // cached value grew from a bare string to `{ formattedAddress, city, ... }`.
+    const place = await cached(`geo:reverse:v2:${lat.toFixed(5)},${lng.toFixed(5)}`, async () => {
       const data = await callGoogle<{
         status: string;
         error_message?: string;
-        results?: Array<{ formatted_address?: string }>;
+        results?: Array<{
+          formatted_address?: string;
+          address_components?: GoogleAddressComponent[];
+        }>;
       }>("/geocode/json", { latlng: `${lat},${lng}`, region: REGION }, "reverse");
 
-      return data?.results?.[0]?.formatted_address ?? null;
+      const top = data?.results?.[0];
+      if (!top?.formatted_address) return null;
+      return {
+        formattedAddress: top.formatted_address,
+        ...parseAddressComponents(top.address_components),
+      };
     });
 
-    res.status(200).json({ success: true, address });
+    res.status(200).json({
+      success: true,
+      // `address` stays a bare string for existing callers (the pin caption);
+      // `place` carries the structured pieces the address form fills from.
+      address: place?.formattedAddress ?? null,
+      place,
+    });
   } catch (error) {
     next(error);
   }

@@ -8,6 +8,7 @@ export default defineConfig((options) => ({
     "src/money.ts",
     "src/outbox.ts",
     "src/transaction.ts",
+    "src/checkout.ts",
   ],
   format: ["esm"],
   platform: "node",

@@ -2,6 +2,7 @@ import cron, { ScheduledTask } from "node-cron";
 import * as cleanupJobs from "./jobs/cleanup.jobs.js";
 import { checkAbandonedCarts } from "./jobs/abandoned-cart.job.js";
 import { cancelStaleUnpaidOrders } from "./jobs/stale-orders.job.js";
+import { releaseExpiredCheckoutSessions } from "./jobs/checkout-session-expiry.job.js";
 import {
   pruneSettledEvents,
   pruneSettledStockReservations,
@@ -53,6 +54,16 @@ export class CronManager {
     this.schedule("*/10 * * * *", async () => {
       console.log("[CRON] Cancelling stale unpaid orders...");
       await cancelStaleUnpaidOrders();
+    });
+
+    // 3b. Abandoned checkout sessions (every 2 minutes)
+    // Far more often than the stale-order sweep above, because a session holds
+    // stock and a delivery slot that nothing else will ever give back, and its
+    // whole point is that capacity returns quickly. Cheap to run: the index it
+    // reads is partial on PENDING rows past their deadline, so an idle sweep
+    // touches almost nothing.
+    this.schedule("*/2 * * * *", async () => {
+      await releaseExpiredCheckoutSessions();
     });
 
     // 4. Retention for the append-only reliability tables (daily, 03:15).

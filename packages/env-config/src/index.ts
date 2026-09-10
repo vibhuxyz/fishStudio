@@ -122,6 +122,18 @@ export const ENV = {
   RAZORPAY_KEY_SECRET: logEnv("RAZORPAY_KEY_SECRET", process.env.RAZORPAY_KEY_SECRET),
   RAZORPAY_WEBHOOK_SECRET: logEnv("RAZORPAY_WEBHOOK_SECRET", process.env.RAZORPAY_WEBHOOK_SECRET),
 
+  // Checkout lifecycle: when on, an online checkout creates a CheckoutSession
+  // and the Order is written only once payment settles. Off, tapping Pay
+  // commits an Order up front — the previous behaviour, where an abandoned
+  // checkout leaves a PENDING order holding stock, a delivery slot and an
+  // order number until the stale-order sweep catches it.
+  //
+  // Deliberately opt-in and read at call time, not at boot: this changes when
+  // money becomes an order, so it needs to be switchable per environment and
+  // reversible without a code change. COD is unaffected either way — it has no
+  // payment sheet to abandon, so its order is correct to create immediately.
+  CHECKOUT_SESSIONS_ENABLED: process.env.CHECKOUT_SESSIONS_ENABLED === "true",
+
   // Google Maps — server-side only, deliberately not NEXT_PUBLIC/EXPO_PUBLIC.
   //
   // Google's Geocoding and Places *web service* endpoints can only be locked

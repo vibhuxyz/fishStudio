@@ -93,6 +93,7 @@ export function useAddress() {
     pincode: string;
     phone?: string;
     country: string;
+    formattedAddress?: string;
     deliveryInstructions?: string;
     lat?: number;
     lng?: number;

@@ -537,6 +537,7 @@
       "dependencies": {
         "@prisma/client": "^5.14.0",
         "@repo/libs": "workspace:*",
+        "@repo/shared": "workspace:*",
         "@repo/typescript-config": "workspace:*",
         "bcryptjs": "^3.0.3",
         "nanoid": "^5.0.7",

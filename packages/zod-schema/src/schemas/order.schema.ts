@@ -19,9 +19,25 @@ export const cartQuoteSchema = z.object({
   storeId: z.string().min(1, "Store ID is required"),
   items: z.array(cartQuoteItemSchema).min(1, "At least one item is required"),
   couponCode: z.string().optional(),
+  // Mirrors createOrderSchema's eventId. Without it a quote could not price a
+  // seller-event promo, so any checkout using one would fail the quote match
+  // at /create for a discount the customer was legitimately shown.
+  eventId: z.string().optional(),
   deliverySlot: z.string().regex(/^[a-z0-9_-]{1,32}$/).optional(),
   deliveryDate: z.string().regex(/^\d{8}$/).optional(),
+  // The cart content version the client believes it is on, as last returned
+  // by /product/api/validate-cart. Recorded on the quote and re-asserted at
+  // /create, so a cart edited from another device in between is caught.
+  //
+  // Client-supplied on both ends by design. Comparing against the server's own
+  // stored version instead would fail spuriously: the cart is synced on a 2s
+  // debounce while quoting is debounced at 500ms, so the server's copy is
+  // routinely a beat behind the basket being priced.
+  cartVersion: z.number().int().nonnegative().optional(),
 });
+
+/** Shape of the ids minted by getCartQuote — `qt_` plus 20 hex characters. */
+export const quoteIdSchema = z.string().regex(/^qt_[a-f0-9]{20}$/, "Invalid quote id");
 
 export const deliveryDetailsSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -81,6 +97,18 @@ export const createOrderSchema = z.object({
   // ddMMyyyy in IST. Absent for "instant", which is always today, and for
   // clients that predate dated slots — order-service defaults those to today.
   deliveryDate: z.string().regex(/^\d{8}$/, "Invalid delivery date").optional(),
+  // The quote the customer actually agreed to pay, from POST /order/api/quote.
+  //
+  // Optional so clients that predate quoting keep working: without it /create
+  // behaves exactly as before, recomputing the price server-side and charging
+  // that. With it, the recomputed price must still match what was quoted, and
+  // a divergence is reported rather than silently charged — which is the only
+  // way "the total moved between the bill you read and the button you tapped"
+  // can be told apart from ordinary repricing.
+  quoteId: quoteIdSchema.optional(),
+  // Re-asserted from the same client state the quote recorded — see
+  // cartQuoteSchema.cartVersion.
+  cartVersion: z.number().int().nonnegative().optional(),
 });
 
 export const acceptOrRejectOrderSchema = z.object({

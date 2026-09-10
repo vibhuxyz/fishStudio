@@ -6,7 +6,7 @@ import { markPreparationCompleteSchema, markDeliveredSchema, validate } from "@r
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { logger } from "@repo/libs/logger";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import {
   invalidateSellerStatsCache,
   releaseRiderIfNoOtherDeliveries,
@@ -134,7 +134,7 @@ export const markPreparationComplete = async (
       data: { status: "READY_FOR_PICKUP", preparationPhotos, updatedAt: new Date() },
     });
 
-    const shortId = formatOrderId(orderId);
+    const shortId = displayOrderNumber(order);
     await notifyCustomer(order, "Preparation Completed", `Your order ${shortId} is ready for pickup.`);
     try {
       await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
@@ -190,7 +190,7 @@ export const markPickedUp = async (
       },
     });
 
-    const shortId = formatOrderId(orderId);
+    const shortId = displayOrderNumber(order);
     await notifyCustomer(order, "Order Picked Up", `Your order ${shortId} is out for delivery.`);
     try {
       await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
@@ -273,7 +273,7 @@ export const markDelivered = async (
     void recordDeliveryDistance(order);
     invalidateSellerStatsCache(req.seller?.id).catch(() => {});
 
-    const shortId = formatOrderId(orderId);
+    const shortId = displayOrderNumber(order);
     // Deliberately a simpler in-app-only notification (no email/SMS invoice
     // metadata) — the full delivery-confirmation email lives in
     // updateOrderStatus's DELIVERED branch and isn't duplicated here.

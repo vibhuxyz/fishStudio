@@ -783,6 +783,13 @@ export interface InventoryProduct {
   image?: string;
   isOutOfStock: boolean;
   isLowStock: boolean;
+  /** Set when the seller stocks each weight tier separately, in which case
+   *  `stock` above is only their sum and can look healthy while an individual
+   *  size is unbuyable. */
+  trackStockPerSize?: boolean;
+  /** Read-only per-size breakdown, worst-first. Stock belongs to the seller
+   *  who owns the store variant; admin sees it here but edits it nowhere. */
+  sizeStock?: Array<{ size: string; qty: number }>;
   createdAt: string;
   updatedAt: string;
 }

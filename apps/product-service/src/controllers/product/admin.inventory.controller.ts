@@ -21,6 +21,26 @@ const SEARCH_SCAN_LIMIT: number = 500;
    Returns: paginated list of sellers, each with:
      seller info → store info → products (title, category, stock, price, totalSold, status)
 ───────────────────────────────────────────────────────────────────────── */
+/**
+ * The per-size rows for display, sorted worst-first so a zero-stock size is
+ * the first thing seen rather than something to hunt for in a long list.
+ *
+ * Stored as an array of {size, qty} rather than a map because size labels like
+ * "1.5 kg" contain dots, which Mongo reads as nested-path separators.
+ */
+const normalizeSizeStockForDisplay = (
+  sizeStock: unknown,
+): Array<{ size: string; qty: number }> => {
+  if (!Array.isArray(sizeStock)) return [];
+  return sizeStock
+    .filter(
+      (entry): entry is { size: string; qty: unknown } =>
+        Boolean(entry) && typeof (entry as any).size === "string",
+    )
+    .map((entry) => ({ size: entry.size, qty: Number(entry.qty) || 0 }))
+    .sort((a, b) => a.qty - b.qty);
+};
+
 export const getAdminSellerInventory = async (
   req: Request,
   res: Response,

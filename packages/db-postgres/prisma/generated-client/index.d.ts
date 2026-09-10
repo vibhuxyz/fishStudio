@@ -74,6 +74,23 @@ export type OutboxEvent = $Result.DefaultSelection<Prisma.$OutboxEventPayload>
  */
 export type StockReservation = $Result.DefaultSelection<Prisma.$StockReservationPayload>
 /**
+ * Model CheckoutSession
+ * One customer's in-flight attempt to buy a basket, before any Order exists.
+ * 
+ * The durability boundary of checkout. Everything a purchase needs is decided
+ * and held here — the priced snapshot, the stock reservation, the delivery
+ * slot, the gateway order — and an Order is written only once money has
+ * actually moved. That inverts the previous arrangement, where tapping Pay
+ * committed a real Order, took its stock, booked its slot and burnt an order
+ * number, and an abandoned checkout left all four stranded until a sweeper
+ * noticed thirty minutes later.
+ * 
+ * Lives in Postgres alongside Order because both services already write here
+ * directly, and because a session and the order it becomes must commit or
+ * roll back together.
+ */
+export type CheckoutSession = $Result.DefaultSelection<Prisma.$CheckoutSessionPayload>
+/**
  * Model CodCollection
  * 
  */
@@ -214,6 +231,16 @@ export const StockReservationStatus: {
 
 export type StockReservationStatus = (typeof StockReservationStatus)[keyof typeof StockReservationStatus]
 
+
+export const CheckoutSessionStatus: {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  EXPIRED: 'EXPIRED',
+  ABANDONED: 'ABANDONED'
+};
+
+export type CheckoutSessionStatus = (typeof CheckoutSessionStatus)[keyof typeof CheckoutSessionStatus]
+
 }
 
 export type OrderStatus = $Enums.OrderStatus
@@ -255,6 +282,10 @@ export const OutboxStatus: typeof $Enums.OutboxStatus
 export type StockReservationStatus = $Enums.StockReservationStatus
 
 export const StockReservationStatus: typeof $Enums.StockReservationStatus
+
+export type CheckoutSessionStatus = $Enums.CheckoutSessionStatus
+
+export const CheckoutSessionStatus: typeof $Enums.CheckoutSessionStatus
 
 /**
  * ##  Prisma Client ʲˢ
@@ -498,6 +529,16 @@ export class PrismaClient<
     * ```
     */
   get stockReservation(): Prisma.StockReservationDelegate<ExtArgs>;
+
+  /**
+   * `prisma.checkoutSession`: Exposes CRUD operations for the **CheckoutSession** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CheckoutSessions
+    * const checkoutSessions = await prisma.checkoutSession.findMany()
+    * ```
+    */
+  get checkoutSession(): Prisma.CheckoutSessionDelegate<ExtArgs>;
 
   /**
    * `prisma.codCollection`: Exposes CRUD operations for the **CodCollection** model.
@@ -1011,6 +1052,7 @@ export namespace Prisma {
     WebhookEvent: 'WebhookEvent',
     OutboxEvent: 'OutboxEvent',
     StockReservation: 'StockReservation',
+    CheckoutSession: 'CheckoutSession',
     CodCollection: 'CodCollection',
     CodSettlement: 'CodSettlement',
     StaffAttendance: 'StaffAttendance',
@@ -1032,7 +1074,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "order" | "invoiceSequence" | "deliverySlotBooking" | "orderNumberSequence" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "codCollection" | "codSettlement" | "staffAttendance" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
+      modelProps: "order" | "invoiceSequence" | "deliverySlotBooking" | "orderNumberSequence" | "orderItem" | "payment" | "couponUsage" | "notification" | "auditLog" | "webhookEvent" | "outboxEvent" | "stockReservation" | "checkoutSession" | "codCollection" | "codSettlement" | "staffAttendance" | "productCoPurchase" | "productOrderStat" | "coPurchaseState"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1873,6 +1915,76 @@ export namespace Prisma {
           count: {
             args: Prisma.StockReservationCountArgs<ExtArgs>
             result: $Utils.Optional<StockReservationCountAggregateOutputType> | number
+          }
+        }
+      }
+      CheckoutSession: {
+        payload: Prisma.$CheckoutSessionPayload<ExtArgs>
+        fields: Prisma.CheckoutSessionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CheckoutSessionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CheckoutSessionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          findFirst: {
+            args: Prisma.CheckoutSessionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CheckoutSessionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          findMany: {
+            args: Prisma.CheckoutSessionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>[]
+          }
+          create: {
+            args: Prisma.CheckoutSessionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          createMany: {
+            args: Prisma.CheckoutSessionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CheckoutSessionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>[]
+          }
+          delete: {
+            args: Prisma.CheckoutSessionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          update: {
+            args: Prisma.CheckoutSessionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          deleteMany: {
+            args: Prisma.CheckoutSessionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CheckoutSessionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.CheckoutSessionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CheckoutSessionPayload>
+          }
+          aggregate: {
+            args: Prisma.CheckoutSessionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCheckoutSession>
+          }
+          groupBy: {
+            args: Prisma.CheckoutSessionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CheckoutSessionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CheckoutSessionCountArgs<ExtArgs>
+            result: $Utils.Optional<CheckoutSessionCountAggregateOutputType> | number
           }
         }
       }
@@ -14390,6 +14502,1104 @@ export namespace Prisma {
 
 
   /**
+   * Model CheckoutSession
+   */
+
+  export type AggregateCheckoutSession = {
+    _count: CheckoutSessionCountAggregateOutputType | null
+    _avg: CheckoutSessionAvgAggregateOutputType | null
+    _sum: CheckoutSessionSumAggregateOutputType | null
+    _min: CheckoutSessionMinAggregateOutputType | null
+    _max: CheckoutSessionMaxAggregateOutputType | null
+  }
+
+  export type CheckoutSessionAvgAggregateOutputType = {
+    totalAmount: Decimal | null
+    cartVersion: number | null
+  }
+
+  export type CheckoutSessionSumAggregateOutputType = {
+    totalAmount: Decimal | null
+    cartVersion: number | null
+  }
+
+  export type CheckoutSessionMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    status: $Enums.CheckoutSessionStatus | null
+    storeId: string | null
+    totalAmount: Decimal | null
+    quoteId: string | null
+    cartVersion: number | null
+    couponId: string | null
+    gatewayOrderId: string | null
+    orderId: string | null
+    stockReservationId: string | null
+    deliverySlot: string | null
+    deliveryDate: string | null
+    expiresAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CheckoutSessionMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    status: $Enums.CheckoutSessionStatus | null
+    storeId: string | null
+    totalAmount: Decimal | null
+    quoteId: string | null
+    cartVersion: number | null
+    couponId: string | null
+    gatewayOrderId: string | null
+    orderId: string | null
+    stockReservationId: string | null
+    deliverySlot: string | null
+    deliveryDate: string | null
+    expiresAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type CheckoutSessionCountAggregateOutputType = {
+    id: number
+    userId: number
+    status: number
+    storeId: number
+    snapshot: number
+    totalAmount: number
+    quoteId: number
+    cartVersion: number
+    couponId: number
+    gatewayOrderId: number
+    orderId: number
+    stockReservationId: number
+    deliverySlot: number
+    deliveryDate: number
+    expiresAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type CheckoutSessionAvgAggregateInputType = {
+    totalAmount?: true
+    cartVersion?: true
+  }
+
+  export type CheckoutSessionSumAggregateInputType = {
+    totalAmount?: true
+    cartVersion?: true
+  }
+
+  export type CheckoutSessionMinAggregateInputType = {
+    id?: true
+    userId?: true
+    status?: true
+    storeId?: true
+    totalAmount?: true
+    quoteId?: true
+    cartVersion?: true
+    couponId?: true
+    gatewayOrderId?: true
+    orderId?: true
+    stockReservationId?: true
+    deliverySlot?: true
+    deliveryDate?: true
+    expiresAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CheckoutSessionMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    status?: true
+    storeId?: true
+    totalAmount?: true
+    quoteId?: true
+    cartVersion?: true
+    couponId?: true
+    gatewayOrderId?: true
+    orderId?: true
+    stockReservationId?: true
+    deliverySlot?: true
+    deliveryDate?: true
+    expiresAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type CheckoutSessionCountAggregateInputType = {
+    id?: true
+    userId?: true
+    status?: true
+    storeId?: true
+    snapshot?: true
+    totalAmount?: true
+    quoteId?: true
+    cartVersion?: true
+    couponId?: true
+    gatewayOrderId?: true
+    orderId?: true
+    stockReservationId?: true
+    deliverySlot?: true
+    deliveryDate?: true
+    expiresAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type CheckoutSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CheckoutSession to aggregate.
+     */
+    where?: CheckoutSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CheckoutSessions to fetch.
+     */
+    orderBy?: CheckoutSessionOrderByWithRelationInput | CheckoutSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CheckoutSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CheckoutSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CheckoutSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CheckoutSessions
+    **/
+    _count?: true | CheckoutSessionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CheckoutSessionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CheckoutSessionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CheckoutSessionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CheckoutSessionMaxAggregateInputType
+  }
+
+  export type GetCheckoutSessionAggregateType<T extends CheckoutSessionAggregateArgs> = {
+        [P in keyof T & keyof AggregateCheckoutSession]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCheckoutSession[P]>
+      : GetScalarType<T[P], AggregateCheckoutSession[P]>
+  }
+
+
+
+
+  export type CheckoutSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CheckoutSessionWhereInput
+    orderBy?: CheckoutSessionOrderByWithAggregationInput | CheckoutSessionOrderByWithAggregationInput[]
+    by: CheckoutSessionScalarFieldEnum[] | CheckoutSessionScalarFieldEnum
+    having?: CheckoutSessionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CheckoutSessionCountAggregateInputType | true
+    _avg?: CheckoutSessionAvgAggregateInputType
+    _sum?: CheckoutSessionSumAggregateInputType
+    _min?: CheckoutSessionMinAggregateInputType
+    _max?: CheckoutSessionMaxAggregateInputType
+  }
+
+  export type CheckoutSessionGroupByOutputType = {
+    id: string
+    userId: string
+    status: $Enums.CheckoutSessionStatus
+    storeId: string
+    snapshot: JsonValue
+    totalAmount: Decimal
+    quoteId: string | null
+    cartVersion: number | null
+    couponId: string | null
+    gatewayOrderId: string | null
+    orderId: string | null
+    stockReservationId: string | null
+    deliverySlot: string | null
+    deliveryDate: string | null
+    expiresAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: CheckoutSessionCountAggregateOutputType | null
+    _avg: CheckoutSessionAvgAggregateOutputType | null
+    _sum: CheckoutSessionSumAggregateOutputType | null
+    _min: CheckoutSessionMinAggregateOutputType | null
+    _max: CheckoutSessionMaxAggregateOutputType | null
+  }
+
+  type GetCheckoutSessionGroupByPayload<T extends CheckoutSessionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CheckoutSessionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CheckoutSessionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CheckoutSessionGroupByOutputType[P]>
+            : GetScalarType<T[P], CheckoutSessionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CheckoutSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    status?: boolean
+    storeId?: boolean
+    snapshot?: boolean
+    totalAmount?: boolean
+    quoteId?: boolean
+    cartVersion?: boolean
+    couponId?: boolean
+    gatewayOrderId?: boolean
+    orderId?: boolean
+    stockReservationId?: boolean
+    deliverySlot?: boolean
+    deliveryDate?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["checkoutSession"]>
+
+  export type CheckoutSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    status?: boolean
+    storeId?: boolean
+    snapshot?: boolean
+    totalAmount?: boolean
+    quoteId?: boolean
+    cartVersion?: boolean
+    couponId?: boolean
+    gatewayOrderId?: boolean
+    orderId?: boolean
+    stockReservationId?: boolean
+    deliverySlot?: boolean
+    deliveryDate?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["checkoutSession"]>
+
+  export type CheckoutSessionSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    status?: boolean
+    storeId?: boolean
+    snapshot?: boolean
+    totalAmount?: boolean
+    quoteId?: boolean
+    cartVersion?: boolean
+    couponId?: boolean
+    gatewayOrderId?: boolean
+    orderId?: boolean
+    stockReservationId?: boolean
+    deliverySlot?: boolean
+    deliveryDate?: boolean
+    expiresAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $CheckoutSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CheckoutSession"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      status: $Enums.CheckoutSessionStatus
+      storeId: string
+      /**
+       * The full priced basket this session is committed to: items with resolved
+       * unit prices, the bill breakdown, delivery details, slot, coupon/event.
+       * Finalisation materialises the Order from this and never re-prices — the
+       * amount the customer agreed to is the amount charged, and a catalogue
+       * change mid-payment cannot move it.
+       */
+      snapshot: Prisma.JsonValue
+      /**
+       * Denormalised out of `snapshot` so the gateway can be charged, and the
+       * capture amount checked, without parsing JSON on the payment path.
+       */
+      totalAmount: Prisma.Decimal
+      /**
+       * Mirrors the quote this session was built from. Retained for audit: it is
+       * how a disputed charge is traced back to the bill the customer was shown.
+       */
+      quoteId: string | null
+      cartVersion: number | null
+      /**
+       * The coupon this checkout is holding a redemption of, denormalised out of
+       * `snapshot` so it can be counted.
+       * 
+       * A held session reserves a coupon use exactly as it reserves stock: the
+       * limit check at creation counts committed CouponUsage rows AND live
+       * sessions, because otherwise two customers could each hold the last
+       * remaining use and both would be entitled to it by the time they paid —
+       * and at that point the money has moved and neither can be refused.
+       */
+      couponId: string | null
+      /**
+       * The Razorpay order bound to this session. Unique for the same reason
+       * Payment.gatewayOrderId is — one gateway order can only ever settle one
+       * thing, and a duplicate binding is money that can never be reconciled.
+       */
+      gatewayOrderId: string | null
+      /**
+       * Set once finalisation succeeds. Also the idempotency guard: a webhook and
+       * a client verify racing each other both find this populated and return the
+       * same order instead of writing a second one.
+       */
+      orderId: string | null
+      /**
+       * The stock hold taken when this session was created, released on expiry.
+       */
+      stockReservationId: string | null
+      /**
+       * The slot place taken when this session was created, if any. Stored so
+       * expiry can give back exactly what was taken.
+       */
+      deliverySlot: string | null
+      deliveryDate: string | null
+      expiresAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["checkoutSession"]>
+    composites: {}
+  }
+
+  type CheckoutSessionGetPayload<S extends boolean | null | undefined | CheckoutSessionDefaultArgs> = $Result.GetResult<Prisma.$CheckoutSessionPayload, S>
+
+  type CheckoutSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<CheckoutSessionFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: CheckoutSessionCountAggregateInputType | true
+    }
+
+  export interface CheckoutSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CheckoutSession'], meta: { name: 'CheckoutSession' } }
+    /**
+     * Find zero or one CheckoutSession that matches the filter.
+     * @param {CheckoutSessionFindUniqueArgs} args - Arguments to find a CheckoutSession
+     * @example
+     * // Get one CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CheckoutSessionFindUniqueArgs>(args: SelectSubset<T, CheckoutSessionFindUniqueArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one CheckoutSession that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {CheckoutSessionFindUniqueOrThrowArgs} args - Arguments to find a CheckoutSession
+     * @example
+     * // Get one CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CheckoutSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, CheckoutSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first CheckoutSession that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionFindFirstArgs} args - Arguments to find a CheckoutSession
+     * @example
+     * // Get one CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CheckoutSessionFindFirstArgs>(args?: SelectSubset<T, CheckoutSessionFindFirstArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first CheckoutSession that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionFindFirstOrThrowArgs} args - Arguments to find a CheckoutSession
+     * @example
+     * // Get one CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CheckoutSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, CheckoutSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more CheckoutSessions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CheckoutSessions
+     * const checkoutSessions = await prisma.checkoutSession.findMany()
+     * 
+     * // Get first 10 CheckoutSessions
+     * const checkoutSessions = await prisma.checkoutSession.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const checkoutSessionWithIdOnly = await prisma.checkoutSession.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CheckoutSessionFindManyArgs>(args?: SelectSubset<T, CheckoutSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a CheckoutSession.
+     * @param {CheckoutSessionCreateArgs} args - Arguments to create a CheckoutSession.
+     * @example
+     * // Create one CheckoutSession
+     * const CheckoutSession = await prisma.checkoutSession.create({
+     *   data: {
+     *     // ... data to create a CheckoutSession
+     *   }
+     * })
+     * 
+     */
+    create<T extends CheckoutSessionCreateArgs>(args: SelectSubset<T, CheckoutSessionCreateArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many CheckoutSessions.
+     * @param {CheckoutSessionCreateManyArgs} args - Arguments to create many CheckoutSessions.
+     * @example
+     * // Create many CheckoutSessions
+     * const checkoutSession = await prisma.checkoutSession.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CheckoutSessionCreateManyArgs>(args?: SelectSubset<T, CheckoutSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CheckoutSessions and returns the data saved in the database.
+     * @param {CheckoutSessionCreateManyAndReturnArgs} args - Arguments to create many CheckoutSessions.
+     * @example
+     * // Create many CheckoutSessions
+     * const checkoutSession = await prisma.checkoutSession.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CheckoutSessions and only return the `id`
+     * const checkoutSessionWithIdOnly = await prisma.checkoutSession.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CheckoutSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, CheckoutSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a CheckoutSession.
+     * @param {CheckoutSessionDeleteArgs} args - Arguments to delete one CheckoutSession.
+     * @example
+     * // Delete one CheckoutSession
+     * const CheckoutSession = await prisma.checkoutSession.delete({
+     *   where: {
+     *     // ... filter to delete one CheckoutSession
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CheckoutSessionDeleteArgs>(args: SelectSubset<T, CheckoutSessionDeleteArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one CheckoutSession.
+     * @param {CheckoutSessionUpdateArgs} args - Arguments to update one CheckoutSession.
+     * @example
+     * // Update one CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CheckoutSessionUpdateArgs>(args: SelectSubset<T, CheckoutSessionUpdateArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more CheckoutSessions.
+     * @param {CheckoutSessionDeleteManyArgs} args - Arguments to filter CheckoutSessions to delete.
+     * @example
+     * // Delete a few CheckoutSessions
+     * const { count } = await prisma.checkoutSession.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CheckoutSessionDeleteManyArgs>(args?: SelectSubset<T, CheckoutSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CheckoutSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CheckoutSessions
+     * const checkoutSession = await prisma.checkoutSession.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CheckoutSessionUpdateManyArgs>(args: SelectSubset<T, CheckoutSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one CheckoutSession.
+     * @param {CheckoutSessionUpsertArgs} args - Arguments to update or create a CheckoutSession.
+     * @example
+     * // Update or create a CheckoutSession
+     * const checkoutSession = await prisma.checkoutSession.upsert({
+     *   create: {
+     *     // ... data to create a CheckoutSession
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CheckoutSession we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CheckoutSessionUpsertArgs>(args: SelectSubset<T, CheckoutSessionUpsertArgs<ExtArgs>>): Prisma__CheckoutSessionClient<$Result.GetResult<Prisma.$CheckoutSessionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of CheckoutSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionCountArgs} args - Arguments to filter CheckoutSessions to count.
+     * @example
+     * // Count the number of CheckoutSessions
+     * const count = await prisma.checkoutSession.count({
+     *   where: {
+     *     // ... the filter for the CheckoutSessions we want to count
+     *   }
+     * })
+    **/
+    count<T extends CheckoutSessionCountArgs>(
+      args?: Subset<T, CheckoutSessionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CheckoutSessionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CheckoutSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CheckoutSessionAggregateArgs>(args: Subset<T, CheckoutSessionAggregateArgs>): Prisma.PrismaPromise<GetCheckoutSessionAggregateType<T>>
+
+    /**
+     * Group by CheckoutSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CheckoutSessionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CheckoutSessionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CheckoutSessionGroupByArgs['orderBy'] }
+        : { orderBy?: CheckoutSessionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CheckoutSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCheckoutSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CheckoutSession model
+   */
+  readonly fields: CheckoutSessionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CheckoutSession.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CheckoutSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CheckoutSession model
+   */ 
+  interface CheckoutSessionFieldRefs {
+    readonly id: FieldRef<"CheckoutSession", 'String'>
+    readonly userId: FieldRef<"CheckoutSession", 'String'>
+    readonly status: FieldRef<"CheckoutSession", 'CheckoutSessionStatus'>
+    readonly storeId: FieldRef<"CheckoutSession", 'String'>
+    readonly snapshot: FieldRef<"CheckoutSession", 'Json'>
+    readonly totalAmount: FieldRef<"CheckoutSession", 'Decimal'>
+    readonly quoteId: FieldRef<"CheckoutSession", 'String'>
+    readonly cartVersion: FieldRef<"CheckoutSession", 'Int'>
+    readonly couponId: FieldRef<"CheckoutSession", 'String'>
+    readonly gatewayOrderId: FieldRef<"CheckoutSession", 'String'>
+    readonly orderId: FieldRef<"CheckoutSession", 'String'>
+    readonly stockReservationId: FieldRef<"CheckoutSession", 'String'>
+    readonly deliverySlot: FieldRef<"CheckoutSession", 'String'>
+    readonly deliveryDate: FieldRef<"CheckoutSession", 'String'>
+    readonly expiresAt: FieldRef<"CheckoutSession", 'DateTime'>
+    readonly createdAt: FieldRef<"CheckoutSession", 'DateTime'>
+    readonly updatedAt: FieldRef<"CheckoutSession", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CheckoutSession findUnique
+   */
+  export type CheckoutSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter, which CheckoutSession to fetch.
+     */
+    where: CheckoutSessionWhereUniqueInput
+  }
+
+  /**
+   * CheckoutSession findUniqueOrThrow
+   */
+  export type CheckoutSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter, which CheckoutSession to fetch.
+     */
+    where: CheckoutSessionWhereUniqueInput
+  }
+
+  /**
+   * CheckoutSession findFirst
+   */
+  export type CheckoutSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter, which CheckoutSession to fetch.
+     */
+    where?: CheckoutSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CheckoutSessions to fetch.
+     */
+    orderBy?: CheckoutSessionOrderByWithRelationInput | CheckoutSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CheckoutSessions.
+     */
+    cursor?: CheckoutSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CheckoutSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CheckoutSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CheckoutSessions.
+     */
+    distinct?: CheckoutSessionScalarFieldEnum | CheckoutSessionScalarFieldEnum[]
+  }
+
+  /**
+   * CheckoutSession findFirstOrThrow
+   */
+  export type CheckoutSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter, which CheckoutSession to fetch.
+     */
+    where?: CheckoutSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CheckoutSessions to fetch.
+     */
+    orderBy?: CheckoutSessionOrderByWithRelationInput | CheckoutSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CheckoutSessions.
+     */
+    cursor?: CheckoutSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CheckoutSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CheckoutSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CheckoutSessions.
+     */
+    distinct?: CheckoutSessionScalarFieldEnum | CheckoutSessionScalarFieldEnum[]
+  }
+
+  /**
+   * CheckoutSession findMany
+   */
+  export type CheckoutSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter, which CheckoutSessions to fetch.
+     */
+    where?: CheckoutSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CheckoutSessions to fetch.
+     */
+    orderBy?: CheckoutSessionOrderByWithRelationInput | CheckoutSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CheckoutSessions.
+     */
+    cursor?: CheckoutSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CheckoutSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CheckoutSessions.
+     */
+    skip?: number
+    distinct?: CheckoutSessionScalarFieldEnum | CheckoutSessionScalarFieldEnum[]
+  }
+
+  /**
+   * CheckoutSession create
+   */
+  export type CheckoutSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * The data needed to create a CheckoutSession.
+     */
+    data: XOR<CheckoutSessionCreateInput, CheckoutSessionUncheckedCreateInput>
+  }
+
+  /**
+   * CheckoutSession createMany
+   */
+  export type CheckoutSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CheckoutSessions.
+     */
+    data: CheckoutSessionCreateManyInput | CheckoutSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CheckoutSession createManyAndReturn
+   */
+  export type CheckoutSessionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many CheckoutSessions.
+     */
+    data: CheckoutSessionCreateManyInput | CheckoutSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CheckoutSession update
+   */
+  export type CheckoutSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * The data needed to update a CheckoutSession.
+     */
+    data: XOR<CheckoutSessionUpdateInput, CheckoutSessionUncheckedUpdateInput>
+    /**
+     * Choose, which CheckoutSession to update.
+     */
+    where: CheckoutSessionWhereUniqueInput
+  }
+
+  /**
+   * CheckoutSession updateMany
+   */
+  export type CheckoutSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CheckoutSessions.
+     */
+    data: XOR<CheckoutSessionUpdateManyMutationInput, CheckoutSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which CheckoutSessions to update
+     */
+    where?: CheckoutSessionWhereInput
+  }
+
+  /**
+   * CheckoutSession upsert
+   */
+  export type CheckoutSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * The filter to search for the CheckoutSession to update in case it exists.
+     */
+    where: CheckoutSessionWhereUniqueInput
+    /**
+     * In case the CheckoutSession found by the `where` argument doesn't exist, create a new CheckoutSession with this data.
+     */
+    create: XOR<CheckoutSessionCreateInput, CheckoutSessionUncheckedCreateInput>
+    /**
+     * In case the CheckoutSession was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CheckoutSessionUpdateInput, CheckoutSessionUncheckedUpdateInput>
+  }
+
+  /**
+   * CheckoutSession delete
+   */
+  export type CheckoutSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+    /**
+     * Filter which CheckoutSession to delete.
+     */
+    where: CheckoutSessionWhereUniqueInput
+  }
+
+  /**
+   * CheckoutSession deleteMany
+   */
+  export type CheckoutSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CheckoutSessions to delete
+     */
+    where?: CheckoutSessionWhereInput
+  }
+
+  /**
+   * CheckoutSession without action
+   */
+  export type CheckoutSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CheckoutSession
+     */
+    select?: CheckoutSessionSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Model CodCollection
    */
 
@@ -20334,6 +21544,29 @@ export namespace Prisma {
   export type StockReservationScalarFieldEnum = (typeof StockReservationScalarFieldEnum)[keyof typeof StockReservationScalarFieldEnum]
 
 
+  export const CheckoutSessionScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    status: 'status',
+    storeId: 'storeId',
+    snapshot: 'snapshot',
+    totalAmount: 'totalAmount',
+    quoteId: 'quoteId',
+    cartVersion: 'cartVersion',
+    couponId: 'couponId',
+    gatewayOrderId: 'gatewayOrderId',
+    orderId: 'orderId',
+    stockReservationId: 'stockReservationId',
+    deliverySlot: 'deliverySlot',
+    deliveryDate: 'deliveryDate',
+    expiresAt: 'expiresAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type CheckoutSessionScalarFieldEnum = (typeof CheckoutSessionScalarFieldEnum)[keyof typeof CheckoutSessionScalarFieldEnum]
+
+
   export const CodCollectionScalarFieldEnum: {
     id: 'id',
     orderId: 'orderId',
@@ -20669,6 +21902,20 @@ export namespace Prisma {
    * Reference to a field of type 'StockReservationStatus[]'
    */
   export type ListEnumStockReservationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StockReservationStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'CheckoutSessionStatus'
+   */
+  export type EnumCheckoutSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CheckoutSessionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'CheckoutSessionStatus[]'
+   */
+  export type ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CheckoutSessionStatus[]'>
     
 
 
@@ -21682,6 +22929,120 @@ export namespace Prisma {
     status?: EnumStockReservationStatusWithAggregatesFilter<"StockReservation"> | $Enums.StockReservationStatus
     createdAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"StockReservation"> | Date | string
+  }
+
+  export type CheckoutSessionWhereInput = {
+    AND?: CheckoutSessionWhereInput | CheckoutSessionWhereInput[]
+    OR?: CheckoutSessionWhereInput[]
+    NOT?: CheckoutSessionWhereInput | CheckoutSessionWhereInput[]
+    id?: StringFilter<"CheckoutSession"> | string
+    userId?: StringFilter<"CheckoutSession"> | string
+    status?: EnumCheckoutSessionStatusFilter<"CheckoutSession"> | $Enums.CheckoutSessionStatus
+    storeId?: StringFilter<"CheckoutSession"> | string
+    snapshot?: JsonFilter<"CheckoutSession">
+    totalAmount?: DecimalFilter<"CheckoutSession"> | Decimal | DecimalJsLike | number | string
+    quoteId?: StringNullableFilter<"CheckoutSession"> | string | null
+    cartVersion?: IntNullableFilter<"CheckoutSession"> | number | null
+    couponId?: StringNullableFilter<"CheckoutSession"> | string | null
+    gatewayOrderId?: StringNullableFilter<"CheckoutSession"> | string | null
+    orderId?: StringNullableFilter<"CheckoutSession"> | string | null
+    stockReservationId?: StringNullableFilter<"CheckoutSession"> | string | null
+    deliverySlot?: StringNullableFilter<"CheckoutSession"> | string | null
+    deliveryDate?: StringNullableFilter<"CheckoutSession"> | string | null
+    expiresAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+    createdAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+    updatedAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+  }
+
+  export type CheckoutSessionOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    status?: SortOrder
+    storeId?: SortOrder
+    snapshot?: SortOrder
+    totalAmount?: SortOrder
+    quoteId?: SortOrderInput | SortOrder
+    cartVersion?: SortOrderInput | SortOrder
+    couponId?: SortOrderInput | SortOrder
+    gatewayOrderId?: SortOrderInput | SortOrder
+    orderId?: SortOrderInput | SortOrder
+    stockReservationId?: SortOrderInput | SortOrder
+    deliverySlot?: SortOrderInput | SortOrder
+    deliveryDate?: SortOrderInput | SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CheckoutSessionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    gatewayOrderId?: string
+    orderId?: string
+    stockReservationId?: string
+    AND?: CheckoutSessionWhereInput | CheckoutSessionWhereInput[]
+    OR?: CheckoutSessionWhereInput[]
+    NOT?: CheckoutSessionWhereInput | CheckoutSessionWhereInput[]
+    userId?: StringFilter<"CheckoutSession"> | string
+    status?: EnumCheckoutSessionStatusFilter<"CheckoutSession"> | $Enums.CheckoutSessionStatus
+    storeId?: StringFilter<"CheckoutSession"> | string
+    snapshot?: JsonFilter<"CheckoutSession">
+    totalAmount?: DecimalFilter<"CheckoutSession"> | Decimal | DecimalJsLike | number | string
+    quoteId?: StringNullableFilter<"CheckoutSession"> | string | null
+    cartVersion?: IntNullableFilter<"CheckoutSession"> | number | null
+    couponId?: StringNullableFilter<"CheckoutSession"> | string | null
+    deliverySlot?: StringNullableFilter<"CheckoutSession"> | string | null
+    deliveryDate?: StringNullableFilter<"CheckoutSession"> | string | null
+    expiresAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+    createdAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+    updatedAt?: DateTimeFilter<"CheckoutSession"> | Date | string
+  }, "id" | "gatewayOrderId" | "orderId" | "stockReservationId">
+
+  export type CheckoutSessionOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    status?: SortOrder
+    storeId?: SortOrder
+    snapshot?: SortOrder
+    totalAmount?: SortOrder
+    quoteId?: SortOrderInput | SortOrder
+    cartVersion?: SortOrderInput | SortOrder
+    couponId?: SortOrderInput | SortOrder
+    gatewayOrderId?: SortOrderInput | SortOrder
+    orderId?: SortOrderInput | SortOrder
+    stockReservationId?: SortOrderInput | SortOrder
+    deliverySlot?: SortOrderInput | SortOrder
+    deliveryDate?: SortOrderInput | SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: CheckoutSessionCountOrderByAggregateInput
+    _avg?: CheckoutSessionAvgOrderByAggregateInput
+    _max?: CheckoutSessionMaxOrderByAggregateInput
+    _min?: CheckoutSessionMinOrderByAggregateInput
+    _sum?: CheckoutSessionSumOrderByAggregateInput
+  }
+
+  export type CheckoutSessionScalarWhereWithAggregatesInput = {
+    AND?: CheckoutSessionScalarWhereWithAggregatesInput | CheckoutSessionScalarWhereWithAggregatesInput[]
+    OR?: CheckoutSessionScalarWhereWithAggregatesInput[]
+    NOT?: CheckoutSessionScalarWhereWithAggregatesInput | CheckoutSessionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CheckoutSession"> | string
+    userId?: StringWithAggregatesFilter<"CheckoutSession"> | string
+    status?: EnumCheckoutSessionStatusWithAggregatesFilter<"CheckoutSession"> | $Enums.CheckoutSessionStatus
+    storeId?: StringWithAggregatesFilter<"CheckoutSession"> | string
+    snapshot?: JsonWithAggregatesFilter<"CheckoutSession">
+    totalAmount?: DecimalWithAggregatesFilter<"CheckoutSession"> | Decimal | DecimalJsLike | number | string
+    quoteId?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    cartVersion?: IntNullableWithAggregatesFilter<"CheckoutSession"> | number | null
+    couponId?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    gatewayOrderId?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    orderId?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    stockReservationId?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    deliverySlot?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    deliveryDate?: StringNullableWithAggregatesFilter<"CheckoutSession"> | string | null
+    expiresAt?: DateTimeWithAggregatesFilter<"CheckoutSession"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"CheckoutSession"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"CheckoutSession"> | Date | string
   }
 
   export type CodCollectionWhereInput = {
@@ -23210,6 +24571,146 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CheckoutSessionCreateInput = {
+    id?: string
+    userId: string
+    status?: $Enums.CheckoutSessionStatus
+    storeId: string
+    snapshot: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    quoteId?: string | null
+    cartVersion?: number | null
+    couponId?: string | null
+    gatewayOrderId?: string | null
+    orderId?: string | null
+    stockReservationId?: string | null
+    deliverySlot?: string | null
+    deliveryDate?: string | null
+    expiresAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CheckoutSessionUncheckedCreateInput = {
+    id?: string
+    userId: string
+    status?: $Enums.CheckoutSessionStatus
+    storeId: string
+    snapshot: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    quoteId?: string | null
+    cartVersion?: number | null
+    couponId?: string | null
+    gatewayOrderId?: string | null
+    orderId?: string | null
+    stockReservationId?: string | null
+    deliverySlot?: string | null
+    deliveryDate?: string | null
+    expiresAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CheckoutSessionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCheckoutSessionStatusFieldUpdateOperationsInput | $Enums.CheckoutSessionStatus
+    storeId?: StringFieldUpdateOperationsInput | string
+    snapshot?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
+    cartVersion?: NullableIntFieldUpdateOperationsInput | number | null
+    couponId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
+    stockReservationId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CheckoutSessionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCheckoutSessionStatusFieldUpdateOperationsInput | $Enums.CheckoutSessionStatus
+    storeId?: StringFieldUpdateOperationsInput | string
+    snapshot?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
+    cartVersion?: NullableIntFieldUpdateOperationsInput | number | null
+    couponId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
+    stockReservationId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CheckoutSessionCreateManyInput = {
+    id?: string
+    userId: string
+    status?: $Enums.CheckoutSessionStatus
+    storeId: string
+    snapshot: JsonNullValueInput | InputJsonValue
+    totalAmount: Decimal | DecimalJsLike | number | string
+    quoteId?: string | null
+    cartVersion?: number | null
+    couponId?: string | null
+    gatewayOrderId?: string | null
+    orderId?: string | null
+    stockReservationId?: string | null
+    deliverySlot?: string | null
+    deliveryDate?: string | null
+    expiresAt: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type CheckoutSessionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCheckoutSessionStatusFieldUpdateOperationsInput | $Enums.CheckoutSessionStatus
+    storeId?: StringFieldUpdateOperationsInput | string
+    snapshot?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
+    cartVersion?: NullableIntFieldUpdateOperationsInput | number | null
+    couponId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
+    stockReservationId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CheckoutSessionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    status?: EnumCheckoutSessionStatusFieldUpdateOperationsInput | $Enums.CheckoutSessionStatus
+    storeId?: StringFieldUpdateOperationsInput | string
+    snapshot?: JsonNullValueInput | InputJsonValue
+    totalAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
+    cartVersion?: NullableIntFieldUpdateOperationsInput | number | null
+    couponId?: NullableStringFieldUpdateOperationsInput | string | null
+    gatewayOrderId?: NullableStringFieldUpdateOperationsInput | string | null
+    orderId?: NullableStringFieldUpdateOperationsInput | string | null
+    stockReservationId?: NullableStringFieldUpdateOperationsInput | string | null
+    deliverySlot?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type CodCollectionCreateInput = {
     id?: string
     orderId: string
@@ -24705,6 +26206,118 @@ export namespace Prisma {
     _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
   }
 
+  export type EnumCheckoutSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CheckoutSessionStatus | EnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel> | $Enums.CheckoutSessionStatus
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type CheckoutSessionCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    status?: SortOrder
+    storeId?: SortOrder
+    snapshot?: SortOrder
+    totalAmount?: SortOrder
+    quoteId?: SortOrder
+    cartVersion?: SortOrder
+    couponId?: SortOrder
+    gatewayOrderId?: SortOrder
+    orderId?: SortOrder
+    stockReservationId?: SortOrder
+    deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CheckoutSessionAvgOrderByAggregateInput = {
+    totalAmount?: SortOrder
+    cartVersion?: SortOrder
+  }
+
+  export type CheckoutSessionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    status?: SortOrder
+    storeId?: SortOrder
+    totalAmount?: SortOrder
+    quoteId?: SortOrder
+    cartVersion?: SortOrder
+    couponId?: SortOrder
+    gatewayOrderId?: SortOrder
+    orderId?: SortOrder
+    stockReservationId?: SortOrder
+    deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CheckoutSessionMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    status?: SortOrder
+    storeId?: SortOrder
+    totalAmount?: SortOrder
+    quoteId?: SortOrder
+    cartVersion?: SortOrder
+    couponId?: SortOrder
+    gatewayOrderId?: SortOrder
+    orderId?: SortOrder
+    stockReservationId?: SortOrder
+    deliverySlot?: SortOrder
+    deliveryDate?: SortOrder
+    expiresAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type CheckoutSessionSumOrderByAggregateInput = {
+    totalAmount?: SortOrder
+    cartVersion?: SortOrder
+  }
+
+  export type EnumCheckoutSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CheckoutSessionStatus | EnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCheckoutSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.CheckoutSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
   export type CodSettlementNullableRelationFilter = {
     is?: CodSettlementWhereInput | null
     isNot?: CodSettlementWhereInput | null
@@ -25204,6 +26817,18 @@ export namespace Prisma {
 
   export type EnumStockReservationStatusFieldUpdateOperationsInput = {
     set?: $Enums.StockReservationStatus
+  }
+
+  export type EnumCheckoutSessionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.CheckoutSessionStatus
+  }
+
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type CodSettlementCreateNestedOneWithoutCollectionsInput = {
@@ -25721,6 +27346,50 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumStockReservationStatusFilter<$PrismaModel>
     _max?: NestedEnumStockReservationStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCheckoutSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.CheckoutSessionStatus | EnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel> | $Enums.CheckoutSessionStatus
+  }
+
+  export type NestedEnumCheckoutSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CheckoutSessionStatus | EnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.CheckoutSessionStatus[] | ListEnumCheckoutSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumCheckoutSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.CheckoutSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumCheckoutSessionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
   export type OrderItemCreateWithoutOrderInput = {
@@ -26890,6 +28559,10 @@ export namespace Prisma {
      * @deprecated Use StockReservationDefaultArgs instead
      */
     export type StockReservationArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = StockReservationDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use CheckoutSessionDefaultArgs instead
+     */
+    export type CheckoutSessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = CheckoutSessionDefaultArgs<ExtArgs>
     /**
      * @deprecated Use CodCollectionDefaultArgs instead
      */

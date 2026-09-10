@@ -77,13 +77,16 @@ export class RazorpayProvider implements PaymentProvider {
     return this._client;
   }
 
-  async createOrder({ orderId, userId, amountInPaise, currency }: CreateOrderParams): Promise<GatewayOrder> {
+  async createOrder({ orderId, userId, amountInPaise, currency, sessionId }: CreateOrderParams): Promise<GatewayOrder> {
     const rzpOrder = await this.client().orders.create({
       amount: amountInPaise,
       currency,
       receipt: `rcpt_${orderId.slice(-10)}`,
-      // notes are echoed back on the webhook, letting us recover our orderId.
-      notes: { orderId, userId },
+      // notes are echoed back on the webhook, letting us recover what this
+      // payment was for. Under the checkout-session lifecycle that is a
+      // sessionId and there is no order yet, so both keys are carried and the
+      // webhook branches on which one is present.
+      notes: sessionId ? { sessionId, userId } : { orderId, userId },
     });
 
     return {
@@ -129,18 +132,26 @@ export class RazorpayProvider implements PaymentProvider {
     const eventType: string = event.event;
     const payload = event.payload?.payment?.entity ?? event.payload?.refund?.entity ?? {};
     const orderId = payload.notes?.orderId as string | undefined;
+    const sessionId = payload.notes?.sessionId as string | undefined;
 
     switch (eventType) {
       case "payment.captured":
         return {
           kind: "PAYMENT_CAPTURED",
           orderId,
+          sessionId,
           gatewayPaymentId: payload.id,
           amountInPaise: typeof payload.amount === "number" ? payload.amount : undefined,
           instrument: extractInstrument(payload) ?? undefined,
         };
       case "payment.failed":
-        return { kind: "PAYMENT_FAILED", orderId, gatewayPaymentId: payload.id, reason: payload.error_description };
+        return {
+          kind: "PAYMENT_FAILED",
+          orderId,
+          sessionId,
+          gatewayPaymentId: payload.id,
+          reason: payload.error_description,
+        };
       case "refund.created":
       case "refund.processed":
         return {

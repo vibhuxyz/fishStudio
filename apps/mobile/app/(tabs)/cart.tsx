@@ -3,7 +3,7 @@ import CouponSheet from "@/components/shared/coupon-sheet";
 import SlotSheet from "@/components/shared/slot-sheet";
 import { useAddress } from "@/hooks/useAddress";
 import useUser from "@/hooks/useUser";
-import { CartItem, useStore } from "@/store";
+import { CartItem, useStore, recordCartVersion } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
@@ -130,6 +130,7 @@ export default function CartScreen() {
           storeId: selectedLocation?.storeId || undefined,
         })
         .then(({ data }) => {
+          recordCartVersion(data?.cartVersion);
           if (data.success) {
             setDeliveryInfo({
               isStoreOpen: data.isStoreOpen !== false,

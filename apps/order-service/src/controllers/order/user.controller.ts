@@ -6,8 +6,11 @@ import {
   enqueueOutboxEvent,
   runSerializable,
   toMoney,
+  Prisma,
   type PaymentMethod,
+  type CheckoutSnapshotPayload,
 } from "@repo/db-postgres";
+import { ENV } from "@repo/env-config";
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Request, Response } from "express";
 import { createOrderSchema, cartQuoteSchema, cancelOrderSchema, validate } from "@repo/zod-schema";
@@ -24,8 +27,12 @@ import {
   ProductPieceSizePricing,
   PLACED_ORDER_STATUSES,
 } from "@repo/shared/pricing";
-import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
-import { deliveryDateKey, isSlotStillOffered } from "@repo/shared/delivery-slots";
+import { displayOrderNumber } from "@repo/shared/order-id";
+import {
+  deliveryDateKey,
+  isSlotStillOffered,
+  type DeliverySlotDefinition,
+} from "@repo/shared/delivery-slots";
 import {
   isInstantDeliveryAvailableNow,
   StoreHours,
@@ -37,6 +44,7 @@ import { logger } from "@repo/libs/logger";
 import {
   restoreOrderStock,
   decrementStockItem,
+  invalidateStorefrontCache,
   restoreStockItem,
   orderMoneyFields,
   orderItemMoneyFields,
@@ -47,6 +55,7 @@ import {
   reserveDeliverySlot,
   releaseDeliverySlot,
   storeDeliverySlots,
+  hashCartItems,
 } from "./utils.js";
 
 // Populated by @repo/middlewares' isAuthenticated from the verified JWT.
@@ -61,6 +70,11 @@ const IDEMPOTENCY_TTL_SEC = 86_400; // 24 hours
 // comfortably above payment-service's reconciliation interval so the sweep has
 // had a chance to resolve the payment first.
 const PAYMENT_SETTLE_GRACE_MS = 10 * 60 * 1000;
+
+// The combo rows createOrder reprices against. Named so the "no combos in
+// this cart" branch of the parallel fetch below can present the same type as
+// the query, instead of collapsing the tuple to never[].
+type ComboRow = Awaited<ReturnType<typeof prismaMongo.combos.findMany>>[number];
 
 /* ─── Coupon helpers ────────────────────────────────────────────────────── */
 async function prefetchCoupon(couponCode: string) {
@@ -205,7 +219,7 @@ const generateRewardCode = () => {
   return `REF${suffix}`;
 };
 
-async function grantReferralReward(
+export async function grantReferralReward(
   referralCode: string,
   refereeUserId: string,
   refereeOrderId: string,
@@ -417,6 +431,32 @@ function computeOrderTotals(params: {
 const QUOTE_TTL_SEC = 60;
 
 /**
+ * What a quote commits the server to, and what /create checks it against.
+ *
+ * Only inputs that can move the charge are recorded. Everything here is
+ * re-derived from the database at /create — the snapshot is never a source of
+ * prices, only the record of which numbers the customer was shown, so a
+ * tampered or stale entry can cause a checkout to be rejected but never to be
+ * charged at the wrong amount.
+ */
+interface QuoteSnapshot {
+  storeId: string;
+  couponCode: string | null;
+  eventId: string | null;
+  deliverySlot: string;
+  deliveryDate: string | null;
+  itemsHash: string;
+  grandTotal: number;
+  /** The cart version the client asserted when quoting. Null from clients that
+   *  do not track one — the itemsHash still guards the basket itself. */
+  cartVersion: number | null;
+}
+
+/** Rejections a client should respond to by re-quoting rather than retrying. */
+const quoteConflict = (message: string, code: string, details?: Record<string, unknown>) =>
+  new AppError(message, 409, true, { code, ...details });
+
+/**
  * Prices a cart without touching stock or creating anything. Clients render
  * this verbatim instead of doing their own arithmetic — the numbers here come
  * from the same computeOrderTotals() that createOrder charges with, so the
@@ -436,10 +476,8 @@ export const getCartQuote = async (
       return next(new ValidationError("You must be signed in to price a cart"));
     }
 
-    const { storeId, items, couponCode, deliverySlot } = validate(
-      cartQuoteSchema,
-      req.body,
-    );
+    const { storeId, items, couponCode, eventId, deliverySlot, deliveryDate, cartVersion } =
+      validate(cartQuoteSchema, req.body);
 
     const [dbProducts, store, couponRaw] = await Promise.all([
       prismaMongo.products.findMany({
@@ -480,6 +518,10 @@ export const getCartQuote = async (
     ]);
 
     if (!store) return next(new ValidationError("Store not found"));
+
+    // Needs store.sellerId, so it can't join the batch above — same ordering
+    // constraint, and the same couponCode-wins tie-break, as createOrder.
+    const eventRaw = eventId && !couponCode ? await prefetchEvent(eventId, store.sellerId) : null;
 
     const productMap = new Map(dbProducts.map((product) => [product.id, product]));
 
@@ -535,27 +577,63 @@ export const getCartQuote = async (
       userId,
       couponCode,
       couponRaw,
+      eventId,
+      eventRaw,
     });
 
     const quoteId = `qt_${randomUUID().replace(/-/g, "").slice(0, 20)}`;
     const expiresAt = new Date(Date.now() + QUOTE_TTL_SEC * 1000).toISOString();
 
     // Parked so /create can tell whether the customer agreed to a stale price.
-    await redis
-      .set(
+    //
+    // Every field here is one the charge depends on, and nothing else. The
+    // delivery address and the payment method are deliberately absent: the fee
+    // rules come from the store's own configuration (see computeOrderTotals),
+    // not from the address, and no payment method changes the total — storing
+    // them would invalidate quotes over choices that cannot move the number.
+    const snapshot: QuoteSnapshot = {
+      storeId,
+      couponCode: couponCode ?? null,
+      eventId: eventId ?? null,
+      deliverySlot: deliverySlot ?? "evening",
+      deliveryDate: deliveryDate ?? null,
+      itemsHash: hashCartItems(items),
+      grandTotal: summary.grandTotal,
+      cartVersion: cartVersion ?? null,
+    };
+
+    // A quote id whose snapshot was never stored is worse than no quote at
+    // all: /create would reject it as expired, and the client would re-quote
+    // into the same failure forever. Report the outage instead, so the caller
+    // can fall back to placing the order without one.
+    let quoted = true;
+    try {
+      await redis.set(
         `quote:${userId}:${quoteId}`,
-        JSON.stringify({ storeId, couponCode, deliverySlot, summary }),
+        JSON.stringify(snapshot),
         "EX",
         QUOTE_TTL_SEC,
-      )
-      .catch((error) => {
-        logger.warn("[getCartQuote] failed to cache quote", { quoteId, error });
-      });
+      );
+    } catch (error) {
+      quoted = false;
+      logger.warn("[getCartQuote] failed to cache quote", { quoteId, error });
+    }
 
     res.status(200).json({
       success: true,
-      quoteId,
-      expiresAt,
+      // Null when the snapshot could not be parked. The prices below are still
+      // correct and renderable — the caller just has nothing to redeem, and
+      // should place the order without a quoteId rather than retry.
+      quoteId: quoted ? quoteId : null,
+      expiresAt: quoted ? expiresAt : null,
+      // Whether this environment defers the Order until payment settles.
+      //
+      // Clients read it to decide if they may prepare a checkout ahead of the
+      // tap. Under the session lifecycle that costs a reservation the expiry
+      // sweep will release; under the order one the same act would commit a
+      // real Order for a customer who has not pressed anything yet, so the
+      // client must know which it is dealing with before speculating.
+      checkoutSessionsEnabled: ENV.CHECKOUT_SESSIONS_ENABLED,
       items: lines,
       unavailable,
       subtotal: summary.subtotal,
@@ -680,12 +758,397 @@ async function reserveStock(
     // Every outcome here is known, so the successful decrements can be undone
     // precisely and the reservation closed out.
     await rollbackStock(decrementedItems);
+    // A rollback still means stock moved twice; the cache can't be trusted to
+    // reflect either state, and something here was genuinely sold out.
+    invalidateStorefrontCache("reserveStock:rollback");
     throw new ValidationError(
       `"${outOfStockTitle}" just went out of stock. Please remove it from your cart.`,
     );
   }
 
+  // Per-size availability is baked into the storefront's cached payloads, so a
+  // size this order just emptied would keep being offered until the TTL lapsed.
+  if (decrementedItems.length > 0) {
+    invalidateStorefrontCache("reserveStock");
+  }
+
   return decrementedItems;
+}
+
+/* ─── Checkout sessions ─────────────────────────────────────────────────── */
+
+/**
+ * How long a held checkout stays payable.
+ *
+ * The customer's whole payment journey has to fit inside it — reading the
+ * sheet, switching to a UPI app, approving, coming back. Fifteen minutes is
+ * generous for that while being far shorter than the thirty the previous
+ * stale-order sweep needed, which is the point: stock and delivery capacity
+ * come back in a quarter of the time they used to.
+ */
+const CHECKOUT_SESSION_TTL_MS = 15 * 60 * 1000;
+
+/** The store's seller plus its active staff — everyone told about a new order. */
+async function resolveOrderNotifyTargets(
+  sellerId: string | null,
+  sellerName: string | null,
+): Promise<Array<{ id: string; name: string }>> {
+  if (!sellerId) return [];
+
+  const staffs = await prismaMongo.staffs
+    .findMany({ where: { sellerId, isActive: true }, select: { id: true, name: true } })
+    .catch(() => [] as Array<{ id: string; name: string }>);
+
+  return [{ id: sellerId, name: sellerName || "Seller" }, ...staffs];
+}
+
+/**
+ * Parks a priced, resource-holding checkout as a CheckoutSession.
+ *
+ * The snapshot written here is the sole input to finalisation — nothing is
+ * re-priced when the money lands — so everything the Order will need must be
+ * captured now, at the prices the customer agreed to.
+ *
+ * The slot booking shares this transaction with the session row for the same
+ * reason it used to share one with the Order: a place held against a session
+ * that failed to write is capacity nobody can ever use.
+ */
+async function createCheckoutSessionForCheckout(params: {
+  userId: string;
+  storeId: string;
+  store: { locationCode: string | null };
+  reservationId: string;
+  items: Array<{ productId: string; quantity: number; selectedOptions?: Record<string, unknown> }>;
+  productMap: Map<string, { catalogProductId?: string | null }>;
+  resolvedPrices: number[];
+  deliveryDetails: CheckoutSnapshotPayload["deliveryDetails"];
+  paymentMethod: PaymentMethod;
+  totalAmount: number;
+  totalDiscount: number;
+  totalDelivery: number;
+  itemTotal: number;
+  baseDeliveryCharge: number;
+  slotExtraCharge: number;
+  summary: { packagingCharge: number; gstAmount: number };
+  couponCode: string | null;
+  couponId: string | null;
+  couponRaw: Awaited<ReturnType<typeof prefetchCoupon>>;
+  eventId: string | null;
+  eventDiscountCode: string | null;
+  deliverySlot: string;
+  bookedSlotKey: string | null;
+  bookedDeliveryDate: string | null;
+  slotDefinitions: DeliverySlotDefinition[];
+  slotLabel: string;
+  userName: string | null;
+  quoteId: string | null;
+  cartVersion: number | null;
+  storeName: string;
+  sellerId: string | null;
+  sellerName: string | null;
+  referralCode: string | null;
+}) {
+  const snapshot: CheckoutSnapshotPayload = {
+    storeId: params.storeId,
+    storeLocationCode: params.store.locationCode,
+    userName: params.userName,
+    items: params.items.map((item, idx) => ({
+      productId: item.productId,
+      // A catalog root ordered directly has no catalogProductId of its own —
+      // it *is* the root, so it stands in for itself. Same rule the Order
+      // path applies, resolved here so finalisation needs no Mongo read.
+      catalogProductId: params.productMap.get(item.productId)?.catalogProductId ?? item.productId,
+      quantity: item.quantity,
+      price: params.resolvedPrices[idx]!,
+      selectedOptions: (item.selectedOptions ?? {}) as Prisma.InputJsonValue,
+    })),
+    deliveryDetails: params.deliveryDetails,
+    billDetails: {
+      itemTotal: params.itemTotal,
+      deliveryCharge: params.baseDeliveryCharge,
+      slotExtraCharge: params.slotExtraCharge,
+      packagingCharge: params.summary.packagingCharge,
+      gstAmount: params.summary.gstAmount,
+      discount: params.totalDiscount,
+      totalAmount: params.totalAmount,
+      ...(params.eventId && params.eventDiscountCode ? { eventId: params.eventId } : {}),
+    },
+    totalAmount: params.totalAmount,
+    discountAmount: params.totalDiscount,
+    deliveryCharge: params.totalDelivery,
+    // Events have no redeemable code — the display slug stands in, exactly as
+    // on the Order path, so confirmation and invoice screens need not know the
+    // difference between a coupon and an event promo.
+    couponCode: params.couponCode ?? params.eventDiscountCode ?? null,
+    couponId: params.couponId,
+    eventId: params.eventId,
+    deliverySlot: params.deliverySlot,
+    deliveryDate: params.bookedDeliveryDate,
+    slotLabel: params.slotLabel,
+    paymentMethod: params.paymentMethod,
+    referralCode: params.referralCode,
+    storeName: params.storeName,
+    sellerId: params.sellerId,
+    // Resolved now rather than at finalisation, which runs where there is no
+    // Mongo. A list up to fifteen minutes stale is a far smaller problem than
+    // a seller who never hears about a paid order.
+    notifyTargets: await resolveOrderNotifyTargets(params.sellerId, params.sellerName),
+  };
+
+  const expiresAt = new Date(Date.now() + CHECKOUT_SESSION_TTL_MS);
+
+  return runSerializable(async (tx) => {
+    /* A held session reserves a coupon redemption, not just stock.
+       
+       These are the same three limits the Order path enforces, with one
+       addition: live PENDING sessions are counted alongside committed
+       CouponUsage rows. Without that, two customers could each hold the last
+       remaining use and both would be entitled to it by the time they paid —
+       and the money has moved by then, so neither could be refused. Checking
+       at finalisation is not an option for exactly that reason.
+
+       At Serializable, two sessions racing for the last use read the same rows
+       one of them is about to write, so one is rolled back rather than both
+       passing a check made before either committed. */
+    if (params.couponId && params.couponRaw) {
+      const coupon = params.couponRaw;
+      const liveHold = { status: "PENDING" as const, expiresAt: { gt: new Date() } };
+
+      const [userUsed, userHeld, globalUsed, globalHeld, priorOrders, priorHeld] =
+        await Promise.all([
+          tx.couponUsage.count({ where: { couponId: coupon.id, userId: params.userId } }),
+          tx.checkoutSession.count({
+            where: { couponId: coupon.id, userId: params.userId, ...liveHold },
+          }),
+          coupon.maxUses !== null
+            ? tx.couponUsage.count({ where: { couponId: coupon.id } })
+            : Promise.resolve(0),
+          coupon.maxUses !== null
+            ? tx.checkoutSession.count({ where: { couponId: coupon.id, ...liveHold } })
+            : Promise.resolve(0),
+          // A first-order coupon is capped by the customer's order history, not
+          // by its own redemption count — someone who ordered before and never
+          // used this code still isn't a new customer.
+          coupon.isFirstOrder
+            ? tx.order.count({
+                where: {
+                  userId: params.userId,
+                  ...(coupon.sellerId === null ? {} : { storeId: params.storeId }),
+                  status: { in: [...PLACED_ORDER_STATUSES] },
+                },
+              })
+            : Promise.resolve(0),
+          coupon.isFirstOrder
+            ? tx.checkoutSession.count({ where: { userId: params.userId, ...liveHold } })
+            : Promise.resolve(0),
+        ]);
+
+      if (userUsed + userHeld >= coupon.maxUsesPerUser) {
+        throw new ValidationError("Coupon is not valid for this order");
+      }
+      if (coupon.maxUses !== null && globalUsed + globalHeld >= coupon.maxUses) {
+        throw new ValidationError("Coupon is not valid for this order");
+      }
+      if (coupon.isFirstOrder && priorOrders + priorHeld > 0) {
+        throw new ValidationError(
+          coupon.sellerId === null
+            ? "This coupon is only valid for your first order on our platform"
+            : "This coupon is only valid for your first order at this store",
+        );
+      }
+    }
+
+    if (params.bookedSlotKey && params.bookedDeliveryDate) {
+      const definition = params.slotDefinitions.find((slot) => slot.key === params.bookedSlotKey);
+      const reserved = await reserveDeliverySlot(tx, {
+        storeId: params.storeId,
+        deliveryDate: params.bookedDeliveryDate,
+        slotKey: params.bookedSlotKey,
+        capacity: definition?.capacity ?? 0,
+      });
+      if (!reserved) {
+        throw new ValidationError("That delivery slot just filled up. Please choose another one.");
+      }
+    }
+
+    return tx.checkoutSession.create({
+      data: {
+        userId: params.userId,
+        storeId: params.storeId,
+        snapshot: snapshot as unknown as Prisma.InputJsonObject,
+        totalAmount: params.totalAmount,
+        quoteId: params.quoteId,
+        cartVersion: params.cartVersion,
+        couponId: params.couponId,
+        stockReservationId: params.reservationId,
+        deliverySlot: params.bookedSlotKey,
+        deliveryDate: params.bookedDeliveryDate,
+        expiresAt,
+      },
+      select: { id: true, expiresAt: true },
+    });
+  });
+}
+
+/**
+ * GET /order/api/checkout-session/:sessionId — where a held checkout got to.
+ *
+ * Exists for the recovery path the payment sheet forces on us: Razorpay hands
+ * the client a payment and the verify call then fails or never lands. Under the
+ * order lifecycle the client polled the order it already had; under this one
+ * there is no order until finalisation, so this is the only way to ask whether
+ * the webhook settled it. Returns the order id once there is one.
+ */
+export const getCheckoutSessionStatus = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next(new ValidationError("You must be signed in"));
+
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId) return next(new NotFoundError("Checkout session not found"));
+
+    const session = await prismaPostgres.checkoutSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true, status: true, orderId: true, expiresAt: true },
+    });
+
+    // Ownership is checked as a 404, not a 403: confirming that someone else's
+    // session id exists is itself a leak.
+    if (!session || session.userId !== userId) {
+      return next(new NotFoundError("Checkout session not found"));
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: session.status,
+      orderId: session.orderId,
+      expiresAt: session.expiresAt.toISOString(),
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * PUT /order/api/checkout-session/:sessionId/abandon — give it all back now.
+ *
+ * The customer closed the payment sheet and walked away. Releasing on their say
+ * so returns the stock and the delivery slot immediately instead of leaving
+ * them held until the expiry sweep notices, which on a busy evening slot is the
+ * difference between someone else being able to buy and not.
+ *
+ * Refuses once a payment has settled, and the claim is conditional, so a
+ * capture landing at the same moment wins and this becomes a no-op — releasing
+ * the stock of an order that was just paid for is the one outcome that must
+ * never happen here.
+ */
+export const abandonCheckoutSession = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next(new ValidationError("You must be signed in"));
+
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId) return next(new NotFoundError("Checkout session not found"));
+
+    const session = await prismaPostgres.checkoutSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        userId: true,
+        status: true,
+        orderId: true,
+        storeId: true,
+        deliverySlot: true,
+        deliveryDate: true,
+        stockReservationId: true,
+      },
+    });
+
+    if (!session || session.userId !== userId) {
+      return next(new NotFoundError("Checkout session not found"));
+    }
+
+    if (session.orderId) {
+      return res
+        .status(200)
+        .json({ success: false, released: false, reason: "ALREADY_PAID", orderId: session.orderId });
+    }
+
+    const claimed = await prismaPostgres.checkoutSession.updateMany({
+      where: { id: sessionId, status: "PENDING", orderId: null },
+      data: { status: "ABANDONED" },
+    });
+    if (claimed.count === 0) {
+      // Someone else got there first — the expiry sweep, or a payment landing.
+      return res.status(200).json({ success: true, released: false, reason: "ALREADY_CLOSED" });
+    }
+
+    await releaseCheckoutSessionHolds({
+      storeId: session.storeId,
+      deliverySlot: session.deliverySlot,
+      deliveryDate: session.deliveryDate,
+      stockReservationId: session.stockReservationId,
+    });
+
+    return res.status(200).json({ success: true, released: true });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Returns the stock and the delivery slot a session was holding.
+ *
+ * The reservation is claimed before the stock moves, so a second release — an
+ * abandon racing the expiry sweep — finds nothing to claim and credits nothing
+ * twice. Best-effort past that point: the session is already closed, and a
+ * failure here is a stock discrepancy for the sweeper to notice rather than a
+ * reason to fail the customer's request.
+ */
+async function releaseCheckoutSessionHolds(params: {
+  storeId: string;
+  deliverySlot: string | null;
+  deliveryDate: string | null;
+  stockReservationId: string | null;
+}): Promise<void> {
+  const { storeId, deliverySlot, deliveryDate, stockReservationId } = params;
+
+  await releaseDeliverySlot({ storeId, deliveryDate, slotKey: deliverySlot });
+
+  if (!stockReservationId) return;
+
+  const claimed = await prismaPostgres.stockReservation.updateMany({
+    where: { id: stockReservationId, status: "HELD" },
+    data: { status: "RELEASED" },
+  });
+  if (claimed.count === 0) return;
+
+  const reservation = await prismaPostgres.stockReservation.findUnique({
+    where: { id: stockReservationId },
+    select: { items: true },
+  });
+  const items = (reservation?.items ?? []) as unknown as Array<{
+    productId: string;
+    quantity: number;
+    size?: string;
+  }>;
+
+  await Promise.allSettled(
+    items.map((item) => restoreStockItem(item.productId, item.quantity, item.size)),
+  );
+
+  if (items.length > 0) invalidateStorefrontCache("abandonCheckoutSession");
 }
 
 /* ─── Create order ────────────────────────────────────────────────────── */
@@ -697,17 +1160,6 @@ export const createOrder = async (
   try {
     const userId = req.user?.id as string;
 
-    /* ── 0. Idempotency — prevent duplicate orders on double-tap ────────── */
-    const idempotencyKey = (req.headers["x-idempotency-key"] as string | undefined)?.trim();
-    if (idempotencyKey) {
-      const redisKey = `idempotency:order:${userId}:${idempotencyKey}`;
-      const cached = await redis.get(redisKey).catch(() => null);
-      if (cached) {
-        // Return the exact same response as the first successful call
-        return res.status(200).json(JSON.parse(cached));
-      }
-    }
-
     const {
       storeId,
       items,
@@ -718,12 +1170,132 @@ export const createOrder = async (
       referralCode,
       deliverySlot,
       deliveryDate,
+      quoteId,
+      cartVersion,
       totalAmount: clientTotalAmount,
     } = validate(createOrderSchema, req.body);
 
-    /* ── 1. Fetch products + store + coupon in parallel ─────────────────── */
+    /* ── 0. Idempotency + quote lookup ───────────────────────────────────
+       Both are Redis reads keyed off this request and neither depends on the
+       other, so they go out in one pipeline. Sequentially they were two hops
+       to a managed Redis before any of the real work started. */
+    const idempotencyKey = (req.headers["x-idempotency-key"] as string | undefined)?.trim();
+    const idempotencyRedisKey = idempotencyKey
+      ? `idempotency:order:${userId}:${idempotencyKey}`
+      : null;
+    const quoteRedisKey = quoteId ? `quote:${userId}:${quoteId}` : null;
+
+    let cachedResponse: string | null = null;
+    let quoteRaw: string | null = null;
+    let quoteLookupFailed = false;
+
+    if (idempotencyRedisKey || quoteRedisKey) {
+      const keys = [idempotencyRedisKey, quoteRedisKey].filter(
+        (key): key is string => key !== null,
+      );
+      const replies = await redis
+        .pipeline(keys.map((key) => ["get", key]))
+        .exec()
+        .catch(() => null);
+
+      if (replies) {
+        let cursor = 0;
+        if (idempotencyRedisKey) cachedResponse = (replies[cursor++]?.[1] as string) ?? null;
+        if (quoteRedisKey) quoteRaw = (replies[cursor]?.[1] as string) ?? null;
+      } else {
+        // The read itself failed, which says nothing about whether the quote
+        // exists. Distinguishing this from "the key is gone" is what keeps a
+        // Redis blip from turning into a checkout outage below.
+        quoteLookupFailed = true;
+      }
+    }
+
+    // Duplicate of a call that already succeeded — replay it verbatim rather
+    // than placing a second order.
+    if (cachedResponse) {
+      return res.status(200).json(JSON.parse(cachedResponse));
+    }
+
+    /* ── 0b. Honour the quote the customer agreed to ─────────────────────
+       A quote is the record of the bill the customer actually read. The price
+       is still recomputed from the database below and that recomputed number
+       is what gets charged — this only establishes that the two agree, so a
+       basket or a price that moved between reading the bill and tapping Pay
+       is reported instead of silently charged at the new amount.
+
+       Absent quoteId keeps the pre-quote behaviour, so older clients are
+       unaffected.
+
+       The two ways `quoteRaw` can be empty are deliberately not treated
+       alike. A key that is genuinely gone means the quote expired, and the
+       customer is asked to re-read the bill. A failed *read* means Redis is
+       unreachable, and rejecting there would take checkout down with it for
+       exactly the clients that adopted quoting — while the recomputed
+       server-side price, which is what actually gets charged, is unaffected.
+       So an outage degrades to the pre-quote behaviour rather than to an
+       error the customer cannot clear by retrying. */
+    let quote: QuoteSnapshot | null = null;
+    if (quoteId && quoteLookupFailed) {
+      logger.warn("[createOrder] quote lookup unavailable, proceeding unquoted", {
+        userId,
+        quoteId,
+      });
+    } else if (quoteId) {
+      if (!quoteRaw) {
+        return next(
+          quoteConflict(
+            "Your order summary expired. Please review the bill and try again.",
+            "QUOTE_EXPIRED",
+          ),
+        );
+      }
+
+      quote = JSON.parse(quoteRaw) as QuoteSnapshot;
+
+      // Compared before any database work: these are the cheap rejections, and
+      // a basket that no longer matches will not produce a matching price
+      // anyway.
+      const mismatch =
+        quote.storeId !== storeId ||
+        quote.couponCode !== (couponCode ?? null) ||
+        quote.eventId !== (eventId ?? null) ||
+        quote.deliverySlot !== deliverySlot ||
+        quote.deliveryDate !== (deliveryDate ?? null) ||
+        quote.itemsHash !== hashCartItems(items) ||
+        // Catches the edit this order's own basket cannot show: another device
+        // changing the cart, which moves the version the client is told about
+        // without changing the items THIS client is submitting.
+        quote.cartVersion !== (cartVersion ?? null);
+
+      if (mismatch) {
+        return next(
+          quoteConflict(
+            "Your cart changed after this summary was prepared. Please review it again.",
+            "QUOTE_STALE",
+          ),
+        );
+      }
+    }
+
+    /* ── 1. Fetch products + store + coupon + combos in parallel ────────── */
     const productIds = items.map((i: any) => i.productId);
-    const [dbProducts, store, couponRaw] = await Promise.all([
+
+    // Which combos to load is decided by the request body alone, so grouping
+    // them here lets the read join the batch below instead of trailing it.
+    // It used to run after product validation, costing a combo cart one extra
+    // Mongo round trip in the middle of checkout for no ordering reason — the
+    // validation it feeds is pure CPU and happens further down either way.
+    const comboGroups = new Map<string, number[]>(); // comboId -> item indexes
+    items.forEach((item: any, i: number) => {
+      const comboId = item.selectedOptions?.comboId as string | undefined;
+      if (comboId) {
+        if (!comboGroups.has(comboId)) comboGroups.set(comboId, []);
+        comboGroups.get(comboId)!.push(i);
+      }
+    });
+    const comboIds = [...comboGroups.keys()];
+
+    const [dbProducts, store, couponRaw, dbCombos] = await Promise.all([
       prismaMongo.products.findMany({
         where: { id: { in: productIds }, isDeleted: false, status: "Active" },
         select: {
@@ -768,6 +1340,9 @@ export const createOrder = async (
         },
       }),
       couponCode ? prefetchCoupon(couponCode) : Promise.resolve(null),
+      comboIds.length > 0
+        ? prismaMongo.combos.findMany({ where: { id: { in: comboIds }, isActive: true } })
+        : Promise.resolve([] as ComboRow[]),
     ]);
 
     if (!store) return next(new ValidationError("Store not found"));
@@ -813,20 +1388,8 @@ export const createOrder = async (
        quantities, and any seller-fixed variant) before its members are
        repriced to the bundle price — otherwise a client could swap in a
        cheaper product and still get the combo discount. */
-    const comboGroups = new Map<string, number[]>(); // comboId -> item indexes
-    items.forEach((item: any, i: number) => {
-      const comboId = item.selectedOptions?.comboId as string | undefined;
-      if (comboId) {
-        if (!comboGroups.has(comboId)) comboGroups.set(comboId, []);
-        comboGroups.get(comboId)!.push(i);
-      }
-    });
-
     if (comboGroups.size > 0) {
-      const combos = await prismaMongo.combos.findMany({
-        where: { id: { in: [...comboGroups.keys()] }, isActive: true },
-      });
-      const comboMap = new Map(combos.map((c) => [c.id, c]));
+      const comboMap = new Map(dbCombos.map((c) => [c.id, c]));
 
       for (const [comboId, indexes] of comboGroups) {
         const combo = comboMap.get(comboId);
@@ -934,6 +1497,31 @@ export const createOrder = async (
       });
     }
 
+    // A quote, unlike the client's number, IS blocking. The two are different
+    // claims: the client's total is its own arithmetic and may lag by a render,
+    // whereas the quote is this server's own figure from a minute ago, so a
+    // divergence means a price, a coupon or the stock behind it genuinely moved
+    // — and charging through that silently is the case quoting exists to stop.
+    //
+    // Exact comparison, not a tolerance: both sides come from the same
+    // computeOrderTotals, so any difference at all is a real change rather than
+    // rounding, and `> 1` above would wave through a rupee of drift per order.
+    if (quote && quote.grandTotal !== totalAmount) {
+      logger.info("[createOrder] quote superseded by a repriced cart", {
+        userId,
+        storeId,
+        quotedTotal: quote.grandTotal,
+        currentTotal: totalAmount,
+      });
+      return next(
+        quoteConflict(
+          "The total for this order changed. Please review the updated bill.",
+          "QUOTE_STALE",
+          { quotedTotal: quote.grandTotal, currentTotal: totalAmount },
+        ),
+      );
+    }
+
     /* ── 5. Atomic stock decrement in MongoDB (First to prevent overselling) ── */
     // The Mongo decrement and the Postgres order below are two databases and
     // cannot share a transaction. Record the intent first so a crash in the
@@ -985,6 +1573,139 @@ export const createOrder = async (
         : deliverySlot === "morning"
           ? "Morning (6AM-10AM)"
           : "Evening (5PM-9PM)";
+
+    /* ── 6a. Online checkout: hold the purchase, don't commit it ──────────
+       Everything above — pricing, quote validation, the stock hold — is
+       identical for both lifecycles and deliberately shared. Only what gets
+       written differs.
+
+       With sessions on, an online checkout stops here: the priced basket is
+       parked as a CheckoutSession, the delivery slot is booked against it, and
+       nothing that looks like a sale exists yet. The Order is written by
+       finalizeCheckoutSession once the money actually lands, which is what
+       stops an abandoned payment sheet from leaving a PENDING order sitting on
+       a seller's dashboard holding a slot for thirty minutes.
+
+       COD never takes this path: there is no payment sheet to abandon, so its
+       order is correct to create immediately, and deferring it would leave the
+       customer with no order at all. */
+    const useCheckoutSession =
+      ENV.CHECKOUT_SESSIONS_ENABLED && (paymentMethod ?? "COD") !== "COD";
+
+    if (useCheckoutSession) {
+      try {
+        const session = await createCheckoutSessionForCheckout({
+          userId,
+          storeId,
+          store,
+          reservationId: reservation.id,
+          items,
+          productMap,
+          resolvedPrices,
+          deliveryDetails,
+          paymentMethod: paymentMethod ?? "COD",
+          totalAmount,
+          totalDiscount,
+          totalDelivery,
+          itemTotal,
+          baseDeliveryCharge,
+          slotExtraCharge,
+          summary,
+          couponCode: couponCode ?? null,
+          couponId: couponId ?? null,
+          couponRaw,
+          eventId: eventId ?? null,
+          eventDiscountCode: eventDiscountCode ?? null,
+          deliverySlot: deliverySlot ?? "evening",
+          bookedSlotKey,
+          bookedDeliveryDate,
+          slotDefinitions,
+          slotLabel,
+          userName: orderUser?.name ?? null,
+          quoteId: quoteId ?? null,
+          cartVersion: cartVersion ?? null,
+          storeName: store.name,
+          sellerId: store.sellerId,
+          sellerName: store.seller?.name ?? null,
+          referralCode: referralCode ?? null,
+        });
+
+        const sessionResponse = {
+          success: true,
+          sessionId: session.id,
+          expiresAt: session.expiresAt.toISOString(),
+          totalAmount,
+        };
+        res.status(201).json(sessionResponse);
+
+        if (idempotencyKey) {
+          redis
+            .set(
+              `idempotency:order:${userId}:${idempotencyKey}`,
+              JSON.stringify(sessionResponse),
+              "EX",
+              IDEMPOTENCY_TTL_SEC,
+            )
+            .catch(() => {});
+        }
+
+        // Warms the gateway order against the session, so the tap opens the
+        // sheet without waiting on Razorpay. Same best-effort contract as the
+        // order-based prewarm it replaces.
+        publishToQueue(QUEUE_NAMES.PAYMENT_EVENTS, {
+          type: "PAYMENT_PREWARM",
+          sessionId: session.id,
+        }).catch((err) =>
+          logger.error("[createOrder] session prewarm publish failed", {
+            err,
+            sessionId: session.id,
+          }),
+        );
+
+        writeAuditLog("ORDER", session.id, "CHECKOUT_SESSION_CREATED", userId, "USER", {
+          storeId,
+          totalAmount,
+          paymentMethod: paymentMethod ?? "COD",
+          itemCount: items.length,
+        });
+
+        /* Side effects of the stock having moved, which it has: the session
+           holds it from now until it is either paid for or released. These
+           belong here rather than at finalisation because they describe the
+           shelf, not the order — a size that just sold out is sold out whether
+           or not this particular customer completes their payment.
+
+           The Mongo coupon counter is deliberately NOT incremented here. It is
+           display-only (enforcement counts Postgres CouponUsage rows), and a
+           held session that expires would leave it permanently overstated. */
+        decrementedItems.forEach(({ productId, quantity }) => {
+          const product = productMap.get(productId);
+          const remaining = (product?.stock ?? quantity) - quantity;
+          if (remaining > 0) return;
+          publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {
+            type: "STOCK_UPDATE",
+            productId,
+            stock: 0,
+            message: `${product?.title ?? productId} is now out of stock!`,
+          }).catch((err) => logger.error("[createOrder] low-stock publish failed", { err }));
+        });
+
+        // Stop the abandoned-cart reminder sequence — the customer is clearly
+        // mid-purchase, and the next add-to-cart starts a fresh one.
+        prismaMongo.carts
+          .update({ where: { userId }, data: { isConverted: true } })
+          .catch(() => {});
+        return;
+      } catch (sessionError) {
+        // Nothing durable was written, but the Mongo stock decrement above was
+        // real — give it back rather than leaking it into the sweeper's lap.
+        await rollbackStock(decrementedItems);
+        await prismaPostgres.stockReservation
+          .update({ where: { id: reservation.id }, data: { status: "RELEASED" } })
+          .catch((err) => logger.error("[createOrder] failed to release reservation", { err }));
+        return next(sessionError);
+      }
+    }
 
     // totalAmount is numeric(12,2) in Postgres and arrives as a Decimal. It is
     // converted to a number before leaving the transaction because this object
@@ -1759,7 +2480,7 @@ export const cancelOrder = async (
     // wait on Mongo lookups for who to notify.
     (async () => {
       try {
-        const shortId = formatOrderId(orderId);
+        const shortId = displayOrderNumber(order);
         const store = await prismaMongo.stores.findUnique({
           where: { id: order.storeId },
           select: { sellerId: true },
@@ -1821,6 +2542,11 @@ export const requestCodConversion = async (
       where: { id: orderId },
       select: {
         id: true,
+        // Both notifications below name the order to the customer and to the
+        // store, and displayOrderNumber falls back to the id-derived form
+        // without it — which would show one order under two different
+        // identifiers depending on which message you happened to read.
+        orderNumber: true,
         userId: true,
         storeId: true,
         status: true,
@@ -1887,7 +2613,7 @@ export const requestCodConversion = async (
         userId,
         title: "Switched to Cash on Delivery",
         message:
-          `Order ${formatOrderId(orderId)} will now be paid in cash on delivery. ` +
+          `Order ${displayOrderNumber(order)} will now be paid in cash on delivery. ` +
           "The store will confirm and accept it shortly.",
         type: "INFO",
         category: "ORDER",
@@ -1903,7 +2629,7 @@ export const requestCodConversion = async (
     // on Mongo lookups).
     (async () => {
       try {
-        const shortId = formatOrderId(orderId);
+        const shortId = displayOrderNumber(order);
         const store = await prismaMongo.stores.findUnique({
           where: { id: order.storeId },
           select: { sellerId: true },

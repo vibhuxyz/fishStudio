@@ -44,10 +44,12 @@
     "prepare": "husky",
     "db:setup": "cd packages/db && bun run db:setup",
     "db:generate": "cd packages/db-postgres && bunx prisma generate && cd ../db-mongo && bunx prisma generate",
-    "db:migrate": "cd packages/db-postgres && bunx prisma migrate dev && cd ../db-mongo && bunx prisma db push",
+    "db:migrate": "bun run db:guard && cd packages/db-postgres && dotenv -e ../../.env -- bunx prisma migrate dev && cd ../db-mongo && dotenv -e ../../.env -- bunx prisma db push",
     "db:seed": "cd packages/db-mongo && bun run db:seed",
     "db:reset": "bun run scripts/reset-db.ts",
-    "admin:init": "bun run scripts/initAdmin.ts"
+    "admin:init": "bun run scripts/initAdmin.ts",
+    "db:guard": "dotenv -e .env -- bun run scripts/guard-local-db.ts",
+    "db:deploy": "cd packages/db-postgres && dotenv -e ../../.env -- bunx prisma migrate deploy"
   },
   "workspaces": [
     "apps/*",

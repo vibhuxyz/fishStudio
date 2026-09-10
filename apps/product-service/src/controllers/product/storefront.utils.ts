@@ -45,6 +45,10 @@ export const storefrontVariantSelect = {
   id: true,
   catalogProductId: true,
   stock: true,
+  // What this store actually sells. The catalog root lists every size the
+  // product can come in; a seller prices and stocks only the ones they carry,
+  // and offering the difference is offering something checkout will refuse.
+  sizes: true,
   // Per-size stock, for products sold by weight tier. Without these the
   // storefront has no way to know a single size is sold out and offers it
   // anyway, which the customer only discovers at checkout.
@@ -270,7 +274,12 @@ export const pickBestVariantPerCatalog = <
  * "1.1 kg" contain dots, which Mongo would read as nested-path separators.
  */
 const buildSizeAvailability = (catalog: any, variant: any) => {
-  const sizes: string[] = catalog.sizes ?? variant.sizes ?? [];
+  // The variant's list wins when it has one — it's the set the seller priced
+  // and stocked. Falling back to the catalog's wider list would mark sizes
+  // this store never carries as merely "out of stock".
+  const sizes: string[] = variant.sizes?.length
+    ? variant.sizes
+    : (catalog.sizes ?? []);
   if (sizes.length === 0) return [];
 
   if (!variant.trackStockPerSize) {
@@ -344,6 +353,12 @@ export const mergeCatalogWithVariant = (
     stock: variant.stock,
     sale_price: variant.sale_price,
     regular_price: variant.regular_price,
+    // Kept in step with sizePricing below. Spreading the catalog's list while
+    // overriding only its pricing left the storefront advertising sizes with
+    // no price and no stock row for this store — normalizeSizePricing then
+    // padded each one with the product's base price, so an unsellable size
+    // rendered as a real, buyable option at a fabricated price.
+    sizes: variant.sizes?.length ? variant.sizes : catalog.sizes,
     sizePricing: variant.sizePricing ?? catalog.sizePricing,
     cuttingTypePricing:
       variant.cuttingTypePricing ?? catalog.cuttingTypePricing,

@@ -28,7 +28,7 @@ import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { openWhatsApp } from "@/utils/whatsapp";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { resolvePaymentState } from "@repo/shared/payment-state";
 import { buildTelUrl, buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
@@ -223,7 +223,7 @@ export default function OrderDetailsScreen() {
             "This order has been cancelled. Your payment will be refunded within 3–5 business days to your original payment method.",
         }
       : HERO_CONTENT[upperStatus] ?? HERO_CONTENT.PENDING;
-  const shortId = formatOrderId(order.id);
+  const shortId = displayOrderNumber(order);
   const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const deliveryMinutes = getDeliveryEtaMinutes(order, selectedLocation?.deliveryTimeMinutes);
   const sellerPhone = order.store?.sellerPhone;

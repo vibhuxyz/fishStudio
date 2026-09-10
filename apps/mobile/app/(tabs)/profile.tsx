@@ -9,7 +9,7 @@ import { toast } from "@/utils/toast";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { colors } from "@/constants/theme";
 import { Order, STATUS_CONFIG } from "@/constants/order";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { resolvePaymentState } from "@repo/shared/payment-state";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -430,7 +430,7 @@ export default function Profile() {
                   const cfg = STATUS_CONFIG[displayStatus] ?? {
                     bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: displayStatus,
                   };
-                  const orderNumber = formatOrderId(order.id);
+                  const orderNumber = displayOrderNumber(order);
                   const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
                     day: "2-digit", month: "short", year: "numeric",
                   });

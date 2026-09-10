@@ -14,6 +14,8 @@ export interface Address {
   city: string;
   state: string;
   pincode: string;
+  /** Full human-readable address from reverse geocoding the pinned coordinate. */
+  formattedAddress?: string;
   deliveryInstructions?: string;
   lat?: number;
   lng?: number;

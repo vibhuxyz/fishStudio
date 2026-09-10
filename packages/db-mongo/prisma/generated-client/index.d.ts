@@ -20229,11 +20229,13 @@ export namespace Prisma {
 
   export type CartsAvgAggregateOutputType = {
     totalAmount: number | null
+    version: number | null
     notifyStage: number | null
   }
 
   export type CartsSumAggregateOutputType = {
     totalAmount: number | null
+    version: number | null
     notifyStage: number | null
   }
 
@@ -20245,6 +20247,7 @@ export namespace Prisma {
     totalAmount: number | null
     notifiedAt: Date | null
     isConverted: boolean | null
+    version: number | null
     notifyStage: number | null
     lastUpdatedAt: Date | null
     createdAt: Date | null
@@ -20258,6 +20261,7 @@ export namespace Prisma {
     totalAmount: number | null
     notifiedAt: Date | null
     isConverted: boolean | null
+    version: number | null
     notifyStage: number | null
     lastUpdatedAt: Date | null
     createdAt: Date | null
@@ -20272,6 +20276,7 @@ export namespace Prisma {
     totalAmount: number
     notifiedAt: number
     isConverted: number
+    version: number
     notifyStage: number
     lastUpdatedAt: number
     createdAt: number
@@ -20281,11 +20286,13 @@ export namespace Prisma {
 
   export type CartsAvgAggregateInputType = {
     totalAmount?: true
+    version?: true
     notifyStage?: true
   }
 
   export type CartsSumAggregateInputType = {
     totalAmount?: true
+    version?: true
     notifyStage?: true
   }
 
@@ -20297,6 +20304,7 @@ export namespace Prisma {
     totalAmount?: true
     notifiedAt?: true
     isConverted?: true
+    version?: true
     notifyStage?: true
     lastUpdatedAt?: true
     createdAt?: true
@@ -20310,6 +20318,7 @@ export namespace Prisma {
     totalAmount?: true
     notifiedAt?: true
     isConverted?: true
+    version?: true
     notifyStage?: true
     lastUpdatedAt?: true
     createdAt?: true
@@ -20324,6 +20333,7 @@ export namespace Prisma {
     totalAmount?: true
     notifiedAt?: true
     isConverted?: true
+    version?: true
     notifyStage?: true
     lastUpdatedAt?: true
     createdAt?: true
@@ -20425,6 +20435,7 @@ export namespace Prisma {
     totalAmount: number
     notifiedAt: Date | null
     isConverted: boolean
+    version: number
     notifyStage: number
     lastUpdatedAt: Date
     createdAt: Date
@@ -20458,6 +20469,7 @@ export namespace Prisma {
     totalAmount?: boolean
     notifiedAt?: boolean
     isConverted?: boolean
+    version?: boolean
     notifyStage?: boolean
     lastUpdatedAt?: boolean
     createdAt?: boolean
@@ -20473,6 +20485,7 @@ export namespace Prisma {
     totalAmount?: boolean
     notifiedAt?: boolean
     isConverted?: boolean
+    version?: boolean
     notifyStage?: boolean
     lastUpdatedAt?: boolean
     createdAt?: boolean
@@ -20491,6 +20504,7 @@ export namespace Prisma {
       totalAmount: number
       notifiedAt: Date | null
       isConverted: boolean
+      version: number
       notifyStage: number
       lastUpdatedAt: Date
       createdAt: Date
@@ -20894,6 +20908,7 @@ export namespace Prisma {
     readonly totalAmount: FieldRef<"carts", 'Float'>
     readonly notifiedAt: FieldRef<"carts", 'DateTime'>
     readonly isConverted: FieldRef<"carts", 'Boolean'>
+    readonly version: FieldRef<"carts", 'Int'>
     readonly notifyStage: FieldRef<"carts", 'Int'>
     readonly lastUpdatedAt: FieldRef<"carts", 'DateTime'>
     readonly createdAt: FieldRef<"carts", 'DateTime'>
@@ -22470,6 +22485,7 @@ export namespace Prisma {
     totalAmount: 'totalAmount',
     notifiedAt: 'notifiedAt',
     isConverted: 'isConverted',
+    version: 'version',
     notifyStage: 'notifyStage',
     lastUpdatedAt: 'lastUpdatedAt',
     createdAt: 'createdAt'
@@ -24455,6 +24471,7 @@ export namespace Prisma {
     totalAmount?: FloatFilter<"carts"> | number
     notifiedAt?: DateTimeNullableFilter<"carts"> | Date | string | null
     isConverted?: BoolFilter<"carts"> | boolean
+    version?: IntFilter<"carts"> | number
     notifyStage?: IntFilter<"carts"> | number
     lastUpdatedAt?: DateTimeFilter<"carts"> | Date | string
     createdAt?: DateTimeFilter<"carts"> | Date | string
@@ -24469,6 +24486,7 @@ export namespace Prisma {
     totalAmount?: SortOrder
     notifiedAt?: SortOrder
     isConverted?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
@@ -24486,6 +24504,7 @@ export namespace Prisma {
     totalAmount?: FloatFilter<"carts"> | number
     notifiedAt?: DateTimeNullableFilter<"carts"> | Date | string | null
     isConverted?: BoolFilter<"carts"> | boolean
+    version?: IntFilter<"carts"> | number
     notifyStage?: IntFilter<"carts"> | number
     lastUpdatedAt?: DateTimeFilter<"carts"> | Date | string
     createdAt?: DateTimeFilter<"carts"> | Date | string
@@ -24500,6 +24519,7 @@ export namespace Prisma {
     totalAmount?: SortOrder
     notifiedAt?: SortOrder
     isConverted?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
@@ -24522,6 +24542,7 @@ export namespace Prisma {
     totalAmount?: FloatWithAggregatesFilter<"carts"> | number
     notifiedAt?: DateTimeNullableWithAggregatesFilter<"carts"> | Date | string | null
     isConverted?: BoolWithAggregatesFilter<"carts"> | boolean
+    version?: IntWithAggregatesFilter<"carts"> | number
     notifyStage?: IntWithAggregatesFilter<"carts"> | number
     lastUpdatedAt?: DateTimeWithAggregatesFilter<"carts"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"carts"> | Date | string
@@ -26609,6 +26630,7 @@ export namespace Prisma {
     totalAmount?: number
     notifiedAt?: Date | string | null
     isConverted?: boolean
+    version?: number
     notifyStage?: number
     lastUpdatedAt?: Date | string
     createdAt?: Date | string
@@ -26623,6 +26645,7 @@ export namespace Prisma {
     totalAmount?: number
     notifiedAt?: Date | string | null
     isConverted?: boolean
+    version?: number
     notifyStage?: number
     lastUpdatedAt?: Date | string
     createdAt?: Date | string
@@ -26636,6 +26659,7 @@ export namespace Prisma {
     totalAmount?: FloatFieldUpdateOperationsInput | number
     notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isConverted?: BoolFieldUpdateOperationsInput | boolean
+    version?: IntFieldUpdateOperationsInput | number
     notifyStage?: IntFieldUpdateOperationsInput | number
     lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26649,6 +26673,7 @@ export namespace Prisma {
     totalAmount?: FloatFieldUpdateOperationsInput | number
     notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isConverted?: BoolFieldUpdateOperationsInput | boolean
+    version?: IntFieldUpdateOperationsInput | number
     notifyStage?: IntFieldUpdateOperationsInput | number
     lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26663,6 +26688,7 @@ export namespace Prisma {
     totalAmount?: number
     notifiedAt?: Date | string | null
     isConverted?: boolean
+    version?: number
     notifyStage?: number
     lastUpdatedAt?: Date | string
     createdAt?: Date | string
@@ -26676,6 +26702,7 @@ export namespace Prisma {
     totalAmount?: FloatFieldUpdateOperationsInput | number
     notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isConverted?: BoolFieldUpdateOperationsInput | boolean
+    version?: IntFieldUpdateOperationsInput | number
     notifyStage?: IntFieldUpdateOperationsInput | number
     lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -26689,6 +26716,7 @@ export namespace Prisma {
     totalAmount?: FloatFieldUpdateOperationsInput | number
     notifiedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     isConverted?: BoolFieldUpdateOperationsInput | boolean
+    version?: IntFieldUpdateOperationsInput | number
     notifyStage?: IntFieldUpdateOperationsInput | number
     lastUpdatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28314,6 +28342,7 @@ export namespace Prisma {
     totalAmount?: SortOrder
     notifiedAt?: SortOrder
     isConverted?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
@@ -28321,6 +28350,7 @@ export namespace Prisma {
 
   export type cartsAvgOrderByAggregateInput = {
     totalAmount?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
   }
 
@@ -28332,6 +28362,7 @@ export namespace Prisma {
     totalAmount?: SortOrder
     notifiedAt?: SortOrder
     isConverted?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
@@ -28345,6 +28376,7 @@ export namespace Prisma {
     totalAmount?: SortOrder
     notifiedAt?: SortOrder
     isConverted?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
     lastUpdatedAt?: SortOrder
     createdAt?: SortOrder
@@ -28352,6 +28384,7 @@ export namespace Prisma {
 
   export type cartsSumOrderByAggregateInput = {
     totalAmount?: SortOrder
+    version?: SortOrder
     notifyStage?: SortOrder
   }
 

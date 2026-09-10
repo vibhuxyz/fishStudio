@@ -15,6 +15,27 @@ let connection: ChannelModel | null = null;
 let channel: Channel | null = null;
 let isReconnecting = false;
 
+/**
+ * Queues already asserted on the CURRENT channel.
+ *
+ * `assertQueue` is an AMQP RPC — a full round trip to the broker, serialized
+ * on the one shared channel — and the queue's existence cannot change under
+ * us while this process holds it durable. Re-asserting per publish therefore
+ * bought nothing and cost a broker hop on every message, which is why this is
+ * remembered instead.
+ *
+ * Cleared whenever the channel is torn down: a reconnect may land on a
+ * restarted broker that has lost a non-mirrored queue, so the first publish
+ * after one must assert again.
+ */
+let assertedQueues = new Set<string>();
+
+const assertQueueOnce = async (ch: Channel, queueName: string): Promise<void> => {
+  if (assertedQueues.has(queueName)) return;
+  await ch.assertQueue(queueName, { durable: true });
+  assertedQueues.add(queueName);
+};
+
 // Registered consumers — re-applied after reconnect
 const consumers: Array<{
   queue: string;
@@ -27,7 +48,7 @@ const getRabbitMQUrl = () =>
 
 const reRegisterConsumers = async (ch: Channel) => {
   for (const c of consumers) {
-    await ch.assertQueue(c.queue, { durable: true });
+    await assertQueueOnce(ch, c.queue);
     await ch.consume(c.queue, c.handler, c.options);
     logger.info("Re-registered RabbitMQ consumer", { queue: c.queue });
   }
@@ -63,6 +84,7 @@ export const connectRabbitMQ = async (): Promise<Channel> => {
       logger.warn("RabbitMQ connection closed, scheduling reconnect");
       connection = null;
       channel = null;
+      assertedQueues = new Set();
       reconnect();
     });
 
@@ -70,6 +92,7 @@ export const connectRabbitMQ = async (): Promise<Channel> => {
       logger.error("RabbitMQ connection error", err);
       connection = null;
       channel = null;
+      assertedQueues = new Set();
       reconnect();
     });
 
@@ -100,7 +123,7 @@ export const publishToQueue = async (
 ): Promise<void> => {
   const ch = await connectRabbitMQ();
 
-  await ch.assertQueue(queueName, { durable: true });
+  await assertQueueOnce(ch, queueName);
 
   // The trace context and the correlation id ride in the AMQP headers.
   // Without this the story of a checkout ends at the publish: the consumer
@@ -130,7 +153,7 @@ export const consumeQueue = async (
 
   const traced = withMessageContext(queueName, handler);
 
-  await ch.assertQueue(queueName, { durable: true });
+  await assertQueueOnce(ch, queueName);
   await ch.consume(queueName, traced, options);
 
   // Register the traced handler, not the raw one: after a reconnect the

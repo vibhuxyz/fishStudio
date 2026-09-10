@@ -48,11 +48,15 @@ function getSnapshot(): User | null {
 export function setAuthenticatedUser(user: User | null) {
   currentUser = user;
   emitChange();
-  // Pull the user's server-saved cart so it follows them across devices.
-  // Guarded to run once per user, even though session checks may re-set them.
+  // Reconcile with the user's server-saved cart so it follows them across
+  // devices. Guarded to run once per user, but only within this page's
+  // lifetime — this is module state, so a hard refresh runs it again, which
+  // is exactly when a stale server copy used to resurrect deleted lines.
+  // loadServerCart owns that decision now; it needs the id to tell a first
+  // sign-in (merge) from a reload of an already-synced cart (replace).
   if (user && _serverCartLoadedFor !== user.id) {
     _serverCartLoadedFor = user.id;
-    useCartStore.getState().loadServerCart();
+    useCartStore.getState().loadServerCart(user.id);
     // Fold any guest browsing history into the now-authenticated account.
     mergeActivity();
   }
@@ -72,8 +76,10 @@ export async function logoutUser() {
     // keep logout resilient even if the server already cleared the session
   } finally {
     setAuthenticatedUser(null);
-    // Clear all user-specific state on logout
-    useCartStore.getState().clearCart();
+    // Clear all user-specific state on logout — locally only. clearCart()
+    // would POST /cart/clear and mark the account's cart converted, throwing
+    // away the very copy the next sign-in is supposed to restore.
+    useCartStore.getState().resetLocalCart();
     useCouponStore.getState().clearAllCoupons();
     useAddressStore.getState().clearAddresses();
     // Fully remove persisted localStorage entries so no user data lingers

@@ -16,6 +16,8 @@ export interface Address {
   pincode: string;
   phone?: string;
   country: string;
+  /** Full human-readable address from reverse geocoding the pinned coordinate. */
+  formattedAddress?: string;
   deliveryInstructions?: string;
   isDefault: boolean;
   userId: string;

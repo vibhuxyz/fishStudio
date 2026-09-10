@@ -410,6 +410,7 @@ exports.Prisma.CartsScalarFieldEnum = {
   totalAmount: 'totalAmount',
   notifiedAt: 'notifiedAt',
   isConverted: 'isConverted',
+  version: 'version',
   notifyStage: 'notifyStage',
   lastUpdatedAt: 'lastUpdatedAt',
   createdAt: 'createdAt'

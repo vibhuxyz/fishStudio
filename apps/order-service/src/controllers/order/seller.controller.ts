@@ -14,7 +14,7 @@ import {
   recordDeliveryDistance,
   parseSellerOrderFilters,
 } from "./utils.js";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { acceptOrRejectOrderSchema, updateOrderStatusSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
@@ -154,7 +154,7 @@ export const acceptOrRejectOrder = async (
 
     /* ── Notify User ── */
     try {
-      const shortId = formatOrderId(orderId);
+      const shortId = displayOrderNumber(existingOrder);
       await publishToQueue(QUEUE_NAMES.NOTIFICATION_QUEUE, {
         userId: existingOrder.userId,
         title: action === "accept" ? "Order Accepted" : "Order Rejected",
@@ -297,7 +297,7 @@ export const updateOrderStatus = async (
 
     /* ── Notify User ── */
     try {
-      const shortId = formatOrderId(orderId);
+      const shortId = displayOrderNumber(existing);
       let title = "Order Update";
       let message = `Your order ${shortId} status has been updated to ${status}.`;
 

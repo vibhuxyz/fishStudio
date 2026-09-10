@@ -285,6 +285,26 @@ exports.Prisma.StockReservationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.CheckoutSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  status: 'status',
+  storeId: 'storeId',
+  snapshot: 'snapshot',
+  totalAmount: 'totalAmount',
+  quoteId: 'quoteId',
+  cartVersion: 'cartVersion',
+  couponId: 'couponId',
+  gatewayOrderId: 'gatewayOrderId',
+  orderId: 'orderId',
+  stockReservationId: 'stockReservationId',
+  deliverySlot: 'deliverySlot',
+  deliveryDate: 'deliveryDate',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.CodCollectionScalarFieldEnum = {
   id: 'id',
   orderId: 'orderId',
@@ -448,6 +468,13 @@ exports.StockReservationStatus = exports.$Enums.StockReservationStatus = {
   RELEASED: 'RELEASED'
 };
 
+exports.CheckoutSessionStatus = exports.$Enums.CheckoutSessionStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  EXPIRED: 'EXPIRED',
+  ABANDONED: 'ABANDONED'
+};
+
 exports.Prisma.ModelName = {
   Order: 'Order',
   InvoiceSequence: 'InvoiceSequence',
@@ -461,6 +488,7 @@ exports.Prisma.ModelName = {
   WebhookEvent: 'WebhookEvent',
   OutboxEvent: 'OutboxEvent',
   StockReservation: 'StockReservation',
+  CheckoutSession: 'CheckoutSession',
   CodCollection: 'CodCollection',
   CodSettlement: 'CodSettlement',
   StaffAttendance: 'StaffAttendance',

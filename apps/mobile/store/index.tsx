@@ -73,6 +73,28 @@ let _saveCartTimer: ReturnType<typeof setTimeout> | null = null;
 // syncCartOnForeground reads it to decide which copy is authoritative.
 let _cartDirty = false;
 
+/**
+ * Content version of the server-side cart, from the last validate-cart.
+ *
+ * Module-level rather than store state because every validate-cart caller on
+ * this platform (this file, the cart tab, the checkout screen) has to be able
+ * to record it, and the value is read once at checkout rather than rendered.
+ * Quoted against and re-asserted at /create, so a cart edited on another
+ * device is caught before the customer is charged the old total.
+ */
+let _cartVersion: number | null = null;
+
+/** Records a version from any validate-cart response. Ignores anything that
+ *  is not a number, so an older API shape leaves the last known value alone. */
+export function recordCartVersion(value: unknown): void {
+  if (typeof value === "number") _cartVersion = value;
+}
+
+/** Null until the first validate-cart of the session lands. */
+export function getCartVersion(): number | null {
+  return _cartVersion;
+}
+
 async function persistCart(cart: CartItem[]) {
   // validate-cart requires at least one item, so emptying the cart by removing
   // its last line has to go to the clear endpoint instead — otherwise the
@@ -96,7 +118,7 @@ async function persistCart(cart: CartItem[]) {
   if (!pincode) return;
 
   try {
-    await axiosInstance.post("/product/api/validate-cart", {
+    const { data } = await axiosInstance.post("/product/api/validate-cart", {
       cartItems: cart.map((item) => ({
         productId: item.id,
         quantity: item.quantity || 1,
@@ -110,6 +132,7 @@ async function persistCart(cart: CartItem[]) {
       area: selectedLocation?.area || selectedAddress?.area,
       storeId: selectedLocation?.storeId || undefined,
     });
+    recordCartVersion(data?.cartVersion);
     _cartDirty = false;
   } catch {
     // Stays dirty on failure, so the next foreground pushes this copy up

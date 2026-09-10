@@ -33,7 +33,12 @@ import {
   fetchStorefrontProductBySlug,
   resolveProductSizePricing,
 } from "@/lib/storefront";
-import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/shared/pricing";
+import {
+  computePerKgSalePrice,
+  resolvePerKgPricing,
+  isSizeSoldOut,
+  firstBuyableSize,
+} from "@repo/shared/pricing";
 import { useAddressStore } from "@/lib/address-store";
 import { useAuth } from "@/lib/auth-store";
 import { trackProductView } from "@/lib/activity";
@@ -47,6 +52,16 @@ interface Props {
   coupon?: any;
   frequentlyBoughtTogether?: Product[];
 }
+
+/** The size a picker should open on: the first one actually buyable, falling
+ *  back to the product's own default when availability is unknown or nothing
+ *  is in stock. Opening on a sold-out size means every visit starts on a
+ *  disabled option. */
+const defaultSizeFor = (product: Product): string =>
+  firstBuyableSize(product.sizeAvailability) ??
+  product.weight ??
+  product.sizes?.[0] ??
+  "";
 
 export function ProductDetailClient({
   product,
@@ -104,8 +119,8 @@ export function ProductDetailClient({
   const [selectedPieceSize, setSelectedPieceSize] = useState(
     resolvedProduct.pieceSizes?.[0] || "",
   );
-  const [selectedSize, setSelectedSize] = useState(
-    resolvedProduct.weight || resolvedProduct.sizes?.[0] || "",
+  const [selectedSize, setSelectedSize] = useState(() =>
+    defaultSizeFor(resolvedProduct),
   );
 
   const { normalizedPricing, selected } = useMemo(
@@ -232,7 +247,7 @@ export function ProductDetailClient({
   useEffect(() => {
     setSelectedCutting(resolvedProduct.cuttingTypes?.[0] || "");
     setSelectedPieceSize(resolvedProduct.pieceSizes?.[0] || "");
-    setSelectedSize(resolvedProduct.weight || resolvedProduct.sizes?.[0] || "");
+    setSelectedSize(defaultSizeFor(resolvedProduct));
     setQuantity(1);
     setRemovedBundleIds(new Set());
   }, [resolvedProduct]);
@@ -589,11 +604,30 @@ export function ProductDetailClient({
                           <SelectValue placeholder="Select size" />
                         </SelectTrigger>
                         <SelectContent>
-                          {normalizedPricing.map((sizePricing) => (
-                            <SelectItem key={sizePricing.size} value={sizePricing.size}>
-                              {sizePricing.size}
-                            </SelectItem>
-                          ))}
+                          {normalizedPricing.map((sizePricing) => {
+                            const soldOut = isSizeSoldOut(
+                              resolvedProduct.sizeAvailability,
+                              sizePricing.size,
+                            );
+                            return (
+                              <SelectItem
+                                key={sizePricing.size}
+                                value={sizePricing.size}
+                                // Disabled rather than hidden, matching the
+                                // add-to-cart modal: a size that vanishes makes
+                                // the product look broken and throws away the
+                                // signal that someone wanted it.
+                                disabled={soldOut}
+                              >
+                                {sizePricing.size}
+                                {soldOut && (
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    — Out of stock
+                                  </span>
+                                )}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </div>

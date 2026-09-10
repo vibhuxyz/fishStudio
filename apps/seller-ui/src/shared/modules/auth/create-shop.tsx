@@ -267,8 +267,19 @@ const CreateShop = ({
               type="text"
               placeholder="Bihar"
               className={inputStyles}
-              {...register("state", { required: "State is required" })}
+              {...register("state", {
+                required: "State is required",
+                // A store row where state === city produces addresses whose
+                // State field just echoes the City — and buyers can't correct
+                // the fallback. Catch the typo at the source.
+                validate: (v) =>
+                  v.trim().toLowerCase() !== (watch("city") || "").trim().toLowerCase() ||
+                  "State cannot be the same as the city",
+              })}
             />
+            {errors.state && (
+              <p className="text-rose-500 text-[10px] font-bold uppercase mt-1.5 ml-1">{String(errors.state.message)}</p>
+            )}
           </div>
 
           <div className="space-y-2">

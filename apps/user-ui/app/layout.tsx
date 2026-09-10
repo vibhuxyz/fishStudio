@@ -77,6 +77,16 @@ export default function RootLayout({
       className={`${poppins.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* The checkout screen downloads the Razorpay SDK from these two hosts
+            the moment it mounts. Warming the DNS lookup and TLS handshake here
+            means that download starts transferring immediately instead of
+            spending its first ~200ms on connection setup — which on a phone
+            sits directly between tapping Pay and the sheet appearing. */}
+        <link rel="preconnect" href="https://checkout.razorpay.com" />
+        <link rel="preconnect" href="https://api.razorpay.com" />
+        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+      </head>
       <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"

@@ -22,6 +22,7 @@ import {
 import { addToCart, useCartStore } from "@/lib/cart-store";
 import type { Product } from "@repo/zod-schema";
 import { resolvePrice, normalizeSizePricing } from "@/lib/storefront";
+import { isSizeSoldOut, firstBuyableSize } from "@repo/shared/pricing";
 import { computePerKgSalePrice, resolvePerKgPricing } from "@repo/shared/pricing";
 import { useModals } from "@/components/providers/modal-provider";
 import { toast } from "sonner";
@@ -67,9 +68,7 @@ export function AddToCartModal({
     if (open && product) {
       // First *available* size, not simply the first — defaulting to a sold-out
       // size means every open of this modal starts on a disabled option.
-      const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
-        .sizeAvailability;
-      const firstBuyable = availability?.find((entry) => entry.inStock)?.size;
+      const firstBuyable = firstBuyableSize(product.sizeAvailability);
       setSelectedSize(firstBuyable ?? product.sizes?.[0] ?? "");
       setSelectedCutting(product.cuttingTypes?.[0] || "");
       setSelectedPieceSize(product.pieceSizes?.[0] || "");
@@ -170,12 +169,7 @@ export function AddToCartModal({
   // Per-size stock from the storefront response. Absent on an older cached
   // payload, in which case nothing is treated as sold out and the existing
   // whole-product stock check still applies.
-  const sizeIsSoldOut = (size: string) => {
-    const availability = (product as { sizeAvailability?: Array<{ size: string; inStock: boolean }> })
-      .sizeAvailability;
-    if (!availability) return false;
-    return availability.some((entry) => entry.size === size && !entry.inStock);
-  };
+  const sizeIsSoldOut = (size: string) => isSizeSoldOut(product.sizeAvailability, size);
   const hasCuttingTypes =
     product.cuttingTypes && product.cuttingTypes.length > 0;
   const hasPieceSizes = product.pieceSizes && product.pieceSizes.length > 0;

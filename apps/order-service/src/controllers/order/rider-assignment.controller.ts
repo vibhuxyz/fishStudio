@@ -3,7 +3,7 @@ import { prismaPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { NextFunction, Response } from "express";
 import { releaseRiderIfNoOtherDeliveries } from "./utils.js";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { assignRiderSchema, bulkAssignRiderSchema, validate } from "@repo/zod-schema";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
@@ -210,7 +210,7 @@ export const bulkAssignRider = async (
     for (const orderId of toAssign) {
       const order = assignable.get(orderId);
       if (!order) continue;
-      const shortId = formatOrderId(orderId);
+      const shortId = displayOrderNumber(order);
       shortIds.push(shortId);
 
       await notifyCustomer(order, "Rider Assigned", `A delivery rider has been assigned to your order ${shortId}.`);
@@ -305,7 +305,7 @@ export const assignRider = async (
       throw orderErr;
     }
 
-    const shortId = formatOrderId(orderId);
+    const shortId = displayOrderNumber(order);
     await notifyCustomer(order, "Rider Assigned", `A delivery rider has been assigned to your order ${shortId}.`);
     try {
       await publishToQueue(QUEUE_NAMES.ORDER_EVENTS, {

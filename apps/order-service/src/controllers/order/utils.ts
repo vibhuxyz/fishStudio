@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { redis } from "@repo/libs/redis";
 import { prismaMongo } from "@repo/db-mongo";
 import { prismaPostgres, toMoney, toMoneyOrNull, type Prisma } from "@repo/db-postgres";
@@ -483,6 +484,118 @@ export const invalidateSellerStatsCache = async (sellerId: string) => {
   }
 };
 
+/**
+ * A stable fingerprint of what a customer is buying.
+ *
+ * Compared between the quote and the order it is redeemed against, so a basket
+ * that changed after the bill was read is rejected instead of charged. The
+ * total alone cannot do this: swapping one ₹200 fish for another leaves the
+ * total identical while changing the order entirely, and comparing quantities
+ * alone misses a variant change on the same product.
+ *
+ * Order-independent and formatting-independent by construction — the entries
+ * are canonicalised and sorted before hashing — because two clients may send
+ * the same basket with the keys in a different order, and that is not a
+ * change to the basket.
+ */
+export function hashCartItems(
+  items: Array<{
+    productId: string;
+    quantity: number;
+    selectedOptions?: Record<string, unknown> | null;
+  }>,
+): string {
+  const canonical = items
+    .map((item) =>
+      JSON.stringify([
+        item.productId,
+        item.quantity,
+        canonicalise(item.selectedOptions ?? {}),
+      ]),
+    )
+    .sort()
+    .join("|");
+
+  return crypto.createHash("sha256").update(canonical).digest("hex").slice(0, 32);
+}
+
+/** Recursively sorts object keys so JSON.stringify is deterministic. */
+function canonicalise(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalise);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([k, v]) => [k, canonicalise(v)]),
+    );
+  }
+  return value;
+}
+
+/**
+ * Drops the storefront's cached product payloads after stock moves.
+ *
+ * Those payloads embed per-size availability, so without this a size whose
+ * last unit just sold keeps being offered for the rest of the cache TTL and
+ * the customer only finds out at checkout — the same symptom as a variant
+ * that was never filtered at all. product-service already clears this
+ * namespace when a seller edits a product; an order changes the same numbers
+ * and has to do the same.
+ *
+ * Fire-and-forget: the order is already committed and a stale entry expires on
+ * its own, so this must never be able to fail a checkout.
+ *
+ * Coalesced, because the sweep is a `SCAN` of the whole keyspace plus a `DEL`
+ * per match — many round trips against the same Redis that serves auth and
+ * rate limiting for every service. One order's sweep clears the namespace for
+ * every order placed alongside it, so firing one per order added load without
+ * adding freshness: ten simultaneous checkouts ran ten identical full scans
+ * and slowed down every unrelated request's auth lookup while they did.
+ *
+ * A sweep already in flight therefore just sets a flag, and one more sweep
+ * runs when it finishes — the last order's stock change is always followed by
+ * a scan that starts after it, which is the property that matters.
+ */
+const STOREFRONT_SWEEP_MATCH = "storefront:*";
+let storefrontSweepRunning = false;
+let storefrontSweepQueued = false;
+
+export function invalidateStorefrontCache(context: string) {
+  if (storefrontSweepRunning) {
+    storefrontSweepQueued = true;
+    return;
+  }
+  runStorefrontSweep(context);
+}
+
+function runStorefrontSweep(context: string) {
+  storefrontSweepRunning = true;
+  storefrontSweepQueued = false;
+
+  const finish = () => {
+    storefrontSweepRunning = false;
+    // Stock moved while this scan was in progress, so it may have already
+    // passed those keys. Run once more rather than leaving them stale.
+    if (storefrontSweepQueued) runStorefrontSweep(context);
+  };
+
+  try {
+    const stream = (redis as any).scanStream({ match: STOREFRONT_SWEEP_MATCH });
+    stream.on("data", (keys: string[]) => {
+      if (keys.length) redis.del(...keys);
+    });
+    stream.on("error", (err: unknown) => {
+      logger.error(`[${context}] storefront cache invalidation failed`, { err });
+      finish();
+    });
+    stream.on("end", finish);
+  } catch (err) {
+    logger.error(`[${context}] storefront cache invalidation failed`, { err });
+    finish();
+  }
+}
+
 // Whole-fish style products track stock per exact weight instead of one
 // shared pool (see `products.trackStockPerSize`/`sizeStock` in the Mongo
 // schema). `sizeStock` is stored as an array of { size, qty } rather than a
@@ -583,7 +696,9 @@ export function restoreOrderStock(
           : undefined;
       return restoreStockItem(item.productId, item.quantity, size || undefined);
     }),
-  ).catch((err) => logger.error(`[${context}] stock restore failed`, { err }));
+  )
+    .then(() => invalidateStorefrontCache(context))
+    .catch((err) => logger.error(`[${context}] stock restore failed`, { err }));
 }
 
 /**

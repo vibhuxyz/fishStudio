@@ -43,6 +43,14 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   const { user } = useUserSession();
   const { subscribe } = useWs();
   const [mounted, setMounted] = useState(false);
+  // Declared here rather than beside handleDownloadInvoice below, which sits
+  // under three early returns: the loading, access-error and not-found guards
+  // all return before it. Once the order actually arrived the component
+  // rendered past them and called this hook for the first time, and React
+  // threw "Rendered more hooks than during the previous render" — so the page
+  // broke only when the fetch succeeded, which is to say only after a
+  // payment went through.
+  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -201,8 +209,6 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   // The figures are deliberately NOT derived here. An invoice is a statutory
   // document, so its numbering, per-line HSN and GST breakdown, and totals all
   // come from the server, which computes them from the stored order.
-  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
-
   const handleDownloadInvoice = async () => {
     if (isPreparingInvoice) return;
     setIsPreparingInvoice(true);

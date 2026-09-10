@@ -19,11 +19,16 @@ export interface GatewayOrder {
 }
 
 export interface CreateOrderParams {
-  /** Our internal order id. */
+  /** Our internal order id, or — under the checkout-session lifecycle, where no
+   *  Order exists yet — the session id. Used for the gateway receipt. */
   orderId: string;
   userId: string;
   amountInPaise: number;
   currency: string;
+  /** Set instead of an order id when this gateway order is bound to a held
+   *  checkout session. Echoed in the gateway's notes so the webhook can tell
+   *  which of the two a payment belongs to. */
+  sessionId?: string;
 }
 
 export interface VerifySignatureParams {
@@ -59,11 +64,14 @@ export type NormalizedWebhookEvent =
   | {
       kind: "PAYMENT_CAPTURED";
       orderId?: string;
+      /** Present instead of orderId when the payment settles a held checkout
+       *  session — see RazorpayProvider.createOrder's notes. */
+      sessionId?: string;
       gatewayPaymentId: string;
       amountInPaise?: number;
       instrument?: PaymentInstrument;
     }
-  | { kind: "PAYMENT_FAILED"; orderId?: string; gatewayPaymentId: string; reason?: string }
+  | { kind: "PAYMENT_FAILED"; sessionId?: string; orderId?: string; gatewayPaymentId: string; reason?: string }
   | { kind: "REFUND"; orderId?: string; refundId: string; gatewayPaymentId?: string; amount?: number }
   | {
       kind: "REFUND_FAILED";

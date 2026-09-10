@@ -44,6 +44,10 @@ export interface LocationPickerValue {
   label?: string;
   /** Postal address for the form, which is not always what the pin is captioned with. */
   address?: string;
+  /** Structured pieces parsed from the resolved address, when available. */
+  city?: string;
+  state?: string;
+  postalCode?: string;
 }
 
 interface LocationPickerMapProps {
@@ -102,11 +106,21 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
   async function reverseGeocode(lat: number, lng: number) {
     setResolvingLabel(true);
     try {
-      const label = await geocodingProvider.reverseGeocode({ lat, lng });
-      setReverseLabel(label ?? "");
+      const result = await geocodingProvider.reverseGeocodeDetailed({ lat, lng });
+      const label = result?.formattedAddress ?? "";
+      setReverseLabel(label);
       // A dragged pin resolves to an address and nothing else, so the caption
-      // and the form prefill are the same string.
-      onChange({ lat, lng, label: label ?? undefined, address: label ?? undefined });
+      // and the form prefill are the same string — plus the structured city/
+      // state/pincode the address form fills its fields from.
+      onChange({
+        lat,
+        lng,
+        label: label || undefined,
+        address: label || undefined,
+        city: result?.city || undefined,
+        state: result?.state || undefined,
+        postalCode: result?.postalCode || undefined,
+      });
     } finally {
       setResolvingLabel(false);
     }
@@ -173,7 +187,15 @@ export default function LocationPickerMap({ value, onChange, areaCenter }: Locat
     setReverseLabel(result.label);
     setQuery("");
     setResults([]);
-    onChange({ lat: result.lat, lng: result.lng, label: result.label, address: result.address });
+    onChange({
+      lat: result.lat,
+      lng: result.lng,
+      label: result.label,
+      address: result.address,
+      city: result.city || undefined,
+      state: result.state || undefined,
+      postalCode: result.postalCode || undefined,
+    });
   };
 
   return (

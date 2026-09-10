@@ -1,5 +1,5 @@
 import express, { Router, Response, NextFunction } from "express";
-import { BANNER_CACHE, CATEGORY_CACHE } from "../middleware/cache-control.js";
+import { BANNER_CACHE, CATEGORY_CACHE, NO_STORE } from "../middleware/cache-control.js";
 import {
   searchProducts,
   searchSuggestions,
@@ -355,7 +355,7 @@ router.post("/validate-cart", validateCart);
 // Cross-device cart restore. Auth is resolved inside the controller via
 // optionalUserId — same as validate-cart — so a signed-out caller gets an
 // empty cart rather than a 401 it would have to special-case.
-router.get("/cart", getCart);
+router.get("/cart", NO_STORE, getCart);
 router.post("/cart/clear", clearCart);
 router.get("/get-product/:slug", getStoreProductBySlug);
 router.get("/get-product-reviews/:productId", getProductReviews);

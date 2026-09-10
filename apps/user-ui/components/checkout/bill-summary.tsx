@@ -20,6 +20,11 @@ interface BillSummaryProps {
   /** Label for the action button. Checkout switches this to "Retry Payment"
    *  when a previous attempt on the same order did not complete. */
   actionLabel?: string;
+  /** The server-quoted total, when one is in hand. Overrides the sum of the
+   *  lines above: a quote may include charges this bill has no row for, so
+   *  re-adding the visible lines could show a total the customer is not in
+   *  fact agreeing to. Falls back to the sum when absent. */
+  totalPayable?: number;
 }
 
 export function BillSummary({
@@ -35,8 +40,11 @@ export function BillSummary({
   isLoading,
   disabled,
   actionLabel = "Place Order",
+  totalPayable: quotedTotal,
 }: BillSummaryProps) {
-  const totalPayable = itemTotal + deliveryCharge + extraCharge + packagingCharge + gstAmount - discount;
+  const totalPayable =
+    quotedTotal ??
+    itemTotal + deliveryCharge + extraCharge + packagingCharge + gstAmount - discount;
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:p-6">

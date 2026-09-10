@@ -220,6 +220,11 @@ export const transformProduct = (bp: BackendProduct): Product => {
     weight: defaultSize || defaultResolved.unit,
     sizes: bp.sizes || [],
     sizePricing: normalizedSizePricingData,
+    // Carried through, not derived: the API is the only thing that knows the
+    // seller's per-size stock. Dropping it here left every size looking
+    // buyable, because the pickers read a missing list as "unknown" and so
+    // disable nothing — a sold-out size was selectable right up to checkout.
+    sizeAvailability: bp.sizeAvailability ?? undefined,
     cuttingTypePricing: Array.isArray(bp.cuttingTypePricing)
       ? bp.cuttingTypePricing
       : [],

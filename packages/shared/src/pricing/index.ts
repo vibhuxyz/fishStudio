@@ -68,6 +68,43 @@ export const parseWeightToGrams = (value: string): number => {
 };
 
 /**
+ * Whether one size can be bought right now, as computed by the storefront API
+ * from the seller variant's per-size stock (or its single pool when the seller
+ * hasn't opted into per-size tracking).
+ */
+export interface ProductSizeAvailability {
+  size: string;
+  qty: number;
+  inStock: boolean;
+}
+
+/**
+ * True only when the API positively says this size is sold out.
+ *
+ * An absent list means the payload predates per-size stock, or came from an
+ * older cache entry — that is *unknown*, not sold out. Guessing "sold out"
+ * there would make a fully stocked product unbuyable off a stale response, so
+ * the unknown case stays selectable and validate-cart remains the backstop.
+ */
+export const isSizeSoldOut = (
+  availability: ProductSizeAvailability[] | null | undefined,
+  size: string,
+): boolean => {
+  if (!availability) return false;
+  return availability.some((entry) => entry.size === size && !entry.inStock);
+};
+
+/**
+ * The first size a customer can actually buy, for defaulting a picker.
+ *
+ * Undefined when nothing is buyable or availability is unknown; callers fall
+ * back to their existing default rather than landing on a disabled option.
+ */
+export const firstBuyableSize = (
+  availability: ProductSizeAvailability[] | null | undefined,
+): string | undefined => availability?.find((entry) => entry.inStock)?.size;
+
+/**
  * Ensure sizePricing covers every size in `sizes`, falling back to the product's base prices.
  */
 export const normalizeSizePricing = (

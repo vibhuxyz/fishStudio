@@ -33,6 +33,18 @@ export interface PlaceResult {
   address: string;
   lat: number;
   lng: number;
+  /** Structured pieces, when the provider exposes them. */
+  city?: string;
+  state?: string;
+  postalCode?: string;
+}
+
+/** Reverse-geocode result broken into the fields the address form needs. */
+export interface ReverseGeocodeResult {
+  formattedAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
 }
 
 export interface GeocodingProvider {
@@ -40,6 +52,12 @@ export interface GeocodingProvider {
   search(query: string, bounds?: GeoBounds): Promise<PlaceResult[]>;
   /** Human-readable label for a coordinate — a convenience display string only. */
   reverseGeocode(point: GeoPoint): Promise<string | null>;
+  /**
+   * Like `reverseGeocode`, but split into city/state/pincode for prefilling the
+   * address form. The seller store's own free-text state is unreliable, so the
+   * form derives these from the pinned coordinate instead.
+   */
+  reverseGeocodeDetailed(point: GeoPoint): Promise<ReverseGeocodeResult | null>;
   /** Resolve a coarse query (e.g. "Sector 45, Gurgaon, 122003") to a point. */
   geocode(query: string): Promise<GeoPoint | null>;
   /** A handful of well-known nearby places, for when `search` finds nothing. */
@@ -54,22 +72,49 @@ export interface GeocodingProvider {
 // likely to be throttled or dropped by the public instance.
 const NOMINATIM_HEADERS = { "User-Agent": "FishStudioApp/1.0 (delivery-address-picker)" };
 
+interface NominatimAddress {
+  state?: string;
+  city?: string;
+  town?: string;
+  village?: string;
+  municipality?: string;
+  county?: string;
+  postcode?: string;
+}
+
 interface NominatimResult {
   place_id: number;
   display_name: string;
   lat: string;
   lon: string;
+  address?: NominatimAddress;
+}
+
+function parseNominatimAddress(a: NominatimAddress = {}): {
+  city: string;
+  state: string;
+  postalCode: string;
+} {
+  return {
+    state: a.state ?? "",
+    city: a.city || a.town || a.village || a.municipality || a.county || "",
+    postalCode: a.postcode ?? "",
+  };
 }
 
 function toPlaceResult(r: NominatimResult): PlaceResult {
   // Nominatim has a single display string per place, so the list label and the
   // form prefill are necessarily the same value here.
+  const parts = parseNominatimAddress(r.address);
   return {
     id: r.place_id,
     label: r.display_name,
     address: r.display_name,
     lat: parseFloat(r.lat),
     lng: parseFloat(r.lon),
+    city: parts.city,
+    state: parts.state,
+    postalCode: parts.postalCode,
   };
 }
 
@@ -80,7 +125,7 @@ function viewboxParam(bounds?: GeoBounds): string {
 
 async function nominatimSearch(query: string, extraParams = ""): Promise<NominatimResult[]> {
   const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=in&q=${encodeURIComponent(query)}${extraParams}`,
+    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=in&q=${encodeURIComponent(query)}${extraParams}`,
     { headers: NOMINATIM_HEADERS },
   );
   const data = await res.json();
@@ -118,6 +163,23 @@ const nominatimProvider: GeocodingProvider = {
       );
       const data = await res.json();
       return data?.display_name ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async reverseGeocodeDetailed(point) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${point.lat}&lon=${point.lng}`,
+        { headers: NOMINATIM_HEADERS },
+      );
+      const data = await res.json();
+      if (!data?.display_name) return null;
+      return {
+        formattedAddress: data.display_name,
+        ...parseNominatimAddress(data.address),
+      };
     } catch {
       return null;
     }
@@ -187,6 +249,24 @@ const googleMapsProvider: GeocodingProvider = {
     }
   },
 
+  async reverseGeocodeDetailed(point) {
+    try {
+      const { data } = await axiosInstance.get("/auth/api/geocode/reverse", {
+        params: { lat: point.lat, lng: point.lng },
+      });
+      const place = data?.place;
+      if (!place?.formattedAddress) return null;
+      return {
+        formattedAddress: place.formattedAddress,
+        city: place.city ?? "",
+        state: place.state ?? "",
+        postalCode: place.postalCode ?? "",
+      };
+    } catch {
+      return null;
+    }
+  },
+
   async geocode(query) {
     try {
       const { data } = await axiosInstance.get("/auth/api/geocode/forward", {
@@ -246,6 +326,7 @@ const active = (): GeocodingProvider =>
 export const geocodingProvider: GeocodingProvider = {
   search: (query, bounds) => active().search(query, bounds),
   reverseGeocode: (point) => active().reverseGeocode(point),
+  reverseGeocodeDetailed: (point) => active().reverseGeocodeDetailed(point),
   geocode: (query) => active().geocode(query),
   nearbyLandmarks: (center, bounds) => active().nearbyLandmarks(center, bounds),
 };

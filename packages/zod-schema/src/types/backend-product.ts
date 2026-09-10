@@ -5,6 +5,19 @@ export interface ProductSizePricing {
   regularPrice: number;
 }
 
+/**
+ * Whether one size can actually be bought right now.
+ *
+ * Built by the storefront API from the seller variant's per-size stock, or
+ * from its single stock pool when the seller hasn't opted into per-size
+ * tracking. `qty` is the remaining unit count for that size.
+ */
+export interface ProductSizeAvailability {
+  size: string;
+  qty: number;
+  inStock: boolean;
+}
+
 export interface ProductCuttingTypePricing {
   cuttingType: string;
   salePrice: number;
@@ -36,6 +49,11 @@ export interface BackendProduct {
   // Arrays for dropdown options
   sizes: string[];
   sizePricing?: ProductSizePricing[] | null;
+  /** Per-size stock, computed by the storefront API. One entry per size the
+   *  store actually sells, so a picker can disable a sold-out weight instead
+   *  of offering it and failing at checkout. Absent on an older cached
+   *  payload, which callers must read as "unknown", never as "sold out". */
+  sizeAvailability?: ProductSizeAvailability[] | null;
   cuttingTypePricing?: ProductCuttingTypePricing[] | null;
   pieceSizePricing?: ProductPieceSizePricing[] | null;
   cuttingTypes: string[];
@@ -75,6 +93,8 @@ export interface Product {
   weight: string; // Mapped from sizes[0] (Primary display weight)
   sizes: string[]; // Full list of available sizes/packs
   sizePricing: ProductSizePricing[];
+  /** Carried straight through from the API — see ProductSizeAvailability. */
+  sizeAvailability?: ProductSizeAvailability[] | null;
   cuttingTypePricing: ProductCuttingTypePricing[];
   pieceSizePricing: ProductPieceSizePricing[];
 

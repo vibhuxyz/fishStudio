@@ -1,7 +1,16 @@
-import { prismaPostgres, writeAuditLog, toMoney, Prisma } from "@repo/db-postgres";
+import {
+  prismaPostgres,
+  writeAuditLog,
+  toMoney,
+  Prisma,
+  finalizeCheckoutSession,
+  CheckoutSessionRaceLostError,
+  CheckoutSessionNotPayableError,
+} from "@repo/db-postgres";
 import { ENV } from "@repo/env-config";
 import { AppError, ValidationError, NotFoundError, ForbiddenError } from "@repo/error-handlers";
 import { logger } from "@repo/libs/logger";
+import { redis } from "@repo/libs/redis";
 import type { VerifyPaymentInput, InitiateRefundInput } from "@repo/zod-schema";
 import { getPaymentProvider } from "../payment/payment.factory.js";
 import type { GatewayOrder, NormalizedWebhookEvent } from "../payment/payment.interface.js";
@@ -21,19 +30,233 @@ const CURRENCY = "INR";
  */
 const toPaise = (amount: Prisma.Decimal) => amount.mul(100).toNumber();
 
-/* ── Create a gateway order for a payable internal order ─────────────────── */
-export async function createPaymentOrder(userId: string, orderId: string): Promise<GatewayOrder> {
-  const order = await prismaPostgres.order.findUnique({
-    where: { id: orderId },
+/* ── Checkout sessions ────────────────────────────────────────────────────
+   With CHECKOUT_SESSIONS_ENABLED on there is no Order to pay for yet — only a
+   held, priced CheckoutSession. The gateway order binds to that instead, and
+   the Order is written by finalizeCheckoutSession once the money lands. The
+   order-based functions below remain for the flag-off lifecycle and for
+   retrying orders placed before it was turned on. */
+
+/** Creates (or reuses) the gateway order for a held checkout session. */
+export async function createPaymentOrderForSession(
+  userId: string,
+  sessionId: string,
+): Promise<GatewayOrder> {
+  const session = await prismaPostgres.checkoutSession.findUnique({
+    where: { id: sessionId },
     select: {
       id: true,
       userId: true,
-      totalAmount: true,
-      paymentStatus: true,
-      paymentMethod: true,
       status: true,
+      totalAmount: true,
+      gatewayOrderId: true,
+      orderId: true,
+      expiresAt: true,
     },
   });
+
+  if (!session) {
+    throw new AppError("Checkout session not found", 404, true, { code: "SESSION_NOT_FOUND" });
+  }
+  if (session.userId !== userId) {
+    throw new AppError("Access denied", 403, true, { code: "FORBIDDEN" });
+  }
+  if (session.orderId) {
+    throw new ValidationError("This checkout has already been paid", { code: "ORDER_PAID" });
+  }
+  if (session.status !== "PENDING") {
+    throw new ValidationError("This checkout is no longer active. Please start again.", {
+      code: "SESSION_CLOSED",
+    });
+  }
+  // Checked here rather than left to the sweeper: the sweep runs on a timer, so
+  // a session can be past its deadline while still PENDING, and handing out a
+  // gateway order for one would take money against stock about to be released.
+  if (session.expiresAt.getTime() <= Date.now()) {
+    throw new ValidationError("This checkout expired. Please start again.", {
+      code: "SESSION_EXPIRED",
+    });
+  }
+
+  const amountInPaise = toPaise(session.totalAmount);
+
+  // Already warmed by the prewarm consumer, which is the intended path.
+  if (session.gatewayOrderId) {
+    if (!ENV.RAZORPAY_KEY_ID) {
+      throw new AppError(
+        "Online payments are not configured on this environment. Please use Pay on Delivery.",
+        503,
+        true,
+        { code: "PAYMENT_GATEWAY_UNAVAILABLE" },
+      );
+    }
+    return {
+      gatewayOrderId: session.gatewayOrderId,
+      amount: amountInPaise,
+      currency: CURRENCY,
+      publicKey: ENV.RAZORPAY_KEY_ID,
+    };
+  }
+
+  return createAndBindSessionGatewayOrder({
+    sessionId: session.id,
+    userId: session.userId,
+    amountInPaise,
+    totalAmount: session.totalAmount,
+    actorType: "USER",
+  });
+}
+
+/**
+ * Creates a gateway order and binds it to the session.
+ *
+ * Shares the claim lock with the order-based path and for the same reason: the
+ * prewarm and the customer's own tap both arrive here, and without a claim both
+ * would call out and one gateway order would be orphaned — a real order on
+ * Razorpay's side that nothing can ever verify against.
+ */
+async function createAndBindSessionGatewayOrder(params: {
+  sessionId: string;
+  userId: string;
+  amountInPaise: number;
+  totalAmount: Prisma.Decimal;
+  actorType: "USER" | "SYSTEM";
+}): Promise<GatewayOrder> {
+  const { sessionId, userId, amountInPaise, totalAmount, actorType } = params;
+
+  const mayCall = await claimGatewayCall(sessionId);
+  if (!mayCall) {
+    const existing = await awaitSessionGatewayBinding(sessionId);
+    if (existing) {
+      return {
+        gatewayOrderId: existing,
+        amount: amountInPaise,
+        currency: CURRENCY,
+        publicKey: ENV.RAZORPAY_KEY_ID as string,
+      };
+    }
+    logger.warn("[payment] session claim holder produced no binding, proceeding", { sessionId });
+  }
+
+  let gwOrder: GatewayOrder;
+  try {
+    gwOrder = await gateway.createOrder({
+      // `notes.sessionId` is how the webhook recovers which checkout a payment
+      // belongs to — Razorpay echoes notes back on every event for the order.
+      orderId: sessionId,
+      userId,
+      amountInPaise,
+      currency: CURRENCY,
+      sessionId,
+    });
+  } catch (error) {
+    await releaseGatewayClaim(sessionId);
+    throw error;
+  }
+
+  // Conditional on the session still being unbound and unpaid: a second binding
+  // would overwrite a gateway order a payment may already be in flight against.
+  const bound = await prismaPostgres.checkoutSession.updateMany({
+    where: { id: sessionId, gatewayOrderId: null, orderId: null, status: "PENDING" },
+    data: { gatewayOrderId: gwOrder.gatewayOrderId },
+  });
+
+  await releaseGatewayClaim(sessionId);
+
+  if (bound.count === 0) {
+    // Lost to a concurrent binder, or the session closed underneath us. Re-read
+    // rather than fail: if a binding now exists it is as good as ours, and the
+    // customer gets a working sheet instead of an error.
+    const current = await prismaPostgres.checkoutSession.findUnique({
+      where: { id: sessionId },
+      select: { gatewayOrderId: true, status: true, orderId: true },
+    });
+    if (current?.gatewayOrderId && current.status === "PENDING" && !current.orderId) {
+      return {
+        gatewayOrderId: current.gatewayOrderId,
+        amount: amountInPaise,
+        currency: CURRENCY,
+        publicKey: ENV.RAZORPAY_KEY_ID as string,
+      };
+    }
+    throw new ValidationError("This checkout is no longer active. Please start again.", {
+      code: "SESSION_CLOSED",
+    });
+  }
+
+  writeAuditLog("PAYMENT", sessionId, "PAYMENT_INITIATED", actorType === "SYSTEM" ? null : userId, actorType, {
+    razorpayOrderId: gwOrder.gatewayOrderId,
+    amount: toMoney(totalAmount),
+    ...(actorType === "SYSTEM" ? { source: "prewarm" } : {}),
+  });
+
+  return gwOrder;
+}
+
+/** Waits for the claim holder to publish a binding on the session. */
+async function awaitSessionGatewayBinding(sessionId: string): Promise<string | null> {
+  const deadline = Date.now() + GATEWAY_WAIT_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await sleep(GATEWAY_WAIT_POLL_MS);
+    const row = await prismaPostgres.checkoutSession
+      .findUnique({ where: { id: sessionId }, select: { gatewayOrderId: true } })
+      .catch(() => null);
+    if (row?.gatewayOrderId) return row.gatewayOrderId;
+  }
+
+  return null;
+}
+
+/**
+ * Creates the gateway order for a session ahead of the customer tapping Pay.
+ *
+ * Best-effort, same contract as the order-based prewarm: every failure mode is
+ * recoverable by the interactive path doing the work itself.
+ */
+export async function prewarmSessionGatewayOrder(sessionId: string): Promise<void> {
+  if (!ENV.RAZORPAY_KEY_ID) return;
+
+  const session = await prismaPostgres.checkoutSession.findUnique({
+    where: { id: sessionId },
+    select: { id: true, userId: true, totalAmount: true, status: true, gatewayOrderId: true },
+  });
+
+  if (!session || session.status !== "PENDING" || session.gatewayOrderId) return;
+
+  await createAndBindSessionGatewayOrder({
+    sessionId: session.id,
+    userId: session.userId,
+    amountInPaise: toPaise(session.totalAmount),
+    totalAmount: session.totalAmount,
+    actorType: "SYSTEM",
+  });
+}
+
+/* ── Create a gateway order for a payable internal order ─────────────────── */
+export async function createPaymentOrder(userId: string, orderId: string): Promise<GatewayOrder> {
+  // Both reads are keyed by `orderId` and neither depends on the other, so
+  // they go out together. Sequentially they cost two round trips to Postgres
+  // on the one request standing between the customer's tap and the payment
+  // sheet — and against a cross-region database that is the difference
+  // between one hop and two.
+  const [order, pendingPayment] = await Promise.all([
+    prismaPostgres.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        userId: true,
+        totalAmount: true,
+        paymentStatus: true,
+        paymentMethod: true,
+        status: true,
+      },
+    }),
+    prismaPostgres.payment.findFirst({
+      where: { orderId, status: "PENDING" },
+      select: { gatewayOrderId: true },
+    }),
+  ]);
 
   // `code` lets clients branch on what went wrong without parsing `message`
   // strings — in particular, to tell "this exact order can never be paid,
@@ -51,14 +274,10 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
 
   const amountInPaise = toPaise(order.totalAmount);
 
-  // Reuse an already-bound gateway order (e.g. a second checkout tab, or a
-  // retry after the modal was closed). Creating a fresh one would orphan the
-  // first — a payment on it could then never verify against this order.
-  const pendingPayment = await prismaPostgres.payment.findFirst({
-    where: { orderId, status: "PENDING" },
-    select: { gatewayOrderId: true },
-  });
-
+  // `pendingPayment` (read above) reuses an already-bound gateway order — e.g.
+  // a second checkout tab, or a retry after the modal was closed. Creating a
+  // fresh one would orphan the first: a payment on it could then never verify
+  // against this order.
   if (!pendingPayment) {
     // No live attempt. Either every previous attempt failed — a retry, which
     // must reuse this order rather than mint a new one — or the order was
@@ -144,6 +363,73 @@ export async function createPaymentOrder(userId: string, orderId: string): Promi
  * drift — binding is the step that makes a gateway order verifiable, and a
  * gateway order created without one is money the webhook can never match back.
  */
+/* ── One gateway order per order, even with two creators racing ───────────
+   The prewarm below and the customer's own tap both reach
+   createAndBindGatewayOrder, and the tap usually arrives while the prewarm is
+   still waiting on Razorpay — the prewarm is published as the order-create
+   response is written, so it is only ever one queue hop ahead of a client
+   that replies in one network round trip.
+
+   Without a claim both call out, both bind, and the loser's gateway order is
+   orphaned: a real order on Razorpay's side that nothing can ever verify
+   against. With one, the loser waits for the winner's binding to appear and
+   returns that instead — which is also what finally makes prewarming pay off,
+   since the tap now inherits a call already in flight rather than starting a
+   second one.
+
+   Fail-open throughout: if Redis is unreachable, or the winner dies mid-call,
+   the waiter falls through and creates the gateway order itself. A duplicate
+   is the old behaviour; a checkout that cannot open is worse than either. */
+const GATEWAY_CLAIM_TTL_SEC = 30;
+const GATEWAY_WAIT_TIMEOUT_MS = 4000;
+const GATEWAY_WAIT_POLL_MS = 120;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** True when this caller may make the gateway call; false when someone else is. */
+async function claimGatewayCall(orderId: string): Promise<boolean> {
+  try {
+    const claimed = await redis.set(
+      `payment:gwclaim:${orderId}`,
+      "1",
+      "EX",
+      GATEWAY_CLAIM_TTL_SEC,
+      "NX",
+    );
+    return claimed === "OK";
+  } catch {
+    // Redis down — everyone proceeds, exactly as before this guard existed.
+    return true;
+  }
+}
+
+async function releaseGatewayClaim(orderId: string): Promise<void> {
+  await redis.del(`payment:gwclaim:${orderId}`).catch(() => {});
+}
+
+/**
+ * Waits for whoever holds the claim to publish a binding.
+ *
+ * Returns the gateway order id, or null if it never appeared in time — in
+ * which case the caller does the work itself rather than failing the checkout.
+ */
+async function awaitGatewayBinding(orderId: string): Promise<string | null> {
+  const deadline = Date.now() + GATEWAY_WAIT_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await sleep(GATEWAY_WAIT_POLL_MS);
+    const row = await prismaPostgres.payment
+      .findFirst({
+        where: { orderId, status: "PENDING" },
+        select: { gatewayOrderId: true },
+      })
+      .catch(() => null);
+    if (row?.gatewayOrderId) return row.gatewayOrderId;
+  }
+
+  return null;
+}
+
 async function createAndBindGatewayOrder(params: {
   orderId: string;
   userId: string;
@@ -156,12 +442,40 @@ async function createAndBindGatewayOrder(params: {
 }): Promise<GatewayOrder> {
   const { orderId, userId, amountInPaise, totalAmount, actorType, paymentId } = params;
 
-  const gwOrder = await gateway.createOrder({
-    orderId,
-    userId,
-    amountInPaise,
-    currency: CURRENCY,
-  });
+  // The retry path has just minted a payment row of its own, so there is no
+  // concurrent creator to coordinate with and nothing for a waiter to find.
+  if (!paymentId) {
+    const mayCall = await claimGatewayCall(orderId);
+    if (!mayCall) {
+      const existing = await awaitGatewayBinding(orderId);
+      if (existing) {
+        return {
+          gatewayOrderId: existing,
+          amount: amountInPaise,
+          currency: CURRENCY,
+          publicKey: ENV.RAZORPAY_KEY_ID as string,
+        };
+      }
+      logger.warn("[payment] gateway claim holder produced no binding, proceeding", { orderId });
+    }
+  }
+
+  let gwOrder: GatewayOrder;
+  try {
+    gwOrder = await gateway.createOrder({
+      orderId,
+      userId,
+      amountInPaise,
+      currency: CURRENCY,
+    });
+  } catch (error) {
+    // Hand the claim back rather than letting it sit out its TTL: the customer
+    // is about to be shown an error and tap again, and that retry should be
+    // able to make the call instead of waiting on a holder that already gave
+    // up.
+    if (!paymentId) await releaseGatewayClaim(orderId);
+    throw error;
+  }
 
   const bound = await prismaPostgres.payment.updateMany({
     where: paymentId
@@ -169,6 +483,11 @@ async function createAndBindGatewayOrder(params: {
       : { orderId, status: "PENDING" },
     data: { gatewayOrderId: gwOrder.gatewayOrderId },
   });
+  // Released only after the binding is durable: a waiter that wakes up between
+  // the release and the write would find no gatewayOrderId and start a second
+  // gateway call, which is the duplicate the claim exists to prevent.
+  if (!paymentId) void releaseGatewayClaim(orderId);
+
   if (bound.count === 0) {
     // The payment row changed state between our read and this write (e.g. a
     // webhook captured it). Without a persisted binding, verify would reject
@@ -242,10 +561,140 @@ export async function prewarmGatewayOrder(orderId: string): Promise<void> {
   });
 }
 
+/**
+ * Verifies a checkout callback and settles a held checkout session.
+ *
+ * The session lifecycle's answer to verifyPayment below: instead of flipping an
+ * existing Order to paid, this writes the Order for the first time. The
+ * signature check and the order-binding check are the same in spirit — prove
+ * the payment is genuine, then prove it belongs to THIS checkout — but the
+ * binding is asserted against the session's gatewayOrderId rather than a
+ * Payment row's.
+ */
+export async function verifySessionPayment(
+  userId: string,
+  {
+    sessionId,
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature,
+  }: { sessionId: string } & Omit<VerifyPaymentInput, "orderId" | "sessionId">,
+): Promise<{ orderId: string; alreadyVerified?: boolean }> {
+  const signatureValid = gateway.verifySignature({
+    gatewayOrderId: razorpayOrderId,
+    gatewayPaymentId: razorpayPaymentId,
+    signature: razorpaySignature,
+  });
+  if (!signatureValid) {
+    writeAuditLog("PAYMENT", sessionId, "PAYMENT_SIGNATURE_MISMATCH", userId, "USER", {
+      razorpayOrderId,
+      razorpayPaymentId,
+    });
+    throw new ValidationError("Payment verification failed: invalid signature");
+  }
+
+  const session = await prismaPostgres.checkoutSession.findUnique({
+    where: { id: sessionId },
+    select: { id: true, userId: true, gatewayOrderId: true, orderId: true, status: true },
+  });
+
+  if (!session) throw new NotFoundError("Checkout session not found");
+  if (session.userId !== userId) throw new ForbiddenError("Access denied");
+
+  // Already settled — by the webhook, or by this customer's own retry. Return
+  // the order rather than writing a second one.
+  if (session.orderId) {
+    return { orderId: session.orderId, alreadyVerified: true };
+  }
+
+  // The signature only proves SOME payment on this merchant account is genuine;
+  // it does not tie it to THIS checkout. Requiring the gateway order to match
+  // the one bound at creation is what stops a cheap checkout's payment from
+  // settling an expensive one.
+  if (!session.gatewayOrderId || session.gatewayOrderId !== razorpayOrderId) {
+    writeAuditLog("PAYMENT", sessionId, "PAYMENT_ORDER_MISMATCH", userId, "USER", {
+      suppliedRazorpayOrderId: razorpayOrderId,
+      boundRazorpayOrderId: session.gatewayOrderId ?? null,
+      razorpayPaymentId,
+    });
+    throw new ValidationError(
+      "Payment verification failed: payment does not belong to this checkout",
+    );
+  }
+
+  const result = await finalizeSessionWithRetry({
+    sessionId,
+    gatewayPaymentId: razorpayPaymentId,
+    gatewayOrderId: razorpayOrderId,
+  });
+
+  // Display-only, and deliberately not awaited — see the note on the order
+  // path's backfill. The order is already written and payable state settled.
+  backfillPaymentInstrument(result.orderId, razorpayPaymentId, razorpayOrderId);
+
+  writeAuditLog("PAYMENT", sessionId, "PAYMENT_VERIFIED", userId, "USER", {
+    razorpayOrderId,
+    razorpayPaymentId,
+    orderId: result.orderId,
+  });
+
+  return result;
+}
+
+/**
+ * Finalises a session, absorbing the one race the finaliser cannot resolve
+ * itself.
+ *
+ * `finalizeCheckoutSession` throws CheckoutSessionRaceLostError when another
+ * finaliser committed while its transaction was open — the correct outcome, but
+ * not one a caller should surface. Retrying takes the idempotent fast path and
+ * returns the winner's order.
+ */
+async function finalizeSessionWithRetry(params: {
+  sessionId: string;
+  gatewayPaymentId: string;
+  gatewayOrderId: string;
+}): Promise<{ orderId: string; alreadyVerified?: boolean }> {
+  try {
+    const { orderId, alreadyFinalized } = await finalizeCheckoutSession(params);
+    return { orderId, ...(alreadyFinalized ? { alreadyVerified: true } : {}) };
+  } catch (error) {
+    if (error instanceof CheckoutSessionRaceLostError) {
+      const { orderId } = await finalizeCheckoutSession(params);
+      return { orderId, alreadyVerified: true };
+    }
+
+    // The session was already released, so its stock and delivery slot are
+    // gone — writing the order would oversell. The money is real, so this is
+    // surfaced loudly and the payment is left for the reconciliation sweep to
+    // refund rather than being quietly dropped.
+    if (error instanceof CheckoutSessionNotPayableError) {
+      logger.error("[payment] captured a payment for a released checkout — refund required", {
+        sessionId: params.sessionId,
+        gatewayPaymentId: params.gatewayPaymentId,
+        status: error.status,
+      });
+      writeAuditLog("PAYMENT", params.sessionId, "PAYMENT_ON_CANCELLED_ORDER", null, "SYSTEM", {
+        gatewayPaymentId: params.gatewayPaymentId,
+        gatewayOrderId: params.gatewayOrderId,
+        sessionStatus: error.status,
+      });
+      throw new AppError(
+        "This checkout expired before the payment completed. Our team will refund you shortly.",
+        409,
+        true,
+        { code: "SESSION_EXPIRED_AFTER_PAYMENT" },
+      );
+    }
+
+    throw error;
+  }
+}
+
 /* ── Verify the checkout callback signature and settle the order ─────────── */
 export async function verifyPayment(
   userId: string,
-  { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature }: VerifyPaymentInput,
+  { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature }: VerifyPaymentInput & { orderId: string },
 ): Promise<{ orderId: string; alreadyVerified?: boolean }> {
   const signatureValid = gateway.verifySignature({
     gatewayOrderId: razorpayOrderId,
@@ -260,10 +709,19 @@ export async function verifyPayment(
     throw new ValidationError("Payment verification failed: invalid signature");
   }
 
-  const order = await prismaPostgres.order.findUnique({
-    where: { id: orderId },
-    select: { id: true, userId: true, paymentStatus: true },
-  });
+  // Independent reads on the same key, issued together — see the note in
+  // createPaymentOrder. This is the request the customer waits on between the
+  // payment sheet closing and the confirmation screen.
+  const [order, pendingPayment] = await Promise.all([
+    prismaPostgres.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, userId: true, paymentStatus: true },
+    }),
+    prismaPostgres.payment.findFirst({
+      where: { orderId, status: "PENDING" },
+      select: { gatewayOrderId: true },
+    }),
+  ]);
 
   if (!order) throw new NotFoundError("Order not found");
   if (order.userId !== userId) throw new ForbiddenError("Access denied");
@@ -277,10 +735,6 @@ export async function verifyPayment(
   // genuine — it doesn't tie it to THIS order. Require the razorpayOrderId
   // to match the one bound in createPaymentOrder, otherwise a cheap order's
   // payment could mark an expensive order paid.
-  const pendingPayment = await prismaPostgres.payment.findFirst({
-    where: { orderId, status: "PENDING" },
-    select: { gatewayOrderId: true },
-  });
   const boundRazorpayOrderId = pendingPayment?.gatewayOrderId;
   if (!boundRazorpayOrderId || boundRazorpayOrderId !== razorpayOrderId) {
     writeAuditLog("PAYMENT", orderId, "PAYMENT_ORDER_MISMATCH", userId, "USER", {
@@ -290,13 +744,6 @@ export async function verifyPayment(
     });
     throw new ValidationError("Payment verification failed: payment does not belong to this order");
   }
-
-  // Best-effort: the checkout callback carries no info on how the customer
-  // actually paid, so look it up for display (order-tracking / order-detail
-  // screens). Must never block verification — a lookup failure just means
-  // the instrument shows up blank until the webhook (which does carry it)
-  // lands.
-  const instrument = await gateway.fetchPaymentInstrument(razorpayPaymentId).catch(() => null);
 
   // Mark order and payment as completed atomically. The signature itself is
   // deliberately not persisted — it's a known-plaintext HMAC pair with no
@@ -322,11 +769,22 @@ export async function verifyPayment(
         metadata: {
           razorpayOrderId,
           razorpayPaymentId,
-          ...(instrument ? { method: instrument.method, instrumentDetail: instrument.detail ?? null } : {}),
         },
       },
     }),
   ]);
+
+  // The checkout callback carries no info on how the customer actually paid,
+  // so the instrument (card network / UPI handle) is looked up for display on
+  // the order-tracking and order-detail screens.
+  //
+  // Deliberately NOT awaited. Its own contract is best-effort — a failure just
+  // means the instrument shows blank until the `payment.captured` webhook,
+  // which does carry it, lands — but it was previously awaited, putting a full
+  // Razorpay HTTPS round trip between the payment sheet closing and the
+  // confirmation screen for a string nothing on that screen reads. The order
+  // is already COMPLETED above; this only fills in a display field.
+  backfillPaymentInstrument(orderId, razorpayPaymentId, razorpayOrderId);
 
   writeAuditLog("PAYMENT", orderId, "PAYMENT_VERIFIED", userId, "USER", {
     razorpayOrderId,
@@ -334,6 +792,40 @@ export async function verifyPayment(
   });
 
   return { orderId };
+}
+
+/**
+ * Fetches the payment instrument and merges it into the settled Payment row.
+ *
+ * Scoped by `transactionId` rather than `status: "PENDING"` because the row it
+ * targets has already been moved to COMPLETED by the caller. Every failure is
+ * swallowed: the webhook writes the same field, so the worst outcome is that
+ * the display value arrives a few seconds later instead of never.
+ */
+function backfillPaymentInstrument(
+  orderId: string,
+  gatewayPaymentId: string,
+  gatewayOrderId: string,
+): void {
+  void gateway
+    .fetchPaymentInstrument(gatewayPaymentId)
+    .then(async (instrument) => {
+      if (!instrument) return;
+      await prismaPostgres.payment.updateMany({
+        where: { orderId, transactionId: gatewayPaymentId },
+        data: {
+          metadata: {
+            razorpayOrderId: gatewayOrderId,
+            razorpayPaymentId: gatewayPaymentId,
+            method: instrument.method,
+            instrumentDetail: instrument.detail ?? null,
+          },
+        },
+      });
+    })
+    .catch((error: unknown) =>
+      logger.warn("[verifyPayment] instrument backfill failed", { orderId, error }),
+    );
 }
 
 /* ── Durable webhook log + dedupe ────────────────────────────────────────── */
@@ -388,6 +880,82 @@ export async function markWebhookEventProcessed(eventId: string): Promise<void> 
 
 /* ── Apply a verified, deduplicated webhook event ────────────────────────── */
 export async function applyWebhookEvent(evt: NormalizedWebhookEvent): Promise<void> {
+  /* ── Session lifecycle ──────────────────────────────────────────────────
+     A capture carrying a sessionId settles a held checkout, and the webhook is
+     the backstop for the case that matters most: the customer paid and then
+     lost the app, the network, or their patience before verify could run.
+     Without this the money would be real and the order would never exist.
+
+     finalizeCheckoutSession is idempotent, so this racing the client's own
+     verify is expected and safe — whichever arrives second gets the winner's
+     order id back. */
+  if (evt.kind === "PAYMENT_CAPTURED" && evt.sessionId) {
+    const sessionId = evt.sessionId;
+    const session = await prismaPostgres.checkoutSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, status: true, orderId: true, totalAmount: true, gatewayOrderId: true },
+    });
+
+    if (!session) {
+      logger.error("[Payment] Captured a payment for an unknown checkout session", {
+        sessionId,
+        gatewayPaymentId: evt.gatewayPaymentId,
+      });
+      return;
+    }
+
+    if (session.orderId) return; // already settled by the client's verify
+
+    // Same reasoning as the order path: the gateway fixes the amount at
+    // checkout, so a mismatch means something upstream is wrong and a human
+    // should look before any order is written against it.
+    if (evt.amountInPaise !== undefined && evt.amountInPaise !== toPaise(session.totalAmount)) {
+      logger.error("[Payment] Captured amount does not match checkout total — not settling", {
+        sessionId,
+        gatewayPaymentId: evt.gatewayPaymentId,
+        expected: toPaise(session.totalAmount),
+        captured: evt.amountInPaise,
+      });
+      writeAuditLog("PAYMENT", sessionId, "PAYMENT_AMOUNT_MISMATCH", null, "SYSTEM", {
+        razorpayPaymentId: evt.gatewayPaymentId,
+        expected: toPaise(session.totalAmount),
+        captured: evt.amountInPaise,
+      });
+      return;
+    }
+
+    try {
+      const { orderId } = await finalizeSessionWithRetry({
+        sessionId,
+        gatewayPaymentId: evt.gatewayPaymentId,
+        gatewayOrderId: session.gatewayOrderId ?? "",
+      });
+      writeAuditLog("PAYMENT", sessionId, "CHECKOUT_SESSION_FINALIZED", null, "SYSTEM", {
+        razorpayPaymentId: evt.gatewayPaymentId,
+        orderId,
+        source: "webhook",
+      });
+    } catch (error) {
+      // finalizeSessionWithRetry already logged and audited the released-session
+      // case as needing a refund. Rethrowing keeps the handler's 5xx, so
+      // Razorpay retries anything genuinely transient.
+      if (error instanceof AppError && error.statusCode === 409) return;
+      throw error;
+    }
+    return;
+  }
+
+  if (evt.kind === "PAYMENT_FAILED" && evt.sessionId) {
+    // Nothing to mark: a failed attempt on a held checkout leaves the session
+    // PENDING so the customer can retry against the same held stock, and the
+    // expiry sweep releases it if they don't. Recorded for the trail only.
+    writeAuditLog("PAYMENT", evt.sessionId, "PAYMENT_FAILED", null, "SYSTEM", {
+      razorpayPaymentId: evt.gatewayPaymentId,
+      reason: evt.reason ?? null,
+    });
+    return;
+  }
+
   if (evt.kind === "PAYMENT_CAPTURED" && evt.orderId) {
     const orderId = evt.orderId;
     const order = await prismaPostgres.order.findUnique({

@@ -232,6 +232,27 @@ export function CartSidebar({ open, onOpenChange, onLoginClick }: CartSidebarPro
                     <div className="mt-3 space-y-3">
                       <AnimatePresence mode="popLayout">
                         {items.map((item, index) => {
+                          // Restored from the account's cart and not yet
+                          // resolved by validate-cart — an identity with no
+                          // title or price, which the normal row would render
+                          // as a blank "Out of Stock" ₹0 line.
+                          if (item.isPlaceholder) {
+                            return (
+                              <div
+                                key={`${item.product.id}-${item.cuttingType.id}-${item.pieceSize.id}-${item.size}`}
+                                className="flex items-center gap-3"
+                                aria-busy="true"
+                              >
+                                <div className="h-14 w-14 flex-shrink-0 animate-pulse rounded-xl bg-muted" />
+                                <div className="min-w-0 flex-1 space-y-2">
+                                  <div className="h-4 w-3/5 animate-pulse rounded bg-muted" />
+                                  <div className="h-3 w-2/5 animate-pulse rounded bg-muted" />
+                                </div>
+                                <div className="h-8 w-20 animate-pulse rounded-lg bg-muted" />
+                              </div>
+                            );
+                          }
+
                           const isInvalid = item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0);
                           
                           return (

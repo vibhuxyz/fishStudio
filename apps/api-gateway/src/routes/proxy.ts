@@ -39,8 +39,30 @@ const proxyOptions: proxy.ProxyOptions = {
     return headers;
   },
   proxyErrorHandler: (err, res, _next) => {
-    console.error("[Gateway] Upstream proxy error:", err?.message || err);
+    const code = (err as NodeJS.ErrnoException)?.code;
+    console.error("[Gateway] Upstream proxy error:", code || "", err?.message || err);
     if (res.headersSent) return;
+
+    // A connection that timed out or was cut off and an upstream that is
+    // simply down are different problems with different answers, and
+    // collapsing both into one 502 sends the caller looking in the wrong
+    // place. The commonest way to land here is a request body too large or
+    // too slow for the hop, which reads as a reset rather than as an outage.
+    const isTimeoutOrReset =
+      code === "ETIMEDOUT" ||
+      code === "ESOCKETTIMEDOUT" ||
+      code === "ECONNRESET" ||
+      code === "EPIPE";
+
+    if (isTimeoutOrReset) {
+      return res.status(504).json({
+        success: false,
+        message:
+          "The request took too long or was cut off. On a slow connection, try again — " +
+          "if you were uploading a photo, a smaller one will go through.",
+      });
+    }
+
     res.status(502).json({
       success: false,
       message: "Service temporarily unavailable. Please try again.",

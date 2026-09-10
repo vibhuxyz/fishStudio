@@ -77,9 +77,47 @@ function SummaryCard({
 
 // ── Product row ───────────────────────────────────────────────────────────────
 
+/**
+ * Per-size stock, shown only for products the seller tracks that way.
+ *
+ * A summed `stock` of 18 hides the fact that one weight is at 0 and can't be
+ * bought — which is exactly the case that reaches support as "the product is
+ * in stock but the customer says they can't order it".
+ */
+function SizeStockBreakdown({ product }: { product: InventoryProduct }) {
+  if (!product.trackStockPerSize || !product.sizeStock?.length) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 pl-12 pb-2.5">
+      {product.sizeStock.map((entry) => (
+        <span
+          key={entry.size}
+          className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${
+            entry.qty === 0
+              ? "bg-red-500/15 text-red-400"
+              : entry.qty <= 3
+                ? "bg-yellow-500/15 text-yellow-400"
+                : "bg-white/5 text-zinc-400"
+          }`}
+          title={
+            entry.qty === 0
+              ? `${entry.size} is sold out and hidden from buyers`
+              : `${entry.size}: ${entry.qty} in stock`
+          }
+        >
+          {entry.size}
+          <span className="opacity-70">·</span>
+          {entry.qty}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function ProductRow({ product }: { product: InventoryProduct }) {
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded-lg transition-colors">
+    <>
+    <div className="flex items-center gap-3 py-2.5 hover:bg-white/5 px-2 rounded-lg transition-colors">
       {product.image ? (
         <img
           src={product.image}
@@ -113,6 +151,10 @@ function ProductRow({ product }: { product: InventoryProduct }) {
         </span>
       </div>
     </div>
+    <div className="border-b border-white/5 last:border-0">
+      <SizeStockBreakdown product={product} />
+    </div>
+    </>
   );
 }
 

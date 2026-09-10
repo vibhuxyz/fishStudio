@@ -23,6 +23,7 @@ import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
 import router from "./routes/order.route.js";
 import { stockReservationSweeper } from "./jobs/stock-reservation.sweeper.js";
+import { orderFollowupConsumer } from "./consumers/order-followup.consumer.js";
 
 initMetrics({ serviceName: "order-service" });
 initTracing({ serviceName: "order-service" });
@@ -87,9 +88,10 @@ app.get(
         return true;
       },
       redis: async () => (await redis.ping()) === "PONG",
-      // No RabbitMQ check: this service never opens a channel. Checkout
-      // writes to the outbox table and worker-service's relay publishes,
-      // so a broker outage does not degrade order-service itself.
+      // No RabbitMQ check. Checkout's durable events go through the outbox
+      // table and worker-service's relay publishes them, so a broker outage
+      // does not lose anything. The follow-up consumer and the best-effort
+      // publishes this service does make would both simply resume.
     },
   }),
 );
@@ -102,6 +104,14 @@ app.use(errorMiddleware);
 const port = Number(ENV.ORDER_SERVICE_PORT) || 6004;
 const server = app.listen(port, () => {
   logger.info(`Listening at http://localhost:${port}/api`);
+
+  // Started after the port is open so a broker that is slow to come up delays
+  // follow-up work rather than the service itself. Failing to register is
+  // logged, not fatal: the outbox holds the events until a restart picks them
+  // up, and nothing on the checkout path depends on this consumer running.
+  orderFollowupConsumer().catch((err) =>
+    logger.error("Failed to start order follow-up consumer", { err }),
+  );
 });
 server.on("error", (err) => logger.error("Server error", { err }));
 

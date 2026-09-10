@@ -189,6 +189,7 @@ export function AddressModal({
     city: "",
     state: "",
     pincode: "",
+    formattedAddress: "",
     deliveryInstructions: "",
     lat: undefined as number | undefined,
     lng: undefined as number | undefined,
@@ -228,6 +229,7 @@ export function AddressModal({
         city: "",
         state: "",
         pincode: "",
+        formattedAddress: "",
         deliveryInstructions: "",
         lat: undefined,
         lng: undefined,
@@ -411,6 +413,7 @@ export function AddressModal({
       city: address.city,
       state: address.state,
       pincode: address.pincode,
+      formattedAddress: address.formattedAddress || "",
       deliveryInstructions: address.deliveryInstructions || "",
       lat: address.lat,
       lng: address.lng,
@@ -814,6 +817,14 @@ export function AddressModal({
                             // Only prefill street from the pin if the shopper
                             // hasn't already typed one — never clobber input.
                             street: f.street ? f.street : (loc.address?.split(",")[0] ?? f.street),
+                            formattedAddress: loc.address ?? f.formattedAddress,
+                            // The pinned coordinate is the source of truth for
+                            // city/state — the seller store's free-text state
+                            // can be wrong. Keep the existing value only when
+                            // the pin didn't resolve one. Pincode is left alone:
+                            // it anchors which store services this address.
+                            city: loc.city || f.city,
+                            state: loc.state || f.state,
                           }))
                         }
                       />
@@ -930,8 +941,7 @@ export function AddressModal({
                         <Input
                           placeholder="City"
                           value={form.city}
-                          readOnly
-                          className="bg-muted"
+                          onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                         />
                       </div>
                       <div>
@@ -939,8 +949,7 @@ export function AddressModal({
                         <Input
                           placeholder="Bihar"
                           value={form.state}
-                          readOnly
-                          className="bg-muted"
+                          onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
                         />
                       </div>
                     </div>

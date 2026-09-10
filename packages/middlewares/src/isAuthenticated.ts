@@ -2,7 +2,12 @@ import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ENV } from "@repo/env-config";
-import { hashToken, isTokenRevoked } from "@repo/libs/auth-tokens";
+import {
+  hashToken,
+  isRevokedFromExists,
+  isTokenRevoked,
+  revocationKeys,
+} from "@repo/libs/auth-tokens";
 import { redis } from "@repo/libs/redis";
 import {
   STAFF_SCOPE_HEADER,
@@ -80,6 +85,10 @@ const pickToken = (req: any): { token: string | null; requestedRole: string | nu
 };
 
 const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
+  // Set once the pipeline below has already answered "is this token revoked",
+  // so the cache-miss path does not repeat that round trip.
+  let revocationChecked = false;
+
   try {
     const { token } = pickToken(req);
 
@@ -90,9 +99,36 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     const tokenHash = hashToken(token);
     const cacheKey = `auth:${tokenHash}`;
 
+    // The signed `jti` is read without verifying, purely to build the
+    // blocklist key below. Nothing is trusted from it: the token is still
+    // verified on the cache-miss path, and a forged jti can only make this
+    // request look revoked, never make a revoked one look live.
+    const unverifiedJti = (jwt.decode(token) as { jti?: string } | null)?.jti;
+
     // ── Redis cache check (hashed key) ────────────────────────────────────
+    // The session cache and the revocation blocklist are read in ONE pipeline
+    // rather than as two awaits. Both key sets are known before either reply
+    // comes back, so sequencing them bought nothing and cost a full network
+    // round trip per request — paid on every request, in every service, and
+    // three times over during a single checkout.
     try {
-      const cached = await redis.get(cacheKey);
+      const revokeKeys = revocationKeys(token, unverifiedJti);
+      const replies = await redis
+        .pipeline([
+          ["get", cacheKey],
+          ...revokeKeys.map((key) => ["exists", key]),
+        ])
+        .exec();
+
+      // ioredis returns [error, value] pairs; a null exec means the pipeline
+      // itself failed, which the catch below treats as "Redis unavailable".
+      if (!replies) throw new Error("redis pipeline returned no replies");
+
+      const cached = replies[0]?.[1] as string | null | undefined;
+      const revoked = isRevokedFromExists(
+        replies.slice(1).map((r) => (r?.[1] as number | null) ?? 0),
+      );
+
       if (cached) {
         const data = JSON.parse(cached);
 
@@ -105,7 +141,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
 
         if (!bypassCache) {
           // Honour revocation before serving cached data.
-          if (await isTokenRevoked(token, data.jti)) {
+          if (revoked) {
             await redis.del(cacheKey).catch(() => {});
             return res.status(401).json({ message: "Unauthorized! Session revoked." });
           }
@@ -118,6 +154,13 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
           return next();
         }
       }
+
+      // Cache miss (or a deliberate bypass) still has the blocklist answer
+      // from the same pipeline, so the DB path below need not ask again.
+      if (revoked) {
+        return res.status(401).json({ message: "Unauthorized! Session revoked." });
+      }
+      revocationChecked = true;
     } catch {
       // Redis unavailable — fall through to DB path.
     }
@@ -133,7 +176,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       return res.status(401).json({ message: "Unauthorized! Invalid token" });
     }
 
-    if (await isTokenRevoked(token, decoded.jti)) {
+    if (!revocationChecked && (await isTokenRevoked(token, decoded.jti))) {
       return res.status(401).json({ message: "Unauthorized! Session revoked." });
     }
 

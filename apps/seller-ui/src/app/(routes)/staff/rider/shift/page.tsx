@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Camera, Loader2, MapPin, CheckCircle2, IndianRupee, Package, Route } from "lucide-react";
 import { toast } from "sonner";
 import axiosInstance from "@/utils/axiosInstance";
+import { downscaleImageToDataUrl } from "@/utils/downscaleImage";
 import { formatIstDateTime } from "@repo/shared/datetime";
 
 interface Attendance {
@@ -26,16 +27,6 @@ interface DailyStats {
 }
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
-
-/** Reads a picked photo as a data URL — the shape the upload endpoint takes. */
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read that photo"));
-    reader.readAsDataURL(file);
-  });
-}
 
 /** Browser geolocation, promisified with a timeout the user can act on. */
 function getPosition(): Promise<GeolocationPosition> {
@@ -97,7 +88,12 @@ export default function RiderShiftPage() {
       // Location first: a rider who is out of range should find that out before
       // being asked to wait through a photo upload.
       const position = await getPosition();
-      const photo = await readAsDataUrl(file);
+      // Downscaled first. The camera hands back a full-resolution still —
+      // several megabytes, and a third more again once base64'd — which was
+      // large enough that the request died in transit and surfaced as the
+      // gateway's generic 502 rather than anything a rider could act on. A
+      // 1280px selfie is far more than enough to recognise a face.
+      const photo = await downscaleImageToDataUrl(file, { maxDimension: 1280, quality: 0.85 });
 
       await axiosInstance.post("/order/api/attendance/check-in", {
         photo,

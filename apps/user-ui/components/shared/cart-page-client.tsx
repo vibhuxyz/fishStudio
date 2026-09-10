@@ -227,6 +227,29 @@ export function CartPageClient() {
                 }
 
                 const { item, index } = entry;
+
+                // A line restored from the account's cart carries only an
+                // identity until validate-cart resolves it. Its name is empty
+                // and its price 0, so rendering the normal row would show a
+                // blank "Out of Stock" ₹0 line — and it stays that way for as
+                // long as the customer has no address for syncItems to use.
+                if (item.isPlaceholder) {
+                  return (
+                    <div
+                      key={`${item.product.id}-${index}`}
+                      className="flex items-center gap-3"
+                      aria-busy="true"
+                    >
+                      <div className="h-16 w-16 flex-shrink-0 animate-pulse rounded-xl bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/5 animate-pulse rounded bg-muted" />
+                        <div className="h-3 w-2/5 animate-pulse rounded bg-muted" />
+                      </div>
+                      <div className="h-8 w-24 animate-pulse rounded-lg bg-muted" />
+                    </div>
+                  );
+                }
+
                 const isInvalid = item.product.status !== "Active" || (item.product.stock !== undefined && item.product.stock <= 0);
 
                 return (

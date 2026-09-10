@@ -13,6 +13,12 @@ import { prismaPostgres } from "./client.js";
  */
 export type AuditAction =
   | "ORDER_CREATED"
+  // An online checkout was held: stock and slot reserved, price fixed, no
+  // Order yet. The trail from here is either CHECKOUT_SESSION_FINALIZED or
+  // CHECKOUT_SESSION_EXPIRED — never both.
+  | "CHECKOUT_SESSION_CREATED"
+  | "CHECKOUT_SESSION_FINALIZED"
+  | "CHECKOUT_SESSION_EXPIRED"
   | "ORDER_CANCELLED_BY_USER"
   // Customer chose Cash on Delivery after their online payment failed.
   | "ORDER_COD_CONVERSION_REQUESTED"

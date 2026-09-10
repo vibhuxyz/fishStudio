@@ -22,7 +22,8 @@
     "@repo/libs": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "bcryptjs": "^3.0.3",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.7",
+    "@repo/shared": "workspace:*"
   },
   "devDependencies": {
     "prisma": "^5.14.0",

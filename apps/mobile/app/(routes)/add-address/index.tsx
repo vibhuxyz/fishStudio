@@ -165,6 +165,7 @@ export default function AddAddressScreen() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [pinLabel, setPinLabel] = useState("");
+  const [formattedAddress, setFormattedAddress] = useState(editingAddress?.formattedAddress || "");
   const [resolvingPinLabel, setResolvingPinLabel] = useState(false);
   const [mapSearchQuery, setMapSearchQuery] = useState("");
   const [mapSearchResults, setMapSearchResults] = useState<PlaceResult[]>([]);
@@ -274,25 +275,49 @@ export default function AddAddressScreen() {
       setLng(position.coords.longitude);
       mapRef.current?.setMarker(position.coords.latitude, position.coords.longitude);
 
-      const results = await Location.reverseGeocodeAsync({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-      const place = results[0];
-      if (!place) {
-        toast.error("Couldn't detect your address. Please enter it manually.");
-        return;
-      }
+      const point = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
 
-      const detectedPincode = place.postalCode || "";
-      const detectedCity = place.city || place.subregion || "";
-      const detectedState = place.region || "";
-      const detectedArea = [place.district, place.street].filter(Boolean).join(", ");
+      // The configured provider (Google via the proxy, else Nominatim) splits
+      // city and state reliably; the OS geocoder often collapses them into the
+      // same value. Fall back to it only if the provider resolves nothing.
+      const detailed = await geocodingProvider.reverseGeocodeDetailed(point);
+      let detectedPincode = detailed?.postalCode || "";
+      let detectedCity = detailed?.city || "";
+      let detectedState = detailed?.state || "";
+      let detectedArea = detailed?.formattedAddress
+        ? detailed.formattedAddress.split(",").slice(0, 2).join(",").trim()
+        : "";
+      let detectedFormatted = detailed?.formattedAddress || "";
+
+      if (!detailed || (!detectedCity && !detectedState && !detectedPincode)) {
+        const [place] = await Location.reverseGeocodeAsync({
+          latitude: point.lat,
+          longitude: point.lng,
+        });
+        if (!place) {
+          toast.error("Couldn't detect your address. Please enter it manually.");
+          return;
+        }
+        detectedPincode = place.postalCode || "";
+        // `subregion` is a district — only a usable city when it isn't just
+        // echoing the state.
+        detectedCity =
+          place.city ||
+          (place.subregion && place.subregion !== place.region ? place.subregion : "") ||
+          "";
+        detectedState = place.region || "";
+        detectedArea = [place.district, place.street].filter(Boolean).join(", ");
+        detectedFormatted = "";
+      }
 
       if (detectedPincode) setPincode(detectedPincode);
       if (detectedCity) setCity(detectedCity);
       if (detectedState) setState(detectedState);
       if (detectedArea) setAreaStreet((prev) => prev || detectedArea);
+      if (detectedFormatted) setFormattedAddress(detectedFormatted);
       setPinLabel([detectedArea, detectedCity].filter(Boolean).join(", "));
 
       toast.success("Location detected");
@@ -327,8 +352,20 @@ export default function AddAddressScreen() {
   const reverseGeocodePin = async (nextLat: number, nextLng: number) => {
     setResolvingPinLabel(true);
     try {
-      const label = await geocodingProvider.reverseGeocode({ lat: nextLat, lng: nextLng });
-      if (label) setPinLabel(label);
+      const detailed = await geocodingProvider.reverseGeocodeDetailed({ lat: nextLat, lng: nextLng });
+      if (detailed?.formattedAddress) {
+        setPinLabel(detailed.formattedAddress);
+        setFormattedAddress(detailed.formattedAddress);
+      }
+      // The pinned coordinate is the source of truth for city/state — the
+      // seller store's free-text state can be wrong. Keep the current value
+      // only when the pin didn't resolve one.
+      if (detailed?.city) setCity(detailed.city);
+      if (detailed?.state) setState(detailed.state);
+      if (!detailed) {
+        const label = await geocodingProvider.reverseGeocode({ lat: nextLat, lng: nextLng });
+        if (label) setPinLabel(label);
+      }
     } finally {
       setResolvingPinLabel(false);
     }
@@ -384,6 +421,9 @@ export default function AddAddressScreen() {
     setLat(result.lat);
     setLng(result.lng);
     setPinLabel(result.label);
+    if (result.address) setFormattedAddress(result.address);
+    if (result.city) setCity(result.city);
+    if (result.state) setState(result.state);
     setMapSearchQuery("");
     setMapSearchResults([]);
     mapRef.current?.setMarker(result.lat, result.lng);
@@ -429,6 +469,7 @@ export default function AddAddressScreen() {
         pincode: pincode.trim(),
         phone: phone.trim(),
         country,
+        formattedAddress: formattedAddress.trim() || undefined,
         deliveryInstructions: deliveryInstructions.trim(),
         ...(lat != null && lng != null ? { lat, lng } : {}),
       };
@@ -826,8 +867,8 @@ export default function AddAddressScreen() {
                 icon="business-outline"
                 label="City"
                 value={city}
+                onChangeText={setCity}
                 placeholder="e.g. Gurgaon"
-                editable={false}
               />
             </View>
             <View style={{ flex: 1 }}>

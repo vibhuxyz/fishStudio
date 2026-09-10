@@ -4,7 +4,7 @@ import useUser from "@/hooks/useUser";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { useDeliverySlotStore } from "@/lib/delivery-slot-store";
-import { useStore } from "@/store";
+import { useStore, getCartVersion, recordCartVersion } from "@/store";
 import { SLOT_OPTIONS, SCHEDULED_SLOTS } from "@/constants/delivery-slots";
 import axiosInstance from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
@@ -78,8 +78,54 @@ const WALLETS = [
 // Payment" rather than a button that fails the same way forever.
 type PaymentIssueCode = "NETWORK" | "SERVER_ERROR" | "PAYMENT_CANCELLED" | "PAYMENT_START_FAILED";
 
+/**
+ * What the payment sheet is being opened against.
+ *
+ * Two checkout lifecycles are live at once and the client does not choose
+ * between them: it uses whichever handle `/order/api/create` returned. With
+ * checkout sessions on there is no Order yet and one is written when the money
+ * lands, so its id only becomes known from the verify response.
+ */
+type PaymentHandle =
+  | { kind: "order"; orderId: string }
+  | { kind: "session"; sessionId: string };
+
+/**
+ * A checkout prepared ahead of the tap: stock held, price fixed, gateway order
+ * already created.
+ *
+ * Keyed to the fingerprint it was built for — a prepared checkout describes one
+ * exact basket, and the moment the basket changes it is not the thing the
+ * customer is looking at any more.
+ */
+interface PreparedCheckout {
+  fingerprint: string;
+  sessionId: string;
+  rzp: { keyId: string; amount: number; currency: string; razorpayOrderId: string };
+}
+
+/**
+ * How long the inputs must hold still before a checkout is prepared.
+ *
+ * Longer than the quote debounce because preparing is the expensive one: it
+ * holds stock and creates a gateway order, so it should only happen once the
+ * customer has genuinely stopped fiddling.
+ */
+const PREPARE_DEBOUNCE_MS = 800;
+
+const handleId = (handle: PaymentHandle) =>
+  handle.kind === "order" ? handle.orderId : handle.sessionId;
+
+/** The body identifying this checkout to payment-service. Exactly one key. */
+const handleBody = (handle: PaymentHandle) =>
+  handle.kind === "order" ? { orderId: handle.orderId } : { sessionId: handle.sessionId };
+
 interface PaymentIssue {
+  /** The id of whatever is awaiting payment — an Order, or a held session. */
   orderId: string;
+  /** Which of the two `orderId` names. Older persisted issues have no kind and
+   *  are treated as orders, which is what they were. */
+  kind?: "order" | "session";
   code: PaymentIssueCode;
 }
 
@@ -120,6 +166,65 @@ const DEAD_ORDER_CODES = new Set(["ORDER_CANCELLED", "PAYMENT_RECORD_MISSING", "
 const isRazorpayAvailable = () => !!NativeModules.RNRazorpayCheckout;
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
+/** How long the inputs must hold still before the bill is re-quoted. */
+const QUOTE_DEBOUNCE_MS = 500;
+
+/**
+ * How often a quote is refreshed while the customer sits on the screen.
+ *
+ * Comfortably inside order-service's 60s QUOTE_TTL_SEC. Without this, reading
+ * the screen for a minute would be enough to have the order rejected on the
+ * first tap — with "your bill was updated" for a bill nobody changed, which
+ * is both wrong and the exact message that teaches people to distrust it.
+ */
+const QUOTE_REFRESH_MS = 45_000;
+
+/**
+ * The `items` array sent to BOTH /order/api/quote and /order/api/create.
+ *
+ * Shared rather than built twice on purpose: order-service fingerprints the
+ * basket (`hashCartItems`) and refuses a quote whose fingerprint no longer
+ * matches the order redeeming it. Two separately-maintained copies of this
+ * mapping would drift on the first new option added to a cart line, and every
+ * checkout would then fail with QUOTE_STALE for a basket nobody changed.
+ */
+const buildOrderItems = (cart: any[]) =>
+  cart.map((item) => ({
+    productId: item.id,
+    quantity: item.quantity || 1,
+    price: item.price,
+    selectedOptions: {
+      cuttingType: item.cuttingType || "",
+      pieceSize: item.pieceSize || "",
+      size: item.selectedSize || "",
+      // Tags this line as a combo bundle member so order-service
+      // reprices the whole group to the bundle price at checkout.
+      ...(item.comboId ? { comboId: item.comboId } : {}),
+      ...(item.priceBreakdown || {}),
+    },
+  }));
+
+/** What the server quoted, plus the inputs it was quoted for. */
+interface CheckoutQuote {
+  quoteId: string;
+  /** The input fingerprint this quote answers — it is only usable while it
+   *  still matches what is on screen. */
+  fingerprint: string;
+  itemTotal: number;
+  deliveryCharge: number;
+  slotExtraCharge: number;
+  packagingCharge: number;
+  gstAmount: number;
+  discount: number;
+  /** Displayed verbatim rather than re-added from the lines above: the quote
+   *  can include charges this bill has no row for, and a total the screen
+   *  derived itself could then differ from the one being agreed to. */
+  grandTotal: number;
+  /** Whether this environment defers the Order until payment settles. Gates
+   *  speculative preparation. */
+  sessionsEnabled: boolean;
+}
+
 export default function CheckoutScreen() {
   const { user } = useUser();
   const { cart, clearCart } = useStore();
@@ -146,6 +251,25 @@ export default function CheckoutScreen() {
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  // Identifies one checkout attempt. order-service has always honoured
+  // `x-idempotency-key` — it caches the response under it and replays that on
+  // a repeat — but no client ever sent one, so a POST that timed out on a
+  // patchy mobile connection left the customer with a placed order, no
+  // confirmation, and a Place Order button happy to charge them again.
+  //
+  // Held across retries of the SAME attempt and cleared once an order exists,
+  // so a resend after a dropped response returns the original order while a
+  // genuinely new checkout still gets a new one.
+  const idempotencyKeyRef = useRef<string | null>(null);
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  // A checkout prepared ahead of the tap. Mirrored into a ref so the unmount
+  // cleanup that releases it sees the current value rather than the one
+  // captured when its effect was set up.
+  const [prepared, setPrepared] = useState<PreparedCheckout | null>(null);
+  const preparedRef = useRef<PreparedCheckout | null>(null);
+  preparedRef.current = prepared;
+  // Bumped on a timer to re-quote before the current one lapses.
+  const [quoteTick, setQuoteTick] = useState(0);
   // Short status shown on the CTA while isPlacingOrder is true — the request
   // is a single round trip per step, but naming the step makes the wait read
   // as progress instead of a frozen button.
@@ -241,6 +365,7 @@ export default function CheckoutScreen() {
           storeId: selectedLocation?.storeId || undefined,
         })
         .then(({ data }) => {
+          recordCartVersion(data?.cartVersion);
           if (data.success) {
             setSlotAvailability(data.availableSlots || SCHEDULED_SLOTS, data.instantFee || 20, data.deliverySlots || []);
             setBillConfig({
@@ -263,7 +388,7 @@ export default function CheckoutScreen() {
   // sweeper runs — release it as soon as the customer walks away.
   useEffect(
     () => () => {
-      if (paymentIssueRef.current) cancelUnpaidOrder(paymentIssueRef.current.orderId);
+      if (paymentIssueRef.current) cancelUnpaidOrder(paymentIssueRef.current);
     },
     [],
   );
@@ -302,16 +427,124 @@ export default function CheckoutScreen() {
   const appliedCoupon = appliedCoupons[0] ?? null;
   const appliedCouponSaving = appliedCoupon ? getDiscountForCoupon(appliedCoupon, subtotal) : 0;
 
+  /* ── Server-authoritative bill ────────────────────────────────────────
+     The arithmetic above is what the screen renders while a quote is being
+     fetched, but it is the client's own reckoning. The quote is the server's,
+     from the same computeOrderTotals that /create bills with — so once one
+     arrives for the current inputs it is what the bill shows and what the
+     customer agrees to by tapping Pay.
+
+     Only inputs that can move the total are fingerprinted. The address is not
+     one: delivery fees come from the store's configuration, not from where it
+     is going. Neither is the payment method. */
+  const quoteStoreId = selectedLocation?.storeId ?? null;
+  // getCartVersion() is a module-level value that validate-cart updates
+  // outside React, so it is sampled on the quote tick rather than read during
+  // render — otherwise a version that moved would not re-trigger the quote.
+  const [cartVersionTracked, setCartVersionTracked] = useState<number | null>(getCartVersion());
+
+  const quoteFingerprint = useMemo(
+    () =>
+      JSON.stringify([
+        quoteStoreId,
+        buildOrderItems(cart),
+        selectedSlot ?? null,
+        selectedDeliveryDate ?? null,
+        appliedCoupon && !appliedCoupon.isEvent ? appliedCoupon.code : null,
+        appliedCoupon?.isEvent ? appliedCoupon.eventId : null,
+        // Read through the fingerprint so a version that moves under us
+        // re-quotes rather than silently invalidating the quote in hand.
+        cartVersionTracked,
+      ]),
+    [quoteStoreId, cart, selectedSlot, selectedDeliveryDate, appliedCoupon, cartVersionTracked],
+  );
+
+  useEffect(() => {
+    if (!quoteStoreId || cart.length === 0 || !selectedSlot) return;
+
+    // Debounced because the customer assembles the order in bursts — slot,
+    // then coupon, then a quantity nudge. Quoting each intermediate state
+    // would spend a request per basket nobody is going to buy.
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const { data } = await axiosInstance.post("/order/api/quote", {
+            storeId: quoteStoreId,
+            items: buildOrderItems(cart),
+            deliverySlot: selectedSlot,
+            ...(selectedDeliveryDate ? { deliveryDate: selectedDeliveryDate } : {}),
+            ...(appliedCoupon && !appliedCoupon.isEvent ? { couponCode: appliedCoupon.code } : {}),
+            ...(appliedCoupon?.isEvent ? { eventId: appliedCoupon.eventId } : {}),
+            ...(cartVersionTracked !== null ? { cartVersion: cartVersionTracked } : {}),
+          });
+
+          // A newer fingerprint won while this was in flight, or the server
+          // could not park the snapshot (quoteId null) — either way there is
+          // nothing redeemable, so the local arithmetic stands.
+          if (cancelled || !data?.success || !data.quoteId) return;
+
+          setQuote({
+            quoteId: data.quoteId,
+            fingerprint: quoteFingerprint,
+            itemTotal: data.subtotal,
+            deliveryCharge: data.baseDeliveryFee,
+            slotExtraCharge: data.slotExtraCharge,
+            packagingCharge: data.packagingCharge,
+            gstAmount: data.tax,
+            discount: data.discount,
+            grandTotal: data.grandTotal,
+            sessionsEnabled: data.checkoutSessionsEnabled === true,
+          });
+        } catch {
+          // Quoting is an enhancement over arithmetic the screen can already
+          // do. A failure leaves the local figures rendered and the order
+          // placeable without a quoteId, exactly as before quoting existed.
+          if (!cancelled) setQuote(null);
+        }
+      })();
+    }, QUOTE_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [quoteFingerprint, quoteTick, quoteStoreId, cart, selectedSlot, selectedDeliveryDate, appliedCoupon, cartVersionTracked]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCartVersionTracked(getCartVersion());
+      setQuoteTick((n) => n + 1);
+    }, QUOTE_REFRESH_MS);
+    return () => clearInterval(id);
+  }, []);
+
+  // Usable only while it still describes what is on screen.
+  const activeQuote = quote && quote.fingerprint === quoteFingerprint ? quote : null;
+
+  // What the bill shows, and therefore what the customer is agreeing to.
+  // Every row below is drawn from the same source as the total — a bill whose
+  // lines came from one calculation and whose total came from another is how
+  // you end up with a screen that does not add up.
+  const displayedTotal = activeQuote?.grandTotal ?? grandTotal;
+  const quotedDelivery = activeQuote?.deliveryCharge ?? deliveryCharge;
+  const quotedSlotExtra = activeQuote?.slotExtraCharge ?? slotExtraCharge;
+
   // Order created with paymentMethod RAZORPAY is unpaid until verified.
   // Release it if the customer backs out before Razorpay hands us a payment.
   // order-service refuses this while a checkout is still within its settle
   // grace window (a webhook may confirm it any moment), so this can
   // legitimately no-op — callers that tell the user "cancelled" check the
   // return value rather than assuming success.
-  const cancelUnpaidOrder = (orderId: string) =>
+  /** Releases whatever a dismissed checkout is holding, on either lifecycle. */
+  const cancelUnpaidOrder = (issue: { orderId: string; kind?: "order" | "session" }) =>
     axiosInstance
-      .put(`/order/api/cancel/${orderId}`)
-      .then(() => true)
+      .put(
+        issue.kind === "session"
+          ? `/order/api/checkout-session/${issue.orderId}/abandon`
+          : `/order/api/cancel/${issue.orderId}`,
+      )
+      .then(({ data }) => data?.success !== false)
       .catch(() => false);
 
   const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -332,13 +565,50 @@ export default function CheckoutScreen() {
     }
   };
 
-  const startRazorpayPayment = async (orderId: string) => {
+  /**
+   * Did this payment settle, whatever the SDK or the verify call reported?
+   *
+   * Returns the order id once one exists. Under the session lifecycle that only
+   * happens at finalisation, so this is also how the client learns the id at
+   * all when its own verify never landed.
+   */
+  const fetchSettledOrderId = async (handle: PaymentHandle): Promise<string | null> => {
+    if (handle.kind === "order") {
+      const status = await fetchOrderPaymentStatus(handle.orderId);
+      return status === "COMPLETED" ? handle.orderId : null;
+    }
+    try {
+      const { data } = await axiosInstance.get(
+        `/order/api/checkout-session/${handle.sessionId}`,
+      );
+      return data?.orderId ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  /**
+   * Opens the payment sheet for a handle, creating the gateway order first
+   * unless one was prepared ahead of the tap.
+   *
+   * `prefetched` is what makes preparation worth anything: with it, nothing
+   * touches the network between the tap and the sheet appearing.
+   */
+  const startRazorpayPayment = async (
+    handle: PaymentHandle,
+    prefetched?: PreparedCheckout["rzp"],
+  ) => {
     let paymentAttempted = false;
     try {
       setPlacingStage("Opening payment…");
-      const { data: rzp } = await axiosInstance.post("/payment/api/create-razorpay-order", {
-        orderId,
-      });
+      const rzp =
+        prefetched ??
+        (
+          await axiosInstance.post(
+            "/payment/api/create-razorpay-order",
+            handleBody(handle),
+          )
+        ).data;
 
       const razorpayOptions = {
         key: rzp.keyId, // public key_id, supplied by the backend
@@ -360,7 +630,7 @@ export default function CheckoutScreen() {
 
       let result;
       try {
-        console.log("[Checkout] Opening Razorpay", { orderId, razorpayOrderId: rzp.razorpayOrderId, method: onlineRail });
+        console.log("[Checkout] Opening Razorpay", { handle, razorpayOrderId: rzp.razorpayOrderId, method: onlineRail });
         result = await RazorpayCheckout.open(razorpayOptions);
         console.log("[Checkout] Razorpay success", result);
       } catch (checkoutError: any) {
@@ -378,14 +648,14 @@ export default function CheckoutScreen() {
         // seconds apart, for the webhook to have already settled this order
         // before telling the customer nothing was captured.
         setPlacingStage("Confirming payment status…");
-        let status = await fetchOrderPaymentStatus(orderId);
-        if (status !== "COMPLETED") {
+        let settledOrderId = await fetchSettledOrderId(handle);
+        if (!settledOrderId) {
           await wait(3000);
-          status = await fetchOrderPaymentStatus(orderId);
+          settledOrderId = await fetchSettledOrderId(handle);
         }
-        console.log("[Checkout] Order payment status after Razorpay error", { orderId, status });
+        console.log("[Checkout] Settlement check after Razorpay error", { handle, settledOrderId });
 
-        if (status === "COMPLETED") {
+        if (settledOrderId) {
           trackPaymentIssue(null);
           clearCart();
           clearAllCoupons();
@@ -393,7 +663,7 @@ export default function CheckoutScreen() {
           toast.success("Payment successful!", { haptic: false });
           router.replace({
             pathname: "/(routes)/order-confirmation/[id]",
-            params: { id: orderId },
+            params: { id: settledOrderId },
           });
           return;
         }
@@ -410,7 +680,7 @@ export default function CheckoutScreen() {
         const code: PaymentIssueCode = isUserCancellation(checkoutError)
           ? "PAYMENT_CANCELLED"
           : "PAYMENT_START_FAILED";
-        trackPaymentIssue({ orderId, code });
+        trackPaymentIssue({ orderId: handleId(handle), kind: handle.kind, code });
         toast.error(checkoutError?.description || PAYMENT_ISSUE_MESSAGES[code]);
         return;
       }
@@ -418,14 +688,19 @@ export default function CheckoutScreen() {
       paymentAttempted = true;
       setPlacingStage("Verifying payment…");
       const { data: verified } = await axiosInstance.post("/payment/api/verify", {
-        orderId,
+        ...handleBody(handle),
         razorpayOrderId: result.razorpay_order_id,
         razorpayPaymentId: result.razorpay_payment_id,
         razorpaySignature: result.razorpay_signature,
       });
       console.log("[Checkout] Verify response", verified);
 
-      if (!verified.success) {
+      // Under the session lifecycle the Order is written by this very call, so
+      // its id is only knowable from the response.
+      const settledOrderId =
+        verified.orderId ?? (handle.kind === "order" ? handle.orderId : null);
+
+      if (!verified.success || !settledOrderId) {
         toast.error("Payment could not be verified. Please contact support.");
         return;
       }
@@ -438,7 +713,7 @@ export default function CheckoutScreen() {
       toast.success("Payment successful!", { haptic: false });
       router.replace({
         pathname: "/(routes)/order-confirmation/[id]",
-        params: { id: orderId },
+        params: { id: settledOrderId },
       });
     } catch (error: any) {
       console.log("[Checkout] Payment flow error", {
@@ -467,17 +742,24 @@ export default function CheckoutScreen() {
         const status = error?.response?.status;
 
         if (backendCode === "ORDER_PAID") {
-          // A previous attempt already settled this order (e.g. two retries
-          // raced) — that's success, not a dead end.
+          // A previous attempt already settled this (e.g. two retries raced) —
+          // that's success, not a dead end. Under the session lifecycle the
+          // order id has to be looked up, since this client never saw one.
+          const settledOrderId =
+            handle.kind === "order" ? handle.orderId : await fetchSettledOrderId(handle);
           trackPaymentIssue(null);
           clearCart();
           clearAllCoupons();
           haptic.orderPlaced();
           toast.success("Payment already completed!", { haptic: false });
-          router.replace({
-            pathname: "/(routes)/order-confirmation/[id]",
-            params: { id: orderId },
-          });
+          if (settledOrderId) {
+            router.replace({
+              pathname: "/(routes)/order-confirmation/[id]",
+              params: { id: settledOrderId },
+            });
+          } else {
+            router.replace("/(routes)/my-orders");
+          }
         } else if (backendCode === "PAYMENT_GATEWAY_UNAVAILABLE") {
           trackPaymentIssue(null);
           toast.error(backendMessage || "Online payments aren't available right now. Please use Cash on Delivery.");
@@ -487,7 +769,11 @@ export default function CheckoutScreen() {
           trackPaymentIssue(null);
           toast.error(backendMessage || "This order can no longer be paid. Please place a new order.");
         } else {
-          trackPaymentIssue({ orderId, code: typeof status === "number" ? "SERVER_ERROR" : "NETWORK" });
+          trackPaymentIssue({
+            orderId: handleId(handle),
+            kind: handle.kind,
+            code: typeof status === "number" ? "SERVER_ERROR" : "NETWORK",
+          });
           toast.error("Could not start payment. Please check your connection and try again.");
         }
       }
@@ -496,6 +782,178 @@ export default function CheckoutScreen() {
       setPlacingStage(null);
     }
   };
+
+  /**
+   * The body for POST /order/api/create.
+   *
+   * Shared by the tap and by the speculative preparation above it, because the
+   * two must produce byte-identical requests: order-service fingerprints the
+   * basket, and a prepared checkout built from a different payload than the one
+   * the tap would have sent is a checkout for a different basket.
+   */
+  const buildCreatePayload = (storeId: string) => {
+    // Guarded here rather than at each call site: both callers already require
+    // an address, and threading the narrowing through them buys nothing.
+    if (!selectedAddress) return null;
+
+    return {
+        storeId,
+        items: buildOrderItems(cart),
+        deliveryDetails: {
+          name: selectedAddress.name,
+          phone: selectedAddress.phone || user?.phone || "",
+          address: `${selectedAddress.street}${selectedAddress.area ? `, ${selectedAddress.area}` : ""}`,
+          city: selectedAddress.city,
+          pincode: selectedAddress.pincode,
+          ...(selectedAddress.lat != null && selectedAddress.lng != null
+            ? { latitude: selectedAddress.lat, longitude: selectedAddress.lng }
+            : {}),
+          ...(selectedAddress.landmark ? { landmark: selectedAddress.landmark } : {}),
+          ...(selectedAddress.deliveryInstructions
+            ? { deliveryInstructions: selectedAddress.deliveryInstructions }
+            : {}),
+        },
+        billDetails: {
+          itemTotal: activeQuote?.itemTotal ?? subtotal,
+          deliveryCharge: activeQuote?.deliveryCharge ?? deliveryCharge,
+          packagingCharge: activeQuote?.packagingCharge ?? packagingCharge,
+          gstAmount: activeQuote?.gstAmount ?? gstAmount,
+          discount: activeQuote?.discount ?? discount,
+          discountBreakdown: appliedCoupon
+            ? [{ code: appliedCoupon.code, amount: appliedCouponSaving }]
+            : [],
+        },
+        // The figure the bill actually showed. Advisory either way — the
+        // server recomputes what it charges — but sending the local sum while
+        // displaying the quoted one would make createOrder's drift warning
+        // fire on orders that never drifted.
+        totalAmount: displayedTotal,
+        // Redeems the bill the customer read. Sent only while the quote still
+        // matches the screen; the server treats its absence as "price this
+        // fresh", which is the pre-quote behaviour.
+        ...(activeQuote ? { quoteId: activeQuote.quoteId } : {}),
+        ...(cartVersionTracked !== null ? { cartVersion: cartVersionTracked } : {}),
+        paymentMethod,
+        deliverySlot: selectedSlot,
+        ...(selectedDeliveryDate ? { deliveryDate: selectedDeliveryDate } : {}),
+        // Order-service's couponCode is a single exact-match lookup against
+        // discount_codes — sending more than one code here (the old
+        // join(",")) never matches a real discountCode and createOrder
+        // rejects the whole order. Event-derived offers (Flash Sale /
+        // seasonal Discount / Free Delivery banners) aren't discount_codes
+        // rows at all — they go through eventId instead, or the same
+        // "invalid coupon" rejection happens for a different reason (no
+        // discountCode ever existed for the fabricated event label).
+        couponCode: appliedCoupon && !appliedCoupon.isEvent ? appliedCoupon.code : undefined,
+        eventId: appliedCoupon?.isEvent ? appliedCoupon.eventId : undefined,
+        referralCode: referralCodeInput.trim() || undefined,
+        discountAmount: discount,
+    };
+  };
+
+  /* ── Prepare the checkout before it is needed ─────────────────────────────
+     Once the customer has settled on a basket, a slot and an online payment
+     method, everything the sheet needs can be built while their thumb is still
+     travelling: the session that holds the stock, and the Razorpay order.
+
+     Gated on the session lifecycle, because preparing under the order one
+     would commit a real Order for a customer who has pressed nothing; on an
+     online method, because COD opens no sheet; and on a live quote, because
+     preparing a price the server has not agreed to defeats quoting.
+
+     This holds stock from the moment a payment method is picked rather than
+     from the tap. That is the trade: a held basket is released by the expiry
+     sweep within fifteen minutes, or immediately when the customer changes
+     their mind, and in exchange the sheet opens instantly. */
+  const canPrepare =
+    Boolean(activeQuote?.sessionsEnabled) &&
+    paymentMethod === "RAZORPAY" &&
+    Boolean(selectedAddress) &&
+    Boolean(quoteStoreId) &&
+    Boolean(selectedSlot) &&
+    (selectedSlot === "instant" || Boolean(selectedDeliveryDate)) &&
+    !paymentIssue &&
+    isRazorpayAvailable();
+
+  const activePrepared =
+    prepared && prepared.fingerprint === quoteFingerprint ? prepared : null;
+
+  /** Hands back a prepared checkout the customer has moved on from. */
+  const releasePrepared = (sessionId: string) => {
+    axiosInstance.put(`/order/api/checkout-session/${sessionId}/abandon`).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!canPrepare || !quoteStoreId) return;
+    if (preparedRef.current?.fingerprint === quoteFingerprint) return;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        const payload = buildCreatePayload(quoteStoreId);
+        if (!payload) return;
+
+        try {
+          const { data } = await axiosInstance.post("/order/api/create", payload, {
+            headers: {
+              "x-idempotency-key": `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            },
+          });
+          // No sessionId means this environment is on the order lifecycle after
+          // all — the flag moved under us. Stop rather than leave a
+          // speculatively created Order lying around.
+          if (!data?.sessionId) return;
+
+          const { data: rzp } = await axiosInstance.post(
+            "/payment/api/create-razorpay-order",
+            { sessionId: data.sessionId },
+          );
+
+          if (cancelled) {
+            // The basket changed while this was in flight, so what was just
+            // built describes the old one. Give its stock back now.
+            releasePrepared(data.sessionId);
+            return;
+          }
+
+          const previous = preparedRef.current;
+          if (previous && previous.sessionId !== data.sessionId) {
+            releasePrepared(previous.sessionId);
+          }
+
+          setPrepared({ fingerprint: quoteFingerprint, sessionId: data.sessionId, rzp });
+        } catch {
+          // Preparation is an optimisation with a working fallback: the tap
+          // does this same work itself. Silent, because the customer has not
+          // asked for anything yet.
+        }
+      })();
+    }, PREPARE_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [canPrepare, quoteFingerprint, quoteStoreId]);
+
+  // A prepared checkout that no longer matches the screen is holding stock for
+  // a basket nobody is buying.
+  useEffect(() => {
+    if (prepared && prepared.fingerprint !== quoteFingerprint) {
+      releasePrepared(prepared.sessionId);
+      setPrepared(null);
+    }
+  }, [prepared, quoteFingerprint]);
+
+  // Leaving checkout with a prepared-but-unpaid basket holds its stock for the
+  // full expiry window. Hand it back on the way out.
+  useEffect(
+    () => () => {
+      const held = preparedRef.current;
+      if (held) releasePrepared(held.sessionId);
+    },
+    [],
+  );
 
   // ── Place order ─────────────────────────────────────────────────────────────
   const handlePlaceOrder = async () => {
@@ -510,6 +968,23 @@ export default function CheckoutScreen() {
 
     setIsPlacingOrder(true);
     setPlacingStage("Validating your order…");
+
+    /* The fast path: a checkout was prepared for exactly this basket while the
+       customer was choosing, so the sheet opens with nothing between the tap
+       and Razorpay. Everything below is the fallback for when it wasn't — they
+       tapped inside the debounce, preparation failed, or the basket moved at
+       the last moment. */
+    if (activePrepared) {
+      // Consumed: it belongs to this payment now, not to the pool of prepared
+      // checkouts that get released when the basket changes.
+      setPrepared(null);
+      preparedRef.current = null;
+      await startRazorpayPayment(
+        { kind: "session", sessionId: activePrepared.sessionId },
+        activePrepared.rzp,
+      );
+      return;
+    }
 
     // storeId is usually resolved by the time the button is tapped, but the
     // lookup runs in the background off the address's pincode — give it one
@@ -550,10 +1025,14 @@ export default function CheckoutScreen() {
     // (the order is bound to a gateway payment), so release it and start over.
     if (paymentIssue) {
       if (paymentMethod === "RAZORPAY") {
-        await startRazorpayPayment(paymentIssue.orderId);
+        await startRazorpayPayment(
+          paymentIssue.kind === "session"
+            ? { kind: "session", sessionId: paymentIssue.orderId }
+            : { kind: "order", orderId: paymentIssue.orderId },
+        );
         return;
       }
-      const released = await cancelUnpaidOrder(paymentIssue.orderId);
+      const released = await cancelUnpaidOrder(paymentIssue);
       if (!released) {
         // A payment may still be in flight on that order — creating a fresh
         // COD order now would reserve the same stock twice.
@@ -566,63 +1045,8 @@ export default function CheckoutScreen() {
     }
 
     try {
-      const orderPayload = {
-        storeId,
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity || 1,
-          price: item.price,
-          selectedOptions: {
-            cuttingType: item.cuttingType || "",
-            pieceSize: item.pieceSize || "",
-            size: item.selectedSize || "",
-            // Tags this line as a combo bundle member so order-service
-            // reprices the whole group to the bundle price at checkout.
-            ...(item.comboId ? { comboId: item.comboId } : {}),
-            ...(item.priceBreakdown || {}),
-          },
-        })),
-        deliveryDetails: {
-          name: selectedAddress.name,
-          phone: selectedAddress.phone || user?.phone || "",
-          address: `${selectedAddress.street}${selectedAddress.area ? `, ${selectedAddress.area}` : ""}`,
-          city: selectedAddress.city,
-          pincode: selectedAddress.pincode,
-          ...(selectedAddress.lat != null && selectedAddress.lng != null
-            ? { latitude: selectedAddress.lat, longitude: selectedAddress.lng }
-            : {}),
-          ...(selectedAddress.landmark ? { landmark: selectedAddress.landmark } : {}),
-          ...(selectedAddress.deliveryInstructions
-            ? { deliveryInstructions: selectedAddress.deliveryInstructions }
-            : {}),
-        },
-        billDetails: {
-          itemTotal: subtotal,
-          deliveryCharge,
-          packagingCharge,
-          gstAmount,
-          discount,
-          discountBreakdown: appliedCoupon
-            ? [{ code: appliedCoupon.code, amount: appliedCouponSaving }]
-            : [],
-        },
-        totalAmount: grandTotal,
-        paymentMethod,
-        deliverySlot: selectedSlot,
-        ...(selectedDeliveryDate ? { deliveryDate: selectedDeliveryDate } : {}),
-        // Order-service's couponCode is a single exact-match lookup against
-        // discount_codes — sending more than one code here (the old
-        // join(",")) never matches a real discountCode and createOrder
-        // rejects the whole order. Event-derived offers (Flash Sale /
-        // seasonal Discount / Free Delivery banners) aren't discount_codes
-        // rows at all — they go through eventId instead, or the same
-        // "invalid coupon" rejection happens for a different reason (no
-        // discountCode ever existed for the fabricated event label).
-        couponCode: appliedCoupon && !appliedCoupon.isEvent ? appliedCoupon.code : undefined,
-        eventId: appliedCoupon?.isEvent ? appliedCoupon.eventId : undefined,
-        referralCode: referralCodeInput.trim() || undefined,
-        discountAmount: discount,
-      };
+      const orderPayload = buildCreatePayload(storeId);
+      if (!orderPayload) return;
 
       // Same schema the backend validates against (order-service's
       // createOrder) — catches malformed requests before they hit the network.
@@ -633,11 +1057,24 @@ export default function CheckoutScreen() {
       }
 
       setPlacingStage("Reserving your items…");
-      const { data } = await axiosInstance.post("/order/api/create", orderPayload);
+      idempotencyKeyRef.current ??= `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const { data } = await axiosInstance.post("/order/api/create", orderPayload, {
+        headers: { "x-idempotency-key": idempotencyKeyRef.current },
+      });
+
+      // An order exists now, so the key has done its job. The next Place Order
+      // is a different purchase and must not replay this response.
+      idempotencyKeyRef.current = null;
 
       if (paymentMethod === "RAZORPAY") {
+        // Which lifecycle the server is on is read off the response, not from a
+        // flag here: a sessionId means the Order is written when the money
+        // lands, an orderId means it already exists.
+        const handle: PaymentHandle = data.sessionId
+          ? { kind: "session", sessionId: data.sessionId }
+          : { kind: "order", orderId: data.orderId };
         // Online payment: keep the loading state until checkout resolves.
-        await startRazorpayPayment(data.orderId);
+        await startRazorpayPayment(handle);
         return;
       }
 
@@ -650,6 +1087,21 @@ export default function CheckoutScreen() {
         params: { id: data.orderId },
       });
     } catch (error: any) {
+      const code = error.response?.data?.details?.code;
+
+      // The bill moved between being read and being tapped. Drop the stale
+      // quote so the effect above re-prices, and stop — deliberately WITHOUT
+      // retrying. Re-submitting silently would charge a total the customer
+      // never saw, which is the whole thing quoting exists to prevent.
+      if (code === "QUOTE_STALE" || code === "QUOTE_EXPIRED") {
+        setQuote(null);
+        toast.error(
+          error.response?.data?.message ||
+            "Your bill was updated. Please review it and place the order again.",
+        );
+        return;
+      }
+
       toast.error(error.response?.data?.message || "Failed to place order. Please try again.");
     } finally {
       setIsPlacingOrder(false);
@@ -661,7 +1113,7 @@ export default function CheckoutScreen() {
     if (!paymentIssue) return;
     // order-service can refuse this while it's still within the settle
     // grace window — don't tell the customer it's cancelled unless it is.
-    const cancelled = await cancelUnpaidOrder(paymentIssue.orderId);
+    const cancelled = await cancelUnpaidOrder(paymentIssue);
     if (cancelled) {
       trackPaymentIssue(null);
       toast.info("Order cancelled. Your cart is still here.");
@@ -761,7 +1213,7 @@ export default function CheckoutScreen() {
       ? "Retry Payment"
       : paymentMethod === "COD"
         ? "Place Order"
-        : `Pay ₹${grandTotal.toFixed(0)}`;
+        : `Pay ₹${displayedTotal.toFixed(0)}`;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#F9F9F9" }}>
@@ -1030,32 +1482,32 @@ export default function CheckoutScreen() {
             numbers, not another scroll of images and names. */}
         <SectionTitle title="Bill Summary" />
         <View style={{ paddingHorizontal: 16 }}>
-          <BillRow label={`Items (${cart.length})`} value={`₹${subtotal.toFixed(2)}`} />
+          <BillRow label={`Items (${cart.length})`} value={`₹${(activeQuote?.itemTotal ?? subtotal).toFixed(2)}`} />
           {discount > 0 && appliedCoupon && (
             <BillRow
               label={`Coupon (${appliedCoupon.code})`}
-              value={`-₹${discount.toFixed(2)}`}
+              value={`-₹${(activeQuote?.discount ?? discount).toFixed(2)}`}
               valueColor="#22C55E"
             />
           )}
           <BillRow
             label="Delivery Fee"
-            value={deliveryCharge === 0 ? "FREE" : `₹${deliveryCharge}.00`}
-            strikeValue={deliveryCharge === 0 && baseDelivery > 0 ? `₹${baseDelivery}.00` : undefined}
-            valueColor={deliveryCharge === 0 ? "#22C55E" : undefined}
+            value={quotedDelivery === 0 ? "FREE" : `₹${quotedDelivery}.00`}
+            strikeValue={quotedDelivery === 0 && baseDelivery > 0 ? `₹${baseDelivery}.00` : undefined}
+            valueColor={quotedDelivery === 0 ? "#22C55E" : undefined}
           />
-          {slotExtraCharge > 0 && (
-            <BillRow label="Instant delivery" value={`₹${slotExtraCharge}.00`} />
+          {quotedSlotExtra > 0 && (
+            <BillRow label="Instant delivery" value={`₹${quotedSlotExtra}.00`} />
           )}
-          <BillRow label="Packaging Charges" value={`₹${packagingCharge}.00`} />
-          <BillRow label="Taxes (incl. GST)" value={`₹${gstAmount}.00`} />
+          <BillRow label="Packaging Charges" value={`₹${activeQuote?.packagingCharge ?? packagingCharge}.00`} />
+          <BillRow label="Taxes (incl. GST)" value={`₹${activeQuote?.gstAmount ?? gstAmount}.00`} />
 
           {/* Total */}
           <View style={{ height: 1, backgroundColor: "#EFEFEF", marginVertical: 12 }} />
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 16, color: "#1A1C1C" }}>Total Amount</Text>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#5A2C96" }}>
-              ₹{grandTotal.toFixed(2)}
+              ₹{displayedTotal.toFixed(2)}
             </Text>
           </View>
 
@@ -1092,7 +1544,7 @@ export default function CheckoutScreen() {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <View style={{ marginRight: 14 }}>
             <Text style={{ fontFamily: "Inter-Bold", fontSize: 18, color: "#1A1C1C" }}>
-              ₹{grandTotal.toFixed(0)}
+              ₹{displayedTotal.toFixed(0)}
             </Text>
             <Text style={{ fontFamily: "Inter-Regular", fontSize: 10, color: "#898B8A" }}>Total</Text>
           </View>

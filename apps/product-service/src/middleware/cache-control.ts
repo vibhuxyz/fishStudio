@@ -52,3 +52,16 @@ export const CATEGORY_CACHE: RequestHandler = publicCache(300, 600);
 
 /** Merchandising content — changes more often than categories, still not per-user. */
 export const BANNER_CACHE: RequestHandler = publicCache(120, 300);
+
+/**
+ * The opposite of `publicCache`: forbids storing the response anywhere.
+ *
+ * For per-user state a client must never see a stale copy of. Express's weak
+ * ETag would otherwise let a shared cache or the browser answer from its own
+ * store, and `no-store` also suppresses the ETag/304 path entirely — so a
+ * cart read after a delete can't come back holding the deleted line.
+ */
+export const NO_STORE: RequestHandler = (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  next();
+};

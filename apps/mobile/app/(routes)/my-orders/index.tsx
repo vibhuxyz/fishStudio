@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import CancelOrderModal from "@/components/shared/cancel-order-modal";
 import OrderListSkeleton from "@/components/skelton/order-list.skelton";
 
@@ -132,7 +132,7 @@ export default function MyOrders() {
     const cfg = STATUS_CONFIG[order.status] ?? {
       bg: "#F3F4F6", text: "#6B7280", icon: "help-circle-outline", label: order.status,
     };
-    const orderNumber = formatOrderId(order.id);
+    const orderNumber = displayOrderNumber(order);
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
       day: "2-digit", month: "short", year: "numeric",
     });
@@ -272,7 +272,7 @@ export default function MyOrders() {
       icon: "help-circle-outline",
       label: displayStatus,
     };
-    const orderNumber = formatOrderId(order.id);
+    const orderNumber = displayOrderNumber(order);
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",

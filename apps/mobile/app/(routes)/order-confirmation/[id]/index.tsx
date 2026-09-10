@@ -27,7 +27,7 @@ import { colors, gradients } from "@/constants/theme";
 import { formatDeliveryDateLabel, getScheduledDeliveryDate } from "@/constants/delivery-slots";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 import OrderConfirmationSkeleton from "@/components/skelton/order-confirmation.skelton";
-import { formatOrderId } from "@repo/shared/order-id";
+import { displayOrderNumber } from "@repo/shared/order-id";
 import { buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
 const PRIMARY = colors.primary;
@@ -76,7 +76,7 @@ export default function OrderConfirmationScreen() {
     );
   }
 
-  const shortId = formatOrderId(order.id);
+  const shortId = displayOrderNumber(order);
   const slotLabel = SLOT_LABEL[order.deliverySlot || ""] || "Standard Delivery";
   const billDetails = (order.billDetails as Record<string, number> | null) ?? null;
   const createdAt = new Date(order.createdAt);
