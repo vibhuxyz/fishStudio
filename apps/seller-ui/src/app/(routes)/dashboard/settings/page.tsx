@@ -447,6 +447,16 @@ export default function SettingsPage() {
   const handleSaveClick = () => {
     if (!formData.name || !formData.pincode) { toast.error("Store name and pincode are required"); return; }
     if (cityDeliveries.length === 0) { toast.error("Add at least one serviceable area with a pincode and delivery time"); return; }
+    // Older stores can have areas that predate the city+pincode registry, so
+    // their areaCity/pincode load as blank and the save fails server-side with
+    // an opaque "City is required" — name them here so the seller can fix them.
+    const incompleteAreas = cityDeliveries
+      .filter((c) => !c.areaCity || !/^\d{6}$/.test(c.pincode))
+      .map((c) => c.area);
+    if (incompleteAreas.length > 0) {
+      toast.error(`Set a city & 6-digit pincode for: ${incompleteAreas.join(", ")}`);
+      return;
+    }
     setShowModal(true);
   };
 
