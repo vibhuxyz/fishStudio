@@ -73,7 +73,7 @@ export const trackOtpRequests = async (
   const otpRequestsKey = `otp_requests_count:${identifier}`;
   let otpRequests = parseInt((await redis.get(otpRequestsKey)) || "0");
 
-  if (otpRequests >= 2) {
+  if (otpRequests >= 5) {
     await redis.set(`otp_spam_lock:${identifier}`, "locked", "EX", 30 * 60); // 30 minutes lock
     throw new RateLimitError(
       "Too many OTP requests! Please try again after 30 minutes.",
@@ -99,7 +99,7 @@ export const sendOtp = async (
 
   try {
     await redis.set(`otp:${identifier}`, otp, "EX", 120);
-    await redis.set(`otp_cooldown:${identifier}`, "true", "EX", 60);
+    await redis.set(`otp_cooldown:${identifier}`, "true", "EX", 15);
 
     // Publish job to RabbitMQ (not sending OTP directly)
 

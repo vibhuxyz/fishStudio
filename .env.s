@@ -11,20 +11,23 @@ PRODUCT_SERVICE_PORT=6003
 ORDER_SERVICE_PORT=6004
 NOTIFICATION_SERVICE_PORT=6005
 WORKER_SERVICE_PORT=6006
+PAYMENT_SERVICE_PORT=6002
 
-USER_UI_URL=https://fish-studio-user-ui.vercel.app
-ADMIN_UI_URL=https://fish-studio-admin-ui.vercel.app
-SELLER_UI_URL=https://fish-studio-seller-ui.vercel.app
+USER_UI_URL=http://localhost:3000
+ADMIN_UI_URL=http://localhost:3001
+SELLER_UI_URL=http://localhost:3002
+CONTROL_UI_URL=http://localhost:3003
 
-CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002,https://fishstudio.in,https://admin.fishstudio.in,https://seller.fishstudio.in,https://fish-studio-user-ui.vercel.app,https://fish-studio-admin-ui.vercel.app,https://fish-studio-seller-ui.vercel.app
+
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,https://fishstudio.in,https://admin.fishstudio.in,https://seller.fishstudio.in,https://fish-studio-user-ui.vercel.app,https://fish-studio-admin-ui.vercel.app,https://fish-studio-seller-ui.vercel.app
 
 
-AUTH_SERVICE_URL=http://auth-service:6001
-PRODUCT_SERVICE_URL=http://product-service:6002
-ORDER_SERVICE_URL=http://order-service:6004
-NOTIFICATION_SERVICE_URL=http://notification-service:6005
-PAYMENT_SERVICE_URL=http://payment-service:6007
-WORKER_SERVICE_URL=http://worker-service:6006
+AUTH_SERVICE_URL=http://localhost:6001
+PRODUCT_SERVICE_URL=http://localhost:6003
+ORDER_SERVICE_URL=http://localhost:6004
+NOTIFICATION_SERVICE_URL=http://localhost:6005
+PAYMENT_SERVICE_URL=http://localhost:6002
+WORKER_SERVICE_URL=http://localhost:6006
 
 # JWT Secret
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
@@ -45,16 +48,17 @@ REFRESH_TOKEN_JWT_SECRET_KEY=ilovekiyarawithkiabdy
 
 # RabbitMQ
 RABBITMQ_PROTOCOL=amqp
-RABBITMQ_HOST_NAME=rabbitmq-shared
+RABBITMQ_HOST_NAME=localhost
 RABBITMQ_USER_NAME=admin
 RABBITMQ_PASSWORD=mysecretpassword
 RABBITMQ_PORT=5672
 RABBITMQ_VHOST=fishstudio_vhost
 
+
 MEILISEARCH_HOST=http://meilisearch:7700
 MEILISEARCH_API_KEY=masterKey123
 
-NEXT_PUBLIC_USER_UI_LINK=https://<storefront-domain>
+NEXT_PUBLIC_USER_UI_LINK=http://localhost:3000
 
 
 NEXT_PUBLIC_MAP_PROVIDER=google
@@ -81,7 +85,7 @@ CLOUDINARY_FOLDER=fishStudio-app
 
 
 # Node Environment
-NODE_ENV="production"
+NODE_ENV="developement"
 
 ORG_NAME="FishStudio"
 ORG_SUPPORT_EMAIL="support@fishstudio.dev"
@@ -91,4 +95,3 @@ PROMETHEUS_URL=http://127.0.0.1:9090
 TEMPO_URL=http://127.0.0.1:3200
 LOKI_URL=http://127.0.0.1:3101
 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
-

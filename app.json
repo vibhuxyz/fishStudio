@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "a6541c7a-68fc-407e-9dbb-7d159f02abcc"
+      }
+    },
+    "android": {
+      "package": "com.vibhuxyz.fishstudio"
+    }
+  }
+}

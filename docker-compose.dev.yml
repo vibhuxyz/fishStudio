@@ -1,0 +1,182 @@
+# Local development stack: backing services + observability plane, in one file.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   docker compose -f docker-compose.dev.yml down          # keep data
+#   docker compose -f docker-compose.dev.yml down -v       # wipe data
+#
+# The node apps still run on the host (`bun run dev` / `turbo dev`).
+#
+# What runs here:
+#   * rabbitmq, meilisearch   - backing services with no hosted equivalent in dev
+#   * prometheus, grafana, loki, tempo, alertmanager - observability plane
+#
+# What does NOT run here:
+#   * Redis / Postgres - dev points at the hosted Upstash / Neon instances via
+#     .env (REDIS_DATABASE_URL, POSTGRES_URL), same as production.
+#
+# Observability notes (dev variant; prod lives in prod.docker-compose.observability.yml):
+#   * Prometheus scrapes the host via host.docker.internal - the node apps run
+#     under `bun dev` and publish /metrics on localhost.
+#   * Grafana is anonymous-admin with the login form disabled: a debugging tool
+#     on a loopback-bound port, not an auth boundary.
+#   * Every observability port is bound to 127.0.0.1.
+#   * Retention is 15d - plenty for live dashboards.
+#
+# Matching .env values for the host apps:
+#   RABBITMQ_PROTOCOL=amqp
+#   RABBITMQ_HOST_NAME=localhost
+#   RABBITMQ_PORT=5672
+#   RABBITMQ_USER_NAME=admin
+#   RABBITMQ_PASSWORD=mysecretpassword
+#   RABBITMQ_VHOST=fishstudio_vhost
+#   MEILISEARCH_HOST=http://localhost:7700
+#   MEILI_MASTER_KEY=masterKey123
+
+name: fishstudio-dev
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backing services
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    container_name: fishstudio-rabbitmq-dev
+    hostname: fishstudio-rabbitmq-dev
+    image: rabbitmq:3-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: mysecretpassword
+      # No RABBITMQ_DEFAULT_VHOST: setting it makes RabbitMQ create ONLY that
+      # vhost and skip the default "/". @repo/libs/rabbitmq builds its URL
+      # without a vhost path, so it connects to "/" — same as prod.
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI -> http://localhost:15672
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fishstudio-dev
+
+  meilisearch:
+    container_name: fishstudio-meilisearch-dev
+    image: getmeili/meilisearch:v1.40.0
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: masterKey123
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meili-data:/meili_data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - fishstudio-dev
+
+  # ---------------------------------------------------------------------------
+  # Observability plane (dev variant)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    container_name: fishstudio-prometheus
+    image: prom/prometheus:v3.1.0
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./docker/observability/prometheus.local.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/observability/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      # Docker Desktop resolves host.docker.internal already; this makes the
+      # same config work on Linux.
+      - "host.docker.internal:host-gateway"
+    networks:
+      - fishstudio-dev
+
+  grafana:
+    container_name: fishstudio-grafana
+    image: grafana/grafana:11.5.1
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      # Local debugging tool on a loopback-bound port — not an auth boundary.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "127.0.0.1:3100:3000"
+    volumes:
+      - ./docker/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - fishstudio-dev
+
+  loki:
+    container_name: fishstudio-loki
+    image: grafana/loki:3.3.2
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      # 3101 on the host, not 3100: Grafana already owns that one locally.
+      - "127.0.0.1:3101:3100"
+    volumes:
+      - ./docker/observability/loki.yml:/etc/loki/loki.yml:ro
+      - loki-data:/loki
+    networks:
+      - fishstudio-dev
+
+  tempo:
+    container_name: fishstudio-tempo
+    image: grafana/tempo:2.7.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "127.0.0.1:3200:3200"
+      # OTLP receiver. Services running on the host under `bun dev` export here.
+      - "127.0.0.1:4318:4318"
+    volumes:
+      - ./docker/observability/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - fishstudio-dev
+
+  alertmanager:
+    container_name: fishstudio-alertmanager
+    image: prom/alertmanager:v0.28.0
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    ports:
+      - "127.0.0.1:9093:9093"
+    volumes:
+      - ./docker/observability/alertmanager.local.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - fishstudio-dev
+
+volumes:
+  rabbitmq-data:
+  meili-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  tempo-data:
+  alertmanager-data:
+
+networks:
+  fishstudio-dev:
+    driver: bridge
