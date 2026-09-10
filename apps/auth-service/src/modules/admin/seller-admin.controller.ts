@@ -5,11 +5,9 @@ import { adminStoreSettingsSchema, updateSellerApprovalSchema, validate } from "
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { redis } from "@repo/libs/redis";
-import { logger } from "@repo/libs/logger";
 
 import { runBestEffort } from "../../utils/runBestEffort.js";
 import { bumpRefreshFamily } from "../../utils/tokenRevocation.js";
-import { normalizeLocationCode } from "@repo/shared/order-id";
 
 export const getAllSellersForAdmin = async (
   req: Request,
@@ -257,14 +255,11 @@ export const updateSellerApproval = async (
 };
 
 /**
- * Set the store settings only an admin controls.
+ * Set the store settings only an admin controls — COD auto-accept limit and
+ * the tax-invoice registration identity.
  *
- * `locationCode` is the middle segment of every order number the store issues
- * (FS-NOI-30082026-001), so it is set centrally rather than by the seller —
- * see the note on adminStoreSettingsSchema.
- *
- * Changing it does not renumber existing orders: those carry the number they
- * were issued, which is the point of storing it rather than deriving it.
+ * Location codes are the seller's now (dashboard → Settings → Serviceable
+ * Areas): a store serving several cities needs one code per city.
  */
 export const updateAdminStoreSettings = async (
   req: Request,
@@ -286,9 +281,6 @@ export const updateAdminStoreSettings = async (
     const updated = await prisma.stores.update({
       where: { id: storeId },
       data: {
-        ...(settings.locationCode !== undefined
-          ? { locationCode: normalizeLocationCode(settings.locationCode) }
-          : {}),
         ...(settings.codAutoAcceptLimit !== undefined
           ? { codAutoAcceptLimit: settings.codAutoAcceptLimit }
           : {}),

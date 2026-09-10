@@ -2,6 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { prismaMongo as prisma } from "@repo/db-mongo";
 import { ValidationError } from "@repo/error-handlers";
 import { storeSchema, updateStoreSchema, validate } from "@repo/zod-schema";
+import {
+  normalizeCityLocationCodes,
+  normalizeLocationCode,
+} from "@repo/shared/order-id";
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
@@ -154,14 +158,24 @@ export const updateStore = async (
     }
     const servicePincodes = Array.from(new Set(Object.values(areaPincodes)));
 
+    // Location codes drive this store's order/invoice numbers, so they are
+    // normalised here (3–4 letters, upper-cased) rather than trusted raw.
+    // Only touched when the client actually sends the field.
+    const locationCode =
+      validatedData.locationCode !== undefined
+        ? normalizeLocationCode(validatedData.locationCode || null)
+        : undefined;
+    const cityLocationCodes =
+      validatedData.cityLocationCodes !== undefined
+        ? normalizeCityLocationCodes(validatedData.cityLocationCodes)
+        : undefined;
+
     const updatedStore = await prisma.stores.update({
       where: { id: store.id },
       data: {
         ...validatedData,
-        // Never seller-settable, even if a client sends it: it is the middle
-        // segment of this store's order numbers. Admin-only, via
-        // updateAdminStoreSettings.
-        locationCode: undefined,
+        locationCode,
+        cityLocationCodes,
         name: validatedData.name || store.name,
         bio: validatedData.bio || store.bio,
         address: validatedData.address || store.address,

@@ -333,16 +333,22 @@ model stores {
   // office, not the delivery hub.
   invoiceJurisdiction String?
 
-  // Short location code for this store's human-facing order numbers, e.g.
-  // "NOI" for Noida — the middle segment of FS-NOI-30082026-001. Set by the
-  // admin rather than derived from `city`, because two cities can shorten to
-  // the same three letters and because a city rename must not silently change
-  // the numbers already printed on customers' invoices.
+  // This store's primary location code, e.g. "NOI" for Noida — the middle
+  // segment of its GST invoice numbers (FS/NOI/2026-27/00042) and the fallback
+  // for an order whose delivery city has no code of its own. Set by the seller
+  // (dashboard → Settings → Serviceable Areas), not derived from `city`,
+  // because two cities can shorten to the same letters and a city rename must
+  // not change numbers already printed on customers' invoices.
   //
-  // Null until an admin sets it: orders at such a store still go through, they
-  // just carry no orderNumber (see the note on Order.orderNumber in the
-  // Postgres schema).
+  // Null until set: orders at such a store still go through, they just carry no
+  // orderNumber (see the note on Order.orderNumber in the Postgres schema).
   locationCode       String?
+  // Per-city order-number codes, keyed by the registered city an order is
+  // delivered to: {"Greater Noida": "GRN", "Ghaziabad": "GZB"}. A store
+  // serving several cities issues FS-GRN-… and FS-GZB-… from one shop.
+  // Lookup is case-insensitive; falls back to locationCode. Order numbers
+  // only — invoice numbers always use locationCode.
+  cityLocationCodes  Json?
   // Cap above which a COD order needs the seller to phone the customer before
   // accepting. At or below it, and for any order already paid online, the
   // order is auto-accepted — the seller's Accept button exists for the risky

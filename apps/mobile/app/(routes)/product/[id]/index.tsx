@@ -5,7 +5,13 @@ import { useAddressStore } from "@/lib/address-store";
 import { trackProductView } from "@/actions/activity";
 import axiosInstance from "@/utils/axiosInstance";
 import { cloudinaryThumbnail } from "@/utils/cloudinary";
-import { computePerKgSalePrice, resolvePerKgPricing, resolveProductSizePricing } from "@/utils/pricing";
+import {
+  computePerKgSalePrice,
+  firstBuyableSize,
+  isSizeSoldOut,
+  resolvePerKgPricing,
+  resolveProductSizePricing,
+} from "@/utils/pricing";
 import { ProductBadges } from "@/components/home/badge";
 import AddToCartModal from "@/components/home/add-to-cart-modal";
 import FloatingCartBar from "@/components/shared/floating-cart-bar";
@@ -39,6 +45,7 @@ function PillSelector({
   onSelect,
   renderCaption,
   learnMore,
+  disabledOptions,
 }: {
   label: string;
   value: string;
@@ -46,6 +53,10 @@ function PillSelector({
   onSelect: (v: string) => void;
   renderCaption?: (option: string) => string | undefined;
   learnMore?: boolean;
+  // Options that are shown but not selectable (e.g. a sold-out pack size).
+  // Kept visible rather than removed so the shopper still sees the size
+  // exists — matching the web product page's disabled-not-hidden variants.
+  disabledOptions?: string[];
 }) {
   if (!options || options.length === 0) return null;
   return (
@@ -66,11 +77,13 @@ function PillSelector({
       <View className="flex-row flex-wrap" style={{ gap: 10 }}>
         {options.map((opt) => {
           const active = opt === value;
-          const caption = renderCaption?.(opt);
+          const disabled = disabledOptions?.includes(opt) ?? false;
+          const caption = disabled ? "Out of stock" : renderCaption?.(opt);
           return (
             <TouchableOpacity
               key={opt}
               onPress={() => onSelect(opt)}
+              disabled={disabled}
               activeOpacity={0.8}
               style={{
                 minWidth: 78,
@@ -79,15 +92,21 @@ function PillSelector({
                 borderRadius: 14,
                 borderWidth: active ? 1.5 : 1,
                 borderColor: active ? "#5A2C96" : "#E5E7EB",
-                backgroundColor: active ? "#F3EEFB" : "#FFFFFF",
+                backgroundColor: disabled
+                  ? "#F3F4F6"
+                  : active
+                    ? "#F3EEFB"
+                    : "#FFFFFF",
                 alignItems: "center",
+                opacity: disabled ? 0.55 : 1,
               }}
             >
               <Text
                 style={{
                   fontFamily: active ? "Inter-Bold" : "Inter-SemiBold",
                   fontSize: 13,
-                  color: active ? "#5A2C96" : "#1A1C1C",
+                  color: disabled ? "#9CA3AF" : active ? "#5A2C96" : "#1A1C1C",
+                  textDecorationLine: disabled ? "line-through" : "none",
                 }}
               >
                 {opt}
@@ -97,7 +116,11 @@ function PillSelector({
                   style={{
                     fontFamily: "Inter-Regular",
                     fontSize: 11,
-                    color: active ? "#5A2C96" : "#898B8A",
+                    color: disabled
+                      ? "#9CA3AF"
+                      : active
+                        ? "#5A2C96"
+                        : "#898B8A",
                     marginTop: 1,
                   }}
                 >
@@ -169,7 +192,15 @@ export default function ProductDetailScreen() {
     if (!product) return;
     setSelectedCutting(product.cuttingTypes?.[0] || "");
     setSelectedPieceSize(product.pieceSizes?.[0] || "");
-    setSelectedSize(product.weight || product.sizes?.[0] || "");
+    // Open on the first size that can actually be bought — landing on a
+    // sold-out default means the shopper starts on a disabled option and a
+    // dead "Add to Cart" button.
+    setSelectedSize(
+      firstBuyableSize(product.sizeAvailability) ||
+        product.weight ||
+        product.sizes?.[0] ||
+        "",
+    );
     setQuantity(1);
     setRemovedBundleIds(new Set());
   }, [product]);
@@ -180,6 +211,12 @@ export default function ProductDetailScreen() {
   );
 
   const isWeightAdjustable = selected.weightGrams > 0;
+  // Per-size stock from the storefront payload. `isSizeSoldOut` only reports
+  // true when the API positively says so, so an older cached payload without
+  // the list leaves every size selectable and validate-cart stays the backstop.
+  const selectedSizeSoldOut =
+    (product?.sizes?.length ?? 0) > 0 &&
+    isSizeSoldOut(product?.sizeAvailability, selectedSize);
   const isPerKgMode =
     (product?.sizes?.length ?? 0) === 0 &&
     ((product?.cuttingTypes?.length ?? 0) > 0 ||
@@ -349,6 +386,10 @@ export default function ProductDetailScreen() {
   const handleAddToCart = () => {
     if (!user) { toast.error("Please login to add items to cart"); return; }
     if (!product) return;
+    if (selectedSizeSoldOut) {
+      toast.error("This size is out of stock — pick another");
+      return;
+    }
     addCurrentToCart();
     toast.success("Added to cart!");
   };
@@ -622,6 +663,9 @@ export default function ProductDetailScreen() {
             label="Select Weight"
             value={selectedSize}
             options={normalizedPricing.map((e) => e.size)}
+            disabledOptions={normalizedPricing
+              .map((e) => e.size)
+              .filter((size) => isSizeSoldOut(product?.sizeAvailability, size))}
             onSelect={setSelectedSize}
             renderCaption={(opt) => {
               const entry = normalizedPricing.find((e) => e.size === opt);
@@ -1189,8 +1233,11 @@ export default function ProductDetailScreen() {
           </Text>
         </View>
         <TouchableOpacity
-          className="flex-row items-center bg-primary rounded-2xl px-8 py-4"
+          className={`flex-row items-center rounded-2xl px-8 py-4 ${
+            selectedSizeSoldOut ? "bg-gray-300" : "bg-primary"
+          }`}
           onPress={handleAddToCart}
+          disabled={selectedSizeSoldOut}
           activeOpacity={0.85}
         >
           <Ionicons name="cart-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
@@ -1201,7 +1248,7 @@ export default function ProductDetailScreen() {
               fontWeight: Platform.OS === "android" ? "700" : "normal",
             }}
           >
-            Add to Cart
+            {selectedSizeSoldOut ? "Out of Stock" : "Add to Cart"}
           </Text>
         </TouchableOpacity>
       </View>

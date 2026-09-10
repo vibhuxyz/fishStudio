@@ -240,6 +240,7 @@ exports.Prisma.StoresScalarFieldEnum = {
   registeredAddress: 'registeredAddress',
   invoiceJurisdiction: 'invoiceJurisdiction',
   locationCode: 'locationCode',
+  cityLocationCodes: 'cityLocationCodes',
   codAutoAcceptLimit: 'codAutoAcceptLimit',
   maxConcurrentDeliveries: 'maxConcurrentDeliveries',
   attendanceGeofenceMeters: 'attendanceGeofenceMeters',

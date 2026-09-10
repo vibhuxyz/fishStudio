@@ -521,7 +521,6 @@ export const useUpdateSellerApproval = () => {
 export type AdminStoreSettingsPayload = {
   storeId: string;
   sellerId: string;
-  locationCode?: string | null;
   codAutoAcceptLimit?: number | null;
   legalName?: string | null;
   gstin?: string | null;

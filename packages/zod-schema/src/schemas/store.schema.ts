@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+/** A store/city location code: 3–4 letters (NOI, GRN, GZB). "" clears it. */
+const locationCodeField = z
+  .string()
+  .regex(/^[A-Za-z]{3,4}$/, "Location code must be 3–4 letters")
+  .nullable()
+  .optional()
+  .or(z.literal(""));
+
 export const storeSchema = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().min(1, "Bio is required"),
@@ -65,6 +73,22 @@ export const storeSchema = z.object({
   state: z.string().optional(),
   sellerId: z.string().optional(),
 
+  // The store's primary location code — the middle segment of its GST invoice
+  // numbers (FS/NOI/2026-27/00042) and the fallback for an order whose
+  // delivery city has no code of its own. Seller-set: it belongs with the
+  // rest of this store's operational config, not on the admin surface.
+  locationCode: locationCodeField,
+  // Per-city order-number codes, keyed by the registered city an order is
+  // delivered to: { "Greater Noida": "GRN", "Ghaziabad": "GZB" }. A store
+  // serving several cities issues FS-GRN-… and FS-GZB-… from the same shop.
+  // Only order numbers vary by city; invoice numbers stay on locationCode.
+  cityLocationCodes: z
+    .record(
+      z.string().min(1),
+      z.string().regex(/^[A-Za-z]{3,4}$/, "Location code must be 3–4 letters"),
+    )
+    .optional(),
+
   // Support / Contact Configuration — shown to customers on order-detail
   // screens (Call Support / Chat on WhatsApp).
   supportPhone: z.string().optional(),
@@ -85,17 +109,11 @@ export const updateStoreSchema = storeSchema.partial().refine(
 /**
  * Store settings only an admin may change.
  *
- * `locationCode` is deliberately not in storeSchema above: it is the middle
- * segment of every order number this store issues (FS-NOI-30082026-001), so a
- * seller editing it would renumber their own invoices. It is set once, centrally.
+ * Location codes moved to storeSchema / the seller dashboard — a store serving
+ * several cities needs a code per city, and that registry is the seller's to
+ * keep. What remains here is compliance data the platform owns.
  */
 export const adminStoreSettingsSchema = z.object({
-  locationCode: z
-    .string()
-    .max(4, "Location code max 4 letters")
-    .regex(/^[A-Za-z]*$/, "Letters only")
-    .nullable()
-    .optional(),
   codAutoAcceptLimit: z.number().min(0).nullable().optional(),
 
   // ── Tax invoice identity ──────────────────────────────────────────────

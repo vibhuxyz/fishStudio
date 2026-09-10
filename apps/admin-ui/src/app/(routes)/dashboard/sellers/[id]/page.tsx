@@ -43,16 +43,15 @@ const SellerDetailPage = () => {
 
   // Seeded from the store once it loads, then owned by the form. `??` not `||`
   // so a deliberate 0 limit (every COD order needs a call) isn't read as unset.
-  const storeLocationCode = seller?.store?.locationCode ?? "";
   const storeCodLimit = seller?.store?.codAutoAcceptLimit;
-  const [locationCodeInput, setLocationCodeInput] = useState<string | null>(null);
   const [codLimitInput, setCodLimitInput] = useState<string | null>(null);
   const storeSettingsMutation = useUpdateAdminStoreSettings();
 
-  const locationCodeValue = locationCodeInput ?? storeLocationCode;
+  // Order/invoice location codes moved to the seller dashboard — a store
+  // serving several cities needs one per city. Shown read-only below.
+  const storeLocationCode = seller?.store?.locationCode ?? "";
   const codLimitValue = codLimitInput ?? (storeCodLimit != null ? String(storeCodLimit) : "");
   const storeSettingsDirty =
-    locationCodeValue !== storeLocationCode ||
     codLimitValue !== (storeCodLimit != null ? String(storeCodLimit) : "");
 
   // Tax invoice identity. Same seed-from-server-then-own-it pattern as the
@@ -93,16 +92,11 @@ const SellerDetailPage = () => {
       {
         storeId,
         sellerId,
-        // Empty clears the code rather than being skipped — that is how an
-        // admin removes one they set by mistake.
-        locationCode: locationCodeValue.trim() || null,
         codAutoAcceptLimit: trimmedLimit === "" ? null : Number(trimmedLimit),
       },
       {
         onSuccess: () => {
-          // Hand ownership back to the server copy so the form reflects what
-          // was actually stored (the code is normalised server-side).
-          setLocationCodeInput(null);
+          // Hand ownership back to the server copy.
           setCodLimitInput(null);
         },
       },
@@ -346,7 +340,8 @@ const SellerDetailPage = () => {
                 </div>
               </div>
 
-              {/* Order numbering & COD policy — admin-only store settings */}
+              {/* COD policy — admin-only store setting. Location codes are the
+                  seller's (dashboard → Settings → Serviceable Areas). */}
               {seller.store?.id && (
                 <div className="mt-6 pt-6 border-t border-gray-800">
                   <h4 className="mb-4 text-sm font-semibold text-slate-400 uppercase tracking-wider">
@@ -354,23 +349,29 @@ const SellerDetailPage = () => {
                   </h4>
                   <div className="bg-slate-950/50 p-4 rounded-lg border border-gray-800 space-y-4">
                     <div>
-                      <label htmlFor="locationCode" className="block text-sm font-medium text-white">
+                      <span className="block text-sm font-medium text-white">
                         Location code
-                      </label>
+                        {storeLocationCode.trim().length === 0 && (
+                          <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
+                            Not set
+                          </span>
+                        )}
+                      </span>
                       <p className="mt-1 text-xs text-slate-400">
-                        Used in this store&apos;s order numbers, e.g.{" "}
-                        <span className="font-mono text-slate-300">
-                          FS-{locationCodeValue.toUpperCase() || "NOI"}-30082026-001
-                        </span>
-                        . Letters only. Existing orders keep the number they were issued.
+                        {storeLocationCode.trim()
+                          ? (
+                            <>
+                              Primary code:{" "}
+                              <span className="font-mono text-slate-300">
+                                {storeLocationCode.toUpperCase()}
+                              </span>
+                              {" "}(GST invoices &amp; order-number fallback).
+                            </>
+                          )
+                          : "This store issues no sequential order numbers yet."}{" "}
+                        Set in the seller dashboard → Settings → Serviceable Areas
+                        (a code per serviceable city). Read-only here.
                       </p>
-                      <input
-                        id="locationCode"
-                        value={locationCodeValue}
-                        onChange={(e) => setLocationCodeInput(e.target.value.replace(/[^A-Za-z]/g, "").slice(0, 4))}
-                        placeholder="NOI"
-                        className="mt-2 w-32 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 font-mono uppercase text-white outline-none focus:border-blue-500"
-                      />
                     </div>
 
                     <div>

@@ -10387,6 +10387,7 @@ export namespace Prisma {
     registeredAddress: number
     invoiceJurisdiction: number
     locationCode: number
+    cityLocationCodes: number
     codAutoAcceptLimit: number
     maxConcurrentDeliveries: number
     attendanceGeofenceMeters: number
@@ -10550,6 +10551,7 @@ export namespace Prisma {
     registeredAddress?: true
     invoiceJurisdiction?: true
     locationCode?: true
+    cityLocationCodes?: true
     codAutoAcceptLimit?: true
     maxConcurrentDeliveries?: true
     attendanceGeofenceMeters?: true
@@ -10686,6 +10688,7 @@ export namespace Prisma {
     registeredAddress: string | null
     invoiceJurisdiction: string | null
     locationCode: string | null
+    cityLocationCodes: JsonValue | null
     codAutoAcceptLimit: number | null
     maxConcurrentDeliveries: number | null
     attendanceGeofenceMeters: number | null
@@ -10754,6 +10757,7 @@ export namespace Prisma {
     registeredAddress?: boolean
     invoiceJurisdiction?: boolean
     locationCode?: boolean
+    cityLocationCodes?: boolean
     codAutoAcceptLimit?: boolean
     maxConcurrentDeliveries?: boolean
     attendanceGeofenceMeters?: boolean
@@ -10810,6 +10814,7 @@ export namespace Prisma {
     registeredAddress?: boolean
     invoiceJurisdiction?: boolean
     locationCode?: boolean
+    cityLocationCodes?: boolean
     codAutoAcceptLimit?: boolean
     maxConcurrentDeliveries?: boolean
     attendanceGeofenceMeters?: boolean
@@ -10877,6 +10882,7 @@ export namespace Prisma {
       registeredAddress: string | null
       invoiceJurisdiction: string | null
       locationCode: string | null
+      cityLocationCodes: Prisma.JsonValue | null
       codAutoAcceptLimit: number | null
       maxConcurrentDeliveries: number | null
       attendanceGeofenceMeters: number | null
@@ -11320,6 +11326,7 @@ export namespace Prisma {
     readonly registeredAddress: FieldRef<"stores", 'String'>
     readonly invoiceJurisdiction: FieldRef<"stores", 'String'>
     readonly locationCode: FieldRef<"stores", 'String'>
+    readonly cityLocationCodes: FieldRef<"stores", 'Json'>
     readonly codAutoAcceptLimit: FieldRef<"stores", 'Float'>
     readonly maxConcurrentDeliveries: FieldRef<"stores", 'Int'>
     readonly attendanceGeofenceMeters: FieldRef<"stores", 'Int'>
@@ -22288,6 +22295,7 @@ export namespace Prisma {
     registeredAddress: 'registeredAddress',
     invoiceJurisdiction: 'invoiceJurisdiction',
     locationCode: 'locationCode',
+    cityLocationCodes: 'cityLocationCodes',
     codAutoAcceptLimit: 'codAutoAcceptLimit',
     maxConcurrentDeliveries: 'maxConcurrentDeliveries',
     attendanceGeofenceMeters: 'attendanceGeofenceMeters',
@@ -23369,6 +23377,7 @@ export namespace Prisma {
     registeredAddress?: StringNullableFilter<"stores"> | string | null
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
+    cityLocationCodes?: JsonNullableFilter<"stores">
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
     attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
@@ -23423,6 +23432,7 @@ export namespace Prisma {
     registeredAddress?: SortOrder
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
+    cityLocationCodes?: SortOrder
     codAutoAcceptLimit?: SortOrder
     maxConcurrentDeliveries?: SortOrder
     attendanceGeofenceMeters?: SortOrder
@@ -23481,6 +23491,7 @@ export namespace Prisma {
     registeredAddress?: StringNullableFilter<"stores"> | string | null
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
+    cityLocationCodes?: JsonNullableFilter<"stores">
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
     attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
@@ -23534,6 +23545,7 @@ export namespace Prisma {
     registeredAddress?: SortOrder
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
+    cityLocationCodes?: SortOrder
     codAutoAcceptLimit?: SortOrder
     maxConcurrentDeliveries?: SortOrder
     attendanceGeofenceMeters?: SortOrder
@@ -23591,6 +23603,7 @@ export namespace Prisma {
     registeredAddress?: StringNullableWithAggregatesFilter<"stores"> | string | null
     invoiceJurisdiction?: StringNullableWithAggregatesFilter<"stores"> | string | null
     locationCode?: StringNullableWithAggregatesFilter<"stores"> | string | null
+    cityLocationCodes?: JsonNullableWithAggregatesFilter<"stores">
     codAutoAcceptLimit?: FloatNullableWithAggregatesFilter<"stores"> | number | null
     maxConcurrentDeliveries?: IntNullableWithAggregatesFilter<"stores"> | number | null
     attendanceGeofenceMeters?: IntNullableWithAggregatesFilter<"stores"> | number | null
@@ -25352,6 +25365,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -25405,6 +25419,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -25455,6 +25470,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25507,6 +25523,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25559,6 +25576,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -25606,6 +25624,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -25653,6 +25672,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -27672,6 +27692,7 @@ export namespace Prisma {
     registeredAddress?: SortOrder
     invoiceJurisdiction?: SortOrder
     locationCode?: SortOrder
+    cityLocationCodes?: SortOrder
     codAutoAcceptLimit?: SortOrder
     maxConcurrentDeliveries?: SortOrder
     attendanceGeofenceMeters?: SortOrder
@@ -30763,6 +30784,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -30814,6 +30836,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -31095,6 +31118,7 @@ export namespace Prisma {
     registeredAddress?: StringNullableFilter<"stores"> | string | null
     invoiceJurisdiction?: StringNullableFilter<"stores"> | string | null
     locationCode?: StringNullableFilter<"stores"> | string | null
+    cityLocationCodes?: JsonNullableFilter<"stores">
     codAutoAcceptLimit?: FloatNullableFilter<"stores"> | number | null
     maxConcurrentDeliveries?: IntNullableFilter<"stores"> | number | null
     attendanceGeofenceMeters?: IntNullableFilter<"stores"> | number | null
@@ -31719,6 +31743,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -31771,6 +31796,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -31986,6 +32012,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -32037,6 +32064,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -32187,6 +32215,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -32239,6 +32268,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -32380,6 +32410,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -32431,6 +32462,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -33596,6 +33628,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -33648,6 +33681,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -34030,6 +34064,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -34081,6 +34116,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -34525,6 +34561,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -34577,6 +34614,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -34642,6 +34680,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -34693,6 +34732,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -35107,6 +35147,7 @@ export namespace Prisma {
     registeredAddress?: string | null
     invoiceJurisdiction?: string | null
     locationCode?: string | null
+    cityLocationCodes?: InputJsonValue | null
     codAutoAcceptLimit?: number | null
     maxConcurrentDeliveries?: number | null
     attendanceGeofenceMeters?: number | null
@@ -35220,6 +35261,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -35270,6 +35312,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null
@@ -35320,6 +35363,7 @@ export namespace Prisma {
     registeredAddress?: NullableStringFieldUpdateOperationsInput | string | null
     invoiceJurisdiction?: NullableStringFieldUpdateOperationsInput | string | null
     locationCode?: NullableStringFieldUpdateOperationsInput | string | null
+    cityLocationCodes?: InputJsonValue | InputJsonValue | null
     codAutoAcceptLimit?: NullableFloatFieldUpdateOperationsInput | number | null
     maxConcurrentDeliveries?: NullableIntFieldUpdateOperationsInput | number | null
     attendanceGeofenceMeters?: NullableIntFieldUpdateOperationsInput | number | null

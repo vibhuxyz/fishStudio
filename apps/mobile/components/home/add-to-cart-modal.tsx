@@ -243,7 +243,11 @@ export default function AddToCartModal({
     return parseFloat((resolved.salePrice * quantity).toFixed(2));
   }, [isPerKgMode, perKgPricing, perKgWeightGrams, resolved.salePrice, quantity]);
 
-  const isOutOfStock = product?.stock === 0;
+  // Either the whole product has no stock, or the size the shopper has
+  // landed on is sold out — both should block the add and grey the button.
+  const isOutOfStock =
+    product?.stock === 0 ||
+    (hasSizes && !!selectedSize && soldOutSizes.includes(selectedSize));
   const hasDiscount =
     resolved.regularPrice > resolved.salePrice && resolved.regularPrice > 0;
   const discountPct = hasDiscount

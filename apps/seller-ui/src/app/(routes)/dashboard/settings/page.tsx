@@ -253,6 +253,16 @@ export default function SettingsPage() {
   const [newRegistryCity, setNewRegistryCity] = useState("");
   const [newRegistryPincode, setNewRegistryPincode] = useState("");
 
+  // Order-number location codes. `primaryLocationCode` is the store's own code
+  // (GST invoices + fallback); `cityCodes` maps a registered city to the code
+  // its orders are numbered under, so one store can issue FS-GRN-… and FS-GZB-…
+  const [primaryLocationCode, setPrimaryLocationCode] = useState("");
+  const [cityCodes, setCityCodes] = useState<Record<string, string>>({});
+  const savedLocationCodesRef = useRef<{ primary: string; city: Record<string, string> }>({
+    primary: "",
+    city: {},
+  });
+
   // Step 2 — attach an area to one of the registered combos above.
   const [newCity, setNewCity] = useState("");
   const [selectedCityPincode, setSelectedCityPincode] = useState("");
@@ -348,9 +358,29 @@ export default function SettingsPage() {
     setStoreLongitude(lng);
     savedCoordsRef.current = { lat, lng };
     setCityPincodes(registry);
+
+    const primaryCode = (store.locationCode ?? "").toUpperCase();
+    const storedCityCodes = Object.fromEntries(
+      Object.entries((store.cityLocationCodes as Record<string, string> | null) ?? {}).map(
+        ([city, code]) => [city, String(code).toUpperCase()],
+      ),
+    );
+    setPrimaryLocationCode(primaryCode);
+    setCityCodes(storedCityCodes);
+    savedLocationCodesRef.current = { primary: primaryCode, city: storedCityCodes };
+
     savedFormRef.current = loaded;
     savedCitiesRef.current = cities;
   }, [seller]);
+
+  // The distinct registered cities orders can be delivered to — each can carry
+  // its own order-number code.
+  const registeredCities = Array.from(
+    new Set(cityPincodes.map((cp) => cp.city.trim()).filter(Boolean)),
+  );
+  const invalidLocationCode = [primaryLocationCode, ...Object.values(cityCodes)].some(
+    (c) => c.trim().length > 0 && !/^[A-Za-z]{3,4}$/.test(c.trim()),
+  );
 
   // Step 1 — register a city+pincode combo, reused below when adding areas.
   const handleAddCityPincode = () => {
@@ -437,6 +467,27 @@ export default function SettingsPage() {
       });
     }
 
+    const codesLabel = (primary: string, city: Record<string, string>) => {
+      const parts = [primary ? `Primary ${primary}` : "Primary —"];
+      Object.entries(city).forEach(([c, code]) => parts.push(`${c} ${code}`));
+      return parts.join(", ");
+    };
+    const beforeCodes = codesLabel(
+      savedLocationCodesRef.current.primary,
+      savedLocationCodesRef.current.city,
+    );
+    const afterCodes = codesLabel(
+      primaryLocationCode.trim().toUpperCase(),
+      Object.fromEntries(
+        registeredCities
+          .map((c) => [c, (cityCodes[c] ?? "").trim().toUpperCase()])
+          .filter(([, v]) => v),
+      ),
+    );
+    if (beforeCodes !== afterCodes) {
+      formDiff.push({ field: "Order Number Codes", before: beforeCodes, after: afterCodes });
+    }
+
     const beforeCities = citiesLabel(savedCitiesRef.current);
     const afterCities  = citiesLabel(cityDeliveries);
     const citiesDiff   = beforeCities !== afterCities ? { before: beforeCities, after: afterCities } : null;
@@ -457,6 +508,7 @@ export default function SettingsPage() {
       toast.error(`Set a city & 6-digit pincode for: ${incompleteAreas.join(", ")}`);
       return;
     }
+    if (invalidLocationCode) { toast.error("Location codes must be 3–4 letters"); return; }
     setShowModal(true);
   };
 
@@ -490,6 +542,13 @@ export default function SettingsPage() {
           cityDeliveryTimes: cityDeliveryTimesMap,
           areaPincodes: areaPincodesMap,
           areaCities: areaCitiesMap,
+          locationCode: primaryLocationCode.trim().toUpperCase() || null,
+          // Only codes for cities still in the registry, non-empty ones.
+          cityLocationCodes: Object.fromEntries(
+            registeredCities
+              .map((city) => [city, (cityCodes[city] ?? "").trim().toUpperCase()])
+              .filter(([, code]) => code),
+          ),
         },
         isProtected,
       );
@@ -499,6 +558,14 @@ export default function SettingsPage() {
         savedMaxDeliveriesRef.current = maxConcurrentDeliveries;
         savedGeofenceRef.current = attendanceGeofenceMeters;
         savedCoordsRef.current = { lat: storeLatitude, lng: storeLongitude };
+        savedLocationCodesRef.current = {
+          primary: primaryLocationCode.trim().toUpperCase(),
+          city: Object.fromEntries(
+            registeredCities
+              .map((c) => [c, (cityCodes[c] ?? "").trim().toUpperCase()])
+              .filter(([, v]) => v),
+          ),
+        };
         toast.success("Settings updated successfully!");
         // Refetch the full seller record so useEffect repopulates the form
         // with exactly what is stored in the DB (includes all fields).
@@ -1004,6 +1071,62 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Order-number codes — one per registered city, plus the
+                  store's primary code for GST invoices. */}
+              <div className="col-span-2 space-y-2 rounded-lg border border-gray-700 bg-gray-900/40 p-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-300">
+                    Order Number Codes
+                  </label>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    Orders are numbered <span className="font-mono text-gray-300">FS-CODE-DDMMYYYY-001</span>{" "}
+                    using the code for the delivery city. Existing orders keep the number they were issued.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-gray-400">
+                    Primary code — used on GST invoices &amp; when a city has no code
+                  </span>
+                  <input
+                    type="text"
+                    value={primaryLocationCode}
+                    onChange={(e) =>
+                      setPrimaryLocationCode(e.target.value.replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase())
+                    }
+                    placeholder="NOI"
+                    className="w-32 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 font-mono uppercase text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                {registeredCities.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <span className="text-xs font-medium text-gray-400">Per city</span>
+                    {registeredCities.map((city) => (
+                      <div key={city} className="flex items-center gap-3">
+                        <span className="flex-1 text-sm text-gray-200">{city}</span>
+                        <input
+                          type="text"
+                          value={cityCodes[city] ?? ""}
+                          onChange={(e) =>
+                            setCityCodes((prev) => ({
+                              ...prev,
+                              [city]: e.target.value.replace(/[^A-Za-z]/g, "").slice(0, 4).toUpperCase(),
+                            }))
+                          }
+                          placeholder={primaryLocationCode || "GRN"}
+                          className="w-32 rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 font-mono uppercase text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {invalidLocationCode && (
+                  <p className="text-xs text-red-400">Each code must be 3–4 letters.</p>
+                )}
               </div>
 
               {/* Step 2 — attach an area to one of the registered combos above */}

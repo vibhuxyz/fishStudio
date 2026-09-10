@@ -56,6 +56,54 @@ export function normalizeLocationCode(raw: string | null | undefined): string | 
 }
 
 /**
+ * Clean a seller-entered { city -> code } map: trim keys, normalise codes,
+ * drop any entry whose code doesn't survive normalisation. The stored shape is
+ * always keyed by the exact registered city string; lookup (below) is
+ * case-insensitive so a delivery address's casing doesn't matter.
+ */
+export function normalizeCityLocationCodes(
+  raw: Record<string, unknown> | null | undefined,
+): Record<string, string> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [city, code] of Object.entries(raw)) {
+    const key = String(city).trim();
+    const normalized = normalizeLocationCode(
+      typeof code === "string" ? code : null,
+    );
+    if (key && normalized) out[key] = normalized;
+  }
+  return out;
+}
+
+/**
+ * The location code an order should be numbered under: the code for its
+ * delivery city when the store has set one, else the store's primary code,
+ * else null (order still goes through, just without a sequential number).
+ *
+ * Only order numbers vary by city. Invoice numbers always use
+ * store.locationCode directly — GST numbering is per registered entity.
+ */
+export function resolveOrderLocationCode(
+  store: {
+    locationCode?: string | null;
+    cityLocationCodes?: unknown;
+  },
+  deliveryCity: string | null | undefined,
+): string | null {
+  const city = (deliveryCity ?? "").trim().toLowerCase();
+  if (city) {
+    const map = normalizeCityLocationCodes(
+      store.cityLocationCodes as Record<string, unknown> | null | undefined,
+    );
+    for (const [key, code] of Object.entries(map)) {
+      if (key.toLowerCase() === city) return code;
+    }
+  }
+  return normalizeLocationCode(store.locationCode);
+}
+
+/**
  * Assemble an order number from its parts: FS-NOI-30082026-001.
  *
  * The counter is zero-padded to three digits for readability but deliberately

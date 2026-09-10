@@ -27,7 +27,7 @@ import {
   ProductPieceSizePricing,
   PLACED_ORDER_STATUSES,
 } from "@repo/shared/pricing";
-import { displayOrderNumber } from "@repo/shared/order-id";
+import { displayOrderNumber, resolveOrderLocationCode } from "@repo/shared/order-id";
 import {
   deliveryDateKey,
   isSlotStillOffered,
@@ -816,7 +816,7 @@ async function resolveOrderNotifyTargets(
 async function createCheckoutSessionForCheckout(params: {
   userId: string;
   storeId: string;
-  store: { locationCode: string | null };
+  store: { locationCode: string | null; cityLocationCodes?: unknown };
   reservationId: string;
   items: Array<{ productId: string; quantity: number; selectedOptions?: Record<string, unknown> }>;
   productMap: Map<string, { catalogProductId?: string | null }>;
@@ -850,7 +850,12 @@ async function createCheckoutSessionForCheckout(params: {
 }) {
   const snapshot: CheckoutSnapshotPayload = {
     storeId: params.storeId,
-    storeLocationCode: params.store.locationCode,
+    // Resolve the per-city code now, while the delivery city is in hand, so
+    // finalisation (which has only the snapshot) needs no extra lookup.
+    storeLocationCode: resolveOrderLocationCode(
+      params.store,
+      params.deliveryDetails.city,
+    ),
     userName: params.userName,
     items: params.items.map((item, idx) => ({
       productId: item.productId,
@@ -1334,6 +1339,7 @@ export const createOrder = async (
           base_delivery_charge: true,
           free_delivery_threshold: true,
           locationCode: true,
+          cityLocationCodes: true,
           codAutoAcceptLimit: true,
           deliverySlotConfig: true,
           seller: { select: { name: true } },
@@ -1769,7 +1775,13 @@ export const createOrder = async (
         // Allocated inside the order transaction so a rolled-back checkout
         // never burns a number, leaving a visible gap in the day's sequence
         // that a seller would have to explain.
-        const orderNumber = await allocateOrderNumber(tx, store.locationCode);
+        // Per-city: an order delivered to Ghaziabad is numbered FS-GZB-… even
+        // though the shop is registered in Noida. Falls back to the store's
+        // primary code when the delivery city has none.
+        const orderNumber = await allocateOrderNumber(
+          tx,
+          resolveOrderLocationCode(store, deliveryDetails.city),
+        );
 
         // Inside the transaction for the same reason the number is: if
         // anything below fails, the place goes back on its own rather than
