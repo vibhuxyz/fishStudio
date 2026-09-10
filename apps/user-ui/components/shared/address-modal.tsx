@@ -98,6 +98,7 @@ export function AddressModal({
   const [view, setView] = useState<ModalView>("list");
   const [pincode, setPincode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [detecting, setDetecting] = useState(false);
   const [pincodeError, setPincodeError] = useState("");
 
   /** Select a saved address and resolve its store for product/banner filtering */
@@ -291,8 +292,8 @@ export function AddressModal({
     setLocationSearchQuery("");
   };
 
-  const handleCheckPincode = async () => {
-    if (pincode.length !== 6) {
+  const handleCheckPincode = async (code: string = pincode) => {
+    if (code.length !== 6) {
       setPincodeError("Please enter a valid 6-digit pincode");
       return;
     }
@@ -304,7 +305,7 @@ export function AddressModal({
     setServiceablePincodes([]);
 
     try {
-      const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${pincode}`);
+      const res = await axiosInstance.get(`/auth/api/check-pincode?pincode=${code}`);
       const data = res.data;
 
       if (data.success && data.store) {
@@ -326,6 +327,41 @@ export function AddressModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      toast.info("Location detection not available. Please enter pincode.");
+      return;
+    }
+    setDetecting(true);
+    setPincodeError("");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const result = await geocodingProvider.reverseGeocodeDetailed({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+          const code = result?.postalCode?.replace(/\D/g, "") ?? "";
+          if (code.length !== 6) {
+            toast.info("Couldn't determine your pincode. Please enter it manually.");
+            return;
+          }
+          handlePincodeInput(code);
+          handleCheckPincode(code);
+        } catch (_) {
+          toast.error("Couldn't detect your location. Please enter pincode.");
+        } finally {
+          setDetecting(false);
+        }
+      },
+      () => {
+        setDetecting(false);
+        toast.info("Location permission denied. Please enter pincode.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const handleSelectCity = (city: string) => {
@@ -565,7 +601,7 @@ export function AddressModal({
                       />
                       <Button
                         className="h-12 bg-offer-green px-5 text-white hover:bg-offer-green/90 font-bold"
-                        onClick={handleCheckPincode}
+                        onClick={() => handleCheckPincode()}
                         disabled={pincode.length !== 6 || loading}
                       >
                         {loading ? "Checking..." : "Check"}
@@ -576,11 +612,12 @@ export function AddressModal({
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-offer-green px-4 py-3 text-sm font-semibold text-white transition hover:bg-offer-green/90"
-                        onClick={() => toast.info("Location detection not available. Please enter pincode.")}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-offer-green px-4 py-3 text-sm font-semibold text-white transition hover:bg-offer-green/90 disabled:opacity-60"
+                        onClick={handleDetectLocation}
+                        disabled={detecting || loading}
                       >
                         <Navigation className="h-4 w-4" />
-                        Detect my location
+                        {detecting ? "Detecting..." : "Detect my location"}
                       </button>
                       <span className="text-xs font-medium text-muted-foreground">OR</span>
                       <button
