@@ -47,4 +47,6 @@ export interface AuthenticatedRequest extends Request {
   seller?: AuthSeller;
   staff?: AuthStaff;
   user?: AuthUser;
+  // Present only for "user"-role, multi-device sessions.
+  sid?: string;
 }

@@ -50,6 +50,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "^12.38.0",
+    "html2pdf.js": "^0.14.0",
     "input-otp": "1.4.1",
     "isomorphic-dompurify": "^3.19.0",
     "leaflet": "^1.9.4",

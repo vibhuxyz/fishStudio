@@ -52,6 +52,10 @@
     "./geo": {
       "types": "./dist/geo/index.d.ts",
       "default": "./dist/geo/index.js"
+    },
+    "./invoice-html": {
+      "types": "./dist/invoice-html/index.d.ts",
+      "default": "./dist/invoice-html/index.js"
     }
   },
   "scripts": {

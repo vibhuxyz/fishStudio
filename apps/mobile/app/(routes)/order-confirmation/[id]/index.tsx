@@ -27,6 +27,7 @@ import { colors, gradients } from "@/constants/theme";
 import { formatDeliveryDateLabel, getScheduledDeliveryDate } from "@/constants/delivery-slots";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
 import OrderConfirmationSkeleton from "@/components/skelton/order-confirmation.skelton";
+import { useDownloadInvoice } from "@/hooks/useDownloadInvoice";
 import { displayOrderNumber } from "@repo/shared/order-id";
 import { buildWhatsAppUrl, fillWhatsAppTemplate } from "@repo/shared/whatsapp";
 
@@ -66,6 +67,7 @@ export default function OrderConfirmationScreen() {
   const { order, isLoading } = useLiveOrder(id);
   const insets = useSafeAreaInsets();
   const [supportModalVisible, setSupportModalVisible] = useState(false);
+  const { downloadInvoice, isPreparingInvoice } = useDownloadInvoice();
 
   if (isLoading || !order) {
     return (
@@ -149,34 +151,7 @@ export default function OrderConfirmationScreen() {
     }
   };
 
-  // No PDF library on mobile — the native share sheet doubles as "view/save invoice".
-  const handleViewInvoice = async () => {
-    const lines = (order.items || [])
-      .map(
-        (item: any) =>
-          `• ${item.product?.title || "Product"} ×${item.quantity}  ₹${(item.price * item.quantity).toFixed(0)}`,
-      )
-      .join("\n");
-    const invoice =
-      `FISH STUDIO — Invoice #${shortId}\n` +
-      `${createdAt.toLocaleString("en-IN")}\n\n` +
-      `Deliver to:\n${order.deliveryName}\n${order.deliveryAddress}\n${order.deliveryCity} – ${order.deliveryPincode}\n\n` +
-      `Items:\n${lines}\n\n` +
-      `Item Total: ₹${itemTotal.toFixed(0)}\n` +
-      (deliveryCharge > 0 ? `Delivery: ₹${deliveryCharge.toFixed(0)}\n` : "Delivery: FREE\n") +
-      (slotExtraCharge > 0 ? `Express Delivery Fee: ₹${slotExtraCharge.toFixed(0)}\n` : "") +
-      (packagingCharge > 0 ? `Packaging Charge: ₹${packagingCharge.toFixed(0)}\n` : "") +
-      (gstAmount > 0 ? `Taxes (GST): ₹${gstAmount.toFixed(0)}\n` : "") +
-      (discount > 0 ? `Discount: −₹${discount.toFixed(0)}\n` : "") +
-      `Total Paid: ₹${order.totalAmount}\n` +
-      `Payment: ${paymentMethodLabel}\n\n` +
-      `Thank you for shopping with Fish Studio.`;
-    try {
-      await Share.share({ message: invoice });
-    } catch {
-      // user dismissed the sheet — ignore
-    }
-  };
+  const handleViewInvoice = () => downloadInvoice(order.id);
 
   return (
     <SafeAreaView edges={["bottom"]} style={{ flex: 1, backgroundColor: colors.secondaryBg }}>
@@ -487,11 +462,19 @@ export default function OrderConfirmationScreen() {
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <Text style={{ fontFamily: "Inter-Bold", fontSize: 15, color: colors.textPrimary }}>Payment Summary</Text>
-              <TouchableOpacity onPress={handleViewInvoice} style={{ flexDirection: "row", alignItems: "center" }}>
+              <TouchableOpacity
+                onPress={handleViewInvoice}
+                disabled={isPreparingInvoice}
+                style={{ flexDirection: "row", alignItems: "center", opacity: isPreparingInvoice ? 0.5 : 1 }}
+              >
                 <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 12, color: PRIMARY, marginRight: 4 }}>
-                  View Invoice
+                  {isPreparingInvoice ? "Preparing…" : "View Invoice"}
                 </Text>
-                <Ionicons name="download-outline" size={13} color={PRIMARY} />
+                {isPreparingInvoice ? (
+                  <ActivityIndicator size="small" color={PRIMARY} />
+                ) : (
+                  <Ionicons name="download-outline" size={13} color={PRIMARY} />
+                )}
               </TouchableOpacity>
             </View>
 

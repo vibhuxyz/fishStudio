@@ -16,6 +16,7 @@ import {
   Pencil,
   ShieldCheck,
   ShoppingBag,
+  Smartphone,
   Trash2,
   User,
   Wallet,
@@ -48,6 +49,10 @@ const GROUPS: { title: string; rows: Row[] }[] = [
   {
     title: "Addresses",
     rows: [{ label: "Saved Addresses", href: "/addresses", icon: MapPin }],
+  },
+  {
+    title: "Security",
+    rows: [{ label: "Login Devices", href: "/account/devices", icon: Smartphone }],
   },
   {
     title: "Support",

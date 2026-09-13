@@ -36,7 +36,7 @@ RUN bunx turbo run build --filter=control-center...
 # The standalone output already contains its own minimal node_modules, so
 # there is no separate prod-deps stage and no bun install at runtime.
 # ==========================================
-FROM node:20-slim AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

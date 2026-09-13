@@ -179,6 +179,16 @@ export default function Settings() {
       onPress: () => router.push("/(routes)/data-usage"),
     },
     {
+      id: "login_devices",
+      title: "Login Devices",
+      subtitle: "See where you're signed in",
+      icon: "phone-portrait-outline",
+      iconColor: "#2563EB",
+      iconBg: "#DBEAFE",
+      type: "navigation",
+      onPress: () => router.push("/(routes)/devices"),
+    },
+    {
       id: "privacy_policy",
       title: "Privacy Policy",
       subtitle: "Read our privacy policy",
@@ -259,7 +269,7 @@ export default function Settings() {
   );
 
   const appSettings = settings.filter((item) =>
-    ["data_usage"].includes(item.id)
+    ["data_usage", "login_devices"].includes(item.id)
   );
 
   const legalSettings = settings.filter((item) =>

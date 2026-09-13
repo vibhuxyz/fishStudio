@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.textWhite,
   },
   ripple: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: LOGO_SIZE / 2,
     borderWidth: 2,
     borderColor: colors.brandRipple,

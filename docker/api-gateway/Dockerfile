@@ -51,8 +51,8 @@ RUN bunx turbo run build --filter=@repo/api-gateway...
 ARG TARGETPLATFORM
 RUN set -eu; \
     case "$TARGETPLATFORM" in \
-      "linux/arm64") keep="libquery_engine-linux-arm64-openssl-3.0.x.so.node" ;; \
-      "linux/amd64") keep="libquery_engine-debian-openssl-3.0.x.so.node" ;; \
+      "linux/arm64") keep="libquery_engine-linux-musl-arm64-openssl-3.0.x.so.node" ;; \
+      "linux/amd64") keep="libquery_engine-linux-musl-openssl-3.0.x.so.node" ;; \
       *) echo "unsupported TARGETPLATFORM: $TARGETPLATFORM" >&2; exit 1 ;; \
     esac; \
     for dir in $(find packages -type d -name generated-client); do \
@@ -96,15 +96,13 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
 # ==========================================
 # 4. Runtime Stage (Uses Node)
 # ==========================================
-FROM node:20-slim AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
 # openssl is loaded by the prisma query engine at runtime
-RUN apt-get update -y \
- && apt-get install -y --no-install-recommends openssl ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache openssl ca-certificates
 
 # node_modules holds workspace symlinks into ./packages, so both trees have to
 # land at the same paths the builder used.

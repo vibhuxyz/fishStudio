@@ -132,6 +132,26 @@ model users {
   @@index([phone_number])
 }
 
+// One row per logged-in device for a customer. Lets us cap concurrent
+// sessions per account (currently 3) and show/manage them from the
+// "Login Devices" screen in user-ui / mobile. Seller/staff/admin logins
+// don't use this — they still rely on the old global per-user revocation.
+model sessions {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String    @db.ObjectId
+  sid         String    @unique
+  platform    String
+  deviceLabel String
+  userAgent   String?
+  ip          String?
+  accessJti   String?
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime  @default(now())
+  revokedAt   DateTime?
+
+  @@index([userId, revokedAt])
+}
+
 model discount_codes {
   id                String @id @default(auto()) @map("_id") @db.ObjectId
   public_name       String

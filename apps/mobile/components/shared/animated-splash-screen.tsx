@@ -294,7 +294,7 @@ export default function AnimatedSplashScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: "hidden",
     backgroundColor: colors.lavenderDeep,
   },

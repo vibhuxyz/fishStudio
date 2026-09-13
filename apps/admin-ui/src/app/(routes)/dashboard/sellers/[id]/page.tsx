@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { AlertTriangle, ArrowLeft, BarChart3, CheckCircle2, IndianRupee, Mail, MapPin, Package, Phone, RefreshCw, ShoppingCart, Store, TicketPercent, TrendingDown, Trophy, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import DashboardPageShell from "@/shared/components/dashboard/dashboard-page-shell";
 import { useAdminSellerDetail, useAdminStats, useUpdateSellerApproval, useAdminSellerOrders, useUpdateAdminStoreSettings, StatsPeriod, DetailedProductRow, SellerOrder } from "@/hooks/useAdminQueries";
@@ -80,7 +81,13 @@ const SellerDetailPage = () => {
         registeredAddress: invoiceValue("registeredAddress").trim() || null,
         invoiceJurisdiction: invoiceValue("invoiceJurisdiction").trim() || null,
       },
-      { onSuccess: () => setInvoiceEdits({}) },
+      {
+        onSuccess: () => setInvoiceEdits({}),
+        onError: (error: any) =>
+          toast.error(
+            error?.response?.data?.message || "Failed to save invoice identity",
+          ),
+      },
     );
   };
 
@@ -99,6 +106,10 @@ const SellerDetailPage = () => {
           // Hand ownership back to the server copy.
           setCodLimitInput(null);
         },
+        onError: (error: any) =>
+          toast.error(
+            error?.response?.data?.message || "Failed to save store settings",
+          ),
       },
     );
   };

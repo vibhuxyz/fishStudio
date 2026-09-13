@@ -81,9 +81,16 @@ const STATUS_CONFIG: Record<
     border: "border-red-400/30",
     dot: "bg-red-400",
   },
+  Cancelled: {
+    label: "Cancelled",
+    color: "text-gray-400",
+    bg: "bg-gray-400/10",
+    border: "border-gray-400/30",
+    dot: "bg-gray-400",
+  },
 };
 
-const COLUMN_ORDER: OrderStatus[] = ["New", "Processing", "Ready", "Completed", "Rejected"];
+const COLUMN_ORDER: OrderStatus[] = ["New", "Processing", "Ready", "Completed", "Rejected", "Cancelled"];
 
 const formatINR = (amount: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
@@ -919,6 +926,7 @@ function StatusColumn({
     Ready: <Package size={15} className="text-teal-400" />,
     Completed: <CheckCircle size={15} className="text-green-400" />,
     Rejected: <XCircle size={15} className="text-red-400" />,
+    Cancelled: <XCircle size={15} className="text-gray-400" />,
   };
 
   return (
@@ -963,7 +971,7 @@ function StatusColumn({
 // ─── Stats bar ───────────────────────────────────────────────────────────────
 
 function StatsBar({ orders }: { orders: MockOrder[] }) {
-  const total = orders.reduce((s, o) => s + (o.status !== "Rejected" ? o.total : 0), 0);
+  const total = orders.reduce((s, o) => s + (o.status !== "Rejected" && o.status !== "Cancelled" ? o.total : 0), 0);
   const newCount = orders.filter((o) => o.status === "New").length;
   const processingCount = orders.filter((o) => o.status === "Processing").length;
   const completedCount = orders.filter((o) => o.status === "Completed").length;
@@ -1157,6 +1165,7 @@ const StaffOrdersPage = () => {
         id: o.id,
         status: o.status === "ACCEPTED" || o.status === "PREPARING" ? "Processing"
                : o.status === "REJECTED"  ? "Rejected"
+               : o.status === "CANCELLED" ? "Cancelled"
                : o.status === "READY_FOR_PICKUP" || o.status === "ASSIGNED_TO_RIDER" || o.status === "SHIPPED" ? "Ready"
                : o.status === "DELIVERED" ? "Completed"
                : "New",

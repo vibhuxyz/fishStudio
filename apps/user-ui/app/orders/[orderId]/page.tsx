@@ -20,11 +20,13 @@ import {
   XCircle,
   Scissors,
   Banknote,
+  Download,
 } from "lucide-react";
 import { useAddressStore } from "@/lib/address-store";
 import axiosInstance from "@/utils/axiosInstance";
 import { useUserSession } from "@/hooks/useUserSession";
 import { useWs } from "@/context/ws-context";
+import { useDownloadInvoice } from "@/hooks/useDownloadInvoice";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -76,6 +78,7 @@ export default function OrderDetailsPage({
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState<string | null>(null);
   const [cancelNote, setCancelNote] = useState("");
+  const { downloadInvoice, isPreparingInvoice } = useDownloadInvoice();
 
   const { data: order, isLoading } = useQuery({
     queryKey: ["order", orderId],
@@ -277,6 +280,15 @@ export default function OrderDetailsPage({
             })}
           </p>
         </div>
+        <Button
+          variant="outline"
+          className="h-10 rounded-full font-semibold"
+          onClick={() => downloadInvoice(order.id)}
+          disabled={isPreparingInvoice}
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {isPreparingInvoice ? "Preparing…" : "Invoice"}
+        </Button>
       </div>
 
       <div className="space-y-4">

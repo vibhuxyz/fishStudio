@@ -14,6 +14,7 @@ export default defineConfig((options) => ({
     "data/index": "src/data/index.ts",
     "delivery-slots/index": "src/delivery-slots/index.ts",
     "geo/index": "src/geo/index.ts",
+    "invoice-html/index": "src/invoice-html/index.ts",
   },
   format: ["esm"],
   target: "node18",

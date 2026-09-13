@@ -25,8 +25,12 @@ import {
   revokeToken,
   bumpRefreshFamily,
   getRefreshFamily,
+  getSessionFamily,
+  bumpSessionFamily,
+  revokeJti,
   hashToken,
 } from "../../utils/tokenRevocation.js";
+import { resolveDeviceInfo } from "../../utils/deviceLabel.js";
 import type { AuthenticatedRequest } from "../../types/auth-request.js";
 import {
   ROLE_COOKIES,
@@ -41,6 +45,11 @@ import {
   staffCookieNames,
   staffScopeOf,
 } from "@repo/middlewares";
+
+// A customer may be logged in on at most this many devices at once. Logging
+// in past the cap evicts the least-recently-used session rather than
+// blocking the new login.
+const MAX_USER_SESSIONS = 3;
 
 export const sendOtpToUser = async (
   req: Request,
@@ -173,13 +182,49 @@ export const verifyOtpAndLogin = async (
       return next(new ValidationError("Unable to sign in — please try again"));
     }
 
+    // Multi-device cap: at most MAX_USER_SESSIONS concurrent sessions per
+    // customer. Logging in past the cap evicts the oldest (by lastUsedAt)
+    // rather than blocking the new login.
+    const activeSessions = await prisma.sessions.findMany({
+      where: { userId: user.id, revokedAt: null },
+      orderBy: { lastUsedAt: "asc" },
+    });
+    if (activeSessions.length >= MAX_USER_SESSIONS) {
+      const toEvict = activeSessions.slice(0, activeSessions.length - MAX_USER_SESSIONS + 1);
+      await Promise.allSettled(
+        toEvict.map(async (session) => {
+          await prisma.sessions.update({
+            where: { id: session.id },
+            data: { revokedAt: new Date() },
+          });
+          await bumpSessionFamily(session.sid);
+          await revokeJti(session.accessJti, 15 * 60);
+        }),
+      );
+    }
+
+    const sid = crypto.randomUUID();
+    const { platform, deviceLabel, userAgent } = resolveDeviceInfo(req);
+
     // Fix #11: access/refresh tokens carry a jti and refresh tokens carry a
     // family generation so they can be revoked.
-    const accessToken = signAccessToken({ id: user.id, role: "user" }, "15m");
+    const accessToken = signAccessToken({ id: user.id, role: "user", sid }, "15m");
     const refreshToken = await signRefreshToken(
-      { id: user.id, role: "user" },
+      { id: user.id, role: "user", sid },
       REFRESH_TTL_BY_ROLE.user,
     );
+
+    await prisma.sessions.create({
+      data: {
+        userId: user.id,
+        sid,
+        platform,
+        deviceLabel,
+        userAgent,
+        ip: req.ip || null,
+        accessJti: (jwt.decode(accessToken) as { jti?: string } | null)?.jti || null,
+      },
+    });
 
     // The access cookie may safely outlive the 15m token inside it — the
     // client refreshes off the refresh cookie, and a cookie that vanished
@@ -270,6 +315,7 @@ export const refreshToken = async (
       role: "admin" | "seller" | "user" | "staff";
       gen?: number;
       jti?: string;
+      sid?: string;
     };
 
     if (!decoded || !decoded.id || !decoded.role) {
@@ -280,14 +326,32 @@ export const refreshToken = async (
       return res.status(401).json({ success: false, message: "Role mismatch" });
     }
 
-    // Fix #11: reject refresh tokens whose family generation has been bumped
-    // (happens on logout or reuse). This invalidates the entire refresh-token
-    // tree for a user in one write.
-    const currentGen = await getRefreshFamily(decoded.role, decoded.id);
-    if ((decoded.gen ?? 0) < currentGen) {
-      // Bump again to invalidate anything else someone might be holding.
-      await bumpRefreshFamily(decoded.role, decoded.id);
-      return res.status(401).json({ success: false, message: "Session expired. Please sign in again." });
+    // Multi-device (per-session) customer sessions: check the session row and
+    // its own generation counter instead of the per-user one, so revoking or
+    // evicting one device never touches another device's refresh tokens.
+    // Tokens issued before this feature carry no `sid` and keep using the old
+    // per-user check below until they naturally expire.
+    let userSession: Awaited<ReturnType<typeof prisma.sessions.findUnique>> | null = null;
+    if (decoded.role === "user" && decoded.sid) {
+      userSession = await prisma.sessions.findUnique({ where: { sid: decoded.sid } });
+      if (!userSession || userSession.revokedAt) {
+        return res.status(401).json({ success: false, message: "Session expired. Please sign in again." });
+      }
+      const currentSessionGen = await getSessionFamily(decoded.sid);
+      if ((decoded.gen ?? 0) < currentSessionGen) {
+        await bumpSessionFamily(decoded.sid);
+        return res.status(401).json({ success: false, message: "Session expired. Please sign in again." });
+      }
+    } else {
+      // Fix #11: reject refresh tokens whose family generation has been bumped
+      // (happens on logout or reuse). This invalidates the entire refresh-token
+      // tree for a user in one write.
+      const currentGen = await getRefreshFamily(decoded.role, decoded.id);
+      if ((decoded.gen ?? 0) < currentGen) {
+        // Bump again to invalidate anything else someone might be holding.
+        await bumpRefreshFamily(decoded.role, decoded.id);
+        return res.status(401).json({ success: false, message: "Session expired. Please sign in again." });
+      }
     }
 
     // Fix #11 (account-existence): don't mint tokens for deleted/disabled accounts.
@@ -317,11 +381,24 @@ export const refreshToken = async (
     // that if an attacker grabs a single token, replaying it detects reuse.
     await revokeToken(refreshToken);
 
-    const newAccessToken = signAccessToken({ id: decoded.id, role: decoded.role }, "15m");
+    const newAccessToken = signAccessToken(
+      { id: decoded.id, role: decoded.role, sid: decoded.sid },
+      "15m",
+    );
     const newRefreshToken = await signRefreshToken(
-      { id: decoded.id, role: decoded.role },
+      { id: decoded.id, role: decoded.role, sid: decoded.sid },
       REFRESH_TTL_BY_ROLE[decoded.role],
     );
+
+    if (userSession) {
+      await prisma.sessions.update({
+        where: { id: userSession.id },
+        data: {
+          lastUsedAt: new Date(),
+          accessJti: (jwt.decode(newAccessToken) as { jti?: string } | null)?.jti || null,
+        },
+      });
+    }
 
     // Rotate back into the same scoped cookie the request came from, so a
     // refresh in the Rider tab can't overwrite the Cutting Staff session.
@@ -602,9 +679,20 @@ export const logOutUser = async (req: AuthenticatedRequest, res: Response) => {
   await revokeToken(accessToken).catch(() => {});
   await revokeToken(refreshToken).catch(() => {});
 
-  // Fix #11: bump the refresh-token family so every outstanding refresh token
-  // for this user is invalid.
-  if (req.user?.id) {
+  // Multi-device sessions: only tear down *this* device's session — logging
+  // out on one phone must not sign the user out on their other two devices.
+  // req.sid comes from isAuthenticated (present for tokens issued after the
+  // multi-device feature shipped); legacy tokens fall back to the old
+  // mass-revoke behaviour below.
+  const sid = req.sid || (jwt.decode(accessToken || "") as { sid?: string } | null)?.sid;
+  if (sid) {
+    await prisma.sessions
+      .updateMany({ where: { sid, revokedAt: null }, data: { revokedAt: new Date() } })
+      .catch(() => {});
+    await bumpSessionFamily(sid).catch(() => {});
+  } else if (req.user?.id) {
+    // Fix #11: bump the refresh-token family so every outstanding refresh token
+    // for this user is invalid.
     await bumpRefreshFamily("user", req.user.id).catch(() => {});
   }
 
@@ -835,6 +923,8 @@ export const deleteUser = async (
     await revokeToken(accessToken).catch(() => {});
     await revokeToken(refreshToken).catch(() => {});
     await bumpRefreshFamily("user", userId).catch(() => {});
+    // Clean up the device-session rows too — the account no longer exists.
+    await prisma.sessions.deleteMany({ where: { userId } }).catch(() => {});
 
     clearCookie(res, "access_token");
     clearCookie(res, "refresh_token");
@@ -843,6 +933,73 @@ export const deleteUser = async (
       success: true,
       message: "Your account has been deleted",
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// "Login Devices" — list the customer's active (non-revoked) sessions, most
+// recently used first, flagging which one is the caller's current device.
+export const listUserSessions = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next(new ValidationError("Not authenticated"));
+
+    const currentSid = req.sid;
+
+    const sessions = await prisma.sessions.findMany({
+      where: { userId, revokedAt: null },
+      orderBy: { lastUsedAt: "desc" },
+    });
+
+    res.status(200).json({
+      success: true,
+      limit: MAX_USER_SESSIONS,
+      count: sessions.length,
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        sid: s.sid,
+        platform: s.platform,
+        deviceLabel: s.deviceLabel,
+        createdAt: s.createdAt,
+        lastUsedAt: s.lastUsedAt,
+        current: !!currentSid && s.sid === currentSid,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Sign a specific device out remotely. Only revokes the one session — every
+// other device the customer is logged in on keeps working.
+export const revokeUserSession = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return next(new ValidationError("Not authenticated"));
+
+    const sid = String(req.params.sid);
+    const session = await prisma.sessions.findUnique({ where: { sid } });
+    if (!session || session.userId !== userId) {
+      return next(new NotFoundError("Session not found"));
+    }
+
+    await prisma.sessions.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+    await bumpSessionFamily(sid);
+    await revokeJti(session.accessJti, 15 * 60);
+
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }

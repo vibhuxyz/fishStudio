@@ -39,7 +39,7 @@ export const MOCK_STAFF = {
   },
 };
 
-export type OrderStatus = "New" | "Processing" | "Ready" | "Completed" | "Rejected";
+export type OrderStatus = "New" | "Processing" | "Ready" | "Completed" | "Rejected" | "Cancelled";
 
 // The real backend status, kept alongside the collapsed 5-bucket `status`
 // above — several real statuses (READY_FOR_PICKUP, ASSIGNED_TO_RIDER,

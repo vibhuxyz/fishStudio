@@ -151,6 +151,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
           if (data.staff) req.staff = data.staff;
           if (data.admin) req.admin = data.admin;
           if (data.user) req.user = data.user;
+          if (data.sid) req.sid = data.sid;
           return next();
         }
       }
@@ -170,6 +171,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       id: string;
       role: "admin" | "user" | "seller" | "staff";
       jti?: string;
+      sid?: string;
     };
 
     if (!decoded) {
@@ -223,6 +225,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     }
 
     req.role = decoded.role;
+    if (decoded.sid) req.sid = decoded.sid;
 
     // ── Write to cache ────────────────────────────────────────────────────
     // Only cache the fields actually read by downstream handlers. Big nested
@@ -271,6 +274,7 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
       const cacheData = {
         role: decoded.role,
         jti: decoded.jti,
+        sid: decoded.sid,
         seller: slimSeller,
         staff: slimStaff,
         admin: slimAdmin,

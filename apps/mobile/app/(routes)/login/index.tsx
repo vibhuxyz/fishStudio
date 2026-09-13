@@ -3,6 +3,7 @@ import { NameStep } from "@/components/auth/name-step";
 import { OtpStep } from "@/components/auth/otp-step";
 import { PhoneStep } from "@/components/auth/phone-step";
 import { SuccessStep } from "@/components/auth/success-step";
+import { getDeviceInfo } from "@/lib/deviceLabel";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance, { storeAccessToken } from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
@@ -84,6 +85,7 @@ export default function LoginScreen() {
         otp: code,
         ...(name ? { name } : {}),
         ...(referralCode ? { referralCode } : {}),
+        ...getDeviceInfo(),
       });
       return data;
     },

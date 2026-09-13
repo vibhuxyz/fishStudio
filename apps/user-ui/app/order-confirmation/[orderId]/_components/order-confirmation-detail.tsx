@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import type { Order } from "@/lib/orders-api";
 import { displayOrderNumber, formatOrderId } from "@repo/shared/order-id";
 import { formatDeliveryDateKey } from "@repo/shared/delivery-slots";
-import { renderInvoiceHtml, type Invoice } from "@/lib/invoice-template";
+import { useDownloadInvoice } from "@/hooks/useDownloadInvoice";
 import { OrderConfirmationSkeleton } from "./order-confirmation-skeleton";
 
 interface OrderConfirmationDetailProps {
@@ -50,7 +50,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   // threw "Rendered more hooks than during the previous render" — so the page
   // broke only when the fetch succeeded, which is to say only after a
   // payment went through.
-  const [isPreparingInvoice, setIsPreparingInvoice] = useState(false);
+  const { downloadInvoice, isPreparingInvoice } = useDownloadInvoice();
 
   useEffect(() => {
     setMounted(true);
@@ -202,50 +202,7 @@ export function OrderConfirmationDetail({ initialOrder, orderId }: OrderConfirma
   const statusCfg = getStatusConfig(order.status);
   const shortId = displayOrderNumber(order);
 
-  // Download Invoice — fetches the GST tax invoice from order-service and
-  // opens it print-ready. Dependency free: the user prints or "Saves as PDF"
-  // from the browser dialog.
-  //
-  // The figures are deliberately NOT derived here. An invoice is a statutory
-  // document, so its numbering, per-line HSN and GST breakdown, and totals all
-  // come from the server, which computes them from the stored order.
-  const handleDownloadInvoice = async () => {
-    if (isPreparingInvoice) return;
-    setIsPreparingInvoice(true);
-
-    // Opened before the await: a popup blocked because it was not opened in
-    // the click's own task is indistinguishable, to the user, from a broken
-    // button. Opening first means the only failure left is a real blocker.
-    const w = window.open("", "_blank", "width=900,height=1000");
-    if (!w) {
-      setIsPreparingInvoice(false);
-      toast.error("Allow pop-ups to download the invoice");
-      return;
-    }
-    w.document.write("<p style='font-family:sans-serif;padding:24px'>Preparing invoice…</p>");
-
-    try {
-      const { data } = await axiosInstance.get(`/order/api/invoice/${order.id}`);
-      if (!data?.success || !data.invoice) throw new Error("No invoice returned");
-
-      w.document.open();
-      w.document.write(renderInvoiceHtml(data.invoice as Invoice));
-      w.document.close();
-      w.focus();
-      setTimeout(() => w.print(), 300);
-    } catch (error: unknown) {
-      w.close();
-      const message =
-        typeof error === "object" && error !== null
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      // The server refuses when the store has no GSTIN configured yet, and says
-      // so — that reason is far more actionable than a generic failure.
-      toast.error(message || "Couldn't prepare the invoice. Please try again.");
-    } finally {
-      setIsPreparingInvoice(false);
-    }
-  };
+  const handleDownloadInvoice = () => downloadInvoice(order.id);
 
   // Share Order — native share where available, otherwise copy the link.
   const handleShareOrder = async () => {

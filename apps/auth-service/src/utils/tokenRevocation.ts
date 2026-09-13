@@ -82,6 +82,41 @@ export const bumpRefreshFamily = async (role: string, id: string): Promise<numbe
   }
 };
 
+// Per-session (per-device) equivalent of the family counter above, used only
+// for the "user" role's multi-device sessions so that logging out or being
+// evicted on one device never touches another device's refresh tokens.
+const sessionFamilyKey = (sid: string) => `auth:rt_family:session:${sid}`;
+
+export const getSessionFamily = async (sid: string): Promise<number> => {
+  try {
+    const v = await redis.get(sessionFamilyKey(sid));
+    return v ? parseInt(v, 10) : 0;
+  } catch {
+    return 0;
+  }
+};
+
+export const bumpSessionFamily = async (sid: string): Promise<number> => {
+  try {
+    const v = await redis.incr(sessionFamilyKey(sid));
+    await redis.expire(sessionFamilyKey(sid), MAX_REFRESH_TTL_SECONDS);
+    return v;
+  } catch {
+    return 0;
+  }
+};
+
+/** Blocklist a single access token by jti alone, without holding the raw token
+ * (used when evicting/revoking a device's session from a stored record). */
+export const revokeJti = async (jti: string | null | undefined, ttlSeconds: number) => {
+  if (!jti) return;
+  try {
+    await redis.set(`auth:revoked:jti:${jti}`, "1", "EX", Math.max(ttlSeconds, 60));
+  } catch {
+    // non-fatal
+  }
+};
+
 /** Sign an access token with a jti (used by the blocklist for targeted revocation). */
 export const signAccessToken = (
   payload: {
@@ -92,6 +127,9 @@ export const signAccessToken = (
     // URL so worker-service can trust it without a Mongo lookup of its own.
     storeId?: string;
     sellerId?: string;
+    // Present only for "user"-role, multi-device sessions — identifies which
+    // sessions row this token belongs to.
+    sid?: string;
   },
   expiresIn: string | number,
 ) =>
@@ -103,10 +141,14 @@ export const signAccessToken = (
 
 /** Sign a refresh token carrying a family generation so we can mass-revoke. */
 export const signRefreshToken = async (
-  payload: { id: string; role: "admin" | "seller" | "user" | "staff" },
+  payload: { id: string; role: "admin" | "seller" | "user" | "staff"; sid?: string },
   expiresIn: string | number,
 ) => {
-  const gen = await getRefreshFamily(payload.role, payload.id);
+  // A sid'd (per-device) token uses its own session-scoped generation counter;
+  // everything else keeps the old per-user counter untouched.
+  const gen = payload.sid
+    ? await getSessionFamily(payload.sid)
+    : await getRefreshFamily(payload.role, payload.id);
   return jwt.sign(
     { ...payload, gen, jti: crypto.randomUUID() },
     ENV.REFRESH_TOKEN_JWT_SECRET_KEY as string,

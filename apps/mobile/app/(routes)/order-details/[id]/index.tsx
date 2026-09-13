@@ -25,6 +25,7 @@ import OrderTrackingSkeleton from "@/components/skelton/order-tracking.skelton";
 import { Order } from "@/constants/order";
 import { useAddressStore } from "@/lib/address-store";
 import { getOrderStatusLabel, useLiveOrder } from "@/hooks/useLiveOrder";
+import { useDownloadInvoice } from "@/hooks/useDownloadInvoice";
 import axiosInstance from "@/utils/axiosInstance";
 import { toast } from "@/utils/toast";
 import { openWhatsApp } from "@/utils/whatsapp";
@@ -126,6 +127,7 @@ export default function OrderDetailsScreen() {
   const [supportModalVisible, setSupportModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [prepPhotosVisible, setPrepPhotosVisible] = useState(false);
+  const { downloadInvoice, isPreparingInvoice } = useDownloadInvoice();
   const queryClient = useQueryClient();
 
   const { mutate: cancelOrder, isPending: isCancelling } = useMutation({
@@ -694,6 +696,43 @@ export default function OrderDetailsScreen() {
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         )}
+
+        {/* ── Download invoice ────────────────────────────────────────── */}
+        <TouchableOpacity
+          onPress={() => order && downloadInvoice(order.id)}
+          disabled={isPreparingInvoice}
+          activeOpacity={0.85}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: colors.white,
+            borderRadius: 20,
+            padding: 16,
+            marginTop: 12,
+            opacity: isPreparingInvoice ? 0.6 : 1,
+            shadowColor: "#000",
+            shadowOpacity: 0.04,
+            shadowRadius: 8,
+            elevation: 1,
+          }}
+        >
+          <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.primarySurface, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+            {isPreparingInvoice ? (
+              <ActivityIndicator size="small" color={PRIMARY} />
+            ) : (
+              <Ionicons name="download-outline" size={18} color={PRIMARY} />
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: "Inter-SemiBold", fontSize: 13, color: colors.textPrimary }}>
+              {isPreparingInvoice ? "Preparing invoice…" : "Download Tax Invoice"}
+            </Text>
+            <Text style={{ fontFamily: "Inter-Regular", fontSize: 11, color: colors.textMuted, marginTop: 1 }}>
+              GST invoice PDF for this order
+            </Text>
+          </View>
+          {!isPreparingInvoice && <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+        </TouchableOpacity>
 
         {/* ── Need help ────────────────────────────────────────────────── */}
         <View

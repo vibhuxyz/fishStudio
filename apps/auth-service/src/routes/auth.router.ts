@@ -46,6 +46,8 @@ import {
   refreshToken,
   sendOtpToUser,
   verifyOtpAndLogin,
+  listUserSessions,
+  revokeUserSession,
 } from "../modules/user/user.controller.js";
 import {
   getSeller,
@@ -93,6 +95,8 @@ router.post("/send-otp", otpRateLimiter, sendOtpToUser);
 router.post("/verify-otp", authRateLimiter, verifyOtpAndLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
+router.get("/sessions", isAuthenticated, isUser, listUserSessions);
+router.delete("/sessions/:sid", isAuthenticated, isUser, revokeUserSession);
 router.put("/update-user-profile", isAuthenticated, isUser, updateUserProfile);
 router.post("/upload-avatar-image", isAuthenticated, isUser, uploadAvatarImage);
 router.put("/update-avatar", isAuthenticated, isUser, updateAvatar);

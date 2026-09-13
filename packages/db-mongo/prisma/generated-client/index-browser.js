@@ -149,6 +149,20 @@ exports.Prisma.UsersScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SessionsScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  sid: 'sid',
+  platform: 'platform',
+  deviceLabel: 'deviceLabel',
+  userAgent: 'userAgent',
+  ip: 'ip',
+  accessJti: 'accessJti',
+  createdAt: 'createdAt',
+  lastUsedAt: 'lastUsedAt',
+  revokedAt: 'revokedAt'
+};
+
 exports.Prisma.Discount_codesScalarFieldEnum = {
   id: 'id',
   public_name: 'public_name',
@@ -480,6 +494,7 @@ exports.Prisma.ModelName = {
   admins: 'admins',
   images: 'images',
   users: 'users',
+  sessions: 'sessions',
   discount_codes: 'discount_codes',
   coupon_usages: 'coupon_usages',
   sellers: 'sellers',

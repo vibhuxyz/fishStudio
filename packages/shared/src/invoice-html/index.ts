@@ -114,41 +114,60 @@ export function renderInvoiceHtml(invoice: Invoice): string {
     )
     .join("");
 
+  // Brand blue, matched to the seller/admin dashboards (blue-600/blue-500)
+  // so the invoice doesn't read as a generic unbranded document.
+  const BRAND = "#2563eb";
+
   return `<!doctype html><html><head><meta charset="utf-8" />
 <title>Invoice ${esc(invoice.invoiceNumber)}</title>
 <style>
   @page { size: A4; margin: 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; color: #000; font-size: 11px; margin: 0; }
-  h1 { font-size: 17px; text-align: center; margin: 0 0 14px; letter-spacing: .5px; }
-  .head { display: flex; gap: 24px; align-items: flex-start; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; font-size: 11px; margin: 0; }
+  h1 { font-size: 18px; text-align: center; margin: 0 0 4px; letter-spacing: .5px; color: ${BRAND}; }
+  .subtitle { text-align: center; font-size: 10px; color: #666; margin: 0 0 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .brand .logo { flex: none; }
+  .brand .name { font-size: 16px; font-weight: bold; color: ${BRAND}; letter-spacing: .3px; }
+  .head { display: flex; gap: 24px; align-items: flex-start; border-top: 2px solid ${BRAND}; padding-top: 12px; }
   .head > div { flex: 1; }
   .seller { font-size: 11px; line-height: 1.7; }
-  .seller .name { font-weight: bold; font-size: 12px; }
   table.meta td { padding: 1px 0; vertical-align: top; }
-  table.meta td.lbl { white-space: nowrap; padding-right: 8px; width: 1%; }
+  table.meta td.lbl { white-space: nowrap; padding-right: 8px; width: 1%; color: #555; }
   table.items { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  table.items th, table.items td { border: 1px solid #000; padding: 4px 5px; vertical-align: top; }
-  table.items th { font-size: 10px; text-align: center; font-weight: bold; }
-  .sub { color: #444; font-size: 10px; }
+  table.items th, table.items td { border: 1px solid #cbd5e1; padding: 5px 6px; vertical-align: top; }
+  table.items th { font-size: 10px; text-align: center; font-weight: bold; background: ${BRAND}; color: #fff; }
+  .sub { color: #666; font-size: 10px; }
   .c { text-align: center; }
   .r { text-align: right; }
-  table.totals { margin-top: 10px; margin-left: auto; border-collapse: collapse; }
+  table.totals { margin-top: 10px; margin-left: auto; border-collapse: collapse; min-width: 260px; }
   table.totals td { padding: 3px 10px; }
-  table.totals tr.grand td { border-top: 1px solid #000; font-weight: bold; font-size: 12px; }
+  table.totals tr.grand td { border-top: 2px solid ${BRAND}; font-weight: bold; font-size: 13px; color: ${BRAND}; }
   .foot { margin-top: 28px; display: flex; gap: 24px; align-items: flex-start; }
   .foot > div { flex: 1; }
   .sign { text-align: right; }
   .sign .space { height: 52px; }
-  .jur { margin-top: 22px; padding-top: 6px; border-top: 1px solid #000;
-         display: flex; justify-content: space-between; font-size: 10px; }
+  .jur { margin-top: 22px; padding-top: 6px; border-top: 1px solid #cbd5e1;
+         display: flex; justify-content: space-between; font-size: 10px; color: #555; }
 </style></head>
 <body>
+  <div class="brand">
+    <span class="logo">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 16c4-6 10-9 16-9 4 0 7 2 8 4-1 2-2 3-3 4l3 3c-1 2-4 5-8 5-6 0-12-3-16-9z" fill="${BRAND}"/>
+        <circle cx="10.5" cy="14" r="1.4" fill="#fff"/>
+        <path d="M4 16l-3-3 1 3-1 3 3-3z" fill="${BRAND}"/>
+      </svg>
+    </span>
+    <span class="name">Fish Studio</span>
+  </div>
+
   <h1>TAX INVOICE</h1>
+  <div class="subtitle">GST Compliant Invoice</div>
 
   <div class="head">
     <div class="seller">
-      <div class="name">${esc(seller.legalName)}</div>
+      <div class="name" style="font-weight:bold;font-size:12px">${esc(seller.legalName)}</div>
       ${seller.address ? `<div>Address : ${esc(seller.address)}</div>` : ""}
       ${seller.phone ? `<div>Phone : ${esc(seller.phone)}</div>` : ""}
       ${seller.email ? `<div>Email : ${esc(seller.email)}</div>` : ""}

@@ -115,6 +115,35 @@ export async function updateProfile(input: { name?: string; email?: string }) {
   return data;
 }
 
+export interface DeviceSession {
+  id: string;
+  sid: string;
+  platform: string;
+  deviceLabel: string;
+  createdAt: string;
+  lastUsedAt: string;
+  current: boolean;
+}
+
+// "Login Devices" — list this account's active sessions across web/mobile.
+export async function listSessions(): Promise<{
+  sessions: DeviceSession[];
+  count: number;
+  limit: number;
+}> {
+  const { data } = await axiosInstance.get("/auth/api/sessions", isProtected);
+  return { sessions: data.sessions, count: data.count, limit: data.limit };
+}
+
+// Sign a specific device out remotely (does not affect the caller's own session).
+export async function revokeSession(sid: string) {
+  const { data } = await axiosInstance.delete(
+    `/auth/api/sessions/${encodeURIComponent(sid)}`,
+    isProtected,
+  );
+  return data;
+}
+
 // Delete Account — permanently removes the account, then clears local session.
 export async function deleteAccount() {
   await axiosInstance.delete("/auth/api/delete-user", isProtected);

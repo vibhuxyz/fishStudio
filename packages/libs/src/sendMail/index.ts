@@ -134,48 +134,65 @@ const sendWithBrevo = async (to: string, subject: string, html: string) => {
   });
 };
 
+const sendWithEthereal = async (to: string, subject: string, html: string) => {
+  const transporter = await getEtherealTransporter();
+  const info = await transporter.sendMail({
+    from: `FishStudio <noreply@fishstudio.dev>`,
+    to,
+    subject,
+    html,
+  });
+
+  const previewUrl = nodemailer.getTestMessageUrl(info);
+  if (previewUrl) {
+    console.log(`\n📬 [DEV] Email preview: ${previewUrl}\n`);
+  }
+
+  return info.messageId;
+};
+
 const sendWithNodemailer = async (
   to: string,
   subject: string,
   html: string,
 ) => {
-  return smtpCircuit.execute(async () => {
-    return retryWithBackoff(
-      async () => {
-        let transporter: nodemailer.Transporter;
-        let fromAddress: string;
+  if (!hasSmtpConfig()) {
+    // Dev fallback: Ethereal test account (no .env config needed)
+    return sendWithEthereal(to, subject, html);
+  }
 
-        if (hasSmtpConfig()) {
-          transporter = getSmtpTransporter();
-          fromAddress = `${ENV.EMAIL_FROM || "FishStudio"} <${ENV.SMTP_USER}>`;
-        } else {
-          // Dev fallback: Ethereal test account (no .env config needed)
-          transporter = await getEtherealTransporter();
-          fromAddress = `FishStudio <noreply@fishstudio.dev>`;
-        }
+  try {
+    return await smtpCircuit.execute(async () => {
+      return retryWithBackoff(
+        async () => {
+          const transporter = getSmtpTransporter();
+          const info = await transporter.sendMail({
+            from: `${ENV.EMAIL_FROM || "FishStudio"} <${ENV.SMTP_USER}>`,
+            to,
+            subject,
+            html,
+          });
 
-        const info = await transporter.sendMail({
-          from: fromAddress,
-          to,
-          subject,
-          html,
-        });
-
-        // Print Ethereal preview URL in dev
-        const previewUrl = nodemailer.getTestMessageUrl(info);
-        if (previewUrl) {
-          console.log(`\n📬 [DEV] Email preview: ${previewUrl}\n`);
-        }
-
-        return info.messageId;
-      },
-      {
-        maxAttempts: 3,
-        initialDelayMs: 200,
-        maxDelayMs: 3_000,
-      },
-    );
-  });
+          return info.messageId;
+        },
+        {
+          maxAttempts: 3,
+          initialDelayMs: 200,
+          maxDelayMs: 3_000,
+        },
+      );
+    });
+  } catch (error: any) {
+    // In dev, a real SMTP account (e.g. Gmail's ~500/day cap) shouldn't block
+    // testing — fall back to Ethereal so OTP/email flows keep working locally.
+    if (!isProduction) {
+      logger.warn(
+        `[sendMail] SMTP send failed in non-production, falling back to Ethereal: ${error?.message ?? error}`,
+      );
+      return sendWithEthereal(to, subject, html);
+    }
+    throw error;
+  }
 };
 
 /**

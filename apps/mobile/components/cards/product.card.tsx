@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   imageWash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.textSecondary,
     opacity: 0.35,
   },

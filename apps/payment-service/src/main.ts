@@ -131,10 +131,21 @@ server.on("error", (err) => logger.error("[Payment Service] Server error", err))
 
 // Prewarming is an optimisation — if the broker is unreachable the interactive
 // path still creates gateway orders itself, so this must not stop the service
-// from serving payments.
-paymentPrewarmConsumer().catch((err) =>
-  logger.error("[Payment Service] Prewarm consumer failed to start", err),
-);
+// from serving payments. But a broker that's merely still booting (common in
+// dev, where this service can win the race against RabbitMQ's handshake port
+// coming up) must not permanently disable the consumer for the process's
+// lifetime either — retry with backoff until it connects.
+const startPaymentPrewarmConsumer = (delayMs = 5000): void => {
+  paymentPrewarmConsumer().catch((err) => {
+    logger.error("[Payment Service] Prewarm consumer failed to start, retrying", {
+      delayMs,
+      err,
+    });
+    setTimeout(() => startPaymentPrewarmConsumer(Math.min(delayMs * 2, 30000)), delayMs);
+  });
+};
+
+startPaymentPrewarmConsumer();
 
 const shutdown = () => {
   logger.info("Shutting down Payment Service...");
