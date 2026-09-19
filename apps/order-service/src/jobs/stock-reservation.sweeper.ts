@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { prismaPostgres } from "@repo/db-postgres";
 import { redis } from "@repo/libs/redis";
+import { SWEEPS, recordSweepHorizon, shouldSweep } from "@repo/libs/sweep-gate";
 import { logger } from "@repo/libs/logger";
 import { restoreStockItem } from "../controllers/order/utils.js";
 
@@ -14,8 +15,10 @@ import { restoreStockItem } from "../controllers/order/utils.js";
  */
 
 // Comfortably longer than a slow createOrder round-trip, so an in-flight
-// request is never swept out from under itself.
-const RESERVATION_GRACE_MS = 15 * 60 * 1000;
+// request is never swept out from under itself. Exported because createOrder
+// marks the sweep gate with the same window when it takes a reservation — the
+// two must agree, or the gate parks the sweep past the moment it is needed.
+export const RESERVATION_GRACE_MS = 15 * 60 * 1000;
 const BATCH_SIZE = 100;
 
 const LOCK_KEY = "order:reservation-sweep:lock";
@@ -80,11 +83,40 @@ async function sweepOnce(): Promise<number> {
     });
   }
 
+  await recordNextDue();
+
   return releasedIds.length;
 }
 
+/**
+ * Parks the sweep until the oldest HELD reservation comes of age.
+ *
+ * A reservation is due one grace period after it was created, so the earliest
+ * `createdAt` still HELD gives the next moment this job matters. Reservations
+ * left HELD by a partial restore are already past due, which puts the horizon
+ * in the past and has the next tick retry them — the retry the sweep above is
+ * counting on. Nothing HELD at all parks it until the safety interval.
+ */
+async function recordNextDue(): Promise<void> {
+  const oldest = await prismaPostgres.stockReservation.aggregate({
+    where: { status: "HELD" },
+    _min: { createdAt: true },
+  });
+
+  const createdAt = oldest._min.createdAt;
+  await recordSweepHorizon(
+    SWEEPS.STOCK_RESERVATION,
+    createdAt ? new Date(createdAt.getTime() + RESERVATION_GRACE_MS) : null,
+  );
+}
+
 // Exported so main.ts can stop it on graceful shutdown.
-export const stockReservationSweeper = cron.schedule("*/5 * * * *", async () => {
+// Back to five minutes. The cadence is affordable again because the gate below
+// answers out of Redis: a tick with no reservation past its grace period never
+// reaches Postgres, so the frequency costs scheduling, not compute.
+export const SWEEP_CRON = process.env.RESERVATION_SWEEP_CRON || "*/5 * * * *";
+
+export const stockReservationSweeper = cron.schedule(SWEEP_CRON, async () => {
   let locked = false;
   try {
     locked = (await redis.set(LOCK_KEY, "1", "EX", LOCK_TTL_SECONDS, "NX")) !== null;
@@ -95,8 +127,14 @@ export const stockReservationSweeper = cron.schedule("*/5 * * * *", async () => 
   if (!locked) return;
 
   try {
+    // Redis already knows whether any reservation can be due yet. Checking it
+    // costs nothing and leaves a serverless Postgres asleep on the ticks — the
+    // large majority — where the answer is no.
+    if (!(await shouldSweep(SWEEPS.STOCK_RESERVATION))) return;
+
     await sweepOnce();
   } catch (err) {
+    // Deliberately no horizon on failure: the next tick finds none and sweeps.
     logger.error("[ReservationSweep] Sweep failed", err);
   } finally {
     await redis.del(LOCK_KEY).catch(() => {});

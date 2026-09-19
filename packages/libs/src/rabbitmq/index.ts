@@ -144,6 +144,32 @@ export const publishToQueue = async (
   });
 };
 
+/**
+ * Best-effort nudge to worker-service's outbox relay.
+ *
+ * Published *after* the producer's transaction commits, so the relay always
+ * finds the row it is being told about. Deliberately fire-and-forget and
+ * deliberately not persistent: the durable copy of the event is the Postgres
+ * row, and this message only decides whether the relay learns about it now or
+ * on its next sweep. A broker that is down must not fail a checkout.
+ *
+ * The per-message expiration stops a relay outage from accumulating a queue of
+ * stale nudges — one sweep after it comes back catches everything they would
+ * have pointed at anyway.
+ */
+export const publishOutboxWakeup = async (queueName: string): Promise<void> => {
+  try {
+    const ch = await connectRabbitMQ();
+    await assertQueueOnce(ch, queueName);
+    ch.sendToQueue(queueName, Buffer.from("1"), {
+      persistent: false,
+      expiration: "30000",
+    });
+  } catch (err) {
+    logger.warn("Outbox wakeup could not be published; relay will sweep instead", err);
+  }
+};
+
 export const consumeQueue = async (
   queueName: string,
   handler: (msg: ConsumeMessage | null) => void,

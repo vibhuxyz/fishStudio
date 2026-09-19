@@ -14,7 +14,7 @@
     "build": "tsup && tsc --emitDeclarationOnly --declaration --declarationMap false --outDir dist --project tsconfig.json",
     "dev": "tsup --watch",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "cd ../.. && bun run db:guard && cd packages/db-postgres && prisma migrate dev",
     "db:studio": "prisma studio"
   },
   "dependencies": {

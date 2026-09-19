@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -47,6 +47,8 @@ const formatINR = (n: number) =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(n);
+
+const ORDERS_PER_PAGE = 20;
 
 const statusBadge = (order: SellerOrder) => (
   <PaymentBadge
@@ -274,41 +276,48 @@ const SellerPaymentDetail = () => {
   const sellerId = typeof params?.sellerId === "string" ? params.sellerId : "";
   const [period, setPeriod] = useState<StatsPeriod>("month");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<SellerOrder | null>(null);
 
   const { data: sellerData } = useAdminSellerDetail(sellerId);
   const { data: statsData, isLoading: statsLoading } = useAdminStats(period, sellerId);
-  const { data: ordersData, isLoading: ordersLoading } = useAdminSellerOrders(sellerId);
+  // Debounced so a search is one query when the admin stops typing rather than
+  // one per keystroke — each of these now costs a page query plus an aggregate.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
-  const stats = statsData?.stats;
-  const orders: SellerOrder[] = ordersData?.orders || [];
-  const store = ordersData?.store || sellerData?.store;
+  // Any new search starts at the first page; staying on page 4 of the previous
+  // result set would show an empty table for a term that has matches.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
-  const filtered = orders.filter((o) => {
-    const q = search.toLowerCase();
-    return (
-      o.id?.toLowerCase().includes(q) ||
-      (o.user as any)?.name?.toLowerCase().includes(q) ||
-      o.paymentMethod?.toLowerCase().includes(q) ||
-      o.status?.toLowerCase().includes(q)
-    );
+  const {
+    data: ordersData,
+    isLoading: ordersLoading,
+    isFetching: ordersFetching,
+  } = useAdminSellerOrders(sellerId, {
+    page,
+    limit: ORDERS_PER_PAGE,
+    search: debouncedSearch || undefined,
   });
 
-  const totalEarned = orders
-    .filter((o) => {
-      if (o.paymentMethod === "COD") return o.status === "DELIVERED";
-      return o.paymentStatus === "COMPLETED";
-    })
-    .reduce((sum, o) => sum + (o.totalAmount || (o as any).total || 0), 0);
+  const stats = statsData?.stats;
+  // Already the page the server selected: searching and paging happen in
+  // Postgres now, so there is nothing left to filter here.
+  const orders: SellerOrder[] = ordersData?.orders || [];
+  const store = ordersData?.store || sellerData?.store;
+  const pagination = ordersData?.pagination;
 
-  const totalRefunded = orders
-    .filter((o) => o.paymentStatus === "REFUNDED")
-    .reduce((sum, o) => sum + (o.totalAmount || (o as any).total || 0), 0);
-
-  const totalOrders = orders.length;
-  const pendingCOD = orders.filter(
-    (o) => o.paymentMethod === "COD" && o.status !== "DELIVERED" && o.status !== "REJECTED" && o.status !== "CANCELLED",
-  ).length;
+  // Whole-history figures, computed as SQL aggregates rather than by reducing
+  // over the rows on screen — a page of twenty cannot add up to a lifetime.
+  const totalEarned = ordersData?.totals?.totalEarned ?? 0;
+  const totalRefunded = ordersData?.totals?.totalRefunded ?? 0;
+  const totalOrders = ordersData?.totals?.totalOrders ?? 0;
+  const pendingCOD = ordersData?.totals?.pendingCOD ?? 0;
 
   return (
     <div className="w-full min-h-screen p-6 bg-[#0a0c14]">
@@ -443,7 +452,7 @@ const SellerPaymentDetail = () => {
 
         {ordersLoading ? (
           <p className="text-center text-white py-6">Loading transactions…</p>
-        ) : filtered.length === 0 ? (
+        ) : orders.length === 0 ? (
           <p className="text-center text-gray-400 py-6">No transactions found.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -462,7 +471,7 @@ const SellerPaymentDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((order) => {
+                {orders.map((order) => {
                   const date = new Date(order.createdAt);
                   const isCOD = order.paymentMethod === "COD";
                   const items: any[] = (order as any).orderItems || (order as any).items || [];
@@ -554,6 +563,31 @@ const SellerPaymentDetail = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between pt-4">
+            <p className="text-sm text-gray-400">
+              Page {pagination.page} of {pagination.totalPages} &mdash; {pagination.total}{" "}
+              {pagination.total === 1 ? "transaction" : "transactions"}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={!pagination.hasPrevPage || ordersFetching}
+                className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!pagination.hasNextPage || ordersFetching}
+                className="px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

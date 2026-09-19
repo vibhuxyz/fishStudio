@@ -4,6 +4,7 @@ import {
   prismaPostgres,
   writeAuditLog,
   enqueueOutboxEvent,
+  notifyOutboxPending,
   runSerializable,
   toMoney,
   Prisma,
@@ -40,6 +41,8 @@ import {
 import { publishToQueue } from "@repo/libs/rabbitmq";
 import { QUEUE_NAMES } from "@repo/libs/queues";
 import { redis } from "@repo/libs/redis";
+import { SWEEPS, markSweepDue } from "@repo/libs/sweep-gate";
+import { RESERVATION_GRACE_MS } from "../../jobs/stock-reservation.sweeper.js";
 import { logger } from "@repo/libs/logger";
 import {
   restoreOrderStock,
@@ -902,7 +905,7 @@ async function createCheckoutSessionForCheckout(params: {
 
   const expiresAt = new Date(Date.now() + CHECKOUT_SESSION_TTL_MS);
 
-  return runSerializable(async (tx) => {
+  const session = await runSerializable(async (tx) => {
     /* A held session reserves a coupon redemption, not just stock.
        
        These are the same three limits the Order path enforces, with one
@@ -993,6 +996,14 @@ async function createCheckoutSessionForCheckout(params: {
       select: { id: true, expiresAt: true },
     });
   });
+
+  // This session holds stock and a delivery slot until `expiresAt`, and the
+  // expiry sweep is what gives them back. Telling the gate exactly when that
+  // becomes due is what lets the sweep sleep through every night nobody shops,
+  // without the release itself being any slower than it was.
+  void markSweepDue(SWEEPS.CHECKOUT_EXPIRY, session.expiresAt);
+
+  return session;
 }
 
 /**
@@ -1549,6 +1560,14 @@ export const createOrder = async (
       select: { id: true },
     });
 
+    // The sweeper only cares about this row once it is older than its grace
+    // period. Recording that moment is what lets the sweep skip every tick
+    // until then rather than polling for it.
+    void markSweepDue(
+      SWEEPS.STOCK_RESERVATION,
+      new Date(Date.now() + RESERVATION_GRACE_MS),
+    );
+
     let decrementedItems: Array<{ productId: string; quantity: number; size?: string }>;
     try {
       decrementedItems = await reserveStock(items, productMap);
@@ -1943,6 +1962,11 @@ export const createOrder = async (
     }
 
     // Stock decrement is now handled BEFORE the Postgres transaction.
+
+    // The order's outbox rows are committed, so nudge the relay to drain them
+    // now rather than on its next sweep. Fire-and-forget by design: the rows
+    // are the durable copy and the sweep is the guarantee.
+    void notifyOutboxPending();
 
     /* ── 7. Respond immediately ─────────────────────────────────────────── */
     const responsePayload = { success: true, orderId: order.id, order };

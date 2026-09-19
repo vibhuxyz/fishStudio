@@ -22,4 +22,9 @@ export const QUEUE_NAMES = {
   // queue's consumers — a second consumer there would silently take half the
   // dashboard's events.
   ORDER_FOLLOWUP_EVENTS: "ORDER_FOLLOWUP_EVENTS",
+  // Carries no payload — it exists only to tell worker-service's outbox relay
+  // that a row was just committed, so the relay can drain immediately instead
+  // of discovering it on a timer. The relay still sweeps on its own schedule,
+  // so a lost wakeup delays an event rather than stranding it.
+  OUTBOX_WAKEUP: "OUTBOX_WAKEUP",
 } as const;

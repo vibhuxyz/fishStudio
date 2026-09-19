@@ -16,6 +16,8 @@ import { formatPaymentRef } from "@repo/shared/payment-id";
 import { formatIstDate } from "@repo/shared/datetime";
 import { PaymentBadge } from "@/shared/components/orders/payment-badge";
 
+const ORDER_HISTORY_PAGE_SIZE = 20;
+
 const PERIODS: { label: string; value: StatsPeriod }[] = [
   { label: "Week", value: "week" },
   { label: "Month", value: "month" },
@@ -38,9 +40,18 @@ const SellerDetailPage = () => {
   const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>("month");
   const [selectedProduct, setSelectedProduct] = useState<DetailedProductRow | null>(null);
   const { data: statsData, isLoading: isLoadingStats } = useAdminStats(statsPeriod, sellerId);
-  const { data: ordersData, isLoading: isLoadingOrders } = useAdminSellerOrders(sellerId);
+  // This panel is a recent-history view, not an export: the seller's whole
+  // order history used to be fetched in full on every visit, which grew without
+  // bound. One page at a time, newest first.
+  const [orderPage, setOrderPage] = useState(1);
+  const {
+    data: ordersData,
+    isLoading: isLoadingOrders,
+    isFetching: isFetchingOrders,
+  } = useAdminSellerOrders(sellerId, { page: orderPage, limit: ORDER_HISTORY_PAGE_SIZE });
   const stats = statsData?.stats;
   const orders = ordersData?.orders || [];
+  const orderPagination = ordersData?.pagination;
 
   // Seeded from the store once it loads, then owned by the form. `??` not `||`
   // so a deliberate 0 limit (every COD order needs a call) isn't read as unset.
@@ -825,6 +836,31 @@ const SellerDetailPage = () => {
               </div>
             ) : (
               <p className="text-gray-500 text-sm py-4 italic text-center">No orders found for this seller.</p>
+            )}
+
+            {orderPagination && orderPagination.totalPages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-xs text-gray-400">
+                  Page {orderPagination.page} of {orderPagination.totalPages} &mdash;{" "}
+                  {orderPagination.total} orders total
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                    disabled={!orderPagination.hasPrevPage || isFetchingOrders}
+                    className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-xs text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setOrderPage((p) => p + 1)}
+                    disabled={!orderPagination.hasNextPage || isFetchingOrders}
+                    className="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-xs text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

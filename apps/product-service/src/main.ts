@@ -21,6 +21,7 @@ import { prismaMongo } from "@repo/db-mongo";
 import { redis } from "@repo/libs/redis";
 import { initMeilisearchIndex } from "./lib/meilisearch.js";
 import { productSyncWorker } from "./workers/productSync.worker.js";
+import { disconnectPostgres } from "@repo/db-postgres";
 
 initMetrics({ serviceName: "product-service" });
 initTracing({ serviceName: "product-service" });
@@ -97,7 +98,12 @@ server.on("error", (err) => {
 const shutdown = () => {
   console.log("Shutting down Product Service...");
   productCleanupTask.stop();
-  server.close(() => process.exit(0));
+  server.close(() => {
+      // Hand the pool back rather than leaving the connections for the
+      // server to time out — a redeploy otherwise stacks a second set on top
+      // of the first, and the compute stays awake for both.
+      void disconnectPostgres().finally(() => process.exit(0));
+  });
 };
 
 process.on("SIGINT", shutdown);

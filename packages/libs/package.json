@@ -4,8 +4,8 @@
   "private": true,
   "main": "./dist/main.js",
   "scripts": {
-    "build": "tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/sendPush/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts src/auth-tokens/index.ts --format esm --dts && mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/",
-    "dev": "mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/ ; tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/sendPush/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts src/auth-tokens/index.ts --format esm --dts --watch"
+    "build": "tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/sendPush/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts src/auth-tokens/index.ts src/sweep-gate/index.ts --format esm --dts && mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/",
+    "dev": "mkdir -p dist/sendMail/templates && cp src/sendMail/templates/*.ejs dist/sendMail/templates/ ; tsup src/cloudinary/index.ts src/rabbitmq/index.ts src/redis/index.ts src/sendMail/index.ts src/sendOtp/index.ts src/sendPush/index.ts src/seo/productSeo.ts src/utils/logger.ts src/queues/index.ts src/cache/index.ts src/auth-tokens/index.ts src/sweep-gate/index.ts --format esm --dts --watch"
   },
   "exports": {
     "./cloudinary": {
@@ -23,6 +23,10 @@
     "./redis": {
       "types": "./dist/redis/index.d.ts",
       "default": "./dist/redis/index.js"
+    },
+    "./sweep-gate": {
+      "types": "./dist/sweep-gate/index.d.ts",
+      "default": "./dist/sweep-gate/index.js"
     },
     "./sendMail": {
       "types": "./dist/sendMail/index.d.ts",

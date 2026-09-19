@@ -9,6 +9,7 @@ import { errorMiddleware } from "@repo/error-handlers";
 import { ENV } from "@repo/env-config";
 import {
   buildHealthHandler,
+  cacheCheck,
   correlationId,
   httpLogging,
   httpMetrics,
@@ -17,7 +18,7 @@ import {
   initTracing,
   metricsRoute,
 } from "@repo/observability";
-import { prismaPostgres } from "@repo/db-postgres";
+import { prismaPostgres, disconnectPostgres } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { redis } from "@repo/libs/redis";
 import { logger } from "@repo/libs/logger";
@@ -79,10 +80,14 @@ app.get(
   buildHealthHandler({
     service: "order-service",
     checks: {
-      postgres: async () => {
+      // Cached: this endpoint is polled, and an uncached `SELECT 1` on every
+      // poll is enough on its own to stop a serverless Postgres from ever
+      // suspending. A failure is never cached, so an outage still shows up on
+      // the next probe.
+      postgres: cacheCheck(async () => {
         await prismaPostgres.$queryRaw`SELECT 1`;
         return true;
-      },
+      }),
       mongo: async () => {
         await prismaMongo.$runCommandRaw({ ping: 1 });
         return true;
@@ -118,7 +123,12 @@ server.on("error", (err) => logger.error("Server error", { err }));
 const shutdown = () => {
   logger.info("Shutting down order-service...");
   stockReservationSweeper.stop();
-  server.close(() => process.exit(0));
+  server.close(() => {
+      // Hand the pool back rather than leaving the connections for the
+      // server to time out — a redeploy otherwise stacks a second set on top
+      // of the first, and the compute stays awake for both.
+      void disconnectPostgres().finally(() => process.exit(0));
+  });
 };
 
 process.on("SIGINT", shutdown);

@@ -1,37 +1,3 @@
-# Local development stack: backing services + observability plane, in one file.
-#
-#   docker compose -f docker-compose.dev.yml up -d
-#   docker compose -f docker-compose.dev.yml down          # keep data
-#   docker compose -f docker-compose.dev.yml down -v       # wipe data
-#
-# The node apps still run on the host (`bun run dev` / `turbo dev`).
-#
-# What runs here:
-#   * rabbitmq, meilisearch   - backing services with no hosted equivalent in dev
-#   * prometheus, grafana, loki, tempo, alertmanager - observability plane
-#
-# What does NOT run here:
-#   * Redis / Postgres - dev points at the hosted Upstash / Neon instances via
-#     .env (REDIS_DATABASE_URL, POSTGRES_URL), same as production.
-#
-# Observability notes (dev variant; prod lives in prod.docker-compose.observability.yml):
-#   * Prometheus scrapes the host via host.docker.internal - the node apps run
-#     under `bun dev` and publish /metrics on localhost.
-#   * Grafana is anonymous-admin with the login form disabled: a debugging tool
-#     on a loopback-bound port, not an auth boundary.
-#   * Every observability port is bound to 127.0.0.1.
-#   * Retention is 15d - plenty for live dashboards.
-#
-# Matching .env values for the host apps:
-#   RABBITMQ_PROTOCOL=amqp
-#   RABBITMQ_HOST_NAME=localhost
-#   RABBITMQ_PORT=5672
-#   RABBITMQ_USER_NAME=admin
-#   RABBITMQ_PASSWORD=mysecretpassword
-#   RABBITMQ_VHOST=fishstudio_vhost
-#   MEILISEARCH_HOST=http://localhost:7700
-#   MEILI_MASTER_KEY=masterKey123
-
 name: fishstudio-dev
 
 services:
@@ -46,9 +12,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: mysecretpassword
-      # No RABBITMQ_DEFAULT_VHOST: setting it makes RabbitMQ create ONLY that
-      # vhost and skip the default "/". @repo/libs/rabbitmq builds its URL
-      # without a vhost path, so it connects to "/" — same as prod.
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # management UI -> http://localhost:15672
@@ -81,9 +44,7 @@ services:
     networks:
       - fishstudio-dev
 
-  # ---------------------------------------------------------------------------
-  # Observability plane (dev variant)
-  # ---------------------------------------------------------------------------
+
   prometheus:
     container_name: fishstudio-prometheus
     image: prom/prometheus:v3.1.0
@@ -99,8 +60,7 @@ services:
       - ./docker/observability/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     extra_hosts:
-      # Docker Desktop resolves host.docker.internal already; this makes the
-      # same config work on Linux.
+      
       - "host.docker.internal:host-gateway"
     networks:
       - fishstudio-dev
@@ -112,7 +72,7 @@ services:
     depends_on:
       - prometheus
     environment:
-      # Local debugging tool on a loopback-bound port — not an auth boundary.
+
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
@@ -130,7 +90,7 @@ services:
     restart: unless-stopped
     command: ["-config.file=/etc/loki/loki.yml"]
     ports:
-      # 3101 on the host, not 3100: Grafana already owns that one locally.
+
       - "127.0.0.1:3101:3100"
     volumes:
       - ./docker/observability/loki.yml:/etc/loki/loki.yml:ro

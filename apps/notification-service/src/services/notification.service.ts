@@ -1,6 +1,6 @@
 import { prismaPostgres, type Prisma } from "@repo/db-postgres";
 import { sendEmail } from "@repo/libs/sendMail";
-import { sendPhoneOtp } from "@repo/libs/sendOtp";
+import { sendPhoneOtp, sendSms } from "@repo/libs/sendOtp";
 import { sendPushNotification } from "@repo/libs/sendPush";
 import { logger } from "@repo/libs/logger";
 import { ENV } from "@repo/env-config";
@@ -73,7 +73,7 @@ export async function send({
   if (channels.includes("SMS") && contact.phone_number) {
     try {
       if (ENV.NODE_ENV === "production") {
-        await sendPhoneOtp(contact.name, contact.phone_number, message);
+        await sendSms(contact.phone_number, message);
       } else {
         logger.info(`[SMS][DEV] To ${contact.phone_number}: ${message}`);
       }

@@ -14,7 +14,7 @@
     "build": "tsup && tsc --emitDeclarationOnly --declaration --declarationMap false --outDir dist --project tsconfig.json",
     "dev": "tsup --watch",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:push": "cd ../.. && bun run db:guard && cd packages/db-mongo && prisma db push",
     "db:seed": "prisma db seed",
     "db:indexes": "tsx src/ensure-indexes.ts"
   },

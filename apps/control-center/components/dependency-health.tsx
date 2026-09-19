@@ -34,7 +34,12 @@ export function DependencyHealth({ service }: { service: ServiceName }) {
       }
       return (await response.json()) as HealthPayload;
     },
-    refetchInterval: 10_000,
+    // Slower than the metric panels on purpose. Each poll fans out to every
+    // service's health endpoint, and those probe Postgres — a tab left open
+    // on this page is otherwise a standing reason for the database never to
+    // idle. The services cache their successful checks too, so polling
+    // faster than this would not even show fresher data.
+    refetchInterval: 30_000,
   });
 
   const checks = Object.entries(data?.checks ?? {});

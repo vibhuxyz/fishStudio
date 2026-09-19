@@ -46,15 +46,27 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prismaPostgres;
 }
 
-// Check database connection
-prismaPostgres
-  .$connect()
-  .then(() => {
-    console.log("PostgreSQL is connected successfully!");
-  })
-  .catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("PostgreSQL connection error: ", message);
-  });
+/**
+ * Connecting is deliberately left to the first query.
+ *
+ * This module used to call `$connect()` at import time, which meant every
+ * service that imports it opened a pool the moment it booted and held it open
+ * for the life of the process — whether or not anybody was using the database.
+ * Five services doing that is a permanent floor of idle connections, and a
+ * serverless Postgres does not suspend while connections are open: the compute
+ * is billed for the whole day at its minimum size to serve nothing overnight.
+ *
+ * Nothing is lost by waiting. Prisma connects lazily on the first query, and
+ * boot-time verification was never what proved the database reachable anyway —
+ * `/internal/health` runs a real `SELECT 1` and reports the failure with the
+ * reason attached, which is where anyone actually looks.
+ *
+ * Services should call `disconnectPostgres()` on shutdown so a redeploy hands
+ * its connections back immediately rather than leaving them for the server to
+ * time out.
+ */
+export function disconnectPostgres(): Promise<void> {
+  return prismaPostgres.$disconnect();
+}
 
 export * from "../prisma/generated-client/index.js";

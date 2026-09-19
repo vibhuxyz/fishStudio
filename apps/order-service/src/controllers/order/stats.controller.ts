@@ -1,4 +1,4 @@
-import { prismaPostgres, toMoney } from "@repo/db-postgres";
+import { prismaPostgres, toMoney, type Prisma } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
 import { Response, NextFunction } from "express";
 import { ValidationError } from "@repo/error-handlers";
@@ -7,7 +7,7 @@ import {
   Period, 
   getPeriodStart, 
   computeStats, 
-  STATS_CACHE_TTL 
+  statsCacheTtl 
 } from "./utils.js";
 
 async function hydrateOrders(orders: any[]) {
@@ -81,8 +81,23 @@ export const getSellerStats = async (
 
     const ordersRaw = await prismaPostgres.order.findMany({
       where: { storeId, createdAt: { gte: since } },
-      include: {
-        orderItems: true
+      // Only the columns the rollup actually reads. `include` pulled all 49
+      // columns of Order — delivery coordinates, landmarks, staff photos,
+      // invoice numbers — for every order in the period, to compute totals
+      // that touch seven of them. On a metered database that is paid for
+      // twice, in the scan and in the bytes shipped back.
+      select: {
+        id: true,
+        userId: true,
+        storeId: true,
+        status: true,
+        paymentStatus: true,
+        totalAmount: true,
+        discountAmount: true,
+        deliveryCharge: true,
+        orderItems: {
+          select: { productId: true, quantity: true, price: true },
+        },
       },
     });
 
@@ -90,7 +105,7 @@ export const getSellerStats = async (
     const stats = computeStats(orders);
 
     try {
-      await redis.set(cacheKey, JSON.stringify({ stats }), "EX", STATS_CACHE_TTL);
+      await redis.set(cacheKey, JSON.stringify({ stats }), "EX", statsCacheTtl(period));
     } catch {
       // Non-fatal
     }
@@ -141,8 +156,23 @@ export const getAdminStats = async (
         ...(storeId ? { storeId } : {}),
         createdAt: { gte: since },
       },
-      include: {
-        orderItems: true
+      // Only the columns the rollup actually reads. `include` pulled all 49
+      // columns of Order — delivery coordinates, landmarks, staff photos,
+      // invoice numbers — for every order in the period, to compute totals
+      // that touch seven of them. On a metered database that is paid for
+      // twice, in the scan and in the bytes shipped back.
+      select: {
+        id: true,
+        userId: true,
+        storeId: true,
+        status: true,
+        paymentStatus: true,
+        totalAmount: true,
+        discountAmount: true,
+        deliveryCharge: true,
+        orderItems: {
+          select: { productId: true, quantity: true, price: true },
+        },
       },
     });
 
@@ -179,7 +209,7 @@ export const getAdminStats = async (
     };
 
     try {
-      await redis.set(cacheKey, JSON.stringify(payload), "EX", STATS_CACHE_TTL);
+      await redis.set(cacheKey, JSON.stringify(payload), "EX", statsCacheTtl(period));
     } catch {
       // Non-fatal
     }
@@ -190,6 +220,44 @@ export const getAdminStats = async (
   }
 };
 
+const ADMIN_ORDERS_DEFAULT_LIMIT = 20;
+const ADMIN_ORDERS_MAX_LIMIT = 100;
+
+/** Enum values whose name contains the search term, for the free-text box. */
+function matchEnum<T extends string>(values: readonly T[], term: string): T[] {
+  return values.filter((value) => value.toLowerCase().includes(term));
+}
+
+const ORDER_STATUSES = [
+  "PENDING",
+  "ACCEPTED",
+  "PREPARING",
+  "READY_FOR_PICKUP",
+  "ASSIGNED_TO_RIDER",
+  "REJECTED",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
+
+const PAYMENT_METHODS = ["COD", "RAZORPAY", "ONLINE"] as const;
+
+/**
+ * The seller's order history, one page at a time.
+ *
+ * Paginated and searched in Postgres rather than in the browser. This used to
+ * return every order the store had ever taken — all 49 columns, every order
+ * item, every one of them hydrated against Mongo — so that the admin page could
+ * filter the array client-side. That is a query with no upper bound: it gets
+ * slower and more expensive every day the seller trades, and it was re-run on
+ * every visit to two different pages.
+ *
+ * The headline figures are the reason this could not simply be truncated: they
+ * are sums over the seller's whole history, and a page of twenty orders cannot
+ * produce them. They come back as SQL aggregates instead — one extra round trip
+ * that reads an index and returns four numbers, rather than shipping the table
+ * to Node to be added up there.
+ */
 export const getAdminSellerOrders = async (
   req: any,
   res: Response,
@@ -199,30 +267,125 @@ export const getAdminSellerOrders = async (
     const { sellerId } = req.params;
     if (!sellerId) return next(new ValidationError("sellerId is required"));
 
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(
+      ADMIN_ORDERS_MAX_LIMIT,
+      Math.max(1, Number(req.query.limit) || ADMIN_ORDERS_DEFAULT_LIMIT),
+    );
+    const search = String(req.query.search ?? "").trim().toLowerCase();
+    const status = String(req.query.status ?? "").trim().toUpperCase();
+
+    if (status && !ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])) {
+      return next(new ValidationError(`Unknown order status: ${status}`));
+    }
+
     // Stores are in Mongo
     const store = await prismaMongo.stores.findUnique({ 
       where: { sellerId },
       include: { seller: { select: { id: true, name: true, email: true } } }
     });
     if (!store) {
-      return res.status(200).json({ success: true, orders: [], seller: null });
+      return res.status(200).json({
+        success: true,
+        orders: [],
+        seller: null,
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+        totals: { totalOrders: 0, totalEarned: 0, totalRefunded: 0, pendingCOD: 0 },
+      });
     }
 
-    const ordersRaw = await prismaPostgres.order.findMany({
-      where: { storeId: store.id },
-      include: {
-        orderItems: true
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    /* The search box is one free-text field over an id and two enums, so it is
+       matched the way each column allows: a prefix match on the id, and an
+       expansion of the term to the enum values whose names contain it. Prisma
+       cannot do `contains` on an enum column, and casting one to text per row
+       would give up the index for a search that is really over nine constants. */
+    const searchFilter: Prisma.OrderWhereInput[] = [];
+    if (search) {
+      const statuses = matchEnum(ORDER_STATUSES, search);
+      const methods = matchEnum(PAYMENT_METHODS, search);
+
+      searchFilter.push({ id: { contains: search, mode: "insensitive" } });
+      searchFilter.push({ orderNumber: { contains: search, mode: "insensitive" } });
+      if (statuses.length > 0) searchFilter.push({ status: { in: statuses } });
+      if (methods.length > 0) searchFilter.push({ paymentMethod: { in: methods } });
+    }
+
+    const where: Prisma.OrderWhereInput = {
+      storeId: store.id,
+      ...(status ? { status: status as (typeof ORDER_STATUSES)[number] } : {}),
+      ...(searchFilter.length > 0 ? { OR: searchFilter } : {}),
+    };
+
+    const [ordersRaw, total, totals] = await Promise.all([
+      prismaPostgres.order.findMany({
+        where,
+        include: { orderItems: true },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prismaPostgres.order.count({ where }),
+      // Whole-history figures for the summary tiles, unaffected by the search
+      // or the page — same scope the client-side reduce had. One statement with
+      // FILTER clauses rather than four aggregate queries, because each one
+      // would be its own round trip for a single number.
+      prismaPostgres.$queryRaw<
+        Array<{
+          totalOrders: number;
+          totalEarned: Prisma.Decimal;
+          totalRefunded: Prisma.Decimal;
+          pendingCOD: number;
+        }>
+      >`
+        SELECT
+          count(*)::int AS "totalOrders",
+          COALESCE(sum("totalAmount") FILTER (
+            WHERE ("paymentMethod" = 'COD' AND "status" = 'DELIVERED')
+               OR ("paymentMethod" IS DISTINCT FROM 'COD' AND "paymentStatus" = 'COMPLETED')
+          ), 0) AS "totalEarned",
+          COALESCE(sum("totalAmount") FILTER (
+            WHERE "paymentStatus" = 'REFUNDED'
+          ), 0) AS "totalRefunded",
+          count(*) FILTER (
+            WHERE "paymentMethod" = 'COD'
+              AND "status" NOT IN ('DELIVERED', 'REJECTED', 'CANCELLED')
+          )::int AS "pendingCOD"
+        FROM "Order"
+        WHERE "storeId" = ${store.id}
+      `,
+    ]);
 
     const orders = await hydrateOrders(ordersRaw);
+    const summary = totals[0];
 
     return res.status(200).json({
       success: true,
       orders,
       seller: store.seller || null,
-      store
+      store,
+      // Same shape as the admin order list, so the console's existing pager
+      // component works against this endpoint unchanged.
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
+      totals: {
+        totalOrders: summary?.totalOrders ?? 0,
+        totalEarned: toMoney(summary?.totalEarned),
+        totalRefunded: toMoney(summary?.totalRefunded),
+        pendingCOD: summary?.pendingCOD ?? 0,
+      },
     });
   } catch (error) {
     next(error);

@@ -1,8 +1,15 @@
 import { QUEUE_NAMES } from "@repo/libs/queues";
-import { buildOrderNumber, normalizeLocationCode, orderDateKey } from "@repo/shared/order-id";
-import { Prisma, type PaymentMethod } from "../prisma/generated-client/index.js";
+import {
+  buildOrderNumber,
+  normalizeLocationCode,
+  orderDateKey,
+} from "@repo/shared/order-id";
+import {
+  Prisma,
+  type PaymentMethod,
+} from "../prisma/generated-client/index.js";
 import { prismaPostgres } from "./client.js";
-import { enqueueOutboxEvent } from "./outbox.js";
+import { enqueueOutboxEvent, notifyOutboxPending } from "./outbox.js";
 import { runSerializable } from "./transaction.js";
 import { toMoney } from "./money.js";
 
@@ -146,7 +153,7 @@ export async function finalizeCheckoutSession(params: {
     return { orderId: existing.orderId, alreadyFinalized: true };
   }
 
-  return runSerializable(async (tx) => {
+  const result = await runSerializable(async (tx) => {
     // Re-read inside the transaction. The check above is an optimisation; THIS
     // is the one that has to be correct, because only a read at serializable
     // isolation is ordered against the other racer's write.
@@ -164,7 +171,8 @@ export async function finalizeCheckoutSession(params: {
       },
     });
 
-    if (!session) throw new Error(`finalizeCheckoutSession: no session ${sessionId}`);
+    if (!session)
+      throw new Error(`finalizeCheckoutSession: no session ${sessionId}`);
     if (session.orderId) {
       return { orderId: session.orderId, alreadyFinalized: true };
     }
@@ -179,7 +187,10 @@ export async function finalizeCheckoutSession(params: {
 
     const snapshot = session.snapshot as unknown as CheckoutSnapshotPayload;
 
-    const orderNumber = await allocateOrderNumber(tx, snapshot.storeLocationCode);
+    const orderNumber = await allocateOrderNumber(
+      tx,
+      snapshot.storeLocationCode,
+    );
 
     const order = await tx.order.create({
       data: {
@@ -197,7 +208,8 @@ export async function finalizeCheckoutSession(params: {
         deliveryLatitude: snapshot.deliveryDetails.latitude ?? null,
         deliveryLongitude: snapshot.deliveryDetails.longitude ?? null,
         deliveryLandmark: snapshot.deliveryDetails.landmark ?? null,
-        deliveryInstructions: snapshot.deliveryDetails.deliveryInstructions ?? null,
+        deliveryInstructions:
+          snapshot.deliveryDetails.deliveryInstructions ?? null,
         deliveryCharge: snapshot.deliveryCharge,
         billDetails: snapshot.billDetails,
         deliverySlot: snapshot.deliverySlot,
@@ -219,7 +231,12 @@ export async function finalizeCheckoutSession(params: {
           })),
         },
       },
-      select: { id: true, orderNumber: true, totalAmount: true, paymentMethod: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        totalAmount: true,
+        paymentMethod: true,
+      },
     });
 
     // What a seller reads out over the phone. Falls back to the internal id's
@@ -228,7 +245,11 @@ export async function finalizeCheckoutSession(params: {
 
     if (snapshot.couponId) {
       await tx.couponUsage.create({
-        data: { couponId: snapshot.couponId, userId: session.userId, orderId: order.id },
+        data: {
+          couponId: snapshot.couponId,
+          userId: session.userId,
+          orderId: order.id,
+        },
       });
     }
 
@@ -241,7 +262,10 @@ export async function finalizeCheckoutSession(params: {
         transactionId: gatewayPaymentId,
         gatewayOrderId,
         metadata: gatewayOrderId
-          ? { razorpayOrderId: gatewayOrderId, razorpayPaymentId: gatewayPaymentId }
+          ? {
+              razorpayOrderId: gatewayOrderId,
+              razorpayPaymentId: gatewayPaymentId,
+            }
           : undefined,
       },
     });
@@ -291,7 +315,7 @@ export async function finalizeCheckoutSession(params: {
     });
 
     /* Seller-facing fan-out, in the same transaction as the order.
-       
+
        Through the outbox rather than a post-commit publish for the same reason
        the customer's confirmation is: a seller who is never told about a paid
        order finds out when the customer rings to ask where the fish is. Under
@@ -340,7 +364,7 @@ export async function finalizeCheckoutSession(params: {
     }
 
     /* Referral credit, if this purchase carries one.
-       
+
        Deferred to order-service through the outbox rather than done here: the
        reward writes Mongo coupons, which this package cannot reach. Through the
        outbox rather than a publish so it is atomic with the order — a referrer
@@ -367,6 +391,14 @@ export async function finalizeCheckoutSession(params: {
 
     return { orderId: order.id, alreadyFinalized: false };
   });
+
+  // After the commit, never inside it: the relay must be able to see the rows
+  // it is being sent to look for. Not awaited into the caller's critical path
+  // and it cannot throw — a broker that is down delays the confirmation to the
+  // relay's next sweep, it does not fail a paid checkout.
+  void notifyOutboxPending();
+
+  return result;
 }
 
 /** The session was already released, so its stock and slot are gone. */

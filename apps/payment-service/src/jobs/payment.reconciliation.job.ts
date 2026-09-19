@@ -9,7 +9,12 @@ const LOCK_KEY = "payment:reconcile:lock";
 const LOCK_TTL_SECONDS = 4 * 60;
 
 // Exported so main.ts can stop it on graceful shutdown.
-export const paymentReconciliationTask = cron.schedule("*/5 * * * *", async () => {
+// Back to five minutes. reconcilePendingPayments consults the sweep gate before
+// it queries, so an idle tick is a Redis read rather than a reason for the
+// database to be awake.
+export const RECONCILE_CRON = process.env.PAYMENT_RECONCILE_CRON || "*/5 * * * *";
+
+export const paymentReconciliationTask = cron.schedule(RECONCILE_CRON, async () => {
   let locked = false;
   try {
     locked = (await redis.set(LOCK_KEY, "1", "EX", LOCK_TTL_SECONDS, "NX")) !== null;

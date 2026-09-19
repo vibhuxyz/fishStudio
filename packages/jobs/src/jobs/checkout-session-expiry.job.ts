@@ -1,5 +1,6 @@
 import { prismaPostgres, writeAuditLog } from "@repo/db-postgres";
 import { prismaMongo } from "@repo/db-mongo";
+import { SWEEPS, recordSweepHorizon, shouldSweep } from "@repo/libs/sweep-gate";
 
 /**
  * Releases what an abandoned checkout was holding.
@@ -26,6 +27,11 @@ interface ReservedItem {
 const EXPIRY_BATCH_SIZE = 200;
 
 export async function releaseExpiredCheckoutSessions() {
+  // Ask Redis whether anything can possibly be due before asking Postgres.
+  // On a quiet night the answer is no, and the database is left asleep rather
+  // than woken every few minutes to confirm there is nothing to do.
+  if (!(await shouldSweep(SWEEPS.CHECKOUT_EXPIRY))) return;
+
   const now = new Date();
 
   try {
@@ -42,7 +48,10 @@ export async function releaseExpiredCheckoutSessions() {
       take: EXPIRY_BATCH_SIZE,
     });
 
-    if (expired.length === 0) return;
+    if (expired.length === 0) {
+      await recordNextExpiry();
+      return;
+    }
 
     for (const session of expired) {
       // Claim before releasing anything. Conditional on still being PENDING so
@@ -79,9 +88,31 @@ export async function releaseExpiredCheckoutSessions() {
     }
 
     console.log(`[CheckoutSessionExpiry] Released ${expired.length} abandoned checkout(s)`);
+    await recordNextExpiry();
   } catch (error) {
+    // No horizon is recorded on failure, so the next tick finds none and
+    // sweeps — a failed pass must not talk the gate into skipping the retry.
     console.error("[CheckoutSessionExpiry] Sweep failed", error);
   }
+}
+
+/**
+ * Parks the sweep until the oldest live session is actually due.
+ *
+ * The earliest `expiresAt` still PENDING is exactly when this job next has
+ * something to do. A batch that filled up handles itself: the rows left behind
+ * are already past their deadline, so the minimum is in the past and the next
+ * tick sweeps again rather than sleeping on a backlog. No pending sessions at
+ * all means nothing to do until the safety interval. Served by the same partial
+ * index the sweep itself reads.
+ */
+async function recordNextExpiry(): Promise<void> {
+  const next = await prismaPostgres.checkoutSession.aggregate({
+    where: { status: "PENDING" },
+    _min: { expiresAt: true },
+  });
+
+  await recordSweepHorizon(SWEEPS.CHECKOUT_EXPIRY, next._min.expiresAt ?? null);
 }
 
 /**

@@ -4,6 +4,7 @@ import { checkAbandonedCarts } from "./jobs/abandoned-cart.job.js";
 import { cancelStaleUnpaidOrders } from "./jobs/stale-orders.job.js";
 import { releaseExpiredCheckoutSessions } from "./jobs/checkout-session-expiry.job.js";
 import {
+  pruneAuditLog,
   pruneSettledEvents,
   pruneSettledStockReservations,
 } from "./jobs/outbox-retention.job.js";
@@ -24,6 +25,15 @@ export class CronManager {
 
   /**
    * Initializes and starts all registered cron jobs.
+   */
+  /**
+   * Schedules are aligned on purpose.
+   *
+   * Every job here is a sweep that usually finds nothing, and each one is a
+   * reason for a serverless Postgres to be awake. Staggered across the hour
+   * they add up to continuous activity and a compute that never suspends;
+   * landing them on the same multiples of ten minutes concentrates the work
+   * into one short wake and leaves a genuine idle gap between them.
    */
   public async init() {
     console.log("🕒 Initializing Cron Jobs...");
@@ -56,13 +66,17 @@ export class CronManager {
       await cancelStaleUnpaidOrders();
     });
 
-    // 3b. Abandoned checkout sessions (every 2 minutes)
-    // Far more often than the stale-order sweep above, because a session holds
-    // stock and a delivery slot that nothing else will ever give back, and its
-    // whole point is that capacity returns quickly. Cheap to run: the index it
-    // reads is partial on PENDING rows past their deadline, so an idle sweep
-    // touches almost nothing.
-    this.schedule("*/2 * * * *", async () => {
+    // 3b. Abandoned checkout sessions — back on its original two-minute tick.
+    //
+    // The tick is cheap again because it no longer implies a query. The job
+    // asks the sweep gate first, and the gate answers out of Redis: unless a
+    // session is actually past its deadline, the tick returns without touching
+    // Postgres at all. So the cadence now costs what it looks like it costs,
+    // and there is no reason to trade responsiveness for it — capacity comes
+    // back within two minutes of a checkout being abandoned, as it did before,
+    // while an idle night wakes the database once an hour instead of thirty
+    // times.
+    this.schedule(process.env.CHECKOUT_EXPIRY_CRON || "*/2 * * * *", async () => {
       await releaseExpiredCheckoutSessions();
     });
 
@@ -73,6 +87,8 @@ export class CronManager {
       await Promise.allSettled([
         pruneSettledEvents(),
         pruneSettledStockReservations(),
+        // No-op unless AUDIT_LOG_RETENTION_DAYS is set. See the job.
+        pruneAuditLog(),
       ]);
     });
 

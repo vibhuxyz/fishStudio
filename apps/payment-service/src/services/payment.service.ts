@@ -11,6 +11,12 @@ import { ENV } from "@repo/env-config";
 import { AppError, ValidationError, NotFoundError, ForbiddenError } from "@repo/error-handlers";
 import { logger } from "@repo/libs/logger";
 import { redis } from "@repo/libs/redis";
+import {
+  SWEEPS,
+  markSweepDue,
+  recordSweepHorizon,
+  shouldSweep,
+} from "@repo/libs/sweep-gate";
 import type { VerifyPaymentInput, InitiateRefundInput } from "@repo/zod-schema";
 import { getPaymentProvider } from "../payment/payment.factory.js";
 import type { GatewayOrder, NormalizedWebhookEvent } from "../payment/payment.interface.js";
@@ -189,6 +195,11 @@ async function createAndBindSessionGatewayOrder(params: {
     amount: toMoney(totalAmount),
     ...(actorType === "SYSTEM" ? { source: "prewarm" } : {}),
   });
+
+  // A payment now exists that the reconcile sweep will care about once it is
+  // old enough. Telling the gate when that is lets the sweep stay asleep until
+  // then instead of waking the database every few minutes to check.
+  void markSweepDue(SWEEPS.PAYMENT_RECONCILE, new Date(Date.now() + RECONCILE_MIN_AGE_MS));
 
   return gwOrder;
 }
@@ -509,6 +520,10 @@ async function createAndBindGatewayOrder(params: {
       ...(actorType === "SYSTEM" ? { source: "prewarm" } : {}),
     },
   );
+
+  // Same as the session path above: tell the gate when this payment becomes
+  // worth reconciling, so the sweep can sleep until then.
+  void markSweepDue(SWEEPS.PAYMENT_RECONCILE, new Date(Date.now() + RECONCILE_MIN_AGE_MS));
 
   return gwOrder;
 }
@@ -1273,6 +1288,14 @@ export async function recheckOrderPayment(params: {
 }
 
 export async function reconcilePendingPayments(): Promise<{ scanned: number; settled: number }> {
+  // Nothing can be due before the recorded horizon, and Redis can say so
+  // without waking Postgres. Fails open: an unknown horizon or an unreachable
+  // Redis both sweep, so the gate can only ever skip a pass it is sure is
+  // pointless.
+  if (!(await shouldSweep(SWEEPS.PAYMENT_RECONCILE))) {
+    return { scanned: 0, settled: 0 };
+  }
+
   const now = Date.now();
 
   const stale = await prismaPostgres.payment.findMany({
@@ -1315,7 +1338,32 @@ export async function reconcilePendingPayments(): Promise<{ scanned: number; set
     }
   }
 
+  await recordNextReconcile();
+
   return { scanned: stale.length, settled };
+}
+
+/**
+ * Parks the reconcile sweep until a payment is old enough to be worth asking
+ * the gateway about.
+ *
+ * A PENDING payment becomes reconcilable RECONCILE_MIN_AGE_MS after it was
+ * created, so the oldest one that is still waiting gives the next moment this
+ * job has anything to do. Nothing pending parks it until the safety interval —
+ * which on a quiet night is the difference between waking the database every
+ * ten minutes and waking it once an hour.
+ */
+async function recordNextReconcile(): Promise<void> {
+  const oldest = await prismaPostgres.payment.aggregate({
+    where: { status: "PENDING", gatewayOrderId: { not: null } },
+    _min: { createdAt: true },
+  });
+
+  const createdAt = oldest._min.createdAt;
+  await recordSweepHorizon(
+    SWEEPS.PAYMENT_RECONCILE,
+    createdAt ? new Date(createdAt.getTime() + RECONCILE_MIN_AGE_MS) : null,
+  );
 }
 
 /* ── Payments needing human attention ────────────────────────────────────

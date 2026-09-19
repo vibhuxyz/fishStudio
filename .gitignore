@@ -40,3 +40,4 @@ fishstudio.apk
 
 # Prometheus scrape credential, written by the deploy step
 docker/observability/metrics-token
+.env.s

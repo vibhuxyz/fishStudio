@@ -9,6 +9,7 @@ import { errorMiddleware } from "@repo/error-handlers";
 import { connectRabbitMQ, isRabbitMQHealthy } from "@repo/libs/rabbitmq";
 import {
   buildHealthHandler,
+  cacheCheck,
   correlationId,
   httpLogging,
   httpMetrics,
@@ -17,7 +18,7 @@ import {
   initTracing,
   metricsRoute,
 } from "@repo/observability";
-import { prismaPostgres } from "@repo/db-postgres";
+import { disconnectPostgres, prismaPostgres } from "@repo/db-postgres";
 import { logger } from "@repo/libs/logger";
 import notificationRouter from "./routes/notification.router.js";
 import { startNotificationConsumer } from "./consumers/notification.consumer.js";
@@ -104,10 +105,14 @@ app.get(
   buildHealthHandler({
     service: "notification-service",
     checks: {
-      postgres: async () => {
+      // Cached: this endpoint is polled, and an uncached `SELECT 1` on every
+      // poll is enough on its own to stop a serverless Postgres from ever
+      // suspending. A failure is never cached, so an outage still shows up on
+      // the next probe.
+      postgres: cacheCheck(async () => {
         await prismaPostgres.$queryRaw`SELECT 1`;
         return true;
-      },
+      }),
       rabbitmq: async () => isRabbitMQHealthy(),
     },
   }),
@@ -144,10 +149,13 @@ const shutdown = async (signal: string) => {
   if (server) {
     server.close(() => {
       logger.info("[Notification Service] HTTP server closed");
-      process.exit(0);
+      // Hand the pool back rather than leaving the connections for the
+      // server to time out — a redeploy otherwise stacks a second set on top
+      // of the first, and the compute stays awake for both.
+      void disconnectPostgres().finally(() => process.exit(0));
     });
   } else {
-    process.exit(0);
+    void disconnectPostgres().finally(() => process.exit(0));
   }
 };
 

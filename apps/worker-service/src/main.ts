@@ -9,9 +9,10 @@ import { ENV } from "@repo/env-config";
 import { CronManager } from "@repo/jobs";
 import { logger } from "@repo/libs/logger";
 import { isRabbitMQHealthy } from "@repo/libs/rabbitmq";
-import { prismaPostgres } from "@repo/db-postgres";
+import { disconnectPostgres, prismaPostgres } from "@repo/db-postgres";
 import {
   buildHealthPayload,
+  cacheCheck,
   initMetrics,
   initTracing,
   isMetricsRequestAuthorised,
@@ -63,13 +64,21 @@ async function mainWorkerService() {
       }
 
       if (path === "/internal/health") {
+        // Matches the Express handler the other services get from
+        // buildHealthHandler: routine polls read the cache, `?deep=1` probes.
+        const query = (req.url ?? "").split("?")[1] ?? "";
+        const deep = /(^|&)deep=(1|true)(&|$)/.test(query);
+
         buildHealthPayload({
           service: "worker-service",
+          deep,
           checks: {
-            postgres: async () => {
+            // Cached — see the note in the other services: an uncached probe
+            // on every poll keeps a serverless Postgres awake by itself.
+            postgres: cacheCheck(async () => {
               await prismaPostgres.$queryRaw`SELECT 1`;
               return true;
-            },
+            }),
             rabbitmq: async () => isRabbitMQHealthy(),
           },
         })
@@ -140,7 +149,10 @@ async function mainWorkerService() {
       server.close(() => {
         stopOutboxRelay();
         cronManager.stopAll();
-        process.exit(0);
+      // Hand the pool back rather than leaving the connections for the
+      // server to time out — a redeploy otherwise stacks a second set on top
+      // of the first, and the compute stays awake for both.
+        void disconnectPostgres().finally(() => process.exit(0));
       });
     };
 

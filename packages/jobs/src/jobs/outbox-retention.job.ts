@@ -100,3 +100,45 @@ export async function pruneSettledStockReservations() {
     console.error("[JOB] ❌ Error pruning stock reservations:", error);
   }
 }
+
+/**
+ * Prunes AuditLog — only if a retention window has been configured.
+ *
+ * Off unless AUDIT_LOG_RETENTION_DAYS is set, and deliberately so. Everything
+ * else in this file deletes rows that have served their purpose: a PUBLISHED
+ * outbox event and a CONSUMED reservation describe work that is finished, and
+ * nothing will ever ask about them again. AuditLog is the opposite — it is the
+ * durable record of who moved money and when, and the questions it answers
+ * (a chargeback, a disputed refund, a tax audit) arrive months later and from
+ * outside the system. How long that has to be kept is a legal and commercial
+ * decision, not one a cleanup job should make by defaulting to a number.
+ *
+ * Set it once you have decided. It is the only table here that grows without
+ * bound, so on a database billed for storage and history it is what eventually
+ * dominates the bill.
+ */
+export async function pruneAuditLog() {
+  const days = Number(process.env.AUDIT_LOG_RETENTION_DAYS);
+  if (!Number.isFinite(days) || days <= 0) return;
+
+  const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  try {
+    await pruneInBatches("AuditLog", async () => {
+      // Served by AuditLog_createdAt_idx. Batched by id like the others so the
+      // first run against years of history doesn't take one long lock.
+      const ids = await prismaPostgres.auditLog.findMany({
+        where: { createdAt: { lt: threshold } },
+        select: { id: true },
+        take: DELETE_BATCH_SIZE,
+      });
+      if (ids.length === 0) return 0;
+      const { count } = await prismaPostgres.auditLog.deleteMany({
+        where: { id: { in: ids.map((row) => row.id) } },
+      });
+      return count;
+    });
+  } catch (error) {
+    console.error("[JOB] ❌ Error pruning audit log:", error);
+  }
+}

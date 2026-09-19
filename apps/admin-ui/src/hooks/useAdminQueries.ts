@@ -396,13 +396,47 @@ export const fetchAdminSellerDetail = async (
   return response.data.seller ?? null;
 };
 
-export const fetchAdminSellerOrders = async (sellerId: string): Promise<{
+export interface AdminSellerOrdersParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+}
+
+export interface AdminSellerOrdersResponse {
   orders: SellerOrder[];
   seller: any;
   store: any;
-}> => {
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  /** Whole-history figures for the summary tiles — not just the page. */
+  totals?: {
+    totalOrders: number;
+    totalEarned: number;
+    totalRefunded: number;
+    pendingCOD: number;
+  };
+}
+
+export const fetchAdminSellerOrders = async (
+  sellerId: string,
+  params: AdminSellerOrdersParams = {},
+): Promise<AdminSellerOrdersResponse> => {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.search) query.set("search", params.search);
+  if (params.status) query.set("status", params.status);
+
+  const suffix = query.toString() ? `?${query.toString()}` : "";
   const response = await axiosInstance.get(
-    `/order/api/admin-orders/${sellerId}`,
+    `/order/api/admin-orders/${sellerId}${suffix}`,
     isProtected,
   );
   return response.data;
@@ -491,11 +525,19 @@ export const useAdminSellerDetail = (sellerId?: string) =>
     enabled: Boolean(sellerId),
   });
 
-export const useAdminSellerOrders = (sellerId?: string) =>
+export const useAdminSellerOrders = (
+  sellerId?: string,
+  params: AdminSellerOrdersParams = {},
+) =>
   useQuery({
-    queryKey: sellerId ? ["admin", "seller-orders", sellerId] : ["admin", "seller-orders"],
-    queryFn: () => fetchAdminSellerOrders(sellerId as string),
+    queryKey: sellerId
+      ? ["admin", "seller-orders", sellerId, params]
+      : ["admin", "seller-orders"],
+    queryFn: () => fetchAdminSellerOrders(sellerId as string, params),
     enabled: Boolean(sellerId),
+    // Keeps the current page on screen while the next one loads, instead of
+    // dropping back to the loading state on every page or search change.
+    placeholderData: (previous) => previous,
   });
 
 export const useOrderDetail = (orderId?: string) =>

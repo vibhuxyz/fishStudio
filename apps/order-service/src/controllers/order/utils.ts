@@ -7,7 +7,28 @@ import { buildOrderNumber, normalizeLocationCode, orderDateKey } from "@repo/sha
 import { parseDeliverySlotConfig, type DeliverySlotDefinition } from "@repo/shared/delivery-slots";
 import { distanceInKm } from "@repo/shared/geo";
 
-export const STATS_CACHE_TTL = 120; // 2 minutes
+/**
+ * How long a computed stats rollup is cached, by period.
+ *
+ * Scaled to the window it summarises. Every miss re-reads every order in the
+ * period out of Postgres and aggregates it in Node, so a flat two minutes meant
+ * a *yearly* rollup re-scanned a year of orders thirty times an hour — for
+ * numbers that cannot visibly move in that time, since one more order is a
+ * rounding error against a year of them. The week view keeps the short TTL
+ * because there it actually shows: a handful of orders changes the totals.
+ *
+ * This is the single largest read this service makes against a metered
+ * database, so the TTL is the main lever on what it costs.
+ */
+const STATS_CACHE_TTL_BY_PERIOD: Record<Period, number> = {
+  week: 120, // 2 minutes
+  month: 900, // 15 minutes
+  year: 3600, // 1 hour
+};
+
+export function statsCacheTtl(period: Period): number {
+  return STATS_CACHE_TTL_BY_PERIOD[period] ?? 120;
+}
 
 /**
  * The order id shown to customers is never the raw cuid — every client

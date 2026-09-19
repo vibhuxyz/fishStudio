@@ -1,3 +1,5 @@
+import { QUEUE_NAMES } from "@repo/libs/queues";
+import { publishOutboxWakeup } from "@repo/libs/rabbitmq";
 import { Prisma } from "../prisma/generated-client/index.js";
 
 /**
@@ -43,4 +45,21 @@ export function enqueueOutboxEvent(tx: OutboxWriter, event: OutboxEventInput) {
       payload: event.payload,
     },
   });
+}
+
+/**
+ * Tell the relay there is work, instead of making it ask.
+ *
+ * Call once AFTER the transaction that wrote the events commits — calling it
+ * inside would race the relay against the commit, and a relay that looks and
+ * finds nothing has learned nothing. Awaiting is optional: the wakeup is an
+ * optimisation, and the relay's own sweep is what makes delivery guaranteed.
+ *
+ * This is what lets the relay's idle poll be slow. Polling every two seconds
+ * was buying low latency for the rare event by keeping the database awake for
+ * every second of the day; the nudge buys the same latency only when there is
+ * actually something to deliver.
+ */
+export function notifyOutboxPending(): Promise<void> {
+  return publishOutboxWakeup(QUEUE_NAMES.OUTBOX_WAKEUP);
 }
