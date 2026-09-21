@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "What is your refund policy?",
-    a: "If anything isn't right with your order, reach out within 24 hours and we'll arrange a refund or replacement.",
+    a: "If anything isn't right with your order, reach out within 48 hours of delivery. Eligible issues are replaced or refunded as per our Return, Replacement, Refund & Cancellation Policy.",
   },
   {
     q: "Which payment methods are accepted?",

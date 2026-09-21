@@ -49,6 +49,7 @@ import {
   listUserSessions,
   revokeUserSession,
 } from "../modules/user/user.controller.js";
+import { googleLogin } from "../modules/user/google-auth.controller.js";
 import {
   getSeller,
   loginSeller,
@@ -93,6 +94,7 @@ const router: Router = express.Router();
 router.get("/home", (req, res) => res.send("Hello World"));
 router.post("/send-otp", otpRateLimiter, sendOtpToUser);
 router.post("/verify-otp", authRateLimiter, verifyOtpAndLogin);
+router.post("/google-login", authRateLimiter, googleLogin);
 router.get("/logged-in-user", isAuthenticated, isUser, getUser);
 router.post("/logout-user", isAuthenticated, isUser, logOutUser);
 router.get("/sessions", isAuthenticated, isUser, listUserSessions);

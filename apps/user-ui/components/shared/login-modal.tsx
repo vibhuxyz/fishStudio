@@ -26,6 +26,10 @@ import axiosInstance from "@/utils/axiosInstance";
 import { setAuthenticatedUser } from "@/lib/auth-store";
 import { useAddressStore } from "@/lib/address-store";
 import { storefrontKeys } from "@/lib/storefront";
+import {
+  GoogleSignInButton,
+  isGoogleSignInConfigured,
+} from "@/components/shared/google-sign-in-button";
 
 interface LoginModalProps {
   open: boolean;
@@ -108,6 +112,31 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const isPhoneInput = /^\d+$/.test(identifier.trim()) && !identifier.includes("@");
   const isValid = isEmail || isPhone;
 
+  /* ── Shared by OTP and Google sign-in ── */
+  const completeLogin = async (user: {
+    id: string;
+    name: string;
+    phone_number?: string | null;
+    email?: string | null;
+  }) => {
+    setAuthenticatedUser({
+      id: user.id,
+      name: user.name,
+      phone: user.phone_number || "",
+      email: user.email || "",
+    });
+    try {
+      const { data: userData } = await axiosInstance.get("/auth/api/logged-in-user");
+      if (userData?.user?.addresses) {
+        useAddressStore.getState().setAddresses(userData.user.addresses);
+      }
+    } catch (_) {}
+    queryClient.invalidateQueries({ queryKey: storefrontKeys.userSession });
+    toast.success("Welcome to Fish Studio! 🐟");
+    setStep("success");
+    window.setTimeout(() => onOpenChange(false), 1800);
+  };
+
   /* ── Mutations ── */
   const sendOtpMutation = useMutation({
     mutationFn: async () => {
@@ -146,22 +175,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         return;
       }
 
-      setAuthenticatedUser({
-        id: data.user.id,
-        name: data.user.name,
-        phone: data.user.phone_number || "",
-        email: data.user.email || "",
-      });
-      try {
-        const { data: userData } = await axiosInstance.get("/auth/api/logged-in-user");
-        if (userData?.user?.addresses) {
-          useAddressStore.getState().setAddresses(userData.user.addresses);
-        }
-      } catch (_) {}
-      queryClient.invalidateQueries({ queryKey: storefrontKeys.userSession });
-      toast.success("Welcome to Fish Studio! 🐟");
-      setStep("success");
-      window.setTimeout(() => onOpenChange(false), 1800);
+      await completeLogin(data.user);
     },
     onError: (error: any) => {
       toast.error(
@@ -170,7 +184,25 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     },
   });
 
-  const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;
+  const googleLoginMutation = useMutation({
+    mutationFn: async (idToken: string) => {
+      const { data } = await axiosInstance.post("/auth/api/google-login", {
+        idToken,
+      });
+      return data;
+    },
+    onSuccess: (data) => completeLogin(data.user),
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        error?.response?.data?.message || "Google sign-in failed. Please try again.",
+      );
+    },
+  });
+
+  const isLoading =
+    sendOtpMutation.isPending ||
+    verifyOtpMutation.isPending ||
+    googleLoginMutation.isPending;
 
   /* ── Reset on open ── */
   useEffect(() => {
@@ -350,15 +382,41 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                       )}
                     </button>
 
+                    {isGoogleSignInConfigured && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <span className="h-px flex-1 bg-border" />
+                          <span className="text-xs text-muted-foreground">or</span>
+                          <span className="h-px flex-1 bg-border" />
+                        </div>
+                        <GoogleSignInButton
+                          disabled={isLoading}
+                          onCredential={(idToken) =>
+                            googleLoginMutation.mutate(idToken)
+                          }
+                        />
+                      </>
+                    )}
+
                     <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
                       By proceeding you confirm that you agree to our{" "}
-                      <span className="cursor-pointer font-semibold text-foreground hover:underline">
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-foreground hover:underline"
+                      >
                         Privacy Policy
-                      </span>{" "}
+                      </a>{" "}
                       &amp;{" "}
-                      <span className="cursor-pointer font-semibold text-foreground hover:underline">
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-foreground hover:underline"
+                      >
                         Terms of Use
-                      </span>
+                      </a>
                       .
                     </p>
                   </div>

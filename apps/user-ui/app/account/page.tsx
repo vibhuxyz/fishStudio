@@ -66,6 +66,8 @@ const GROUPS: { title: string; rows: Row[] }[] = [
     rows: [
       { label: "Privacy Policy", href: "/privacy", icon: ShieldCheck },
       { label: "Terms & Conditions", href: "/terms", icon: FileText },
+      { label: "Return & Refund Policy", href: "/return-policy", icon: FileText },
+      { label: "Shipping & Delivery Policy", href: "/shipping-policy", icon: FileText },
     ],
   },
 ];

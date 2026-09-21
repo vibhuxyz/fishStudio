@@ -51,6 +51,87 @@ import {
 // blocking the new login.
 const MAX_USER_SESSIONS = 3;
 
+/**
+ * Silently ignore a code that doesn't match anyone — a typo shouldn't block
+ * signup, and never leaking whether it's valid avoids leaking whether any
+ * given code belongs to a real account.
+ */
+export const resolveReferralCode = async (
+  raw: unknown,
+): Promise<string | undefined> => {
+  if (!raw || typeof raw !== "string") return undefined;
+  const code = raw.trim().toUpperCase();
+  const referrer = await prisma.users.findFirst({
+    where: { referralCode: code },
+    select: { id: true },
+  });
+  return referrer ? code : undefined;
+};
+
+/**
+ * Opens a new session for a customer who has just proved who they are (OTP or
+ * Google): enforces the per-device cap, signs the token pair, records the
+ * session row and sets the auth cookies. The tokens are returned so the caller
+ * can put them in the response body for mobile (Bearer) clients.
+ */
+export const createUserSession = async (
+  req: Request,
+  res: Response,
+  user: { id: string },
+) => {
+  // Multi-device cap: at most MAX_USER_SESSIONS concurrent sessions per
+  // customer. Logging in past the cap evicts the oldest (by lastUsedAt)
+  // rather than blocking the new login.
+  const activeSessions = await prisma.sessions.findMany({
+    where: { userId: user.id, revokedAt: null },
+    orderBy: { lastUsedAt: "asc" },
+  });
+  if (activeSessions.length >= MAX_USER_SESSIONS) {
+    const toEvict = activeSessions.slice(0, activeSessions.length - MAX_USER_SESSIONS + 1);
+    await Promise.allSettled(
+      toEvict.map(async (session) => {
+        await prisma.sessions.update({
+          where: { id: session.id },
+          data: { revokedAt: new Date() },
+        });
+        await bumpSessionFamily(session.sid);
+        await revokeJti(session.accessJti, 15 * 60);
+      }),
+    );
+  }
+
+  const sid = crypto.randomUUID();
+  const { platform, deviceLabel, userAgent } = resolveDeviceInfo(req);
+
+  // Fix #11: access/refresh tokens carry a jti and refresh tokens carry a
+  // family generation so they can be revoked.
+  const accessToken = signAccessToken({ id: user.id, role: "user", sid }, "15m");
+  const refreshToken = await signRefreshToken(
+    { id: user.id, role: "user", sid },
+    REFRESH_TTL_BY_ROLE.user,
+  );
+
+  await prisma.sessions.create({
+    data: {
+      userId: user.id,
+      sid,
+      platform,
+      deviceLabel,
+      userAgent,
+      ip: req.ip || null,
+      accessJti: (jwt.decode(accessToken) as { jti?: string } | null)?.jti || null,
+    },
+  });
+
+  // The access cookie may safely outlive the 15m token inside it — the
+  // client refreshes off the refresh cookie, and a cookie that vanished
+  // first would strand a session the server would still have renewed.
+  setCookie(res, "access_token", accessToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
+  setCookie(res, "refresh_token", refreshToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
+
+  return { accessToken, refreshToken };
+};
+
 export const sendOtpToUser = async (
   req: Request,
   res: Response,
@@ -148,17 +229,7 @@ export const verifyOtpAndLogin = async (
     if (!user && name) {
       await redis.del(`otp_verified:${key}`);
 
-      // Silently ignore a code that doesn't match anyone — a typo shouldn't
-      // block signup, and never leaking whether it's valid avoids leaking
-      // whether any given code belongs to a real account.
-      let referredByCode: string | undefined;
-      if (referralCode && typeof referralCode === "string") {
-        const referrer = await prisma.users.findFirst({
-          where: { referralCode: referralCode.trim().toUpperCase() },
-          select: { id: true },
-        });
-        if (referrer) referredByCode = referralCode.trim().toUpperCase();
-      }
+      const referredByCode = await resolveReferralCode(referralCode);
 
       try {
         user = await prisma.users.create({
@@ -182,55 +253,7 @@ export const verifyOtpAndLogin = async (
       return next(new ValidationError("Unable to sign in — please try again"));
     }
 
-    // Multi-device cap: at most MAX_USER_SESSIONS concurrent sessions per
-    // customer. Logging in past the cap evicts the oldest (by lastUsedAt)
-    // rather than blocking the new login.
-    const activeSessions = await prisma.sessions.findMany({
-      where: { userId: user.id, revokedAt: null },
-      orderBy: { lastUsedAt: "asc" },
-    });
-    if (activeSessions.length >= MAX_USER_SESSIONS) {
-      const toEvict = activeSessions.slice(0, activeSessions.length - MAX_USER_SESSIONS + 1);
-      await Promise.allSettled(
-        toEvict.map(async (session) => {
-          await prisma.sessions.update({
-            where: { id: session.id },
-            data: { revokedAt: new Date() },
-          });
-          await bumpSessionFamily(session.sid);
-          await revokeJti(session.accessJti, 15 * 60);
-        }),
-      );
-    }
-
-    const sid = crypto.randomUUID();
-    const { platform, deviceLabel, userAgent } = resolveDeviceInfo(req);
-
-    // Fix #11: access/refresh tokens carry a jti and refresh tokens carry a
-    // family generation so they can be revoked.
-    const accessToken = signAccessToken({ id: user.id, role: "user", sid }, "15m");
-    const refreshToken = await signRefreshToken(
-      { id: user.id, role: "user", sid },
-      REFRESH_TTL_BY_ROLE.user,
-    );
-
-    await prisma.sessions.create({
-      data: {
-        userId: user.id,
-        sid,
-        platform,
-        deviceLabel,
-        userAgent,
-        ip: req.ip || null,
-        accessJti: (jwt.decode(accessToken) as { jti?: string } | null)?.jti || null,
-      },
-    });
-
-    // The access cookie may safely outlive the 15m token inside it — the
-    // client refreshes off the refresh cookie, and a cookie that vanished
-    // first would strand a session the server would still have renewed.
-    setCookie(res, "access_token", accessToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
-    setCookie(res, "refresh_token", refreshToken, REFRESH_COOKIE_MAX_AGE_BY_ROLE.user);
+    const { accessToken, refreshToken } = await createUserSession(req, res, user);
 
     // Include tokens in response body for mobile clients (Bearer token auth).
     // Web clients use the httpOnly cookies above; mobile stores these in

@@ -4,6 +4,7 @@ import { useStore } from "@/store";
 import { useAddressStore } from "@/lib/address-store";
 import { useCouponStore } from "@/lib/coupon-store";
 import { resetDeviceId } from "@/lib/device";
+import { signOutOfGoogle } from "@/lib/google-auth";
 import { queryClient } from "@/config/providers";
 
 export const clearStoredAuth = async () => {
@@ -11,6 +12,9 @@ export const clearStoredAuth = async () => {
     SecureStore.deleteItemAsync("access_token").catch(() => {}),
     SecureStore.deleteItemAsync("refresh_token").catch(() => {}),
     SecureStore.deleteItemAsync("user").catch(() => {}),
+    // Otherwise the native SDK silently reuses the last Google account and the
+    // next person on this device never gets the account picker.
+    signOutOfGoogle(),
   ]);
 
   // Cart, wishlist, coupons and saved addresses are all per-account — left

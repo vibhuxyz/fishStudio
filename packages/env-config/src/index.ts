@@ -151,6 +151,15 @@ export const ENV = {
   // covers the calls we make. See apps/auth-service/.../geocoding.controller.
   GOOGLE_MAPS_API_KEY: logEnv("GOOGLE_MAPS_API_KEY", process.env.GOOGLE_MAPS_API_KEY),
 
+  // Google Sign-In (customers). One or more OAuth client IDs, comma-separated:
+  // an ID token is accepted only if it was minted for one of these. Use the
+  // *Web* client ID — the browser button and the native Android/iOS SDKs (when
+  // given it as `webClientId`) all issue tokens with that audience. The client
+  // ID is public, not a secret; there is deliberately no client secret because
+  // the ID-token flow never needs one. No logEnv: unset just means the feature
+  // is off, which shouldn't paint a red line on every service's boot.
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+
   // Payment Service
   PAYMENT_SERVICE_PORT: process.env.PAYMENT_SERVICE_PORT || "6007",
   PAYMENT_SERVICE_URL: logEnv(

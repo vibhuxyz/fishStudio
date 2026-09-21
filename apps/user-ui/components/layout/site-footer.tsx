@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { Fish, Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 
+const POLICY_LINKS = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms & Conditions", href: "/terms" },
+  { label: "Return & Refund Policy", href: "/return-policy" },
+  { label: "Shipping & Delivery Policy", href: "/shipping-policy" },
+];
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-background">
@@ -92,6 +99,22 @@ export function SiteFooter() {
             Copyright © 2025 Fishstudio | All rights reserved
           </p>
         </div>
+
+        {/* Policies */}
+        <nav
+          aria-label="Policies"
+          className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:justify-start"
+        >
+          {POLICY_LINKS.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="text-[11px] text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );

@@ -23,6 +23,14 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@repo/db-mongo": "workspace:*",
+    "@repo/env-config": "workspace:*",
+    "@repo/error-handlers": "workspace:*",
+    "@repo/libs": "workspace:*",
+    "@repo/middlewares": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@repo/shared": "workspace:*",
+    "@repo/zod-schema": "workspace:*",
     "@types/compression": "^1.8.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -34,15 +42,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "google-auth-library": "^11.1.0",
     "helmet": "^8.1.0",
-    "jsonwebtoken": "^9.0.3",
-    "@repo/db-mongo": "workspace:*",
-    "@repo/env-config": "workspace:*",
-    "@repo/middlewares": "workspace:*",
-    "@repo/libs": "workspace:*",
-    "@repo/shared": "workspace:*",
-    "@repo/zod-schema": "workspace:*",
-    "@repo/error-handlers": "workspace:*",
-    "@repo/observability": "workspace:*"
+    "jsonwebtoken": "^9.0.3"
   }
 }

@@ -1,50 +1,76 @@
+import { PolicyPage, type PolicySection } from "@/components/shared/policy-page";
+
 export const metadata = { title: "Privacy Policy · Fish Studio" };
 
-const SECTIONS = [
+const SECTIONS: PolicySection[] = [
   {
-    h: "Information we collect",
-    p: "We collect details you provide — name, phone number, email and delivery addresses — along with order history and how you browse the app, so we can fulfil orders and improve your experience.",
+    h: "Introduction",
+    p: [
+      "We respect your privacy and are committed to protecting the personal information you provide while using our website and services. This Privacy Policy explains what information we collect, how we use it, when it may be shared, and the measures we take to protect it.",
+    ],
   },
   {
-    h: "How we use your information",
-    p: "Your data is used to process orders, arrange delivery, personalise recommendations, prevent fraud, and send service updates. We do not sell your personal data.",
+    h: "Information We Collect",
+    p: [
+      "When you browse our website, contact us, or place an order, we may collect information such as your name, mobile number, email address, billing and delivery address, order details, transaction or payment status, and information you voluntarily provide to our customer-support team.",
+    ],
   },
   {
-    h: "Sharing",
-    p: "We share only what's necessary with delivery partners and payment providers to complete your order, and where required by law.",
+    h: "How We Use Your Information",
+    p: [
+      "We may use customer information to process and fulfil orders, arrange delivery, communicate order updates, provide customer support, process eligible cancellations, refunds and replacements, prevent fraudulent or unauthorised transactions, improve our products and services, and comply with applicable legal and regulatory requirements.",
+    ],
   },
   {
-    h: "Data retention",
-    p: "We keep your account data while your account is active. Order records may be retained for legal and accounting purposes after account deletion.",
+    h: "Payments",
+    p: [
+      "Online payments may be processed through Razorpay or another authorised payment service provider. We do not intentionally collect or store sensitive payment credentials such as card CVV, UPI PIN, or banking passwords. Payment information is handled by the relevant payment service provider in accordance with its applicable terms and privacy practices.",
+    ],
   },
   {
-    h: "Your choices",
-    p: "You can edit your profile, manage addresses, or delete your account at any time from My Account. Deleting your account removes your personal profile data from our systems.",
+    h: "Cookies and Similar Technologies",
+    p: [
+      "Our website may use cookies and similar technologies that are necessary for website functionality, security, analytics, and improving the customer experience. We may also use third-party analytics or advertising technologies where applicable.",
+    ],
+  },
+  {
+    h: "Sharing of Information",
+    p: [
+      "We may share information with payment service providers, delivery and logistics partners, technology and service providers, analytics or advertising providers, and government or regulatory authorities where required or permitted by applicable law. Information shared with delivery personnel will be limited to what is reasonably necessary to complete the delivery.",
+    ],
+  },
+  {
+    h: "Data Security",
+    p: [
+      "We use reasonable administrative, technical, and organisational measures intended to protect customer information against unauthorised access, misuse, alteration, disclosure, or destruction. However, no method of electronic transmission or storage can be guaranteed to be completely secure.",
+    ],
+  },
+  {
+    h: "Data Retention",
+    p: [
+      "We may retain customer and transaction information for as long as reasonably necessary to fulfil the purposes for which it was collected, provide customer support, resolve disputes, maintain appropriate business and transaction records, and comply with applicable legal, accounting, or regulatory requirements.",
+    ],
+  },
+  {
+    h: "Your Choices",
+    p: [
+      "Where applicable, customers may request information about the personal data held by us, ask for correction of inaccurate information, or opt out of promotional communications. Requests should be made through our designated customer-support channels.",
+    ],
   },
   {
     h: "Contact",
-    p: "Questions about privacy? Email us at privacy@fishstudio.in.",
+    p: [
+      "For privacy-related questions or requests, please contact us using the customer-support details published on our website.",
+    ],
   },
 ];
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-6 pb-28 md:px-6 md:pb-10">
-      <h1 className="mb-1 text-xl font-bold text-foreground md:text-2xl">
-        Privacy Policy
-      </h1>
-      <p className="mb-6 text-xs text-muted-foreground">Last updated: June 2026</p>
-
-      <div className="space-y-5">
-        {SECTIONS.map((s) => (
-          <section key={s.h}>
-            <h2 className="text-base font-semibold text-foreground">{s.h}</h2>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              {s.p}
-            </p>
-          </section>
-        ))}
-      </div>
-    </div>
+    <PolicyPage
+      title="Privacy Policy"
+      lastUpdated="September 2026"
+      sections={SECTIONS}
+    />
   );
 }

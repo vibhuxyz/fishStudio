@@ -4,6 +4,11 @@ import { OtpStep } from "@/components/auth/otp-step";
 import { PhoneStep } from "@/components/auth/phone-step";
 import { SuccessStep } from "@/components/auth/success-step";
 import { getDeviceInfo } from "@/lib/deviceLabel";
+import {
+  GoogleSignInCancelled,
+  getGoogleIdToken,
+  isGoogleSignInConfigured,
+} from "@/lib/google-auth";
 import { useUserStore } from "@/lib/user-store";
 import axiosInstance, { storeAccessToken } from "@/utils/axiosInstance";
 import { haptic } from "@/utils/haptics";
@@ -48,6 +53,48 @@ export default function LoginScreen() {
     const id = setInterval(() => setTimer((previous) => previous - 1), 1000);
     return () => clearInterval(id);
   }, [step, timer]);
+
+  // Everything that follows a successful login, whichever way the user got in:
+  // persist the tokens/profile, then send them onward.
+  const completeLogin = async (data: any) => {
+    const accessTokenToStore = data.accessToken || data.token;
+    if (accessTokenToStore) {
+      await storeAccessToken(accessTokenToStore);
+    }
+
+    if (data.refreshToken) {
+      await SecureStore.setItemAsync("refresh_token", data.refreshToken);
+    }
+
+    if (data.user) {
+      // Go through the store, not SecureStore directly: useUser() only reads
+      // from disk once per launch, so writing the key behind its back leaves
+      // every consumer showing a logged-out state until the app restarts.
+      await useUserStore.getState().updateUser({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email || "",
+        phone: data.user.phone_number || "",
+        avatar: data.user.avatar || undefined,
+      });
+    }
+
+    // Fold any guest browsing history into the now-authenticated account.
+    mergeActivity();
+
+    setStep("success");
+    haptic.success();
+    setTimeout(async () => {
+      const hasSeenNotificationPrompt = await AsyncStorage.getItem(
+        NOTIFICATION_ONBOARDING_SEEN_KEY,
+      );
+      if (!hasSeenNotificationPrompt) {
+        router.replace("/(routes)/notification-permissions");
+        return;
+      }
+      router.replace(redirect && redirect.startsWith("/") ? (redirect as Href) : "/(tabs)");
+    }, 1300);
+  };
 
   const sendOtpMutation = useMutation({
     mutationFn: async () => {
@@ -97,43 +144,7 @@ export default function LoginScreen() {
         return;
       }
 
-      const accessTokenToStore = data.accessToken || data.token;
-      if (accessTokenToStore) {
-        await storeAccessToken(accessTokenToStore);
-      }
-
-      if (data.refreshToken) {
-        await SecureStore.setItemAsync("refresh_token", data.refreshToken);
-      }
-
-      if (data.user) {
-        // Go through the store, not SecureStore directly: useUser() only reads
-        // from disk once per launch, so writing the key behind its back leaves
-        // every consumer showing a logged-out state until the app restarts.
-        await useUserStore.getState().updateUser({
-          id: data.user.id,
-          name: data.user.name,
-          email: data.user.email || "",
-          phone: data.user.phone_number || "",
-          avatar: data.user.avatar || undefined,
-        });
-      }
-
-      // Fold any guest browsing history into the now-authenticated account.
-      mergeActivity();
-
-      setStep("success");
-      haptic.success();
-      setTimeout(async () => {
-        const hasSeenNotificationPrompt = await AsyncStorage.getItem(
-          NOTIFICATION_ONBOARDING_SEEN_KEY,
-        );
-        if (!hasSeenNotificationPrompt) {
-          router.replace("/(routes)/notification-permissions");
-          return;
-        }
-        router.replace(redirect && redirect.startsWith("/") ? (redirect as Href) : "/(tabs)");
-      }, 1300);
+      await completeLogin(data);
     },
     onError: (error: unknown) => {
       const message = isAxiosError(error)
@@ -143,7 +154,35 @@ export default function LoginScreen() {
     },
   });
 
-  const isLoading = sendOtpMutation.isPending || verifyOtpMutation.isPending;
+  const googleLoginMutation = useMutation({
+    mutationFn: async () => {
+      const idToken = await getGoogleIdToken();
+      const { data } = await axiosInstance.post("/auth/api/google-login", {
+        idToken,
+        ...getDeviceInfo(),
+      });
+      return data;
+    },
+    onSuccess: async (data) => {
+      setIsNewUser(!!data.isNewUser);
+      await completeLogin(data);
+    },
+    onError: (error: unknown) => {
+      // Dismissing the account picker is a choice, not a failure.
+      if (error instanceof GoogleSignInCancelled) return;
+      const message = isAxiosError(error)
+        ? error.response?.data?.message || "Google sign-in failed."
+        : error instanceof Error
+          ? error.message
+          : "Something went wrong.";
+      toast.error(message);
+    },
+  });
+
+  const isLoading =
+    sendOtpMutation.isPending ||
+    verifyOtpMutation.isPending ||
+    googleLoginMutation.isPending;
 
   const handleSkip = () => {
     haptic.press();
@@ -210,6 +249,9 @@ export default function LoginScreen() {
       isLoading={isLoading}
       onSubmit={() => sendOtpMutation.mutate()}
       onSkip={handleSkip}
+      onGoogleSignIn={
+        isGoogleSignInConfigured ? () => googleLoginMutation.mutate() : undefined
+      }
     />
   );
 }

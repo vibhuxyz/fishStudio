@@ -47,6 +47,8 @@ type PhoneStepProps = {
   isLoading: boolean;
   onSubmit: () => void;
   onSkip: () => void;
+  /** Wired only when Google sign-in is configured; otherwise the stub shows. */
+  onGoogleSignIn?: () => void;
 };
 
 export function PhoneStep({
@@ -56,6 +58,7 @@ export function PhoneStep({
   isLoading,
   onSubmit,
   onSkip,
+  onGoogleSignIn,
 }: PhoneStepProps) {
   const phoneRef = useRef<TextInput>(null);
   const [termsAccepted, setTermsAccepted] = useState(true);
@@ -212,7 +215,16 @@ export function PhoneStep({
 
             <View style={styles.socialRow}>
               <Pressable
-                onPress={notYetAvailable("Google sign-in")}
+                onPress={
+                  onGoogleSignIn
+                    ? () => {
+                        if (isLoading) return;
+                        haptic.press();
+                        onGoogleSignIn();
+                      }
+                    : notYetAvailable("Google sign-in")
+                }
+                disabled={isLoading}
                 style={styles.socialButton}
               >
                 <GoogleMark size={vs(authScreen.googleMarkSize)} />

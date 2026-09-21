@@ -32,6 +32,7 @@ See `env.example`. In addition to what's listed there, this service reads from t
 - `REDIS_DATABASE_URL` — rate limiting, OTP state, token blocklist, auth cache.
 - `RABBITMQ_PROTOCOL` / `RABBITMQ_HOST_NAME` / `RABBITMQ_USER_NAME` / `RABBITMQ_PASSWORD` / `RABBITMQ_PORT` — OTP/notification queue publishing.
 - `FAST2SMS_API_KEY` — required in production for phone-based OTP.
+- `GOOGLE_CLIENT_ID` — Web OAuth client ID(s), comma-separated, that `POST /google-login` accepts ID tokens for. Empty disables Google sign-in.
 - `NODE_ENV` — gates dev-only OTP console logging and cookie `secure`/`sameSite` behavior.
 
 ## Dependencies
